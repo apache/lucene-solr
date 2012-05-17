@@ -398,9 +398,6 @@ sammy.get
         content_element
           .html( template );
 
-        $( '#navigation a[href="' + context.path + '"]', content_element )
-          .parent().addClass( 'current' );
-
         frame_element = $( '#frame', content_element );
         frame_element
           .html
@@ -472,7 +469,7 @@ sammy.get
 // #/~logging/level
 sammy.get
 (
-  /^#\/~(logging)\/level$/,
+  /^#\/(~logging)\/level$/,
   function( context )
   {
     var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );
@@ -487,8 +484,8 @@ sammy.get
         content_element
           .html( template );
 
-        $( '#navigation a[href="' + context.path + '"]', content_element )
-          .parent().addClass( 'current' );
+        $( '#menu a[href="' + context.path + '"]' )
+          .parent().addClass( 'active' );
                       
         $.ajax
         (

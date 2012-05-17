@@ -18,7 +18,7 @@
 var init_debug = function( cloud_element )
 {
   var debug_element = $( '#debug', cloud_element );
-  var debug_button = $( '.dump a', cloud_element );
+  var debug_button = $( '#menu #cloud .dump a' );
 
   var clipboard_element = $( '.clipboard', debug_element );
   var clipboard_button = $( 'a', clipboard_element );
@@ -65,7 +65,6 @@ var init_debug = function( cloud_element )
       'show',
       function( event )
       {
-        debug_button.hide();
         debug_element.show();
 
         $.ajax
@@ -147,7 +146,6 @@ var init_debug = function( cloud_element )
 
         clipboard_client.destroy();
 
-        debug_button.show();
         debug_element.hide();
       }
     );
@@ -675,7 +673,7 @@ sammy.get
           .html( template );
 
         var cloud_element = $( '#cloud', content_element );
-        var navigation_element = $( '#navigation', content_element );
+        var navigation_element = $( '#menu #cloud' );
 
         init_debug( cloud_element );
 
@@ -686,7 +684,7 @@ sammy.get
             'activate',
             function( event )
             {
-              $( this ).addClass( 'current' );
+              $( this ).addClass( 'active' );
               init_tree( $( '#tree-content', cloud_element ) );
             }
           );
@@ -698,7 +696,7 @@ sammy.get
             'activate',
             function( event )
             {
-              $( this ).addClass( 'current' );
+              $( this ).addClass( 'active' );
               init_graph( $( '#graph-content', cloud_element ) );
             }
           );
@@ -710,7 +708,7 @@ sammy.get
             'activate',
             function( event )
             {
-              $( this ).addClass( 'current' );
+              $( this ).addClass( 'active' );
               init_rgraph( $( '#graph-content', cloud_element ) );
             }
           );

@@ -76,12 +76,30 @@ limitations under the License.
         <div>
                   
           <ul id="menu">
+
             <li id="index" class="global"><p><a href="#/">Dashboard</a></p></li>
-            <li id="logging" class="global"><p><a href="#/~logging">Logging</a></p></li>
-            <li id="cloud" class="global optional"><p><a href="#/~cloud">Cloud</a></p></li>
+
+            <li id="logging" class="global"><p><a href="#/~logging">Logging</a></p>
+              <ul>
+                <li class="level"><a href="#/~logging/level">Level</a></li>
+              </ul>
+            </li>
+
+            <li id="cloud" class="global optional"><p><a href="#/~cloud">Cloud</a></p>
+              <ul>
+                <li class="tree"><a href="#/~cloud">Tree</a></li>
+                <li class="graph"><a href="#/~cloud?view=graph">Graph</a></li>
+                <li class="rgraph"><a href="#/~cloud?view=rgraph">Graph (Radial)</a></li>
+                <li class="dump"><a href="#/~cloud">Dump</a></li>
+              </ul>
+            </li>
+
             <li id="cores" class="global"><p><a href="#/~cores">Core Admin</a></p></li>
+
             <li id="java-properties" class="global"><p><a href="#/~java-properties">Java Properties</a></li>
+
             <li id="threads" class="global"><p><a href="#/~threads">Thread Dump</a></p></li>
+            
           </ul>
 
           <ul id="menu-selector">

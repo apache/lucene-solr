@@ -1,17 +1,3 @@
-#content #logging #navigation
-{
-  width: 8%;
-}
-
-#content #logging #navigation .viewer a { background-image: url( ../../img/ico/document-text.png ); }
-#content #logging #navigation .level a { background-image: url( ../../img/ico/gear.png ); }
-
-#content #logging #frame
-{
-  float: right;
-  width: 90%;
-}
-
 #content #logging .loader
 {
   background-position: 0 50%;

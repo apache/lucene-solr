@@ -3,32 +3,6 @@
   position: relative;
 }
 
-#content #cloud #navigation
-{
-  width: 11%;
-}
-
-#content #cloud #navigation .tree a { background-image: url( ../../img/ico/folder-tree.png ); }
-#content #cloud #navigation .graph a { background-image: url( ../../img/ico/molecule.png ); }
-#content #cloud #navigation .rgraph a { background-image: url( ../../img/ico/asterisk.png ); }
-#content #cloud #navigation .dump a { background-image: url( ../../img/ico/download-cloud.png ); }
-
-#content #cloud #navigation .dump
-{
-  margin-top: 10px;
-}
-
-#content #cloud #navigation .dump a:hover
-{
-  color: #008;
-}
-
-#content #cloud #frame
-{
-  float: right;
-  width: 88%;
-}
-
 #content #cloud #frame .content
 {
   display: none;
