@@ -614,7 +614,7 @@ public class FieldMutatingUpdateProcessorTest extends SolrTestCaseJ4 {
   }
 
   /** 
-   * Convinience method for building up SolrInputDocuments
+   * Convenience method for building up SolrInputDocuments
    */
   SolrInputDocument doc(SolrInputField... fields) {
     SolrInputDocument d = new SolrInputDocument();
@@ -625,7 +625,7 @@ public class FieldMutatingUpdateProcessorTest extends SolrTestCaseJ4 {
   }
 
   /** 
-   * Convinience method for building up SolrInputFields
+   * Convenience method for building up SolrInputFields
    */
   SolrInputField field(String name, float boost, Object... values) {
     SolrInputField f = new SolrInputField(name);
@@ -637,7 +637,7 @@ public class FieldMutatingUpdateProcessorTest extends SolrTestCaseJ4 {
   }
 
   /** 
-   * Convinience method for building up SolrInputFields with default boost
+   * Convenience method for building up SolrInputFields with default boost
    */
   SolrInputField f(String name, Object... values) {
     return field(name, 1.0F, values);
@@ -647,7 +647,7 @@ public class FieldMutatingUpdateProcessorTest extends SolrTestCaseJ4 {
   /**
    * Runs a document through the specified chain, and returns the final 
    * document used when the chain is completed (NOTE: some chains may 
-   * modifiy the document in place
+   * modify the document in place
    */
   SolrInputDocument processAdd(final String chain, 
                                final SolrInputDocument docIn) 
