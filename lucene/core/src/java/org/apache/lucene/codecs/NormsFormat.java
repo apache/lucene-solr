@@ -28,7 +28,16 @@ import org.apache.lucene.index.SegmentReadState;
  * format for normalization factors
  */
 public abstract class NormsFormat {
+
+  /** Returns a {@link PerDocConsumer} to write norms to the
+   *  index. */
   public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
+
+  /** Returns a {@link PerDocProducer} to read norms from the
+   *  index. */
   public abstract PerDocProducer docsProducer(SegmentReadState state) throws IOException;
+
+  /** Gathers files (exact file name or a Pattern regex)
+   *  associated with this segment. */
   public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

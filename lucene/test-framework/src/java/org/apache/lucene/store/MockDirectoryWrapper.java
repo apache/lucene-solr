@@ -784,8 +784,9 @@ public class MockDirectoryWrapper extends Directory {
   public IndexInputSlicer createSlicer(final String name, IOContext context)
       throws IOException {
     maybeYield();
-    if (!delegate.fileExists(name))
+    if (!delegate.fileExists(name)) {
       throw new FileNotFoundException(name);
+    }
     // cannot open a file for input if it's still open for
     // output, except for segments.gen and segments_N
     if (openFilesForWrite.contains(name) && !name.startsWith("segments")) {

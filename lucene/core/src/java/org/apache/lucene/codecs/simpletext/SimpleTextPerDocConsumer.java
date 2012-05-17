@@ -58,37 +58,27 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
   @Override
   public void abort() {
     Set<String> files = new HashSet<String>();
-    files(state.directory, state.fieldInfos, state.segmentName, files, segmentSuffix);
+    files(state.directory, state.segmentName, files, segmentSuffix);
     IOUtils.deleteFilesIgnoringExceptions(state.directory,
-        files.toArray(new String[0]));
+                                          SegmentInfo.findMatchingFiles(state.directory, files).toArray(new String[0]));
   }
   
-  
-  static void files(SegmentInfo info, Set<String> files, String segmentSuffix) throws IOException {
-    files(info.dir, info.getFieldInfos(), info.name, files, segmentSuffix);
+  static void files(SegmentInfo info, Set<String> files, String segmentSuffix) {
+    files(info.dir, info.name, files, segmentSuffix);
   }
   
   static String docValuesId(String segmentsName, int fieldId) {
     return segmentsName + "_" + fieldId;
   }
 
-  @SuppressWarnings("fallthrough")
-  private static void files(Directory dir, FieldInfos fieldInfos,
-      String segmentName, Set<String> files, String segmentSuffix) {
-    for (FieldInfo fieldInfo : fieldInfos) {
-      if (fieldInfo.hasDocValues()) {
-        String filename = docValuesId(segmentName, fieldInfo.number);
-        files.add(IndexFileNames.segmentFileName(filename, "",
-            segmentSuffix));
-        try {
-          assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
-              segmentSuffix));
-        } catch (IOException e) {
-          // don't throw checked exception - dir is only used in assert
-          throw new RuntimeException(e);
-        }
-      }
-    }
+  static String docValuesIdRegexp(String segmentsName) {
+    return segmentsName + "_\\d+";
   }
 
+  @SuppressWarnings("fallthrough")
+  private static void files(Directory dir,
+      String segmentName, Set<String> files, String segmentSuffix) {
+    files.add(IndexFileNames.segmentFileName(docValuesIdRegexp(segmentName), "",
+                                               segmentSuffix));
+  }
 }

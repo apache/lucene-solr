@@ -189,30 +189,6 @@ final class IndexFileDeleter {
             }
           }
           if (sis != null) {
-            final SegmentInfos infos = sis;
-            for (SegmentInfo segmentInfo : infos) {
-              try {
-                /*
-                 * Force FI to load for each segment since we could see a
-                 * segments file and load successfully above if the files are
-                 * still referenced when they are deleted and the os doesn't let
-                 * you delete them. Yet its likely that fnm files are removed
-                 * while seg file is still around Since LUCENE-2984 we need FI
-                 * to find out if a seg has vectors and prox so we need those
-                 * files to be opened for a commit point.
-                 */
-                segmentInfo.getFieldInfos();
-              } catch (FileNotFoundException e) {
-                refresh(segmentInfo.name);
-                sis = null;
-                if (infoStream.isEnabled("IFD")) {
-                  infoStream.message("IFD", "init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
-                }
-              }
-            }
-           
-          }
-          if (sis != null) {
             final CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
             if (sis.getGeneration() == segmentInfos.getGeneration()) {
               currentCommitPoint = commitPoint;
@@ -488,7 +464,7 @@ final class IndexFileDeleter {
     assert locked();
     // If this is a commit point, also incRef the
     // segments_N file:
-    for( final String fileName: segmentInfos.files(directory, isCommit) ) {
+    for(final String fileName: segmentInfos.files(directory, isCommit)) {
       incRef(fileName);
     }
   }

@@ -57,7 +57,7 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   public abstract FieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
 
   /**
-   * Gathers files associated with this segment
+   * Gathers files (exact file name or a Pattern regex) associated with this segment
    * 
    * @param segmentInfo the {@link SegmentInfo} for this segment 
    * @param segmentSuffix the format's suffix within this segment

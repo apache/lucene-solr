@@ -22,10 +22,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
-import java.util.LinkedList;
 import java.util.Collection;
-
+import java.util.LinkedList;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -35,6 +33,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -201,15 +200,20 @@ public class TestDoc extends LuceneTestCase {
       MergeState mergeState = merger.merge();
       r1.close();
       r2.close();
-      final FieldInfos fieldInfos =  mergeState.fieldInfos;
-      final SegmentInfo info = new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir,
-                                               false, codec, fieldInfos);
+      final SegmentInfo info = new SegmentInfo(si1.dir, Constants.LUCENE_MAIN_VERSION, merged,
+                                               si1.docCount + si2.docCount, -1, -1, merged,
+                                               false, null, false, 0, mergeState.fieldInfos.hasProx(), codec, null,
+                                               mergeState.fieldInfos.hasVectors(),
+                                               mergeState.fieldInfos.hasDocValues(),
+                                               mergeState.fieldInfos.hasNorms(),
+                                               mergeState.fieldInfos.hasFreq());
       
       if (useCompoundFile) {
         Collection<String> filesToDelete = IndexWriter.createCompoundFile(dir, merged + ".cfs", MergeState.CheckAbort.NONE, info, newIOContext(random()));
         info.setUseCompoundFile(true);
-        for (final String fileToDelete : filesToDelete) 
+        for (final String fileToDelete : filesToDelete) {
           si1.dir.deleteFile(fileToDelete);
+        }
       }
 
       return info;

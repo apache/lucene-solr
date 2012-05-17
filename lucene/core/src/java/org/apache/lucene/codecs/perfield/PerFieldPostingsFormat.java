@@ -336,6 +336,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     final String mapFileName = IndexFileNames.segmentFileName(info.name, segmentSuffix, PER_FIELD_EXTENSION);
     files.add(mapFileName);
 
+    // nocommit can we use regexp to simplify this?
     try {
       new VisitPerFieldFile(dir, info.name, segmentSuffix) {
         @Override
@@ -344,7 +345,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         }
 
         @Override
-          protected void visitOneField(String field, PostingsFormat format) {
+        protected void visitOneField(String field, PostingsFormat format) {
         }
       };
     } catch (FileNotFoundException fnfe) {

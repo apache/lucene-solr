@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -82,10 +83,13 @@ public class TestSegmentMerger extends LuceneTestCase {
     MergeState mergeState = merger.merge();
     int docsMerged = mergeState.mergedDocCount;
     assertTrue(docsMerged == 2);
-    final FieldInfos fieldInfos = mergeState.fieldInfos;
     //Should be able to open a new SegmentReader against the new directory
-    SegmentReader mergedReader = new SegmentReader(new SegmentInfo(mergedSegment, docsMerged, mergedDir, false,
-                                                                                     codec, fieldInfos),
+    SegmentReader mergedReader = new SegmentReader(new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, docsMerged, -1, -1, mergedSegment,
+                                                                   false, null, false, 0, mergeState.fieldInfos.hasProx(), codec, null,
+                                                                   mergeState.fieldInfos.hasVectors(),
+                                                                   mergeState.fieldInfos.hasDocValues(),
+                                                                   mergeState.fieldInfos.hasNorms(),
+                                                                   mergeState.fieldInfos.hasFreq()),
                                                    DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);

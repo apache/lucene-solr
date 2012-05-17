@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -98,9 +99,8 @@ final class SegmentCoreReaders {
         cfsReader = null;
         cfsDir = dir;
       }
-      si.loadFieldInfos(cfsDir, false); // prevent opening the CFS to load fieldInfos
-      fieldInfos = si.getFieldInfos();
-      
+      fieldInfos = codec.fieldInfosFormat().getFieldInfosReader().read(cfsDir, si.name, IOContext.READONCE);
+
       this.termsIndexDivisor = termsIndexDivisor;
       final PostingsFormat format = codec.postingsFormat();
       final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si, fieldInfos, context, termsIndexDivisor);
@@ -110,6 +110,7 @@ final class SegmentCoreReaders {
       // ask codec for its Norms: 
       // TODO: since we don't write any norms file if there are no norms,
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
+      // nocommit shouldn't we check si.getHasNorms()/si.getHasDocValues()...?
       norms = codec.normsFormat().docsProducer(segmentReadState);
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
   

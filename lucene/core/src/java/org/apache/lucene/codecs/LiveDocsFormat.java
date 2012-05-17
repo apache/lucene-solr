@@ -43,7 +43,7 @@ public abstract class LiveDocsFormat {
    *  generation of the deletes file you should write to. */
   public abstract void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, int newDelCount, IOContext context) throws IOException;
 
-  /** Records all files in use by this {@link SegmentInfo}
-   *  into the files argument. */
+  /** Records all files (exact file name or a Pattern regex)
+   *  in use by this {@link SegmentInfo} into the files argument. */
   public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

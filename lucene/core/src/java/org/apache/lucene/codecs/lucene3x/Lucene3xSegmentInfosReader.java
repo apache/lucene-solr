@@ -127,14 +127,14 @@ class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     final int delCount = input.readInt();
     assert delCount <= docCount;
 
-    final int hasProx = input.readByte();
+    final boolean hasProx = input.readByte() == 1;
 
     final Codec codec = Codec.forName("Lucene3x");
     final Map<String,String> diagnostics = input.readStringStringMap();
 
-    final int hasVectors;
+    final boolean hasVectors;
     if (format <= SegmentInfos.FORMAT_HAS_VECTORS) {
-      hasVectors = input.readByte();
+      hasVectors = input.readByte() == 1;
     } else {
       final String storesSegment;
       final String ext;
@@ -155,16 +155,17 @@ class Lucene3xSegmentInfosReader extends SegmentInfosReader {
         dirToTest = dir;
       }
       try {
-        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION)) ? SegmentInfo.YES : SegmentInfo.NO;
+        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
       } finally {
         if (isCompoundFile) {
           dirToTest.close();
         }
       }
     }
-    
+
+    // nocommit 3x always has norms?
     return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
       docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-      delCount, hasProx, codec, diagnostics, hasVectors);
+      delCount, hasProx, codec, diagnostics, hasVectors, false, true, true);
   }
 }

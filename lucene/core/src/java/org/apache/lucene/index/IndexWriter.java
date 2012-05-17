@@ -661,7 +661,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       rollbackSegments = segmentInfos.createBackupSegmentInfos(true);
 
       // start with previous field numbers, but new FieldInfos
-      globalFieldNumberMap = segmentInfos.getOrLoadGlobalFieldNumberMap();
+      globalFieldNumberMap = getOrLoadGlobalFieldNumberMap();
       docWriter = new DocumentsWriter(codec, config, directory, this, globalFieldNumberMap, bufferedDeletesStream);
 
       // Default deleter (for backwards compatibility) is
@@ -701,6 +701,55 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         writeLock = null;
       }
     }
+  }
+
+  private FieldInfos getFieldInfos(SegmentInfo info) throws IOException {
+    Directory cfsDir = null;
+    try {
+      if (info.getUseCompoundFile()) {
+        cfsDir = new CompoundFileDirectory(directory,
+                                           IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION),
+                                           IOContext.READONCE,
+                                           false);
+      } else {
+        cfsDir = directory;
+      }
+      return info.getCodec().fieldInfosFormat().getFieldInfosReader().read(cfsDir,
+                                                                           info.name,
+                                                                           IOContext.READONCE);
+    } finally {
+      if (info.getUseCompoundFile() && cfsDir != null) {
+        cfsDir.close();
+      }
+    }
+  }
+
+  /**
+   * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
+   * If this {@link SegmentInfos} has no global field number map the returned instance is empty
+   */
+  private FieldNumberBiMap getOrLoadGlobalFieldNumberMap() throws IOException {
+    final FieldNumberBiMap map  = new FieldNumberBiMap();
+
+    if (segmentInfos.size() > 0) {
+      if (segmentInfos.getFormat() > SegmentInfos.FORMAT_DIAGNOSTICS) {
+        // Pre-3.1 index.  In this case we sweep all
+        // segments, merging their FieldInfos:
+        for(SegmentInfo info : segmentInfos) {
+          for(FieldInfo fi : getFieldInfos(info)) {
+            map.addOrGet(fi.name, fi.number);
+          }
+        }
+      } else {
+        // Already >= 3.1 index; just seed the FieldInfos
+        // from the last segment
+        for(FieldInfo fi : getFieldInfos(segmentInfos.info(segmentInfos.size()-1))) {
+          map.addOrGet(fi.name, fi.number);
+        }
+      }
+    }
+
+    return map;
   }
   
   /**
@@ -2233,14 +2282,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                                                mergedName, MergeState.CheckAbort.NONE, payloadProcessorProvider,
                                                new MutableFieldInfos(globalFieldNumberMap), codec, context);
 
-      for (IndexReader reader : readers)      // add new indexes
+      for (IndexReader reader : readers) {    // add new indexes
         merger.add(reader);
+      }
+
       MergeState mergeState = merger.merge();                // merge 'em
       int docCount = mergeState.mergedDocCount;
-      final FieldInfos fieldInfos = mergeState.fieldInfos;
-      SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
-                                         false, codec,
-                                         fieldInfos);
+      SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, docCount,
+                                         SegmentInfo.NO, -1, mergedName, false, null, false, 0,
+                                         mergeState.fieldInfos.hasProx(), codec, null,
+                                         mergeState.fieldInfos.hasVectors(),
+                                         mergeState.fieldInfos.hasDocValues(),
+                                         mergeState.fieldInfos.hasNorms(),
+                                         mergeState.fieldInfos.hasFreq());
+                                         
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
       boolean useCompoundFile;
@@ -3157,7 +3212,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, new MutableFieldInfos(globalFieldNumberMap));
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null);
 
     // TODO: in the non-pool'd case this is somewhat
     // wasteful, because we open these readers, close them,
@@ -3320,11 +3375,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final MergeState.CheckAbort checkAbort = new MergeState.CheckAbort(merge, directory);
     SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(), mergedName, checkAbort,
-        // nocommit
-                                             payloadProcessorProvider, (MutableFieldInfos)merge.info.getFieldInfos(), codec, context);
+                                             // nocommit
+                                             payloadProcessorProvider, new MutableFieldInfos(globalFieldNumberMap), codec, context);
 
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "merging " + segString(merge.segments) + " mergeVectors=" + merge.info.getFieldInfos().hasVectors());
+      infoStream.message("IW", "merging " + segString(merge.segments) + " mergeVectors=" + merge.info.getHasVectors());
     }
 
     merge.readers = new ArrayList<SegmentReader>();
@@ -3383,11 +3438,26 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       MergeState mergeState = merger.merge();
       mergedDocCount = merge.info.docCount = mergeState.mergedDocCount;
 
+      // LUCENE-3403: set hasVectors after merge(), so that it is properly set.
+      merge.info.setHasVectors(mergeState.fieldInfos.hasVectors());
+      merge.info.setHasProx(mergeState.fieldInfos.hasProx());
+      merge.info.setHasFreq(mergeState.fieldInfos.hasFreq());
+      merge.info.setHasDocValues(mergeState.fieldInfos.hasDocValues());
+      merge.info.setHasNorms(mergeState.fieldInfos.hasNorms());
+
       // Record which codec was used to write the segment
+
+      // nocommit stop doing this once we call non-wimpy
+      // ctor when we make the merge.info:
       merge.info.setCodec(codec);
 
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "merge codec=" + codec + " docCount=" + mergedDocCount);
+        infoStream.message("IW", "merge codec=" + codec + " docCount=" + mergedDocCount + "; merged segment has " +
+                           (merge.info.getHasVectors() ? "vectors" : "no vectors") + "; " +
+                           (merge.info.getHasNorms() ? "norms" : "no norms") + "; " + 
+                           (merge.info.getHasDocValues() ? "docValues" : "no docValues") + "; " + 
+                           (merge.info.getHasProx() ? "prox" : "no prox") + "; " + 
+                           (merge.info.getHasProx() ? "freqs" : "no freqs"));
       }
 
       // Very important to do this before opening the reader

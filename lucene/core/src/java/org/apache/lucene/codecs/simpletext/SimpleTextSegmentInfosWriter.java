@@ -53,6 +53,9 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
   final static BytesRef SI_DELCOUNT         = new BytesRef("    number of deletions ");
   final static BytesRef SI_HASPROX          = new BytesRef("    has prox ");
   final static BytesRef SI_HASVECTORS       = new BytesRef("    has vectors ");
+  final static BytesRef SI_HASDOCVALUES     = new BytesRef("    has doc values ");
+  final static BytesRef SI_HASNORMS         = new BytesRef("    has norms ");
+  final static BytesRef SI_HASFREQS         = new BytesRef("    has freqs ");
   final static BytesRef SI_USECOMPOUND      = new BytesRef("    uses compound file ");
   final static BytesRef SI_DSOFFSET         = new BytesRef("    docstore offset ");
   final static BytesRef SI_DSSEGMENT        = new BytesRef("    docstore segment ");
@@ -147,21 +150,23 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
     SimpleTextUtil.writeNewline(output);
     
     SimpleTextUtil.write(output, SI_HASPROX);
-    switch(si.getHasProxInternal()) {
-      case SegmentInfo.YES: SimpleTextUtil.write(output, "true", scratch); break;
-      case SegmentInfo.CHECK_FIELDINFO: SimpleTextUtil.write(output, "check fieldinfo", scratch); break;
-      // its "NO" if its 'anything but YES'... such as 0
-      default: SimpleTextUtil.write(output, "false", scratch); break;
-    }
+    SimpleTextUtil.write(output, si.getHasProx() ? "true" : "false", scratch);
     SimpleTextUtil.writeNewline(output);
     
     SimpleTextUtil.write(output, SI_HASVECTORS);
-    switch(si.getHasVectorsInternal()) {
-      case SegmentInfo.YES: SimpleTextUtil.write(output, "true", scratch); break;
-      case SegmentInfo.CHECK_FIELDINFO: SimpleTextUtil.write(output, "check fieldinfo", scratch); break;
-      // its "NO" if its 'anything but YES'... such as 0
-      default: SimpleTextUtil.write(output, "false", scratch); break;
-    }
+    SimpleTextUtil.write(output, si.getHasVectors() ? "true" : "false", scratch);
+    SimpleTextUtil.writeNewline(output);
+
+    SimpleTextUtil.write(output, SI_HASDOCVALUES);
+    SimpleTextUtil.write(output, si.getHasDocValues() ? "true" : "false", scratch);
+    SimpleTextUtil.writeNewline(output);
+    
+    SimpleTextUtil.write(output, SI_HASNORMS);
+    SimpleTextUtil.write(output, si.getHasNorms() ? "true" : "false", scratch);
+    SimpleTextUtil.writeNewline(output);
+
+    SimpleTextUtil.write(output, SI_HASFREQS);
+    SimpleTextUtil.write(output, si.getHasFreq() ? "true" : "false", scratch);
     SimpleTextUtil.writeNewline(output);
     
     SimpleTextUtil.write(output, SI_USECOMPOUND);

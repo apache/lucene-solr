@@ -35,6 +35,7 @@ import org.apache.lucene.util.IOUtils;
  * Implementation of PerDocConsumer that uses separate files.
  * @lucene.experimental
  */
+
 public class SepDocValuesConsumer extends DocValuesWriterBase {
   private final Directory directory;
   private final FieldInfos fieldInfos;
@@ -52,59 +53,21 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
 
   public static void files(SegmentInfo segmentInfo,
       Set<String> files) throws IOException {
-    files(segmentInfo.dir, segmentInfo.getFieldInfos(), segmentInfo.name, files);
+    files(segmentInfo, files);
   }
   
   @SuppressWarnings("fallthrough")
-  private static void files(Directory dir,FieldInfos fieldInfos, String segmentName, Set<String> files)  {
-    for (FieldInfo fieldInfo : fieldInfos) {
-      if (fieldInfo.hasDocValues()) {
-        String filename = PerDocProducerBase.docValuesId(segmentName, fieldInfo.number);
-        switch (fieldInfo.getDocValuesType()) {
-          case BYTES_FIXED_DEREF:
-          case BYTES_VAR_DEREF:
-          case BYTES_VAR_STRAIGHT:
-          case BYTES_FIXED_SORTED:
-          case BYTES_VAR_SORTED:
-            files.add(IndexFileNames.segmentFileName(filename, "",
-                INDEX_EXTENSION));
-            try {
-            assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
-                INDEX_EXTENSION));
-            } catch (IOException e) {
-              // don't throw checked exception - dir is only used in assert 
-              throw new RuntimeException(e);
-            }
-            // until here all types use an index
-          case BYTES_FIXED_STRAIGHT:
-          case FLOAT_32:
-          case FLOAT_64:
-          case VAR_INTS:
-          case FIXED_INTS_16:
-          case FIXED_INTS_32:
-          case FIXED_INTS_64:
-          case FIXED_INTS_8:
-            files.add(IndexFileNames.segmentFileName(filename, "",
-                DATA_EXTENSION));
-          try {
-            assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
-                DATA_EXTENSION));
-          } catch (IOException e) {
-            // don't throw checked exception - dir is only used in assert
-            throw new RuntimeException(e);
-          }
-            break;
-          default:
-            assert false;
-        }
-      }
-    }
+  private static void files(String segmentName, Set<String> files)  {
+    String filename = PerDocProducerBase.docValuesRegex(segmentName);
+    files.add(IndexFileNames.segmentFileName(filename, "", INDEX_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(filename, "", DATA_EXTENSION));
   }
 
   @Override
   public void abort() {
     Set<String> files = new HashSet<String>();
-    files(directory, fieldInfos, segmentName, files);
-    IOUtils.deleteFilesIgnoringExceptions(directory, files.toArray(new String[0]));
+    assert false: "sep is broken for now!!";
+    files(segmentName, files);
+    IOUtils.deleteFilesIgnoringExceptions(directory, SegmentInfo.findMatchingFiles(directory, files).toArray(new String[0]));
   }
 }

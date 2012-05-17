@@ -1,14 +1,5 @@
 package org.apache.lucene.index;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,6 +16,15 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 
 // nocommit: temporary
 public final class ReadOnlyFieldInfos extends FieldInfos {

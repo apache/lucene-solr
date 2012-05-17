@@ -95,10 +95,13 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
 
     output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
     output.writeInt(si.getDelCount());
-    output.writeByte((byte) (si.getHasProxInternal()));
+    output.writeByte((byte) (si.getHasProx() ? 1 : 0));
     output.writeString(si.getCodec().getName());
     output.writeStringStringMap(si.getDiagnostics());
-    output.writeByte((byte) (si.getHasVectorsInternal()));
+    output.writeByte((byte) (si.getHasVectors() ? 1 : 0));
+    output.writeByte((byte) (si.getHasDocValues() ? 1 : 0));
+    output.writeByte((byte) (si.getHasNorms() ? 1 : 0));
+    output.writeByte((byte) (si.getHasFreq() ? 1 : 0));
   }
   
   protected IndexOutput createOutput(Directory dir, String segmentFileName, IOContext context)

@@ -609,7 +609,7 @@ public class CheckIndex {
         // Test Term Vectors
         segInfoStat.termVectorStatus = testTermVectors(fieldInfos, info, reader, nf);
         
-        segInfoStat.docValuesStatus = testDocValues(info, reader);
+        segInfoStat.docValuesStatus = testDocValues(info, fieldInfos, reader);
 
         // Rethrow the first exception we encountered
         //  This will cause stats for failed segments to be incremented properly
@@ -1311,13 +1311,13 @@ public class CheckIndex {
   }
   
   private Status.DocValuesStatus testDocValues(SegmentInfo info,
-      SegmentReader reader) {
+                                               FieldInfos fieldInfos,
+                                               SegmentReader reader) {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
     try {
       if (infoStream != null) {
         infoStream.print("    test: DocValues........");
       }
-      final FieldInfos fieldInfos = info.getFieldInfos();
       for (FieldInfo fieldInfo : fieldInfos) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;

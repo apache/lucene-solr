@@ -91,6 +91,18 @@ public abstract class FieldInfos implements Cloneable,Iterable<FieldInfo> {
     }
     return false;
   }
+
+  /**
+   * @return true if at least one field has doc values
+   */
+  public boolean hasDocValues() {
+    for (FieldInfo fi : this) {
+      if (fi.hasDocValues()) {
+        return true;
+      }
+    }
+    return false;
+  }
   
   /**
    * @return true if at least one field has any norms
@@ -98,18 +110,6 @@ public abstract class FieldInfos implements Cloneable,Iterable<FieldInfo> {
   public boolean hasNorms() {
     for (FieldInfo fi : this) {
       if (fi.hasNorms()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * @return true if at least one field has docValues
-   */
-  public boolean hasDocValues() {
-    for (FieldInfo fi : this) {
-      if (fi.hasDocValues()) { 
         return true;
       }
     }

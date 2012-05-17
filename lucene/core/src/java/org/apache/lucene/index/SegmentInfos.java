@@ -130,8 +130,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
   private int format;
   
-  private FieldNumberBiMap globalFieldNumberMap; // this segments global field number map - lazy loaded on demand
-  
   private List<SegmentInfo> segments = new ArrayList<SegmentInfo>();
   private Set<SegmentInfo> segmentSet = new HashSet<SegmentInfo>();
   private transient List<SegmentInfo> cachedUnmodifiableList;
@@ -896,28 +894,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     version++;
   }
   
-  /**
-   * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
-   * If this {@link SegmentInfos} has no global field number map the returned instance is empty
-   */
-  FieldNumberBiMap getOrLoadGlobalFieldNumberMap() throws IOException {
-    if (globalFieldNumberMap != null) {
-      return globalFieldNumberMap;
-    }
-    final FieldNumberBiMap map  = new FieldNumberBiMap();
-    
-    if (size() > 0) {
-      // build the map up
-      for (SegmentInfo info : this) {
-        final FieldInfos segFieldInfos = info.getFieldInfos();
-        for (FieldInfo fi : segFieldInfos) {
-          map.addOrGet(fi.name, fi.number);
-        }
-      }
-    }
-    return globalFieldNumberMap = map;
-  }
-
   /** applies all changes caused by committing a merge to this SegmentInfos */
   void applyMergeChanges(MergePolicy.OneMerge merge, boolean dropSegment) {
     final Set<SegmentInfo> mergedAway = new HashSet<SegmentInfo>(merge.segments);

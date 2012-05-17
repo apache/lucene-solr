@@ -129,25 +129,23 @@ public class SimpleTextNormsFormat extends NormsFormat {
     @Override
     public void abort() {
       Set<String> files = new HashSet<String>();
-      filesInternal(state.fieldInfos, state.segmentName, files, segmentSuffix);
+      filesInternal(state.fieldInfos.hasNorms(), state.segmentName, files, segmentSuffix);
       IOUtils.deleteFilesIgnoringExceptions(state.directory,
-          files.toArray(new String[0]));
+                                            SegmentInfo.findMatchingFiles(state.directory, files).toArray(new String[0]));
     }
     
     public static void files(SegmentInfo segmentInfo, Set<String> files)
         throws IOException {
-      filesInternal(segmentInfo.getFieldInfos(), segmentInfo.name, files,
+      filesInternal(segmentInfo.getHasNorms(), segmentInfo.name, files,
           NORMS_SEG_SUFFIX);
     }
     
-    public static void filesInternal(FieldInfos fieldInfos, String segmentName,
+    public static void filesInternal(boolean hasNorms, String segmentName,
         Set<String> files, String segmentSuffix) {
-      for (FieldInfo fieldInfo : fieldInfos) {
-        if (fieldInfo.hasNorms()) {
-          String id = docValuesId(segmentName, fieldInfo.number);
-          files.add(IndexFileNames.segmentFileName(id, "",
-              segmentSuffix));
-        }
+      if (hasNorms) {
+        String id = docValuesIdRegexp(segmentName);
+        files.add(IndexFileNames.segmentFileName(id, "",
+                                                 segmentSuffix));
       }
     }
   }

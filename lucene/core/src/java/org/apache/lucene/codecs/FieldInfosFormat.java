@@ -28,7 +28,15 @@ import org.apache.lucene.index.SegmentInfo;
  * @lucene.experimental
  */
 public abstract class FieldInfosFormat {
+  /** Returns a {@link FieldInfosReader} to read field infos
+   *  from the index */
   public abstract FieldInfosReader getFieldInfosReader() throws IOException;
+
+  /** Returns a {@link FieldInfosWriter} to write field infos
+   *  to the index */
   public abstract FieldInfosWriter getFieldInfosWriter() throws IOException;
+
+  /** Gathers files (exact file name or a Pattern regex)
+   *  associated with this segment. */
   public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

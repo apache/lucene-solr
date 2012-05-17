@@ -17,25 +17,26 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
-
 import java.io.IOException;
 import java.text.NumberFormat;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.MutableBits;
+import org.apache.lucene.util.RamUsageEstimator;
+
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 class DocumentsWriterPerThread {
 
@@ -474,10 +475,22 @@ class DocumentsWriterPerThread {
     try {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
-      final SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.codec, fieldInfos.asReadOnly());
+      final SegmentInfo newSegment = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, segment, flushState.numDocs,
+                                                     SegmentInfo.NO, -1, segment, false, null, false, 0,
+                                                     flushState.fieldInfos.hasProx(), flushState.codec,
+                                                     null,
+                                                     flushState.fieldInfos.hasVectors(),
+                                                     flushState.fieldInfos.hasDocValues(),
+                                                     flushState.fieldInfos.hasNorms(),
+                                                     flushState.fieldInfos.hasFreq());
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.delCountOnFlush)) + " deleted docs");
-        infoStream.message("DWPT", "new segment has " + (newSegment.getHasVectors() ? "vectors" : "no vectors"));
+        infoStream.message("DWPT", "new segment has " +
+                           (newSegment.getHasVectors() ? "vectors" : "no vectors") + "; " +
+                           (newSegment.getHasNorms() ? "norms" : "no norms") + "; " + 
+                           (newSegment.getHasDocValues() ? "docValues" : "no docValues") + "; " + 
+                           (newSegment.getHasProx() ? "prox" : "no prox") + "; " + 
+                           (newSegment.getHasProx() ? "freqs" : "no freqs"));
         infoStream.message("DWPT", "flushedFiles=" + newSegment.files());
         infoStream.message("DWPT", "flushed codec=" + newSegment.getCodec());
       }

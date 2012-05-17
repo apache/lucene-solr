@@ -69,7 +69,7 @@ public class SepPostingsReader extends PostingsReaderBase {
 
       skipIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.SKIP_EXTENSION), context);
 
-      if (segmentInfo.getFieldInfos().hasFreq()) {
+      if (segmentInfo.getHasFreq()) {
         freqIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.FREQ_EXTENSION), context);        
       } else {
         freqIn = null;
@@ -93,7 +93,7 @@ public class SepPostingsReader extends PostingsReaderBase {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.DOC_EXTENSION));
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.SKIP_EXTENSION));
 
-    if (segmentInfo.getFieldInfos().hasFreq()) {
+    if (segmentInfo.getHasFreq()) {
       files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.FREQ_EXTENSION));
     }
 

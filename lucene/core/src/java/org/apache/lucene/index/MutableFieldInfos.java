@@ -50,8 +50,8 @@ final class MutableFieldInfos extends FieldInfos {
         final Integer preferredBoxed = Integer.valueOf(preferredFieldNumber);
 
         if (preferredFieldNumber != -1 && !numberToName.containsKey(preferredBoxed)) {
-            // cool - we can use this number globally
-            fieldNumber = preferredBoxed;
+          // cool - we can use this number globally
+          fieldNumber = preferredBoxed;
         } else {
           // find a new FieldNumber
           while (numberToName.containsKey(++lowestUnassignedFieldNumber)) {
@@ -62,7 +62,6 @@ final class MutableFieldInfos extends FieldInfos {
         
         numberToName.put(fieldNumber, fieldName);
         nameToNumber.put(fieldName, fieldNumber);
-        
       }
 
       return fieldNumber.intValue();

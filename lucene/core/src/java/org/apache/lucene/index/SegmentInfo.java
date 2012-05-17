@@ -23,9 +23,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosReader;
@@ -70,10 +71,11 @@ public final class SegmentInfo implements Cloneable {
 
   private boolean isCompoundFile;
 
-  private volatile List<String> files;                     // cached list of files that this segment uses
+  // nocommit should we stop caching the files!?
+  private volatile List<String> files;            // cached list of files that this segment uses
                                                   // in the Directory
 
-  private volatile long sizeInBytes = -1;           // total byte size of all files (computed on demand)
+  private volatile long sizeInBytes = -1;         // total byte size of all files (computed on demand)
 
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
@@ -86,13 +88,11 @@ public final class SegmentInfo implements Cloneable {
 
   private int delCount;                           // How many deleted docs in this segment
   
-  //TODO: remove when we don't have to support old indexes anymore that had this field
-  private int hasVectors = CHECK_FIELDINFO;
-  //TODO: remove when we don't have to support old indexes anymore that had this field
-  private int hasProx = CHECK_FIELDINFO;     // True if this segment has any fields with positional information
-
-  
-  private FieldInfos fieldInfos;
+  private boolean hasVectors;       // True if this segment has any term vectors fields
+  private boolean hasDocValues;     // True if this segment has any doc values fields
+  private boolean hasFreq;          // True if this segment has any fields with docFreq information
+  private boolean hasProx;          // True if this segment has any fields with positional information
+  private boolean hasNorms;         // True if this segment has any fields with norms enabled
 
   private Codec codec;
 
@@ -109,11 +109,9 @@ public final class SegmentInfo implements Cloneable {
   // this is never written to/read from the Directory
   private long bufferedDeletesGen;
   
-  // holds the fieldInfos Version to refresh files() cache if FI has changed
-  private long fieldInfosVersion;
-  
+  // nocommit why do we have this wimpy ctor...?
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
-                     Codec codec, FieldInfos fieldInfos) {
+                     Codec codec) {
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
@@ -124,7 +122,6 @@ public final class SegmentInfo implements Cloneable {
     this.codec = codec;
     delCount = 0;
     version = Constants.LUCENE_MAIN_VERSION;
-    this.fieldInfos = fieldInfos;
   }
 
   void setDiagnostics(Map<String, String> diagnostics) {
@@ -142,7 +139,8 @@ public final class SegmentInfo implements Cloneable {
    */
   public SegmentInfo(Directory dir, String version, String name, int docCount, long delGen, int docStoreOffset,
       String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
-      int delCount, int hasProx, Codec codec, Map<String,String> diagnostics, int hasVectors) {
+      int delCount, boolean hasProx, Codec codec, Map<String,String> diagnostics, boolean hasVectors, boolean hasDocValues,
+      boolean hasNorms, boolean hasFreq) {
     this.dir = dir;
     this.version = version;
     this.name = name;
@@ -157,48 +155,75 @@ public final class SegmentInfo implements Cloneable {
     this.hasProx = hasProx;
     this.codec = codec;
     this.diagnostics = diagnostics;
+    // nocommit remove these now that we can do regexp instead!
     this.hasVectors = hasVectors;
-  }
-
-  synchronized void loadFieldInfos(Directory dir, boolean checkCompoundFile) throws IOException {
-    if (fieldInfos == null) {
-      Directory dir0 = dir;
-      if (isCompoundFile && checkCompoundFile) {
-        dir0 = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(name,
-            "", IndexFileNames.COMPOUND_FILE_EXTENSION), IOContext.READONCE, false);
-      }
-      try {
-        FieldInfosReader reader = codec.fieldInfosFormat().getFieldInfosReader();
-        fieldInfos = reader.read(dir0, name, IOContext.READONCE);
-      } finally {
-        if (dir != dir0) {
-          dir0.close();
-        }
-      }
-    }
+    this.hasDocValues = hasDocValues;
+    this.hasNorms = hasNorms;
+    this.hasFreq = hasFreq;
   }
 
   /**
    * Returns total size in bytes of all of files used by this segment
    */
   public long sizeInBytes() throws IOException {
-      long sum = 0;
-      for (final String fileName : files()) {
-        sum += dir.fileLength(fileName);
-      }
-      sizeInBytes = sum;
-      return sizeInBytes;
+    long sum = 0;
+    for (final String fileName : files()) {
+      sum += dir.fileLength(fileName);
+    }
+    sizeInBytes = sum;
+    return sizeInBytes;
   }
 
+  // nocommit: ideally codec stores this info privately:
+  public boolean getHasFreq() throws IOException {
+    return hasFreq;
+  }
+
+  public void setHasFreq(boolean hasFreq) {
+    this.hasFreq = hasFreq;
+    clearFilesCache();
+  }
+
+  // nocommit: ideally codec stores this info privately:
+  public boolean getHasProx() throws IOException {
+    return hasProx;
+  }
+
+  public void setHasProx(boolean hasProx) {
+    this.hasProx = hasProx;
+    clearFilesCache();
+  }
+
+  // nocommit: ideally codec stores this info privately:
   public boolean getHasVectors() throws IOException {
-    return hasVectors == CHECK_FIELDINFO ? getFieldInfos().hasVectors() : hasVectors == YES;
+    return hasVectors;
+  }
+
+  public void setHasVectors(boolean hasVectors) {
+    this.hasVectors = hasVectors;
+    clearFilesCache();
+  }
+
+  // nocommit: ideally codec stores this info privately:
+  public boolean getHasDocValues() throws IOException {
+    return hasDocValues;
+  }
+
+  public void setHasDocValues(boolean hasDocValues) {
+    this.hasDocValues = hasDocValues;
+    clearFilesCache();
   }
   
-  public FieldInfos getFieldInfos() throws IOException {
-    loadFieldInfos(dir, true);
-    return fieldInfos;
+  // nocommit: ideally codec stores this info privately:
+  public boolean getHasNorms() throws IOException {
+    return hasNorms;
   }
 
+  public void setHasNorms(boolean hasNorms) {
+    this.hasNorms = hasNorms;
+    clearFilesCache();
+  }
+  
   public boolean hasDeletions() {
     // Cases:
     //
@@ -232,24 +257,20 @@ public final class SegmentInfo implements Cloneable {
 
   @Override
   public SegmentInfo clone() {
-    final SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, codec,
-        fieldInfos == null ? null : fieldInfos.clone());
-    si.docStoreOffset = docStoreOffset;
-    si.docStoreSegment = docStoreSegment;
-    si.docStoreIsCompoundFile = docStoreIsCompoundFile;
-    si.delGen = delGen;
-    si.delCount = delCount;
-    si.diagnostics = new HashMap<String, String>(diagnostics);
+    final HashMap<Integer,Long> clonedNormGen;
     if (normGen != null) {
-      si.normGen = new HashMap<Integer, Long>();
+      clonedNormGen = new HashMap<Integer, Long>();
       for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        si.normGen.put(entry.getKey(), entry.getValue());
+        clonedNormGen.put(entry.getKey(), entry.getValue());
       }
+    } else {
+      clonedNormGen = null;
     }
-    si.version = version;
-    si.hasProx = hasProx;
-    si.hasVectors = hasVectors;
-    return si;
+
+    return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
+                           docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
+                           delCount, hasProx, codec, new HashMap<String,String>(diagnostics),
+                           hasVectors, hasDocValues, hasNorms, hasFreq);
   }
 
   /**
@@ -337,10 +358,6 @@ public final class SegmentInfo implements Cloneable {
     return docStoreSegment;
   }
 
-  public boolean getHasProx() throws IOException {
-    return hasProx == CHECK_FIELDINFO ? getFieldInfos().hasProx() : hasProx == YES;
-  }
-
   /** Can only be called once. */
   public void setCodec(Codec codec) {
     assert this.codec == null;
@@ -354,6 +371,39 @@ public final class SegmentInfo implements Cloneable {
     return codec;
   }
 
+  // nocommit move elsewhere?  IndexFileNames?
+  public static List<String> findMatchingFiles(Directory dir, Set<String> namesOrPatterns) {
+    // nocommit need more efficient way to do this?
+    List<String> files = new ArrayList<String>();
+    final String[] existingFiles;
+    try {
+      existingFiles = dir.listAll();
+    } catch (IOException ioe) {
+      // nocommit maybe just throw IOE...? not sure how far up we'd have to change sigs...
+      throw new RuntimeException(ioe);
+    }
+    for(String nameOrPattern : namesOrPatterns) {
+      boolean exists = false;
+      try {
+        exists = dir.fileExists(nameOrPattern);
+      } catch (IOException ioe) {
+        // nocommit maybe just throw IOE...?
+        // Ignore
+      }
+      if (exists) {
+        files.add(nameOrPattern);
+      } else {
+        for(String file : existingFiles) {
+          if (Pattern.matches(nameOrPattern, file)) {
+            files.add(file);
+          }
+        }
+      }
+    }
+
+    return files;
+  }
+
   /*
    * Return all files referenced by this SegmentInfo.  The
    * returns List is a locally cached List so you should not
@@ -361,20 +411,13 @@ public final class SegmentInfo implements Cloneable {
    */
 
   public List<String> files() throws IOException {
-    final long fisVersion = fieldInfosVersion;
-    // nocommit
-    FieldInfos infos = getFieldInfos();
-    if (infos instanceof MutableFieldInfos && fisVersion != (fieldInfosVersion = ((MutableFieldInfos)infos).getVersion())) {
-      clearFilesCache(); // FIS has modifications - need to recompute
-    } else if (files != null) {
-      // Already cached:
-      return files;
+    if (files == null) {
+      // nocommit maybe don't cache...?
+      // Cache
+      final Set<String> fileSet = new HashSet<String>();
+      codec.files(this, fileSet);
+      files = findMatchingFiles(dir, fileSet);
     }
-    final Set<String> fileSet = new HashSet<String>();
-
-    codec.files(this, fileSet);
-
-    files = new ArrayList<String>(fileSet);
 
     return files;
   }
@@ -501,18 +544,5 @@ public final class SegmentInfo implements Cloneable {
   /** @lucene.internal */
   public Map<Integer,Long> getNormGen() {
     return normGen;
-  }
-  
-  // TODO: clean up this SI/FI stuff here
-  /** returns the 'real' value for hasProx (doesn't consult fieldinfos) 
-   * @lucene.internal */
-  public int getHasProxInternal() {
-    return hasProx;
-  }
-  
-  /** returns the 'real' value for hasVectors (doesn't consult fieldinfos) 
-   * @lucene.internal */
-  public int getHasVectorsInternal() {
-    return hasVectors;
   }
 }

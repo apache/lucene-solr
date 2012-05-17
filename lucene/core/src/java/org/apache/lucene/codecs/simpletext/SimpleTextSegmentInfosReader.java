@@ -104,11 +104,23 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
     
     SimpleTextUtil.readLine(input, scratch);
     assert StringHelper.startsWith(scratch, SI_HASPROX);
-    final int hasProx = readTernary(SI_HASPROX.length, scratch);
-    
+    final boolean hasProx = Boolean.parseBoolean(readString(SI_HASPROX.length, scratch));
+
     SimpleTextUtil.readLine(input, scratch);
     assert StringHelper.startsWith(scratch, SI_HASVECTORS);
-    final int hasVectors = readTernary(SI_HASVECTORS.length, scratch);
+    final boolean hasVectors = Boolean.parseBoolean(readString(SI_HASVECTORS.length, scratch));
+
+    SimpleTextUtil.readLine(input, scratch);
+    assert StringHelper.startsWith(scratch, SI_HASDOCVALUES);
+    final boolean hasDocValues = Boolean.parseBoolean(readString(SI_HASDOCVALUES.length, scratch));
+    
+    SimpleTextUtil.readLine(input, scratch);
+    assert StringHelper.startsWith(scratch, SI_HASNORMS);
+    final boolean hasNorms = Boolean.parseBoolean(readString(SI_HASNORMS.length, scratch));
+
+    SimpleTextUtil.readLine(input, scratch);
+    assert StringHelper.startsWith(scratch, SI_HASFREQS);
+    final boolean hasFreqs = Boolean.parseBoolean(readString(SI_HASFREQS.length, scratch));
     
     SimpleTextUtil.readLine(input, scratch);
     assert StringHelper.startsWith(scratch, SI_USECOMPOUND);
@@ -168,23 +180,10 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
     
     return new SegmentInfo(directory, version, name, docCount, delGen, dsOffset,
         dsSegment, dsCompoundFile, normGen, isCompoundFile,
-        delCount, hasProx, codec, diagnostics, hasVectors);
+        delCount, hasProx, codec, diagnostics, hasVectors, hasDocValues, hasNorms, hasFreqs);
   }
   
   private String readString(int offset, BytesRef scratch) {
     return new String(scratch.bytes, scratch.offset+offset, scratch.length-offset, IOUtils.CHARSET_UTF_8);
-  }
-  
-  private int readTernary(int offset, BytesRef scratch) throws IOException {
-    String s = readString(offset, scratch);
-    if ("check fieldinfo".equals(s)) {
-      return SegmentInfo.CHECK_FIELDINFO;
-    } else if ("true".equals(s)) {
-      return SegmentInfo.YES;
-    } else if ("false".equals(s)) {
-      return 0;
-    } else {
-      throw new CorruptIndexException("invalid ternary value: " + s);
-    }
   }
 }

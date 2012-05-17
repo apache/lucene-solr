@@ -1,8 +1,5 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.index.DocValues.Type;
-
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +17,8 @@ import org.apache.lucene.index.DocValues.Type;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocValues.Type;
+
 /**
  *  Access to the Fieldable Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Fieldable Info file. Objects
@@ -27,6 +26,7 @@ import org.apache.lucene.index.DocValues.Type;
  *  be adding documents at a time, with no other reader or writer threads
  *  accessing this object.
  **/
+
 public final class FieldInfo {
   public final String name;
   public final int number;

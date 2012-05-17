@@ -1,6 +1,7 @@
 package org.apache.lucene.util;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -20,14 +21,12 @@ import org.apache.lucene.search.RandomSimilarityProvider;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 
-import static org.apache.lucene.util.LuceneTestCase.VERBOSE;
+import static org.apache.lucene.util.LuceneTestCase.*;
 import static org.apache.lucene.util.LuceneTestCase.INFOSTREAM;
 import static org.apache.lucene.util.LuceneTestCase.TEST_CODEC;
-
-import static org.apache.lucene.util.LuceneTestCase.*;
+import static org.apache.lucene.util.LuceneTestCase.VERBOSE;
 
 
 
@@ -126,7 +125,20 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     final Random random = RandomizedContext.current().getRandom();
     final boolean v = random.nextBoolean();
     if (INFOSTREAM) {
-      InfoStream.setDefault(new PrintStreamInfoStream(System.out));
+      InfoStream.setDefault(new PrintStreamInfoStream(System.out) {
+          @Override
+          public void message(String component, String message) {
+            final String name;
+            if (Thread.currentThread().getName().startsWith("TEST-")) {
+              // The name of the main thread is way too
+              // long when looking at IW verbose output...:
+              name = "main";
+            } else {
+              name = Thread.currentThread().getName();
+            }
+            stream.println(component + " " + messageID + " [" + new Date() + "; " + name + "]: " + message);    
+          }
+        });
     } else if (v) {
       InfoStream.setDefault(new NullInfoStream());
     }
