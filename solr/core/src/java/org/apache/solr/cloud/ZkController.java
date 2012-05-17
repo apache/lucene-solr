@@ -32,6 +32,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.xml.xpath.XPathConstants;
+
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
@@ -46,16 +48,22 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.Config;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.DOMUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 /**
  * Handle ZooKeeper interactions.
@@ -114,21 +122,31 @@ public final class ZkController {
   // this can be null in which case recovery will be inactive
   private CoreContainer cc;
 
+  /**
+   * Bootstraps the current configs for all collections in solr.xml.
+   * Takes two params - the zkhost to connect to and the solrhome location
+   * to find solr.xml.
+   *
+   * If you also pass a solrPort, it will be used to start
+   * an embedded zk useful for single machine, multi node tests.
+   * 
+   * @param args
+   * @throws Exception
+   */
   public static void main(String[] args) throws Exception {
     // start up a tmp zk server first
     String zkServerAddress = args[0];
     
-    String solrPort = args[1];
-    
-    String confDir = args[2];
-    String confName = args[3];
-    
-    String solrHome = null;
-    if (args.length == 5) {
-      solrHome = args[4];
+    String solrHome = args[1];
+   
+    String solrPort = null;
+    if (args.length > 2) {
+      solrPort = args[2];
     }
+    
+
     SolrZkServer zkServer = null;
-    if (solrHome != null) {
+    if (solrPort != null) {
       zkServer = new SolrZkServer("true", null, solrHome + "/zoo_data", solrHome, solrPort);
       zkServer.parseConfig();
       zkServer.start();
@@ -140,8 +158,13 @@ public final class ZkController {
           public void command() {
           }});
     
-    uploadConfigDir(zkClient, new File(confDir), confName);
-    if (solrHome != null) {
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
+    solrHome = loader.getInstanceDir();
+    
+    InputSource cfgis = new InputSource(new File(solrHome, "solr.xml").toURI().toASCIIString());
+    Config cfg = new Config(loader, null, cfgis , null, false);
+    bootstrapConf(zkClient, cfg, solrHome);
+    if (solrPort != null) {
       zkServer.stop();
     }
   }
@@ -855,7 +878,7 @@ public final class ZkController {
         try {
           Map<String,String> collectionProps = new HashMap<String,String>();
           // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
-          String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX+CONFIGNAME_PROP, "configuration1");
+          String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX+CONFIGNAME_PROP, collection);
 
           // params passed in - currently only done via core admin (create core commmand).
           if (params != null) {
@@ -948,6 +971,13 @@ public final class ZkController {
         collectionProps.put(CONFIGNAME_PROP,  configNames.get(0));
         break;
       }
+      
+      if (configNames != null && configNames.contains(collection)) {
+        log.info("Could not find explicit collection configName, but found config name matching collection name - using that set.");
+        collectionProps.put(CONFIGNAME_PROP,  collection);
+        break;
+      }
+      
       log.info("Could not find collection configName - pausing for 3 seconds and trying again - try: " + retry);
       Thread.sleep(3000);
     }
@@ -1154,6 +1184,35 @@ public final class ZkController {
       server.shutdown();
     }
     return leaderProps;
+  }
+  
+  /**
+   * If in SolrCloud mode, upload config sets for each SolrCore in solr.xml.
+   * 
+   * @throws IOException
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
+  public static void bootstrapConf(SolrZkClient zkClient, Config cfg, String solrHome) throws IOException,
+      KeeperException, InterruptedException {
+    
+    NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
+
+    for (int i=0; i<nodes.getLength(); i++) {
+      Node node = nodes.item(i);
+      String rawName = DOMUtil.getAttr(node, "name", null);
+      String instanceDir = DOMUtil.getAttr(node, "instanceDir", null);
+      File idir = new File(instanceDir);
+      if (!idir.isAbsolute()) {
+        idir = new File(solrHome, instanceDir);
+      }
+      String confName = DOMUtil.getAttr(node, "collection", null);
+      if (confName == null) {
+        confName = rawName;
+      }
+
+      ZkController.uploadConfigDir(zkClient, new File(idir, "conf"), confName);
+    }
   }
 
 }

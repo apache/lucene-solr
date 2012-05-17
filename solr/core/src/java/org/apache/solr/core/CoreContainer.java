@@ -233,7 +233,7 @@ public class CoreContainer
         
         boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
         if(boostrapConf) {
-          bootstrapConf();
+          ZkController.bootstrapConf(zkController.getZkClient(), cfg, solrHome);
         }
         
       } catch (InterruptedException e) {
@@ -257,28 +257,6 @@ public class CoreContainer
       }
     }
     
-  }
-
-  private void bootstrapConf() throws IOException,
-      KeeperException, InterruptedException {
-
-    NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
-
-    for (int i=0; i<nodes.getLength(); i++) {
-      Node node = nodes.item(i);
-      String rawName = DOMUtil.getAttr(node, "name", null);
-      String instanceDir = DOMUtil.getAttr(node, "instanceDir", null);
-      File idir = new File(instanceDir);
-      if (!idir.isAbsolute()) {
-        idir = new File(solrHome, instanceDir);
-      }
-      String confName = DOMUtil.getAttr(node, "collection", null);
-      if (confName == null) {
-        confName = rawName;
-      }
-
-      zkController.uploadConfigDir(new File(idir, "conf"), confName);
-    }
   }
 
   public Properties getContainerProperties() {
