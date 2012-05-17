@@ -226,10 +226,7 @@ New Features
 * SOLR-3069: Ability to add openSearcher=false to not open a searcher when doing
   a hard commit.  commitWithin now only invokes a softCommit. (yonik)
 
-* SOLR-1726: Added deep paging support to search (sort by score only) which should use less memory when paging deeply into results
- by keeping the priority queue small. (Manojkumar Rangasamy Kannadasan, gsingers)
-
-* SOLR-2802: New FieldMutatingUpdateProcessor and Factory to simplify the 
+* SOLR-2802: New FieldMutatingUpdateProcessor and Factory to simplify the
   development of UpdateProcessors that modify field values of documents as 
   they are indexed. Also includes several useful new implementations:
       RemoveBlankFieldUpdateProcessorFactory
