@@ -79,18 +79,33 @@ public final class FieldInfo {
     } else { // for non-indexed fields, leave defaults
       this.storeTermVector = false;
       this.storePayloads = false;
-      // nocommit these trip ... which is spooky... means
-      // the FI we are cloning was in a bad state...
-      //assert !storeTermVector;
-      //assert !storePayloads;
-      //assert !omitNorms;
-      //assert normsType == null;
       this.omitNorms = false;
       this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       this.normType = null;
     }
+    assert checkConsistency();
     assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !storePayloads;
   }
+
+  private boolean checkConsistency() {
+    // nocommit more checks here
+    if (!indexed) {
+      assert !storeTermVector;
+      assert !storePayloads;
+      assert !omitNorms;
+      assert normType == null;
+      assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    } else {
+      assert omitNorms || normsType != null;
+      assert indexOptions != null;
+    }
+
+    // Cannot store payloads unless positions are indexed:
+    assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
+
+    return true;
+  }
+
   
   @Override
   public FieldInfo clone() {
@@ -124,10 +139,12 @@ public final class FieldInfo {
       }
     }
     assert this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
+    assert checkConsistency();
   }
 
   void setDocValuesType(DocValues.Type type) {
     docValueType = type;
+    assert checkConsistency();
   }
   
   /** @return IndexOptions for the field */
@@ -158,16 +175,19 @@ public final class FieldInfo {
 
   void setStoreTermVectors() {
     storeTermVector = true;
+    assert checkConsistency();
   }
   
   void setStorePayloads() {
     if (indexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
       storePayloads = true;
     }
+    assert checkConsistency();
   }
 
   void setNormValueType(Type type) {
     normType = type;
+    assert checkConsistency();
   }
   
   /**
@@ -204,5 +224,4 @@ public final class FieldInfo {
   public boolean hasVectors() {
     return storeTermVector;
   }
-  
 }
