@@ -49,7 +49,8 @@ public interface TermDocs extends Closeable {
   int freq();
 
   /** Moves to the next pair in the enumeration.  <p> Returns true iff there is
-   such a next pair in the enumeration. */
+   such a next pair in the enumeration.  Once this returns
+   false you should not call any of the other methods. */
   boolean next() throws IOException;
 
   /** Attempts to read multiple entries from the enumeration, up to length of
