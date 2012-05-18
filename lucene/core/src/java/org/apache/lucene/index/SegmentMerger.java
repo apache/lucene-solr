@@ -199,7 +199,8 @@ final class SegmentMerger {
   // NOTE: this is actually merging all the fieldinfos
   public void mergeDocValuesAndNormsFieldInfos() throws IOException {
     // mapping from all docvalues fields found to their promoted types
-    // this is because FieldInfos does not store the valueSize
+    // this is because FieldInfos does not store the
+    // valueSize
     Map<FieldInfo,TypePromoter> docValuesTypes = new HashMap<FieldInfo,TypePromoter>();
     Map<FieldInfo,TypePromoter> normValuesTypes = new HashMap<FieldInfo,TypePromoter>();
 

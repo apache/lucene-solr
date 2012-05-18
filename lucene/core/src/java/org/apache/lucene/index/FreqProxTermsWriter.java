@@ -39,7 +39,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   // Other writers would presumably share alot of this...
 
   @Override
-  public void flush(Map<FieldInfo, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
+  public void flush(Map<String,TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
 
     // Gather all FieldData's that have postings, across all
     // ThreadStates
@@ -80,15 +80,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         final FieldInfo fieldInfo = allFields.get(fieldNumber).fieldInfo;
         
         final FreqProxTermsWriterPerField fieldWriter = allFields.get(fieldNumber);
-        
-        // Aggregate the storePayload as seen by the same
-        // field across multiple threads
-        if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-          if (fieldWriter.hasPayloads) {
-            fieldInfo.setStorePayloads();
-          }
-        }
-        
+
         // If this field has postings then add them to the
         // segment
         fieldWriter.flush(fieldInfo.name, consumer, state);

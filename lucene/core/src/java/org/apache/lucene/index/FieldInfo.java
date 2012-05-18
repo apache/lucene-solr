@@ -79,6 +79,12 @@ public final class FieldInfo {
     } else { // for non-indexed fields, leave defaults
       this.storeTermVector = false;
       this.storePayloads = false;
+      // nocommit these trip ... which is spooky... means
+      // the FI we are cloning was in a bad state...
+      //assert !storeTermVector;
+      //assert !storePayloads;
+      //assert !omitNorms;
+      //assert normsType == null;
       this.omitNorms = false;
       this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       this.normType = null;
@@ -155,7 +161,9 @@ public final class FieldInfo {
   }
   
   void setStorePayloads() {
-    storePayloads = true;
+    if (indexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
+      storePayloads = true;
+    }
   }
 
   void setNormValueType(Type type) {

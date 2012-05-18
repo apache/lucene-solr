@@ -55,13 +55,13 @@ final class NormsConsumer extends InvertedDocEndConsumer {
   /** Produce _X.nrm if any document had a field with norms
    *  not disabled */
   @Override
-  public void flush(Map<FieldInfo,InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
+  public void flush(Map<String,InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
     boolean success = false;
     boolean anythingFlushed = false;
     try {
       if (state.fieldInfos.hasNorms()) {
         for (FieldInfo fi : state.fieldInfos) {
-          final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi);
+          final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi.name);
           // we must check the final value of omitNorms for the fieldinfo, it could have 
           // changed for this field since the first time we added it.
           if (!fi.omitsNorms()) {
@@ -71,7 +71,7 @@ final class NormsConsumer extends InvertedDocEndConsumer {
               assert fi.getNormType() == type;
             } else if (fi.isIndexed()) {
               anythingFlushed = true;
-              assert fi.getNormType() == null;
+              assert fi.getNormType() == null: "got " + fi.getNormType() + "; field=" + fi.name;
             }
           }
         }

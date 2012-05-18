@@ -49,7 +49,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   }
 
   @Override
-  void flush(Map<FieldInfo, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
+  void flush(Map<String, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
     if (writer != null) {
       // At least one doc in this run had term vectors enabled
       try {

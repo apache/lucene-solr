@@ -68,7 +68,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   }
 
   @Override
-  void finish() {}
+  void finish() {
+    if (hasPayloads) {
+      fieldInfo.setStorePayloads();
+    }
+  }
 
   boolean hasPayloads;
 

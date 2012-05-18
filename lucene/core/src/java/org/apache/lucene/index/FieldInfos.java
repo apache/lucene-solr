@@ -306,8 +306,12 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
     
     final FieldInfos finish() {
-      // nocommit: bogus we don't clone each FI
-      return new FieldInfos(byName.values().toArray(new FieldInfo[byName.size()]));
+      FieldInfo[] cloned = new FieldInfo[byName.size()];
+      int upto = 0;
+      for(FieldInfo fieldInfo : byName.values()) {
+        cloned[upto++] = fieldInfo.clone();
+      }
+      return new FieldInfos(cloned);
     }
   }
 }

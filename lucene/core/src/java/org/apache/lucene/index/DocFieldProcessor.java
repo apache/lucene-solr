@@ -71,10 +71,10 @@ final class DocFieldProcessor extends DocConsumer {
   @Override
   public void flush(SegmentWriteState state) throws IOException {
 
-    Map<FieldInfo, DocFieldConsumerPerField> childFields = new HashMap<FieldInfo, DocFieldConsumerPerField>();
+    Map<String,DocFieldConsumerPerField> childFields = new HashMap<String,DocFieldConsumerPerField>();
     Collection<DocFieldConsumerPerField> fields = fields();
     for (DocFieldConsumerPerField f : fields) {
-      childFields.put(f.getFieldInfo(), f);
+      childFields.put(f.getFieldInfo().name, f);
     }
 
     fieldsWriter.flush(state);
