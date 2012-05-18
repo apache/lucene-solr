@@ -248,11 +248,11 @@ public class TestCodecs extends LuceneTestCase {
       terms[i] = new TermData(text, docs, null);
     }
 
-    final MutableFieldInfos fieldInfos = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
+    final MutableFieldInfos builder = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
 
-    final FieldData field = new FieldData("field", fieldInfos, terms, true, false);
+    final FieldData field = new FieldData("field", builder, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
-
+    final FieldInfos fieldInfos = builder.finish();
     final Directory dir = newDirectory();
     this.write(fieldInfos, dir, fields, true);
     Codec codec = Codec.getDefault();
@@ -294,16 +294,17 @@ public class TestCodecs extends LuceneTestCase {
   }
 
   public void testRandomPostings() throws Throwable {
-    final MutableFieldInfos fieldInfos = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
+    final MutableFieldInfos builder = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
 
     final FieldData[] fields = new FieldData[NUM_FIELDS];
     for(int i=0;i<NUM_FIELDS;i++) {
       final boolean omitTF = 0==(i%3);
       final boolean storePayloads = 1==(i%3);
-      fields[i] = new FieldData(fieldNames[i], fieldInfos, this.makeRandomTerms(omitTF, storePayloads), omitTF, storePayloads);
+      fields[i] = new FieldData(fieldNames[i], builder, this.makeRandomTerms(omitTF, storePayloads), omitTF, storePayloads);
     }
 
     final Directory dir = newDirectory();
+    final FieldInfos fieldInfos = builder.finish();
 
     if (VERBOSE) {
       System.out.println("TEST: now write postings");

@@ -560,7 +560,7 @@ class DocumentsWriterPerThread {
 
   PerDocWriteState newPerDocWriteState(String segmentSuffix) {
     assert segment != null;
-    return new PerDocWriteState(infoStream, directory, segment, fieldInfos, bytesUsed, segmentSuffix, IOContext.DEFAULT);
+    return new PerDocWriteState(infoStream, directory, segment, bytesUsed, segmentSuffix, IOContext.DEFAULT);
   }
   
   @Override

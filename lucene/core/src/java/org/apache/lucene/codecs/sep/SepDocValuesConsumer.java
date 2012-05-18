@@ -38,12 +38,10 @@ import org.apache.lucene.util.IOUtils;
 
 public class SepDocValuesConsumer extends DocValuesWriterBase {
   private final Directory directory;
-  private final FieldInfos fieldInfos;
 
   public SepDocValuesConsumer(PerDocWriteState state) throws IOException {
     super(state);
     this.directory = state.directory;
-    fieldInfos = state.fieldInfos;
   }
   
   @Override

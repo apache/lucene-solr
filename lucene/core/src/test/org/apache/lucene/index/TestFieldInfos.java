@@ -46,10 +46,11 @@ public class TestFieldInfos extends LuceneTestCase {
   public FieldInfos createAndWriteFieldInfos(Directory dir, String filename) throws IOException{
   //Positive test of FieldInfos
     assertTrue(testDoc != null);
-    MutableFieldInfos fieldInfos = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
+    MutableFieldInfos builder = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
     for (IndexableField field : testDoc) {
-      fieldInfos.addOrUpdate(field.name(), field.fieldType());
+      builder.addOrUpdate(field.name(), field.fieldType());
     }
+    FieldInfos fieldInfos = builder.finish();
     //Since the complement is stored as well in the fields map
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
     
