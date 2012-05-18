@@ -36,6 +36,9 @@ Bug Fixes:
 * SOLR-3436: Group count incorrect when not all shards are queried in the second
   pass. (Francois Perron, Martijn van Groningen)
 
+* SOLR-3454: Exception when using result grouping with main=true and using
+  wt=javabin. (Ludovic Boutros, Martijn van Groningen)
+
 ==================  3.6.0  ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:

@@ -20,13 +20,21 @@ package org.apache.solr;
 import org.apache.lucene.search.FieldCache;
 import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.DocSlice;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 /**
@@ -240,6 +248,36 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         req("q", "*:*", "start", "2", "rows", "1", "group", "true", "group.field", "id", "group.main", "true"),
         "/response=={'numFound':5,'start':2,'docs':[{'id':'3'}]}"
     );
+  }
+
+  @Test
+  public void testGroupingSimpleFormatArrayIndexOutOfBoundsExceptionWithJavaBin() throws Exception {
+    assertU(add(doc("id", "1", "nullfirst", "1")));
+    assertU(add(doc("id", "2", "nullfirst", "1")));
+    assertU(add(doc("id", "3", "nullfirst", "2")));
+    assertU(add(doc("id", "4", "nullfirst", "2")));
+    assertU(add(doc("id", "5", "nullfirst", "2")));
+    assertU(add(doc("id", "6", "nullfirst", "3")));
+    assertU(commit());
+
+    SolrQueryRequest request =
+        req("q", "*:*","group", "true", "group.field", "nullfirst", "group.main", "true", "wt", "javabin", "start", "4", "rows", "10");
+
+    SolrQueryResponse response = new SolrQueryResponse();
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    try {
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(request, response));
+      String handlerName = request.getParams().get(CommonParams.QT);
+      h.getCore().execute(h.getCore().getRequestHandler(handlerName), request, response);
+      BinaryResponseWriter responseWriter = new BinaryResponseWriter();
+      responseWriter.write(out, request, response);
+    } finally {
+      request.close();
+      SolrRequestInfo.clearRequestInfo();
+    }
+
+    assertEquals(6, ((DocSlice) response.getValues().get("response")).matches());
+    new BinaryResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
   }
 
   @Test
