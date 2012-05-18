@@ -62,8 +62,16 @@ CharacterEntities = ( "AElig" | "Aacute" | "Acirc" | "Agrave" | "Alpha"
                     | "weierp" | "xi" | "yacute" | "yen" | "yuml" | "zeta"
                     | "zwj" | "zwnj" )
 %{
-  private static final Set<String> upperCaseVariantsAccepted
-      = new HashSet<String>(Arrays.asList("quot","copy","gt","lt","reg","amp"));
+  private static final Map<String,String> upperCaseVariantsAccepted
+      = new HashMap<String,String>();
+  static {
+    upperCaseVariantsAccepted.put("quot", "QUOT");
+    upperCaseVariantsAccepted.put("copy", "COPY");
+    upperCaseVariantsAccepted.put("gt", "GT");
+    upperCaseVariantsAccepted.put("lt", "LT");
+    upperCaseVariantsAccepted.put("reg", "REG");
+    upperCaseVariantsAccepted.put("amp", "AMP");
+  }
   private static final CharArrayMap<Character> entityValues
       = new CharArrayMap<Character>(Version.LUCENE_40, 253, false);
   static {
@@ -145,8 +153,9 @@ CharacterEntities = ( "AElig" | "Aacute" | "Acirc" | "Agrave" | "Alpha"
     for (int i = 0 ; i < entities.length ; i += 2) {
       Character value = entities[i + 1].charAt(0);
       entityValues.put(entities[i], value);
-      if (upperCaseVariantsAccepted.contains(entities[i])) {
-        entityValues.put(entities[i].toUpperCase(), value);
+      String upperCaseVariant = upperCaseVariantsAccepted.get(entities[i]);
+      if (upperCaseVariant != null) {
+        entityValues.put(upperCaseVariant, value);
       }
     }
   }
