@@ -53,9 +53,7 @@ public class TestReproduceMessage extends WithNestedTests {
       public Statement apply(final Statement base, Description description) {
         return new Statement() {
           public void evaluate() throws Throwable {
-            if (isRunningNested()) {
-              triggerOn(SorePoint.RULE);
-            }
+            triggerOn(SorePoint.RULE);
             base.evaluate();
           }
         };
@@ -69,9 +67,7 @@ public class TestReproduceMessage extends WithNestedTests {
 
     @Before
     public void before() {
-      if (isRunningNested()) {
-        triggerOn(SorePoint.BEFORE);
-      }
+      triggerOn(SorePoint.BEFORE);
     }    
 
     @Test
@@ -81,9 +77,7 @@ public class TestReproduceMessage extends WithNestedTests {
     
     @After
     public void after() {
-      if (isRunningNested()) {
-        triggerOn(SorePoint.AFTER);
-      }
+      triggerOn(SorePoint.AFTER);
     }    
 
     @AfterClass

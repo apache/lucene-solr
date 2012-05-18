@@ -22,15 +22,18 @@ import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestRuleIgnoreTestSuites;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  * An abstract test class that prepares nested test classes to run.
@@ -45,28 +48,11 @@ import com.carrotsearch.randomizedtesting.RandomizedRunner;
  * cause havoc (static fields).
  */
 public abstract class WithNestedTests {
-  /**
-   * This can no longer be thread local because {@link RandomizedRunner} runs
-   * suites in an isolated threadgroup/thread.
-   */
-  public static volatile boolean runsAsNested;
 
-  public static abstract class AbstractNestedTest extends LuceneTestCase {
-    @ClassRule
-    public static TestRule ignoreIfRunAsStandalone = new TestRule() {
-      public Statement apply(final Statement s, Description arg1) {
-        return new Statement() {
-          public void evaluate() throws Throwable {
-            if (isRunningNested()) {
-              s.evaluate();
-            }
-          }
-        };
-      }
-    };
-
+  public static abstract class AbstractNestedTest extends LuceneTestCase 
+    implements TestRuleIgnoreTestSuites.NestedTestSuite {
     protected static boolean isRunningNested() {
-      return runsAsNested;
+      return TestRuleIgnoreTestSuites.isRunningNested();
     }
   }
 
@@ -81,6 +67,12 @@ public abstract class WithNestedTests {
   private ByteArrayOutputStream sysout;
   private ByteArrayOutputStream syserr;
 
+  /**
+   * Restore properties after test.
+   */
+  @Rule
+  public SystemPropertiesRestoreRule restoreProperties = new SystemPropertiesRestoreRule();
+  
   @Before
   public final void before() {
     if (suppressOutputStreams) {
@@ -97,13 +89,11 @@ public abstract class WithNestedTests {
       }
     }
 
-    runsAsNested = true;
+    System.setProperty(TestRuleIgnoreTestSuites.PROPERTY_RUN_NESTED, "true");
   }
 
   @After
   public final void after() {
-    runsAsNested = false;
-
     if (suppressOutputStreams) {
       System.out.flush();
       System.err.flush();
