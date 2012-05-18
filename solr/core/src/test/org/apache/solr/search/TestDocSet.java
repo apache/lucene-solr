@@ -31,7 +31,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.ReadOnlyFieldInfos;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -367,7 +366,7 @@ public class TestDocSet extends LuceneTestCase {
 
       @Override
       public FieldInfos getFieldInfos() {
-        return new ReadOnlyFieldInfos(new FieldInfo[0]);
+        return new FieldInfos(new FieldInfo[0]);
       }
 
       @Override

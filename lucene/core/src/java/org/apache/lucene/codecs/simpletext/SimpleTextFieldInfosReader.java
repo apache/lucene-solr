@@ -25,7 +25,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.ReadOnlyFieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.DocValues;
@@ -108,7 +107,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
       
-      return new ReadOnlyFieldInfos(infos);
+      return new FieldInfos(infos);
     } finally {
       input.close();
     }

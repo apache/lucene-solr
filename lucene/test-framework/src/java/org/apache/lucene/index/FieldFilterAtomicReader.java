@@ -39,7 +39,7 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
         filteredInfos.add(fi);
       }
     }
-    fieldInfos = new ReadOnlyFieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
+    fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
   }
   
   boolean hasField(String field) {

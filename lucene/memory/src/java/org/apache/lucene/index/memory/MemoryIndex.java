@@ -25,8 +25,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -203,7 +201,7 @@ public class MemoryIndex {
 
   private static final boolean DEBUG = false;
 
-  private final MemoryFieldInfos fieldInfos;
+  private HashMap<String,FieldInfo> fieldInfos = new HashMap<String,FieldInfo>();
   
   /**
    * Sorts term entries into ascending order; also works for
@@ -239,7 +237,6 @@ public class MemoryIndex {
    */
   protected MemoryIndex(boolean storeOffsets) {
     this.stride = storeOffsets ? 3 : 1;
-    fieldInfos = new MemoryFieldInfos();
   }
   
   /**
@@ -356,7 +353,10 @@ public class MemoryIndex {
       int numOverlapTokens = 0;
       int pos = -1;
 
-      fieldInfos.addOrUpdate(fieldName);
+      if (!fieldInfos.containsKey(fieldName)) {
+        fieldInfos.put(fieldName, 
+            new FieldInfo(fieldName, true, fieldInfos.size(), false, false, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, null));
+      }
       
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
@@ -555,49 +555,6 @@ public class MemoryIndex {
     return result.toString();
   }
   
-  
-  ///////////////////////////////////////////////////////////////////////////////
-  // Nested classes:
-  ///////////////////////////////////////////////////////////////////////////////
-  private static final class MemoryFieldInfos extends FieldInfos {
-    private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
-    private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
-    
-    @Override
-    public FieldInfos clone() {
-      return this; // I think this is ok here.
-    }
-
-    @Override
-    public FieldInfo fieldInfo(String fieldName) {
-      return byName.get(fieldName);
-    }
-
-    @Override
-    public FieldInfo fieldInfo(int fieldNumber) {
-      return byNumber.get(fieldNumber);
-    }
-
-    @Override
-    public Iterator<FieldInfo> iterator() {
-      return byNumber.values().iterator();
-    }
-
-    @Override
-    public int size() {
-      return byNumber.size();
-    }
-    
-    public void addOrUpdate(String name) {
-      if (!byName.containsKey(name)) {
-        int number = byNumber.isEmpty() ? 0 : byNumber.lastKey() + 1;
-        FieldInfo info = new FieldInfo(name, true, number, false, false, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, null);
-        byNumber.put(number, info);
-        byName.put(name, info);
-      }
-    }
-  }
-  
   /**
    * Index data structure for a field; Contains the tokenized term texts and
    * their positions.
@@ -757,7 +714,7 @@ public class MemoryIndex {
     
     @Override
     public FieldInfos getFieldInfos() {
-      return fieldInfos;
+      return new FieldInfos(fieldInfos.values().toArray(new FieldInfo[fieldInfos.size()]));
     }
 
     private class MemoryFields extends Fields {

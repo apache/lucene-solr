@@ -17,7 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 
@@ -25,14 +31,101 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  * Collection of {@link FieldInfo}s (accessible by number or by name).
  *  @lucene.experimental
  */
-public abstract class FieldInfos implements Iterable<FieldInfo> {
- 
+public class FieldInfos implements Iterable<FieldInfo> {
+  private final boolean hasFreq;
+  private final boolean hasProx;
+  private final boolean hasVectors;
+  private final boolean hasNorms;
+  private final boolean hasDocValues;
+  
+  private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
+  private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+  private final Collection<FieldInfo> values; // for an unmodifiable iterator
+  
+  public FieldInfos(FieldInfo[] infos) {
+    boolean hasVectors = false;
+    boolean hasProx = false;
+    boolean hasFreq = false;
+    boolean hasNorms = false;
+    boolean hasDocValues = false;
+    
+    for (FieldInfo info : infos) {
+      assert !byNumber.containsKey(info.number);
+      byNumber.put(info.number, info);
+      assert !byName.containsKey(info.name);
+      byName.put(info.name, info);
+      
+      hasVectors |= info.hasVectors();
+      hasProx |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      hasFreq |= info.isIndexed() && info.getIndexOptions() != IndexOptions.DOCS_ONLY;
+      hasNorms |= info.hasNorms();
+      hasDocValues |= info.hasDocValues();
+    }
+    
+    this.hasVectors = hasVectors;
+    this.hasProx = hasProx;
+    this.hasFreq = hasFreq;
+    this.hasNorms = hasNorms;
+    this.hasDocValues = hasDocValues;
+    this.values = Collections.unmodifiableCollection(byNumber.values());
+  }
+  
+  /** Returns true if any fields have freqs */
+  public boolean hasFreq() {
+    return hasFreq;
+  }
+  
+  /** Returns true if any fields have positions */
+  public boolean hasProx() {
+    return hasProx;
+  }
+  
+  /**
+   * @return true if at least one field has any vectors
+   */
+  public boolean hasVectors() {
+    return hasVectors;
+  }
+  
+  /**
+   * @return true if at least one field has any norms
+   */
+  public boolean hasNorms() {
+    return hasNorms;
+  }
+  
+  /**
+   * @return true if at least one field has doc values
+   */
+  public boolean hasDocValues() {
+    return hasDocValues;
+  }
+  
+  /**
+   * @return number of fields
+   */
+  public int size() {
+    assert byNumber.size() == byName.size();
+    return byNumber.size();
+  }
+  
+  /**
+   * Returns an iterator over all the fieldinfo objects present,
+   * ordered by ascending field number
+   */
+  // TODO: what happens if in fact a different order is used?
+  public Iterator<FieldInfo> iterator() {
+    return values.iterator();
+  }
+
   /**
    * Return the fieldinfo object referenced by the field name
    * @return the FieldInfo object or null when the given fieldName
    * doesn't exist.
    */  
-  public abstract FieldInfo fieldInfo(String fieldName);
+  public FieldInfo fieldInfo(String fieldName) {
+    return byName.get(fieldName);
+  }
 
   /**
    * Return the fieldinfo object referenced by the fieldNumber.
@@ -40,73 +133,223 @@ public abstract class FieldInfos implements Iterable<FieldInfo> {
    * @return the FieldInfo object or null when the given fieldNumber
    * doesn't exist.
    */  
-  public abstract FieldInfo fieldInfo(int fieldNumber);
-
-  /**
-   * Returns an iterator over all the fieldinfo objects present,
-   * ordered by ascending field number
-   */
-  // TODO: what happens if in fact a different order is used?
-  public abstract Iterator<FieldInfo> iterator();
-
-  /**
-   * @return number of fields
-   */
-  public abstract int size();
-
-  /** Returns true if any fields have positions */
-  public boolean hasProx() {
-    for (FieldInfo fi : this) {
-      if (fi.isIndexed() && fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-        return true;
-      }
-    }
-    return false;
+  public FieldInfo fieldInfo(int fieldNumber) {
+    return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
   
-  /** Returns true if any fields have freqs */
-  public boolean hasFreq() {
-    for (FieldInfo fi : this) {
-      if (fi.isIndexed() && fi.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-        return true;
-      }
+  static final class FieldNumberBiMap {
+    
+    private final Map<Integer,String> numberToName;
+    private final Map<String,Integer> nameToNumber;
+    private int lowestUnassignedFieldNumber = -1;
+    
+    FieldNumberBiMap() {
+      this.nameToNumber = new HashMap<String, Integer>();
+      this.numberToName = new HashMap<Integer, String>();
     }
-    return false;
-  }
-  
-  /**
-   * @return true if at least one field has any vectors
-   */
-  public boolean hasVectors() {
-    for (FieldInfo fi : this) {
-      if (fi.hasVectors()) {
-        return true;
-      }
-    }
-    return false;
-  }
+    
+    /**
+     * Returns the global field number for the given field name. If the name
+     * does not exist yet it tries to add it with the given preferred field
+     * number assigned if possible otherwise the first unassigned field number
+     * is used as the field number.
+     */
+    synchronized int addOrGet(String fieldName, int preferredFieldNumber) {
+      Integer fieldNumber = nameToNumber.get(fieldName);
+      if (fieldNumber == null) {
+        final Integer preferredBoxed = Integer.valueOf(preferredFieldNumber);
 
-  /**
-   * @return true if at least one field has doc values
-   */
-  public boolean hasDocValues() {
-    for (FieldInfo fi : this) {
-      if (fi.hasDocValues()) {
-        return true;
+        if (preferredFieldNumber != -1 && !numberToName.containsKey(preferredBoxed)) {
+          // cool - we can use this number globally
+          fieldNumber = preferredBoxed;
+        } else {
+          // find a new FieldNumber
+          while (numberToName.containsKey(++lowestUnassignedFieldNumber)) {
+            // might not be up to date - lets do the work once needed
+          }
+          fieldNumber = lowestUnassignedFieldNumber;
+        }
+        
+        numberToName.put(fieldNumber, fieldName);
+        nameToNumber.put(fieldName, fieldNumber);
+      }
+
+      return fieldNumber.intValue();
+    }
+
+    /**
+     * Sets the given field number and name if not yet set. 
+     */
+    synchronized void setIfNotSet(int fieldNumber, String fieldName) {
+      final Integer boxedFieldNumber = Integer.valueOf(fieldNumber);
+      if (!numberToName.containsKey(boxedFieldNumber)
+          && !nameToNumber.containsKey(fieldName)) {
+        numberToName.put(boxedFieldNumber, fieldName);
+        nameToNumber.put(fieldName, boxedFieldNumber);
+      } else {
+        assert containsConsistent(boxedFieldNumber, fieldName);
       }
     }
-    return false;
+    
+    // used by assert
+    synchronized boolean containsConsistent(Integer number, String name) {
+      return name.equals(numberToName.get(number))
+          && number.equals(nameToNumber.get(name));
+    }
   }
   
-  /**
-   * @return true if at least one field has any norms
-   */
-  public boolean hasNorms() {
-    for (FieldInfo fi : this) {
-      if (fi.hasNorms()) {
-        return true;
+  static final class Builder {
+    private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
+    private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+    private final FieldNumberBiMap globalFieldNumbers;
+    
+    private long version; // internal use to track changes
+
+    public Builder() {
+      this(new FieldNumberBiMap());
+    }
+
+    public void add(FieldInfos other) {
+      for(FieldInfo fieldInfo : other){ 
+        add(fieldInfo);
       }
     }
-    return false;
+
+    /**
+     * Creates a new instance with the given {@link FieldNumberBiMap}. 
+     */
+    Builder(FieldNumberBiMap globalFieldNumbers) {
+      assert globalFieldNumbers != null;
+      this.globalFieldNumbers = globalFieldNumbers;
+    }
+    
+    /**
+     * adds the given field to this FieldInfos name / number mapping. The given FI
+     * must be present in the global field number mapping before this method it
+     * called
+     */
+    private void putInternal(FieldInfo fi) {
+      assert !byNumber.containsKey(fi.number);
+      assert !byName.containsKey(fi.name);
+      assert globalFieldNumbers == null || globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name);
+      byNumber.put(fi.number, fi);
+      byName.put(fi.name, fi);
+    }
+    
+    private int nextFieldNumber(String name, int preferredFieldNumber) {
+      // get a global number for this field
+      final int fieldNumber = globalFieldNumbers.addOrGet(name,
+          preferredFieldNumber);
+      assert byNumber.get(fieldNumber) == null : "field number " + fieldNumber
+          + " already taken";
+      return fieldNumber;
+    }
+    
+    /** If the field is not yet known, adds it. If it is known, checks to make
+     *  sure that the isIndexed flag is the same as was given previously for this
+     *  field. If not - marks it as being indexed.  Same goes for the TermVector
+     * parameters.
+     *
+     * @param name The name of the field
+     * @param isIndexed true if the field is indexed
+     * @param storeTermVector true if the term vector should be stored
+     * @param omitNorms true if the norms for the indexed field should be omitted
+     * @param storePayloads true if payloads should be stored for this field
+     * @param indexOptions if term freqs should be omitted for this field
+     */
+    // nocommit: fix testCodecs to do this another way, its the only user of this
+    synchronized FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
+                         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
+      return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
+    }
+
+    // NOTE: this method does not carry over termVector
+    // booleans nor docValuesType; the indexer chain
+    // (TermVectorsConsumerPerField, DocFieldProcessor) must
+    // set these fields when they succeed in consuming
+    // the document:
+    public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType) {
+      // TODO: really, indexer shouldn't even call this
+      // method (it's only called from DocFieldProcessor);
+      // rather, each component in the chain should update
+      // what it "owns".  EG fieldType.indexOptions() should
+      // be updated by maybe FreqProxTermsWriterPerField:
+      return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
+                                 fieldType.omitNorms(), false,
+                                 fieldType.indexOptions(), null, null);
+    }
+
+    synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
+        boolean storeTermVector,
+        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
+      if (globalFieldNumbers == null) {
+        throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
+      }
+      FieldInfo fi = fieldInfo(name);
+      if (fi == null) {
+        final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
+        fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
+      } else {
+        fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
+        if (docValues != null) {
+          fi.setDocValuesType(docValues);
+        }
+        if (normType != null) {
+          fi.setNormValueType(normType);
+        }
+      }
+      version++;
+      return fi;
+    }
+    
+    synchronized public FieldInfo add(FieldInfo fi) {
+      // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
+      return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed(), fi.hasVectors(),
+                 fi.omitsNorms(), fi.hasPayloads(),
+                 fi.getIndexOptions(), fi.getDocValuesType(), fi.getNormType());
+    }
+    
+    private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
+                                  boolean storeTermVector, boolean omitNorms, boolean storePayloads,
+                                  IndexOptions indexOptions, DocValues.Type docValuesType, DocValues.Type normType) {
+      // don't check modifiable here since we use that to initially build up FIs
+      if (globalFieldNumbers != null) {
+        globalFieldNumbers.setIfNotSet(fieldNumber, name);
+      } 
+      final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType);
+      putInternal(fi);
+      return fi;
+    }
+
+    public FieldInfo fieldInfo(String fieldName) {
+      return byName.get(fieldName);
+    }
+
+    /**
+     * Return the fieldinfo object referenced by the fieldNumber.
+     * @param fieldNumber
+     * @return the FieldInfo object or null when the given fieldNumber
+     * doesn't exist.
+     */
+    public FieldInfo fieldInfo(int fieldNumber) {
+      return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
+    }
+
+    synchronized final long getVersion() {
+      return version;
+    }
+    
+    final FieldInfos finish() {
+      // nocommit: bogus we don't clone each FI
+      return new FieldInfos(byNumber.values().toArray(new FieldInfo[byNumber.size()]));
+    }
+    
+    /**
+     * Creates a new instance from the given instance. 
+     */
+    // nocommit
+    static Builder from(Builder other) {
+      return new Builder(other.globalFieldNumbers);
+    }
   }
 }

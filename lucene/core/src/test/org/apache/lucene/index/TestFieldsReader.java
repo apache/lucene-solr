@@ -49,11 +49,11 @@ import org.junit.BeforeClass;
 public class TestFieldsReader extends LuceneTestCase {
   private static Directory dir;
   private static Document testDoc = new Document();
-  private static MutableFieldInfos fieldInfos = null;
+  private static FieldInfos.Builder fieldInfos = null;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    fieldInfos = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
+    fieldInfos = new FieldInfos.Builder();
     DocHelper.setupDoc(testDoc);
     for (IndexableField field : testDoc) {
       fieldInfos.addOrUpdate(field.name(), field.fieldType());

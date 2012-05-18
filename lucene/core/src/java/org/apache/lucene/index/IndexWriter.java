@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
-import org.apache.lucene.index.MutableFieldInfos.FieldNumberBiMap;
+import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.search.Query;
@@ -2280,7 +2280,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(),
                                                mergedName, MergeState.CheckAbort.NONE, payloadProcessorProvider,
-                                               new MutableFieldInfos(globalFieldNumberMap), codec, context);
+                                               new FieldInfos.Builder(globalFieldNumberMap), codec, context);
 
       for (IndexReader reader : readers) {    // add new indexes
         merger.add(reader);
@@ -3372,7 +3372,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final MergeState.CheckAbort checkAbort = new MergeState.CheckAbort(merge, directory);
     SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(), mergedName, checkAbort,
                                              // nocommit
-                                             payloadProcessorProvider, new MutableFieldInfos(globalFieldNumberMap), codec, context);
+                                             payloadProcessorProvider, new FieldInfos.Builder(globalFieldNumberMap), codec, context);
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merging " + segString(merge.segments));

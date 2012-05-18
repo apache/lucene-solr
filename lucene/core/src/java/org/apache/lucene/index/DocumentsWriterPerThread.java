@@ -170,7 +170,7 @@ class DocumentsWriterPerThread {
   boolean aborting = false;   // True if an abort is pending
   boolean hasAborted = false; // True if the last exception throws by #updateDocument was aborting
 
-  private MutableFieldInfos fieldInfos;
+  private FieldInfos.Builder fieldInfos;
   private final InfoStream infoStream;
   private int numDocsInRAM;
   private int flushedDocCount;
@@ -181,7 +181,7 @@ class DocumentsWriterPerThread {
 
   
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent,
-      MutableFieldInfos fieldInfos, IndexingChain indexingChain) {
+      FieldInfos.Builder fieldInfos, IndexingChain indexingChain) {
     this.directory = directory;
     this.parent = parent;
     this.fieldInfos = fieldInfos;
@@ -197,7 +197,7 @@ class DocumentsWriterPerThread {
     initialize();
   }
   
-  public DocumentsWriterPerThread(DocumentsWriterPerThread other, MutableFieldInfos fieldInfos) {
+  public DocumentsWriterPerThread(DocumentsWriterPerThread other, FieldInfos.Builder fieldInfos) {
     this(other.directory, other.parent, fieldInfos, other.parent.chain);
   }
   
@@ -414,7 +414,7 @@ class DocumentsWriterPerThread {
   private void doAfterFlush() throws IOException {
     segment = null;
     consumer.doAfterFlush();
-    fieldInfos = MutableFieldInfos.from(fieldInfos);
+    fieldInfos = FieldInfos.Builder.from(fieldInfos);
     parent.subtractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
   }
@@ -442,7 +442,7 @@ class DocumentsWriterPerThread {
   FlushedSegment flush() throws IOException {
     assert numDocsInRAM > 0;
     assert deleteSlice == null : "all deletes must be applied in prepareFlush";
-    flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
+    flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos.finish(),
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
         codec, pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
     final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;

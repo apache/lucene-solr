@@ -46,7 +46,7 @@ public class TestFieldInfos extends LuceneTestCase {
   public FieldInfos createAndWriteFieldInfos(Directory dir, String filename) throws IOException{
   //Positive test of FieldInfos
     assertTrue(testDoc != null);
-    MutableFieldInfos builder = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
+    FieldInfos.Builder builder = new FieldInfos.Builder();
     for (IndexableField field : testDoc) {
       builder.addOrUpdate(field.name(), field.fieldType());
     }

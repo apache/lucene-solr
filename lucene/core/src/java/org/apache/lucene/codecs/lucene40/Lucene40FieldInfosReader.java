@@ -10,7 +10,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
-import org.apache.lucene.index.ReadOnlyFieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.DocValues;
@@ -100,7 +99,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
       
-      return new ReadOnlyFieldInfos(infos);
+      return new FieldInfos(infos);
     } finally {
       input.close();
     }

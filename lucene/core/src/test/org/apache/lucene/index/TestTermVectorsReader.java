@@ -48,7 +48,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private int[][] positions = new int[testTerms.length][];
   private Directory dir;
   private SegmentInfo seg;
-  private FieldInfos fieldInfos = new ReadOnlyFieldInfos(new FieldInfo[0]);
+  private FieldInfos fieldInfos = new FieldInfos(new FieldInfo[0]);
   private static int TERM_FREQ = 3;
 
   private class TestToken implements Comparable<TestToken> {

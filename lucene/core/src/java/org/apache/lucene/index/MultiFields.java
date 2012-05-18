@@ -248,11 +248,11 @@ public final class MultiFields extends Fields {
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
     final List<AtomicReader> subReaders = new ArrayList<AtomicReader>();
     ReaderUtil.gatherSubReaders(subReaders, reader);
-    final MutableFieldInfos fieldInfos = new MutableFieldInfos();
+    final FieldInfos.Builder builder = new FieldInfos.Builder();
     for(AtomicReader subReader : subReaders) {
-      fieldInfos.add(subReader.getFieldInfos());
+      builder.add(subReader.getFieldInfos());
     }
-    return fieldInfos.finish();
+    return builder.finish();
   }
 
   public static Collection<String> getIndexedFields(IndexReader reader) {

@@ -88,7 +88,7 @@ public class TestCodecs extends LuceneTestCase {
     final boolean omitTF;
     final boolean storePayloads;
 
-    public FieldData(final String name, final MutableFieldInfos fieldInfos, final TermData[] terms, final boolean omitTF, final boolean storePayloads) {
+    public FieldData(final String name, final FieldInfos.Builder fieldInfos, final TermData[] terms, final boolean omitTF, final boolean storePayloads) {
       this.omitTF = omitTF;
       this.storePayloads = storePayloads;
       // TODO: change this test to use all three
@@ -248,7 +248,7 @@ public class TestCodecs extends LuceneTestCase {
       terms[i] = new TermData(text, docs, null);
     }
 
-    final MutableFieldInfos builder = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
+    final FieldInfos.Builder builder = new FieldInfos.Builder();
 
     final FieldData field = new FieldData("field", builder, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
@@ -294,7 +294,7 @@ public class TestCodecs extends LuceneTestCase {
   }
 
   public void testRandomPostings() throws Throwable {
-    final MutableFieldInfos builder = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
+    final FieldInfos.Builder builder = new FieldInfos.Builder();
 
     final FieldData[] fields = new FieldData[NUM_FIELDS];
     for(int i=0;i<NUM_FIELDS;i++) {

@@ -100,7 +100,7 @@ public final class ParallelAtomicReader extends AtomicReader {
     }
     
     // TODO: make this read-only in a cleaner way?
-    MutableFieldInfos builder = new MutableFieldInfos();
+    FieldInfos.Builder builder = new FieldInfos.Builder();
     // build FieldInfos and fieldToReader map:
     for (final AtomicReader reader : this.parallelReaders) {
       final FieldInfos readerFieldInfos = reader.getFieldInfos();

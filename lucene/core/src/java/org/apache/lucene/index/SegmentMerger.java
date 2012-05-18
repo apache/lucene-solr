@@ -54,9 +54,9 @@ final class SegmentMerger {
   private final IOContext context;
   
   private final MergeState mergeState = new MergeState();
-  private final MutableFieldInfos fieldInfosBuilder;
+  private final FieldInfos.Builder fieldInfosBuilder;
   
-  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider, MutableFieldInfos fieldInfosBuilder, Codec codec, IOContext context) {
+  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider, FieldInfos.Builder fieldInfosBuilder, Codec codec, IOContext context) {
     mergeState.infoStream = infoStream;
     mergeState.readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
     mergeState.checkAbort = checkAbort;
