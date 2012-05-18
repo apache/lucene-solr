@@ -252,7 +252,7 @@ public final class MultiFields extends Fields {
     for(AtomicReader subReader : subReaders) {
       fieldInfos.add(subReader.getFieldInfos());
     }
-    return fieldInfos.asReadOnly();
+    return fieldInfos.finish();
   }
 
   public static Collection<String> getIndexedFields(IndexReader reader) {

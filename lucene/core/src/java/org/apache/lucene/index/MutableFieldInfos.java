@@ -26,6 +26,8 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 
+// nocommit: fix DWPT and change this to a more minimal FieldInfos.Builder that 
+// does *not* extend fieldinfos
 final class MutableFieldInfos extends FieldInfos {
   static final class FieldNumberBiMap {
     
@@ -265,7 +267,6 @@ final class MutableFieldInfos extends FieldInfos {
     return fi;
   }
 
-  @Override
   public FieldInfo fieldInfo(String fieldName) {
     return byName.get(fieldName);
   }
@@ -276,12 +277,10 @@ final class MutableFieldInfos extends FieldInfos {
    * @return the FieldInfo object or null when the given fieldNumber
    * doesn't exist.
    */
-  @Override
   public FieldInfo fieldInfo(int fieldNumber) {
     return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
 
-  @Override
   public Iterator<FieldInfo> iterator() {
     return byNumber.values().iterator();
   }
@@ -289,7 +288,6 @@ final class MutableFieldInfos extends FieldInfos {
   /**
    * @return number of fields
    */
-  @Override
   public int size() {
     assert byNumber.size() == byName.size();
     return byNumber.size();
@@ -299,11 +297,10 @@ final class MutableFieldInfos extends FieldInfos {
     return version;
   }
   
-  // nocommit
-  final ReadOnlyFieldInfos asReadOnly() {
+  final ReadOnlyFieldInfos finish() {
     FieldInfo infos[] = new FieldInfo[size()];
     int upto = 0;
-    for (FieldInfo info : this) {
+    for (FieldInfo info : byNumber.values()) {
       infos[upto++] = info.clone();
     }
     return new ReadOnlyFieldInfos(infos);

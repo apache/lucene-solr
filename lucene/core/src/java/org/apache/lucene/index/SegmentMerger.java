@@ -54,11 +54,11 @@ final class SegmentMerger {
   private final IOContext context;
   
   private final MergeState mergeState = new MergeState();
-
-  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider, MutableFieldInfos fieldInfos, Codec codec, IOContext context) {
+  private final MutableFieldInfos fieldInfosBuilder;
+  
+  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider, MutableFieldInfos fieldInfosBuilder, Codec codec, IOContext context) {
     mergeState.infoStream = infoStream;
     mergeState.readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
-    mergeState.fieldInfos = fieldInfos;
     mergeState.checkAbort = checkAbort;
     mergeState.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
@@ -66,6 +66,7 @@ final class SegmentMerger {
     this.termIndexInterval = termIndexInterval;
     this.codec = codec;
     this.context = context;
+    this.fieldInfosBuilder = fieldInfosBuilder;
   }
 
   /**
@@ -195,6 +196,7 @@ final class SegmentMerger {
     fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
   }
 
+  // NOTE: this is actually merging all the fieldinfos
   public void mergeDocValuesAndNormsFieldInfos() throws IOException {
     // mapping from all docvalues fields found to their promoted types
     // this is because FieldInfos does not store the valueSize
@@ -205,8 +207,7 @@ final class SegmentMerger {
       final AtomicReader reader = readerAndLiveDocs.reader;
       FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fi : readerFieldInfos) {
-        // nocommit: ugly
-        FieldInfo merged = ((MutableFieldInfos)mergeState.fieldInfos).add(fi);
+        FieldInfo merged = fieldInfosBuilder.add(fi);
         // update the type promotion mapping for this reader
         if (fi.hasDocValues()) {
           TypePromoter previous = docValuesTypes.get(merged);
@@ -220,6 +221,7 @@ final class SegmentMerger {
     }
     updatePromoted(normValuesTypes, true);
     updatePromoted(docValuesTypes, false);
+    mergeState.fieldInfos = fieldInfosBuilder.finish();
   }
   
   protected void updatePromoted(Map<FieldInfo,TypePromoter> infoAndPromoter, boolean norms) {

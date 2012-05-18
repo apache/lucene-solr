@@ -115,7 +115,7 @@ public final class ParallelAtomicReader extends AtomicReader {
         }
       }
     }
-    fieldInfos = builder.asReadOnly();
+    fieldInfos = builder.finish();
     
     // build Fields instance
     for (final AtomicReader reader : this.parallelReaders) {
