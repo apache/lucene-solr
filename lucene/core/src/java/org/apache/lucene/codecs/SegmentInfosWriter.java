@@ -19,6 +19,8 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -28,6 +30,9 @@ import org.apache.lucene.store.IndexOutput;
  * Specifies an API for classes that can write out {@link SegmentInfos} data.
  * @lucene.experimental
  */
+
+// nocommit rename (remove the s?)
+
 public abstract class SegmentInfosWriter {
 
   /**
@@ -42,23 +47,5 @@ public abstract class SegmentInfosWriter {
    * phase commit" operations as described above.
    * @throws IOException
    */
-  public abstract IndexOutput writeInfos(Directory dir, String segmentsFileName, String codecID, SegmentInfos infos, IOContext context) throws IOException;
-  
-  /**
-   * First phase of the two-phase commit - ensure that all output can be
-   * successfully written out.
-   * @param out an instance of {@link IndexOutput} returned from a previous
-   * call to {@link #writeInfos(Directory, String, String, SegmentInfos, IOContext)}.
-   * @throws IOException
-   */
-  public abstract void prepareCommit(IndexOutput out) throws IOException;
-  
-  /**
-   * Second phase of the two-phase commit. In this step the output should be
-   * finalized and closed.
-   * @param out an instance of {@link IndexOutput} returned from a previous
-   * call to {@link #writeInfos(Directory, String, String, SegmentInfos, IOContext)}.
-   * @throws IOException
-   */
-  public abstract void finishCommit(IndexOutput out) throws IOException;
+  public abstract void write(SegmentInfo info, FieldInfos fis) throws IOException;
 }

@@ -21,6 +21,9 @@ import java.util.Map;
 
 import org.apache.lucene.index.DocValues.Type;
 
+// nocommit remove this?  (require DV type does not change
+// for a given field)
+
 /**
  * Type promoter that promotes {@link DocValues} during merge based on
  * their {@link Type} and {@link #getValueSize()}

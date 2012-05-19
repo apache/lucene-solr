@@ -18,10 +18,12 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 
 import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexOutput;
@@ -39,81 +41,50 @@ import org.apache.lucene.util.IOUtils;
  */
 public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
 
+  /** Save a single segment's info. */
   @Override
-  public IndexOutput writeInfos(Directory dir, String segmentFileName, String codecID, SegmentInfos infos, IOContext context)
-          throws IOException {
-    IndexOutput out = createOutput(dir, segmentFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount())));
+  public void write(SegmentInfo si, FieldInfos fis) throws IOException {
+    assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
+    final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfosFormat.SI_EXTENSION);
+    // nocommit what ioctxt to pass?  cannot call .sizeInBytes()!
+    final IndexOutput output = si.dir.createOutput(fileName, new IOContext(new FlushInfo(si.docCount, 0)));
+
     boolean success = false;
     try {
-      /*
-       * TODO its not ideal that we write the format and the codecID inside the
-       * codec private classes but we read it in SegmentInfos.
-       */
-      out.writeInt(SegmentInfos.FORMAT_CURRENT); // write FORMAT
-      out.writeString(codecID); // write codecID
-      out.writeLong(infos.version);
-      out.writeInt(infos.counter); // write counter
-      out.writeInt(infos.size()); // write infos
-      for (SegmentInfo si : infos) {
-        writeInfo(out, si);
+      // Write the Lucene version that created this segment, since 3.1
+      output.writeString(si.getVersion());
+      output.writeInt(si.docCount);
+      // we still need to write this in 4.0 since we can open a 3.x with shared docStores
+      output.writeInt(si.getDocStoreOffset());
+      if (si.getDocStoreOffset() != -1) {
+        output.writeString(si.getDocStoreSegment());
+        output.writeByte((byte) (si.getDocStoreIsCompoundFile() ? 1:0));
       }
-      out.writeStringStringMap(infos.getUserData());
+
+      // nocommit remove (4.0 doesn't write normGen)...
+      Map<Integer,Long> normGen = si.getNormGen();
+      if (normGen == null) {
+        output.writeInt(SegmentInfo.NO);
+      } else {
+        output.writeInt(normGen.size());
+        for (Entry<Integer,Long> entry : normGen.entrySet()) {
+          output.writeInt(entry.getKey());
+          output.writeLong(entry.getValue());
+        }
+      }
+
+      output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
+      output.writeInt(si.getDelCount());
+      output.writeStringStringMap(si.getDiagnostics());
+
       success = true;
-      return out;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(out);
+        IOUtils.closeWhileHandlingException(output);
+        si.dir.deleteFile(fileName);
+      } else {
+        output.close();
       }
     }
-  }
-  
-  /** Save a single segment's info. */
-  private void writeInfo(IndexOutput output, SegmentInfo si) throws IOException {
-    assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
-    // Write the Lucene version that created this segment, since 3.1
-    output.writeString(si.getVersion());
-    output.writeString(si.name);
-    output.writeInt(si.docCount);
-    output.writeLong(si.getDelGen());
-    // we still need to write this in 4.0 since we can open a 3.x with shared docStores
-    output.writeInt(si.getDocStoreOffset());
-    if (si.getDocStoreOffset() != -1) {
-      output.writeString(si.getDocStoreSegment());
-      output.writeByte((byte) (si.getDocStoreIsCompoundFile() ? 1:0));
-    }
-
-    Map<Integer,Long> normGen = si.getNormGen();
-    if (normGen == null) {
-      output.writeInt(SegmentInfo.NO);
-    } else {
-      output.writeInt(normGen.size());
-      for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        output.writeInt(entry.getKey());
-        output.writeLong(entry.getValue());
-      }
-    }
-
-    output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
-    output.writeInt(si.getDelCount());
-    output.writeString(si.getCodec().getName());
-    output.writeStringStringMap(si.getDiagnostics());
-  }
-  
-  protected IndexOutput createOutput(Directory dir, String segmentFileName, IOContext context)
-      throws IOException {
-    IndexOutput plainOut = dir.createOutput(segmentFileName, context);
-    ChecksumIndexOutput out = new ChecksumIndexOutput(plainOut);
-    return out;
-  }
-
-  @Override
-  public void prepareCommit(IndexOutput segmentOutput) throws IOException {
-    ((ChecksumIndexOutput)segmentOutput).prepareCommit();
-  }
-
-  @Override
-  public void finishCommit(IndexOutput out) throws IOException {
-    ((ChecksumIndexOutput)out).finishCommit();
-    out.close();
   }
 }

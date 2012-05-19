@@ -114,13 +114,15 @@ class DocumentsWriterPerThread {
 
   static class FlushedSegment {
     final SegmentInfo segmentInfo;
+    final FieldInfos fieldInfos;
     final BufferedDeletes segmentDeletes;
     final MutableBits liveDocs;
     final int delCount;
 
-    private FlushedSegment(SegmentInfo segmentInfo,
+    private FlushedSegment(SegmentInfo segmentInfo, FieldInfos fieldInfos,
                            BufferedDeletes segmentDeletes, MutableBits liveDocs, int delCount) {
       this.segmentInfo = segmentInfo;
+      this.fieldInfos = fieldInfos;
       this.segmentDeletes = segmentDeletes;
       this.liveDocs = liveDocs;
       this.delCount = delCount;
@@ -476,9 +478,10 @@ class DocumentsWriterPerThread {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
       final SegmentInfo newSegment = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, segment, flushState.numDocs,
-                                                     SegmentInfo.NO, -1, segment, false, null, false, 0,
+                                                     0, segment, false, null, false, 0,
                                                      flushState.codec,
                                                      null);
+
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.delCountOnFlush)) + " deleted docs");
         infoStream.message("DWPT", "new segment has " +
@@ -490,6 +493,7 @@ class DocumentsWriterPerThread {
         infoStream.message("DWPT", "flushedFiles=" + newSegment.files());
         infoStream.message("DWPT", "flushed codec=" + newSegment.getCodec());
       }
+
       flushedDocCount += flushState.numDocs;
 
       final BufferedDeletes segmentDeletes;
@@ -511,7 +515,7 @@ class DocumentsWriterPerThread {
       doAfterFlush();
       success = true;
 
-      return new FlushedSegment(newSegment, segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
+      return new FlushedSegment(newSegment, flushState.fieldInfos, segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
     } finally {
       if (!success) {
         if (segment != null) {

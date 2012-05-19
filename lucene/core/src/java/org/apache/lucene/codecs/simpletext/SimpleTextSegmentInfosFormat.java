@@ -17,9 +17,13 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
+import java.util.Set;
+
 import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.SegmentInfosReader;
 import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
 
 /**
  * plain text segments file format.
@@ -30,6 +34,8 @@ import org.apache.lucene.codecs.SegmentInfosWriter;
 public class SimpleTextSegmentInfosFormat extends SegmentInfosFormat {
   private final SegmentInfosReader reader = new SimpleTextSegmentInfosReader();
   private final SegmentInfosWriter writer = new SimpleTextSegmentInfosWriter();
+
+  public static final String SI_EXTENSION = "si";
   
   @Override
   public SegmentInfosReader getSegmentInfosReader() {
@@ -39,5 +45,10 @@ public class SimpleTextSegmentInfosFormat extends SegmentInfosFormat {
   @Override
   public SegmentInfosWriter getSegmentInfosWriter() {
     return writer;
+  }
+
+  @Override
+  public void files(SegmentInfo info, Set<String> files) {
+    files.add(IndexFileNames.segmentFileName(info.name, "", SI_EXTENSION));
   }
 }

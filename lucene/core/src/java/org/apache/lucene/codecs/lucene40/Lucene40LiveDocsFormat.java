@@ -84,7 +84,8 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   public Bits readLiveDocs(Directory dir, SegmentInfo info, IOContext context) throws IOException {
     String filename = IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen());
     final BitVector liveDocs = new BitVector(dir, filename, context);
-    assert liveDocs.count() == info.docCount - info.getDelCount();
+    assert liveDocs.count() == info.docCount - info.getDelCount():
+        "liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.docCount + " info.getDelCount()=" + info.getDelCount();
     assert liveDocs.length() == info.docCount;
     return liveDocs;
   }

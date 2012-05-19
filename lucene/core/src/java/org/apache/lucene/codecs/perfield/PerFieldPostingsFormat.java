@@ -144,6 +144,9 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         formats.put(format, consumerAndId);
       }
 
+      // nocommit we should only provide the "slice" of FIS
+      // that this PF actually sees ... then stuff like
+      // .hasProx could work correctly?
       return consumerAndId.fieldsConsumer.addField(field);
     }
 

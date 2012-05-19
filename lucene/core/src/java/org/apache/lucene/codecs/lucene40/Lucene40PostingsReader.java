@@ -58,9 +58,11 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
   // private String segment;
 
+  // nocommit don't pass FIS here...
   public Lucene40PostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
     freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION),
                            ioContext);
+    // nocommit we can assert FIS.hasProx == our hasProx here...
     // this.segment = segmentInfo.name;
     if (fieldInfos.hasProx()) {
       boolean success = false;

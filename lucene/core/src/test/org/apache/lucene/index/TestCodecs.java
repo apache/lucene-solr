@@ -312,7 +312,7 @@ public class TestCodecs extends LuceneTestCase {
 
     this.write(fieldInfos, dir, fields, false);
     Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000, -1, -1,
+    final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000, -1,
                                            SEGMENT, false, null, false, 0,
                                            codec, null);
 

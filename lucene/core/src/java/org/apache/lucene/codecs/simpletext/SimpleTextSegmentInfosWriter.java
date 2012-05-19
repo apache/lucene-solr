@@ -18,10 +18,12 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 
 import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexOutput;
@@ -46,8 +48,6 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
   final static BytesRef USERDATA_KEY        = new BytesRef("  key ");
   final static BytesRef USERDATA_VALUE      = new BytesRef("  value ");
   final static BytesRef NUM_SEGMENTS        = new BytesRef("number of segments ");
-  final static BytesRef SI_NAME             = new BytesRef("  name ");
-  final static BytesRef SI_CODEC            = new BytesRef("    codec ");
   final static BytesRef SI_VERSION          = new BytesRef("    version ");
   final static BytesRef SI_DOCCOUNT         = new BytesRef("    number of documents ");
   final static BytesRef SI_DELCOUNT         = new BytesRef("    number of deletions ");
@@ -63,8 +63,7 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
   final static BytesRef SI_DIAG_KEY         = new BytesRef("      key ");
   final static BytesRef SI_DIAG_VALUE       = new BytesRef("      value ");
   
-  @Override
-  public IndexOutput writeInfos(Directory dir, String segmentsFileName, String codecID, SegmentInfos infos, IOContext context) throws IOException {
+  /*
     BytesRef scratch = new BytesRef();
     IndexOutput out = new ChecksumIndexOutput(dir.createOutput(segmentsFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount()))));
     boolean success = false;
@@ -119,96 +118,95 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
       }
     }
   }
+  */
   
-  private void writeInfo(IndexOutput output, SegmentInfo si) throws IOException {
+  @Override
+  public void write(SegmentInfo si, FieldInfos fis) throws IOException {
     assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
-    BytesRef scratch = new BytesRef();
+
+    String fileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
+    // nocommit what IOCtx
+    boolean success = false;
+    IndexOutput output = si.dir.createOutput(fileName, new IOContext(new FlushInfo(0, 0)));
+
+    try {
+      BytesRef scratch = new BytesRef();
     
-    SimpleTextUtil.write(output, SI_NAME);
-    SimpleTextUtil.write(output, si.name, scratch);
-    SimpleTextUtil.writeNewline(output);
+      SimpleTextUtil.write(output, SI_VERSION);
+      SimpleTextUtil.write(output, si.getVersion(), scratch);
+      SimpleTextUtil.writeNewline(output);
     
-    SimpleTextUtil.write(output, SI_CODEC);
-    SimpleTextUtil.write(output, si.getCodec().getName(), scratch);
-    SimpleTextUtil.writeNewline(output);
+      SimpleTextUtil.write(output, SI_DOCCOUNT);
+      SimpleTextUtil.write(output, Integer.toString(si.docCount), scratch);
+      SimpleTextUtil.writeNewline(output);
     
-    SimpleTextUtil.write(output, SI_VERSION);
-    SimpleTextUtil.write(output, si.getVersion(), scratch);
-    SimpleTextUtil.writeNewline(output);
+      SimpleTextUtil.write(output, SI_DELCOUNT);
+      SimpleTextUtil.write(output, Integer.toString(si.getDelCount()), scratch);
+      SimpleTextUtil.writeNewline(output);
     
-    SimpleTextUtil.write(output, SI_DOCCOUNT);
-    SimpleTextUtil.write(output, Integer.toString(si.docCount), scratch);
-    SimpleTextUtil.writeNewline(output);
+      SimpleTextUtil.write(output, SI_USECOMPOUND);
+      SimpleTextUtil.write(output, Boolean.toString(si.getUseCompoundFile()), scratch);
+      SimpleTextUtil.writeNewline(output);
     
-    SimpleTextUtil.write(output, SI_DELCOUNT);
-    SimpleTextUtil.write(output, Integer.toString(si.getDelCount()), scratch);
-    SimpleTextUtil.writeNewline(output);
+      SimpleTextUtil.write(output, SI_DSOFFSET);
+      SimpleTextUtil.write(output, Integer.toString(si.getDocStoreOffset()), scratch);
+      SimpleTextUtil.writeNewline(output);
     
-    SimpleTextUtil.write(output, SI_USECOMPOUND);
-    SimpleTextUtil.write(output, Boolean.toString(si.getUseCompoundFile()), scratch);
-    SimpleTextUtil.writeNewline(output);
+      SimpleTextUtil.write(output, SI_DSSEGMENT);
+      SimpleTextUtil.write(output, si.getDocStoreSegment(), scratch);
+      SimpleTextUtil.writeNewline(output);
     
-    SimpleTextUtil.write(output, SI_DSOFFSET);
-    SimpleTextUtil.write(output, Integer.toString(si.getDocStoreOffset()), scratch);
-    SimpleTextUtil.writeNewline(output);
+      SimpleTextUtil.write(output, SI_DSCOMPOUND);
+      SimpleTextUtil.write(output, Boolean.toString(si.getDocStoreIsCompoundFile()), scratch);
+      SimpleTextUtil.writeNewline(output);
     
-    SimpleTextUtil.write(output, SI_DSSEGMENT);
-    SimpleTextUtil.write(output, si.getDocStoreSegment(), scratch);
-    SimpleTextUtil.writeNewline(output);
+      SimpleTextUtil.write(output, SI_DELGEN);
+      SimpleTextUtil.write(output, Long.toString(si.getDelGen()), scratch);
+      SimpleTextUtil.writeNewline(output);
     
-    SimpleTextUtil.write(output, SI_DSCOMPOUND);
-    SimpleTextUtil.write(output, Boolean.toString(si.getDocStoreIsCompoundFile()), scratch);
-    SimpleTextUtil.writeNewline(output);
+      Map<Integer,Long> normGen = si.getNormGen();
+      int numNormGen = normGen == null ? 0 : normGen.size();
+      SimpleTextUtil.write(output, SI_NUM_NORMGEN);
+      SimpleTextUtil.write(output, Integer.toString(numNormGen), scratch);
+      SimpleTextUtil.writeNewline(output);
     
-    SimpleTextUtil.write(output, SI_DELGEN);
-    SimpleTextUtil.write(output, Long.toString(si.getDelGen()), scratch);
-    SimpleTextUtil.writeNewline(output);
-    
-    Map<Integer,Long> normGen = si.getNormGen();
-    int numNormGen = normGen == null ? 0 : normGen.size();
-    SimpleTextUtil.write(output, SI_NUM_NORMGEN);
-    SimpleTextUtil.write(output, Integer.toString(numNormGen), scratch);
-    SimpleTextUtil.writeNewline(output);
-    
-    if (numNormGen > 0) {
-      for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        SimpleTextUtil.write(output, SI_NORMGEN_KEY);
-        SimpleTextUtil.write(output, Integer.toString(entry.getKey()), scratch);
-        SimpleTextUtil.writeNewline(output);
+      // nocommit no more:
+      if (numNormGen > 0) {
+        for (Entry<Integer,Long> entry : normGen.entrySet()) {
+          SimpleTextUtil.write(output, SI_NORMGEN_KEY);
+          SimpleTextUtil.write(output, Integer.toString(entry.getKey()), scratch);
+          SimpleTextUtil.writeNewline(output);
         
-        SimpleTextUtil.write(output, SI_NORMGEN_VALUE);
-        SimpleTextUtil.write(output, Long.toString(entry.getValue()), scratch);
-        SimpleTextUtil.writeNewline(output);
+          SimpleTextUtil.write(output, SI_NORMGEN_VALUE);
+          SimpleTextUtil.write(output, Long.toString(entry.getValue()), scratch);
+          SimpleTextUtil.writeNewline(output);
+        }
+      }
+    
+      Map<String,String> diagnostics = si.getDiagnostics();
+      int numDiagnostics = diagnostics == null ? 0 : diagnostics.size();
+      SimpleTextUtil.write(output, SI_NUM_DIAG);
+      SimpleTextUtil.write(output, Integer.toString(numDiagnostics), scratch);
+      SimpleTextUtil.writeNewline(output);
+    
+      if (numDiagnostics > 0) {
+        for (Map.Entry<String,String> diagEntry : diagnostics.entrySet()) {
+          SimpleTextUtil.write(output, SI_DIAG_KEY);
+          SimpleTextUtil.write(output, diagEntry.getKey(), scratch);
+          SimpleTextUtil.writeNewline(output);
+        
+          SimpleTextUtil.write(output, SI_DIAG_VALUE);
+          SimpleTextUtil.write(output, diagEntry.getValue(), scratch);
+          SimpleTextUtil.writeNewline(output);
+        }
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(output);
+      } else {
+        output.close();
       }
     }
-    
-    Map<String,String> diagnostics = si.getDiagnostics();
-    int numDiagnostics = diagnostics == null ? 0 : diagnostics.size();
-    SimpleTextUtil.write(output, SI_NUM_DIAG);
-    SimpleTextUtil.write(output, Integer.toString(numDiagnostics), scratch);
-    SimpleTextUtil.writeNewline(output);
-    
-    if (numDiagnostics > 0) {
-      for (Map.Entry<String,String> diagEntry : diagnostics.entrySet()) {
-        SimpleTextUtil.write(output, SI_DIAG_KEY);
-        SimpleTextUtil.write(output, diagEntry.getKey(), scratch);
-        SimpleTextUtil.writeNewline(output);
-        
-        SimpleTextUtil.write(output, SI_DIAG_VALUE);
-        SimpleTextUtil.write(output, diagEntry.getValue(), scratch);
-        SimpleTextUtil.writeNewline(output);
-      }
-    }
-  }
-
-  @Override
-  public void prepareCommit(IndexOutput out) throws IOException {
-    ((ChecksumIndexOutput)out).prepareCommit();
-  }
-
-  @Override
-  public void finishCommit(IndexOutput out) throws IOException {
-    ((ChecksumIndexOutput)out).finishCommit();
-    out.close();
   }
 }

@@ -169,8 +169,9 @@ public class MockDirectoryWrapper extends Directory {
   public synchronized void sync(Collection<String> names) throws IOException {
     maybeYield();
     maybeThrowDeterministicException();
-    if (crashed)
+    if (crashed) {
       throw new IOException("cannot sync after crash");
+    }
     unSyncedFiles.removeAll(names);
     if (LuceneTestCase.rarely(randomState) || delegate instanceof NRTCachingDirectory) {
       // don't wear out our hardware so much in tests.
@@ -506,8 +507,9 @@ public class MockDirectoryWrapper extends Directory {
     if (failOnOpenInput) {
       maybeThrowDeterministicException();
     }
-    if (!delegate.fileExists(name))
-      throw new FileNotFoundException(name);
+    if (!delegate.fileExists(name)) {
+      throw new FileNotFoundException(name + " in dir=" + delegate);
+    }
 
     // cannot open a file for input if it's still open for
     // output, except for segments.gen and segments_N

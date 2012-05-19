@@ -148,7 +148,8 @@ public class Lucene3xCodec extends Codec {
     // never inside CFS
     liveDocsFormat().files(info, files);
     ((Lucene3xNormsFormat)normsFormat()).separateFiles(info, files);
-    
+    segmentInfosFormat().files(info, files);
+
     // shared docstores: these guys check the hair
     if (info.getDocStoreOffset() != -1) {
       storedFieldsFormat().files(info, files);

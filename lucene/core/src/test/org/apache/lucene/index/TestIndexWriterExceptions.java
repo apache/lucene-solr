@@ -800,6 +800,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         for (int i = 0; i < trace.length; i++) {
           if (doFail && MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "sync".equals(trace[i].getMethodName())) {
             didFail = true;
+            if (VERBOSE) {
+              System.out.println("TEST: now throw exc:");
+              new Throwable().printStackTrace(System.out);
+            }
             throw new IOException("now failing on purpose during sync");
           }
         }

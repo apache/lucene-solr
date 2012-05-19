@@ -132,7 +132,7 @@ public class IndexSplitter {
       infos.remove(idx);
     }
     infos.changed();
-    infos.commit(fsDir, infos.codecFormat());
+    infos.commit(fsDir);
   }
 
   public void split(File destDir, String[] segs) throws IOException {
@@ -142,7 +142,11 @@ public class IndexSplitter {
     destInfos.counter = infos.counter;
     for (String n : segs) {
       SegmentInfo info = getInfo(n);
-      destInfos.add(info);
+      // Same info just changing the dir:
+      SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.docCount, info.getDocStoreOffset(),
+                                            info.getDocStoreSegment(), info.getDocStoreIsCompoundFile(), info.getNormGen(), info.getUseCompoundFile(),
+                                            info.getDelCount(), info.getCodec(), info.getDiagnostics());
+      destInfos.add(newInfo);
       // now copy files over
       List<String> files = info.files();
       for (final String srcName : files) {
@@ -152,7 +156,7 @@ public class IndexSplitter {
       }
     }
     destInfos.changed();
-    destInfos.commit(destFSDir, infos.codecFormat());
+    destInfos.commit(destFSDir);
     // System.out.println("destDir:"+destDir.getAbsolutePath());
   }
 

@@ -24,7 +24,7 @@ import org.apache.lucene.codecs.SegmentInfosWriter;
  */
 class PreFlexRWSegmentInfosFormat extends Lucene3xSegmentInfosFormat {
   private final SegmentInfosWriter writer = new PreFlexRWSegmentInfosWriter();
-  
+
   @Override
   public SegmentInfosWriter getSegmentInfosWriter() {
     return writer;

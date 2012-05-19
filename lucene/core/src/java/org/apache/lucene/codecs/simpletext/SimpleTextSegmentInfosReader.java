@@ -24,12 +24,14 @@ import java.util.Map;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.SegmentInfosReader;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
@@ -44,8 +46,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfosWriter.*
  */
 public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
 
-  @Override
-  public void read(Directory directory, String segmentsFileName, ChecksumIndexInput input, SegmentInfos infos, IOContext context) throws IOException {
+  /*
     final BytesRef scratch = new BytesRef();
     
     SimpleTextUtil.readLine(input, scratch);
@@ -80,89 +81,96 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
       infos.add(readSegmentInfo(directory, input, scratch));
     }
   }
+  */
   
-  public SegmentInfo readSegmentInfo(Directory directory, DataInput input, BytesRef scratch) throws IOException {
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_NAME);
-    final String name = readString(SI_NAME.length, scratch);
+  @Override
+  public SegmentInfo read(Directory directory, String segmentName) throws IOException {
+    BytesRef scratch = new BytesRef();
+    String fileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
+    IndexInput input = directory.openInput(fileName, IOContext.READONCE);
+    boolean success = false;
+    try {
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_VERSION);
+      final String version = readString(SI_VERSION.length, scratch);
     
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_CODEC);
-    final Codec codec = Codec.forName(readString(SI_CODEC.length, scratch));
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_DOCCOUNT);
+      final int docCount = Integer.parseInt(readString(SI_DOCCOUNT.length, scratch));
     
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_VERSION);
-    final String version = readString(SI_VERSION.length, scratch);
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_DELCOUNT);
+      final int delCount = Integer.parseInt(readString(SI_DELCOUNT.length, scratch));
     
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_DOCCOUNT);
-    final int docCount = Integer.parseInt(readString(SI_DOCCOUNT.length, scratch));
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_USECOMPOUND);
+      final boolean isCompoundFile = Boolean.parseBoolean(readString(SI_USECOMPOUND.length, scratch));
     
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_DELCOUNT);
-    final int delCount = Integer.parseInt(readString(SI_DELCOUNT.length, scratch));
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_DSOFFSET);
+      final int dsOffset = Integer.parseInt(readString(SI_DSOFFSET.length, scratch));
     
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_USECOMPOUND);
-    final boolean isCompoundFile = Boolean.parseBoolean(readString(SI_USECOMPOUND.length, scratch));
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_DSSEGMENT);
+      final String dsSegment = readString(SI_DSSEGMENT.length, scratch);
     
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_DSOFFSET);
-    final int dsOffset = Integer.parseInt(readString(SI_DSOFFSET.length, scratch));
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_DSCOMPOUND);
+      final boolean dsCompoundFile = Boolean.parseBoolean(readString(SI_DSCOMPOUND.length, scratch));
     
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_DSSEGMENT);
-    final String dsSegment = readString(SI_DSSEGMENT.length, scratch);
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_DELGEN);
+      final long delGen = Long.parseLong(readString(SI_DELGEN.length, scratch));
     
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_DSCOMPOUND);
-    final boolean dsCompoundFile = Boolean.parseBoolean(readString(SI_DSCOMPOUND.length, scratch));
-    
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_DELGEN);
-    final long delGen = Long.parseLong(readString(SI_DELGEN.length, scratch));
-    
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_NUM_NORMGEN);
-    final int numNormGen = Integer.parseInt(readString(SI_NUM_NORMGEN.length, scratch));
-    final Map<Integer,Long> normGen;
-    if (numNormGen == 0) {
-      normGen = null;
-    } else {
-      normGen = new HashMap<Integer,Long>();
-      for (int i = 0; i < numNormGen; i++) {
-        SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, SI_NORMGEN_KEY);
-        int key = Integer.parseInt(readString(SI_NORMGEN_KEY.length, scratch));
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_NUM_NORMGEN);
+      final int numNormGen = Integer.parseInt(readString(SI_NUM_NORMGEN.length, scratch));
+      final Map<Integer,Long> normGen;
+      if (numNormGen == 0) {
+        normGen = null;
+      } else {
+        normGen = new HashMap<Integer,Long>();
+        for (int i = 0; i < numNormGen; i++) {
+          SimpleTextUtil.readLine(input, scratch);
+          assert StringHelper.startsWith(scratch, SI_NORMGEN_KEY);
+          int key = Integer.parseInt(readString(SI_NORMGEN_KEY.length, scratch));
         
+          SimpleTextUtil.readLine(input, scratch);
+          assert StringHelper.startsWith(scratch, SI_NORMGEN_VALUE);
+          long value = Long.parseLong(readString(SI_NORMGEN_VALUE.length, scratch));
+          normGen.put(key, value);
+        }
+      }
+    
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_NUM_DIAG);
+      int numDiag = Integer.parseInt(readString(SI_NUM_DIAG.length, scratch));
+      Map<String,String> diagnostics = new HashMap<String,String>();
+
+      for (int i = 0; i < numDiag; i++) {
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, SI_NORMGEN_VALUE);
-        long value = Long.parseLong(readString(SI_NORMGEN_VALUE.length, scratch));
-        normGen.put(key, value);
+        assert StringHelper.startsWith(scratch, SI_DIAG_KEY);
+        String key = readString(SI_DIAG_KEY.length, scratch);
+      
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch, SI_DIAG_VALUE);
+        String value = readString(SI_DIAG_VALUE.length, scratch);
+        diagnostics.put(key, value);
+      }
+
+      success = true;
+      return new SegmentInfo(directory, version, segmentName, docCount, dsOffset,
+                             dsSegment, dsCompoundFile, normGen, isCompoundFile,
+                             delCount, null, diagnostics);
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(input);
+      } else {
+        input.close();
       }
     }
-    
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_NUM_DIAG);
-    int numDiag = Integer.parseInt(readString(SI_NUM_DIAG.length, scratch));
-    Map<String,String> diagnostics = new HashMap<String,String>();
-
-    for (int i = 0; i < numDiag; i++) {
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, SI_DIAG_KEY);
-      String key = readString(SI_DIAG_KEY.length, scratch);
-      
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, SI_DIAG_VALUE);
-      String value = readString(SI_DIAG_VALUE.length, scratch);
-      diagnostics.put(key, value);
-    }
-    
-    return new SegmentInfo(directory, version, name, docCount, delGen, dsOffset,
-        dsSegment, dsCompoundFile, normGen, isCompoundFile,
-        delCount, codec, diagnostics);
   }
-  
+
   private String readString(int offset, BytesRef scratch) {
     return new String(scratch.bytes, scratch.offset+offset, scratch.length-offset, IOUtils.CHARSET_UTF_8);
   }

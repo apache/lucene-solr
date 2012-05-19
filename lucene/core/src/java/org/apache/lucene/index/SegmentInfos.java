@@ -34,13 +34,19 @@ import java.util.Set;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.SegmentInfosReader;
 import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
+import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfosFormat;
+import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfosReader;
 import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.DataOutput; // javadocs
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoSuchDirectoryException;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -87,43 +93,25 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   // also i think this class should write this, somehow we let 
   // preflexrw hackishly override this (like seek backwards and overwrite it)
 
-  /** This format adds optional per-segment String
-   *  diagnostics storage, and switches userData to Map */
-  public static final int FORMAT_DIAGNOSTICS = -9;
+  // nocommit fix to read 3.x...
 
-  /** Each segment records whether it has term vectors */
-  public static final int FORMAT_HAS_VECTORS = -10;
+  public static final int VERSION_40 = 0;
 
-  /** Each segment records the Lucene version that created it. */
-  public static final int FORMAT_3_1 = -11;
-
-  /** Each segment records whether its postings are written
-   *  in the new flex format */
-  public static final int FORMAT_4_0 = -12;
-
-  /** This must always point to the most recent file format.
-   * whenever you add a new format, make it 1 smaller (negative version logic)! */
-  // TODO: move this, as its currently part of required preamble
-  public static final int FORMAT_CURRENT = FORMAT_4_0;
-  
-  /** This must always point to the first supported file format. */
-  public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;
-  
   /** Used for the segments.gen file only!
    * Whenever you add a new format, make it 1 smaller (negative version logic)! */
   public static final int FORMAT_SEGMENTS_GEN_CURRENT = -2;
-    
+
   public int counter;    // used to name new segments
   
   /**
    * counts how often the index has been changed
    */
   public long version;
-  
+
   private long generation;     // generation of the "segments_N" for the next commit
   private long lastGeneration; // generation of the "segments_N" file we last successfully read
-                                   // or wrote; this is normally the same as generation except if
-                                   // there was an IOException that had interrupted a commit
+                               // or wrote; this is normally the same as generation except if
+                               // there was an IOException that had interrupted a commit
 
   public Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
 
@@ -278,41 +266,55 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     // TODO: scary to have default impl reopen the file... but to make it a bit more flexible,
     // maybe we could use a plain indexinput here... could default impl rewind/wrap with checksumII,
     // and any checksumming is then up to implementation?
-    ChecksumIndexInput input = null;
+    ChecksumIndexInput input = new ChecksumIndexInput(directory.openInput(segmentFileName, IOContext.READ));
     try {
-      input = new ChecksumIndexInput(directory.openInput(segmentFileName, IOContext.READ));
       final int format = input.readInt();
-      setFormat(format);
-    
-      // check that it is a format we can understand
-      if (format > FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(input, format,
-          FORMAT_MINIMUM, FORMAT_CURRENT);
-      if (format < FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(input, format,
-          FORMAT_MINIMUM, FORMAT_CURRENT);
-
-      if (format <= FORMAT_4_0) {
-        codecFormat = Codec.forName(input.readString());
+      final boolean checkCheckSum;
+      if (format == CodecUtil.CODEC_MAGIC) {
+        // 4.0+
+        CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_40);
+        version = input.readLong();
+        counter = input.readInt();
+        int numSegments = input.readInt();
+        for(int seg=0;seg<numSegments;seg++) {
+          String segName = input.readString();
+          Codec codec = Codec.forName(input.readString());
+          //System.out.println("SIS.read seg=" + seg + " codec=" + codec);
+          SegmentInfo info = codec.segmentInfosFormat().getSegmentInfosReader().read(directory, segName);
+          info.setCodec(codec);
+          info.setDelGen(input.readLong());
+          info.setDelCount(input.readInt());
+          add(info);
+        }
+        userData = input.readStringStringMap();
       } else {
-        codecFormat = Codec.forName("Lucene3x");
+        // nocommit 3.x needs normGens too ... we can push
+        // down to make this 3.x private????
+        Lucene3xSegmentInfosReader.readLegacyInfos(this, directory, input, format);
+        Codec codec = Codec.forName("Lucene3x");
+        for (SegmentInfo info : this) {
+          info.setCodec(codec);
+        }
       }
-      SegmentInfosReader infosReader = codecFormat.segmentInfosFormat().getSegmentInfosReader();
-      infosReader.read(directory, segmentFileName, input, this, IOContext.READ);
+
+      // nocommit all 3.x indices have checksum right...????
+      // ie we added it during 2.x? i think so!
+
       final long checksumNow = input.getChecksum();
       final long checksumThen = input.readLong();
-      if (checksumNow != checksumThen)
+      if (checksumNow != checksumThen) {
         throw new CorruptIndexException("checksum mismatch in segments file (resource: " + input + ")");
-      success = true;
-    }
-    finally {
-      if (input != null) {
-        input.close();
       }
+
+      success = true;
+    } finally {
       if (!success) {
         // Clear any segment infos we had loaded so we
         // have a clean slate on retry:
         this.clear();
+        IOUtils.closeWhileHandlingException(input);
+      } else {
+        input.close();
       }
     }
   }
@@ -332,9 +334,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
   // Only non-null after prepareCommit has been called and
   // before finishCommit is called
-  IndexOutput pendingSegnOutput;
+  ChecksumIndexOutput pendingSegnOutput;
 
-  private void write(Directory directory, Codec codec) throws IOException {
+  private void write(Directory directory) throws IOException {
 
     String segmentFileName = getNextSegmentFileName();
     
@@ -345,15 +347,43 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       generation++;
     }
     
-    IndexOutput segnOutput = null;
-    
-
+    ChecksumIndexOutput segnOutput = null;
     boolean success = false;
 
+    // nocommit document somewhere taht we store this
+    // list-of-segs plus delGen plus other stuff
+    // "generically" and then codec gets to write SI
+
     try {
-      SegmentInfosWriter infosWriter = codec.segmentInfosFormat().getSegmentInfosWriter();
-      segnOutput = infosWriter.writeInfos(directory, segmentFileName, codec.getName(), this, IOContext.DEFAULT);
-      infosWriter.prepareCommit(segnOutput);
+      // nocommit what IOCtx to use...
+      segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName, new IOContext(new FlushInfo(totalDocCount(), 0))));
+      CodecUtil.writeHeader(segnOutput, "segments", VERSION_40);
+      segnOutput.writeLong(version); 
+      segnOutput.writeInt(counter); // write counter
+      segnOutput.writeInt(size()); // write infos
+      Codec codec3X = Codec.forName("Lucene3x");
+      for (SegmentInfo si : this) {
+        segnOutput.writeString(si.name);
+        segnOutput.writeString(si.getCodec().getName());
+        segnOutput.writeLong(si.getDelGen());
+        segnOutput.writeInt(si.getDelCount());
+        assert si.dir == directory;
+
+        // nocommit hacky!
+        String version = si.getVersion();
+        if (version == null || version.startsWith("3.")) {
+          String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
+          if (!directory.fileExists(fileName)) {
+            //System.out.println("write 3x info seg=" + si.name + " version=" + si.getVersion() + " codec=" + si.getCodec().getName());
+            write3xInfo(si);
+            // nocommit do this after, on success...
+            //si.setVersion("4.0");
+            si.clearFilesCache();
+          }
+        }
+      }
+      segnOutput.writeStringStringMap(userData);
+      segnOutput.prepareCommit();
       pendingSegnOutput = segnOutput;
       success = true;
     } finally {
@@ -361,6 +391,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         // We hit an exception above; try to close the file
         // but suppress any exception:
         IOUtils.closeWhileHandlingException(segnOutput);
+
+        // nocommit must also remove any written .si files...
+
         try {
           // Try not to leave a truncated segments_N file in
           // the index:
@@ -368,6 +401,66 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         } catch (Throwable t) {
           // Suppress so we keep throwing the original exception
         }
+      }
+    }
+  }
+
+  // nocommit copy of PreflexRWSegmentInfosWriter.write!!
+
+  @Deprecated
+  public void write3xInfo(SegmentInfo si) throws IOException {
+
+    // NOTE: this is NOT how 3.x is really written...
+    String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
+    //System.out.println("UPGRADE write " + fileName);
+    // nocommit what IOCtx
+    boolean success = false;
+
+    IndexOutput output = si.dir.createOutput(fileName, new IOContext(new FlushInfo(0, 0)));
+    try {
+      // we are about to write this SI in 3.x format, dropping all codec information, etc.
+      // so it had better be a 3.x segment or you will get very confusing errors later.
+      assert si.getCodec() instanceof Lucene3xCodec : "broken test, trying to mix preflex with other codecs";
+      assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
+      // Write the Lucene version that created this segment, since 3.1
+      output.writeString(si.getVersion());
+      output.writeString(si.name);
+      output.writeInt(si.docCount);
+      output.writeLong(si.getDelGen());
+
+      output.writeInt(si.getDocStoreOffset());
+      if (si.getDocStoreOffset() != -1) {
+        output.writeString(si.getDocStoreSegment());
+        output.writeByte((byte) (si.getDocStoreIsCompoundFile() ? 1:0));
+      }
+      // pre-4.0 indexes write a byte if there is a single norms file
+      output.writeByte((byte) 1);
+
+      Map<Integer,Long> normGen = si.getNormGen();
+      if (normGen == null) {
+        output.writeInt(SegmentInfo.NO);
+      } else {
+        output.writeInt(normGen.size());
+        for (Map.Entry<Integer,Long> entry : normGen.entrySet()) {
+          output.writeLong(entry.getValue());
+        }
+      }
+
+      output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
+      output.writeInt(si.getDelCount());
+      // hasProx:
+      output.writeByte((byte) 1);
+      output.writeStringStringMap(si.getDiagnostics());
+      // hasVectors:
+      output.writeByte((byte) 1);
+
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(output);
+        si.dir.deleteFile(fileName);
+      } else {
+        output.close();
       }
     }
   }
@@ -730,10 +823,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    *  method if changes have been made to this {@link SegmentInfos} instance
    *  </p>  
    **/
-  final void prepareCommit(Directory dir, Codec codec) throws IOException {
-    if (pendingSegnOutput != null)
+  final void prepareCommit(Directory dir) throws IOException {
+    if (pendingSegnOutput != null) {
       throw new IllegalStateException("prepareCommit was already called");
-    write(dir, codec);
+    }
+    write(dir);
   }
 
   /** Returns all file names referenced by SegmentInfo
@@ -763,18 +857,22 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     return files;
   }
 
-  final void finishCommit(Directory dir, Codec codec) throws IOException {
-    if (pendingSegnOutput == null)
+  final void finishCommit(Directory dir) throws IOException {
+    if (pendingSegnOutput == null) {
       throw new IllegalStateException("prepareCommit was not called");
+    }
     boolean success = false;
     try {
-      SegmentInfosWriter infosWriter = codec.segmentInfosFormat().getSegmentInfosWriter();
-      infosWriter.finishCommit(pendingSegnOutput);
-      pendingSegnOutput = null;
+      pendingSegnOutput.finishCommit();
       success = true;
     } finally {
-      if (!success)
+      if (!success) {
+        IOUtils.closeWhileHandlingException(pendingSegnOutput);
         rollbackCommit(dir);
+      } else {
+        pendingSegnOutput.close();
+        pendingSegnOutput = null;
+      }
     }
 
     // NOTE: if we crash here, we have left a segments_N
@@ -836,9 +934,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    *  method if changes have been made to this {@link SegmentInfos} instance
    *  </p>  
    **/
-  final void commit(Directory dir, Codec codec) throws IOException {
-    prepareCommit(dir, codec);
-    finishCommit(dir, codec);
+  final void commit(Directory dir) throws IOException {
+    prepareCommit(dir);
+    finishCommit(dir);
   }
 
   public String toString(Directory directory) {

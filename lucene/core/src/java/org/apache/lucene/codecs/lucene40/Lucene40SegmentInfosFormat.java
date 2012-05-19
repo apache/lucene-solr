@@ -17,6 +17,9 @@ package org.apache.lucene.codecs.lucene40;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Set;
+
 import org.apache.lucene.codecs.Codec; // javadocs
 import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
 import org.apache.lucene.codecs.SegmentInfosFormat;
@@ -25,7 +28,9 @@ import org.apache.lucene.codecs.SegmentInfosWriter;
 import org.apache.lucene.codecs.StoredFieldsFormat; // javadocs
 import org.apache.lucene.codecs.TermVectorsFormat; // javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions; // javadocs
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter; // javadocs
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos; // javadocs
 import org.apache.lucene.store.DataOutput; // javadocs
 
@@ -128,5 +133,12 @@ public class Lucene40SegmentInfosFormat extends SegmentInfosFormat {
   @Override
   public SegmentInfosWriter getSegmentInfosWriter() {
     return writer;
+  }
+
+  public final static String SI_EXTENSION = "si";
+  
+  @Override
+  public void files(SegmentInfo segmentInfo, Set<String> files) {
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SI_EXTENSION));
   }
 }

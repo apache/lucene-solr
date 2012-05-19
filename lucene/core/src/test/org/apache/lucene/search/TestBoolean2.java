@@ -72,7 +72,13 @@ public class TestBoolean2 extends LuceneTestCase {
     // First multiply small test index:
     mulFactor = 1;
     int docCount = 0;
+    if (VERBOSE) {
+      System.out.println("\nTEST: now copy index...");
+    }
     do {
+      if (VERBOSE) {
+        System.out.println("\nTEST: cycle...");
+      }
       final Directory copy = new MockDirectoryWrapper(random(), new RAMDirectory(dir2, IOContext.DEFAULT));
       RandomIndexWriter w = new RandomIndexWriter(random(), dir2);
       w.addIndexes(copy);

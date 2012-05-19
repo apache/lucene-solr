@@ -126,7 +126,11 @@ public final class CodecUtil {
     if (actualHeader != CODEC_MAGIC) {
       throw new CorruptIndexException("codec header mismatch: actual header=" + actualHeader + " vs expected header=" + CODEC_MAGIC + " (resource: " + in + ")");
     }
+    return checkHeaderNoMagic(in, codec, minVersion, maxVersion);
+  }
 
+  // nocommit jdocs
+  public static int checkHeaderNoMagic(DataInput in, String codec, int minVersion, int maxVersion) throws IOException {
     final String actualCodec = in.readString();
     if (!actualCodec.equals(codec)) {
       throw new CorruptIndexException("codec mismatch: actual codec=" + actualCodec + " vs expected codec=" + codec + " (resource: " + in + ")");

@@ -17,6 +17,9 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import java.util.Set;
+
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos; // javadocs
 
 /**
@@ -29,6 +32,9 @@ import org.apache.lucene.index.SegmentInfos; // javadocs
  * @see SegmentInfos
  * @lucene.experimental
  */
+
+// nocommit rename (remove the s?)
+
 // TODO: would be great to handle this situation better.
 // ideally a custom implementation could implement two-phase commit differently,
 // (e.g. atomic rename), and ideally all versions of lucene could still read it.
@@ -39,4 +45,5 @@ import org.apache.lucene.index.SegmentInfos; // javadocs
 public abstract class SegmentInfosFormat {
   public abstract SegmentInfosReader getSegmentInfosReader();
   public abstract SegmentInfosWriter getSegmentInfosWriter();
+  public abstract void files(SegmentInfo info, Set<String> files);
 }

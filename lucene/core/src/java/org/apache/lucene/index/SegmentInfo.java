@@ -41,17 +41,19 @@ import org.apache.lucene.util.Constants;
  *
  * @lucene.experimental
  */
-public final class SegmentInfo implements Cloneable {
-  public static final int CHECK_FIELDINFO = -2;
+public class SegmentInfo implements Cloneable {
   
   // TODO: remove these from this class, for now this is the representation
   public static final int NO = -1;          // e.g. no norms; no deletes;
   public static final int YES = 1;          // e.g. have norms; have deletes;
   public static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
 
-  public String name;				  // unique name in dir
+  public final String name;				  // unique name in dir
+  // nocommit make me final:
   public int docCount;				  // number of docs in seg
-  public Directory dir;				  // where segment resides
+  public final Directory dir;				  // where segment resides
+
+  // nocommit what other members can we make final?
 
   /*
    * Current generation of del file:
@@ -129,14 +131,14 @@ public final class SegmentInfo implements Cloneable {
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
    */
-  public SegmentInfo(Directory dir, String version, String name, int docCount, long delGen, int docStoreOffset,
-      String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
-      int delCount, Codec codec, Map<String,String> diagnostics) {
+  public SegmentInfo(Directory dir, String version, String name, int docCount, int docStoreOffset,
+                     String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
+                     int delCount, Codec codec, Map<String,String> diagnostics) {
     this.dir = dir;
     this.version = version;
     this.name = name;
     this.docCount = docCount;
-    this.delGen = delGen;
+    this.delGen = NO;
     this.docStoreOffset = docStoreOffset;
     this.docStoreSegment = docStoreSegment;
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
@@ -192,6 +194,7 @@ public final class SegmentInfo implements Cloneable {
     clearFilesCache();
   }
 
+  // nocommit this is dangerous... because we lose the codec's customzied class...
   @Override
   public SegmentInfo clone() {
     final HashMap<Integer,Long> clonedNormGen;
@@ -204,9 +207,11 @@ public final class SegmentInfo implements Cloneable {
       clonedNormGen = null;
     }
 
-    return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
-                           docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
-                           delCount, codec, new HashMap<String,String>(diagnostics));
+    SegmentInfo newInfo = new SegmentInfo(dir, version, name, docCount, docStoreOffset,
+                                          docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
+                                          delCount, codec, new HashMap<String,String>(diagnostics));
+    newInfo.setDelGen(delGen);
+    return newInfo;
   }
 
   /**
@@ -253,6 +258,10 @@ public final class SegmentInfo implements Cloneable {
   void setDelCount(int delCount) {
     this.delCount = delCount;
     assert delCount <= docCount;
+  }
+
+  public void setDelGen(long delGen) {
+    this.delGen = delGen;
   }
 
   /**
@@ -307,7 +316,7 @@ public final class SegmentInfo implements Cloneable {
     return codec;
   }
 
-  // nocommit move elsewhere?  IndexFileNames?
+  // noocmmit nuke this and require, once again, that a codec puts PRECISELY the files that exist into the file set...
   public static List<String> findMatchingFiles(String segmentName, Directory dir, Set<String> namesOrPatterns) {
     // nocommit need more efficient way to do this?
     List<String> files = new ArrayList<String>();
@@ -321,6 +330,10 @@ public final class SegmentInfo implements Cloneable {
     List<Pattern> compiledPatterns = new ArrayList<Pattern>();
     for(String nameOrPattern : namesOrPatterns) {
       boolean exists = false;
+      // nocommit hack -- remove (needed now because si's -1 gen will return null file name):
+      if (nameOrPattern == null) {
+        continue;
+      }
       try {
         exists = dir.fileExists(nameOrPattern);
       } catch (IOException ioe) {
@@ -368,7 +381,8 @@ public final class SegmentInfo implements Cloneable {
 
   /* Called whenever any change is made that affects which
    * files this segment has. */
-  private void clearFilesCache() {
+  // nocommit make private again
+  void clearFilesCache() {
     sizeInBytes = -1;
     files = null;
   }

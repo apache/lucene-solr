@@ -732,6 +732,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final FieldNumberBiMap map  = new FieldNumberBiMap();
 
     if (segmentInfos.size() > 0) {
+      // nocommit fixme for 3.x indices...
+      /*
       if (segmentInfos.getFormat() > SegmentInfos.FORMAT_DIAGNOSTICS) {
         // Pre-3.1 index.  In this case we sweep all
         // segments, merging their FieldInfos:
@@ -741,12 +743,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
         }
       } else {
+      */
         // Already >= 3.1 index; just seed the FieldInfos
         // from the last segment
         for(FieldInfo fi : getFieldInfos(segmentInfos.info(segmentInfos.size()-1))) {
           map.addOrGet(fi.name, fi.number);
         }
-      }
+
+        // nocommit we can also pull the DV types of the
+        // fields... and catch DV type change on addDoc
+        // instead of much later in merge
+        //}
     }
 
     return map;
@@ -2020,6 +2027,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           infoStream.message("IW", "creating compound file " + compoundFileName);
         }
         // Now build compound file
+        // nocommit factor to use craeteCompoundFile method!?
         final Directory cfsDir = new CompoundFileDirectory(directory, compoundFileName, context, true);
         IOException prior = null;
         try {
@@ -2039,6 +2047,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
         newSegment.setUseCompoundFile(true);
       }
+
+      // Have codec write SegmentInfo.  Must do this after
+      // creating CFS so that 1) .si isn't slurped into CFS,
+      // and 2) .si reflects useCompoundFile=true change
+      // above:
+      codec.segmentInfosFormat().getSegmentInfosWriter().write(newSegment, flushedSegment.fieldInfos);
+      newSegment.clearFilesCache();
+
+      // nocommit ideally we would freeze merge.info here!!
+      // because any changes after writing the .si will be
+      // lost... 
 
       // Must write deleted docs after the CFS so we don't
       // slurp the del file into CFS:
@@ -2208,6 +2227,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         sis.read(dir);
         final Set<String> dsFilesCopied = new HashSet<String>();
         final Map<String, String> dsNames = new HashMap<String, String>();
+        final Set<String> copiedFiles = new HashSet<String>();
         for (SegmentInfo info : sis) {
           assert !infos.contains(info): "dup info dir=" + info.dir + " name=" + info.name;
 
@@ -2220,9 +2240,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
           IOContext context = new IOContext(new MergeInfo(info.docCount, info.sizeInBytes(), true, -1));
           
-          copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied, context);
-
-          infos.add(info);
+          infos.add(copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied, context, copiedFiles));
         }
       }
 
@@ -2289,7 +2307,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       MergeState mergeState = merger.merge();                // merge 'em
       int docCount = mergeState.mergedDocCount;
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, docCount,
-                                         SegmentInfo.NO, -1, mergedName, false, null, false, 0,
+                                         -1, mergedName, false, null, false, 0,
                                          codec, null);
                                          
       setDiagnostics(info, "addIndexes(IndexReader...)");
@@ -2316,6 +2334,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         info.setUseCompoundFile(true);
       }
 
+      // Have codec write SegmentInfo.  Must do this after
+      // creating CFS so that 1) .si isn't slurped into CFS,
+      // and 2) .si reflects useCompoundFile=true change
+      // above:
+      codec.segmentInfosFormat().getSegmentInfosWriter().write(info, mergeState.fieldInfos);
+      info.clearFilesCache();
+
       // Register the new segment
       synchronized(this) {
         if (stopMerges) {
@@ -2332,8 +2357,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
-  private void copySegmentAsIs(SegmentInfo info, String segName,
-      Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context)
+  private SegmentInfo copySegmentAsIs(SegmentInfo info, String segName,
+                                      Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context,
+                                      Set<String> copiedFiles)
       throws IOException {
     // Determine if the doc store of this segment needs to be copied. It's
     // only relevant for segments that share doc store with others,
@@ -2352,12 +2378,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     Set<String> codecDocStoreFiles = new HashSet<String>();
     if (info.getDocStoreOffset() != -1) {
       // only violate the codec this way if its preflex
-      codec.storedFieldsFormat().files(info, codecDocStoreFiles);
-      codec.termVectorsFormat().files(info, codecDocStoreFiles);
+      info.getCodec().storedFieldsFormat().files(info, codecDocStoreFiles);
+      info.getCodec().termVectorsFormat().files(info, codecDocStoreFiles);
     }
+
+    //System.out.println("copy seg=" + info.name + " version=" + info.getVersion());
     
     // Copy the segment files
     for (String file: info.files()) {
+
+      // nocommit messy: insteda we should pull .files()
+      // from the codec's SIFormat and check if it's in
+      // there...
+      if (file.endsWith(".si")) {
+        continue;
+      }
+
       final String newFileName;
       if (codecDocStoreFiles.contains(file)) {
         newFileName = newDsName + IndexFileNames.stripSegmentName(file);
@@ -2368,14 +2404,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       } else {
         newFileName = segName + IndexFileNames.stripSegmentName(file);
       }
-      
+
       assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+      assert !copiedFiles.contains(file): "file \"" + file + "\" is being copied more than once";
+      copiedFiles.add(file);
+      //System.out.println("COPY " + file + " -> " + newFileName);
       info.dir.copy(directory, file, newFileName, context);
     }
     
-    info.setDocStore(info.getDocStoreOffset(), newDsName, info.getDocStoreIsCompoundFile());
-    info.dir = directory;
-    info.name = segName;
+    // Same SI as before but we change directory and name:
+    SegmentInfo newInfo = new SegmentInfo(directory, info.getVersion(), segName, info.docCount, info.getDocStoreOffset(),
+                                          newDsName, info.getDocStoreIsCompoundFile(), info.getNormGen(), info.getUseCompoundFile(),
+                                          info.getDelCount(), info.getCodec(), info.getDiagnostics());
+    newInfo.setDelGen(info.getDelGen());
+
+    // nocommit need to pass real FIS...
+    // nocommit maybe we don't pass FIS......?
+    // nocommit messy....
+    //if (!newInfo.getCodec().getName().equals("Lucene3x")) {
+    if (!newInfo.getVersion().startsWith("3.")) {
+      //System.out.println("  now write si for seg=" + newInfo.name + " codec=" + newInfo.getCodec());
+      newInfo.getCodec().segmentInfosFormat().getSegmentInfosWriter().write(newInfo, null);
+    }
+    
+    return newInfo;
   }
   
   /**
@@ -2614,7 +2666,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: pendingCommit != null");
         }
-        pendingCommit.finishCommit(directory, codec);
+        pendingCommit.finishCommit(directory);
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: wrote segments file \"" + pendingCommit.getSegmentsFileName() + "\"");
         }
@@ -3195,15 +3247,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot merge");
     }
 
-    // TODO: is there any perf benefit to sorting
-    // merged segments?  eg biggest to smallest?
-
-    if (merge.info != null)
+    if (merge.info != null) {
       // mergeInit already done
       return;
+    }
 
-    if (merge.isAborted())
+    if (merge.isAborted()) {
       return;
+    }
 
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
@@ -3440,6 +3491,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // ctor when we make the merge.info:
       merge.info.setCodec(codec);
 
+      // nocommit should segment merger do this!?  else
+      // other places must do so...??? addIndexes...
+
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "merge codec=" + codec + " docCount=" + mergedDocCount + "; merged segment has " +
                            (mergeState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
@@ -3513,6 +3567,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
         merge.info.setUseCompoundFile(true);
       }
+
+      // nocommit need try/success thingy...?  ie must
+      // remove all seg files if we fail to write the .si?
+
+      // Have codec write SegmentInfo.  Must do this after
+      // creating CFS so that 1) .si isn't slurped into CFS,
+      // and 2) .si reflects useCompoundFile=true change
+      // above:
+      codec.segmentInfosFormat().getSegmentInfosWriter().write(merge.info, mergeState.fieldInfos);
+      merge.info.clearFilesCache();
+
+      // nocommit ideally we would freeze merge.info here!!
+      // because any changes after writing the .si will be
+      // lost... 
 
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", String.format("merged segment size=%.3f MB vs estimate=%.3f MB", merge.info.sizeInBytes()/1024./1024., merge.estimatedMergeBytes/1024/1024.));
@@ -3706,9 +3774,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       boolean pendingCommitSet = false;
 
       try {
-        // This call can take a long time -- 10s of seconds
-        // or more.  We do it without sync:
-        directory.sync(toSync.files(directory, false));
 
         assert testPoint("midStartCommit2");
 
@@ -3721,14 +3786,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // Exception here means nothing is prepared
           // (this method unwinds everything it did on
           // an exception)
-          toSync.prepareCommit(directory, codec);
+          toSync.prepareCommit(directory);
+          //System.out.println("DONE prepareCommit");
 
           pendingCommitSet = true;
           pendingCommit = toSync;
         }
 
+        // nocommit move this back above...?  problem is
+        // prepareCommit writes on the _X.si files... which
+        // of course need to be sync'd too...
+        // This call can take a long time -- 10s of seconds
+        // or more.  We do it without sync:
+        boolean success = false;
+        final Collection<String> filesToSync = toSync.files(directory, false);
+        try {
+          directory.sync(filesToSync);
+          success = true;
+        } finally {
+          if (!success) {
+            pendingCommitSet = false;
+            pendingCommit = null;
+            toSync.rollbackCommit(directory);
+          }
+        }
+
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "done all syncs");
+          infoStream.message("IW", "done all syncs: " + filesToSync);
         }
 
         assert testPoint("midStartCommitSuccess");

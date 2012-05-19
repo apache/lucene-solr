@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 
@@ -46,7 +47,7 @@ public class AppendingCodec extends Codec {
   }
 
   private final PostingsFormat postings = new AppendingPostingsFormat();
-  private final SegmentInfosFormat infos = new AppendingSegmentInfosFormat();
+  private final SegmentInfosFormat infos = new Lucene40SegmentInfosFormat();
   private final StoredFieldsFormat fields = new Lucene40StoredFieldsFormat();
   private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat();
   private final TermVectorsFormat vectors = new Lucene40TermVectorsFormat();

@@ -26,6 +26,7 @@ import java.util.zip.Checksum;
  *
  * @lucene.internal
  */
+// nocommit fixme to not seek backwards...
 public class ChecksumIndexOutput extends IndexOutput {
   IndexOutput main;
   Checksum digest;
@@ -84,10 +85,14 @@ public class ChecksumIndexOutput extends IndexOutput {
     // are able to write a long to the file, but 2) not
     // actually "commit" the file yet.  This (prepare
     // commit) is phase 1 of a two-phase commit.
+    // nocommit fixme... or just nuke?  appending codec
+    // fails w/ this:
+    /*
     final long pos = main.getFilePointer();
     main.writeLong(checksum-1);
     main.flush();
     main.seek(pos);
+    */
   }
 
   /** See {@link #prepareCommit} */

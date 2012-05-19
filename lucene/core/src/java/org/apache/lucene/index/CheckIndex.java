@@ -410,6 +410,8 @@ public class CheckIndex {
     String sFormat = "";
     boolean skip = false;
 
+    // nocommit fixme
+    /*
     if (format == SegmentInfos.FORMAT_DIAGNOSTICS) {
       sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
     } else if (format == SegmentInfos.FORMAT_HAS_VECTORS) {
@@ -427,6 +429,8 @@ public class CheckIndex {
       sFormat = "int=" + format + " [older version of Lucene than this tool supports]";
       skip = true;
     }
+    */
+    sFormat = "nocommit not working yet";
 
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
@@ -1588,7 +1592,7 @@ public class CheckIndex {
     if (result.partial)
       throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
-    result.newSegments.commit(result.dir, codec);
+    result.newSegments.commit(result.dir);
   }
 
   private static boolean assertsOn;

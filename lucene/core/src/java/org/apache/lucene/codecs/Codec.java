@@ -71,6 +71,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
       docValuesFormat().files(info, files);
       normsFormat().files(info, files);
     }
+    segmentInfosFormat().files(info, files);
     // never inside CFS
     liveDocsFormat().files(info, files);
   }

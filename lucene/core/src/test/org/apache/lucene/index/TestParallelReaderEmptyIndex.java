@@ -19,15 +19,15 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Some tests for {@link ParallelAtomicReader}s with empty indexes
@@ -89,6 +89,9 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
   public void testEmptyIndexWithVectors() throws IOException {
     Directory rd1 = newDirectory();
     {
+      if (VERBOSE) {
+        System.out.println("\nTEST: make 1st writer");
+      }
       IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       Document doc = new Document();
       Field idField = newField("id", "", TextField.TYPE_UNSTORED);
@@ -103,8 +106,14 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw.addDocument(doc);
       iw.close();
 
+      // nocommit
+      _TestUtil.checkIndex(rd1);
+
       IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+      if (VERBOSE) {
+        System.out.println("\nTEST: make 2nd writer");
+      }
       IndexWriter writer = new IndexWriter(rd1, dontMergeConfig);
       
       writer.deleteDocuments(new Term("id", "1"));
