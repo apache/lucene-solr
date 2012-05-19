@@ -2159,6 +2159,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         sis.read(dir);
         final Set<String> dsFilesCopied = new HashSet<String>();
         final Map<String, String> dsNames = new HashMap<String, String>();
+        final Set<String> copiedFiles = new HashSet<String>();
+
         for (SegmentInfo info : sis) {
           assert !infos.contains(info): "dup info dir=" + info.dir + " name=" + info.name;
 
@@ -2171,7 +2173,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
           IOContext context = new IOContext(new MergeInfo(info.docCount, info.sizeInBytes(), true, -1));
           
-          copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied, context);
+          copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied, context, copiedFiles);
 
           infos.add(info);
         }
@@ -2282,7 +2284,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
   private void copySegmentAsIs(SegmentInfo info, String segName,
-      Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context)
+                               Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context,
+                               Set<String> copiedFiles)
       throws IOException {
     // Determine if the doc store of this segment needs to be copied. It's
     // only relevant for segments that share doc store with others,
@@ -2301,10 +2304,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     Set<String> codecDocStoreFiles = new HashSet<String>();
     if (info.getDocStoreOffset() != -1) {
       // only violate the codec this way if its preflex
-      codec.storedFieldsFormat().files(info, codecDocStoreFiles);
-      codec.termVectorsFormat().files(info, codecDocStoreFiles);
+      info.getCodec().storedFieldsFormat().files(info, codecDocStoreFiles);
+      info.getCodec().termVectorsFormat().files(info, codecDocStoreFiles);
     }
-    
+
     // Copy the segment files
     for (String file: info.files()) {
       final String newFileName;
@@ -2319,6 +2322,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
       
       assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+      assert !copiedFiles.contains(file): "file \"" + file + "\" is being copied more than once";
+      copiedFiles.add(file);
       info.dir.copy(directory, file, newFileName, context);
     }
     
