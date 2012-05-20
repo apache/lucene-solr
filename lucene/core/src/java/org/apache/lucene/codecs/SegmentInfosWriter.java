@@ -47,5 +47,5 @@ public abstract class SegmentInfosWriter {
    * phase commit" operations as described above.
    * @throws IOException
    */
-  public abstract void write(SegmentInfo info, FieldInfos fis) throws IOException;
+  public abstract void write(Directory dir, SegmentInfo info, FieldInfos fis, IOContext ioContext) throws IOException;
 }

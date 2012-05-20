@@ -46,43 +46,6 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfosWriter.*
  */
 public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
 
-  /*
-    final BytesRef scratch = new BytesRef();
-    
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, VERSION);
-    infos.version = Long.parseLong(readString(VERSION.length, scratch));
-    
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, COUNTER);
-    infos.counter = Integer.parseInt(readString(COUNTER.length, scratch));
-    
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, NUM_USERDATA);
-    int numUserData = Integer.parseInt(readString(NUM_USERDATA.length, scratch));
-    infos.userData = new HashMap<String,String>();
-
-    for (int i = 0; i < numUserData; i++) {
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, USERDATA_KEY);
-      String key = readString(USERDATA_KEY.length, scratch);
-      
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, USERDATA_VALUE);
-      String value = readString(USERDATA_VALUE.length, scratch);
-      infos.userData.put(key, value);
-    }
-    
-    SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, NUM_SEGMENTS);
-    int numSegments = Integer.parseInt(readString(NUM_SEGMENTS.length, scratch));
-    
-    for (int i = 0; i < numSegments; i++) {
-      infos.add(readSegmentInfo(directory, input, scratch));
-    }
-  }
-  */
-  
   @Override
   public SegmentInfo read(Directory directory, String segmentName) throws IOException {
     BytesRef scratch = new BytesRef();
@@ -99,48 +62,8 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
       final int docCount = Integer.parseInt(readString(SI_DOCCOUNT.length, scratch));
     
       SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, SI_DELCOUNT);
-      final int delCount = Integer.parseInt(readString(SI_DELCOUNT.length, scratch));
-    
-      SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch, SI_USECOMPOUND);
       final boolean isCompoundFile = Boolean.parseBoolean(readString(SI_USECOMPOUND.length, scratch));
-    
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, SI_DSOFFSET);
-      final int dsOffset = Integer.parseInt(readString(SI_DSOFFSET.length, scratch));
-    
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, SI_DSSEGMENT);
-      final String dsSegment = readString(SI_DSSEGMENT.length, scratch);
-    
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, SI_DSCOMPOUND);
-      final boolean dsCompoundFile = Boolean.parseBoolean(readString(SI_DSCOMPOUND.length, scratch));
-    
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, SI_DELGEN);
-      final long delGen = Long.parseLong(readString(SI_DELGEN.length, scratch));
-    
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, SI_NUM_NORMGEN);
-      final int numNormGen = Integer.parseInt(readString(SI_NUM_NORMGEN.length, scratch));
-      final Map<Integer,Long> normGen;
-      if (numNormGen == 0) {
-        normGen = null;
-      } else {
-        normGen = new HashMap<Integer,Long>();
-        for (int i = 0; i < numNormGen; i++) {
-          SimpleTextUtil.readLine(input, scratch);
-          assert StringHelper.startsWith(scratch, SI_NORMGEN_KEY);
-          int key = Integer.parseInt(readString(SI_NORMGEN_KEY.length, scratch));
-        
-          SimpleTextUtil.readLine(input, scratch);
-          assert StringHelper.startsWith(scratch, SI_NORMGEN_VALUE);
-          long value = Long.parseLong(readString(SI_NORMGEN_VALUE.length, scratch));
-          normGen.put(key, value);
-        }
-      }
     
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch, SI_NUM_DIAG);
@@ -159,9 +82,9 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
       }
 
       success = true;
-      return new SegmentInfo(directory, version, segmentName, docCount, dsOffset,
-                             dsSegment, dsCompoundFile, normGen, isCompoundFile,
-                             delCount, null, diagnostics);
+      return new SegmentInfo(directory, version, segmentName, docCount, -1,
+                             segmentName, false, null, isCompoundFile,
+                             0, null, diagnostics);
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(input);

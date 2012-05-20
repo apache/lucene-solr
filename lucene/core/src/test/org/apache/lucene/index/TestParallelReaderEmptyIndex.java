@@ -106,9 +106,6 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw.addDocument(doc);
       iw.close();
 
-      // nocommit
-      _TestUtil.checkIndex(rd1);
-
       IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
       if (VERBOSE) {

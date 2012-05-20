@@ -43,38 +43,21 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
 
   /** Save a single segment's info. */
   @Override
-  public void write(SegmentInfo si, FieldInfos fis) throws IOException {
+  public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
     assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfosFormat.SI_EXTENSION);
-    // nocommit what ioctxt to pass?  cannot call .sizeInBytes()!
-    final IndexOutput output = si.dir.createOutput(fileName, new IOContext(new FlushInfo(si.docCount, 0)));
+    final IndexOutput output = dir.createOutput(fileName, ioContext);
 
     boolean success = false;
     try {
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(si.getVersion());
       output.writeInt(si.docCount);
-      // we still need to write this in 4.0 since we can open a 3.x with shared docStores
-      output.writeInt(si.getDocStoreOffset());
-      if (si.getDocStoreOffset() != -1) {
-        output.writeString(si.getDocStoreSegment());
-        output.writeByte((byte) (si.getDocStoreIsCompoundFile() ? 1:0));
-      }
 
-      // nocommit remove (4.0 doesn't write normGen)...
-      Map<Integer,Long> normGen = si.getNormGen();
-      if (normGen == null) {
-        output.writeInt(SegmentInfo.NO);
-      } else {
-        output.writeInt(normGen.size());
-        for (Entry<Integer,Long> entry : normGen.entrySet()) {
-          output.writeInt(entry.getKey());
-          output.writeLong(entry.getValue());
-        }
-      }
+      assert si.getDocStoreOffset() == -1;
+      assert si.getNormGen() == null;
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
-      output.writeInt(si.getDelCount());
       output.writeStringStringMap(si.getDiagnostics());
 
       success = true;

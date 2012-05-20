@@ -48,7 +48,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     infos.counter = input.readInt(); // read counter
     Lucene3xSegmentInfosReader reader = new Lucene3xSegmentInfosReader();
     for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
-      SegmentInfo si = reader.readSegmentInfo(directory, format, input);
+      SegmentInfo si = reader.readSegmentInfo(null, directory, format, input);
       if (si.getVersion() == null) {
         // Could be a 3.0 - try to open the doc stores - if it fails, it's a
         // 2.x segment, and an IndexFormatTooOldException will be thrown,
@@ -104,7 +104,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     IndexInput input = directory.openInput(fileName, IOContext.READONCE);
 
     try {
-      SegmentInfo si = readSegmentInfo(directory, format, input);
+      SegmentInfo si = readSegmentInfo(segmentName, directory, format, input);
       success = true;
       return si;
     } finally {
@@ -116,7 +116,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     }
   }
 
-  private SegmentInfo readSegmentInfo(Directory dir, int format, IndexInput input) throws IOException {
+  private SegmentInfo readSegmentInfo(String segmentName, Directory dir, int format, IndexInput input) throws IOException {
     // check that it is a format we can understand
     if (format > Lucene3xSegmentInfosFormat.FORMAT_MINIMUM) {
       throw new IndexFormatTooOldException(input, format,
@@ -132,7 +132,14 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     } else {
       version = null;
     }
+
+    // NOTE: we ignore this and use the incoming arg
+    // instead, if it's non-null:
     final String name = input.readString();
+    if (segmentName == null) {
+      segmentName = name;
+    }
+
     final int docCount = input.readInt();
     final long delGen = input.readLong();
     final int docStoreOffset = input.readInt();
@@ -149,7 +156,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     // pre-4.0 indexes write a byte if there is a single norms file
     byte b = input.readByte();
 
-    System.out.println("version=" + version + " name=" + name + " docCount=" + docCount + " delGen=" + delGen + " dso=" + docStoreOffset + " dss=" + docStoreSegment + " dssCFs=" + docStoreIsCompoundFile + " b=" + b + " format=" + format);
+    //System.out.println("version=" + version + " name=" + name + " docCount=" + docCount + " delGen=" + delGen + " dso=" + docStoreOffset + " dss=" + docStoreSegment + " dssCFs=" + docStoreIsCompoundFile + " b=" + b + " format=" + format);
 
     assert 1 == b : "expected 1 but was: "+ b + " format: " + format;
     final int numNormGen = input.readInt();
@@ -178,7 +185,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     // nocommit we can use hasProx/hasVectors from the 3.x
     // si... if we can pass this to the other components...?
 
-    SegmentInfo info = new SegmentInfo(dir, version, name, docCount, docStoreOffset,
+    SegmentInfo info = new SegmentInfo(dir, version, segmentName, docCount, docStoreOffset,
                                        docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
                                        delCount, null, diagnostics);
     info.setDelGen(delGen);

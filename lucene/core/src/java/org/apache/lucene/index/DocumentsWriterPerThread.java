@@ -478,7 +478,7 @@ class DocumentsWriterPerThread {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
       final SegmentInfo newSegment = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, segment, flushState.numDocs,
-                                                     0, segment, false, null, false, 0,
+                                                     -1, segment, false, null, false, 0,
                                                      flushState.codec,
                                                      null);
 

@@ -42,92 +42,20 @@ import org.apache.lucene.util.IOUtils;
  */
 public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
 
-  final static BytesRef VERSION             = new BytesRef("version ");
-  final static BytesRef COUNTER             = new BytesRef("counter ");
-  final static BytesRef NUM_USERDATA        = new BytesRef("user data entries ");
-  final static BytesRef USERDATA_KEY        = new BytesRef("  key ");
-  final static BytesRef USERDATA_VALUE      = new BytesRef("  value ");
-  final static BytesRef NUM_SEGMENTS        = new BytesRef("number of segments ");
   final static BytesRef SI_VERSION          = new BytesRef("    version ");
   final static BytesRef SI_DOCCOUNT         = new BytesRef("    number of documents ");
-  final static BytesRef SI_DELCOUNT         = new BytesRef("    number of deletions ");
   final static BytesRef SI_USECOMPOUND      = new BytesRef("    uses compound file ");
-  final static BytesRef SI_DSOFFSET         = new BytesRef("    docstore offset ");
-  final static BytesRef SI_DSSEGMENT        = new BytesRef("    docstore segment ");
-  final static BytesRef SI_DSCOMPOUND       = new BytesRef("    docstore is compound file ");
-  final static BytesRef SI_DELGEN           = new BytesRef("    deletion generation ");
-  final static BytesRef SI_NUM_NORMGEN      = new BytesRef("    norms generations ");
-  final static BytesRef SI_NORMGEN_KEY      = new BytesRef("      key ");
-  final static BytesRef SI_NORMGEN_VALUE    = new BytesRef("      value ");
   final static BytesRef SI_NUM_DIAG         = new BytesRef("    diagnostics ");
   final static BytesRef SI_DIAG_KEY         = new BytesRef("      key ");
   final static BytesRef SI_DIAG_VALUE       = new BytesRef("      value ");
   
-  /*
-    BytesRef scratch = new BytesRef();
-    IndexOutput out = new ChecksumIndexOutput(dir.createOutput(segmentsFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount()))));
-    boolean success = false;
-    try {
-      // required preamble:
-      out.writeInt(SegmentInfos.FORMAT_CURRENT); // write FORMAT
-      out.writeString(codecID); // write codecID
-      // end preamble
-      
-      // version
-      SimpleTextUtil.write(out, VERSION);
-      SimpleTextUtil.write(out, Long.toString(infos.version), scratch);
-      SimpleTextUtil.writeNewline(out);
-
-      // counter
-      SimpleTextUtil.write(out, COUNTER);
-      SimpleTextUtil.write(out, Integer.toString(infos.counter), scratch);
-      SimpleTextUtil.writeNewline(out);
-
-      // user data
-      int numUserDataEntries = infos.getUserData() == null ? 0 : infos.getUserData().size();
-      SimpleTextUtil.write(out, NUM_USERDATA);
-      SimpleTextUtil.write(out, Integer.toString(numUserDataEntries), scratch);
-      SimpleTextUtil.writeNewline(out);
-      
-      if (numUserDataEntries > 0) {
-        for (Map.Entry<String,String> userEntry : infos.getUserData().entrySet()) {
-          SimpleTextUtil.write(out, USERDATA_KEY);
-          SimpleTextUtil.write(out, userEntry.getKey(), scratch);
-          SimpleTextUtil.writeNewline(out);
-          
-          SimpleTextUtil.write(out, USERDATA_VALUE);
-          SimpleTextUtil.write(out, userEntry.getValue(), scratch);
-          SimpleTextUtil.writeNewline(out);
-        }
-      }
-      
-      // infos size
-      SimpleTextUtil.write(out, NUM_SEGMENTS);
-      SimpleTextUtil.write(out, Integer.toString(infos.size()), scratch);
-      SimpleTextUtil.writeNewline(out);
-
-      for (SegmentInfo si : infos) {
-        writeInfo(out, si);
-      } 
-
-      success = true;
-      return out;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(out);
-      }
-    }
-  }
-  */
-  
   @Override
-  public void write(SegmentInfo si, FieldInfos fis) throws IOException {
+  public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
     assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
 
     String fileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
-    // nocommit what IOCtx
     boolean success = false;
-    IndexOutput output = si.dir.createOutput(fileName, new IOContext(new FlushInfo(0, 0)));
+    IndexOutput output = dir.createOutput(fileName,  ioContext);
 
     try {
       BytesRef scratch = new BytesRef();
@@ -140,48 +68,9 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
       SimpleTextUtil.write(output, Integer.toString(si.docCount), scratch);
       SimpleTextUtil.writeNewline(output);
     
-      SimpleTextUtil.write(output, SI_DELCOUNT);
-      SimpleTextUtil.write(output, Integer.toString(si.getDelCount()), scratch);
-      SimpleTextUtil.writeNewline(output);
-    
       SimpleTextUtil.write(output, SI_USECOMPOUND);
       SimpleTextUtil.write(output, Boolean.toString(si.getUseCompoundFile()), scratch);
       SimpleTextUtil.writeNewline(output);
-    
-      SimpleTextUtil.write(output, SI_DSOFFSET);
-      SimpleTextUtil.write(output, Integer.toString(si.getDocStoreOffset()), scratch);
-      SimpleTextUtil.writeNewline(output);
-    
-      SimpleTextUtil.write(output, SI_DSSEGMENT);
-      SimpleTextUtil.write(output, si.getDocStoreSegment(), scratch);
-      SimpleTextUtil.writeNewline(output);
-    
-      SimpleTextUtil.write(output, SI_DSCOMPOUND);
-      SimpleTextUtil.write(output, Boolean.toString(si.getDocStoreIsCompoundFile()), scratch);
-      SimpleTextUtil.writeNewline(output);
-    
-      SimpleTextUtil.write(output, SI_DELGEN);
-      SimpleTextUtil.write(output, Long.toString(si.getDelGen()), scratch);
-      SimpleTextUtil.writeNewline(output);
-    
-      Map<Integer,Long> normGen = si.getNormGen();
-      int numNormGen = normGen == null ? 0 : normGen.size();
-      SimpleTextUtil.write(output, SI_NUM_NORMGEN);
-      SimpleTextUtil.write(output, Integer.toString(numNormGen), scratch);
-      SimpleTextUtil.writeNewline(output);
-    
-      // nocommit no more:
-      if (numNormGen > 0) {
-        for (Entry<Integer,Long> entry : normGen.entrySet()) {
-          SimpleTextUtil.write(output, SI_NORMGEN_KEY);
-          SimpleTextUtil.write(output, Integer.toString(entry.getKey()), scratch);
-          SimpleTextUtil.writeNewline(output);
-        
-          SimpleTextUtil.write(output, SI_NORMGEN_VALUE);
-          SimpleTextUtil.write(output, Long.toString(entry.getValue()), scratch);
-          SimpleTextUtil.writeNewline(output);
-        }
-      }
     
       Map<String,String> diagnostics = si.getDiagnostics();
       int numDiagnostics = diagnostics == null ? 0 : diagnostics.size();

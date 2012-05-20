@@ -284,6 +284,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           info.setCodec(codec);
           info.setDelGen(input.readLong());
           info.setDelCount(input.readInt());
+          assert info.getDelCount() <= info.docCount;
           add(info);
         }
         userData = input.readStringStringMap();
@@ -296,9 +297,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           info.setCodec(codec);
         }
       }
-
-      // nocommit all 3.x indices have checksum right...????
-      // ie we added it during 2.x? i think so!
 
       final long checksumNow = input.getChecksum();
       final long checksumThen = input.readLong();
@@ -376,8 +374,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           if (!directory.fileExists(fileName)) {
             //System.out.println("write 3x info seg=" + si.name + " version=" + si.getVersion() + " codec=" + si.getCodec().getName());
             write3xInfo(si);
-            // nocommit do this after, on success...
-            //si.setVersion("4.0");
             si.clearFilesCache();
           }
         }

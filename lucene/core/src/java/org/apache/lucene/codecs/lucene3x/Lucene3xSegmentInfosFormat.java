@@ -74,9 +74,8 @@ public class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
 
   @Override
   public void files(SegmentInfo info, Set<String> files) {
-    // nocommit hacky!
-    if (true || !info.getVersion().startsWith("3.")) {
-      files.add(IndexFileNames.segmentFileName(info.name, "", SI_EXTENSION));
-    }
+    // nocommit must take care to filter this out if we are
+    // "really" an old 3.x index
+    files.add(IndexFileNames.segmentFileName(info.name, "", SI_EXTENSION));
   }
 }

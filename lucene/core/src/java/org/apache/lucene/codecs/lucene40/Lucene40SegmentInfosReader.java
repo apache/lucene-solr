@@ -48,37 +48,20 @@ public class Lucene40SegmentInfosReader extends SegmentInfosReader {
     try {
       final String version = input.readString();
       final int docCount = input.readInt();
-        // this is still written in 4.0 if we open a 3.x and upgrade the SI
-      final int docStoreOffset = input.readInt();
-      final String docStoreSegment;
-      final boolean docStoreIsCompoundFile;
-      if (docStoreOffset != -1) { 
-        docStoreSegment = input.readString();
-        docStoreIsCompoundFile = input.readByte() == SegmentInfo.YES;
-      } else {
-        docStoreSegment = segment;
-        docStoreIsCompoundFile = false;
-      }
-      final int numNormGen = input.readInt();
-      final Map<Integer,Long> normGen;
-      if (numNormGen == SegmentInfo.NO) {
-        normGen = null;
-      } else {
-        normGen = new HashMap<Integer, Long>();
-        for(int j=0;j<numNormGen;j++) {
-          normGen.put(input.readInt(), input.readLong());
-        }
-      }
+      final int docStoreOffset = -1;
+      final String docStoreSegment = segment;
+      final boolean docStoreIsCompoundFile = false;
+      final Map<Integer,Long> normGen = null;
       final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
-
-      final int delCount = input.readInt();
-      assert delCount <= docCount;
       final Map<String,String> diagnostics = input.readStringStringMap();
 
+      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, docStoreOffset,
+                                             docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
+                                             0, null, diagnostics);
       success = true;
-      return new SegmentInfo(dir, version, segment, docCount, docStoreOffset,
-                             docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-                             delCount, null, diagnostics);
+
+      return si;
+
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(input);

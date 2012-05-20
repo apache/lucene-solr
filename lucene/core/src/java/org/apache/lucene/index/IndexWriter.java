@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfosFormat;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -46,6 +47,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
@@ -2052,7 +2054,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      codec.segmentInfosFormat().getSegmentInfosWriter().write(newSegment, flushedSegment.fieldInfos);
+      codec.segmentInfosFormat().getSegmentInfosWriter().write(directory, newSegment, flushedSegment.fieldInfos, context);
       newSegment.clearFilesCache();
 
       // nocommit ideally we would freeze merge.info here!!
@@ -2338,7 +2340,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      codec.segmentInfosFormat().getSegmentInfosWriter().write(info, mergeState.fieldInfos);
+      codec.segmentInfosFormat().getSegmentInfosWriter().write(directory, info, mergeState.fieldInfos, context);
       info.clearFilesCache();
 
       // Register the new segment
@@ -2376,23 +2378,40 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
     
     Set<String> codecDocStoreFiles = new HashSet<String>();
-    if (info.getDocStoreOffset() != -1) {
-      // only violate the codec this way if its preflex
+    final boolean hasSharedDocStore = info.getDocStoreOffset() != -1;
+    final String segmentInfoFileName3X = IndexFileNames.segmentFileName(info.name,
+                                                                        "",
+                                                                        Lucene3xSegmentInfosFormat.SI_EXTENSION);
+
+    if (hasSharedDocStore) {
+      // only violate the codec this way if its preflex &
+      // shares doc stores
       info.getCodec().storedFieldsFormat().files(info, codecDocStoreFiles);
       info.getCodec().termVectorsFormat().files(info, codecDocStoreFiles);
     }
 
     //System.out.println("copy seg=" + info.name + " version=" + info.getVersion());
-    
-    // Copy the segment files
-    for (String file: info.files()) {
 
-      // nocommit messy: insteda we should pull .files()
-      // from the codec's SIFormat and check if it's in
-      // there...
-      if (file.endsWith(".si")) {
-        continue;
-      }
+    // Same SI as before but we change directory, name and docStoreSegment:
+    SegmentInfo newInfo = new SegmentInfo(directory, info.getVersion(), segName, info.docCount, info.getDocStoreOffset(),
+                                          newDsName, info.getDocStoreIsCompoundFile(), info.getNormGen(), info.getUseCompoundFile(),
+                                          info.getDelCount(), info.getCodec(), info.getDiagnostics());
+    newInfo.setDelGen(info.getDelGen());
+
+    // We must rewrite the SI file because it references
+    // segment name (its own name, if its 3.x, and doc
+    // store segment name):
+    TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(directory);
+    try {
+      newInfo.getCodec().segmentInfosFormat().getSegmentInfosWriter().write(dirWrapper, newInfo, null, context);
+    } catch (UnsupportedOperationException uoe) {
+      // OK: 3x codec cannot write a new SI file;
+      // SegmentInfos will write this on commit
+    }
+    final Set<String> siFileNames = dirWrapper.getCreatedFiles();
+    
+    // Copy the segment's files
+    for (String file: info.files()) {
 
       final String newFileName;
       if (codecDocStoreFiles.contains(file)) {
@@ -2405,26 +2424,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         newFileName = segName + IndexFileNames.stripSegmentName(file);
       }
 
+      if (siFileNames != null && siFileNames.contains(newFileName)) {
+        // We already rewwrote this above
+        continue;
+      }
+
       assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
       assert !copiedFiles.contains(file): "file \"" + file + "\" is being copied more than once";
       copiedFiles.add(file);
-      //System.out.println("COPY " + file + " -> " + newFileName);
       info.dir.copy(directory, file, newFileName, context);
-    }
-    
-    // Same SI as before but we change directory and name:
-    SegmentInfo newInfo = new SegmentInfo(directory, info.getVersion(), segName, info.docCount, info.getDocStoreOffset(),
-                                          newDsName, info.getDocStoreIsCompoundFile(), info.getNormGen(), info.getUseCompoundFile(),
-                                          info.getDelCount(), info.getCodec(), info.getDiagnostics());
-    newInfo.setDelGen(info.getDelGen());
-
-    // nocommit need to pass real FIS...
-    // nocommit maybe we don't pass FIS......?
-    // nocommit messy....
-    //if (!newInfo.getCodec().getName().equals("Lucene3x")) {
-    if (!newInfo.getVersion().startsWith("3.")) {
-      //System.out.println("  now write si for seg=" + newInfo.name + " codec=" + newInfo.getCodec());
-      newInfo.getCodec().segmentInfosFormat().getSegmentInfosWriter().write(newInfo, null);
     }
     
     return newInfo;
@@ -3511,7 +3519,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       synchronized (this) { // Guard segmentInfos
         useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, merge.info);
       }
-      
+
       if (useCompoundFile) {
         success = false;
         final String compoundFileName = IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
@@ -3520,7 +3528,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "create compound file " + compoundFileName);
           }
-          createCompoundFile(directory, compoundFileName, checkAbort, merge.info, new IOContext(merge.getMergeInfo()));
+          createCompoundFile(directory, compoundFileName, checkAbort, merge.info, context);
           success = true;
         } catch (IOException ioe) {
           synchronized(this) {
@@ -3575,7 +3583,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      codec.segmentInfosFormat().getSegmentInfosWriter().write(merge.info, mergeState.fieldInfos);
+      codec.segmentInfosFormat().getSegmentInfosWriter().write(directory, merge.info, mergeState.fieldInfos, context);
       merge.info.clearFilesCache();
 
       // nocommit ideally we would freeze merge.info here!!

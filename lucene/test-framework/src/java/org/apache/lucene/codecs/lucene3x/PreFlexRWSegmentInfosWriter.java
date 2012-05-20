@@ -39,17 +39,20 @@ import org.apache.lucene.util.IOUtils;
  */
 class PreFlexRWSegmentInfosWriter extends SegmentInfosWriter {
 
+  // NOTE: this is not "really" 3.x format, because we are
+  // writing each SI to its own file, vs 3.x where the list
+  // of segments and SI for each segment is written into a
+  // single segments_N file
+
   /** Save a single segment's info. */
   @Override
-  public void write(SegmentInfo si, FieldInfos fis) throws IOException {
+  public void write(Directory dir ,SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
 
-    // NOTE: this is NOT how 3.x is really written...
     String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
 
-    // nocommit what IOCtx
     boolean success = false;
 
-    IndexOutput output = si.dir.createOutput(fileName, new IOContext(new FlushInfo(0, 0)));
+    IndexOutput output = dir.createOutput(fileName, ioContext);
     try {
       // we are about to write this SI in 3.x format, dropping all codec information, etc.
       // so it had better be a 3.x segment or you will get very confusing errors later.

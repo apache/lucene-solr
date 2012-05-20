@@ -153,7 +153,7 @@ public abstract class Directory implements Closeable {
    * their own locking implementation.
    */
   public LockFactory getLockFactory() {
-      return this.lockFactory;
+    return this.lockFactory;
   }
 
   /**
