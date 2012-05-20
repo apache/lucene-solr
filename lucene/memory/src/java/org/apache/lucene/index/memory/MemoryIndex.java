@@ -945,7 +945,7 @@ public class MemoryIndex {
       }
 
       @Override
-      public int freq() {
+      public int freq() throws IOException {
         return positions.size();
       }
     }
@@ -987,7 +987,7 @@ public class MemoryIndex {
       }
 
       @Override
-      public int freq() {
+      public int freq() throws IOException {
         return positions.size() / stride;
       }
 

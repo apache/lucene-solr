@@ -568,7 +568,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
 
   @Override
-  public final int freq() {
+  public final int freq() throws IOException {
     return _freq;
   }
 

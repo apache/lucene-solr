@@ -528,7 +528,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     private Bits liveDocs;
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return freq;
     }
 
@@ -574,7 +574,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     private int[] endOffsets;
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       if (positions != null) {
         return positions.length;
       } else {

@@ -225,7 +225,7 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return in.freq();
     }
 
@@ -259,7 +259,7 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return in.freq();
     }
 

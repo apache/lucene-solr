@@ -69,7 +69,7 @@ public final class MultiDocsEnum extends DocsEnum {
   }
 
   @Override
-  public int freq() {
+  public int freq() throws IOException {
     return current.freq();
   }
 
