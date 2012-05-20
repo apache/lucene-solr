@@ -93,8 +93,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   // also i think this class should write this, somehow we let 
   // preflexrw hackishly override this (like seek backwards and overwrite it)
 
-  // nocommit fix to read 3.x...
-
   public static final int VERSION_40 = 0;
 
   /** Used for the segments.gen file only!
@@ -289,8 +287,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         }
         userData = input.readStringStringMap();
       } else {
-        // nocommit 3.x needs normGens too ... we can push
-        // down to make this 3.x private????
         Lucene3xSegmentInfosReader.readLegacyInfos(this, directory, input, format);
         Codec codec = Codec.forName("Lucene3x");
         for (SegmentInfo info : this) {

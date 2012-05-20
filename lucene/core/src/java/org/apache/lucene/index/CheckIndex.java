@@ -88,9 +88,6 @@ public class CheckIndex {
     /** Number of segments in the index. */
     public int numSegments;
 
-    /** String description of the version of the index. */
-    public String segmentFormat;
-
     /** Empty unless you passed specific segments list to check as optional 3rd argument.
      *  @see CheckIndex#checkIndex(List) */
     public List<String> segmentsChecked = new ArrayList<String>();
@@ -410,31 +407,8 @@ public class CheckIndex {
     String sFormat = "";
     boolean skip = false;
 
-    // nocommit fixme
-    /*
-    if (format == SegmentInfos.FORMAT_DIAGNOSTICS) {
-      sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
-    } else if (format == SegmentInfos.FORMAT_HAS_VECTORS) {
-      sFormat = "FORMAT_HAS_VECTORS [Lucene 3.1]";
-    } else if (format == SegmentInfos.FORMAT_3_1) {
-      sFormat = "FORMAT_3_1 [Lucene 3.1+]";
-    } else if (format == SegmentInfos.FORMAT_4_0) {
-      sFormat = "FORMAT_4_0 [Lucene 4.0]";
-    } else if (format == SegmentInfos.FORMAT_CURRENT) {
-      throw new RuntimeException("BUG: You should update this tool!");
-    } else if (format < SegmentInfos.FORMAT_CURRENT) {
-      sFormat = "int=" + format + " [newer version of Lucene than this tool supports]";
-      skip = true;
-    } else if (format > SegmentInfos.FORMAT_MINIMUM) {
-      sFormat = "int=" + format + " [older version of Lucene than this tool supports]";
-      skip = true;
-    }
-    */
-    sFormat = "nocommit not working yet";
-
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
-    result.segmentFormat = sFormat;
     result.userData = sis.getUserData();
     String userDataString;
     if (sis.getUserData().size() > 0) {

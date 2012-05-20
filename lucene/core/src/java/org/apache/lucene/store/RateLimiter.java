@@ -62,6 +62,9 @@ public class RateLimiter {
    *  might exceed the target).  It's best to call this
    *  with a biggish count, not one byte at a time. */
   public void pause(long bytes) {
+    if (bytes == 1) {
+      return;
+    }
 
     // TODO: this is purely instantaneous rate; maybe we
     // should also offer decayed recent history one?

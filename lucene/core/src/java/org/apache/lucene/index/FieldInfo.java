@@ -96,7 +96,7 @@ public final class FieldInfo {
       assert normType == null;
       assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     } else {
-      // nocommit this trips:
+      // nocommit trips:
       //assert omitNorms || normType != null;
       assert indexOptions != null;
     }

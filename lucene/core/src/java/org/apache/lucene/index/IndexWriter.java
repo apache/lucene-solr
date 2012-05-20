@@ -3525,7 +3525,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
         }
 
-        // nocommit why do we set success back to false here!?
+        // nocommit why on earth do we suddenly set success back to false here!?
         success = false;
 
         synchronized(this) {

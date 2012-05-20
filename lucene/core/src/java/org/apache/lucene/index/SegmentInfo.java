@@ -41,6 +41,7 @@ import org.apache.lucene.util.Constants;
  *
  * @lucene.experimental
  */
+// nocommit final...?
 public class SegmentInfo implements Cloneable {
   
   // TODO: remove these from this class, for now this is the representation
@@ -196,7 +197,6 @@ public class SegmentInfo implements Cloneable {
     clearFilesCache();
   }
 
-  // nocommit this is dangerous... because we lose the codec's customzied class...
   @Override
   public SegmentInfo clone() {
     final HashMap<Integer,Long> clonedNormGen;
