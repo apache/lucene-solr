@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.index.DocumentsWriterStallControl.MemoryController;
 import org.apache.lucene.util.LuceneTestCase;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeaks;
 
 /**
@@ -59,7 +58,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     memCtrl.netBytes = 50;
     ctrl.updateStalled(memCtrl);
     assertFalse(ctrl.anyStalledThreads());
-    join(waitThreads, 100);
+    join(waitThreads, 500);
   }
   
   public void testRandom() throws InterruptedException {
@@ -297,8 +296,6 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
       throws InterruptedException {
     for (Thread thread : toJoin) {
       thread.join(timeout);
-      assertEquals(thread.getState().toString(), Thread.State.TERMINATED,
-          thread.getState());
     }
   }
   
