@@ -352,6 +352,34 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     assertEquals("List field", "[first, second]", labels.get(4));
   }
 
+  @Test
+  public void customTokenizer() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.TITLE_FIELD_NAME, "title");
+    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
+
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("custom-duplicating-tokenizer"), 1, 16, new TermQuery(new Term("title",
+            "field")), params).get(0));
+    
+    // The custom test tokenizer duplicates each token's text
+    assertTrue("First token", labels.get(0).contains("TitleTitle"));
+  }
+  
+  @Test
+  public void customStemmer() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.TITLE_FIELD_NAME, "title");
+    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
+    
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("custom-duplicating-stemmer"), 1, 12, new TermQuery(new Term("title",
+            "field")), params).get(0));
+    
+    // The custom test stemmer duplicates and lowercases each token's text
+    assertTrue("First token", labels.get(0).contains("titletitle"));
+  }
+
   private CarrotClusteringEngine getClusteringEngine(String engineName) {
     ClusteringComponent comp = (ClusteringComponent) h.getCore()
             .getSearchComponent("clustering");
