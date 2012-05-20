@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -62,6 +63,9 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     
   @Before
   public void createMonitor() throws Exception {
+    assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
+      Constants.WINDOWS);
+  
     SolrCore core = h.getCore();
 
     updater = (DirectUpdateHandler2) core.getUpdateHandler();
