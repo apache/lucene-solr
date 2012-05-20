@@ -339,6 +339,16 @@
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
       <str name="carrot.lexicalResourcesDir">clustering/custom</str>
     </lst>
+    <lst name="engine">
+      <str name="name">custom-duplicating-tokenizer</str>
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.EchoTokensClusteringAlgorithm</str>
+      <str name="PreprocessingPipeline.tokenizerFactory">org.apache.solr.handler.clustering.carrot2.DuplicatingTokenizerFactory</str>
+    </lst>
+    <lst name="engine">
+      <str name="name">custom-duplicating-stemmer</str>
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.EchoStemsClusteringAlgorithm</str>
+      <str name="PreprocessingPipeline.stemmerFactory">org.apache.solr.handler.clustering.carrot2.DuplicatingStemmerFactory</str>
+    </lst>
   </searchComponent>
 
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="doc-clustering">

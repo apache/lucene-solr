@@ -62,6 +62,7 @@ import org.carrot2.core.LanguageCode;
 import org.carrot2.core.attribute.AttributeNames;
 import org.carrot2.text.linguistic.DefaultLexicalDataFactoryDescriptor;
 import org.carrot2.text.preprocessing.pipeline.BasicPreprocessingPipelineDescriptor;
+import org.carrot2.text.preprocessing.pipeline.BasicPreprocessingPipelineDescriptor.AttributeBuilder;
 import org.carrot2.util.resource.ClassLoaderLocator;
 import org.carrot2.util.resource.IResource;
 import org.carrot2.util.resource.IResourceLocator;
@@ -255,10 +256,14 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     // Additionally, we set a custom lexical resource factory for Carrot2 that
     // will use both Carrot2 default stop words as well as stop words from
     // the StopFilter defined on the field.
-    BasicPreprocessingPipelineDescriptor.attributeBuilder(initAttributes)
-        .stemmerFactory(LuceneCarrot2StemmerFactory.class)
-        .tokenizerFactory(LuceneCarrot2TokenizerFactory.class)
-        .lexicalDataFactory(SolrStopwordsCarrot2LexicalDataFactory.class);
+    final AttributeBuilder attributeBuilder = BasicPreprocessingPipelineDescriptor.attributeBuilder(initAttributes);
+    attributeBuilder.lexicalDataFactory(SolrStopwordsCarrot2LexicalDataFactory.class);
+    if (!initAttributes.containsKey(BasicPreprocessingPipelineDescriptor.Keys.TOKENIZER_FACTORY)) {
+      attributeBuilder.tokenizerFactory(LuceneCarrot2TokenizerFactory.class);
+    }
+    if (!initAttributes.containsKey(BasicPreprocessingPipelineDescriptor.Keys.STEMMER_FACTORY)) {
+      attributeBuilder.stemmerFactory(LuceneCarrot2StemmerFactory.class);
+    }
 
     // Pass the schema to SolrStopwordsCarrot2LexicalDataFactory.
     initAttributes.put("solrIndexSchema", core.getSchema());
