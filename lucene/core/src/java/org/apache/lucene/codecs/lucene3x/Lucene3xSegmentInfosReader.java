@@ -89,19 +89,18 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
   }
 
   @Override
-  public SegmentInfo read(Directory directory, String segmentName) throws IOException { 
-    return read(directory, segmentName, Lucene3xSegmentInfosFormat.FORMAT_4_0);
+  public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException { 
+    return read(directory, segmentName, Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE, context);
   }
 
-  public SegmentInfo read(Directory directory, String segmentName, int format) throws IOException { 
+  public SegmentInfo read(Directory directory, String segmentName, int format, IOContext context) throws IOException { 
 
     // NOTE: this is NOT how 3.x is really written...
     String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
 
-    // nocommit what IOCtx
     boolean success = false;
 
-    IndexInput input = directory.openInput(fileName, IOContext.READONCE);
+    IndexInput input = directory.openInput(fileName, context);
 
     try {
       SegmentInfo si = readSegmentInfo(segmentName, directory, format, input);
@@ -118,13 +117,13 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
   private SegmentInfo readSegmentInfo(String segmentName, Directory dir, int format, IndexInput input) throws IOException {
     // check that it is a format we can understand
-    if (format > Lucene3xSegmentInfosFormat.FORMAT_MINIMUM) {
+    if (format > Lucene3xSegmentInfosFormat.FORMAT_DIAGNOSTICS) {
       throw new IndexFormatTooOldException(input, format,
-                                           Lucene3xSegmentInfosFormat.FORMAT_MINIMUM, Lucene3xSegmentInfosFormat.FORMAT_CURRENT);
+                                           Lucene3xSegmentInfosFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE);
     }
-    if (format < Lucene3xSegmentInfosFormat.FORMAT_CURRENT) {
+    if (format < Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE) {
       throw new IndexFormatTooNewException(input, format,
-                                           Lucene3xSegmentInfosFormat.FORMAT_MINIMUM, Lucene3xSegmentInfosFormat.FORMAT_CURRENT);
+                                           Lucene3xSegmentInfosFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE);
     }
     final String version;
     if (format <= Lucene3xSegmentInfosFormat.FORMAT_3_1) {

@@ -49,13 +49,13 @@ public class SimpleTextNormsFormat extends NormsFormat {
   
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new SimpleTextNormsPerDocConsumer(state, NORMS_SEG_SUFFIX);
+    return new SimpleTextNormsPerDocConsumer(state);
   }
   
   @Override
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
     return new SimpleTextNormsPerDocProducer(state,
-        BytesRef.getUTF8SortedAsUnicodeComparator(), NORMS_SEG_SUFFIX);
+        BytesRef.getUTF8SortedAsUnicodeComparator());
   }
   
   @Override
@@ -74,8 +74,8 @@ public class SimpleTextNormsFormat extends NormsFormat {
       SimpleTextPerDocProducer {
     
     public SimpleTextNormsPerDocProducer(SegmentReadState state,
-        Comparator<BytesRef> comp, String segmentSuffix) throws IOException {
-      super(state, comp, segmentSuffix);
+        Comparator<BytesRef> comp) throws IOException {
+      super(state, comp, NORMS_SEG_SUFFIX);
     }
     
     @Override
@@ -105,9 +105,9 @@ public class SimpleTextNormsFormat extends NormsFormat {
   public static class SimpleTextNormsPerDocConsumer extends
       SimpleTextPerDocConsumer {
     
-    public SimpleTextNormsPerDocConsumer(PerDocWriteState state,
-        String segmentSuffix) throws IOException {
-      super(state, segmentSuffix);
+    public SimpleTextNormsPerDocConsumer(PerDocWriteState state)
+      throws IOException {
+      super(state, NORMS_SEG_SUFFIX);
     }
     
     @Override
@@ -129,25 +129,21 @@ public class SimpleTextNormsFormat extends NormsFormat {
     @Override
     public void abort() {
       Set<String> files = new HashSet<String>();
-      filesInternal(state.segmentName, files, segmentSuffix);
+      filesInternal(state.segmentName, files);
       IOUtils.deleteFilesIgnoringExceptions(state.directory,
                                             SegmentInfo.findMatchingFiles(state.segmentName, state.directory, files).toArray(new String[0]));
     }
     
     public static void files(SegmentInfo segmentInfo, Set<String> files)
         throws IOException {
-      filesInternal(segmentInfo.name, files,
-          NORMS_SEG_SUFFIX);
+      filesInternal(segmentInfo.name, files);
     }
     
     public static void filesInternal(String segmentName,
-        Set<String> files, String segmentSuffix) {
-      // nocommit simplify this: weird that we get suffix as
-      // an arg... it's always a constant
-      assert segmentSuffix.equals(NORMS_SEG_SUFFIX);
+        Set<String> files) {
       String id = docValuesIdRegexp(segmentName);
       files.add(IndexFileNames.segmentFileName(id, "",
-                                               segmentSuffix));
+                                               NORMS_SEG_SUFFIX));
     }
   }
 }

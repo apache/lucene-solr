@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene3x;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.Arrays; //nocommit
 
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;

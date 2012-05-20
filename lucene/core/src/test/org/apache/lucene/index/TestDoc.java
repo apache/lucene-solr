@@ -205,7 +205,7 @@ public class TestDoc extends LuceneTestCase {
                                                false, null, false, 0, codec, null);
       
       if (useCompoundFile) {
-        Collection<String> filesToDelete = IndexWriter.createCompoundFile(dir, merged + ".cfs", MergeState.CheckAbort.NONE, info, newIOContext(random()));
+        Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, merged + ".cfs", MergeState.CheckAbort.NONE, info, newIOContext(random()));
         info.setUseCompoundFile(true);
         for (final String fileToDelete : filesToDelete) {
           si1.dir.deleteFile(fileToDelete);

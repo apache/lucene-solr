@@ -47,10 +47,10 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfosWriter.*
 public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
 
   @Override
-  public SegmentInfo read(Directory directory, String segmentName) throws IOException {
+  public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException {
     BytesRef scratch = new BytesRef();
     String fileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
-    IndexInput input = directory.openInput(fileName, IOContext.READONCE);
+    IndexInput input = directory.openInput(fileName, context);
     boolean success = false;
     try {
       SimpleTextUtil.readLine(input, scratch);

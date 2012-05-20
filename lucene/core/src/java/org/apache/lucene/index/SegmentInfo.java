@@ -60,6 +60,7 @@ public class SegmentInfo implements Cloneable {
    * - NO if there are no deletes
    * - YES or higher if there are deletes at generation N
    */
+  // nocommit explain that codec need not save this....:
   private long delGen;
 
   /*
@@ -86,6 +87,7 @@ public class SegmentInfo implements Cloneable {
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
 
+  // nocommit explain that codec need not save this....:
   private int delCount;                           // How many deleted docs in this segment
   
   private Codec codec;

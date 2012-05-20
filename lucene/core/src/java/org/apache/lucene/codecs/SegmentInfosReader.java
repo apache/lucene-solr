@@ -42,5 +42,5 @@ public abstract class SegmentInfosReader {
    * @param infos empty instance to be populated with data
    * @throws IOException
    */
-  public abstract SegmentInfo read(Directory directory, String segmentName) throws IOException;
+  public abstract SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException;
 }

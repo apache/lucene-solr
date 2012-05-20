@@ -46,57 +46,7 @@ class PreFlexRWSegmentInfosWriter extends SegmentInfosWriter {
 
   /** Save a single segment's info. */
   @Override
-  public void write(Directory dir ,SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
-
-    String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
-
-    boolean success = false;
-
-    IndexOutput output = dir.createOutput(fileName, ioContext);
-    try {
-      // we are about to write this SI in 3.x format, dropping all codec information, etc.
-      // so it had better be a 3.x segment or you will get very confusing errors later.
-      assert si.getCodec() instanceof Lucene3xCodec : "broken test, trying to mix preflex with other codecs";
-      assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
-      // Write the Lucene version that created this segment, since 3.1
-      output.writeString(si.getVersion());
-      output.writeString(si.name);
-      output.writeInt(si.docCount);
-      output.writeLong(si.getDelGen());
-
-      output.writeInt(si.getDocStoreOffset());
-      if (si.getDocStoreOffset() != -1) {
-        output.writeString(si.getDocStoreSegment());
-        output.writeByte((byte) (si.getDocStoreIsCompoundFile() ? 1:0));
-      }
-      // pre-4.0 indexes write a byte if there is a single norms file
-      output.writeByte((byte) 1);
-
-      Map<Integer,Long> normGen = si.getNormGen();
-      if (normGen == null) {
-        output.writeInt(SegmentInfo.NO);
-      } else {
-        output.writeInt(normGen.size());
-        for (Entry<Integer,Long> entry : normGen.entrySet()) {
-          output.writeLong(entry.getValue());
-        }
-      }
-
-      output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
-      output.writeInt(si.getDelCount());
-      // hasProx:
-      output.writeByte((byte) 1);
-      output.writeStringStringMap(si.getDiagnostics());
-      // hasVectors:
-      output.writeByte((byte) 1);
-
-      success = true;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(output);
-      } else {
-        output.close();
-      }
-    }
+  public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
+    SegmentInfos.write3xInfo(dir, si, ioContext);
   }
 }

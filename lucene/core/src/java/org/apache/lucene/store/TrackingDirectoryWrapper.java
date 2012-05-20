@@ -109,7 +109,7 @@ public final class TrackingDirectoryWrapper extends Directory implements Closeab
 
   @Override
   public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
-    // nocommit add dest to created files!?
+    createdFileNames.add(dest);
     other.copy(to, src, dest, context);
   }
 
@@ -117,11 +117,6 @@ public final class TrackingDirectoryWrapper extends Directory implements Closeab
   public Directory.IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
     return other.createSlicer(name, context);
   }
-
-  // nocommit no?
-  //@Override
-  //protected final void ensureOpen() throws
-  //AlreadyClosedException {
 
   public Set<String> getCreatedFiles() {
     return createdFileNames;

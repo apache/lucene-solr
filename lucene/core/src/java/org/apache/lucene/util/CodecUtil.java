@@ -129,7 +129,10 @@ public final class CodecUtil {
     return checkHeaderNoMagic(in, codec, minVersion, maxVersion);
   }
 
-  // nocommit jdocs
+  /** Like {@link
+   *  checkHeader(DataInput,String,int,int)} except this
+   *  version assumes the first int has already been read
+   *  and validated from the input. */
   public static int checkHeaderNoMagic(DataInput in, String codec, int minVersion, int maxVersion) throws IOException {
     final String actualCodec = in.readString();
     if (!actualCodec.equals(codec)) {

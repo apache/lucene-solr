@@ -280,7 +280,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           String segName = input.readString();
           Codec codec = Codec.forName(input.readString());
           //System.out.println("SIS.read seg=" + seg + " codec=" + codec);
-          SegmentInfo info = codec.segmentInfosFormat().getSegmentInfosReader().read(directory, segName);
+          SegmentInfo info = codec.segmentInfosFormat().getSegmentInfosReader().read(directory, segName, IOContext.READ);
           info.setCodec(codec);
           info.setDelGen(input.readLong());
           info.setDelCount(input.readInt());
@@ -352,9 +352,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     // list-of-segs plus delGen plus other stuff
     // "generically" and then codec gets to write SI
 
+    final Set<String> upgradedSIFiles = new HashSet<String>();
+
     try {
-      // nocommit what IOCtx to use...
-      segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName, new IOContext(new FlushInfo(totalDocCount(), 0))));
+      segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName, IOContext.DEFAULT));
       CodecUtil.writeHeader(segnOutput, "segments", VERSION_40);
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
@@ -367,19 +368,19 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         segnOutput.writeInt(si.getDelCount());
         assert si.dir == directory;
 
-        // nocommit hacky!
+        // If this segment is pre-4.x, perform a one-time
+        // "ugprade" to write the .si file for it:
         String version = si.getVersion();
         if (version == null || version.startsWith("3.")) {
           String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
           if (!directory.fileExists(fileName)) {
             //System.out.println("write 3x info seg=" + si.name + " version=" + si.getVersion() + " codec=" + si.getCodec().getName());
-            write3xInfo(si);
+            upgradedSIFiles.add(write3xInfo(directory, si, IOContext.DEFAULT));
             si.clearFilesCache();
           }
         }
       }
       segnOutput.writeStringStringMap(userData);
-      segnOutput.prepareCommit();
       pendingSegnOutput = segnOutput;
       success = true;
     } finally {
@@ -388,7 +389,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         // but suppress any exception:
         IOUtils.closeWhileHandlingException(segnOutput);
 
-        // nocommit must also remove any written .si files...
+        for(String fileName : upgradedSIFiles) {
+          try {
+            directory.deleteFile(fileName);
+          } catch (Throwable t) {
+            // Suppress so we keep throwing the original exception
+          }
+        }
 
         try {
           // Try not to leave a truncated segments_N file in
@@ -401,18 +408,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     }
   }
 
-  // nocommit copy of PreflexRWSegmentInfosWriter.write!!
-
   @Deprecated
-  public void write3xInfo(SegmentInfo si) throws IOException {
+  public static String write3xInfo(Directory dir, SegmentInfo si, IOContext context) throws IOException {
 
     // NOTE: this is NOT how 3.x is really written...
     String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
     //System.out.println("UPGRADE write " + fileName);
-    // nocommit what IOCtx
     boolean success = false;
-
-    IndexOutput output = si.dir.createOutput(fileName, new IOContext(new FlushInfo(0, 0)));
+    IndexOutput output = dir.createOutput(fileName, context);
     try {
       // we are about to write this SI in 3.x format, dropping all codec information, etc.
       // so it had better be a 3.x segment or you will get very confusing errors later.
@@ -454,11 +457,17 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(output);
-        si.dir.deleteFile(fileName);
+        try {
+          si.dir.deleteFile(fileName);
+        } catch (Throwable t) {
+          // Suppress so we keep throwing the original exception
+        }
       } else {
         output.close();
       }
     }
+
+    return fileName;
   }
 
   /**

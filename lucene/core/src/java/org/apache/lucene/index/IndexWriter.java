@@ -663,7 +663,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       rollbackSegments = segmentInfos.createBackupSegmentInfos(true);
 
       // start with previous field numbers, but new FieldInfos
-      globalFieldNumberMap = getOrLoadGlobalFieldNumberMap();
+      globalFieldNumberMap = getFieldNumberMap();
       docWriter = new DocumentsWriter(codec, config, directory, this, globalFieldNumberMap, bufferedDeletesStream);
 
       // Default deleter (for backwards compatibility) is
@@ -730,33 +730,26 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
    * If this {@link SegmentInfos} has no global field number map the returned instance is empty
    */
-  private FieldNumberBiMap getOrLoadGlobalFieldNumberMap() throws IOException {
+  private FieldNumberBiMap getFieldNumberMap() throws IOException {
     final FieldNumberBiMap map  = new FieldNumberBiMap();
 
-    if (segmentInfos.size() > 0) {
-      // nocommit fixme for 3.x indices...
-      /*
-      if (segmentInfos.getFormat() > SegmentInfos.FORMAT_DIAGNOSTICS) {
-        // Pre-3.1 index.  In this case we sweep all
-        // segments, merging their FieldInfos:
-        for(SegmentInfo info : segmentInfos) {
-          for(FieldInfo fi : getFieldInfos(info)) {
-            map.addOrGet(fi.name, fi.number);
-          }
-        }
-      } else {
-      */
-        // Already >= 3.1 index; just seed the FieldInfos
-        // from the last segment
-        for(FieldInfo fi : getFieldInfos(segmentInfos.info(segmentInfos.size()-1))) {
-          map.addOrGet(fi.name, fi.number);
-        }
-
-        // nocommit we can also pull the DV types of the
-        // fields... and catch DV type change on addDoc
-        // instead of much later in merge
-        //}
+    SegmentInfo biggest = null;
+    for(SegmentInfo info : segmentInfos) {
+      if (biggest == null || (info.docCount-info.getDelCount()) > (biggest.docCount-biggest.getDelCount())) {
+        biggest = info;
+      }
     }
+
+    if (biggest != null) {
+      for(FieldInfo fi : getFieldInfos(biggest)) {
+        map.addOrGet(fi.name, fi.number);
+      }
+    }
+
+    // nocommit we can also pull the DV types of the
+    // fields... and catch DV type change on addDoc
+    // instead of much later in merge
+    //}
 
     return map;
   }
@@ -2025,29 +2018,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     try {
       if (useCompoundFile(newSegment)) {
         String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
-        if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "creating compound file " + compoundFileName);
-        }
+
         // Now build compound file
-        // nocommit factor to use craeteCompoundFile method!?
-        final Directory cfsDir = new CompoundFileDirectory(directory, compoundFileName, context, true);
-        IOException prior = null;
-        try {
-          for(String fileName : newSegment.files()) {
-            directory.copy(cfsDir, fileName, fileName, context);
-          }
-        } catch(IOException ex) {
-          prior = ex;
-        } finally {
-          IOUtils.closeWhileHandlingException(prior, cfsDir);
-        }
-        // Perform the merge
+        Collection<String> files = createCompoundFile(infoStream, directory, compoundFileName, MergeState.CheckAbort.NONE, newSegment, context);
+        newSegment.setUseCompoundFile(true);
         
         synchronized(this) {
-          deleter.deleteNewFiles(newSegment.files());
+          deleter.deleteNewFiles(files);
         }
-
-        newSegment.setUseCompoundFile(true);
       }
 
       // Have codec write SegmentInfo.  Must do this after
@@ -2326,7 +2304,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Now create the compound file if needed
       if (useCompoundFile) {
-        createCompoundFile(directory, IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), MergeState.CheckAbort.NONE, info, context);
+        createCompoundFile(infoStream, directory, IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), MergeState.CheckAbort.NONE, info, context);
 
         // delete new non cfs files directly: they were never
         // registered with IFD
@@ -3422,15 +3400,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final String mergedName = merge.info.name;
 
-    int mergedDocCount = 0;
-
     List<SegmentInfo> sourceSegments = merge.segments;
     
     IOContext context = new IOContext(merge.getMergeInfo());
 
     final MergeState.CheckAbort checkAbort = new MergeState.CheckAbort(merge, directory);
     SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(), mergedName, checkAbort,
-                                             // nocommit
                                              payloadProcessorProvider, new FieldInfos.Builder(globalFieldNumberMap), codec, context);
 
     if (infoStream.isEnabled("IW")) {
@@ -3491,7 +3466,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // This is where all the work happens:
       MergeState mergeState = merger.merge();
-      mergedDocCount = merge.info.docCount = mergeState.mergedDocCount;
+      merge.info.docCount = mergeState.mergedDocCount;
 
       // Record which codec was used to write the segment
 
@@ -3499,11 +3474,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // ctor when we make the merge.info:
       merge.info.setCodec(codec);
 
-      // nocommit should segment merger do this!?  else
-      // other places must do so...??? addIndexes...
-
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "merge codec=" + codec + " docCount=" + mergedDocCount + "; merged segment has " +
+        infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.docCount + "; merged segment has " +
                            (mergeState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
                            (mergeState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
                            (mergeState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
@@ -3525,10 +3497,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         final String compoundFileName = IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
 
         try {
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "create compound file " + compoundFileName);
-          }
-          createCompoundFile(directory, compoundFileName, checkAbort, merge.info, context);
+          createCompoundFile(infoStream, directory, compoundFileName, checkAbort, merge.info, context);
           success = true;
         } catch (IOException ioe) {
           synchronized(this) {
@@ -3556,6 +3525,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
         }
 
+        // nocommit why do we set success back to false here!?
         success = false;
 
         synchronized(this) {
@@ -3576,14 +3546,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         merge.info.setUseCompoundFile(true);
       }
 
-      // nocommit need try/success thingy...?  ie must
-      // remove all seg files if we fail to write the .si?
-
       // Have codec write SegmentInfo.  Must do this after
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      codec.segmentInfosFormat().getSegmentInfosWriter().write(directory, merge.info, mergeState.fieldInfos, context);
+      boolean success2 = false;
+      try {
+        codec.segmentInfosFormat().getSegmentInfosWriter().write(directory, merge.info, mergeState.fieldInfos, context);
+        success2 = true;
+      } finally {
+        if (!success2) {
+          synchronized(this) {
+            deleter.deleteNewFiles(merge.info.files());
+          }          
+        }
+      }
       merge.info.clearFilesCache();
 
       // nocommit ideally we would freeze merge.info here!!
@@ -3626,7 +3603,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
-    return mergedDocCount;
+    return merge.info.docCount;
   }
 
   synchronized void addMergeException(MergePolicy.OneMerge merge) {
@@ -3801,9 +3778,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           pendingCommit = toSync;
         }
 
-        // nocommit move this back above...?  problem is
-        // prepareCommit writes on the _X.si files... which
-        // of course need to be sync'd too...
         // This call can take a long time -- 10s of seconds
         // or more.  We do it without sync:
         boolean success = false;
@@ -3999,19 +3973,26 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * deletion files, this SegmentInfo must not reference such files when this
    * method is called, because they are not allowed within a compound file.
    */
-  static final Collection<String> createCompoundFile(Directory directory, String fileName, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
+  static final Collection<String> createCompoundFile(InfoStream infoStream, Directory directory, String fileName, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
           throws IOException {
+
+    if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "create compound file " + fileName);
+    }
     assert info.getDocStoreOffset() == -1;
     // Now merge all added files
     Collection<String> files = info.files();
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
+    IOException prior = null;
     try {
       for (String file : files) {
         directory.copy(cfsDir, file, file, context);
         checkAbort.work(directory.fileLength(file));
       }
+    } catch(IOException ex) {
+      prior = ex;
     } finally {
-      cfsDir.close();
+      IOUtils.closeWhileHandlingException(prior, cfsDir);
     }
 
     return files;

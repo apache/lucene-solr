@@ -41,9 +41,9 @@ import org.apache.lucene.util.IOUtils;
 public class Lucene40SegmentInfosReader extends SegmentInfosReader {
 
   @Override
-  public SegmentInfo read(Directory dir, String segment) throws IOException {
+  public SegmentInfo read(Directory dir, String segment, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene40SegmentInfosFormat.SI_EXTENSION);
-    final IndexInput input = dir.openInput(fileName, IOContext.READONCE);
+    final IndexInput input = dir.openInput(fileName, context);
     boolean success = false;
     try {
       final String version = input.readString();

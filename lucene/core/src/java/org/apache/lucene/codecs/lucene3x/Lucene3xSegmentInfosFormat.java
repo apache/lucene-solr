@@ -35,9 +35,6 @@ import org.apache.lucene.index.SegmentInfo;
 public class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
   private final SegmentInfosReader reader = new Lucene3xSegmentInfosReader();
 
-  // nocommit explain or remove this!:
-  public static final String SI_EXTENSION = "si";
-  
   /** This format adds optional per-segment String
    *  diagnostics storage, and switches userData to Map */
   public static final int FORMAT_DIAGNOSTICS = -9;
@@ -48,20 +45,14 @@ public class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
   /** Each segment records the Lucene version that created it. */
   public static final int FORMAT_3_1 = -11;
 
-  // nocommit we should nuke FORMAT_4_0!?
-
   /** Each segment records whether its postings are written
    *  in the new flex format */
-  public static final int FORMAT_4_0 = -12;
+  public static final int FORMAT_4X_UPGRADE = -12;
 
-  /** This must always point to the most recent file format.
-   * whenever you add a new format, make it 1 smaller (negative version logic)! */
-  // TODO: move this, as its currently part of required preamble
-  public static final int FORMAT_CURRENT = FORMAT_4_0;
+  /** Extension used for saving each SegmentInfo, once a 3.x
+   *  index is first committed to with 4.0. */
+  public static final String SI_EXTENSION = "si";
   
-  /** This must always point to the first supported file format. */
-  public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;
-
   @Override
   public SegmentInfosReader getSegmentInfosReader() {
     return reader;
