@@ -29,10 +29,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FieldInfosReader;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Constants;
 
 /**
@@ -70,7 +67,7 @@ public class SegmentInfo implements Cloneable {
    * - NO says this field has no separate norms
    * >= YES says this field has separate norms with the specified generation
    */
-  private Map<Integer,Long> normGen;
+  private final Map<Integer,Long> normGen;
 
   private boolean isCompoundFile;
 
@@ -109,16 +106,7 @@ public class SegmentInfo implements Cloneable {
   // nocommit why do we have this wimpy ctor...?
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
                      Codec codec) {
-    this.name = name;
-    this.docCount = docCount;
-    this.dir = dir;
-    delGen = NO;
-    this.isCompoundFile = isCompoundFile;
-    this.docStoreOffset = -1;
-    this.docStoreSegment = name;
-    this.codec = codec;
-    delCount = 0;
-    version = Constants.LUCENE_MAIN_VERSION;
+    this(dir, Constants.LUCENE_MAIN_VERSION, name, docCount, -1, name, false, null, isCompoundFile, 0, codec, new HashMap<String,String>());
   }
 
   void setDiagnostics(Map<String, String> diagnostics) {
