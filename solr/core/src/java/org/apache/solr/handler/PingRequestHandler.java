@@ -25,6 +25,7 @@ import java.util.Locale;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -173,7 +174,15 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   {
     
     SolrParams params = req.getParams();
-    SolrCore core = req.getCore();
+    
+    // in this case, we want to default distrib to false so
+    // we only ping the single node
+    Boolean distrib = params.getBool("distrib");
+    if (distrib == null)   {
+      ModifiableSolrParams mparams = new ModifiableSolrParams(params);
+      mparams.set("distrib", false);
+      req.setParams(mparams);
+    }
     
     String actionParam = params.get("action");
     ACTIONS action = null;

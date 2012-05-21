@@ -31,6 +31,8 @@ import java.util.Map;
 /**
  * Query that is boosted by a ValueSource
  */
+// TODO: BoostedQuery and BoostingQuery in the same module? 
+// something has to give
 public class BoostedQuery extends Query {
   private Query q;
   private ValueSource boostVal; // optional, can be null
@@ -187,10 +189,9 @@ public class BoostedQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    if (getClass() != o.getClass()) return false;
+  if (!super.equals(o)) return false;
     BoostedQuery other = (BoostedQuery)o;
-    return this.getBoost() == other.getBoost()
-           && this.q.equals(other.q)
+    return this.q.equals(other.q)
            && this.boostVal.equals(other.boostVal);
   }
 

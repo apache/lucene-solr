@@ -28,7 +28,6 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.tasks.AddDocTask;
 import org.apache.lucene.benchmark.byTask.tasks.CloseIndexTask;
 import org.apache.lucene.benchmark.byTask.tasks.CreateIndexTask;
-import org.apache.lucene.benchmark.byTask.tasks.ResetInputsTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
@@ -42,7 +41,7 @@ import org.apache.lucene.search.TopDocs;
 /** Tests the functionality of {@link DocMaker}. */
 public class DocMakerTest extends BenchmarkTestCase {
 
-  static final class OneDocSource extends ContentSource {
+  public static final class OneDocSource extends ContentSource {
 
     private boolean finish = false;
     
@@ -106,7 +105,6 @@ public class DocMakerTest extends BenchmarkTestCase {
     
     // Indexing configuration.
     props.setProperty("analyzer", WhitespaceAnalyzer.class.getName());
-    props.setProperty("content.source", OneDocSource.class.getName());
     props.setProperty("directory", "RAMDirectory");
     if (setNormsProp) {
       props.setProperty("doc.tokenized.norms", Boolean.toString(normsPropVal));
@@ -119,7 +117,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     Config config = new Config(props);
     
     DocMaker dm = new DocMaker();
-    dm.setConfig(config);
+    dm.setConfig(config, new OneDocSource());
     return dm.makeDocument();
   }
   
@@ -175,12 +173,15 @@ public class DocMakerTest extends BenchmarkTestCase {
     ps.close();
     
     Properties props = new Properties();
-    props.setProperty("content.source", "org.apache.lucene.benchmark.byTask.feeds.LineDocSource");
     props.setProperty("docs.file", f.getAbsolutePath());
     props.setProperty("content.source.forever", "false");
     Config config = new Config(props);
+    
+    ContentSource source = new LineDocSource();
+    source.setConfig(config);
+    
     DocMaker dm = new DocMaker();
-    dm.setConfig(config);
+    dm.setConfig(config, source);
     dm.resetInputs();
     dm.resetInputs();
     dm.close();

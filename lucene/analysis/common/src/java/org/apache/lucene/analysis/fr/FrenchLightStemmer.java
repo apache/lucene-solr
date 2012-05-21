@@ -246,7 +246,7 @@ public class FrenchLightStemmer {
       
       char ch = s[0];
       for (int i = 1; i < len; i++) {
-        if (s[i] == ch)
+        if (s[i] == ch && Character.isLetter(ch))
           len = delete(s, i--, len);
         else
           ch = s[i];
@@ -260,7 +260,7 @@ public class FrenchLightStemmer {
         if (s[len-1] == 'r') len--;
         if (s[len-1] == 'e') len--;
         if (s[len-1] == 'e') len--;
-        if (s[len-1] == s[len-2]) len--;
+        if (s[len-1] == s[len-2] && Character.isLetter(s[len-1])) len--;
     }
     return len;
   }

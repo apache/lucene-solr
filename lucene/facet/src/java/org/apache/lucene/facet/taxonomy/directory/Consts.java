@@ -4,8 +4,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.StoredFieldVisitor.Status;
-import org.apache.lucene.store.IndexInput;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -42,6 +40,7 @@ abstract class Consts {
   public static final class LoadFullPathOnly extends StoredFieldVisitor {
     private String fullPath;
 
+    @Override
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       fullPath = value;
     }

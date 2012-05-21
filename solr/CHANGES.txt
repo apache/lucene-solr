@@ -107,7 +107,7 @@ New Features
 * SOLR-2112: Solrj API now supports streaming results. (ryan)
 
 * SOLR-792: Adding PivotFacetComponent for Hierarchical faceting
-  (erik, Jeremy Hinegardner, Thibaut Lassalle, ryan)
+  (ehatcher, Jeremy Hinegardner, Thibaut Lassalle, ryan)
 
 * LUCENE-2507, SOLR-2571, SOLR-2576: Added DirectSolrSpellChecker, which uses Lucene's
   DirectSpellChecker to retrieve correction candidates directly from the term dictionary using
@@ -144,7 +144,7 @@ New Features
 * SOLR-2338: Add support for using <similarity/> in a schema's fieldType,
   for customizing scoring on a per-field basis. (hossman, yonik, rmuir)
   
-* SOLR-2335: New 'field("...")' function syntax for refering to complex 
+* SOLR-2335: New 'field("...")' function syntax for referring to complex
   field names (containing whitespace or special characters) in functions.
 
 * SOLR-2383: /browse improvements: generalize range and date facet display
@@ -226,10 +226,7 @@ New Features
 * SOLR-3069: Ability to add openSearcher=false to not open a searcher when doing
   a hard commit.  commitWithin now only invokes a softCommit. (yonik)
 
-* SOLR-1726: Added deep paging support to search (sort by score only) which should use less memory when paging deeply into results
- by keeping the priority queue small. (Manojkumar Rangasamy Kannadasan, gsingers)
-
-* SOLR-2802: New FieldMutatingUpdateProcessor and Factory to simplify the 
+* SOLR-2802: New FieldMutatingUpdateProcessor and Factory to simplify the
   development of UpdateProcessors that modify field values of documents as 
   they are indexed. Also includes several useful new implementations:
       RemoveBlankFieldUpdateProcessorFactory
@@ -427,6 +424,9 @@ Bug Fixes
 
 * SOLR-3436: Group count incorrect when not all shards are queried in the second
   pass. (Francois Perron, Martijn van Groningen)
+
+* SOLR-3454: Exception when using result grouping with main=true and using
+  wt=javabin. (Ludovic Boutros, Martijn van Groningen)
 
 Other Changes
 ----------------------

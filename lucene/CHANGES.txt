@@ -266,6 +266,11 @@ Changes in backwards compatibility policy
 * LUCENE-3970: Rename Fields.getUniqueFieldCount -> .size() and
   Terms.getUniqueTermCount -> .size().  (Iulius Curt via Mike McCandless)
 
+* LUCENE-3514: IndexSearcher.setDefaultFieldSortScoring was removed
+  and replaced with per-search control via new expert search methods
+  that take two booleans indicating whether hit scores and max
+  score should be computed.  (Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -507,6 +512,9 @@ API Changes
 * LUCENE-3830: Switched to NormalizeCharMap.Builder to create
   immutable instances of NormalizeCharMap. (Dawid Weiss, Mike
   McCandless)
+
+* LUCENE-4063: FrenchLightStemmer no longer deletes repeated digits.
+  (Tanguy Moal via Steve Rowe)
 
 New features
 
@@ -857,6 +865,10 @@ New features
 * LUCENE-4039: Add AddIndexesTask to benchmark, which uses IW.addIndexes. 
   (Shai Erera)
 
+* LUCENE-3514: Added IndexSearcher.searchAfter when Sort is used,
+  returning results after a specified FieldDoc for deep
+  paging.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
@@ -905,7 +917,11 @@ Optimizations
   FST under the hood, which requires less RAM.  NormalizeCharMap no
   longer accepts empty string match (it did previously, but ignored
   it).  (Dawid Weiss, Mike McCandless)
-             
+
+* LUCENE-4061: improve synchronization in DirectoryTaxonomyWriter.addCategory
+  and few general improvements to DirectoryTaxonomyWriter.
+  (Shai Erera, Gilad Barkai)
+  
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
@@ -953,6 +969,11 @@ Bug fixes
   offset calculation in PathHierarchyTokenizer. 
   (Mike McCandless, Uwe Schindler, Robert Muir)
 
+* LUCENE-4060: Fix a synchronization bug in 
+  DirectoryTaxonomyWriter.addTaxonomies(). Also, the method has been renamed to
+  addTaxonomy and now takes only one Directory and one OrdinalMap.
+  (Shai Erera, Gilad Barkai)
+
 Documentation
 
 * LUCENE-3958: Javadocs corrections for IndexWriter.
@@ -989,6 +1010,10 @@ Build
 
 * LUCENE-3286: Moved remainder of contrib/xml-query-parser to lucene/queryparser.
   Classes now found at org.apache.lucene.queryparser.xml.*
+
+* LUCENE-4059: Improve ANT task prepare-webpages (used by documentation
+  tasks) to correctly encode build file names as URIs for later processing by
+  XSL.  (Greg Bowyer, Uwe Schindler)
 
 ======================= Lucene 3.6.0 =======================
 

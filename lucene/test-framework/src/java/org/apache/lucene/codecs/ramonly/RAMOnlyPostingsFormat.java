@@ -439,7 +439,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return current.positions.length;
     }
 
@@ -487,7 +487,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return current.positions.length;
     }
 

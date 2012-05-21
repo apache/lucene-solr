@@ -121,6 +121,11 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
     return TermOrdValComparator_SML.createComparator(context.reader(), this);
   }
 
+  @Override
+  public int compareDocToValue(int doc, Comparable docValue) {
+    throw new UnsupportedOperationException();
+  }
+
   // Base class for specialized (per bit width of the
   // ords) per-segment comparator.  NOTE: this is messy;
   // we do this only because hotspot can't reliably inline
@@ -215,6 +220,20 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
     @Override
     public BytesRef value(int slot) {
       return values==null ? parent.NULL_VAL : values[slot];
+    }
+
+    @Override
+    public int compareDocToValue(int doc, BytesRef value) {
+      final BytesRef docValue = termsIndex.getTerm(doc, tempBR);
+      if (docValue == null) {
+        if (value == null) {
+          return 0;
+        }
+        return 1;
+      } else if (value == null) {
+        return -1;
+      }
+      return docValue.compareTo(value);
     }
   }
 

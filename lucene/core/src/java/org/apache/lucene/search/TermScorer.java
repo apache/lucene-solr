@@ -51,7 +51,7 @@ final class TermScorer extends Scorer {
   }
 
   @Override
-  public float freq() {
+  public float freq() throws IOException {
     return docsEnum.freq();
   }
 
@@ -66,7 +66,7 @@ final class TermScorer extends Scorer {
   }
   
   @Override
-  public float score() {
+  public float score() throws IOException {
     assert docID() != NO_MORE_DOCS;
     return docScorer.score(docsEnum.docID(), docsEnum.freq());  
   }

@@ -138,6 +138,12 @@ public class RandomSortField extends FieldType {
         public Integer value(int slot) {
           return values[slot];
         }
+
+        @Override
+        public int compareDocToValue(int doc, Integer valueObj) {
+          // values will be positive... no overflow possible.
+          return hash(doc+seed) - valueObj.intValue();
+        }
       };
     }
   };

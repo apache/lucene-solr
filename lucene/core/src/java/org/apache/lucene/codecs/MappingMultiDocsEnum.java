@@ -52,7 +52,7 @@ public final class MappingMultiDocsEnum extends DocsEnum {
   }
 
   @Override
-  public int freq() {
+  public int freq() throws IOException {
     return current.freq();
   }
 

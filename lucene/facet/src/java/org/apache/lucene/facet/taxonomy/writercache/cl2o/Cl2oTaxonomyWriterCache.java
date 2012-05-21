@@ -1,5 +1,8 @@
 package org.apache.lucene.facet.taxonomy.writercache.cl2o;
 
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
@@ -30,44 +33,71 @@ import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
  */
 public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {  
 
+  private final ReadWriteLock lock = new ReentrantReadWriteLock();
   private CompactLabelToOrdinal cache;
 
   public Cl2oTaxonomyWriterCache(int initialCapcity, float loadFactor, int numHashArrays) {
     this.cache = new CompactLabelToOrdinal(initialCapcity, loadFactor, numHashArrays);
   }
 
-  public void close() {
-    cache=null;
+  @Override
+  public synchronized void close() {
+    cache = null;
   }
 
+  @Override
   public boolean hasRoom(int n) {
     // This cache is unlimited, so we always have room for remembering more:
     return true;
   }
 
+  @Override
   public int get(CategoryPath categoryPath) {
-    return cache.getOrdinal(categoryPath);
+    lock.readLock().lock();
+    try {
+      return cache.getOrdinal(categoryPath);
+    } finally {
+      lock.readLock().unlock();
+    }
   }
 
+  @Override
   public int get(CategoryPath categoryPath, int length) {
-    if (length<0 || length>categoryPath.length()) {
+    if (length < 0 || length > categoryPath.length()) {
       length = categoryPath.length();
     }
-    return cache.getOrdinal(categoryPath, length);
+    lock.readLock().lock();
+    try {
+      return cache.getOrdinal(categoryPath, length);
+    } finally {
+      lock.readLock().unlock();
+    }
   }
 
+  @Override
   public boolean put(CategoryPath categoryPath, int ordinal) {
-    cache.addLabel(categoryPath, ordinal);
-    // Tell the caller we didn't clear part of the cache, so it doesn't
-    // have to flush its on-disk index now
-    return false;
+    lock.writeLock().lock();
+    try {
+      cache.addLabel(categoryPath, ordinal);
+      // Tell the caller we didn't clear part of the cache, so it doesn't
+      // have to flush its on-disk index now
+      return false;
+    } finally {
+      lock.writeLock().unlock();
+    }
   }
 
+  @Override
   public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) {
-    cache.addLabel(categoryPath, prefixLen, ordinal);
-    // Tell the caller we didn't clear part of the cache, so it doesn't
-    // have to flush its on-disk index now
-    return false;
+    lock.writeLock().lock();
+    try {
+      cache.addLabel(categoryPath, prefixLen, ordinal);
+      // Tell the caller we didn't clear part of the cache, so it doesn't
+      // have to flush its on-disk index now
+      return false;
+    } finally {
+      lock.writeLock().unlock();
+    }
   }
 
   /**
@@ -75,8 +105,7 @@ public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {
    * @return Number of bytes in memory used by this object.
    */
   public int getMemoryUsage() {
-    int memoryUsage = (this.cache == null) ? 0 : this.cache.getMemoryUsage();
-    return memoryUsage;
+    return cache == null ? 0 : cache.getMemoryUsage();
   }
 
 }

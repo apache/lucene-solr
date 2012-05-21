@@ -398,7 +398,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private Bits liveDocs;
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       assert freq != -1;
       return freq;
     }
@@ -445,7 +445,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private int[] endOffsets;
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       if (positions != null) {
         return positions.length;
       } else {

@@ -353,7 +353,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
     
     @Override
-    public final int freq() {
+    public final int freq() throws IOException {
       assert !indexOmitsTF;
       return freq;
     }
@@ -772,7 +772,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return freq;
     }
 
@@ -991,7 +991,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return freq;
     }
 

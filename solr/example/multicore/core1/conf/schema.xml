@@ -19,14 +19,16 @@
 <schema name="example core one" version="1.1">
   <types>
    <fieldtype name="string"  class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
   </types>
 
  <fields>   
   <!-- general -->
-  <field name="id"       type="string"    indexed="true"  stored="true"  multiValued="false" required="true"/>
-  <field name="type"     type="string"    indexed="true"  stored="true"  multiValued="false" /> 
-  <field name="name"     type="string"    indexed="true"  stored="true"  multiValued="false" /> 
-  <field name="core1"    type="string"    indexed="true"  stored="true"  multiValued="false" /> 
+  <field name="id"        type="string"    indexed="true"  stored="true"  multiValued="false" required="true"/>
+  <field name="type"      type="string"    indexed="true"  stored="true"  multiValued="false" /> 
+  <field name="name"      type="string"    indexed="true"  stored="true"  multiValued="false" /> 
+  <field name="core1"     type="string"    indexed="true"  stored="true"  multiValued="false" />
+  <field name="_version_" type="long"      indexed="true"  stored="true"/>
  </fields>
 
  <!-- field to use to determine and enforce document uniqueness. -->

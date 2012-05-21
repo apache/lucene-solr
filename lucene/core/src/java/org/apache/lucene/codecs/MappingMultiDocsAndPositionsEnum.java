@@ -53,7 +53,7 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
   }
 
   @Override
-  public int freq() {
+  public int freq() throws IOException {
     return current.freq();
   }
 

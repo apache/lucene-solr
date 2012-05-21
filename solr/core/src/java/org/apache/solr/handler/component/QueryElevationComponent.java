@@ -560,9 +560,14 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       public Integer value(int slot) {
         return values[slot];
       }
+
+      @Override
+      public int compareDocToValue(int doc, Integer valueObj) throws IOException {
+        final int value = valueObj.intValue();
+        final int docValue = docVal(doc);
+        return docValue - value;  // values will be small enough that there is no overflow concern
+      }
     };
   }
+  }
 }
-}
-
-

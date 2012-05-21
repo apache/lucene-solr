@@ -269,7 +269,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       assert !omitTF;
       return tf;
     }
@@ -370,7 +370,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return tf;
     }
 

@@ -225,8 +225,13 @@
   </target>
   
   <target name="process-webpages" depends="resolve-pegdown">
-    <pathconvert pathsep="|" dirsep="/" property="buildfiles">
+    <pathconvert pathsep="|" property="buildfiles">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
+      <mapper>
+        <scriptmapper language="javascript">
+          self.addMappedName((new java.io.File(source)).toURI());
+        </scriptmapper>
+      </mapper>
     </pathconvert>
     <!--
       The XSL input file is ignored completely, but XSL expects one to be given,

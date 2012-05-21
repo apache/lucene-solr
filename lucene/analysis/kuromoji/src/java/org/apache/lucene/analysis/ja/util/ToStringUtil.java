@@ -252,6 +252,8 @@ public class ToStringUtil {
   /**
    * Romanize katakana with modified hepburn
    */
+  // TODO: now that this is used by readingsfilter and not just for
+  // debugging, fix this to really be a scheme that works best with IMEs
   public static void getRomanization(Appendable builder, CharSequence s) throws IOException {
     final int len = s.length();
     for (int i = 0; i < len; i++) {
@@ -522,6 +524,9 @@ public class ToStringUtil {
           if (ch2 == 'ウ') {
             builder.append("tō");
             i++;
+          } else if (ch2 == 'ゥ') {
+            builder.append("tu");
+            i++;
           } else {
             builder.append("to");
           }
@@ -665,7 +670,7 @@ public class ToStringUtil {
           builder.append("mu");
           break;
         case 'メ':
-          builder.append("mi");
+          builder.append("me");
           break;
         case 'モ':
           if (ch2 == 'ウ') {
@@ -690,7 +695,12 @@ public class ToStringUtil {
           }
           break;
         case 'ラ':
-          builder.append("ra");
+          if (ch2 == '゜') {
+            builder.append("la");
+            i++;
+          } else {
+            builder.append("ra");
+          }
           break;
         case 'リ':
           if (ch2 == 'ョ' && ch3 == 'ウ') {
@@ -711,19 +721,35 @@ public class ToStringUtil {
           } else if (ch2 == 'ェ') {
             builder.append("rye");
             i++;
+          } else if (ch2 == '゜') {
+            builder.append("li");
+            i++;
           } else {
             builder.append("ri");
           }
           break;
         case 'ル':
-          builder.append("ru");
+          if (ch2 == '゜') {
+            builder.append("lu");
+            i++;
+          } else {
+            builder.append("ru");
+          }
           break;
         case 'レ':
-          builder.append("re");
+          if (ch2 == '゜') {
+            builder.append("le");
+            i++;
+          } else {
+            builder.append("re");
+          }
           break;
         case 'ロ':
           if (ch2 == 'ウ') {
             builder.append("rō");
+            i++;
+          } else if (ch2 == '゜') {
+            builder.append("lo");
             i++;
           } else {
             builder.append("ro");
@@ -887,7 +913,28 @@ public class ToStringUtil {
           builder.append("da");
           break;
         case 'ヂ':
-          builder.append("ji");
+          // TODO: investigate all this
+          if (ch2 == 'ョ' && ch3 == 'ウ') {
+            builder.append("jō");
+            i += 2;
+          } else if (ch2 == 'ュ' && ch3 == 'ウ') {
+            builder.append("jū");
+            i += 2;
+          } else if (ch2 == 'ャ') {
+            builder.append("ja");
+            i++;
+          } else if (ch2 == 'ョ') {
+            builder.append("jo");
+            i++;
+          } else if (ch2 == 'ュ') {
+            builder.append("ju");
+            i++;
+          } else if (ch2 == 'ェ') {
+            builder.append("je");
+            i++;
+          } else {
+            builder.append("ji");
+          }
           break;
         case 'ヅ':
           builder.append("zu");
@@ -993,6 +1040,18 @@ public class ToStringUtil {
           } else {
             builder.append("po");
           }
+          break;
+        case 'ヷ':
+          builder.append("va");
+          break;
+        case 'ヸ':
+          builder.append("vi");
+          break;
+        case 'ヹ':
+          builder.append("ve");
+          break;
+        case 'ヺ':
+          builder.append("vo");
           break;
         case 'ヴ':
           if (ch2 == 'ィ' && ch3 == 'ェ') {

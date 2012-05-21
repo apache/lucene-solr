@@ -291,7 +291,8 @@ public abstract class LuceneTestCase extends Assert {
    */
   @ClassRule
   public static TestRule classRules = RuleChain
-    .outerRule(suiteFailureMarker = new TestRuleMarkFailure())
+    .outerRule(new TestRuleIgnoreTestSuites())
+    .around(suiteFailureMarker = new TestRuleMarkFailure())
     .around(new TestRuleAssertionsRequired())
     .around(new TestRuleNoStaticHooksShadowing())
     .around(new TestRuleNoInstanceHooksOverrides())

@@ -190,6 +190,10 @@ public abstract class FieldComparator<T> {
     }
   }
 
+  /** Returns negative result if the doc's value is less
+   *  than the provided value. */
+  public abstract int compareDocToValue(int doc, T value) throws IOException;
+
   public static abstract class NumericComparator<T extends Number> extends FieldComparator<T> {
     protected final T missingValue;
     protected final String field;
@@ -274,9 +278,19 @@ public abstract class FieldComparator<T> {
     public Byte value(int slot) {
       return Byte.valueOf(values[slot]);
     }
+
+    @Override
+    public int compareDocToValue(int doc, Byte value) {
+      byte docValue = currentReaderValues[doc];
+      // Test for docValue == 0 to save Bits.get method call for
+      // the common case (doc has value and value is non-zero):
+      if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
+        docValue = missingValue;
+      }
+      return docValue - value.byteValue();
+    }
   }
 
-  
   /** Parses field's values as double (using {@link
    *  FieldCache#getDoubles} and sorts by ascending value */
   public static final class DoubleComparator extends NumericComparator<Double> {
@@ -351,6 +365,24 @@ public abstract class FieldComparator<T> {
     public Double value(int slot) {
       return Double.valueOf(values[slot]);
     }
+
+    @Override
+    public int compareDocToValue(int doc, Double valueObj) {
+      final double value = valueObj.doubleValue();
+      double docValue = currentReaderValues[doc];
+      // Test for docValue == 0 to save Bits.get method call for
+      // the common case (doc has value and value is non-zero):
+      if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
+        docValue = missingValue;
+      }
+      if (docValue < value) {
+        return -1;
+      } else if (docValue > value) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
   }
 
   /** Uses float index values to sort by ascending value */
@@ -414,6 +446,19 @@ public abstract class FieldComparator<T> {
     @Override
     public Double value(int slot) {
       return Double.valueOf(values[slot]);
+    }
+
+    @Override
+    public int compareDocToValue(int doc, Double valueObj) {
+      final double value = valueObj.doubleValue();
+      final double docValue = currentReaderValues.getFloat(doc);
+      if (docValue < value) {
+        return -1;
+      } else if (docValue > value) {
+        return 1;
+      } else {
+        return 0;
+      }
     }
   }
 
@@ -494,6 +539,24 @@ public abstract class FieldComparator<T> {
     public Float value(int slot) {
       return Float.valueOf(values[slot]);
     }
+
+    @Override
+    public int compareDocToValue(int doc, Float valueObj) {
+      final float value = valueObj.floatValue();
+      float docValue = currentReaderValues[doc];
+      // Test for docValue == 0 to save Bits.get method call for
+      // the common case (doc has value and value is non-zero):
+      if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
+        docValue = missingValue;
+      }
+      if (docValue < value) {
+        return -1;
+      } else if (docValue > value) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
   }
 
   /** Parses field's values as short (using {@link
@@ -555,6 +618,18 @@ public abstract class FieldComparator<T> {
     @Override
     public Short value(int slot) {
       return Short.valueOf(values[slot]);
+    }
+
+    @Override
+    public int compareDocToValue(int doc, Short valueObj) {
+      final short value = valueObj.shortValue();
+      short docValue = currentReaderValues[doc];
+      // Test for docValue == 0 to save Bits.get method call for
+      // the common case (doc has value and value is non-zero):
+      if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
+        docValue = missingValue;
+      }
+      return docValue - value;
     }
   }
 
@@ -640,6 +715,24 @@ public abstract class FieldComparator<T> {
     public Integer value(int slot) {
       return Integer.valueOf(values[slot]);
     }
+
+    @Override
+    public int compareDocToValue(int doc, Integer valueObj) {
+      final int value = valueObj.intValue();
+      int docValue = currentReaderValues[doc];
+      // Test for docValue == 0 to save Bits.get method call for
+      // the common case (doc has value and value is non-zero):
+      if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
+        docValue = missingValue;
+      }
+      if (docValue < value) {
+        return -1;
+      } else if (docValue > value) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
   }
 
   /** Loads int index values and sorts by ascending value. */
@@ -707,6 +800,19 @@ public abstract class FieldComparator<T> {
     @Override
     public Long value(int slot) {
       return Long.valueOf(values[slot]);
+    }
+
+    @Override
+    public int compareDocToValue(int doc, Long valueObj) {
+      final long value = valueObj.longValue();
+      final long docValue = currentReaderValues.getInt(doc);
+      if (docValue < value) {
+        return -1;
+      } else if (docValue > value) {
+        return 1;
+      } else {
+        return 0;
+      }
     }
   }
 
@@ -788,6 +894,24 @@ public abstract class FieldComparator<T> {
     public Long value(int slot) {
       return Long.valueOf(values[slot]);
     }
+
+    @Override
+    public int compareDocToValue(int doc, Long valueObj) {
+      final long value = valueObj.longValue();
+      long docValue = currentReaderValues[doc];
+      // Test for docValue == 0 to save Bits.get method call for
+      // the common case (doc has value and value is non-zero):
+      if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
+        docValue = missingValue;
+      }
+      if (docValue < value) {
+        return -1;
+      } else if (docValue > value) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
   }
 
   /** Sorts by descending relevance.  NOTE: if you are
@@ -815,12 +939,14 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareBottom(int doc) throws IOException {
       float score = scorer.score();
+      assert !Float.isNaN(score);
       return bottom > score ? -1 : (bottom < score ? 1 : 0);
     }
 
     @Override
     public void copy(int slot, int doc) throws IOException {
       scores[slot] = scorer.score();
+      assert !Float.isNaN(scores[slot]);
     }
 
     @Override
@@ -856,6 +982,22 @@ public abstract class FieldComparator<T> {
       // Reversed intentionally because relevance by default
       // sorts descending:
       return second.compareTo(first);
+    }
+
+    @Override
+    public int compareDocToValue(int doc, Float valueObj) throws IOException {
+      final float value = valueObj.floatValue();
+      float docValue = scorer.score();
+      assert !Float.isNaN(docValue);
+      if (docValue < value) {
+        // reverse of FloatComparator
+        return 1;
+      } else if (docValue > value) {
+        // reverse of FloatComparator
+        return -1;
+      } else {
+        return 0;
+      }
     }
   }
 
@@ -903,6 +1045,19 @@ public abstract class FieldComparator<T> {
     @Override
     public Integer value(int slot) {
       return Integer.valueOf(docIDs[slot]);
+    }
+
+    @Override
+    public int compareDocToValue(int doc, Integer valueObj) {
+      final int value = valueObj.intValue();
+      int docValue = docBase + doc;
+      if (docValue < value) {
+        return -1;
+      } else if (docValue > value) {
+        return 1;
+      } else {
+        return 0;
+      }
     }
   }
   
@@ -998,6 +1153,20 @@ public abstract class FieldComparator<T> {
       throw new UnsupportedOperationException();
     }
 
+    @Override
+    public int compareDocToValue(int doc, BytesRef value) {
+      BytesRef docValue = termsIndex.getTerm(doc, tempBR);
+      if (docValue == null) {
+        if (value == null) {
+          return 0;
+        }
+        return -1;
+      } else if (value == null) {
+        return 1;
+      }
+      return docValue.compareTo(value);
+    }
+
     /** Base class for specialized (per bit width of the
      * ords) per-segment comparator.  NOTE: this is messy;
      * we do this only because hotspot can't reliably inline
@@ -1037,6 +1206,11 @@ public abstract class FieldComparator<T> {
           return 1;
         }
         return val1.compareTo(val2);
+      }
+
+      @Override
+      public int compareDocToValue(int doc, BytesRef value) {
+        return TermOrdValComparator.this.compareDocToValue(doc, value);
       }
     }
 
@@ -1385,6 +1559,11 @@ public abstract class FieldComparator<T> {
       throw new UnsupportedOperationException();
     }
 
+    @Override
+    public int compareDocToValue(int doc, BytesRef value) {
+      return termsIndex.getBytes(doc, tempBR).compareTo(value);
+    }
+
     // TODO: would be nice to share these specialized impls
     // w/ TermOrdValComparator
 
@@ -1421,6 +1600,11 @@ public abstract class FieldComparator<T> {
         assert val1 != null;
         assert val2 != null;
         return comp.compare(val1, val2);
+      }
+
+      @Override
+      public int compareDocToValue(int doc, BytesRef value) {
+        return TermOrdValDocValuesComparator.this.compareDocToValue(doc, value);
       }
     }
 
@@ -1801,6 +1985,11 @@ public abstract class FieldComparator<T> {
       }
       return val1.compareTo(val2);
     }
+
+    @Override
+    public int compareDocToValue(int doc, BytesRef value) {
+      return docTerms.getTerm(doc, tempBR).compareTo(value);
+    }
   }
 
   /** Sorts by field's natural Term sort order.  All
@@ -1868,6 +2057,11 @@ public abstract class FieldComparator<T> {
       assert val1 != null;
       assert val2 != null;
       return val1.compareTo(val2);
+    }
+
+    @Override
+    public int compareDocToValue(int doc, BytesRef value) {
+      return docTerms.getBytes(doc, tempBR).compareTo(value);
     }
   }
 

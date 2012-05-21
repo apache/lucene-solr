@@ -19,7 +19,8 @@ package org.apache.lucene.analysis.charfilter;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.Version;

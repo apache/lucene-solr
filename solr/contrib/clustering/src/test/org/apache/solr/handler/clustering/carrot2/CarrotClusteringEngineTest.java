@@ -205,7 +205,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
 
   @Test
-  public void solrStopWordsUsedInCarrot2Clustering() throws Exception {
+  public void testSolrStopWordsUsedInCarrot2Clustering() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("merge-resources", false);
     params.set(AttributeUtils.getKey(
@@ -220,7 +220,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
 
   @Test
-  public void solrStopWordsNotDefinedOnAFieldForClustering() throws Exception {
+  public void testSolrStopWordsNotDefinedOnAFieldForClustering() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     // Force string fields to be used for clustering. Does not make sense
     // in a real word, but does the job in the test.
@@ -239,7 +239,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
   
   @Test
-  public void highlightingOfMultiValueField() throws Exception {
+  public void testHighlightingOfMultiValueField() throws Exception {
     final String snippetWithoutSummary = getLabels(clusterWithHighlighting(
         false, 30, 3, "multi", 1).get(0)).get(1);
     assertTrue("Snippet contains first value", snippetWithoutSummary.contains("First"));
@@ -256,7 +256,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
   
   @Test
-  public void concatenatingMultipleFields() throws Exception {
+  public void testConcatenatingMultipleFields() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CarrotParams.TITLE_FIELD_NAME, "title,heading");
     params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet,body");
@@ -271,7 +271,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
 
   @Test
-  public void highlightingMultipleFields() throws Exception {
+  public void testHighlightingMultipleFields() throws Exception {
     final TermQuery query = new TermQuery(new Term("snippet", "content"));
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -297,7 +297,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
 
   @Test
-  public void oneCarrot2SupportedLanguage() throws Exception {
+  public void testOneCarrot2SupportedLanguage() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
 
@@ -309,7 +309,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
   
   @Test
-  public void oneCarrot2SupportedLanguageOfMany() throws Exception {
+  public void testOneCarrot2SupportedLanguageOfMany() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
     
@@ -321,7 +321,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
   
   @Test
-  public void languageCodeMapping() throws Exception {
+  public void testLanguageCodeMapping() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
     params.add(CarrotParams.LANGUAGE_CODE_MAP, "POLISH:pl");
@@ -334,7 +334,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
   
   @Test
-  public void passingOfCustomFields() throws Exception {
+  public void testPassingOfCustomFields() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CarrotParams.CUSTOM_FIELD_NAME, "intfield_i:intfield");
     params.add(CarrotParams.CUSTOM_FIELD_NAME, "floatfield_f:floatfield");
@@ -350,6 +350,34 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     assertEquals("Integer field", "10", labels.get(2));
     assertEquals("Float field", "10.5", labels.get(3));
     assertEquals("List field", "[first, second]", labels.get(4));
+  }
+
+  @Test
+  public void testCustomTokenizer() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.TITLE_FIELD_NAME, "title");
+    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
+
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("custom-duplicating-tokenizer"), 1, 16, new TermQuery(new Term("title",
+            "field")), params).get(0));
+    
+    // The custom test tokenizer duplicates each token's text
+    assertTrue("First token", labels.get(0).contains("TitleTitle"));
+  }
+  
+  @Test
+  public void testCustomStemmer() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.TITLE_FIELD_NAME, "title");
+    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
+    
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("custom-duplicating-stemmer"), 1, 12, new TermQuery(new Term("title",
+            "field")), params).get(0));
+    
+    // The custom test stemmer duplicates and lowercases each token's text
+    assertTrue("First token", labels.get(0).contains("titletitle"));
   }
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {

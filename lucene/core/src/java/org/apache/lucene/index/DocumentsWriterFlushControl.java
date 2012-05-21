@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
+import org.apache.lucene.index.DocumentsWriterStallControl.MemoryController;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -40,7 +41,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * {@link IndexWriterConfig#getRAMPerThreadHardLimitMB()} to prevent address
  * space exhaustion.
  */
-final class DocumentsWriterFlushControl {
+final class DocumentsWriterFlushControl implements MemoryController {
 
   private final long hardMaxBytesPerDWPT;
   private long activeBytes = 0;
@@ -88,7 +89,7 @@ final class DocumentsWriterFlushControl {
     return flushBytes + activeBytes;
   }
   
-  long stallLimitBytes() {
+  public long stallLimitBytes() {
     final double maxRamMB = config.getRAMBufferSizeMB();
     return maxRamMB != IndexWriterConfig.DISABLE_AUTO_FLUSH ? (long)(2 * (maxRamMB * 1024 * 1024)) : Long.MAX_VALUE;
   }

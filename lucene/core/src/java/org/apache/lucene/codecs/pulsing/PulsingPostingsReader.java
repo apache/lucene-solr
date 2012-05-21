@@ -356,7 +356,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       assert indexOptions != IndexOptions.DOCS_ONLY;
       return freq;
     }
@@ -462,7 +462,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return freq;
     }
 

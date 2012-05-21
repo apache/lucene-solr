@@ -132,7 +132,6 @@ public class TestValueSources extends LuceneTestCase {
     
     reader = iw.getReader();
     searcher = newSearcher(reader);
-    searcher.setDefaultFieldSortScoring(true, true);
     iw.close();
   }
   

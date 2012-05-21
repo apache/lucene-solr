@@ -420,7 +420,7 @@ public class SepPostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       assert !omitTF;
       return freq;
     }
@@ -598,7 +598,7 @@ public class SepPostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return freq;
     }
 

@@ -118,16 +118,14 @@ final class CompoundFileWriter implements Closeable{
   
   private synchronized IndexOutput getOutput() throws IOException {
     if (dataOut == null) {
-      IndexOutput dataOutput = null;
       boolean success = false;
       try {
-        dataOutput = directory.createOutput(dataFileName, IOContext.DEFAULT);
-        dataOutput.writeVInt(FORMAT_CURRENT);
-        dataOut = dataOutput;
+        dataOut = directory.createOutput(dataFileName, IOContext.DEFAULT);
+        dataOut.writeVInt(FORMAT_CURRENT);
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeWhileHandlingException(dataOutput);
+          IOUtils.closeWhileHandlingException(dataOut);
         }
       }
     } 

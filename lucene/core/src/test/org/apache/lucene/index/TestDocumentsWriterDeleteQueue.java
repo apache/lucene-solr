@@ -68,7 +68,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
         assertAllBetween(last2, j, bd2, ids);
         last2 = j + 1;
       }
-      assertEquals(uniqueValues.size(), queue.numGlobalTermDeletes());
+      assertEquals(j+1, queue.numGlobalTermDeletes());
     }
     assertEquals(uniqueValues, bd1.terms.keySet());
     assertEquals(uniqueValues, bd2.terms.keySet());

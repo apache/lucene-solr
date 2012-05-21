@@ -17,7 +17,8 @@
   border-color: #c0c0c0;
 }
 
-#menu-wrapper p a
+#menu-wrapper p a,
+#menu a
 {
   background-position: 5px 50%;
   padding-left: 26px;
@@ -138,19 +139,27 @@
   background-image: url( ../../img/ico/box.png );
 }
 
-#menu-selector ul
+#menu-selector ul,
+#menu ul
 {
   display: none;
   padding-top: 5px;
   padding-bottom: 10px;
 }
 
-#menu-selector .active ul
+#menu-selector .active ul,
+#menu .active ul
 {
   display: block;
 }
 
-#menu-selector ul li a
+#menu ul li
+{
+  border-bottom: 0;
+}
+
+#menu-selector ul li a,
+#menu ul li a
 {
   background-position: 7px 50%;
   border-bottom: 1px solid #f0f0f0;
@@ -159,18 +168,21 @@
   padding-left: 26px;
 }
 
-#menu-selector ul li:last-child a
+#menu-selector ul li:last-child a,
+#menu ul li:last-child a
 {
   border-bottom: 0;
 }
 
-#menu-selector ul li a:hover
+#menu-selector ul li a:hover,
+#menu ul li a:hover
 {
   background-color: #f0f0f0;
   color: #333;
 }
 
-#menu-selector ul li.active a
+#menu-selector ul li.active a,
+#menu ul li.active a
 {
   background-color: #d0d0d0;
   border-color: #d0d0d0;
@@ -178,11 +190,21 @@
 }
 
 #menu #index.global p a { background-image: url( ../../img/ico/dashboard.png ); }
+
 #menu #logging.global p a { background-image: url( ../../img/ico/inbox-document-text.png ); }
+#menu #logging.global .level a { background-image: url( ../../img/ico/gear.png ); }
+
 #menu #java-properties.global p a { background-image: url( ../../img/ico/jar.png ); }
+
 #menu #threads.global p a { background-image: url( ../../img/ico/ui-accordion.png ); }
+
 #menu #cores.global p a { background-image: url( ../../img/ico/databases.png ); }
+
 #menu #cloud.global p a { background-image: url( ../../img/ico/network-cloud.png ); }
+#menu #cloud.global .tree a { background-image: url( ../../img/ico/folder-tree.png ); }
+#menu #cloud.global .graph a { background-image: url( ../../img/ico/molecule.png ); }
+#menu #cloud.global .rgraph a { background-image: url( ../../img/ico/asterisk.png ); }
+#menu #cloud.global .dump a { background-image: url( ../../img/ico/download-cloud.png ); }
 
 #menu-selector .ping.error a
 {

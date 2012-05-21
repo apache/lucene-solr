@@ -1261,12 +1261,13 @@
 
        http://wiki.apache.org/solr/ClusteringComponent
 
-       You'll need to set the solr.cluster.enabled system property 
+       You'll need to set the solr.cluster.enabled system property
        when running solr to run with clustering enabled:
 
-       java -Dsolr.clustering.enabled=true -jar start.jar
+            java -Dsolr.clustering.enabled=true -jar start.jar
+
     -->
-  <searchComponent name="clustering" 
+  <searchComponent name="clustering"
                    enable="${solr.clustering.enabled:false}"
                    class="solr.clustering.ClusteringComponent" >
     <!-- Declare an engine -->

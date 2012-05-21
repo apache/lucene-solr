@@ -64,7 +64,7 @@ public class CustomScoreQuery extends Query {
    * computation.  This parameter is optional - it can be null.
    */
   public CustomScoreQuery(Query subQuery, Query scoringQuery) {
-	  this(subQuery, scoringQuery!=null ? // don't want an array that contains a single null..
+    this(subQuery, scoringQuery!=null ? // don't want an array that contains a single null..
         new Query[] {scoringQuery} : new Query[0]);
   }
 

@@ -1022,7 +1022,7 @@ class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return docs.freq();
     }
 
@@ -1069,7 +1069,7 @@ class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public int freq() {
+    public int freq() throws IOException {
       return pos.freq();
     }
 

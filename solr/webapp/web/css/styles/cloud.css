@@ -3,32 +3,6 @@
   position: relative;
 }
 
-#content #cloud #navigation
-{
-  width: 11%;
-}
-
-#content #cloud #navigation .tree a { background-image: url( ../../img/ico/folder-tree.png ); }
-#content #cloud #navigation .graph a { background-image: url( ../../img/ico/molecule.png ); }
-#content #cloud #navigation .rgraph a { background-image: url( ../../img/ico/asterisk.png ); }
-#content #cloud #navigation .dump a { background-image: url( ../../img/ico/download-cloud.png ); }
-
-#content #cloud #navigation .dump
-{
-  margin-top: 10px;
-}
-
-#content #cloud #navigation .dump a:hover
-{
-  color: #008;
-}
-
-#content #cloud #frame
-{
-  float: right;
-  width: 88%;
-}
-
 #content #cloud #frame .content
 {
   display: none;
@@ -262,17 +236,17 @@
   stroke-width: 1.5px;
 }
 
-#content #graph-content .node.lvl-2 text
+#content #graph-content .node.lvl-3 text
 {
   cursor: pointer;
 }
 
-#content #graph-content .node.lvl-2:hover circle
+#content #graph-content .node.lvl-3:hover circle
 {
   stroke: #000 !important;
 }
 
-#content #graph-content .node.lvl-2:hover text
+#content #graph-content .node.lvl-3:hover text
 {
   fill: #000 !important;
 }
@@ -340,8 +314,18 @@
   fill: #000;
 }
 
-#content #graph-content .link.lvl-1,
+#content #graph-content .link.lvl-2,
 #content #graph-content .link.leader
 {
   stroke: #c0c0c0;
+}
+
+#content #graph-content .node.lvl-0 circle
+{
+  stroke: #fff;
+}
+
+#content #graph-content .link.lvl-1
+{
+  stroke: #fff;
 }

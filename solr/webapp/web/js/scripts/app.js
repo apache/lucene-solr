@@ -131,7 +131,7 @@ var sammy = $.sammy
 
 var solr_admin = function( app_config )
 {
-	self = this,
+  self = this,
 
   menu_element = null,
 
@@ -168,41 +168,29 @@ var solr_admin = function( app_config )
         {
           self.cores_data = response.status;
 
-          var core_count = 0; for( var i in response.status ) { core_count++; }
-          is_multicore = core_count > 1;
-
-          if( is_multicore )
-          {
-            self.menu_element
-              .addClass( 'multicore' );
-
-            $( '#cores', menu_element )
-              .show();
-          }
-          else
-          {
-            self.menu_element 
-              .addClass( 'singlecore' );
-          }
-
           for( var core_name in response.status )
           {
             var core_path = config.solr_path + '/' + core_name;
             var schema =  response['status'][core_name]['schema'];
             var solrconfig =  response['status'][core_name]['config'];
-			
-            if( !core_name )
-            {
-              core_name = 'singlecore';
-              core_path = config.solr_path
-            }
+            var classes = [];
 
             if( !environment_basepath )
             {
               environment_basepath = core_path;
             }
 
-            var core_tpl = '<li id="' + core_name + '" data-basepath="' + core_path + '" schema="' + schema + '" config="' + solrconfig + '">' + "\n"
+            if( response['status'][core_name]['isDefaultCore'] )
+            {
+              classes.push( 'default' );
+            }
+
+            var core_tpl = '<li id="' + core_name + '" '
+                         + '    class="' + classes.join( ' ' ) + '"'
+                         + '    data-basepath="' + core_path + '"'
+                         + '    schema="' + schema + '"'
+                         + '    config="' + solrconfig + '"'
+                         + '>' + "\n"
                          + '  <p><a href="#/' + core_name + '">' + core_name + '</a></p>' + "\n"
                          + '  <ul>' + "\n"
 
@@ -213,7 +201,7 @@ var solr_admin = function( app_config )
                          + '    <li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n"
                          + '    <li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n"
                          + '    <li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
-                         + '    <li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins</span></a></li>' + "\n"
+                         + '    <li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n"
                          + '    <li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
 
                          + '    </ul>' + "\n"

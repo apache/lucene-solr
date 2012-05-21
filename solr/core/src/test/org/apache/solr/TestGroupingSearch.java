@@ -20,13 +20,21 @@ package org.apache.solr;
 import org.apache.lucene.search.FieldCache;
 import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.ResultContext;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 public class TestGroupingSearch extends SolrTestCaseJ4 {
@@ -37,7 +45,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig.xml","schema12.xml");
+    initCore("solrconfig.xml", "schema12.xml");
   }
 
   @Before
@@ -75,18 +83,18 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
             );
 
-    assertQ(req("q","title:title", "group", "true", "group.field","group_si")
-            ,"//lst[@name='grouped']/lst[@name='group_si']"
-            ,"*[count(//arr[@name='groups']/lst) = 2]"
+    assertQ(req("q", "title:title", "group", "true", "group.field", "group_si")
+        , "//lst[@name='grouped']/lst[@name='group_si']"
+        , "*[count(//arr[@name='groups']/lst) = 2]"
 
-            ,"//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
-            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
+        , "//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
+        , "//arr[@name='groups']/lst[1]/result[@numFound='2']"
+        , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
 
-            ,"//arr[@name='groups']/lst[2]/int[@name='groupValue'][.='1']"
-            ,"//arr[@name='groups']/lst[2]/result[@numFound='3']"
-            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
-            );
+        , "//arr[@name='groups']/lst[2]/int[@name='groupValue'][.='1']"
+        , "//arr[@name='groups']/lst[2]/result[@numFound='3']"
+        , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
+    );
   }
 
   @Test
@@ -117,19 +125,19 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
             );
 
-    assertQ(req("q","title:title", "group", "true", "group.field","group_si", "group.ngroups", "true")
-            ,"//lst[@name='grouped']/lst[@name='group_si']/int[@name='matches'][.='5']"
-            ,"//lst[@name='grouped']/lst[@name='group_si']/int[@name='ngroups'][.='2']"
-            ,"*[count(//arr[@name='groups']/lst) = 2]"
+    assertQ(req("q", "title:title", "group", "true", "group.field", "group_si", "group.ngroups", "true")
+        , "//lst[@name='grouped']/lst[@name='group_si']/int[@name='matches'][.='5']"
+        , "//lst[@name='grouped']/lst[@name='group_si']/int[@name='ngroups'][.='2']"
+        , "*[count(//arr[@name='groups']/lst) = 2]"
 
-            ,"//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
-            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
+        , "//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
+        , "//arr[@name='groups']/lst[1]/result[@numFound='2']"
+        , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
 
-            ,"//arr[@name='groups']/lst[2]/int[@name='groupValue'][.='1']"
-            ,"//arr[@name='groups']/lst[2]/result[@numFound='3']"
-            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
-            );
+        , "//arr[@name='groups']/lst[2]/int[@name='groupValue'][.='1']"
+        , "//arr[@name='groups']/lst[2]/result[@numFound='3']"
+        , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
+    );
   }
 
   @Test
@@ -141,22 +149,22 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertU(add(doc("id", "5","name", "author3", "title", "the title of a title")));
     assertU(commit());
 
-    assertQ(req("q","title:title", "group", "true", "group.field","name", "sort", "score desc", "group.sort", "score desc")
-            ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author2']"
-    //        ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
-            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
+    assertQ(req("q", "title:title", "group", "true", "group.field", "name", "sort", "score desc", "group.sort", "score desc")
+        , "//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author2']"
+        //        ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
+        , "//arr[@name='groups']/lst[1]/result[@numFound='2']"
+        , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
 
-            ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author1']"
-    //        ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
-            ,"//arr[@name='groups']/lst[2]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='2']"
+        , "//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author1']"
+        //        ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
+        , "//arr[@name='groups']/lst[2]/result[@numFound='2']"
+        , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='2']"
 
-            ,"//arr[@name='groups']/lst[3]/str[@name='groupValue'][.='author3']"
-    //        ,"//arr[@name='groups']/lst[3]/int[@name='matches'][.='1']"
-            ,"//arr[@name='groups']/lst[3]/result[@numFound='1']"
-            ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
-            );
+        , "//arr[@name='groups']/lst[3]/str[@name='groupValue'][.='author3']"
+        //        ,"//arr[@name='groups']/lst[3]/int[@name='matches'][.='1']"
+        , "//arr[@name='groups']/lst[3]/result[@numFound='1']"
+        , "//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
+    );
   }
 
 
@@ -168,18 +176,18 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertU(add(doc("id", "4","name", "author2", "weight", "0.11")));
     assertU(commit());
 
-    assertQ(req("q","*:*", "group", "true", "group.field","name", "sort", "id asc", "group.sort", "weight desc")
-            ,"*[count(//arr[@name='groups']/lst) = 2]"
-            ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author1']"
-    //        ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
-            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='1']"
+    assertQ(req("q", "*:*", "group", "true", "group.field", "name", "sort", "id asc", "group.sort", "weight desc")
+        , "*[count(//arr[@name='groups']/lst) = 2]"
+        , "//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author1']"
+        //        ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
+        , "//arr[@name='groups']/lst[1]/result[@numFound='2']"
+        , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='1']"
 
-            ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
-    //        ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
-            ,"//arr[@name='groups']/lst[2]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
-            );
+        , "//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
+        //        ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
+        , "//arr[@name='groups']/lst[2]/result[@numFound='2']"
+        , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
+    );
   }
 
   @Test
@@ -212,6 +220,37 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         req("q", "*:*", "start", "2", "rows", "1", "group", "true", "group.field", "id", "group.main", "true"),
         "/response=={'numFound':5,'start':2,'docs':[{'id':'3'}]}"
     );
+  }
+
+  @Test
+  public void testGroupingSimpleFormatArrayIndexOutOfBoundsExceptionWithJavaBin() throws Exception {
+    assertU(add(doc("id", "1", "nullfirst", "1")));
+    assertU(add(doc("id", "2", "nullfirst", "1")));
+    assertU(add(doc("id", "3", "nullfirst", "2")));
+    assertU(add(doc("id", "4", "nullfirst", "2")));
+    assertU(add(doc("id", "5", "nullfirst", "2")));
+    assertU(add(doc("id", "6", "nullfirst", "3")));
+    assertU(commit());
+
+    SolrQueryRequest request =
+        req("q", "*:*","group", "true", "group.field", "nullfirst", "group.main", "true", "wt", "javabin", "start", "4", "rows", "10");
+
+    SolrQueryResponse response = new SolrQueryResponse();
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    try {
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(request, response));
+      String handlerName = request.getParams().get(CommonParams.QT);
+      h.getCore().execute(h.getCore().getRequestHandler(handlerName), request, response);
+      BinaryResponseWriter responseWriter = new BinaryResponseWriter();
+      responseWriter.write(out, request, response);
+    } finally {
+      request.close();
+      SolrRequestInfo.clearRequestInfo();
+    }
+
+    assertEquals(6, ((ResultContext) response.getValues().get("response")).docs.matches());
+    new BinaryResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
+    out.close();
   }
 
   @Test
@@ -530,9 +569,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
 
     ///////////////////////// group.format == simple
-    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","3", "start","1", "group.limit","2", "group.format","simple")
-    , "/grouped/foo_i=={'matches':10,'doclist':"
-        +"{'numFound':10,'start':1,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}}"
+    assertJQ(req("fq", filt, "q", "{!func}" + f2, "group", "true", "group.field", f, "fl", "id", "rows", "3", "start", "1", "group.limit", "2", "group.format", "simple")
+        , "/grouped/foo_i=={'matches':10,'doclist':"
+        + "{'numFound':10,'start':1,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}}"
     );
   }
 
