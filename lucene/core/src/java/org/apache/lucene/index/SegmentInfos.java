@@ -112,28 +112,16 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
                                // there was an IOException that had interrupted a commit
 
   public Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
-
-  private int format;
   
   private List<SegmentInfo> segments = new ArrayList<SegmentInfo>();
   private Set<SegmentInfo> segmentSet = new HashSet<SegmentInfo>();
   private transient List<SegmentInfo> cachedUnmodifiableList;
-  
-  private Codec codecFormat;
   
   /**
    * If non-null, information about loading segments_N files
    * will be printed here.  @see #setInfoStream.
    */
   private static PrintStream infoStream = null;
-  
-  public void setFormat(int format) {
-    this.format = format;
-  }
-
-  public int getFormat() {
-    return format;
-  }
 
   public SegmentInfo info(int i) {
     return segments.get(i);
@@ -971,7 +959,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   void replace(SegmentInfos other) {
     rollbackSegmentInfos(other.asList());
     lastGeneration = other.lastGeneration;
-    format = other.format;
   }
 
   /** Returns sum of all segment's docCounts.  Note that
@@ -1047,14 +1034,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   void rollbackSegmentInfos(List<SegmentInfo> infos) {
     this.clear();
     this.addAll(infos);
-  }
-  
-  /**
-   * Returns the codec used to decode this SegmentInfos from disk 
-   * @lucene.internal
-   */
-  Codec codecFormat() {
-    return codecFormat;
   }
   
   /** Returns an <b>unmodifiable</b> {@link Iterator} of contained segments in order. */
