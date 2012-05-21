@@ -77,13 +77,13 @@ public class SegmentInfo implements Cloneable {
   private volatile long sizeInBytes = -1;         // total byte size of all files (computed on demand)
 
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-  private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
+  private final int docStoreOffset;                     // if this segment shares stored fields & vectors, this
                                                   // offset is where in that file this segment's docs begin
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-  private String docStoreSegment;                 // name used to derive fields/vectors file we share with
+  private final String docStoreSegment;                 // name used to derive fields/vectors file we share with
                                                   // other segments
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-  private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
+  private final boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
 
   // nocommit explain that codec need not save this....:
   private int delCount;                           // How many deleted docs in this segment
@@ -270,18 +270,6 @@ public class SegmentInfo implements Cloneable {
   public boolean getDocStoreIsCompoundFile() {
     // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     return docStoreIsCompoundFile;
-  }
-
-  /**
-   * @deprecated shared doc stores are not supported in >= 4.0
-   */
-  @Deprecated
-  void setDocStore(int offset, String segment, boolean isCompoundFile) {
-    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-    docStoreOffset = offset;
-    docStoreSegment = segment;
-    docStoreIsCompoundFile = isCompoundFile;
-    clearFilesCache();
   }
 
   /**
