@@ -985,26 +985,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-
-  // LUCENE-1468 -- make sure opening an IndexWriter with
-  // create=true does not remove non-index files
-
-  public void testOtherFiles() throws Throwable {
-    Directory dir = newDirectory();
-    try {
-      // Create my own random file:
-      IndexOutput out = dir.createOutput("myrandomfile", newIOContext(random()));
-      out.writeByte((byte) 42);
-      out.close();
-
-      new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
-
-      assertTrue(dir.fileExists("myrandomfile"));
-    } finally {
-      dir.close();
-    }
-  }
-
   public void testDeadlock() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));

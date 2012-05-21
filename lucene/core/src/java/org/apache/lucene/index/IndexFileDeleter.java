@@ -150,7 +150,7 @@ final class IndexFileDeleter {
 
     for (String fileName : files) {
 
-      if ((IndexFileNameFilter.INSTANCE.accept(null, fileName)) && !fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
+      if (!fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
 
         // Add this file to refCounts with initial count 0:
         getRefCount(fileName);
@@ -331,8 +331,9 @@ final class IndexFileDeleter {
 
     for(int i=0;i<files.length;i++) {
       String fileName = files[i];
+      // nocommit nuke this filtering
       if ((segmentName == null || fileName.startsWith(segmentPrefix1) || fileName.startsWith(segmentPrefix2)) &&
-          IndexFileNameFilter.INSTANCE.accept(null, fileName) &&
+          !fileName.endsWith("write.lock") &&
           !refCounts.containsKey(fileName) &&
           !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
         // Unreferenced file, so remove it

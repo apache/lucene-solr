@@ -1505,10 +1505,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // merge:
       for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.maxNumSegments = maxNumSegments;
+        // nocommit: remove this, except it causes
+        // TestExternalCodecs.testPerFieldCodec failures:
+        segmentsToMerge.put(merge.info, Boolean.TRUE);
       }
 
       for (final MergePolicy.OneMerge merge: runningMerges) {
         merge.maxNumSegments = maxNumSegments;
+        // nocommit: remove this, except it causes
+        // TestExternalCodecs.testPerFieldCodec failures:
+        segmentsToMerge.put(merge.info, Boolean.TRUE);
       }
     }
 
@@ -2813,7 +2819,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // merge will skip merging it and will then drop
         // it once it's done:
         if (!mergingSegments.contains(info)) {
-          System.out.println("drop all del seg=" + info.name);
           segmentInfos.remove(info);
           readerPool.drop(info);
         }
@@ -3309,9 +3314,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // names.
     final String mergeSegmentName = newSegmentName();
     merge.info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, 0, -1, mergeSegmentName, false, null, false, 0, codec, details);
-
-    // nocommit
-    // merge.info.setBufferedDeletesGen(result.gen);
 
     // Lock order: IW -> BD
     bufferedDeletesStream.prune(segmentInfos);
