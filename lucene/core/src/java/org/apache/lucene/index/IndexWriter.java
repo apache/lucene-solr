@@ -3276,11 +3276,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return;
     }
 
-    // Bind a new segment name here so even with
-    // ConcurrentMergePolicy we keep deterministic segment
-    // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null);
-
     // TODO: in the non-pool'd case this is somewhat
     // wasteful, because we open these readers, close them,
     // and then open them again for merging.  Maybe  we
@@ -3308,14 +3303,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       checkpoint();
     }
 
+    Map<String,String> details = new HashMap<String,String>();
+    details.put("mergeMaxNumSegments", ""+merge.maxNumSegments);
+    details.put("mergeFactor", Integer.toString(merge.segments.size()));
+
+    // Bind a new segment name here so even with
+    // ConcurrentMergePolicy we keep deterministic segment
+    // names.
+    final String mergeSegmentName = newSegmentName();
+    merge.info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, 0, -1, mergeSegmentName, false, null, false, 0, codec, details);
+
     merge.info.setBufferedDeletesGen(result.gen);
 
     // Lock order: IW -> BD
     bufferedDeletesStream.prune(segmentInfos);
-    Map<String,String> details = new HashMap<String,String>();
-    details.put("mergeMaxNumSegments", ""+merge.maxNumSegments);
-    details.put("mergeFactor", Integer.toString(merge.segments.size()));
-    setDiagnostics(merge.info, "merge", details);
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merge seg=" + merge.info.name);
@@ -3505,10 +3506,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       merge.info.setFiles(new HashSet<String>(dirWrapper.getCreatedFiles()));
 
       // Record which codec was used to write the segment
-
-      // nocommit stop doing this once we call non-wimpy
-      // ctor when we make the merge.info:
-      merge.info.setCodec(codec);
 
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.docCount + "; merged segment has " +

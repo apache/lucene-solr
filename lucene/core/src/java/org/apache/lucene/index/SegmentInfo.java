@@ -40,7 +40,6 @@ import org.apache.lucene.util.Constants;
  *
  * @lucene.experimental
  */
-// nocommit final...?
 public class SegmentInfo implements Cloneable {
   
   // TODO: remove these from this class, for now this is the representation
@@ -60,6 +59,7 @@ public class SegmentInfo implements Cloneable {
    * - NO if there are no deletes
    * - YES or higher if there are deletes at generation N
    */
+  // nocommit move this "out" somewhere...
   // nocommit explain that codec need not save this....:
   private long delGen;
 
@@ -87,6 +87,7 @@ public class SegmentInfo implements Cloneable {
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private final boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
 
+  // nocommit move this out:
   // nocommit explain that codec need not save this....:
   private int delCount;                           // How many deleted docs in this segment
   
@@ -99,31 +100,15 @@ public class SegmentInfo implements Cloneable {
   // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and
   // specific versions afterwards ("3.0", "3.1" etc.).
   // see Constants.LUCENE_MAIN_VERSION.
+  // nocommit why does ctor even take this?  shuldn't we
+  // always be the current version!?
+  // nocommit final?
   private String version;
 
   // NOTE: only used in-RAM by IW to track buffered deletes;
   // this is never written to/read from the Directory
   private long bufferedDeletesGen;
   
-  // nocommit why do we have this wimpy ctor...?
-  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
-                     Codec codec) {
-    // nocommit
-    /*
-    this.name = name;
-    this.docCount = docCount;
-    this.dir = dir;
-    delGen = NO;
-    this.isCompoundFile = isCompoundFile;
-    this.docStoreOffset = -1;
-    this.docStoreSegment = name;
-    this.codec = codec;
-    delCount = 0;
-    version = Constants.LUCENE_MAIN_VERSION;
-    */
-    this(dir, Constants.LUCENE_MAIN_VERSION, name, docCount, -1, name, false, null, isCompoundFile, 0, codec, new HashMap<String,String>());
-  }
-
   void setDiagnostics(Map<String, String> diagnostics) {
     this.diagnostics = diagnostics;
   }
@@ -506,23 +491,12 @@ public class SegmentInfo implements Cloneable {
   // nocommit now on building a CFS we erase the files that
   // are in it... maybe we should somehow preserve it...
   public void setFiles(Set<String> files) {
-    //System.out.println("set files=" + files);
-    //if (files.size() == 0) {
-    //new Throwable().printStackTrace(System.out);
-    //}
     setFiles = files;
   }
 
+  // nocommit remove this!  it's only needed for
+  // clearing/adding the files set...
   public Set<String> getFiles() {
     return setFiles;
-  }
-
-  public Set<String> getFiles2() throws IOException {
-    Set<String> files = new HashSet<String>(setFiles);
-
-    // nocommit make this take list instead...?
-    // Must separately add any live docs files:
-    codec.liveDocsFormat().files(this, files);
-    return files;
   }
 }

@@ -203,30 +203,30 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
       if (isCompoundFile) {
         files.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
       } else {
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "fnm"));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "frq"));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "prx"));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tis"));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tii"));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "nrm"));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xFieldInfosReader.FIELD_INFOS_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xPostingsFormat.FREQ_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xPostingsFormat.PROX_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xPostingsFormat.TERMS_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xNormsProducer.NORMS_EXTENSION));
       }
 
       if (docStoreOffset != -1) {
         if (docStoreIsCompoundFile) {
-          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", "cfx"));
+          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION));
         } else {
-          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", "fdx"));
-          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", "fdt"));
-          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", "tvx"));
-          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", "tvf"));
-          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", "tvd"));
+          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xStoredFieldsReader.FIELDS_INDEX_EXTENSION));
+          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xStoredFieldsReader.FIELDS_EXTENSION));
+          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
+          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION));
+          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
         }
       } else if (!isCompoundFile) {
-        files.add(IndexFileNames.segmentFileName(segmentName, "", "fdx"));
-        files.add(IndexFileNames.segmentFileName(segmentName, "", "fdt"));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tvx"));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tvf"));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tvd"));
+        files.add(IndexFileNames.segmentFileName(segmentName, "", Lucene3xStoredFieldsReader.FIELDS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(segmentName, "", Lucene3xStoredFieldsReader.FIELDS_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
       }
 
       if (normGen != null) {
