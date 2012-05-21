@@ -1501,15 +1501,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
       mergeMaxNumSegments = maxNumSegments;
 
-      // Now mark all pending & running merges as isMaxNumSegments:
+      // Now mark all pending & running merges for forced
+      // merge:
       for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.maxNumSegments = maxNumSegments;
-        segmentsToMerge.put(merge.info, Boolean.TRUE);
       }
 
-      for ( final MergePolicy.OneMerge merge: runningMerges ) {
+      for (final MergePolicy.OneMerge merge: runningMerges) {
         merge.maxNumSegments = maxNumSegments;
-        segmentsToMerge.put(merge.info, Boolean.TRUE);
       }
     }
 
@@ -2040,7 +2039,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // above:
       codec.segmentInfosFormat().getSegmentInfosWriter().write(directory, newSegment, flushedSegment.fieldInfos, context);
 
-      // nocommit ideally we would freeze merge.info here!!
+      // nocommit ideally we would freeze newSegment here!!
       // because any changes after writing the .si will be
       // lost... 
 
@@ -2291,8 +2290,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       MergeState mergeState = merger.merge();                // merge 'em
-      int docCount = mergeState.mergedDocCount;
-      SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, docCount,
+      SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, mergeState.mergedDocCount,
                                          -1, mergedName, false, null, false, 0,
                                          codec, null);
       info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
@@ -2815,6 +2813,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // merge will skip merging it and will then drop
         // it once it's done:
         if (!mergingSegments.contains(info)) {
+          System.out.println("drop all del seg=" + info.name);
           segmentInfos.remove(info);
           readerPool.drop(info);
         }
@@ -3311,7 +3310,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final String mergeSegmentName = newSegmentName();
     merge.info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, 0, -1, mergeSegmentName, false, null, false, 0, codec, details);
 
-    merge.info.setBufferedDeletesGen(result.gen);
+    // nocommit
+    // merge.info.setBufferedDeletesGen(result.gen);
 
     // Lock order: IW -> BD
     bufferedDeletesStream.prune(segmentInfos);
@@ -3329,16 +3329,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         merge.estimatedMergeBytes += info.sizeInBytes() * (1.0 - delRatio);
       }
     }
-
-    // TODO: I think this should no longer be needed (we
-    // now build CFS before adding segment to the infos);
-    // however, on removing it, tests fail for some reason!
-
-    // Also enroll the merged segment into mergingSegments;
-    // this prevents it from getting selected for a merge
-    // after our merge is done but while we are building the
-    // CFS:
-    mergingSegments.add(merge.info);
   }
 
   static void setDiagnostics(SegmentInfo info, String source) {
@@ -3375,9 +3365,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       for(SegmentInfo info : sourceSegments) {
         mergingSegments.remove(info);
       }
-      // TODO: if we remove the add in _mergeInit, we should
-      // also remove this:
-      mergingSegments.remove(merge.info);
       merge.registerDone = false;
     }
 

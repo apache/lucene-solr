@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
-import java.util.Arrays;                          // nocommit
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -186,12 +185,9 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
     final Map<String,String> diagnostics = input.readStringStringMap();
 
-    // nocommit unused...
-    final int hasVectors;
     if (format <= Lucene3xSegmentInfosFormat.FORMAT_HAS_VECTORS) {
-      hasVectors = input.readByte();
-    } else {
-      hasVectors = -1;
+      // NOTE: unused
+      final int hasVectors = input.readByte();
     }
 
     final Set<String> files;
@@ -240,18 +236,10 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
           } else {
             // nocommit -- i thought _X_N.sY files were pre-3.0...????
             assert false;
-            /*
-            System.out.println("FILES: " + Arrays.toString(dir.listAll()) + "; seg=" + segmentName);
-            addIfExists(dir, files, IndexFileNames.fileNameFromGeneration(segmentName, "s" + ent.getKey(), gen));
-            assert false: "gen=" + gen;
-            */
           }
         }
       }
     }
-
-    // nocommit we can use hasProx/hasVectors from the 3.x
-    // si... if we can pass this to the other components...?
 
     SegmentInfo info = new SegmentInfo(dir, version, segmentName, docCount, docStoreOffset,
                                        docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
