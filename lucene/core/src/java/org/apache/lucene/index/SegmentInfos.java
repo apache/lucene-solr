@@ -358,7 +358,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
           if (!directory.fileExists(fileName)) {
             upgradedSIFiles.add(write3xInfo(directory, si, IOContext.DEFAULT));
-            si.clearFilesCache();
           }
         }
       }

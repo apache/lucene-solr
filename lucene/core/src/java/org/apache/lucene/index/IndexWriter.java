@@ -2039,7 +2039,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // and 2) .si reflects useCompoundFile=true change
       // above:
       codec.segmentInfosFormat().getSegmentInfosWriter().write(directory, newSegment, flushedSegment.fieldInfos, context);
-      newSegment.clearFilesCache();
 
       // nocommit ideally we would freeze merge.info here!!
       // because any changes after writing the .si will be
@@ -2329,7 +2328,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // and 2) .si reflects useCompoundFile=true change
       // above:
       codec.segmentInfosFormat().getSegmentInfosWriter().write(trackingDir, info, mergeState.fieldInfos, context);
-      info.clearFilesCache();
       info.getFiles().addAll(trackingDir.getCreatedFiles());
 
       // Register the new segment
@@ -3596,7 +3594,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
         }
       }
-      merge.info.clearFilesCache();
 
       // nocommit ideally we would freeze merge.info here!!
       // because any changes after writing the .si will be

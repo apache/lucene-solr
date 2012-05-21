@@ -73,9 +73,6 @@ public class SegmentInfo implements Cloneable {
 
   private boolean isCompoundFile;
 
-  private volatile List<String> files;            // Cached list of files that this segment uses
-                                                  // in the Directory
-
   private volatile long sizeInBytes = -1;         // total byte size of all files (computed on demand)
 
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
@@ -168,7 +165,7 @@ public class SegmentInfo implements Cloneable {
     } else {
       delGen++;
     }
-    clearFilesCache();
+    sizeInBytes = -1;
   }
 
   public long getNextDelGen() {
@@ -181,7 +178,7 @@ public class SegmentInfo implements Cloneable {
 
   void clearDelGen() {
     delGen = NO;
-    clearFilesCache();
+    sizeInBytes = -1;
   }
 
   @Override
@@ -195,8 +192,6 @@ public class SegmentInfo implements Cloneable {
     } else {
       clonedNormGen = null;
     }
-
-    
 
     SegmentInfo newInfo = new SegmentInfo(dir, version, name, docCount, docStoreOffset,
                                           docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
@@ -239,7 +234,6 @@ public class SegmentInfo implements Cloneable {
    */
   void setUseCompoundFile(boolean isCompoundFile) {
     this.isCompoundFile = isCompoundFile;
-    clearFilesCache();
   }
   
   /**
@@ -261,6 +255,7 @@ public class SegmentInfo implements Cloneable {
 
   public void setDelGen(long delGen) {
     this.delGen = delGen;
+    sizeInBytes = -1;
   }
 
   /**
@@ -323,14 +318,6 @@ public class SegmentInfo implements Cloneable {
     codec.liveDocsFormat().files(this, files);
 
     return new ArrayList<String>(files);
-  }
-
-  /* Called whenever any change is made that affects which
-   * files this segment has. */
-  // nocommit make private again
-  public void clearFilesCache() {
-    sizeInBytes = -1;
-    files = null;
   }
 
   /** {@inheritDoc} */
@@ -443,6 +430,7 @@ public class SegmentInfo implements Cloneable {
   // are in it... maybe we should somehow preserve it...
   public void setFiles(Set<String> files) {
     setFiles = files;
+    sizeInBytes = -1;
   }
 
   // nocommit remove this!  it's only needed for
