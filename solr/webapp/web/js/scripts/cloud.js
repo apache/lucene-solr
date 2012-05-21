@@ -156,12 +156,12 @@ var helper_path_class = function( p )
   var classes = [ 'link' ];
   classes.push( 'lvl-' + p.target.depth );
 
-  if( p.target.data.leader )
+  if( p.target.data && p.target.data.leader )
   {
     classes.push( 'leader' );
   }
 
-  if( p.target.data.state )
+  if( p.target.data && p.target.data.state )
   {
     classes.push( p.target.data.state );
   }
@@ -174,12 +174,12 @@ var helper_node_class = function( d )
   var classes = [ 'node' ];
   classes.push( 'lvl-' + d.depth );
 
-  if( d.data.leader )
+  if( d.data && d.data.leader )
   {
     classes.push( 'leader' );
   }
 
-  if( d.data.state )
+  if( d.data && d.data.state )
   {
     classes.push( d.data.state );
   }
@@ -197,7 +197,7 @@ var helper_data = {
 
 var helper_node_text = function( d )
 {
-  if( !d.data.uri )
+  if( !d.data || !d.data.uri )
   {
     return d.name;
   }
@@ -361,7 +361,11 @@ var prepare_graph = function( graph_element, callback )
               eval( 'state = ' + response.znode.data + ';' );
               
               var leaf_count = 0;
-              var collections = [];
+              var graph_data = {
+                name: null,
+                children : []
+              };
+
               for( var c in state )
               {
                 var shards = [];
@@ -424,10 +428,8 @@ var prepare_graph = function( graph_element, callback )
                   },
                   children: shards
                 };
-                collections.push( collection );
+                graph_data.children.push( collection );
               }
-
-              var graph_data = collections.shift();
               
               helper_data.protocol = $.unique( helper_data.protocol );
               helper_data.host = $.unique( helper_data.host );

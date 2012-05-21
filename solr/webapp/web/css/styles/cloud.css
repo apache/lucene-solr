@@ -236,17 +236,17 @@
   stroke-width: 1.5px;
 }
 
-#content #graph-content .node.lvl-2 text
+#content #graph-content .node.lvl-3 text
 {
   cursor: pointer;
 }
 
-#content #graph-content .node.lvl-2:hover circle
+#content #graph-content .node.lvl-3:hover circle
 {
   stroke: #000 !important;
 }
 
-#content #graph-content .node.lvl-2:hover text
+#content #graph-content .node.lvl-3:hover text
 {
   fill: #000 !important;
 }
@@ -314,8 +314,18 @@
   fill: #000;
 }
 
-#content #graph-content .link.lvl-1,
+#content #graph-content .link.lvl-2,
 #content #graph-content .link.leader
 {
   stroke: #c0c0c0;
+}
+
+#content #graph-content .node.lvl-0 circle
+{
+  stroke: #fff;
+}
+
+#content #graph-content .link.lvl-1
+{
+  stroke: #fff;
 }
