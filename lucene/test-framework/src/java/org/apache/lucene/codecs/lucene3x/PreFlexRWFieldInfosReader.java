@@ -92,7 +92,7 @@ class PreFlexRWFieldInfosReader extends FieldInfosReader {
         }
         
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, null, normType);
+          omitNorms, storePayloads, indexOptions, null, normType, null);
       }
 
       if (input.getFilePointer() != input.length()) {

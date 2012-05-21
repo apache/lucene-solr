@@ -33,13 +33,14 @@ import org.apache.lucene.store.DataOutput; // javadoc
  * <p>
  * <p>Field names are stored in the field info file, with suffix <tt>.fnm</tt>.</p>
  * <p>FieldInfos (.fnm) --&gt; FNMVersion,FieldsCount, &lt;FieldName,FieldNumber,
- * FieldBits,DocValuesBits&gt; <sup>FieldsCount</sup></p>
+ * FieldBits,DocValuesBits,Attributes&gt; <sup>FieldsCount</sup></p>
  * <p>Data types:
  * <ul>
  *   <li>FNMVersion, FieldsCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>FieldName --&gt; {@link DataOutput#writeString String}</li>
  *   <li>FieldBits, DocValuesBits --&gt; {@link DataOutput#writeByte Byte}</li>
- *   <li>FieldNumber --&gt; {@link DataOutput#writeInt Uint32}</li>
+ *   <li>FieldNumber --&gt; {@link DataOutput#writeInt VInt}</li>
+ *   <li>Attributes --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
  * </ul>
  * </p>
  * Field Descriptions:

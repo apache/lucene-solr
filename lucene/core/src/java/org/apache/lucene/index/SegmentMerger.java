@@ -124,6 +124,10 @@ final class SegmentMerger {
       numMerged = mergeVectors();
       assert numMerged == mergeState.mergedDocCount;
     }
+    
+    // write the merged infos
+    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
+    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
 
     return mergeState;
   }
@@ -190,10 +194,6 @@ final class SegmentMerger {
 
   private void mergeFieldInfos() throws IOException {
     mergeDocValuesAndNormsFieldInfos();
-    // write the merged infos
-    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat()
-        .getFieldInfosWriter();
-    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
   }
 
   // NOTE: this is actually merging all the fieldinfos

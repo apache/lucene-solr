@@ -205,6 +205,14 @@ public final class ParallelAtomicReader extends AtomicReader {
     }
   }
   
+  /**
+   * {@inheritDoc}
+   * <p>
+   * NOTE: the returned field numbers will likely not
+   * correspond to the actual field numbers in the underlying
+   * readers, and codec metadata ({@link FieldInfo#getAttribute(String)}
+   * will be unavailable.
+   */
   @Override
   public FieldInfos getFieldInfos() {
     return fieldInfos;

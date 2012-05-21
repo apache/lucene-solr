@@ -18,14 +18,14 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
@@ -93,14 +93,28 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         String dvType = readString(DOCVALUES.length, scratch);
         final DocValues.Type docValuesType = docValuesType(dvType);
         
-        
-        
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, INDEXOPTIONS);
         IndexOptions indexOptions = IndexOptions.valueOf(readString(INDEXOPTIONS.length, scratch));
       
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch, NUM_ATTS);
+        int numAtts = Integer.parseInt(readString(NUM_ATTS.length, scratch));
+        Map<String,String> atts = new HashMap<String,String>();
+
+        for (int j = 0; j < numAtts; j++) {
+          SimpleTextUtil.readLine(input, scratch);
+          assert StringHelper.startsWith(scratch, ATT_KEY);
+          String key = readString(ATT_KEY.length, scratch);
+        
+          SimpleTextUtil.readLine(input, scratch);
+          assert StringHelper.startsWith(scratch, ATT_VALUE);
+          String value = readString(ATT_VALUE.length, scratch);
+          atts.put(key, value);
+        }
+
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType);
+          omitNorms, storePayloads, indexOptions, docValuesType, normsType, atts);
       }
 
       if (input.getFilePointer() != input.length()) {

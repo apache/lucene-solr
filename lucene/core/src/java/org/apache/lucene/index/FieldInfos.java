@@ -296,7 +296,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
                                   boolean storeTermVector, boolean omitNorms, boolean storePayloads,
                                   IndexOptions indexOptions, DocValues.Type docValuesType, DocValues.Type normType) {
       globalFieldNumbers.setIfNotSet(fieldNumber, name);
-      final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType);
+      final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType, null);
       putInternal(fi);
       return fi;
     }
@@ -306,12 +306,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
     
     final FieldInfos finish() {
-      FieldInfo[] cloned = new FieldInfo[byName.size()];
-      int upto = 0;
-      for(FieldInfo fieldInfo : byName.values()) {
-        cloned[upto++] = fieldInfo.clone();
-      }
-      return new FieldInfos(cloned);
+      return new FieldInfos(byName.values().toArray(new FieldInfo[byName.size()]));
     }
   }
 }

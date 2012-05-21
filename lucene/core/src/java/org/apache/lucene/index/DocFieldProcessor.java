@@ -83,6 +83,9 @@ final class DocFieldProcessor extends DocConsumer {
     for (DocValuesConsumerAndDocID consumer : docValues.values()) {
       consumer.docValuesConsumer.finish(state.numDocs);
     }
+    
+    // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
+    IOUtils.close(perDocConsumer);
 
     // Important to save after asking consumer to flush so
     // consumer can alter the FieldInfo* if necessary.  EG,
@@ -90,9 +93,6 @@ final class DocFieldProcessor extends DocConsumer {
     // FieldInfo.storePayload.
     FieldInfosWriter infosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
     infosWriter.write(state.directory, state.segmentName, state.fieldInfos, IOContext.DEFAULT);
-
-    // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
-    IOUtils.close(perDocConsumer);
   }
 
   @Override

@@ -76,7 +76,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
           bits |= OMIT_POSITIONS;
         }
         output.writeString(fi.name);
-        output.writeInt(fi.number);
+        output.writeVInt(fi.number);
         output.writeByte(bits);
 
         // pack the DV types in one byte
@@ -85,6 +85,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);
+        output.writeStringStringMap(fi.attributes());
       }
     } finally {
       output.close();

@@ -1,6 +1,7 @@
 package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.FieldInfosReader;
@@ -64,7 +65,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
 
       for (int i = 0; i < size; i++) {
         String name = input.readString();
-        final int fieldNumber = input.readInt();
+        final int fieldNumber = input.readVInt();
         byte bits = input.readByte();
         boolean isIndexed = (bits & Lucene40FieldInfosWriter.IS_INDEXED) != 0;
         boolean storeTermVector = (bits & Lucene40FieldInfosWriter.STORE_TERMVECTOR) != 0;
@@ -91,8 +92,9 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         byte val = input.readByte();
         final DocValues.Type docValuesType = getDocValuesType((byte) (val & 0x0F));
         final DocValues.Type normsType = getDocValuesType((byte) ((val >>> 4) & 0x0F));
+        final Map<String,String> attributes = input.readStringStringMap();
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType);
+          omitNorms, storePayloads, indexOptions, docValuesType, normsType, attributes);
       }
 
       if (input.getFilePointer() != input.length()) {

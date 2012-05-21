@@ -86,6 +86,7 @@ class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
           // only in RW case
           output.writeByte((byte) (fi.getNormType() == null ? 0 : 1));
         }
+        assert fi.attributes() == null; // not used or supported
       }
     } finally {
       output.close();

@@ -17,6 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.index.DocValues.Type;
 
 /**
@@ -42,6 +45,8 @@ public final class FieldInfo {
   private IndexOptions indexOptions;
   private boolean storePayloads; // whether this field stores payloads together with term positions
 
+  private Map<String,String> attributes;
+
   /**
    * Controls how much information is stored in the postings lists.
    * @lucene.experimental
@@ -65,7 +70,7 @@ public final class FieldInfo {
    * @lucene.experimental
    */
   public FieldInfo(String name, boolean indexed, int number, boolean storeTermVector, 
-            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normsType) {
+            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normsType, Map<String,String> attributes) {
     this.name = name;
     this.indexed = indexed;
     this.number = number;
@@ -83,6 +88,7 @@ public final class FieldInfo {
       this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       this.normType = null;
     }
+    this.attributes = attributes;
     assert checkConsistency();
     assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !storePayloads;
   }
@@ -105,13 +111,6 @@ public final class FieldInfo {
     assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
 
     return true;
-  }
-
-  
-  @Override
-  public FieldInfo clone() {
-    return new FieldInfo(name, indexed, number, storeTermVector,
-                         omitNorms, storePayloads, indexOptions, docValueType, normType);
   }
 
   // should only be called by FieldInfos#addOrUpdate
@@ -224,5 +223,40 @@ public final class FieldInfo {
    */
   public boolean hasVectors() {
     return storeTermVector;
+  }
+  
+  /**
+   * Get a codec attribute value, or null if it does not exist
+   */
+  public String getAttribute(String key) {
+    if (attributes == null) {
+      return null;
+    } else {
+      return attributes.get(key);
+    }
+  }
+  
+  /**
+   * Puts a codec attribute value.
+   * <p>
+   * This is a key-value mapping for the field that the codec can use
+   * to store additional metadata, and will be available to the codec
+   * when reading the segment via {@link #getAttribute(String)}
+   * <p>
+   * If a value already exists for the field, it will be replaced with 
+   * the new value.
+   */
+  public String putAttribute(String key, String value) {
+    if (attributes == null) {
+      attributes = new HashMap<String,String>();
+    }
+    return attributes.put(key, value);
+  }
+  
+  /**
+   * @return internal codec attributes map. May be null if no mappings exist.
+   */
+  public Map<String,String> attributes() {
+    return attributes;
   }
 }
