@@ -118,7 +118,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   private List<SegmentInfo> segments = new ArrayList<SegmentInfo>();
   private Set<SegmentInfo> segmentSet = new HashSet<SegmentInfo>();
   private transient List<SegmentInfo> cachedUnmodifiableList;
-  private transient Set<SegmentInfo> cachedUnmodifiableSet;  
   
   private Codec codecFormat;
   
@@ -479,7 +478,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       sis.segments = new ArrayList<SegmentInfo>(size());
       sis.segmentSet = new HashSet<SegmentInfo>(size());
       sis.cachedUnmodifiableList = null;
-      sis.cachedUnmodifiableSet = null;
       for(final SegmentInfo info : this) {
         assert info.getCodec() != null;
         // dont directly access segments, use add method!!!
@@ -1071,15 +1069,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       cachedUnmodifiableList = Collections.unmodifiableList(segments);
     }
     return cachedUnmodifiableList;
-  }
-  
-  /** Returns all contained segments as an <b>unmodifiable</b> {@link Set} view.
-   * The iterator is not sorted, use {@link List} view or {@link #iterator} to get all segments in order. */
-  public Set<SegmentInfo> asSet() {
-    if (cachedUnmodifiableSet == null) {
-      cachedUnmodifiableSet = Collections.unmodifiableSet(segmentSet);
-    }
-    return cachedUnmodifiableSet;
   }
   
   public int size() {
