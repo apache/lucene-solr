@@ -22,29 +22,48 @@ import com.google.common.collect.ImmutableSet;
  */
 
 
-public interface CarrotParams {
+/**
+ * Carrot2 parameter mapping (recognized and mapped if passed via Solr configuration).
+ */
+public final class CarrotParams {
 
-  String CARROT_PREFIX = "carrot.";
+  private static String CARROT_PREFIX = "carrot.";
 
-  String ALGORITHM = CARROT_PREFIX + "algorithm";
+  public static String ALGORITHM = CARROT_PREFIX + "algorithm";
   
-  String TITLE_FIELD_NAME = CARROT_PREFIX + "title";
-  String URL_FIELD_NAME = CARROT_PREFIX + "url";
-  String SNIPPET_FIELD_NAME = CARROT_PREFIX + "snippet";
-  String LANGUAGE_FIELD_NAME = CARROT_PREFIX + "lang";
-  String CUSTOM_FIELD_NAME = CARROT_PREFIX + "custom";
+  public static String TITLE_FIELD_NAME = CARROT_PREFIX + "title";
+  public static String URL_FIELD_NAME = CARROT_PREFIX + "url";
+  public static String SNIPPET_FIELD_NAME = CARROT_PREFIX + "snippet";
+  public static String LANGUAGE_FIELD_NAME = CARROT_PREFIX + "lang";
+  public static String CUSTOM_FIELD_NAME = CARROT_PREFIX + "custom";
   
-  String PRODUCE_SUMMARY = CARROT_PREFIX + "produceSummary";
-  String SUMMARY_FRAGSIZE = CARROT_PREFIX + "fragSize";
-  String SUMMARY_SNIPPETS = CARROT_PREFIX + "summarySnippets";
+  public static String PRODUCE_SUMMARY = CARROT_PREFIX + "produceSummary";
+  public static String SUMMARY_FRAGSIZE = CARROT_PREFIX + "fragSize";
+  public static String SUMMARY_SNIPPETS = CARROT_PREFIX + "summarySnippets";
 
-  String NUM_DESCRIPTIONS = CARROT_PREFIX + "numDescriptions";
-  String OUTPUT_SUB_CLUSTERS = CARROT_PREFIX + "outputSubClusters";
-  String LEXICAL_RESOURCES_DIR = CARROT_PREFIX + "lexicalResourcesDir";
-  String LANGUAGE_CODE_MAP = CARROT_PREFIX + "lcmap";
+  public static String NUM_DESCRIPTIONS = CARROT_PREFIX + "numDescriptions";
+  public static String OUTPUT_SUB_CLUSTERS = CARROT_PREFIX + "outputSubClusters";
+  public static String LEXICAL_RESOURCES_DIR = CARROT_PREFIX + "lexicalResourcesDir";
+  public static String LANGUAGE_CODE_MAP = CARROT_PREFIX + "lcmap";
 
-  public static final Set<String> CARROT_PARAM_NAMES = ImmutableSet.of(
-          ALGORITHM, TITLE_FIELD_NAME, URL_FIELD_NAME, SNIPPET_FIELD_NAME, LANGUAGE_FIELD_NAME,
-          PRODUCE_SUMMARY, SUMMARY_FRAGSIZE, SUMMARY_SNIPPETS, NUM_DESCRIPTIONS, OUTPUT_SUB_CLUSTERS, 
-          LEXICAL_RESOURCES_DIR);
+  static final Set<String> CARROT_PARAM_NAMES = ImmutableSet.of(
+          ALGORITHM, 
+          
+          TITLE_FIELD_NAME, 
+          URL_FIELD_NAME, 
+          SNIPPET_FIELD_NAME, 
+          LANGUAGE_FIELD_NAME,
+          CUSTOM_FIELD_NAME,
+          
+          PRODUCE_SUMMARY, 
+          SUMMARY_FRAGSIZE, 
+          SUMMARY_SNIPPETS, 
+          
+          NUM_DESCRIPTIONS, 
+          OUTPUT_SUB_CLUSTERS, 
+          LEXICAL_RESOURCES_DIR,
+          LANGUAGE_CODE_MAP);
+  
+  /** No instances. */
+  private CarrotParams() {}
 }

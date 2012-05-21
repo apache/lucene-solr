@@ -10,7 +10,8 @@ $Id$
 
 ================== Release 3.6.1 ==================
 
-(No Changes)
+* SOLR-3470: Bug fix: custom Carrot2 tokenizer and stemmer factories are 
+  respected now (Stanislaw Osinski, Dawid Weiss)
 
 ================== Release 3.6.0 ==================
 

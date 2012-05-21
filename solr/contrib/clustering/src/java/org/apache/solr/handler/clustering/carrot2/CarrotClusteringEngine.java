@@ -109,6 +109,9 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   private Controller controller = ControllerFactory.createPooling();
   private Class<? extends IClusteringAlgorithm> clusteringAlgorithmClass;
 
+  /** Solr core we're bound to. */
+  private SolrCore core;
+
   private static class SolrResourceLocator implements IResourceLocator {
     private final SolrResourceLoader resourceLoader;
     private final String carrot2ResourcesDir;
@@ -145,7 +148,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         public InputStream open() throws IOException {
           return new ByteArrayInputStream(asBytes);
         }
-        
+
         public int hashCode() {
           // In case multiple resources are found they will be deduped, but we don't use it in Solr,
           // so simply rely on instance equivalence.
@@ -217,8 +220,19 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       extractCarrotAttributes(sreq.getParams(), attributes);
 
       // Perform clustering and convert to named list
-      return clustersToNamedList(controller.process(attributes,
-              clusteringAlgorithmClass).getClusters(), sreq.getParams());
+      // Carrot2 uses current thread's context class loader to get
+      // certain classes (e.g. custom tokenizer/stemmer) at runtime.
+      // To make sure classes from contrib JARs are available,
+      // we swap the context class loader for the time of clustering.
+      Thread ct = Thread.currentThread();
+      ClassLoader prev = ct.getContextClassLoader();
+      try {
+        ct.setContextClassLoader(core.getResourceLoader().getClassLoader());
+        return clustersToNamedList(controller.process(attributes,
+                clusteringAlgorithmClass).getClusters(), sreq.getParams());
+      } finally {
+        ct.setContextClassLoader(prev);
+      }
     } catch (Exception e) {
       log.error("Carrot2 clustering failed", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Carrot2 clustering failed", e);
@@ -228,6 +242,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   @Override
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public String init(NamedList config, final SolrCore core) {
+    this.core = core;
+
     String result = super.init(config, core);
     final SolrParams initParams = SolrParams.toSolrParams(config);
 
@@ -262,8 +278,19 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         // Using the class loader directly because this time we want to omit the prefix
         new ClassLoaderLocator(core.getResourceLoader().getClassLoader())));
 
-    this.controller.init(initAttributes);
-    
+    // Carrot2 uses current thread's context class loader to get
+    // certain classes (e.g. custom tokenizer/stemmer) at initialization time.
+    // To make sure classes from contrib JARs are available,
+    // we swap the context class loader for the time of clustering.
+    Thread ct = Thread.currentThread();
+    ClassLoader prev = ct.getContextClassLoader();
+    try {
+      ct.setContextClassLoader(core.getResourceLoader().getClassLoader());
+      this.controller.init(initAttributes);
+    } finally {
+      ct.setContextClassLoader(prev);
+    }
+
     SchemaField uniqueField = core.getSchema().getUniqueKeyField();
     if (uniqueField == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
