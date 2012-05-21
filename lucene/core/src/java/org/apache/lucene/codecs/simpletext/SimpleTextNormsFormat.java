@@ -123,17 +123,8 @@ public class SimpleTextNormsFormat extends NormsFormat {
     
     @Override
     public void abort() {
-      Set<String> files = new HashSet<String>();
-      filesInternal(state.segmentName, files);
-      IOUtils.deleteFilesIgnoringExceptions(state.directory,
-                                            SegmentInfo.findMatchingFiles(state.segmentName, state.directory, files).toArray(new String[0]));
-    }
-    
-    public static void filesInternal(String segmentName,
-        Set<String> files) {
-      String id = docValuesIdRegexp(segmentName);
-      files.add(IndexFileNames.segmentFileName(id, "",
-                                               NORMS_SEG_SUFFIX));
+      // nocommit must we really delete the files...?  IFD
+      // will do so I think?
     }
   }
 }

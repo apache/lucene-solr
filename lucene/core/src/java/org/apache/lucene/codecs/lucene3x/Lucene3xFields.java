@@ -133,21 +133,6 @@ class Lucene3xFields extends FieldsProducer {
     return true;
   }
 
-  static void files(SegmentInfo info, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.TERMS_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.FREQ_EXTENSION));
-    // LUCENE-1739: for certain versions of 2.9-dev,
-    // hasProx would be incorrectly computed during
-    // indexing as true, and then stored into the segments
-    // file, when it should have been false.  So we do the
-    // extra check, here:
-    final String prx = IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.PROX_EXTENSION);
-    if (info.dir.fileExists(prx)) {
-      files.add(prx);
-    }
-  }
-
   @Override
   public FieldsEnum iterator() throws IOException {
     return new PreFlexFieldsEnum();

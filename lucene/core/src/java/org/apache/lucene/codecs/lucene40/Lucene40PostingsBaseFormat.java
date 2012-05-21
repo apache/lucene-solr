@@ -49,9 +49,4 @@ public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
   public PostingsWriterBase postingsWriterBase(SegmentWriteState state) throws IOException {
     return new Lucene40PostingsWriter(state);
   }
-  
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
-  }
 }

@@ -57,10 +57,8 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
 
   @Override
   public void abort() {
-    Set<String> files = new HashSet<String>();
-    files(state.directory, state.segmentName, files, segmentSuffix);
-    IOUtils.deleteFilesIgnoringExceptions(state.directory,
-                                          SegmentInfo.findMatchingFiles(state.segmentName, state.directory, files).toArray(new String[0]));
+    // nocommit must we really delete the files...?  IFD
+    // will do so I think?
   }
   
   static String docValuesId(String segmentsName, int fieldId) {
@@ -69,12 +67,5 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
 
   static String docValuesIdRegexp(String segmentsName) {
     return segmentsName + "_\\d+";
-  }
-
-  @SuppressWarnings("fallthrough")
-  private static void files(Directory dir,
-      String segmentName, Set<String> files, String segmentSuffix) {
-    files.add(IndexFileNames.segmentFileName(docValuesIdRegexp(segmentName), "",
-                                               segmentSuffix));
   }
 }

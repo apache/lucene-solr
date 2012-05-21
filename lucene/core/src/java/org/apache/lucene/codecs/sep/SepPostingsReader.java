@@ -90,16 +90,6 @@ public class SepPostingsReader extends PostingsReaderBase {
     }
   }
 
-  public static void files(SegmentInfo segmentInfo, String segmentSuffix, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.DOC_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.SKIP_EXTENSION));
-
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.FREQ_EXTENSION));
-
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.POS_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.PAYLOAD_EXTENSION));
-  }
-
   @Override
   public void init(IndexInput termsIn) throws IOException {
     // Make sure we are talking to the matching past writer

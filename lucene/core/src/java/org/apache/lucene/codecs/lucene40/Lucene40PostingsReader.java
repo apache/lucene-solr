@@ -81,11 +81,6 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
   }
 
-  public static void files(SegmentInfo segmentInfo, String segmentSuffix, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION));
-  }
-
   @Override
   public void init(IndexInput termsIn) throws IOException {
 

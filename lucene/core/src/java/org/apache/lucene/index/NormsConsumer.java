@@ -49,9 +49,6 @@ final class NormsConsumer extends InvertedDocEndConsumer {
     }
   }
 
-  // We only write the _X.nrm file at flush
-  void files(Collection<String> files) {}
-
   /** Produce _X.nrm if any document had a field with norms
    *  not disabled */
   @Override

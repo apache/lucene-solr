@@ -49,17 +49,9 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
     return directory;
   }
 
-  @SuppressWarnings("fallthrough")
-  private static void files(String segmentName, Set<String> files)  {
-    String filename = PerDocProducerBase.docValuesRegex(segmentName);
-    files.add(IndexFileNames.segmentFileName(filename, "", INDEX_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(filename, "", DATA_EXTENSION));
-  }
-
   @Override
   public void abort() {
-    Set<String> files = new HashSet<String>();
-    files(segmentName, files);
-    IOUtils.deleteFilesIgnoringExceptions(directory, SegmentInfo.findMatchingFiles(segmentName, directory, files).toArray(new String[0]));
+    // nocommit must we really delete the files...?  IFD
+    // will do so I think?
   }
 }

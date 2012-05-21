@@ -199,12 +199,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
   }
 
-  // nocommit remove?
-  public static void files(SegmentInfo segmentInfo, String segmentSuffix, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockTreeTermsWriter.TERMS_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION));
-  }
-
   @Override
   public FieldsEnum iterator() {
     return new TermFieldsEnum();

@@ -690,27 +690,6 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     return new Lucene3xTermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, docStoreOffset, format);
   }
   
-  // note: if there are shared docstores, we are also called by Lucene3xCodec even in 
-  // the CFS case. so logic here must handle this.
-  /*
-  public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    if (info.getDocStoreOffset() != -1) {
-      assert info.getDocStoreSegment() != null;
-      if (info.getDocStoreIsCompoundFile()) {
-        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION));
-      } else {
-        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_INDEX_EXTENSION));
-        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_FIELDS_EXTENSION));
-        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_DOCUMENTS_EXTENSION));
-      }
-    } else if (!info.getUseCompoundFile()) {
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_INDEX_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_FIELDS_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_DOCUMENTS_EXTENSION));
-    }
-  }
-  */
-  
   // If this returns, we do the surrogates shuffle so that the
   // terms are sorted by unicode sort order.  This should be
   // true when segments are used for "normal" searching;

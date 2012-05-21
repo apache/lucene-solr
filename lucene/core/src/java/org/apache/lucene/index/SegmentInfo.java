@@ -100,8 +100,6 @@ public class SegmentInfo implements Cloneable {
   // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and
   // specific versions afterwards ("3.0", "3.1" etc.).
   // see Constants.LUCENE_MAIN_VERSION.
-  // nocommit why does ctor even take this?  shuldn't we
-  // always be the current version!?
   // nocommit final?
   private String version;
 
@@ -303,53 +301,6 @@ public class SegmentInfo implements Cloneable {
 
   public Codec getCodec() {
     return codec;
-  }
-
-  // noocmmit nuke this and require, once again, that a codec puts PRECISELY the files that exist into the file set...
-  public static List<String> findMatchingFiles(String segmentName, Directory dir, Set<String> namesOrPatterns) {
-    // nocommit need more efficient way to do this?
-    List<String> files = new ArrayList<String>();
-    final String[] existingFiles;
-    try {
-      existingFiles = dir.listAll();
-    } catch (IOException ioe) {
-      // nocommit maybe just throw IOE...? not sure how far up we'd have to change sigs...
-      throw new RuntimeException(ioe);
-    }
-    List<Pattern> compiledPatterns = new ArrayList<Pattern>();
-    for(String nameOrPattern : namesOrPatterns) {
-      boolean exists = false;
-      // nocommit hack -- remove (needed now because si's -1 gen will return null file name):
-      if (nameOrPattern == null) {
-        continue;
-      }
-      try {
-        exists = dir.fileExists(nameOrPattern);
-      } catch (IOException ioe) {
-        // nocommit maybe just throw IOE...?
-        // Ignore
-      }
-      if (exists) {
-        files.add(nameOrPattern);
-      } else {
-        // nocommit can i test whether the regexp matches only 1 string...?  maybe... make into autamaton and union them all....?
-        compiledPatterns.add(Pattern.compile(nameOrPattern));
-      }
-    }
-
-    // nocommit this is DOG SLOW: try TestBoolean2 w/ seed 1F7F3638C719C665
-    for(String file : existingFiles) {
-      if (file.startsWith(segmentName)) {
-        for(Pattern pattern : compiledPatterns) {
-          if (pattern.matcher(file).matches()) {
-            files.add(file);
-            break;
-          }
-        }
-      }
-    }
-
-    return files;
   }
 
   /*
