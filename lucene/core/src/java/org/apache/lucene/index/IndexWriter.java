@@ -2077,12 +2077,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * <p><b>WARNING</b>: the index does not currently record
    * which documents were added as a block.  Today this is
-   * fine, because merging will preserve the block (as long
-   * as none them were deleted).  But it's possible in the
-   * future that Lucene may more aggressively re-order
-   * documents (for example, perhaps to obtain better index
-   * compression), in which case you may need to fully
-   * re-index your documents at that time.
+   * fine, because merging will preserve a block. The order of
+   * documents within a segment will be preserved, even when child
+   * documents within a block are deleted. Most search features
+   * (like result grouping and block joining) require you to
+   * mark documents; when these documents are deleted these
+   * search features will not work as expected. Obviously adding
+   * documents to an existing block will require you the reindex
+   * the entire block.
+   *
+   * <p>However it's possible that in the future Lucene may
+   * merge more aggressively re-order documents (for example,
+   * perhaps to obtain better index compression), in which case
+   * you may need to fully re-index your documents at that time.
    *
    * <p>See {@link #addDocument(Document)} for details on
    * index and IndexWriter state after an Exception, and
