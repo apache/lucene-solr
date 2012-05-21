@@ -49,10 +49,4 @@ public class SimpleTextDocValuesFormat extends DocValuesFormat {
   static String docValuesId(String segmentsName, int fieldId) {
     return segmentsName + "_" + fieldId;
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files)
-      throws IOException {
-    SimpleTextPerDocConsumer.files(info, files, DOC_VALUES_SEG_SUFFIX);
-  }
 }

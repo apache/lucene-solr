@@ -103,7 +103,8 @@ final class IndexFileDeleter {
 
   /** Change to true to see details of reference counts when
    *  infoStream is enabled */
-  public static boolean VERBOSE_REF_COUNTS = false;
+  // nocommit back to false:
+  public static boolean VERBOSE_REF_COUNTS = true;
 
   // Used only for assert
   private final IndexWriter writer;

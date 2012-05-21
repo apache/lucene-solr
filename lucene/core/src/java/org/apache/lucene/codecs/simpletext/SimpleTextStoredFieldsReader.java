@@ -178,10 +178,6 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     }
   }
   
-  public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", SimpleTextStoredFieldsWriter.FIELDS_EXTENSION));
-  }
-  
   private void readLine() throws IOException {
     SimpleTextUtil.readLine(in, scratch);
   }

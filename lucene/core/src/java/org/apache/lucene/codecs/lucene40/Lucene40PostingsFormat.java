@@ -335,12 +335,6 @@ public class Lucene40PostingsFormat extends PostingsFormat {
   static final String PROX_EXTENSION = "prx";
 
   @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
-    BlockTreeTermsReader.files(segmentInfo, segmentSuffix, files);
-  }
-
-  @Override
   public String toString() {
     return getName() + "(minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
   }

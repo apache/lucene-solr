@@ -45,5 +45,4 @@ import org.apache.lucene.index.SegmentInfos; // javadocs
 public abstract class SegmentInfosFormat {
   public abstract SegmentInfosReader getSegmentInfosReader();
   public abstract SegmentInfosWriter getSegmentInfosWriter();
-  public abstract void files(SegmentInfo info, Set<String> files);
 }

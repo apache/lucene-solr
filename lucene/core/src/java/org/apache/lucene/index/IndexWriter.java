@@ -504,7 +504,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
      */
     public synchronized ReadersAndLiveDocs get(SegmentInfo info, boolean create) {
 
-      assert info.dir == directory;
+      assert info.dir == directory: "info.dir=" + info.dir + " vs " + directory;
 
       ReadersAndLiveDocs rld = readerMap.get(info);
       if (rld == null) {
@@ -2024,14 +2024,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     boolean success = false;
     try {
       if (useCompoundFile(newSegment)) {
-        String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
 
         // Now build compound file
-        Collection<String> files = createCompoundFile(infoStream, directory, compoundFileName, MergeState.CheckAbort.NONE, newSegment, context);
+        Collection<String> oldFiles = createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, newSegment, context);
         newSegment.setUseCompoundFile(true);
         
         synchronized(this) {
-          deleter.deleteNewFiles(files);
+          deleter.deleteNewFiles(oldFiles);
         }
       }
 
@@ -2278,12 +2277,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       String mergedName = newSegmentName();
       for (IndexReader indexReader : readers) {
         numDocs += indexReader.numDocs();
-       }
-       final IOContext context = new IOContext(new MergeInfo(numDocs, -1, true, -1));
+      }
+      final IOContext context = new IOContext(new MergeInfo(numDocs, -1, true, -1));
 
       // TODO: somehow we should fix this merge so it's
       // abortable so that IW.close(false) is able to stop it
-      SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(),
+      TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
+      SegmentMerger merger = new SegmentMerger(infoStream, trackingDir, config.getTermIndexInterval(),
                                                mergedName, MergeState.CheckAbort.NONE, payloadProcessorProvider,
                                                new FieldInfos.Builder(globalFieldNumberMap), codec, context);
 
@@ -2296,6 +2296,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, docCount,
                                          -1, mergedName, false, null, false, 0,
                                          codec, null);
+      info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
+      trackingDir.getCreatedFiles().clear();
                                          
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
@@ -2311,12 +2313,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Now create the compound file if needed
       if (useCompoundFile) {
-        createCompoundFile(infoStream, directory, IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), MergeState.CheckAbort.NONE, info, context);
+        Collection<String> filesToDelete = info.files();
+        createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, info, context);
 
         // delete new non cfs files directly: they were never
         // registered with IFD
         synchronized(this) {
-          deleter.deleteNewFiles(info.files());
+          deleter.deleteNewFiles(filesToDelete);
         }
         info.setUseCompoundFile(true);
       }
@@ -2325,8 +2328,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      codec.segmentInfosFormat().getSegmentInfosWriter().write(directory, info, mergeState.fieldInfos, context);
+      codec.segmentInfosFormat().getSegmentInfosWriter().write(trackingDir, info, mergeState.fieldInfos, context);
       info.clearFilesCache();
+      info.getFiles().addAll(trackingDir.getCreatedFiles());
 
       // Register the new segment
       synchronized(this) {
@@ -2369,10 +2373,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                                                                         Lucene3xSegmentInfosFormat.SI_EXTENSION);
 
     if (hasSharedDocStore) {
-      // only violate the codec this way if its preflex &
+      // only violate the codec this way if it's preflex &
       // shares doc stores
-      info.getCodec().storedFieldsFormat().files(info, codecDocStoreFiles);
-      info.getCodec().termVectorsFormat().files(info, codecDocStoreFiles);
+      assert info.getDocStoreSegment() != null;
+      // nocommit what to do....
+      if (info.getDocStoreIsCompoundFile()) {
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", "cfx"));
+      } else {
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", "fdt"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", "fdx"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", "tvx"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", "tvf"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", "tvd"));
+      }
     }
 
     //System.out.println("copy seg=" + info.name + " version=" + info.getVersion());
@@ -2383,18 +2396,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                                           info.getDelCount(), info.getCodec(), info.getDiagnostics());
     newInfo.setDelGen(info.getDelGen());
 
+    Set<String> segFiles = new HashSet<String>();
+
+    // Build up new segment's file names:
+    for (String file: info.files()) {
+      final String newFileName;
+      if (codecDocStoreFiles.contains(file)) {
+        newFileName = newDsName + IndexFileNames.stripSegmentName(file);
+      } else {
+        newFileName = segName + IndexFileNames.stripSegmentName(file);
+      }
+      segFiles.add(newFileName);
+    }
+    newInfo.setFiles(segFiles);
+    
     // We must rewrite the SI file because it references
     // segment name (its own name, if its 3.x, and doc
     // store segment name):
-    TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(directory);
     try {
-      newInfo.getCodec().segmentInfosFormat().getSegmentInfosWriter().write(dirWrapper, newInfo, null, context);
+      newInfo.getCodec().segmentInfosFormat().getSegmentInfosWriter().write(directory, newInfo, null, context);
     } catch (UnsupportedOperationException uoe) {
       // OK: 3x codec cannot write a new SI file;
       // SegmentInfos will write this on commit
     }
-    final Set<String> siFileNames = dirWrapper.getCreatedFiles();
-    
+
     // Copy the segment's files
     for (String file: info.files()) {
 
@@ -2409,8 +2434,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         newFileName = segName + IndexFileNames.stripSegmentName(file);
       }
 
-      if (siFileNames != null && siFileNames.contains(newFileName)) {
-        // We already rewwrote this above
+      // nocommit hack
+      //if (siFileNames != null && siFileNames.contains(newFileName)) {
+      if (newFileName.endsWith(".si")) {
+        // We already rewrote this above
         continue;
       }
 
@@ -3412,7 +3439,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     IOContext context = new IOContext(merge.getMergeInfo());
 
     final MergeState.CheckAbort checkAbort = new MergeState.CheckAbort(merge, directory);
-    SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(), mergedName, checkAbort,
+    final TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(directory);
+    SegmentMerger merger = new SegmentMerger(infoStream, dirWrapper, config.getTermIndexInterval(), mergedName, checkAbort,
                                              payloadProcessorProvider, new FieldInfos.Builder(globalFieldNumberMap), codec, context);
 
     if (infoStream.isEnabled("IW")) {
@@ -3474,6 +3502,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // This is where all the work happens:
       MergeState mergeState = merger.merge();
       merge.info.docCount = mergeState.mergedDocCount;
+      merge.info.setFiles(new HashSet<String>(dirWrapper.getCreatedFiles()));
 
       // Record which codec was used to write the segment
 
@@ -3501,10 +3530,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       if (useCompoundFile) {
         success = false;
-        final String compoundFileName = IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+
+        Collection<String> filesToRemove = merge.info.files();
 
         try {
-          createCompoundFile(infoStream, directory, compoundFileName, checkAbort, merge.info, context);
+          filesToRemove = createCompoundFile(infoStream, directory, checkAbort, merge.info, context);
           success = true;
         } catch (IOException ioe) {
           synchronized(this) {
@@ -3525,7 +3555,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
 
             synchronized(this) {
-              deleter.deleteFile(compoundFileName);
+              deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
               deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
               deleter.deleteNewFiles(merge.info.files());
             }
@@ -3539,13 +3569,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
           // delete new non cfs files directly: they were never
           // registered with IFD
-          deleter.deleteNewFiles(merge.info.files());
+          deleter.deleteNewFiles(filesToRemove);
 
           if (merge.isAborted()) {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "abort merge after building CFS");
             }
-            deleter.deleteFile(compoundFileName);
+            deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+            deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
             return 0;
           }
         }
@@ -3565,7 +3596,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (!success2) {
           synchronized(this) {
             deleter.deleteNewFiles(merge.info.files());
-          }          
+          }
         }
       }
       merge.info.clearFilesCache();
@@ -3980,9 +4011,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * deletion files, this SegmentInfo must not reference such files when this
    * method is called, because they are not allowed within a compound file.
    */
-  static final Collection<String> createCompoundFile(InfoStream infoStream, Directory directory, String fileName, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
+  static final Collection<String> createCompoundFile(InfoStream infoStream, Directory directory, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
           throws IOException {
 
+    final String fileName = IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "create compound file " + fileName);
     }
@@ -4001,6 +4033,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } finally {
       IOUtils.closeWhileHandlingException(prior, cfsDir);
     }
+
+    Set<String> siFiles = new HashSet<String>();
+    siFiles.add(fileName);
+    siFiles.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+    info.setFiles(siFiles);
 
     return files;
   }

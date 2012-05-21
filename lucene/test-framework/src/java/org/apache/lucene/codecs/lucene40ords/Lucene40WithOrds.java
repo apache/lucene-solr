@@ -134,11 +134,4 @@ public class Lucene40WithOrds extends PostingsFormat {
 
   /** Extension of prox postings file */
   static final String PROX_EXTENSION = "prx";
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
-    BlockTermsReader.files(segmentInfo, segmentSuffix, files);
-    FixedGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
-  }
 }

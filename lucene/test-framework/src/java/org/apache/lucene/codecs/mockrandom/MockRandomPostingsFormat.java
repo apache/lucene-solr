@@ -411,25 +411,4 @@ public class MockRandomPostingsFormat extends PostingsFormat {
 
     return fields;
   }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    final String seedFileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SEED_EXT);    
-    files.add(seedFileName);
-    SepPostingsReader.files(segmentInfo, segmentSuffix, files);
-    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
-    BlockTermsReader.files(segmentInfo, segmentSuffix, files);
-    BlockTreeTermsReader.files(segmentInfo, segmentSuffix, files);
-    FixedGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
-    VariableGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
-    // hackish!
-    Iterator<String> it = files.iterator();
-    while(it.hasNext()) {
-      final String file = it.next();
-      if (!segmentInfo.dir.fileExists(file)) {
-        it.remove();
-      }
-    }
-    //System.out.println("MockRandom.files return " + files);
-  }
 }

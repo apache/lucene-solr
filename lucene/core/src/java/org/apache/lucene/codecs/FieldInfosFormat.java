@@ -35,8 +35,4 @@ public abstract class FieldInfosFormat {
   /** Returns a {@link FieldInfosWriter} to write field infos
    *  to the index */
   public abstract FieldInfosWriter getFieldInfosWriter() throws IOException;
-
-  /** Gathers files (exact file name or a Pattern regex)
-   *  associated with this segment. */
-  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

@@ -63,10 +63,6 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
                                           SegmentInfo.findMatchingFiles(state.segmentName, state.directory, files).toArray(new String[0]));
   }
   
-  static void files(SegmentInfo info, Set<String> files, String segmentSuffix) {
-    files(info.dir, info.name, files, segmentSuffix);
-  }
-  
   static String docValuesId(String segmentsName, int fieldId) {
     return segmentsName + "_" + fieldId;
   }

@@ -692,6 +692,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
   
   // note: if there are shared docstores, we are also called by Lucene3xCodec even in 
   // the CFS case. so logic here must handle this.
+  /*
   public static void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getDocStoreOffset() != -1) {
       assert info.getDocStoreSegment() != null;
@@ -708,6 +709,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
       files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_DOCUMENTS_EXTENSION));
     }
   }
+  */
   
   // If this returns, we do the surrogates shuffle so that the
   // terms are sorted by unicode sort order.  This should be

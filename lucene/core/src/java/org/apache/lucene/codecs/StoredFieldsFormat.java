@@ -36,8 +36,4 @@ public abstract class StoredFieldsFormat {
   /** Returns a {@link StoredFieldsWriter} to write stored
    *  fields. */
   public abstract StoredFieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException;
-
-  /** Gathers files (exact file name or a Pattern regex)
-   *  associated with this segment. */
-  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

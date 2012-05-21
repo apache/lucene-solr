@@ -62,11 +62,4 @@ public class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
   public SegmentInfosWriter getSegmentInfosWriter() {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) {
-    // nocommit must take care to filter this out if we are
-    // "really" an old 3.x index
-    files.add(IndexFileNames.segmentFileName(info.name, "", SI_EXTENSION));
-  }
 }

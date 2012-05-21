@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.index.IndexWriter;  // Required for javadocs
@@ -148,7 +149,7 @@ public class IndexSplitter {
                                             info.getDelCount(), info.getCodec(), info.getDiagnostics());
       destInfos.add(newInfo);
       // now copy files over
-      List<String> files = info.files();
+      Collection<String> files = info.files();
       for (final String srcName : files) {
         File srcFile = new File(dir, srcName);
         File destFile = new File(destDir, srcName);

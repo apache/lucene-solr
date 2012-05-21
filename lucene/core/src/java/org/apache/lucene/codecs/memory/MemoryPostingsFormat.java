@@ -901,9 +901,4 @@ public class MemoryPostingsFormat extends PostingsFormat {
       }
     };
   }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION));
-  }
 }

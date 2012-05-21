@@ -45,9 +45,4 @@ public class MockSepDocValuesFormat extends DocValuesFormat {
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
     return new SepDocValuesProducer(state);
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    SepDocValuesConsumer.files(info, files);
-  }
 }

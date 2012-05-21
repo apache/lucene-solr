@@ -78,10 +78,4 @@ class Lucene3xTermVectorsFormat extends TermVectorsFormat {
   public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xTermVectorsReader.files(info, files);
-  }
-  
 }

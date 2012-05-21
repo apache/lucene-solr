@@ -389,6 +389,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
+  // nocommit remove (and any other files methods!)
   public static void files(SegmentInfo info, String segmentSuffix, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(info.name, segmentSuffix, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }

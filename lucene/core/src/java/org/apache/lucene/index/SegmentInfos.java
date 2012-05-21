@@ -357,7 +357,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         if (version == null || version.startsWith("3.")) {
           String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
           if (!directory.fileExists(fileName)) {
-            //System.out.println("write 3x info seg=" + si.name + " version=" + si.getVersion() + " codec=" + si.getCodec().getName());
             upgradedSIFiles.add(write3xInfo(directory, si, IOContext.DEFAULT));
             si.clearFilesCache();
           }
@@ -396,6 +395,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
     // NOTE: this is NOT how 3.x is really written...
     String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
+    si.getFiles().add(fileName);
+
     //System.out.println("UPGRADE write " + fileName);
     boolean success = false;
     IndexOutput output = dir.createOutput(fileName, context);
@@ -430,11 +431,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeInt(si.getDelCount());
-      // hasProx:
+      // hasProx (lie):
       output.writeByte((byte) 1);
       output.writeStringStringMap(si.getDiagnostics());
-      // hasVectors:
+      // hasVectors (lie):
       output.writeByte((byte) 1);
+      output.writeStringSet(si.getFiles());
 
       success = true;
     } finally {

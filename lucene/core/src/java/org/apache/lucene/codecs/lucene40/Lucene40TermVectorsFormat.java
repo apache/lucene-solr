@@ -111,9 +111,4 @@ public class Lucene40TermVectorsFormat extends TermVectorsFormat {
   public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
     return new Lucene40TermVectorsWriter(directory, segment, context);
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene40TermVectorsReader.files(info, files);
-  }
 }

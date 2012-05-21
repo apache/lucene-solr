@@ -44,9 +44,4 @@ class Lucene3xFieldInfosFormat extends FieldInfosFormat {
   public FieldInfosWriter getFieldInfosWriter() throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xFieldInfosReader.files(info, files);
-  }
 }

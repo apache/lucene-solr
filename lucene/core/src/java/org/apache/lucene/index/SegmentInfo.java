@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 
 /**
@@ -106,6 +108,19 @@ public class SegmentInfo implements Cloneable {
   // nocommit why do we have this wimpy ctor...?
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
                      Codec codec) {
+    // nocommit
+    /*
+    this.name = name;
+    this.docCount = docCount;
+    this.dir = dir;
+    delGen = NO;
+    this.isCompoundFile = isCompoundFile;
+    this.docStoreOffset = -1;
+    this.docStoreSegment = name;
+    this.codec = codec;
+    delCount = 0;
+    version = Constants.LUCENE_MAIN_VERSION;
+    */
     this(dir, Constants.LUCENE_MAIN_VERSION, name, docCount, -1, name, false, null, isCompoundFile, 0, codec, new HashMap<String,String>());
   }
 
@@ -125,6 +140,7 @@ public class SegmentInfo implements Cloneable {
   public SegmentInfo(Directory dir, String version, String name, int docCount, int docStoreOffset,
                      String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
                      int delCount, Codec codec, Map<String,String> diagnostics) {
+    assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
     this.version = version;
     this.name = name;
@@ -197,9 +213,19 @@ public class SegmentInfo implements Cloneable {
       clonedNormGen = null;
     }
 
+    
+
     SegmentInfo newInfo = new SegmentInfo(dir, version, name, docCount, docStoreOffset,
                                           docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
                                           delCount, codec, new HashMap<String,String>(diagnostics));
+    final Set<String> clonedFiles;
+    if (setFiles != null) {
+      clonedFiles = new HashSet<String>(setFiles);
+    } else {
+      clonedFiles = null;
+    }
+    newInfo.setFiles(clonedFiles);
+
     newInfo.setDelGen(delGen);
     return newInfo;
   }
@@ -347,20 +373,26 @@ public class SegmentInfo implements Cloneable {
    * modify it.
    */
 
-  public List<String> files() throws IOException {
-    if (files == null) {
-      // nocommit can we remove this again....?
-      final Set<String> fileSet = new HashSet<String>();
-      codec.files(this, fileSet);
-      files = findMatchingFiles(name, dir, fileSet);
+  public Collection<String> files() throws IOException {
+    // nocommit make sure when we are called we really have
+    // files set ...
+    if (setFiles == null) {
+      throw new IllegalStateException("files were not computed yet");
     }
-    return files;
+
+    Set<String> files = new HashSet<String>(setFiles);
+
+    // nocommit make this take list instead...?
+    // Must separately add any live docs files:
+    codec.liveDocsFormat().files(this, files);
+
+    return new ArrayList<String>(files);
   }
 
   /* Called whenever any change is made that affects which
    * files this segment has. */
   // nocommit make private again
-  void clearFilesCache() {
+  public void clearFilesCache() {
     sizeInBytes = -1;
     files = null;
   }
@@ -467,5 +499,30 @@ public class SegmentInfo implements Cloneable {
   /** @lucene.internal */
   public Map<Integer,Long> getNormGen() {
     return normGen;
+  }
+
+  private Set<String> setFiles;
+
+  // nocommit now on building a CFS we erase the files that
+  // are in it... maybe we should somehow preserve it...
+  public void setFiles(Set<String> files) {
+    //System.out.println("set files=" + files);
+    //if (files.size() == 0) {
+    //new Throwable().printStackTrace(System.out);
+    //}
+    setFiles = files;
+  }
+
+  public Set<String> getFiles() {
+    return setFiles;
+  }
+
+  public Set<String> getFiles2() throws IOException {
+    Set<String> files = new HashSet<String>(setFiles);
+
+    // nocommit make this take list instead...?
+    // Must separately add any live docs files:
+    codec.liveDocsFormat().files(this, files);
+    return files;
   }
 }

@@ -19,17 +19,20 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.MutableBits;
@@ -160,7 +163,8 @@ class DocumentsWriterPerThread {
   final DocumentsWriter parent;
   final Codec codec;
   final IndexWriter writer;
-  final Directory directory;
+  final TrackingDirectoryWrapper directory;
+  final Directory directoryOrig;
   final DocState docState;
   final DocConsumer consumer;
   final Counter bytesUsed;
@@ -184,7 +188,8 @@ class DocumentsWriterPerThread {
   
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent,
       FieldInfos.Builder fieldInfos, IndexingChain indexingChain) {
-    this.directory = directory;
+    this.directoryOrig = directory;
+    this.directory = new TrackingDirectoryWrapper(directory);
     this.parent = parent;
     this.fieldInfos = fieldInfos;
     this.writer = parent.indexWriter;
@@ -200,7 +205,7 @@ class DocumentsWriterPerThread {
   }
   
   public DocumentsWriterPerThread(DocumentsWriterPerThread other, FieldInfos.Builder fieldInfos) {
-    this(other.directory, other.parent, fieldInfos, other.parent.chain);
+    this(other.directoryOrig, other.parent, fieldInfos, other.parent.chain);
   }
   
   void initialize() {
@@ -416,6 +421,7 @@ class DocumentsWriterPerThread {
   private void doAfterFlush() throws IOException {
     segment = null;
     consumer.doAfterFlush();
+    directory.getCreatedFiles().clear();
     fieldInfos = new FieldInfos.Builder(fieldInfos.globalFieldNumbers);
     parent.subtractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
@@ -448,6 +454,7 @@ class DocumentsWriterPerThread {
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
         codec, pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
     final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;
+
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
@@ -477,10 +484,11 @@ class DocumentsWriterPerThread {
     try {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
-      final SegmentInfo newSegment = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, segment, flushState.numDocs,
+      final SegmentInfo newSegment = new SegmentInfo(directoryOrig, Constants.LUCENE_MAIN_VERSION, segment, flushState.numDocs,
                                                      -1, segment, false, null, false, 0,
                                                      flushState.codec,
                                                      null);
+      newSegment.setFiles(new HashSet<String>(directory.getCreatedFiles()));
 
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.delCountOnFlush)) + " deleted docs");

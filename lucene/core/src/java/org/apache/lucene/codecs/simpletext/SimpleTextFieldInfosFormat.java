@@ -44,9 +44,4 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
   public FieldInfosWriter getFieldInfosWriter() throws IOException {
     return writer;
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextFieldInfosReader.files(info, files);
-  }
 }

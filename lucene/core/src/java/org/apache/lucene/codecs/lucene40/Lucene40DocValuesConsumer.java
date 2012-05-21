@@ -66,11 +66,6 @@ public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
     }
   }
 
-  public static void files(SegmentInfo segmentInfo, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-  }
-
   @Override
   public void abort() {
     try {

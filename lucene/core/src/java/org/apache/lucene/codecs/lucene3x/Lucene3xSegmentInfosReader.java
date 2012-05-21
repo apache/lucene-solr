@@ -18,8 +18,11 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
+import java.util.Arrays;                          // nocommit
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.SegmentInfosReader;
@@ -115,6 +118,12 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     }
   }
 
+  private static void addIfExists(Directory dir, Set<String> files, String fileName) throws IOException {
+    if (dir.fileExists(fileName)) {
+      files.add(fileName);
+    }
+  }
+
   private SegmentInfo readSegmentInfo(String segmentName, Directory dir, int format, IndexInput input) throws IOException {
     // check that it is a format we can understand
     if (format > Lucene3xSegmentInfosFormat.FORMAT_DIAGNOSTICS) {
@@ -177,8 +186,68 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
     final Map<String,String> diagnostics = input.readStringStringMap();
 
+    // nocommit unused...
+    final int hasVectors;
     if (format <= Lucene3xSegmentInfosFormat.FORMAT_HAS_VECTORS) {
-      input.readByte();
+      hasVectors = input.readByte();
+    } else {
+      hasVectors = -1;
+    }
+
+    final Set<String> files;
+    if (format == Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE) {
+      files = input.readStringSet();
+    } else {
+      // Replicate logic from 3.x's SegmentInfo.files():
+      files = new HashSet<String>();
+      if (isCompoundFile) {
+        files.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+      } else {
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "fnm"));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "frq"));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "prx"));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tis"));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tii"));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "nrm"));
+      }
+
+      if (docStoreOffset != -1) {
+        if (docStoreIsCompoundFile) {
+          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", "cfx"));
+        } else {
+          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", "fdx"));
+          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", "fdt"));
+          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", "tvx"));
+          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", "tvf"));
+          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", "tvd"));
+        }
+      } else if (!isCompoundFile) {
+        files.add(IndexFileNames.segmentFileName(segmentName, "", "fdx"));
+        files.add(IndexFileNames.segmentFileName(segmentName, "", "fdt"));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tvx"));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tvf"));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", "tvd"));
+      }
+
+      if (normGen != null) {
+        for(Map.Entry<Integer,Long> ent : normGen.entrySet()) {
+          long gen = ent.getValue();
+          if (gen >= SegmentInfo.YES) {
+            // Definitely a separate norm file, with generation:
+            files.add(IndexFileNames.fileNameFromGeneration(segmentName, "s" + ent.getKey(), gen));
+          } else if (gen == SegmentInfo.NO) {
+            // No seaprate norm
+          } else {
+            // nocommit -- i thought _X_N.sY files were pre-3.0...????
+            assert false;
+            /*
+            System.out.println("FILES: " + Arrays.toString(dir.listAll()) + "; seg=" + segmentName);
+            addIfExists(dir, files, IndexFileNames.fileNameFromGeneration(segmentName, "s" + ent.getKey(), gen));
+            assert false: "gen=" + gen;
+            */
+          }
+        }
+      }
     }
 
     // nocommit we can use hasProx/hasVectors from the 3.x
@@ -188,6 +257,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
                                        docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
                                        delCount, null, diagnostics);
     info.setDelGen(delGen);
+    info.setFiles(files);
     return info;
   }
 }

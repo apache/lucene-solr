@@ -19,7 +19,9 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.SegmentInfosReader;
@@ -54,10 +56,13 @@ public class Lucene40SegmentInfosReader extends SegmentInfosReader {
       final Map<Integer,Long> normGen = null;
       final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
       final Map<String,String> diagnostics = input.readStringStringMap();
+      final Set<String> files = input.readStringSet();
 
       final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, docStoreOffset,
                                              docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
                                              0, null, diagnostics);
+      si.setFiles(files);
+
       success = true;
 
       return si;

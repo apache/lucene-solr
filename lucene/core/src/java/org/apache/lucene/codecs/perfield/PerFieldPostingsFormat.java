@@ -332,34 +332,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     protected abstract void visitOneField(String fieldName, PostingsFormat format) throws IOException;
   }
 
-  @Override
-  public void files(final SegmentInfo info, String segmentSuffix, final Set<String> files) throws IOException {
-    final Directory dir = info.dir;
-
-    final String mapFileName = IndexFileNames.segmentFileName(info.name, segmentSuffix, PER_FIELD_EXTENSION);
-    files.add(mapFileName);
-
-    // nocommit can we use regexp to simplify this?
-    try {
-      new VisitPerFieldFile(dir, info.name, segmentSuffix) {
-        @Override
-        protected void visitOneFormat(String segmentSuffix, PostingsFormat format) throws IOException {
-          format.files(info, segmentSuffix, files);
-        }
-
-        @Override
-        protected void visitOneField(String field, PostingsFormat format) {
-        }
-      };
-    } catch (FileNotFoundException fnfe) {
-      // TODO: this is somewhat shady... if we can't open
-      // the .per file then most likely someone is calling
-      // .files() after this segment was deleted, so, they
-      // wouldn't be able to do anything with the files even
-      // if we could return them, so we don't add any files
-      // in this case.
-    }
-  }
+  // nocommit simplify now that we don't have files()...?
 
   // NOTE: only called during writing; for reading we read
   // all we need from the index (ie we save the field ->

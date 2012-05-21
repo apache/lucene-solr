@@ -58,11 +58,6 @@ public class SimpleTextNormsFormat extends NormsFormat {
         BytesRef.getUTF8SortedAsUnicodeComparator());
   }
   
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextNormsPerDocConsumer.files(info, files);
-  }
-  
   /**
    * Reads plain-text norms.
    * <p>
@@ -132,11 +127,6 @@ public class SimpleTextNormsFormat extends NormsFormat {
       filesInternal(state.segmentName, files);
       IOUtils.deleteFilesIgnoringExceptions(state.directory,
                                             SegmentInfo.findMatchingFiles(state.segmentName, state.directory, files).toArray(new String[0]));
-    }
-    
-    public static void files(SegmentInfo segmentInfo, Set<String> files)
-        throws IOException {
-      filesInternal(segmentInfo.name, files);
     }
     
     public static void filesInternal(String segmentName,

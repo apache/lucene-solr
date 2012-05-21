@@ -589,10 +589,4 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
       return state.get(id);
     }
   }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) {
-    final String idFileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, ID_EXTENSION);
-    files.add(idFileName);
-  }
 }

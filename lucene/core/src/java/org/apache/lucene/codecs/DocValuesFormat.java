@@ -36,8 +36,4 @@ public abstract class DocValuesFormat {
 
   /** Produces (reads) doc values during reading/searching. */
   public abstract PerDocProducer docsProducer(SegmentReadState state) throws IOException;
-
-  /** Gathers files (exact file name or a Pattern regex)
-   *  associated with this segment. */
-  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

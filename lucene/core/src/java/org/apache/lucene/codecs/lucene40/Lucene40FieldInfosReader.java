@@ -140,8 +140,4 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         throw new IllegalStateException("unhandled indexValues type " + b);
     }
   }
-  
-  public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene40FieldInfosWriter.FIELD_INFOS_EXTENSION));
-  }
 }

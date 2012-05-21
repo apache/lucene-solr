@@ -56,15 +56,6 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
    *  use; else, those files may be deleted. */
   public abstract FieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
 
-  /**
-   * Gathers files (exact file name or a Pattern regex) associated with this segment
-   * 
-   * @param segmentInfo the {@link SegmentInfo} for this segment 
-   * @param segmentSuffix the format's suffix within this segment
-   * @param files the of files to add the codec files to.
-   */
-  public abstract void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException;
-
   @Override
   public String toString() {
     return "PostingsFormat(name=" + name + ")";
@@ -79,5 +70,4 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   public static Set<String> availablePostingsFormats() {
     return loader.availableServices();
   }
-  
 }

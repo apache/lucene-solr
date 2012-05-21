@@ -54,28 +54,6 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     return name;
   }
   
-  /** Populates <code>files</code> with all filenames needed for 
-   * the <code>info</code> segment.
-   */
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    if (info.getUseCompoundFile()) {
-      files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-    } else {
-      postingsFormat().files(info, "", files);
-      storedFieldsFormat().files(info, files);
-      termVectorsFormat().files(info, files);
-      fieldInfosFormat().files(info, files);
-      // TODO: segmentInfosFormat should be allowed to declare additional files
-      // if it wants, in addition to segments_N
-      docValuesFormat().files(info, files);
-      normsFormat().files(info, files);
-    }
-    segmentInfosFormat().files(info, files);
-    // never inside CFS
-    liveDocsFormat().files(info, files);
-  }
-  
   /** Encodes/decodes postings */
   public abstract PostingsFormat postingsFormat();
   

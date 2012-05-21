@@ -43,9 +43,4 @@ class Lucene3xStoredFieldsFormat extends StoredFieldsFormat {
       IOContext context) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xStoredFieldsReader.files(info, files);
-  }
 }

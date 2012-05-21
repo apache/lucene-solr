@@ -36,8 +36,4 @@ public abstract class TermVectorsFormat {
   /** Returns a {@link TermVectorsWriter} to write term
    *  vectors. */
   public abstract TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException;
-
-  /** Gathers files (exact file name or a Pattern regex)
-   *  associated with this segment. */
-  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

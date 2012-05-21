@@ -107,9 +107,4 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
   public FieldInfosWriter getFieldInfosWriter() throws IOException {
     return writer;
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene40FieldInfosReader.files(info, files);
-  }
 }

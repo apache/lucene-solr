@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -33,6 +35,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -193,7 +196,8 @@ public class TestDoc extends LuceneTestCase {
       SegmentReader r2 = new SegmentReader(si2, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
 
       final Codec codec = Codec.getDefault();
-      SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, MergeState.CheckAbort.NONE, null, new FieldInfos.Builder(), codec, context);
+      TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.dir);
+      SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), trackingDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, MergeState.CheckAbort.NONE, null, new FieldInfos.Builder(), codec, context);
 
       merger.add(r1);
       merger.add(r2);
@@ -203,9 +207,10 @@ public class TestDoc extends LuceneTestCase {
       final SegmentInfo info = new SegmentInfo(si1.dir, Constants.LUCENE_MAIN_VERSION, merged,
                                                si1.docCount + si2.docCount, -1, merged,
                                                false, null, false, 0, codec, null);
+      info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
       
       if (useCompoundFile) {
-        Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, merged + ".cfs", MergeState.CheckAbort.NONE, info, newIOContext(random()));
+        Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, MergeState.CheckAbort.NONE, info, newIOContext(random()));
         info.setUseCompoundFile(true);
         for (final String fileToDelete : filesToDelete) {
           si1.dir.deleteFile(fileToDelete);

@@ -36,17 +36,6 @@ import org.apache.lucene.index.SegmentReadState;
 @Deprecated
 class Lucene3xNormsFormat extends NormsFormat {
 
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xNormsProducer.files(info, files);
-  }
-
-  public void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xNormsProducer.separateFiles(info, files);
-  }
-
-
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");

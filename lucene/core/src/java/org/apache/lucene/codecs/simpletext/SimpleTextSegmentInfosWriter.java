@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.codecs.SegmentInfosWriter;
 import org.apache.lucene.index.FieldInfos;
@@ -48,14 +49,18 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
   final static BytesRef SI_NUM_DIAG         = new BytesRef("    diagnostics ");
   final static BytesRef SI_DIAG_KEY         = new BytesRef("      key ");
   final static BytesRef SI_DIAG_VALUE       = new BytesRef("      value ");
+  final static BytesRef SI_NUM_FILES        = new BytesRef("    files ");
+  final static BytesRef SI_FILE             = new BytesRef("      file ");
   
   @Override
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
     assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
 
-    String fileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
+    String segFileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
+    si.getFiles().add(segFileName);
+
     boolean success = false;
-    IndexOutput output = dir.createOutput(fileName,  ioContext);
+    IndexOutput output = dir.createOutput(segFileName,  ioContext);
 
     try {
       BytesRef scratch = new BytesRef();
@@ -86,6 +91,20 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
         
           SimpleTextUtil.write(output, SI_DIAG_VALUE);
           SimpleTextUtil.write(output, diagEntry.getValue(), scratch);
+          SimpleTextUtil.writeNewline(output);
+        }
+      }
+
+      Set<String> files = si.getFiles();
+      int numFiles = files == null ? 0 : files.size();
+      SimpleTextUtil.write(output, SI_NUM_FILES);
+      SimpleTextUtil.write(output, Integer.toString(numFiles), scratch);
+      SimpleTextUtil.writeNewline(output);
+
+      if (numFiles > 0) {
+        for(String fileName : files) {
+          SimpleTextUtil.write(output, SI_FILE);
+          SimpleTextUtil.write(output, fileName, scratch);
           SimpleTextUtil.writeNewline(output);
         }
       }

@@ -84,9 +84,6 @@ public class Lucene3xCodec extends Codec {
     public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
       return null;
     }
-
-    @Override
-    public void files(SegmentInfo info, Set<String> files) throws IOException {}
   };
   
   @Override
@@ -128,32 +125,4 @@ public class Lucene3xCodec extends Codec {
   public LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
   }
-  
-  // overrides the default implementation in codec.java to handle CFS without CFE, 
-  // shared doc stores, compound doc stores, separate norms, etc
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    if (info.getUseCompoundFile()) {
-      files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-    } else {
-      postingsFormat().files(info, "", files);
-      storedFieldsFormat().files(info, files);
-      termVectorsFormat().files(info, files);
-      fieldInfosFormat().files(info, files);
-      // TODO: segmentInfosFormat should be allowed to declare additional files
-      // if it wants, in addition to segments_N
-      docValuesFormat().files(info, files);
-      normsFormat().files(info, files);
-    }
-    // never inside CFS
-    liveDocsFormat().files(info, files);
-    ((Lucene3xNormsFormat)normsFormat()).separateFiles(info, files);
-    segmentInfosFormat().files(info, files);
-
-    // shared docstores: these guys check the hair
-    if (info.getDocStoreOffset() != -1) {
-      storedFieldsFormat().files(info, files);
-      termVectorsFormat().files(info, files);
-    }
-  }  
 }

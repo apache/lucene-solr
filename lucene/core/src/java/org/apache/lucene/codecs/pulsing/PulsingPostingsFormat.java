@@ -112,10 +112,4 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
   public int getFreqCutoff() {
     return freqCutoff;
   }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    wrappedPostingsBaseFormat.files(segmentInfo, segmentSuffix, files);
-    BlockTreeTermsReader.files(segmentInfo, segmentSuffix, files);
-  }
 }

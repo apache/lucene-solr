@@ -199,11 +199,4 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
       }
     }
   }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    SepPostingsReader.files(segmentInfo, segmentSuffix, files);
-    BlockTermsReader.files(segmentInfo, segmentSuffix, files);
-    FixedGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
-  }
 }

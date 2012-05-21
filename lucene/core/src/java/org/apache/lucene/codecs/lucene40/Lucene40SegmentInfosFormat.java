@@ -136,9 +136,4 @@ public class Lucene40SegmentInfosFormat extends SegmentInfosFormat {
   }
 
   public final static String SI_EXTENSION = "si";
-  
-  @Override
-  public void files(SegmentInfo segmentInfo, Set<String> files) {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SI_EXTENSION));
-  }
 }

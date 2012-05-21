@@ -200,11 +200,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       offsets = null;
     }
   }
-  
-  public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_EXTENSION));
-  }
-  
+
   private void readLine() throws IOException {
     SimpleTextUtil.readLine(in, scratch);
   }

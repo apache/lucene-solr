@@ -59,11 +59,6 @@ public class Lucene40NormsFormat extends NormsFormat {
     return new Lucene40NormsDocValuesProducer(state, NORMS_SEGMENT_SUFFIX);
   }
 
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene40NormsDocValuesConsumer.files(info, files);
-  }
- 
   /**
    * Lucene 4.0 PerDocProducer implementation that uses compound file.
    * 

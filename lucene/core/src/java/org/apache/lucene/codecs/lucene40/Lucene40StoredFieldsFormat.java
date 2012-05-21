@@ -90,9 +90,4 @@ public class Lucene40StoredFieldsFormat extends StoredFieldsFormat {
       IOContext context) throws IOException {
     return new Lucene40StoredFieldsWriter(directory, segment, context);
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene40StoredFieldsReader.files(info, files);
-  }
 }

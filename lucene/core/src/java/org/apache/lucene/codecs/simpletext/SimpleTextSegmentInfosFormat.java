@@ -46,9 +46,4 @@ public class SimpleTextSegmentInfosFormat extends SegmentInfosFormat {
   public SegmentInfosWriter getSegmentInfosWriter() {
     return writer;
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) {
-    files.add(IndexFileNames.segmentFileName(info.name, "", SI_EXTENSION));
-  }
 }

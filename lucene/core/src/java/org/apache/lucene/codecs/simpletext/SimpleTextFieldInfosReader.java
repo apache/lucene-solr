@@ -124,8 +124,4 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
   private String readString(int offset, BytesRef scratch) {
     return new String(scratch.bytes, scratch.offset+offset, scratch.length-offset, IOUtils.CHARSET_UTF_8);
   }
-  
-  public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", FIELD_INFOS_EXTENSION));
-  }
 }

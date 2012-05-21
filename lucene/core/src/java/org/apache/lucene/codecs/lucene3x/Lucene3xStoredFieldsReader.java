@@ -299,6 +299,7 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
 
   // note: if there are shared docstores, we are also called by Lucene3xCodec even in 
   // the CFS case. so logic here must handle this.
+  /*
   public static void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getDocStoreOffset() != -1) {
       assert info.getDocStoreSegment() != null;
@@ -313,4 +314,5 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
       files.add(IndexFileNames.segmentFileName(info.name, "", FIELDS_EXTENSION));
     }
   }
+  */
 }

@@ -240,9 +240,4 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
 
     return fieldsStream;
   }
-
-  public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene40StoredFieldsWriter.FIELDS_EXTENSION));
-  }
 }

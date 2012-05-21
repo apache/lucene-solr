@@ -45,9 +45,4 @@ public class SimpleTextStoredFieldsFormat extends StoredFieldsFormat {
   public StoredFieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     return new SimpleTextStoredFieldsWriter(directory, segment, context);
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextStoredFieldsReader.files(info, files);
-  }
 }

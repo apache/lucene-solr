@@ -49,11 +49,6 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
     return directory;
   }
 
-  public static void files(SegmentInfo segmentInfo,
-      Set<String> files) throws IOException {
-    files(segmentInfo, files);
-  }
-  
   @SuppressWarnings("fallthrough")
   private static void files(String segmentName, Set<String> files)  {
     String filename = PerDocProducerBase.docValuesRegex(segmentName);

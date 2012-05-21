@@ -58,9 +58,4 @@ public class SimpleTextPostingsFormat extends PostingsFormat {
   static String getPostingsFileName(String segment, String segmentSuffix) {
     return IndexFileNames.segmentFileName(segment, segmentSuffix, POSTINGS_EXTENSION);
   }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    files.add(getPostingsFileName(segmentInfo.name, segmentSuffix));
-  }
 }

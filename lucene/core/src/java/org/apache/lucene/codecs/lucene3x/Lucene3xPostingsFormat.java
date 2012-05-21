@@ -63,10 +63,4 @@ class Lucene3xPostingsFormat extends PostingsFormat {
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new Lucene3xFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor);
   }
-
-  @Override
-  public void files(SegmentInfo info, String segmentSuffix, Set<String> files) throws IOException {
-    // preflex fields have no segmentSuffix - we ignore it here
-    Lucene3xFields.files(info, files);
-  }
 }

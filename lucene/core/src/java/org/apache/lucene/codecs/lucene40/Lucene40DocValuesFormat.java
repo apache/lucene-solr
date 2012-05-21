@@ -141,9 +141,4 @@ public class Lucene40DocValuesFormat extends DocValuesFormat {
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
     return new Lucene40DocValuesProducer(state, Lucene40DocValuesConsumer.DOC_VALUES_SEGMENT_SUFFIX);
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene40DocValuesConsumer.files(info, files);
-  }
 }

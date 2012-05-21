@@ -18,8 +18,10 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.codecs.SegmentInfosWriter;
 import org.apache.lucene.index.FieldInfos;
@@ -46,6 +48,9 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
     assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfosFormat.SI_EXTENSION);
+    assert si.getFiles() != null;
+    si.getFiles().add(fileName);
+
     final IndexOutput output = dir.createOutput(fileName, ioContext);
 
     boolean success = false;
@@ -59,6 +64,7 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeStringStringMap(si.getDiagnostics());
+      output.writeStringSet(si.getFiles());
 
       success = true;
     } finally {

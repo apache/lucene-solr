@@ -118,6 +118,8 @@ public final class TrackingDirectoryWrapper extends Directory implements Closeab
     return other.createSlicer(name, context);
   }
 
+  // maybe clone before returning.... all callers are
+  // cloning anyway....
   public Set<String> getCreatedFiles() {
     return createdFileNames;
   }

@@ -192,7 +192,8 @@ class Lucene3xNormsProducer extends PerDocProducer {
     }
     
   }
-  
+
+  /*
   static void files(SegmentInfo info, Set<String> files) throws IOException {
     // TODO: This is what SI always did... but we can do this cleaner?
     // like first FI that has norms but doesn't have separate norms?
@@ -202,7 +203,9 @@ class Lucene3xNormsProducer extends PerDocProducer {
       files.add(normsFileName);
     }
   }
-  
+  */
+
+  /*
   static void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
     Map<Integer,Long> normGen = info.getNormGen();
     if (normGen != null) {
@@ -215,6 +218,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
       }
     }
   }
+  */
 
   private class NormsDocValues extends DocValues {
     private final IndexInput file;

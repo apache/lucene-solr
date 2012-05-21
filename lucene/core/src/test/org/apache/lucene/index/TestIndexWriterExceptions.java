@@ -1124,49 +1124,49 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // files and make sure we get an IOException trying to
   // open the index:
   public void testSimulatedCorruptIndex2() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
-      dir.setCheckIndexOnClose(false); // we are corrupting it!
-      IndexWriter writer = null;
+    MockDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false); // we are corrupting it!
+    IndexWriter writer = null;
 
-      writer  = new IndexWriter(
-          dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-              setMergePolicy(newLogMergePolicy(true))
-      );
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
+    writer  = new IndexWriter(
+                              dir,
+                              newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+                              setMergePolicy(newLogMergePolicy(true))
+                              );
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
 
-      // add 100 documents
-      for (int i = 0; i < 100; i++) {
-          addDoc(writer);
+    // add 100 documents
+    for (int i = 0; i < 100; i++) {
+      addDoc(writer);
+    }
+
+    // close
+    writer.close();
+
+    long gen = SegmentInfos.getLastCommitGeneration(dir);
+    assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
+
+    String[] files = dir.listAll();
+    boolean corrupted = false;
+    for(int i=0;i<files.length;i++) {
+      if (files[i].endsWith(".cfs")) {
+        dir.deleteFile(files[i]);
+        corrupted = true;
+        break;
       }
+    }
+    assertTrue("failed to find cfs file to remove", corrupted);
 
-      // close
-      writer.close();
-
-      long gen = SegmentInfos.getLastCommitGeneration(dir);
-      assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
-
-      String[] files = dir.listAll();
-      boolean corrupted = false;
-      for(int i=0;i<files.length;i++) {
-        if (files[i].endsWith(".cfs")) {
-          dir.deleteFile(files[i]);
-          corrupted = true;
-          break;
-        }
-      }
-      assertTrue("failed to find cfs file to remove", corrupted);
-
-      IndexReader reader = null;
-      try {
-        reader = IndexReader.open(dir);
-        fail("reader did not hit IOException on opening a corrupt index");
-      } catch (Exception e) {
-      }
-      if (reader != null) {
-        reader.close();
-      }
-      dir.close();
+    IndexReader reader = null;
+    try {
+      reader = IndexReader.open(dir);
+      fail("reader did not hit IOException on opening a corrupt index");
+    } catch (Exception e) {
+    }
+    if (reader != null) {
+      reader.close();
+    }
+    dir.close();
   }
 
   // Simulate a writer that crashed while writing segments

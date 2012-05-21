@@ -19,7 +19,9 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.SegmentInfosReader;
@@ -49,8 +51,8 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
   @Override
   public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException {
     BytesRef scratch = new BytesRef();
-    String fileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
-    IndexInput input = directory.openInput(fileName, context);
+    String segFileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
+    IndexInput input = directory.openInput(segFileName, context);
     boolean success = false;
     try {
       SimpleTextUtil.readLine(input, scratch);
@@ -81,10 +83,24 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
         diagnostics.put(key, value);
       }
 
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_NUM_FILES);
+      int numFiles = Integer.parseInt(readString(SI_NUM_FILES.length, scratch));
+      Set<String> files = new HashSet<String>();
+
+      for (int i = 0; i < numFiles; i++) {
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch, SI_FILE);
+        String fileName = readString(SI_FILE.length, scratch);
+        files.add(fileName);
+      }
+
+      SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, -1,
+                                         segmentName, false, null, isCompoundFile,
+                                         0, null, diagnostics);
+      info.setFiles(files);
       success = true;
-      return new SegmentInfo(directory, version, segmentName, docCount, -1,
-                             segmentName, false, null, isCompoundFile,
-                             0, null, diagnostics);
+      return info;
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(input);
