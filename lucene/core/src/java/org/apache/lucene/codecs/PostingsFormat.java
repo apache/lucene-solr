@@ -40,6 +40,9 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   private final String name;
   
   protected PostingsFormat(String name) {
+    // nocommit: check that name is a-zA-Z0-9 and < some reasonable length
+    // also fix this for Codec
+    // also make NamedSPILoader's map case-insensitive (like Charset)
     this.name = name;
   }
 

@@ -44,7 +44,7 @@ public class IndexFileNameFilter implements FilenameFilter {
   // Approximate match for files that seem to be Lucene
   // index files.  This can easily over-match, ie if some
   // app names a file _foo_bar.go:
-  private final Pattern luceneFilePattern = Pattern.compile("^_[a-z0-9]+(_[a-z0-9]+)?\\.[a-z0-9]+$");
+  private final Pattern luceneFilePattern = Pattern.compile("^_[a-z0-9]+(_[a-zA-Z0-9]+)?\\.[a-z0-9]+$");
 
   /* (non-Javadoc)
    * @see java.io.FilenameFilter#accept(java.io.File, java.lang.String)
