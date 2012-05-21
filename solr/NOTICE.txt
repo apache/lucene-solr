@@ -16,6 +16,12 @@ including, but not limited to:
 This product includes the JQuery JavaScript library created by John Resig.
 Copyright (c) 2010 John Resig, http://jquery.com/
 
+This product includes the D3.js JavaScript library created by Michael Bostock.
+Copyright (c) 2012, Michael Bostock, https://github.com/mbostock/d3
+
+This product includes the highlight.js Javascript library created by Ivan Sagalaev
+Copyright (c) 2006, Ivan Sagalaev, https://github.com/isagalaev/highlight.js
+
 stax-utils library: https://stax-utils.dev.java.net/
 Copyright (c) 2004, Christian Niles, unit12.net
 Copyright (c) 2004, Sun Microsystems, Inc.
