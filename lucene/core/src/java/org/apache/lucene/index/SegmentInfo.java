@@ -19,20 +19,13 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
-import org.apache.lucene.util.Constants;
 
 // nocommit fix codec api to pass this around so they can
 // store attrs
@@ -46,7 +39,7 @@ import org.apache.lucene.util.Constants;
  * @lucene.experimental
  */
 // nocommit make final again once atts are working here
-public class SegmentInfo implements Cloneable {
+public class SegmentInfo {
   
   // TODO: remove these from this class, for now this is the representation
   public static final int NO = -1;          // e.g. no norms; no deletes;
@@ -139,32 +132,6 @@ public class SegmentInfo implements Cloneable {
 
   void clearSizeInBytes() {
     sizeInBytes = -1;
-  }
-
-  // nocommit nuke?
-  @Override
-  public SegmentInfo clone() {
-    final HashMap<Integer,Long> clonedNormGen;
-    if (normGen != null) {
-      clonedNormGen = new HashMap<Integer, Long>();
-      for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        clonedNormGen.put(entry.getKey(), entry.getValue());
-      }
-    } else {
-      clonedNormGen = null;
-    }
-
-    SegmentInfo newInfo = new SegmentInfo(dir, version, name, docCount, docStoreOffset,
-                                          docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
-                                          codec, new HashMap<String,String>(diagnostics));
-    final Set<String> clonedFiles;
-    if (setFiles != null) {
-      clonedFiles = new HashSet<String>(setFiles);
-    } else {
-      clonedFiles = null;
-    }
-    newInfo.setFiles(clonedFiles);
-    return newInfo;
   }
 
   /**
