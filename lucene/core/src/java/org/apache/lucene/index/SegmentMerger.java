@@ -46,7 +46,6 @@ import org.apache.lucene.util.ReaderUtil;
  */
 final class SegmentMerger {
   private final Directory directory;
-  private final String segment;
   private final int termIndexInterval;
 
   private final Codec codec;
@@ -58,7 +57,7 @@ final class SegmentMerger {
 
   // nocommit nuke name since SI has it.... but Directory is
   // NOT the same!!
-  SegmentMerger(SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval, String name,
+  SegmentMerger(SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval,
                 MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider,
                 FieldInfos.Builder fieldInfosBuilder, Codec codec, IOContext context) {
     mergeState.segmentInfo = segmentInfo;
@@ -67,7 +66,6 @@ final class SegmentMerger {
     mergeState.checkAbort = checkAbort;
     mergeState.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
-    segment = name;
     this.termIndexInterval = termIndexInterval;
     this.codec = codec;
     this.context = context;
@@ -134,7 +132,7 @@ final class SegmentMerger {
     
     // write the merged infos
     FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
-    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
+    fieldInfosWriter.write(directory, mergeState.segmentInfo.name, mergeState.fieldInfos, context);
 
     return mergeState;
   }

@@ -2294,7 +2294,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                                          codec, null, null);
 
       SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir, config.getTermIndexInterval(),
-                                               mergedName, MergeState.CheckAbort.NONE, payloadProcessorProvider,
+                                               MergeState.CheckAbort.NONE, payloadProcessorProvider,
                                                new FieldInfos.Builder(globalFieldNumberMap), codec, context);
 
       for (IndexReader reader : readers) {    // add new indexes
@@ -3438,7 +3438,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final MergeState.CheckAbort checkAbort = new MergeState.CheckAbort(merge, directory);
     final TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(directory);
 
-    SegmentMerger merger = new SegmentMerger(merge.info.info, infoStream, dirWrapper, config.getTermIndexInterval(), mergedName, checkAbort,
+    SegmentMerger merger = new SegmentMerger(merge.info.info, infoStream, dirWrapper, config.getTermIndexInterval(), checkAbort,
                                              payloadProcessorProvider, new FieldInfos.Builder(globalFieldNumberMap), codec, context);
 
     if (infoStream.isEnabled("IW")) {
