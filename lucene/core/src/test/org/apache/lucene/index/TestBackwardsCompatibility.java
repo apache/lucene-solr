@@ -330,7 +330,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         assertEquals(7, i);
     }
     
-    ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(new TermQuery(new Term(new String("content"), "aaa")), null, 1000).scoreDocs;
 
     // First document should be #21 since it's norm was
     // increased:
@@ -341,7 +341,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")), null, 1000).scoreDocs;
     assertEquals(34, hits.length);
-    hits = searcher.search(new TermQuery(new Term("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne")), null, 1000).scoreDocs;
+    hits = searcher.search(new TermQuery(new Term(new String("utf8"), "Lu\uD834\uDD1Ece\uD834\uDD60ne")), null, 1000).scoreDocs;
     assertEquals(34, hits.length);
     hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")), null, 1000).scoreDocs;
     assertEquals(34, hits.length);
