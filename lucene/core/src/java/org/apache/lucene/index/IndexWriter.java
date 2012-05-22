@@ -2353,6 +2353,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
+  // nocommit: this gets insanely crazy: if there is any 3.x can we just open a reader and AddIndexes(Reader) ?!
   private SegmentInfoPerCommit copySegmentAsIs(SegmentInfoPerCommit info, String segName,
                                                Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context,
                                                Set<String> copiedFiles)
@@ -2361,7 +2362,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // only relevant for segments that share doc store with others,
     // because the DS might have been copied already, in which case we
     // just want to update the DS name of this SegmentInfo.
-    String dsName = info.info.getDocStoreSegment();
+    final String dsName = info.info.getDocStoreSegment();
     assert dsName != null;
     final String newDsName;
     if (dsNames.containsKey(dsName)) {
@@ -2383,13 +2384,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       assert info.info.getDocStoreSegment() != null;
       // nocommit what to do....
       if (info.info.getDocStoreIsCompoundFile()) {
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.info.getDocStoreSegment(), "", "cfx"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "cfx"));
       } else {
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.info.getDocStoreSegment(), "", "fdt"));
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.info.getDocStoreSegment(), "", "fdx"));
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.info.getDocStoreSegment(), "", "tvx"));
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.info.getDocStoreSegment(), "", "tvf"));
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(info.info.getDocStoreSegment(), "", "tvd"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "fdt"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "fdx"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "tvx"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "tvf"));
+        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "tvd"));
       }
     }
 
