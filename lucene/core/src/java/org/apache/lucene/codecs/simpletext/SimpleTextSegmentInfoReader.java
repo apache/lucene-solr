@@ -38,7 +38,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfosWriter.*;
+import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.*;
 
 // nocommit rename (remove s)
 
@@ -48,12 +48,12 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfosWriter.*
  * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
  * @lucene.experimental
  */
-public class SimpleTextSegmentInfosReader extends SegmentInfoReader {
+public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
 
   @Override
   public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException {
     BytesRef scratch = new BytesRef();
-    String segFileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
+    String segFileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
     IndexInput input = directory.openInput(segFileName, context);
     boolean success = false;
     try {

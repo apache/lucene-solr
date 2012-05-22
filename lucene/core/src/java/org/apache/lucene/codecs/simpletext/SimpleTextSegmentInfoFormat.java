@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene3x;
+package org.apache.lucene.codecs.simpletext;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,36 +17,35 @@ package org.apache.lucene.codecs.lucene3x;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Map.Entry;
-import java.util.Map;
+import java.util.Set;
 
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.codecs.SegmentInfoWriter;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.ChecksumIndexOutput;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FlushInfo;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.IOUtils;
+
+// nocommit rename (remove s)
 
 /**
- * PreFlex implementation of {@link SegmentInfoWriter}.
+ * plain text segments file format.
+ * <p>
+ * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
  * @lucene.experimental
  */
-class PreFlexRWSegmentInfosWriter extends SegmentInfoWriter {
+public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
+  private final SegmentInfoReader reader = new SimpleTextSegmentInfoReader();
+  private final SegmentInfoWriter writer = new SimpleTextSegmentInfoWriter();
 
-  // NOTE: this is not "really" 3.x format, because we are
-  // writing each SI to its own file, vs 3.x where the list
-  // of segments and SI for each segment is written into a
-  // single segments_N file
-
-  /** Save a single segment's info. */
+  public static final String SI_EXTENSION = "si";
+  
   @Override
-  public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
-    SegmentInfos.write3xInfo(dir, si, ioContext);
+  public SegmentInfoReader getSegmentInfosReader() {
+    return reader;
+  }
+
+  @Override
+  public SegmentInfoWriter getSegmentInfosWriter() {
+    return writer;
   }
 }

@@ -1,4 +1,6 @@
-package org.apache.lucene.codecs.simpletext;
+package org.apache.lucene.codecs.lucene3x;
+
+import org.apache.lucene.codecs.SegmentInfoWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,32 +19,11 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import java.util.Set;
-
-import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.SegmentInfoReader;
-import org.apache.lucene.codecs.SegmentInfoWriter;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
-
-// nocommit rename (remove s)
-
 /**
- * plain text segments file format.
- * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
  * @lucene.experimental
  */
-public class SimpleTextSegmentInfosFormat extends SegmentInfoFormat {
-  private final SegmentInfoReader reader = new SimpleTextSegmentInfosReader();
-  private final SegmentInfoWriter writer = new SimpleTextSegmentInfosWriter();
-
-  public static final String SI_EXTENSION = "si";
-  
-  @Override
-  public SegmentInfoReader getSegmentInfosReader() {
-    return reader;
-  }
+class PreFlexRWSegmentInfoFormat extends Lucene3xSegmentInfoFormat {
+  private final SegmentInfoWriter writer = new PreFlexRWSegmentInfoWriter();
 
   @Override
   public SegmentInfoWriter getSegmentInfosWriter() {

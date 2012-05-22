@@ -43,7 +43,7 @@ import org.apache.lucene.util.IOUtils;
  * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
  * @lucene.experimental
  */
-public class SimpleTextSegmentInfosWriter extends SegmentInfoWriter {
+public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
 
   final static BytesRef SI_VERSION          = new BytesRef("    version ");
   final static BytesRef SI_DOCCOUNT         = new BytesRef("    number of documents ");
@@ -60,7 +60,7 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfoWriter {
   @Override
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
 
-    String segFileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
+    String segFileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
     si.getFiles().add(segFileName);
 
     boolean success = false;

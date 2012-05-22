@@ -42,7 +42,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   private final Lucene3xNormsFormat norms = new PreFlexRWNormsFormat();
   private final FieldInfosFormat fieldInfos = new PreFlexRWFieldInfosFormat();
   private final TermVectorsFormat termVectors = new PreFlexRWTermVectorsFormat();
-  private final SegmentInfoFormat segmentInfos = new PreFlexRWSegmentInfosFormat();
+  private final SegmentInfoFormat segmentInfos = new PreFlexRWSegmentInfoFormat();
   private final StoredFieldsFormat storedFields = new PreFlexRWStoredFieldsFormat();
   // TODO: this should really be a different impl
   private final LiveDocsFormat liveDocs = new Lucene40LiveDocsFormat();
