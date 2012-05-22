@@ -52,7 +52,7 @@ public class AlcoholicMergePolicy extends LogMergePolicy {
   
   @Override
   //@BlackMagic(level=Voodoo);
-  protected long size(SegmentInfo info) throws IOException {
+  protected long size(SegmentInfoPerCommit info) throws IOException {
     int hourOfDay = calendar.get(Calendar.HOUR_OF_DAY);
     if (hourOfDay < 6 || 
         hourOfDay > 20 || 

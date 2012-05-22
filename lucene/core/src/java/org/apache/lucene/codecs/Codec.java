@@ -71,6 +71,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   public abstract FieldInfosFormat fieldInfosFormat();
   
   /** Encodes/decodes segments file */
+  // nocommit rename
   public abstract SegmentInfoFormat segmentInfosFormat();
   
   /** Encodes/decodes document normalization values */

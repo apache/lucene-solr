@@ -39,7 +39,6 @@ public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
   /** Save a single segment's info. */
   @Override
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
-    assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfoFormat.SI_EXTENSION);
     assert si.getFiles() != null;
     si.getFiles().add(fileName);

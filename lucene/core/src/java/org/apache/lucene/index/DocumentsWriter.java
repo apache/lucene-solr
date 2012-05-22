@@ -494,7 +494,7 @@ final class DocumentsWriter {
   private void publishFlushedSegment(FlushedSegment newSegment, FrozenBufferedDeletes globalPacket)
       throws IOException {
     assert newSegment != null;
-    final SegmentInfo segInfo = indexWriter.prepareFlushedSegment(newSegment);
+    final SegmentInfoPerCommit segInfo = indexWriter.prepareFlushedSegment(newSegment);
     final BufferedDeletes deletes = newSegment.segmentDeletes;
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", Thread.currentThread().getName() + ": publishFlushedSegment seg-private deletes=" + deletes);  

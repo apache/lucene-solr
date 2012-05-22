@@ -147,7 +147,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
       return IndexFileNames.fileNameFromGeneration(segmentName, SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
     } else {
       // single file for all norms
-      return IndexFileNames.fileNameFromGeneration(segmentName, NORMS_EXTENSION, SegmentInfo.WITHOUT_GEN);
+      return IndexFileNames.segmentFileName(segmentName, "", NORMS_EXTENSION);
     }
   }
   

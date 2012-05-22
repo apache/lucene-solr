@@ -113,7 +113,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * 
  * @lucene.experimental
  */
-public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
+public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCommit> {
 
   /**
    * The file format version for the segments_N codec header
@@ -138,9 +138,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
   public Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
   
-  private List<SegmentInfo> segments = new ArrayList<SegmentInfo>();
-  private Set<SegmentInfo> segmentSet = new HashSet<SegmentInfo>();
-  private transient List<SegmentInfo> cachedUnmodifiableList;
+  private List<SegmentInfoPerCommit> segments = new ArrayList<SegmentInfoPerCommit>();
   
   /**
    * If non-null, information about loading segments_N files
@@ -148,7 +146,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    */
   private static PrintStream infoStream = null;
 
-  public SegmentInfo info(int i) {
+  public SegmentInfoPerCommit info(int i) {
     return segments.get(i);
   }
 
@@ -288,17 +286,17 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           //System.out.println("SIS.read seg=" + seg + " codec=" + codec);
           SegmentInfo info = codec.segmentInfosFormat().getSegmentInfosReader().read(directory, segName, IOContext.READ);
           info.setCodec(codec);
-          info.setDelGen(input.readLong());
-          info.setDelCount(input.readInt());
-          assert info.getDelCount() <= info.docCount;
-          add(info);
+          long delGen = input.readLong();
+          int delCount = input.readInt();
+          assert delCount <= info.docCount;
+          add(new SegmentInfoPerCommit(info, delCount, delGen));
         }
         userData = input.readStringStringMap();
       } else {
         Lucene3xSegmentInfoReader.readLegacyInfos(this, directory, input, format);
         Codec codec = Codec.forName("Lucene3x");
-        for (SegmentInfo info : this) {
-          info.setCodec(codec);
+        for (SegmentInfoPerCommit info : this) {
+          info.info.setCodec(codec);
         }
       }
 
@@ -364,12 +362,15 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
-      for (SegmentInfo si : this) {
+      for (SegmentInfoPerCommit siPerCommit : this) {
+        SegmentInfo si = siPerCommit.info;
         segnOutput.writeString(si.name);
         segnOutput.writeString(si.getCodec().getName());
-        segnOutput.writeLong(si.getDelGen());
-        segnOutput.writeInt(si.getDelCount());
+        segnOutput.writeLong(siPerCommit.getDelGen());
+        segnOutput.writeInt(siPerCommit.getDelCount());
         assert si.dir == directory;
+
+        assert siPerCommit.getDelCount() <= si.docCount;
 
         // If this segment is pre-4.x, perform a one-time
         // "ugprade" to write the .si file for it:
@@ -423,12 +424,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       // we are about to write this SI in 3.x format, dropping all codec information, etc.
       // so it had better be a 3.x segment or you will get very confusing errors later.
       assert si.getCodec() instanceof Lucene3xCodec : "broken test, trying to mix preflex with other codecs";
-      assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(si.getVersion());
       output.writeString(si.name);
       output.writeInt(si.docCount);
-      output.writeLong(si.getDelGen());
+
+      // NOTE: a lie
+      output.writeLong(0L);
 
       output.writeInt(si.getDocStoreOffset());
       if (si.getDocStoreOffset() != -1) {
@@ -449,7 +451,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       }
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
-      output.writeInt(si.getDelCount());
+
+      // NOTE: a lie
+      output.writeInt(0);
+
       // hasProx (lie):
       output.writeByte((byte) 1);
       output.writeStringStringMap(si.getDiagnostics());
@@ -484,11 +489,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     try {
       final SegmentInfos sis = (SegmentInfos) super.clone();
       // deep clone, first recreate all collections:
-      sis.segments = new ArrayList<SegmentInfo>(size());
-      sis.segmentSet = new HashSet<SegmentInfo>(size());
-      sis.cachedUnmodifiableList = null;
-      for(final SegmentInfo info : this) {
-        assert info.getCodec() != null;
+      sis.segments = new ArrayList<SegmentInfoPerCommit>(size());
+      for(final SegmentInfoPerCommit info : this) {
+        assert info.info.getCodec() != null;
         // dont directly access segments, use add method!!!
         sis.add(info.clone());
       }
@@ -857,9 +860,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     }
     final int size = size();
     for(int i=0;i<size;i++) {
-      final SegmentInfo info = info(i);
-      if (info.dir == dir) {
-        files.addAll(info(i).files());
+      final SegmentInfoPerCommit info = info(i);
+      assert info.info.dir == dir;
+      if (info.info.dir == dir) {
+        files.addAll(info.files());
       }
     }
     return files;
@@ -955,7 +959,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       if (i > 0) {
         buffer.append(' ');
       }
-      final SegmentInfo info = info(i);
+      final SegmentInfoPerCommit info = info(i);
       buffer.append(info.toString(directory, 0));
     }
     return buffer.toString();
@@ -986,8 +990,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    *  this does not include deletions */
   public int totalDocCount() {
     int count = 0;
-    for(SegmentInfo info : this) {
-      count += info.docCount;
+    for(SegmentInfoPerCommit info : this) {
+      count += info.info.docCount;
     }
     return count;
   }
@@ -1000,12 +1004,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   
   /** applies all changes caused by committing a merge to this SegmentInfos */
   void applyMergeChanges(MergePolicy.OneMerge merge, boolean dropSegment) {
-    final Set<SegmentInfo> mergedAway = new HashSet<SegmentInfo>(merge.segments);
+    final Set<SegmentInfoPerCommit> mergedAway = new HashSet<SegmentInfoPerCommit>(merge.segments);
     boolean inserted = false;
     int newSegIdx = 0;
     for (int segIdx = 0, cnt = segments.size(); segIdx < cnt; segIdx++) {
       assert segIdx >= newSegIdx;
-      final SegmentInfo info = segments.get(segIdx);
+      final SegmentInfoPerCommit info = segments.get(segIdx);
       if (mergedAway.contains(info)) {
         if (!inserted && !dropSegment) {
           segments.set(segIdx, merge.info);
@@ -1029,93 +1033,68 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     if (!inserted && !dropSegment) {
       segments.add(0, merge.info);
     }
-
-    // update the Set
-    if (!dropSegment) {
-      segmentSet.add(merge.info);
-    }
-    segmentSet.removeAll(mergedAway);
-    
-    assert segmentSet.size() == segments.size();
   }
 
-  List<SegmentInfo> createBackupSegmentInfos(boolean cloneChildren) {
-    if (cloneChildren) {
-      final List<SegmentInfo> list = new ArrayList<SegmentInfo>(size());
-      for(final SegmentInfo info : this) {
-        assert info.getCodec() != null;
-        list.add(info.clone());
-      }
-      return list;
-    } else {
-      return new ArrayList<SegmentInfo>(segments);
+  List<SegmentInfoPerCommit> createBackupSegmentInfos() {
+    final List<SegmentInfoPerCommit> list = new ArrayList<SegmentInfoPerCommit>(size());
+    for(final SegmentInfoPerCommit info : this) {
+      assert info.info.getCodec() != null;
+      list.add(info.clone());
     }
+    return list;
   }
   
-  void rollbackSegmentInfos(List<SegmentInfo> infos) {
+  void rollbackSegmentInfos(List<SegmentInfoPerCommit> infos) {
     this.clear();
     this.addAll(infos);
   }
   
   /** Returns an <b>unmodifiable</b> {@link Iterator} of contained segments in order. */
   // @Override (comment out until Java 6)
-  public Iterator<SegmentInfo> iterator() {
+  public Iterator<SegmentInfoPerCommit> iterator() {
     return asList().iterator();
   }
   
   /** Returns all contained segments as an <b>unmodifiable</b> {@link List} view. */
-  public List<SegmentInfo> asList() {
-    if (cachedUnmodifiableList == null) {
-      cachedUnmodifiableList = Collections.unmodifiableList(segments);
-    }
-    return cachedUnmodifiableList;
+  public List<SegmentInfoPerCommit> asList() {
+    return Collections.unmodifiableList(segments);
   }
   
   public int size() {
     return segments.size();
   }
 
-  public void add(SegmentInfo si) {
-    if (segmentSet.contains(si)) {
-      throw new IllegalStateException("Cannot add the same segment two times to this SegmentInfos instance");
-    }
+  public void add(SegmentInfoPerCommit si) {
     segments.add(si);
-    segmentSet.add(si);
-    assert segmentSet.size() == segments.size();
   }
   
-  public void addAll(Iterable<SegmentInfo> sis) {
-    for (final SegmentInfo si : sis) {
+  public void addAll(Iterable<SegmentInfoPerCommit> sis) {
+    for (final SegmentInfoPerCommit si : sis) {
       this.add(si);
     }
   }
   
   public void clear() {
     segments.clear();
-    segmentSet.clear();
-  }
-  
-  public void remove(SegmentInfo si) {
-    final int index = this.indexOf(si);
-    if (index >= 0) {
-      this.remove(index);
-    }
-  }
-  
-  public void remove(int index) {
-    segmentSet.remove(segments.remove(index));
-    assert segmentSet.size() == segments.size();
-  }
-  
-  public boolean contains(SegmentInfo si) {
-    return segmentSet.contains(si);
   }
 
-  public int indexOf(SegmentInfo si) {
-    if (segmentSet.contains(si)) {
-      return segments.indexOf(si);
-    } else {
-      return -1;
-    }
+  /** WARNING: O(N) cost */
+  public void remove(SegmentInfoPerCommit si) {
+    segments.remove(si);
+  }
+  
+  /** WARNING: O(N) cost */
+  void remove(int index) {
+    segments.remove(index);
+  }
+
+  /** WARNING: O(N) cost */
+  boolean contains(SegmentInfoPerCommit si) {
+    return segments.contains(si);
+  }
+
+  /** WARNING: O(N) cost */
+  int indexOf(SegmentInfoPerCommit si) {
+    return segments.indexOf(si);
   }
 }

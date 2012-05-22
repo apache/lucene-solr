@@ -1526,7 +1526,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertNoUnreferencedFiles(dir, "no tv files");
     DirectoryReader r0 = IndexReader.open(dir);
     for (IndexReader r : r0.getSequentialSubReaders()) {
-      SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
+      SegmentInfoPerCommit s = ((SegmentReader) r).getSegmentInfo();
       assertFalse(((SegmentReader) r).getFieldInfos().hasVectors());
       // nocommit
       /*

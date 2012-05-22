@@ -25,6 +25,8 @@ import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 
+// nocommit rename (remove s)
+
 /**
  * plain text segments file format.
  * <p>

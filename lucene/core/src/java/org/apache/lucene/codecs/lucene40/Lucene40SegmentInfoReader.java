@@ -55,7 +55,7 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
 
       final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, docStoreOffset,
                                              docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-                                             0, null, diagnostics);
+                                             null, diagnostics);
       si.setFiles(files);
 
       success = true;

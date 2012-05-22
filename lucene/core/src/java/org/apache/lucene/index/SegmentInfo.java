@@ -51,7 +51,6 @@ public class SegmentInfo implements Cloneable {
   // TODO: remove these from this class, for now this is the representation
   public static final int NO = -1;          // e.g. no norms; no deletes;
   public static final int YES = 1;          // e.g. have norms; have deletes;
-  public static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
 
   public final String name;				  // unique name in dir
   // nocommit make me final:
@@ -59,15 +58,6 @@ public class SegmentInfo implements Cloneable {
   public final Directory dir;				  // where segment resides
 
   // nocommit what other members can we make final?
-
-  /*
-   * Current generation of del file:
-   * - NO if there are no deletes
-   * - YES or higher if there are deletes at generation N
-   */
-  // nocommit move this "out" somewhere...
-  // nocommit explain that codec need not save this....:
-  private long delGen;
 
   /*
    * Current generation of each field's norm file. If this array is null,
@@ -90,10 +80,6 @@ public class SegmentInfo implements Cloneable {
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private final boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
 
-  // nocommit move this out:
-  // nocommit explain that codec need not save this....:
-  private int delCount;                           // How many deleted docs in this segment
-  
   private Codec codec;
 
   private Map<String,String> diagnostics;
@@ -106,10 +92,6 @@ public class SegmentInfo implements Cloneable {
   // nocommit final?
   private String version;
 
-  // NOTE: only used in-RAM by IW to track buffered deletes;
-  // this is never written to/read from the Directory
-  private long bufferedDeletesGen;
-  
   void setDiagnostics(Map<String, String> diagnostics) {
     this.diagnostics = diagnostics;
   }
@@ -125,19 +107,17 @@ public class SegmentInfo implements Cloneable {
    */
   public SegmentInfo(Directory dir, String version, String name, int docCount, int docStoreOffset,
                      String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
-                     int delCount, Codec codec, Map<String,String> diagnostics) {
+                     Codec codec, Map<String,String> diagnostics) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
     this.version = version;
     this.name = name;
     this.docCount = docCount;
-    this.delGen = NO;
     this.docStoreOffset = docStoreOffset;
     this.docStoreSegment = docStoreSegment;
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     this.normGen = normGen;
     this.isCompoundFile = isCompoundFile;
-    this.delCount = delCount;
     this.codec = codec;
     this.diagnostics = diagnostics;
   }
@@ -145,6 +125,7 @@ public class SegmentInfo implements Cloneable {
   /**
    * Returns total size in bytes of all of files used by this segment
    */
+  // nocommit fails to take live docs into account... hmmm
   public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {
       long sum = 0;
@@ -156,37 +137,11 @@ public class SegmentInfo implements Cloneable {
     return sizeInBytes;
   }
 
-  public boolean hasDeletions() {
-    // Cases:
-    //
-    //   delGen == NO: this means this segment does not have deletions yet
-    //   delGen >= YES: this means this segment has deletions
-    //
-    return delGen != NO;
-  }
-
-  void advanceDelGen() {
-    if (delGen == NO) {
-      delGen = YES;
-    } else {
-      delGen++;
-    }
+  void clearSizeInBytes() {
     sizeInBytes = -1;
   }
 
-  public long getNextDelGen() {
-    if (delGen == NO) {
-      return YES;
-    } else {
-      return delGen + 1;
-    }
-  }
-
-  void clearDelGen() {
-    delGen = NO;
-    sizeInBytes = -1;
-  }
-
+  // nocommit nuke?
   @Override
   public SegmentInfo clone() {
     final HashMap<Integer,Long> clonedNormGen;
@@ -201,7 +156,7 @@ public class SegmentInfo implements Cloneable {
 
     SegmentInfo newInfo = new SegmentInfo(dir, version, name, docCount, docStoreOffset,
                                           docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
-                                          delCount, codec, new HashMap<String,String>(diagnostics));
+                                          codec, new HashMap<String,String>(diagnostics));
     final Set<String> clonedFiles;
     if (setFiles != null) {
       clonedFiles = new HashSet<String>(setFiles);
@@ -209,8 +164,6 @@ public class SegmentInfo implements Cloneable {
       clonedFiles = null;
     }
     newInfo.setFiles(clonedFiles);
-
-    newInfo.setDelGen(delGen);
     return newInfo;
   }
 
@@ -248,20 +201,6 @@ public class SegmentInfo implements Cloneable {
    */
   public boolean getUseCompoundFile() {
     return isCompoundFile;
-  }
-
-  public int getDelCount() {
-    return delCount;
-  }
-
-  void setDelCount(int delCount) {
-    this.delCount = delCount;
-    assert delCount <= docCount;
-  }
-
-  public void setDelGen(long delGen) {
-    this.delGen = delGen;
-    sizeInBytes = -1;
   }
 
   /**
@@ -310,20 +249,15 @@ public class SegmentInfo implements Cloneable {
    * modify it.
    */
 
+  // nocommit remove this temporarily to see who is calling
+  // it ...  very dangerous having this one AND SIPC.files()
   public Collection<String> files() throws IOException {
     // nocommit make sure when we are called we really have
     // files set ...
     if (setFiles == null) {
       throw new IllegalStateException("files were not computed yet");
     }
-
-    Set<String> files = new HashSet<String>(setFiles);
-
-    // nocommit make this take list instead...?
-    // Must separately add any live docs files:
-    codec.liveDocsFormat().files(this, files);
-
-    return new ArrayList<String>(files);
+    return setFiles;
   }
 
   /** {@inheritDoc} */
@@ -344,7 +278,7 @@ public class SegmentInfo implements Cloneable {
    *  shared doc stores named <code>_1</code> (this part is
    *  left off if doc stores are private).</p>
    */
-  public String toString(Directory dir, int pendingDelCount) {
+  public String toString(Directory dir, int delCount) {
 
     StringBuilder s = new StringBuilder();
     s.append(name).append('(').append(version == null ? "?" : version).append(')').append(':');
@@ -356,7 +290,6 @@ public class SegmentInfo implements Cloneable {
     }
     s.append(docCount);
 
-    int delCount = getDelCount() + pendingDelCount;
     if (delCount != 0) {
       s.append('/').append(delCount);
     }
@@ -412,19 +345,6 @@ public class SegmentInfo implements Cloneable {
     return version;
   }
 
-  long getBufferedDeletesGen() {
-    return bufferedDeletesGen;
-  }
-
-  void setBufferedDeletesGen(long v) {
-    bufferedDeletesGen = v;
-  }
-  
-  /** @lucene.internal */
-  public long getDelGen() {
-    return delGen;
-  }
-  
   /** @lucene.internal */
   public Map<Integer,Long> getNormGen() {
     return normGen;

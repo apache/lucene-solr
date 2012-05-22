@@ -35,6 +35,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -68,7 +69,7 @@ public class Lucene3xCodec extends Codec {
   // TODO: this should really be a different impl
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat() {
     @Override
-    public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, int newDelCount, IOContext context) throws IOException {
+    public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfoPerCommit info, int newDelCount, IOContext context) throws IOException {
       throw new UnsupportedOperationException("this codec can only be used for reading");
     }
   };

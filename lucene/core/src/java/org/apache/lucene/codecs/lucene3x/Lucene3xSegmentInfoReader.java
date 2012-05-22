@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.CompoundFileDirectory;
@@ -50,7 +51,9 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     infos.counter = input.readInt(); // read counter
     Lucene3xSegmentInfoReader reader = new Lucene3xSegmentInfoReader();
     for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
-      SegmentInfo si = reader.readSegmentInfo(null, directory, format, input);
+      SegmentInfoPerCommit siPerCommit = reader.readSegmentInfo(null, directory, format, input);
+      SegmentInfo si = siPerCommit.info;
+
       if (si.getVersion() == null) {
         // Could be a 3.0 - try to open the doc stores - if it fails, it's a
         // 2.x segment, and an IndexFormatTooOldException will be thrown,
@@ -84,7 +87,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
         // appropriate exception.
         throw new IndexFormatTooOldException("segment " + si.name + " in resource " + input, si.getVersion());
       }
-      infos.add(si);
+      infos.add(siPerCommit);
     }
       
     infos.userData = input.readStringStringMap();
@@ -105,7 +108,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     IndexInput input = directory.openInput(fileName, context);
 
     try {
-      SegmentInfo si = readSegmentInfo(segmentName, directory, format, input);
+      SegmentInfo si = readSegmentInfo(segmentName, directory, format, input).info;
       success = true;
       return si;
     } finally {
@@ -123,7 +126,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     }
   }
 
-  private SegmentInfo readSegmentInfo(String segmentName, Directory dir, int format, IndexInput input) throws IOException {
+  private SegmentInfoPerCommit readSegmentInfo(String segmentName, Directory dir, int format, IndexInput input) throws IOException {
     // check that it is a format we can understand
     if (format > Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS) {
       throw new IndexFormatTooOldException(input, format,
@@ -243,9 +246,10 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
 
     SegmentInfo info = new SegmentInfo(dir, version, segmentName, docCount, docStoreOffset,
                                        docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-                                       delCount, null, diagnostics);
-    info.setDelGen(delGen);
+                                       null, diagnostics);
     info.setFiles(files);
-    return info;
+
+    SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, delCount, delGen);
+    return infoPerCommit;
   }
 }

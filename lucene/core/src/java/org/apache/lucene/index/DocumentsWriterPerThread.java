@@ -116,13 +116,13 @@ class DocumentsWriterPerThread {
   }
 
   static class FlushedSegment {
-    final SegmentInfo segmentInfo;
+    final SegmentInfoPerCommit segmentInfo;
     final FieldInfos fieldInfos;
     final BufferedDeletes segmentDeletes;
     final MutableBits liveDocs;
     final int delCount;
 
-    private FlushedSegment(SegmentInfo segmentInfo, FieldInfos fieldInfos,
+    private FlushedSegment(SegmentInfoPerCommit segmentInfo, FieldInfos fieldInfos,
                            BufferedDeletes segmentDeletes, MutableBits liveDocs, int delCount) {
       this.segmentInfo = segmentInfo;
       this.fieldInfos = fieldInfos;
@@ -485,7 +485,7 @@ class DocumentsWriterPerThread {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
       final SegmentInfo newSegment = new SegmentInfo(directoryOrig, Constants.LUCENE_MAIN_VERSION, segment, flushState.numDocs,
-                                                     -1, segment, false, null, false, 0,
+                                                     -1, segment, false, null, false,
                                                      flushState.codec,
                                                      null);
       newSegment.setFiles(new HashSet<String>(directory.getCreatedFiles()));
@@ -523,7 +523,8 @@ class DocumentsWriterPerThread {
       doAfterFlush();
       success = true;
 
-      return new FlushedSegment(newSegment, flushState.fieldInfos, segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
+      return new FlushedSegment(new SegmentInfoPerCommit(newSegment, 0, -1L), flushState.fieldInfos,
+                                segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
     } finally {
       if (!success) {
         if (segment != null) {

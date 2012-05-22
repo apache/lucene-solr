@@ -32,7 +32,7 @@ import org.apache.lucene.util.MutableBits;
 class ReadersAndLiveDocs {
   // Not final because we replace (clone) when we need to
   // change it and it's been shared:
-  public final SegmentInfo info;
+  public final SegmentInfoPerCommit info;
 
   // Tracks how many consumers are using this instance:
   private final AtomicInteger refCount = new AtomicInteger(1);
@@ -67,7 +67,7 @@ class ReadersAndLiveDocs {
   // external NRT reader:
   private boolean shared;
 
-  public ReadersAndLiveDocs(IndexWriter writer, SegmentInfo info) {
+  public ReadersAndLiveDocs(IndexWriter writer, SegmentInfoPerCommit info) {
     this.info = info;
     this.writer = writer;
     shared = true;
@@ -98,16 +98,16 @@ class ReadersAndLiveDocs {
     int count;
     if (liveDocs != null) {
       count = 0;
-      for(int docID=0;docID<info.docCount;docID++) {
+      for(int docID=0;docID<info.info.docCount;docID++) {
         if (liveDocs.get(docID)) {
           count++;
         }
       }
     } else {
-      count = info.docCount;
+      count = info.info.docCount;
     }
 
-    assert info.docCount - info.getDelCount() - pendingDeleteCount == count: "info.docCount=" + info.docCount + " info.getDelCount()=" + info.getDelCount() + " pendingDeleteCount=" + pendingDeleteCount + " count=" + count;;
+    assert info.info.docCount - info.getDelCount() - pendingDeleteCount == count: "info.docCount=" + info.info.docCount + " info.getDelCount()=" + info.getDelCount() + " pendingDeleteCount=" + pendingDeleteCount + " count=" + count;
     return true;
   }
 
@@ -169,7 +169,7 @@ class ReadersAndLiveDocs {
   public synchronized boolean delete(int docID) {
     assert liveDocs != null;
     assert Thread.holdsLock(writer);
-    assert docID >= 0 && docID < liveDocs.length() : "out of bounds: docid=" + docID + " liveDocsLength=" + liveDocs.length() + " seg=" + info.name + " docCount=" + info.docCount;
+    assert docID >= 0 && docID < liveDocs.length() : "out of bounds: docid=" + docID + " liveDocsLength=" + liveDocs.length() + " seg=" + info.info.name + " docCount=" + info.info.docCount;
     assert !shared;
     final boolean didDelete = liveDocs.get(docID);
     if (didDelete) {
@@ -207,7 +207,7 @@ class ReadersAndLiveDocs {
     }
     shared = true;
     if (liveDocs != null) {
-      return new SegmentReader(reader.getSegmentInfo(), reader.core, liveDocs, info.docCount - info.getDelCount() - pendingDeleteCount);
+      return new SegmentReader(reader.getSegmentInfo(), reader.core, liveDocs, info.info.docCount - info.getDelCount() - pendingDeleteCount);
     } else {
       assert reader.getLiveDocs() == liveDocs;
       reader.incRef();
@@ -217,17 +217,17 @@ class ReadersAndLiveDocs {
 
   public synchronized void initWritableLiveDocs() throws IOException {
     assert Thread.holdsLock(writer);
-    assert info.docCount > 0;
+    assert info.info.docCount > 0;
     //System.out.println("initWritableLivedocs seg=" + info + " liveDocs=" + liveDocs + " shared=" + shared);
     if (shared) {
       // Copy on write: this means we've cloned a
       // SegmentReader sharing the current liveDocs
       // instance; must now make a private clone so we can
       // change it:
-      LiveDocsFormat liveDocsFormat = info.getCodec().liveDocsFormat();
+      LiveDocsFormat liveDocsFormat = info.info.getCodec().liveDocsFormat();
       if (liveDocs == null) {
         //System.out.println("create BV seg=" + info);
-        liveDocs = liveDocsFormat.newLiveDocs(info.docCount);
+        liveDocs = liveDocsFormat.newLiveDocs(info.info.docCount);
       } else {
         liveDocs = liveDocsFormat.newLiveDocs(liveDocs);
       }
@@ -270,12 +270,12 @@ class ReadersAndLiveDocs {
     //System.out.println("rld.writeLiveDocs seg=" + info + " pendingDelCount=" + pendingDeleteCount);
     if (pendingDeleteCount != 0) {
       // We have new deletes
-      assert liveDocs.length() == info.docCount;
+      assert liveDocs.length() == info.info.docCount;
 
       // We can write directly to the actual name (vs to a
       // .tmp & renaming it) because the file is not live
       // until segments file is written:
-      info.getCodec().liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, dir, info, pendingDeleteCount, IOContext.DEFAULT);
+      info.info.getCodec().liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, dir, info, pendingDeleteCount, IOContext.DEFAULT);
 
       // If we hit an exc in the line above (eg disk full)
       // then info remains pointing to the previous

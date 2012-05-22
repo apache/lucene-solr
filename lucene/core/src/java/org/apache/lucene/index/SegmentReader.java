@@ -36,7 +36,7 @@ import org.apache.lucene.util.Bits;
  */
 public final class SegmentReader extends AtomicReader {
 
-  private final SegmentInfo si;
+  private final SegmentInfoPerCommit si;
   private final Bits liveDocs;
 
   // Normally set to si.docCount - si.delDocCount, unless we
@@ -50,19 +50,19 @@ public final class SegmentReader extends AtomicReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public SegmentReader(SegmentInfo si, int termInfosIndexDivisor, IOContext context) throws IOException {
+  public SegmentReader(SegmentInfoPerCommit si, int termInfosIndexDivisor, IOContext context) throws IOException {
     this.si = si;
-    core = new SegmentCoreReaders(this, si.dir, si, context, termInfosIndexDivisor);
+    core = new SegmentCoreReaders(this, si.info.dir, si, context, termInfosIndexDivisor);
     boolean success = false;
     try {
       if (si.hasDeletions()) {
         // NOTE: the bitvector is stored using the regular directory, not cfs
-        liveDocs = si.getCodec().liveDocsFormat().readLiveDocs(directory(), si, new IOContext(IOContext.READ, true));
+        liveDocs = si.info.getCodec().liveDocsFormat().readLiveDocs(directory(), si, new IOContext(IOContext.READ, true));
       } else {
         assert si.getDelCount() == 0;
         liveDocs = null;
       }
-      numDocs = si.docCount - si.getDelCount();
+      numDocs = si.info.docCount - si.getDelCount();
       success = true;
     } finally {
       // With lock-less commits, it's entirely possible (and
@@ -79,15 +79,17 @@ public final class SegmentReader extends AtomicReader {
   // Create new SegmentReader sharing core from a previous
   // SegmentReader and loading new live docs from a new
   // deletes file.  Used by openIfChanged.
-  SegmentReader(SegmentInfo si, SegmentCoreReaders core, IOContext context) throws IOException {
-    this(si, core, si.getCodec().liveDocsFormat().readLiveDocs(si.dir, si, context), si.docCount - si.getDelCount());
+  SegmentReader(SegmentInfoPerCommit si, SegmentCoreReaders core, IOContext context) throws IOException {
+    this(si, core,
+         si.info.getCodec().liveDocsFormat().readLiveDocs(si.info.dir, si, context),
+         si.info.docCount - si.getDelCount());
   }
 
   // Create new SegmentReader sharing core from a previous
   // SegmentReader and using the provided in-memory
   // liveDocs.  Used by IndexWriter to provide a new NRT
   // reader:
-  SegmentReader(SegmentInfo si, SegmentCoreReaders core, Bits liveDocs, int numDocs) throws IOException {
+  SegmentReader(SegmentInfoPerCommit si, SegmentCoreReaders core, Bits liveDocs, int numDocs) throws IOException {
     this.si = si;
     this.core = core;
     core.incRef();
@@ -151,7 +153,7 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
-    return si.docCount;
+    return si.info.docCount;
   }
 
   /** @lucene.internal */
@@ -179,20 +181,20 @@ public final class SegmentReader extends AtomicReader {
   public String toString() {
     // SegmentInfo.toString takes dir and number of
     // *pending* deletions; so we reverse compute that here:
-    return si.toString(si.dir, si.docCount - numDocs - si.getDelCount());
+    return si.toString(si.info.dir, si.info.docCount - numDocs - si.getDelCount());
   }
   
   /**
    * Return the name of the segment this reader is reading.
    */
   public String getSegmentName() {
-    return si.name;
+    return si.info.name;
   }
   
   /**
-   * Return the SegmentInfo of the segment this reader is reading.
+   * Return the SegmentInfoPerCommit of the segment this reader is reading.
    */
-  SegmentInfo getSegmentInfo() {
+  SegmentInfoPerCommit getSegmentInfo() {
     return si;
   }
 
@@ -201,7 +203,7 @@ public final class SegmentReader extends AtomicReader {
     // Don't ensureOpen here -- in certain cases, when a
     // cloned/reopened reader needs to commit, it may call
     // this method on the closed original reader
-    return si.dir;
+    return si.info.dir;
   }
 
   // This is necessary so that cloned SegmentReaders (which

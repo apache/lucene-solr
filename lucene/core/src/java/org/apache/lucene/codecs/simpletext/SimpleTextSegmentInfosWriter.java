@@ -35,6 +35,8 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
+// nocommit rename (remove s)
+
 /**
  * writes plaintext segments files
  * <p>
@@ -54,7 +56,6 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfoWriter {
   
   @Override
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
-    assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
 
     String segFileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfosFormat.SI_EXTENSION);
     si.getFiles().add(segFileName);

@@ -63,8 +63,8 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
    * so all segments created with a different version number than this Lucene version will
    * get upgraded.
    */
-  protected boolean shouldUpgradeSegment(SegmentInfo si) {
-    return !Constants.LUCENE_MAIN_VERSION.equals(si.getVersion());
+  protected boolean shouldUpgradeSegment(SegmentInfoPerCommit si) {
+    return !Constants.LUCENE_MAIN_VERSION.equals(si.info.getVersion());
   }
 
   @Override
@@ -79,10 +79,10 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   @Override
-  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToMerge) throws CorruptIndexException, IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) throws CorruptIndexException, IOException {
     // first find all old segments
-    final Map<SegmentInfo,Boolean> oldSegments = new HashMap<SegmentInfo,Boolean>();
-    for (final SegmentInfo si : segmentInfos) {
+    final Map<SegmentInfoPerCommit,Boolean> oldSegments = new HashMap<SegmentInfoPerCommit,Boolean>();
+    for (final SegmentInfoPerCommit si : segmentInfos) {
       final Boolean v = segmentsToMerge.get(si);
       if (v != null && shouldUpgradeSegment(si)) {
         oldSegments.put(si, v);
@@ -112,8 +112,8 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
         message("findForcedMerges: " +  base.getClass().getSimpleName() +
         " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments);
       }
-      final List<SegmentInfo> newInfos = new ArrayList<SegmentInfo>();
-      for (final SegmentInfo si : segmentInfos) {
+      final List<SegmentInfoPerCommit> newInfos = new ArrayList<SegmentInfoPerCommit>();
+      for (final SegmentInfoPerCommit si : segmentInfos) {
         if (oldSegments.containsKey(si)) {
           newInfos.add(si);
         }
@@ -134,7 +134,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   @Override
-  public boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment) throws IOException {
+  public boolean useCompoundFile(SegmentInfos segments, SegmentInfoPerCommit newSegment) throws IOException {
     return base.useCompoundFile(segments, newSegment);
   }
   

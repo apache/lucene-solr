@@ -361,8 +361,8 @@ public class CheckIndex {
     String oldSegs = null;
     boolean foundNonNullVersion = false;
     Comparator<String> versionComparator = StringHelper.getVersionComparator();
-    for (SegmentInfo si : sis) {
-      String version = si.getVersion();
+    for (SegmentInfoPerCommit si : sis) {
+      String version = si.info.getVersion();
       if (version == null) {
         // pre-3.1 segment
         oldSegs = "pre-3.1";
@@ -455,47 +455,48 @@ public class CheckIndex {
     result.maxSegmentName = -1;
 
     for(int i=0;i<numSegments;i++) {
-      final SegmentInfo info = sis.info(i);
-      int segmentName = Integer.parseInt(info.name.substring(1), Character.MAX_RADIX);
+      final SegmentInfoPerCommit info = sis.info(i);
+      int segmentName = Integer.parseInt(info.info.name.substring(1), Character.MAX_RADIX);
       if (segmentName > result.maxSegmentName) {
         result.maxSegmentName = segmentName;
       }
-      if (onlySegments != null && !onlySegments.contains(info.name))
+      if (onlySegments != null && !onlySegments.contains(info.info.name)) {
         continue;
+      }
       Status.SegmentInfoStatus segInfoStat = new Status.SegmentInfoStatus();
       result.segmentInfos.add(segInfoStat);
-      msg("  " + (1+i) + " of " + numSegments + ": name=" + info.name + " docCount=" + info.docCount);
-      segInfoStat.name = info.name;
-      segInfoStat.docCount = info.docCount;
+      msg("  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.docCount);
+      segInfoStat.name = info.info.name;
+      segInfoStat.docCount = info.info.docCount;
 
-      int toLoseDocCount = info.docCount;
+      int toLoseDocCount = info.info.docCount;
 
       SegmentReader reader = null;
 
       try {
-        final Codec codec = info.getCodec();
+        final Codec codec = info.info.getCodec();
         msg("    codec=" + codec);
         segInfoStat.codec = codec;
-        msg("    compound=" + info.getUseCompoundFile());
-        segInfoStat.compound = info.getUseCompoundFile();
-        msg("    numFiles=" + info.files().size());
-        segInfoStat.numFiles = info.files().size();
+        msg("    compound=" + info.info.getUseCompoundFile());
+        segInfoStat.compound = info.info.getUseCompoundFile();
+        msg("    numFiles=" + info.info.files().size());
+        segInfoStat.numFiles = info.info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
         msg("    size (MB)=" + nf.format(segInfoStat.sizeMB));
-        Map<String,String> diagnostics = info.getDiagnostics();
+        Map<String,String> diagnostics = info.info.getDiagnostics();
         segInfoStat.diagnostics = diagnostics;
         if (diagnostics.size() > 0) {
           msg("    diagnostics = " + diagnostics);
         }
 
-        final int docStoreOffset = info.getDocStoreOffset();
+        final int docStoreOffset = info.info.getDocStoreOffset();
         if (docStoreOffset != -1) {
           msg("    docStoreOffset=" + docStoreOffset);
           segInfoStat.docStoreOffset = docStoreOffset;
-          msg("    docStoreSegment=" + info.getDocStoreSegment());
-          segInfoStat.docStoreSegment = info.getDocStoreSegment();
-          msg("    docStoreIsCompoundFile=" + info.getDocStoreIsCompoundFile());
-          segInfoStat.docStoreCompoundFile = info.getDocStoreIsCompoundFile();
+          msg("    docStoreSegment=" + info.info.getDocStoreSegment());
+          segInfoStat.docStoreSegment = info.info.getDocStoreSegment();
+          msg("    docStoreIsCompoundFile=" + info.info.getDocStoreIsCompoundFile());
+          segInfoStat.docStoreCompoundFile = info.info.getDocStoreIsCompoundFile();
         }
 
         if (info.hasDeletions()) {
@@ -516,14 +517,14 @@ public class CheckIndex {
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         if (reader.hasDeletions()) {
-          if (reader.numDocs() != info.docCount - info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + (info.docCount - info.getDelCount()) + " vs reader=" + reader.numDocs());
+          if (reader.numDocs() != info.info.docCount - info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + (info.info.docCount - info.getDelCount()) + " vs reader=" + reader.numDocs());
           }
-          if ((info.docCount-reader.numDocs()) > reader.maxDoc()) {
-            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.docCount-reader.numDocs()));
+          if ((info.info.docCount-reader.numDocs()) > reader.maxDoc()) {
+            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.docCount-reader.numDocs()));
           }
-          if (info.docCount - numDocs != info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
+          if (info.info.docCount - numDocs != info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.docCount - numDocs));
           }
           Bits liveDocs = reader.getLiveDocs();
           if (liveDocs == null) {
@@ -540,11 +541,11 @@ public class CheckIndex {
             }
           }
           
-          segInfoStat.numDeleted = info.docCount - numDocs;
+          segInfoStat.numDeleted = info.info.docCount - numDocs;
           msg("OK [" + (segInfoStat.numDeleted) + " deleted docs]");
         } else {
           if (info.getDelCount() != 0) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.docCount - numDocs));
           }
           Bits liveDocs = reader.getLiveDocs();
           if (liveDocs != null) {
@@ -557,8 +558,9 @@ public class CheckIndex {
           }
           msg("OK");
         }
-        if (reader.maxDoc() != info.docCount)
-          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.docCount);
+        if (reader.maxDoc() != info.info.docCount) {
+          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.docCount);
+        }
 
         // Test getFieldInfos()
         if (infoStream != null) {
@@ -1158,7 +1160,7 @@ public class CheckIndex {
   /**
    * Test stored fields for a segment.
    */
-  private Status.StoredFieldStatus testStoredFields(SegmentInfo info, SegmentReader reader, NumberFormat format) {
+  private Status.StoredFieldStatus testStoredFields(SegmentInfoPerCommit info, SegmentReader reader, NumberFormat format) {
     final Status.StoredFieldStatus status = new Status.StoredFieldStatus();
 
     try {
@@ -1168,7 +1170,7 @@ public class CheckIndex {
 
       // Scan stored fields for all documents
       final Bits liveDocs = reader.getLiveDocs();
-      for (int j = 0; j < info.docCount; ++j) {
+      for (int j = 0; j < info.info.docCount; ++j) {
         // Intentionally pull even deleted documents to
         // make sure they too are not corrupt:
         Document doc = reader.document(j);
@@ -1282,7 +1284,7 @@ public class CheckIndex {
     }
   }
   
-  private Status.DocValuesStatus testDocValues(SegmentInfo info,
+  private Status.DocValuesStatus testDocValues(SegmentInfoPerCommit info,
                                                FieldInfos fieldInfos,
                                                SegmentReader reader) {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
@@ -1317,7 +1319,7 @@ public class CheckIndex {
   /**
    * Test term vectors for a segment.
    */
-  private Status.TermVectorStatus testTermVectors(FieldInfos fieldInfos, SegmentInfo info, SegmentReader reader, NumberFormat format) {
+  private Status.TermVectorStatus testTermVectors(FieldInfos fieldInfos, SegmentInfoPerCommit info, SegmentReader reader, NumberFormat format) {
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
 
     final Bits onlyDocIsDeleted = new FixedBitSet(1);
@@ -1347,7 +1349,7 @@ public class CheckIndex {
       TermsEnum termsEnum = null;
       TermsEnum postingsTermsEnum = null;
 
-      for (int j = 0; j < info.docCount; ++j) {
+      for (int j = 0; j < info.info.docCount; ++j) {
         // Intentionally pull/visit (but don't count in
         // stats) deleted documents to make sure they too
         // are not corrupt:

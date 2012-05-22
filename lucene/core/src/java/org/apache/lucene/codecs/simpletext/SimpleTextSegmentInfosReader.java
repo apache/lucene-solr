@@ -40,6 +40,8 @@ import org.apache.lucene.util.StringHelper;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfosWriter.*;
 
+// nocommit rename (remove s)
+
 /**
  * reads plaintext segments files
  * <p>
@@ -97,7 +99,7 @@ public class SimpleTextSegmentInfosReader extends SegmentInfoReader {
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, -1,
                                          segmentName, false, null, isCompoundFile,
-                                         0, null, diagnostics);
+                                         null, diagnostics);
       info.setFiles(files);
       success = true;
       return info;

@@ -64,7 +64,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     iw.close();
     // we should have 2 segments now
     IndexSplitter is = new IndexSplitter(dir);
-    String splitSegName = is.infos.info(1).name;
+    String splitSegName = is.infos.info(1).info.name;
     is.split(destDir, new String[] {splitSegName});
     Directory fsDirDest = newFSDirectory(destDir);
     DirectoryReader r = DirectoryReader.open(fsDirDest);

@@ -105,23 +105,23 @@ public class IndexSplitter {
   public void listSegments() throws IOException {
     DecimalFormat formatter = new DecimalFormat("###,###.###");
     for (int x = 0; x < infos.size(); x++) {
-      SegmentInfo info = infos.info(x);
+      SegmentInfoPerCommit info = infos.info(x);
       String sizeStr = formatter.format(info.sizeInBytes());
-      System.out.println(info.name + " " + sizeStr);
+      System.out.println(info.info.name + " " + sizeStr);
     }
   }
 
   private int getIdx(String name) {
     for (int x = 0; x < infos.size(); x++) {
-      if (name.equals(infos.info(x).name))
+      if (name.equals(infos.info(x).info.name))
         return x;
     }
     return -1;
   }
 
-  private SegmentInfo getInfo(String name) {
+  private SegmentInfoPerCommit getInfo(String name) {
     for (int x = 0; x < infos.size(); x++) {
-      if (name.equals(infos.info(x).name))
+      if (name.equals(infos.info(x).info.name))
         return infos.info(x);
     }
     return null;
@@ -142,14 +142,16 @@ public class IndexSplitter {
     SegmentInfos destInfos = new SegmentInfos();
     destInfos.counter = infos.counter;
     for (String n : segs) {
-      SegmentInfo info = getInfo(n);
+      SegmentInfoPerCommit infoPerCommit = getInfo(n);
+      SegmentInfo info = infoPerCommit.info;
       // Same info just changing the dir:
       SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.docCount, info.getDocStoreOffset(),
                                             info.getDocStoreSegment(), info.getDocStoreIsCompoundFile(), info.getNormGen(), info.getUseCompoundFile(),
-                                            info.getDelCount(), info.getCodec(), info.getDiagnostics());
-      destInfos.add(newInfo);
+                                            info.getCodec(), info.getDiagnostics());
+      destInfos.add(new SegmentInfoPerCommit(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getDelGen()));
+      // nocommit is this right...?
       // now copy files over
-      Collection<String> files = info.files();
+      Collection<String> files = infoPerCommit.files();
       for (final String srcName : files) {
         File srcFile = new File(dir, srcName);
         File destFile = new File(destDir, srcName);

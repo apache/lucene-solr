@@ -261,7 +261,7 @@ class DocHelper {
    * @param doc
    * @throws IOException
    */ 
-  public static SegmentInfo writeDoc(Random random, Directory dir, Document doc) throws IOException
+  public static SegmentInfoPerCommit writeDoc(Random random, Directory dir, Document doc) throws IOException
   {
     return writeDoc(random, dir, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), null, doc);
   }
@@ -276,13 +276,13 @@ class DocHelper {
    * @param doc
    * @throws IOException
    */ 
-  public static SegmentInfo writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
+  public static SegmentInfoPerCommit writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig( /* LuceneTestCase.newIndexWriterConfig(random, */ 
         TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity));
     //writer.setUseCompoundFile(false);
     writer.addDocument(doc);
     writer.commit();
-    SegmentInfo info = writer.newestSegment();
+    SegmentInfoPerCommit info = writer.newestSegment();
     writer.close();
     return info;
   }
