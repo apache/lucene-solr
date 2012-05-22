@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.DocumentsWriterStallControl.MemoryController;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeaks;
 
@@ -40,6 +41,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     SimpleMemCtrl memCtrl = new SimpleMemCtrl();
     memCtrl.limit = 1000;
     memCtrl.netBytes = 1000;
+    memCtrl.flushBytes = 20;
     ctrl.updateStalled(memCtrl);
     Thread[] waitThreads = waitThreads(atLeast(1), ctrl);
     start(waitThreads);
@@ -49,6 +51,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     
     // now stall threads and wake them up again
     memCtrl.netBytes = 1001;
+    memCtrl.flushBytes = 100;
     ctrl.updateStalled(memCtrl);
     waitThreads = waitThreads(atLeast(1), ctrl);
     start(waitThreads);
@@ -56,6 +59,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     assertTrue(ctrl.hasBlocked());
     assertTrue(ctrl.anyStalledThreads());
     memCtrl.netBytes = 50;
+    memCtrl.flushBytes = 0;
     ctrl.updateStalled(memCtrl);
     assertFalse(ctrl.anyStalledThreads());
     join(waitThreads, 500);
@@ -76,9 +80,12 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
           SimpleMemCtrl memCtrl = new SimpleMemCtrl();
           memCtrl.limit = 1000;
           memCtrl.netBytes = 1;
+          memCtrl.flushBytes = 0;
+
           int iters = atLeast(1000);
           for (int j = 0; j < iters; j++) {
             memCtrl.netBytes = baseBytes + random().nextInt(1000);
+            memCtrl.flushBytes = random().nextInt((int)memCtrl.netBytes);
             ctrl.updateStalled(memCtrl);
             if (random().nextInt(5) == 0) { // thread 0 only updates
               ctrl.waitIfStalled();
@@ -112,6 +119,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     SimpleMemCtrl memCtrl = new SimpleMemCtrl();
     memCtrl.limit = 1000;
     memCtrl.netBytes = 1;
+    memCtrl.flushBytes = 0;
     ctrl.updateStalled(memCtrl);
     final AtomicBoolean stop = new AtomicBoolean(false);
     final AtomicBoolean checkPoint = new AtomicBoolean(true);
@@ -143,7 +151,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     for (int i = 0; i < iters; i++) {
       if (checkPoint.get()) {
        
-        latches[0].await(5, TimeUnit.SECONDS);
+        assertTrue("timed out waiting for update threads - deadlock?", latches[0].await(10, TimeUnit.SECONDS));
         if (!exceptions.isEmpty()) {
           for (Throwable throwable : exceptions) {
             throwable.printStackTrace();
@@ -154,7 +162,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
         if (!ctrl.anyStalledThreads()) {
           assertTrue(
               "control claims no stalled threads but waiter seems to be blocked",
-              latches[2].await(3, TimeUnit.SECONDS));
+              latches[2].await(10, TimeUnit.SECONDS));
         }
         checkPoint.set(false);
         
@@ -171,14 +179,13 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     }
     
     stop.set(true);
-    memCtrl.limit = 1000;
-    memCtrl.netBytes = 1;
-    ctrl.updateStalled(memCtrl);
-    if (checkPoint.get()) {
-      latches[1].countDown();
-    }
+    latches[1].countDown();
     
     for (int i = 0; i < threads.length; i++) {
+      memCtrl.limit = 1000;
+      memCtrl.netBytes = 1;
+      memCtrl.flushBytes = 0;
+      ctrl.updateStalled(memCtrl);
       threads[i].join(2000);
       if (threads[i].isAlive() && threads[i] instanceof Waiter) {
         if (threads[i].getState() == Thread.State.WAITING) {
@@ -215,9 +222,10 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
             CountDownLatch wait = latches[1];
             join.countDown();
             try {
-              wait.await();
+              assertTrue(wait.await(10, TimeUnit.SECONDS));
             } catch (InterruptedException e) {
-              throw new RuntimeException(e);
+              System.out.println("[Waiter] got interrupted - wait count: " + wait.getCount());
+              throw new ThreadInterruptedException(e);
             }
           }
         }
@@ -253,6 +261,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
         SimpleMemCtrl memCtrl = new SimpleMemCtrl();
         memCtrl.limit = 1000;
         memCtrl.netBytes = release ? 1 : 2000;
+        memCtrl.flushBytes = random().nextInt((int)memCtrl.netBytes);
         while (!stop.get()) {
           int internalIters = release && random().nextBoolean() ? atLeast(5) : 1;
           for (int i = 0; i < internalIters; i++) {
@@ -263,9 +272,10 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
             CountDownLatch wait = latches[1];
             join.countDown();
             try {
-              wait.await();
+              assertTrue(wait.await(10, TimeUnit.SECONDS));
             } catch (InterruptedException e) {
-              throw new RuntimeException(e);
+              System.out.println("[Updater] got interrupted - wait count: " + wait.getCount());
+              throw new ThreadInterruptedException(e);
             }
           }
           Thread.yield();
@@ -338,6 +348,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
   private static class SimpleMemCtrl implements MemoryController {
     long netBytes;
     long limit;
+    long flushBytes;
     
     @Override
     public long netBytes() {
@@ -347,6 +358,11 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     @Override
     public long stallLimitBytes() {
       return limit;
+    }
+
+    @Override
+    public long flushBytes() {
+      return flushBytes;
     }
     
   }
