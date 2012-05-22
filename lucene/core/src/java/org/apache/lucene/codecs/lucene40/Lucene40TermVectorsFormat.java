@@ -108,7 +108,7 @@ public class Lucene40TermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
-    return new Lucene40TermVectorsWriter(directory, segment, context);
+  public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
+    return new Lucene40TermVectorsWriter(directory, segmentInfo.name, context);
   }
 }

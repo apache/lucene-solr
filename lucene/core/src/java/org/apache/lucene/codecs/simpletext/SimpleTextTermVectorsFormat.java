@@ -42,7 +42,7 @@ public class SimpleTextTermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
-    return new SimpleTextTermVectorsWriter(directory, segment, context);
+  public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
+    return new SimpleTextTermVectorsWriter(directory, segmentInfo.name, context);
   }
 }

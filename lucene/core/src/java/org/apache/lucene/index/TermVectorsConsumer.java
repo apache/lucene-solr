@@ -55,7 +55,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
       try {
         fill(state.numDocs);
         assert state.segmentInfo != null;
-        writer.finish(state.numDocs);
+        writer.finish(state.fieldInfos, state.numDocs);
       } finally {
         IOUtils.close(writer);
         writer = null;
@@ -84,7 +84,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   private final void initTermVectorsWriter() throws IOException {
     if (writer == null) {
       IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
-      writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegmentInfo().name, context);
+      writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegmentInfo(), context);
       lastDocID = 0;
     }
   }

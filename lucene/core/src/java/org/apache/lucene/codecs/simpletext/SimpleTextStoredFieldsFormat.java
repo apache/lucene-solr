@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -37,7 +36,7 @@ import org.apache.lucene.store.IOContext;
 public class SimpleTextStoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
-  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
+  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {;
     return new SimpleTextStoredFieldsReader(directory, si, fn, context);
   }
 
