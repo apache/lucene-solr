@@ -122,6 +122,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
+  public static void setLoggingLevel(Level level) {
+    java.util.logging.Logger logger = java.util.logging.Logger.getLogger("");
+    logger.setLevel(level);
+  }
+
 
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
