@@ -83,7 +83,7 @@ public class Lucene40Codec extends Codec {
   }
   
   @Override
-  public SegmentInfoFormat segmentInfosFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return infosFormat;
   }
 

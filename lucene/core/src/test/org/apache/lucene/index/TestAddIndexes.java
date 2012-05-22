@@ -1150,7 +1150,7 @@ public class TestAddIndexes extends LuceneTestCase {
     }
 
     @Override
-    public SegmentInfoFormat segmentInfosFormat() {
+    public SegmentInfoFormat segmentInfoFormat() {
       return new Lucene40SegmentInfoFormat();
     }
 

@@ -284,7 +284,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
           String segName = input.readString();
           Codec codec = Codec.forName(input.readString());
           //System.out.println("SIS.read seg=" + seg + " codec=" + codec);
-          SegmentInfo info = codec.segmentInfosFormat().getSegmentInfosReader().read(directory, segName, IOContext.READ);
+          SegmentInfo info = codec.segmentInfoFormat().getSegmentInfosReader().read(directory, segName, IOContext.READ);
           info.setCodec(codec);
           long delGen = input.readLong();
           int delCount = input.readInt();

@@ -75,7 +75,7 @@ public final class SimpleTextCodec extends Codec {
   }
 
   @Override
-  public SegmentInfoFormat segmentInfosFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return segmentInfos;
   }
 

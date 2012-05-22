@@ -113,7 +113,7 @@ public class Lucene3xCodec extends Codec {
   }
 
   @Override
-  public SegmentInfoFormat segmentInfosFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return infosFormat;
   }
 

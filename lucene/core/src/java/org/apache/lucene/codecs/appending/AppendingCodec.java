@@ -76,7 +76,7 @@ public class AppendingCodec extends Codec {
   }
 
   @Override
-  public SegmentInfoFormat segmentInfosFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return infos;
   }
   

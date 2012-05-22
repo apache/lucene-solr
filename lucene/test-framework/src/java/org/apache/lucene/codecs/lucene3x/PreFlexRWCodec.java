@@ -66,11 +66,11 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   }
 
   @Override
-  public SegmentInfoFormat segmentInfosFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
       return segmentInfos ;
     } else {
-      return super.segmentInfosFormat();
+      return super.segmentInfoFormat();
     }
   }
 
