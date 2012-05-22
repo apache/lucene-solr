@@ -35,7 +35,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
-import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
+import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.search.Query;
@@ -214,7 +214,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private Collection<String> filesToCommit;
 
   final SegmentInfos segmentInfos;       // the segments
-  final FieldNumberBiMap globalFieldNumberMap;
+  final FieldNumbers globalFieldNumberMap;
 
   private DocumentsWriter docWriter;
   final IndexFileDeleter deleter;
@@ -730,8 +730,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
    * If this {@link SegmentInfos} has no global field number map the returned instance is empty
    */
-  private FieldNumberBiMap getFieldNumberMap() throws IOException {
-    final FieldNumberBiMap map  = new FieldNumberBiMap();
+  private FieldNumbers getFieldNumberMap() throws IOException {
+    final FieldNumbers map  = new FieldNumbers();
 
     SegmentInfoPerCommit biggest = null;
     for(SegmentInfoPerCommit info : segmentInfos) {
@@ -2295,7 +2295,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir, config.getTermIndexInterval(),
                                                MergeState.CheckAbort.NONE, payloadProcessorProvider,
-                                               new FieldInfos.Builder(globalFieldNumberMap), codec, context);
+                                               globalFieldNumberMap, codec, context);
 
       for (IndexReader reader : readers) {    // add new indexes
         merger.add(reader);
@@ -3439,7 +3439,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(directory);
 
     SegmentMerger merger = new SegmentMerger(merge.info.info, infoStream, dirWrapper, config.getTermIndexInterval(), checkAbort,
-                                             payloadProcessorProvider, new FieldInfos.Builder(globalFieldNumberMap), codec, context);
+                                             payloadProcessorProvider, globalFieldNumberMap, codec, context);
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merging " + segString(merge.segments));

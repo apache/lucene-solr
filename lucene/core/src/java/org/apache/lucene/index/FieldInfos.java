@@ -137,13 +137,13 @@ public class FieldInfos implements Iterable<FieldInfo> {
     return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
   
-  static final class FieldNumberBiMap {
+  static final class FieldNumbers {
     
     private final Map<Integer,String> numberToName;
     private final Map<String,Integer> nameToNumber;
     private int lowestUnassignedFieldNumber = -1;
     
-    FieldNumberBiMap() {
+    FieldNumbers() {
       this.nameToNumber = new HashMap<String, Integer>();
       this.numberToName = new HashMap<Integer, String>();
     }
@@ -200,16 +200,16 @@ public class FieldInfos implements Iterable<FieldInfo> {
   
   static final class Builder {
     private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
-    final FieldNumberBiMap globalFieldNumbers;
+    final FieldNumbers globalFieldNumbers;
 
     Builder() {
-      this(new FieldNumberBiMap());
+      this(new FieldNumbers());
     }
     
     /**
-     * Creates a new instance with the given {@link FieldNumberBiMap}. 
+     * Creates a new instance with the given {@link FieldNumbers}. 
      */
-    Builder(FieldNumberBiMap globalFieldNumbers) {
+    Builder(FieldNumbers globalFieldNumbers) {
       assert globalFieldNumbers != null;
       this.globalFieldNumbers = globalFieldNumbers;
     }

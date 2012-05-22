@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
+import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.util.SetOnce;
 
 /**
@@ -121,7 +121,7 @@ abstract class DocumentsWriterPerThreadPool {
 
   private final ThreadState[] threadStates;
   private volatile int numThreadStatesActive;
-  private final SetOnce<FieldNumberBiMap> globalFieldMap = new SetOnce<FieldNumberBiMap>();
+  private final SetOnce<FieldNumbers> globalFieldMap = new SetOnce<FieldNumbers>();
   private final SetOnce<DocumentsWriter> documentsWriter = new SetOnce<DocumentsWriter>();
   
   /**
@@ -135,7 +135,7 @@ abstract class DocumentsWriterPerThreadPool {
     numThreadStatesActive = 0;
   }
 
-  void initialize(DocumentsWriter documentsWriter, FieldNumberBiMap globalFieldMap, IndexWriterConfig config) {
+  void initialize(DocumentsWriter documentsWriter, FieldNumbers globalFieldMap, IndexWriterConfig config) {
     this.documentsWriter.set(documentsWriter); // thread pool is bound to DW
     this.globalFieldMap.set(globalFieldMap);
     for (int i = 0; i < threadStates.length; i++) {
