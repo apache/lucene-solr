@@ -296,7 +296,7 @@ public class TransactionLog {
   }
 
 
-  public long write(AddUpdateCommand cmd) {
+  public long write(AddUpdateCommand cmd, int flags) {
     LogCodec codec = new LogCodec();
     long pos = 0;
     synchronized (this) {
@@ -319,7 +319,7 @@ public class TransactionLog {
 
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.ADD);  // should just take one byte
+        codec.writeInt(UpdateLog.ADD | flags);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
 
@@ -333,7 +333,7 @@ public class TransactionLog {
     }
   }
 
-  public long writeDelete(DeleteUpdateCommand cmd) {
+  public long writeDelete(DeleteUpdateCommand cmd, int flags) {
     LogCodec codec = new LogCodec();
     synchronized (this) {
       try {
@@ -344,7 +344,7 @@ public class TransactionLog {
         }
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.DELETE);  // should just take one byte
+        codec.writeInt(UpdateLog.DELETE | flags);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         BytesRef br = cmd.getIndexedId();
         codec.writeByteArray(br.bytes, br.offset, br.length);
@@ -359,7 +359,7 @@ public class TransactionLog {
     }
   }
 
-  public long writeDeleteByQuery(DeleteUpdateCommand cmd) {
+  public long writeDeleteByQuery(DeleteUpdateCommand cmd, int flags) {
     LogCodec codec = new LogCodec();
     synchronized (this) {
       try {
@@ -370,7 +370,7 @@ public class TransactionLog {
         }
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.DELETE_BY_QUERY);  // should just take one byte
+        codec.writeInt(UpdateLog.DELETE_BY_QUERY | flags);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeStr(cmd.query);
 
@@ -385,7 +385,7 @@ public class TransactionLog {
   }
 
 
-  public long writeCommit(CommitUpdateCommand cmd) {
+  public long writeCommit(CommitUpdateCommand cmd, int flags) {
     LogCodec codec = new LogCodec();
     synchronized (this) {
       try {
@@ -397,7 +397,7 @@ public class TransactionLog {
         }
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.COMMIT);  // should just take one byte
+        codec.writeInt(UpdateLog.COMMIT | flags);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeStr(END_MESSAGE);  // ensure these bytes are (almost) last in the file
 

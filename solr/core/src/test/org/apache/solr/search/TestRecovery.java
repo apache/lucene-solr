@@ -468,6 +468,93 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
 
+  @Test
+  public void testBufferingFlags() throws Exception {
+
+    DirectUpdateHandler2.commitOnClose = false;
+    final Semaphore logReplayFinish = new Semaphore(0);
+
+    UpdateLog.testing_logReplayFinishHook = new Runnable() {
+      @Override
+      public void run() {
+        logReplayFinish.release();
+      }
+    };
+
+
+    SolrQueryRequest req = req();
+    UpdateHandler uhandler = req.getCore().getUpdateHandler();
+    UpdateLog ulog = uhandler.getUpdateLog();
+
+    try {
+      clearIndex();
+      assertU(commit());
+
+      assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
+      ulog.bufferUpdates();
+
+      // simulate updates from a leader
+      updateJ(jsonAdd(sdoc("id","Q1", "_version_","101")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","Q2", "_version_","102")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","Q3", "_version_","103")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+
+      req.close();
+      h.close();
+      createCore();
+
+      req = req();
+      uhandler = req.getCore().getUpdateHandler();
+      ulog = uhandler.getUpdateLog();
+
+      logReplayFinish.acquire();  // wait for replay to finish
+
+      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0);   // since we died while buffering, we should see this last
+
+      //
+      // Try again to ensure that the previous log replay didn't wipe out our flags
+      //
+
+      req.close();
+      h.close();
+      createCore();
+
+      req = req();
+      uhandler = req.getCore().getUpdateHandler();
+      ulog = uhandler.getUpdateLog();
+
+      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0);
+
+      // now do some normal non-buffered adds
+      updateJ(jsonAdd(sdoc("id","Q4", "_version_","114")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","Q5", "_version_","115")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","Q6", "_version_","116")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      assertU(commit());
+
+      req.close();
+      h.close();
+      createCore();
+
+      req = req();
+      uhandler = req.getCore().getUpdateHandler();
+      ulog = uhandler.getUpdateLog();
+
+      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) == 0);
+
+
+      assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+
+      req().close();
+    }
+
+  }
+
+
+
   // make sure that on a restart, versions don't start too low
   @Test
   public void testVersionsOnRestart() throws Exception {

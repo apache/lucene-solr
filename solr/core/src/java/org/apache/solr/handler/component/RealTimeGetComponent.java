@@ -141,7 +141,7 @@ public class RealTimeGetComponent extends SearchComponent
            // should currently be a List<Oper,Ver,Doc/Id>
            List entry = (List)o;
            assert entry.size() >= 3;
-           int oper = (Integer)entry.get(0);
+           int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
            switch (oper) {
              case UpdateLog.ADD:
                SolrDocument doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), req.getSchema());
@@ -211,7 +211,7 @@ public class RealTimeGetComponent extends SearchComponent
           // should currently be a List<Oper,Ver,Doc/Id>
           List entry = (List)o;
           assert entry.size() >= 3;
-          int oper = (Integer)entry.get(0);
+          int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
           switch (oper) {
             case UpdateLog.ADD:
               sid = (SolrInputDocument)entry.get(entry.size()-1);
