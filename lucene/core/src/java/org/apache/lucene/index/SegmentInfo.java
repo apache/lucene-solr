@@ -34,15 +34,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 
-// nocommit fix jdocs for all codec's SI writer impls to
-// describe their format
-
 // nocommit fix codec api to pass this around so they can
 // store attrs
 
 // nocommit add attrs api like FI
-
-// nocommit fix PFPF to use attrs api instead of its .per file
 
 /**
  * Information about a segment such as it's name, directory, and files related

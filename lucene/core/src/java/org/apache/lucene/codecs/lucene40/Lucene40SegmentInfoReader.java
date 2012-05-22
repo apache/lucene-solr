@@ -18,33 +18,28 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.SegmentInfosReader;
+import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Lucene 4.0 implementation of {@link SegmentInfosReader}.
+ * Lucene 4.0 implementation of {@link SegmentInfoReader}.
  * 
- * @see Lucene40SegmentInfosFormat
+ * @see Lucene40SegmentInfoFormat
  * @lucene.experimental
  */
-public class Lucene40SegmentInfosReader extends SegmentInfosReader {
+public class Lucene40SegmentInfoReader extends SegmentInfoReader {
 
   @Override
   public SegmentInfo read(Directory dir, String segment, IOContext context) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene40SegmentInfosFormat.SI_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene40SegmentInfoFormat.SI_EXTENSION);
     final IndexInput input = dir.openInput(fileName, context);
     boolean success = false;
     try {

@@ -18,36 +18,29 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map.Entry;
-import java.util.Map;
-import java.util.Set;
 
-import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Lucene 4.0 implementation of {@link SegmentInfosWriter}.
+ * Lucene 4.0 implementation of {@link SegmentInfoWriter}.
  * 
- * @see Lucene40SegmentInfosFormat
+ * @see Lucene40SegmentInfoFormat
  * @lucene.experimental
  */
-public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
+public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
 
   /** Save a single segment's info. */
   @Override
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
     assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
-    final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfosFormat.SI_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfoFormat.SI_EXTENSION);
     assert si.getFiles() != null;
     si.getFiles().add(fileName);
 

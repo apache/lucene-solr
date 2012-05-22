@@ -137,6 +137,11 @@ its numbering.</p>
 <p>Each segment index maintains the following:</p>
 <ul>
 <li>
+{@link org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat Segment info}.
+   This contains metadata about a segment, such as the number of documents,
+   what files it uses, 
+</li>
+<li>
 {@link org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat Field names}. 
    This contains the set of field names used in the index.
 </li>
@@ -197,8 +202,9 @@ An optional file indicating which documents are deleted.
 <div>
 <p>All files belonging to a segment have the same name with varying extensions.
 The extensions correspond to the different file formats described below. When
-using the Compound File format (default in 1.4 and greater) these files are
-collapsed into a single .cfs file (see below for details)</p>
+using the Compound File format (default in 1.4 and greater) these files (except
+for the Segment info file, the Lock file, and Deleted documents file) are collapsed 
+into a single .cfs file (see below for details)</p>
 <p>Typically, all segments in an index are stored in a single directory,
 although this is not required.</p>
 <p>As of version 2.1 (lock-less commits), file names are never re-used (there
@@ -220,15 +226,20 @@ Lucene:</p>
 <th>Brief Description</th>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat Segments File}</td>
+<td>{@link org.apache.lucene.index.SegmentInfos Segments File}</td>
 <td>segments.gen, segments_N</td>
-<td>Stores information about segments</td>
+<td>Stores information about a commit point</td>
 </tr>
 <tr>
 <td><a href="#Lock_File">Lock File</a></td>
 <td>write.lock</td>
 <td>The Write lock prevents multiple IndexWriters from writing to the same
 file.</td>
+</tr>
+<tr>
+<td>{@link org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat Segment Info}</td>
+<td>.si</td>
+<td>Stores metadata about a segment</td>
 </tr>
 <tr>
 <td>{@link org.apache.lucene.store.CompoundFileDirectory Compound File}</td>

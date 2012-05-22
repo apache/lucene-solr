@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.Map;
 
-import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -34,10 +34,10 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * PreFlex implementation of {@link SegmentInfosWriter}.
+ * PreFlex implementation of {@link SegmentInfoWriter}.
  * @lucene.experimental
  */
-class PreFlexRWSegmentInfosWriter extends SegmentInfosWriter {
+class PreFlexRWSegmentInfosWriter extends SegmentInfoWriter {
 
   // NOTE: this is not "really" 3.x format, because we are
   // writing each SI to its own file, vs 3.x where the list

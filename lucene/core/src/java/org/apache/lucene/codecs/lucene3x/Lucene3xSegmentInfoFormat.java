@@ -19,21 +19,21 @@ package org.apache.lucene.codecs.lucene3x;
 
 import java.util.Set;
 
-import org.apache.lucene.codecs.SegmentInfosFormat;
-import org.apache.lucene.codecs.SegmentInfosReader;
-import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.SegmentInfoReader;
+import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 
 /**
- * Lucene3x ReadOnly SegmentInfosFormat implementation
+ * Lucene3x ReadOnly SegmentInfoFormat implementation
  * @deprecated (4.0) This is only used to read indexes created
  * before 4.0.
  * @lucene.experimental
  */
 @Deprecated
-public class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
-  private final SegmentInfosReader reader = new Lucene3xSegmentInfosReader();
+public class Lucene3xSegmentInfoFormat extends SegmentInfoFormat {
+  private final SegmentInfoReader reader = new Lucene3xSegmentInfoReader();
 
   /** This format adds optional per-segment String
    *  diagnostics storage, and switches userData to Map */
@@ -54,12 +54,12 @@ public class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
   public static final String SI_EXTENSION = "si";
   
   @Override
-  public SegmentInfosReader getSegmentInfosReader() {
+  public SegmentInfoReader getSegmentInfosReader() {
     return reader;
   }
 
   @Override
-  public SegmentInfosWriter getSegmentInfosWriter() {
+  public SegmentInfoWriter getSegmentInfosWriter() {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 }

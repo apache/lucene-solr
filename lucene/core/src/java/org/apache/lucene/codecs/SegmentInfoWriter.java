@@ -21,30 +21,18 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
 
 /**
- * Specifies an API for classes that can write out {@link SegmentInfos} data.
+ * Specifies an API for classes that can write out {@link SegmentInfo} data.
  * @lucene.experimental
  */
 
-// nocommit rename (remove the s?)
-
-public abstract class SegmentInfosWriter {
+public abstract class SegmentInfoWriter {
 
   /**
-   * Write {@link SegmentInfos} data without closing the output. The returned
-   * output will become finished only after a successful completion of
-   * "two phase commit" that first calls {@link #prepareCommit(IndexOutput)} and
-   * then {@link #finishCommit(IndexOutput)}.
-   * @param dir directory to write data to
-   * @param segmentsFileName name of the "segments_N" file to create
-   * @param infos data to write
-   * @return an instance of {@link IndexOutput} to be used in subsequent "two
-   * phase commit" operations as described above.
+   * Write {@link SegmentInfo} data. 
    * @throws IOException
    */
   public abstract void write(Directory dir, SegmentInfo info, FieldInfos fis, IOContext ioContext) throws IOException;

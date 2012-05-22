@@ -30,7 +30,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfosFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
@@ -38,7 +38,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
@@ -1150,8 +1150,8 @@ public class TestAddIndexes extends LuceneTestCase {
     }
 
     @Override
-    public SegmentInfosFormat segmentInfosFormat() {
-      return new Lucene40SegmentInfosFormat();
+    public SegmentInfoFormat segmentInfosFormat() {
+      return new Lucene40SegmentInfoFormat();
     }
 
     @Override

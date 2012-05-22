@@ -206,8 +206,6 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     return new FieldsReader(state);
   }
 
-  // nocommit simplify now that we don't have files()...?
-
   // NOTE: only called during writing; for reading we read
   // all we need from the index (ie we save the field ->
   // format mapping)

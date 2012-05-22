@@ -19,9 +19,9 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.util.Set;
 
-import org.apache.lucene.codecs.SegmentInfosFormat;
-import org.apache.lucene.codecs.SegmentInfosReader;
-import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.SegmentInfoReader;
+import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 
@@ -31,19 +31,19 @@ import org.apache.lucene.index.SegmentInfo;
  * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
  * @lucene.experimental
  */
-public class SimpleTextSegmentInfosFormat extends SegmentInfosFormat {
-  private final SegmentInfosReader reader = new SimpleTextSegmentInfosReader();
-  private final SegmentInfosWriter writer = new SimpleTextSegmentInfosWriter();
+public class SimpleTextSegmentInfosFormat extends SegmentInfoFormat {
+  private final SegmentInfoReader reader = new SimpleTextSegmentInfosReader();
+  private final SegmentInfoWriter writer = new SimpleTextSegmentInfosWriter();
 
   public static final String SI_EXTENSION = "si";
   
   @Override
-  public SegmentInfosReader getSegmentInfosReader() {
+  public SegmentInfoReader getSegmentInfosReader() {
     return reader;
   }
 
   @Override
-  public SegmentInfosWriter getSegmentInfosWriter() {
+  public SegmentInfoWriter getSegmentInfosWriter() {
     return writer;
   }
 }

@@ -71,7 +71,7 @@ public class ChecksumIndexOutput extends IndexOutput {
     throw new UnsupportedOperationException();    
   }
 
-  /** See {@link #prepareCommit} */
+  /** writes the checksum */
   public void finishCommit() throws IOException {
     main.writeLong(getChecksum());
   }

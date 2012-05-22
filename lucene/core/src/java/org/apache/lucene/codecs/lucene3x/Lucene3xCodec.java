@@ -28,7 +28,7 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfosFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
@@ -58,7 +58,7 @@ public class Lucene3xCodec extends Codec {
   
   private final FieldInfosFormat fieldInfosFormat = new Lucene3xFieldInfosFormat();
 
-  private final SegmentInfosFormat infosFormat = new Lucene3xSegmentInfosFormat();
+  private final SegmentInfoFormat infosFormat = new Lucene3xSegmentInfoFormat();
   
   private final Lucene3xNormsFormat normsFormat = new Lucene3xNormsFormat();
   
@@ -112,7 +112,7 @@ public class Lucene3xCodec extends Codec {
   }
 
   @Override
-  public SegmentInfosFormat segmentInfosFormat() {
+  public SegmentInfoFormat segmentInfosFormat() {
     return infosFormat;
   }
 

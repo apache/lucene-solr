@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.SegmentInfosReader;
+import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -46,7 +46,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfosWriter.*
  * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
  * @lucene.experimental
  */
-public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
+public class SimpleTextSegmentInfosReader extends SegmentInfoReader {
 
   @Override
   public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException {

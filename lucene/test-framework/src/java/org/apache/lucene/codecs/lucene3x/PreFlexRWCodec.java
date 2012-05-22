@@ -24,7 +24,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfosFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
@@ -42,7 +42,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   private final Lucene3xNormsFormat norms = new PreFlexRWNormsFormat();
   private final FieldInfosFormat fieldInfos = new PreFlexRWFieldInfosFormat();
   private final TermVectorsFormat termVectors = new PreFlexRWTermVectorsFormat();
-  private final SegmentInfosFormat segmentInfos = new PreFlexRWSegmentInfosFormat();
+  private final SegmentInfoFormat segmentInfos = new PreFlexRWSegmentInfosFormat();
   private final StoredFieldsFormat storedFields = new PreFlexRWStoredFieldsFormat();
   // TODO: this should really be a different impl
   private final LiveDocsFormat liveDocs = new Lucene40LiveDocsFormat();
@@ -66,7 +66,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   }
 
   @Override
-  public SegmentInfosFormat segmentInfosFormat() {
+  public SegmentInfoFormat segmentInfosFormat() {
     if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
       return segmentInfos ;
     } else {

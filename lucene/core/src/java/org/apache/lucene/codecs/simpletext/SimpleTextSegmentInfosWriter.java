@@ -22,7 +22,7 @@ import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -41,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
  * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
  * @lucene.experimental
  */
-public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
+public class SimpleTextSegmentInfosWriter extends SegmentInfoWriter {
 
   final static BytesRef SI_VERSION          = new BytesRef("    version ");
   final static BytesRef SI_DOCCOUNT         = new BytesRef("    number of documents ");

@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfosFormat;
+import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -2372,7 +2372,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final boolean hasSharedDocStore = info.getDocStoreOffset() != -1;
     final String segmentInfoFileName3X = IndexFileNames.segmentFileName(info.name,
                                                                         "",
-                                                                        Lucene3xSegmentInfosFormat.SI_EXTENSION);
+                                                                        Lucene3xSegmentInfoFormat.SI_EXTENSION);
 
     if (hasSharedDocStore) {
       // only violate the codec this way if it's preflex &

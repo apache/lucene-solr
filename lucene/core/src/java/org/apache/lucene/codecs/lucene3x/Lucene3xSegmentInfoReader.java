@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.SegmentInfosReader;
+import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
@@ -38,17 +38,17 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Lucene 3x implementation of {@link SegmentInfosReader}.
+ * Lucene 3x implementation of {@link SegmentInfoReader}.
  * @lucene.experimental
  * @deprecated
  */
 @Deprecated
-public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
+public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
 
   public static void readLegacyInfos(SegmentInfos infos, Directory directory, IndexInput input, int format) throws IOException {
     infos.version = input.readLong(); // read version
     infos.counter = input.readInt(); // read counter
-    Lucene3xSegmentInfosReader reader = new Lucene3xSegmentInfosReader();
+    Lucene3xSegmentInfoReader reader = new Lucene3xSegmentInfoReader();
     for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
       SegmentInfo si = reader.readSegmentInfo(null, directory, format, input);
       if (si.getVersion() == null) {
@@ -92,13 +92,13 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
   @Override
   public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException { 
-    return read(directory, segmentName, Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE, context);
+    return read(directory, segmentName, Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE, context);
   }
 
   public SegmentInfo read(Directory directory, String segmentName, int format, IOContext context) throws IOException { 
 
     // NOTE: this is NOT how 3.x is really written...
-    String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
+    String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene3xSegmentInfoFormat.SI_EXTENSION);
 
     boolean success = false;
 
@@ -125,16 +125,16 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
   private SegmentInfo readSegmentInfo(String segmentName, Directory dir, int format, IndexInput input) throws IOException {
     // check that it is a format we can understand
-    if (format > Lucene3xSegmentInfosFormat.FORMAT_DIAGNOSTICS) {
+    if (format > Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS) {
       throw new IndexFormatTooOldException(input, format,
-                                           Lucene3xSegmentInfosFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE);
+                                           Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE);
     }
-    if (format < Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE) {
+    if (format < Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE) {
       throw new IndexFormatTooNewException(input, format,
-                                           Lucene3xSegmentInfosFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE);
+                                           Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE);
     }
     final String version;
-    if (format <= Lucene3xSegmentInfosFormat.FORMAT_3_1) {
+    if (format <= Lucene3xSegmentInfoFormat.FORMAT_3_1) {
       version = input.readString();
     } else {
       version = null;
@@ -185,13 +185,13 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
     final Map<String,String> diagnostics = input.readStringStringMap();
 
-    if (format <= Lucene3xSegmentInfosFormat.FORMAT_HAS_VECTORS) {
+    if (format <= Lucene3xSegmentInfoFormat.FORMAT_HAS_VECTORS) {
       // NOTE: unused
       final int hasVectors = input.readByte();
     }
 
     final Set<String> files;
-    if (format == Lucene3xSegmentInfosFormat.FORMAT_4X_UPGRADE) {
+    if (format == Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE) {
       files = input.readStringSet();
     } else {
       // Replicate logic from 3.x's SegmentInfo.files():
@@ -232,7 +232,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
             // Definitely a separate norm file, with generation:
             files.add(IndexFileNames.fileNameFromGeneration(segmentName, "s" + ent.getKey(), gen));
           } else if (gen == SegmentInfo.NO) {
-            // No seaprate norm
+            // No separate norm
           } else {
             // nocommit -- i thought _X_N.sY files were pre-3.0...????
             assert false;

@@ -32,16 +32,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.SegmentInfosReader;
-import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfosFormat;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfosReader;
+import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
+import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoReader;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -60,9 +58,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * older segments_N files are present it's because they temporarily cannot be
  * deleted, or, a writer is in the process of committing, or a custom 
  * {@link org.apache.lucene.index.IndexDeletionPolicy IndexDeletionPolicy}
- * is in use). This file lists each segment by name, has details about the
- * separate norms and deletion files, and also contains the size of each
- * segment.
+ * is in use). This file lists each segment by name and has details about the
+ * codec and generation of deletes.
  * </p>
  * <p>There is also a file <tt>segments.gen</tt>. This file contains
  * the current generation (the <tt>_N</tt> in <tt>segments_N</tt>) of the index.
@@ -72,27 +69,55 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * an {@link DataOutput#writeInt Int32} version header 
  * ({@link #FORMAT_SEGMENTS_GEN_CURRENT}), followed by the
  * generation recorded as {@link DataOutput#writeLong Int64}, written twice.</p>
+ * <p>
+ * Files:
+ * <ul>
+ *   <li><tt>segments.gen</tt>: GenHeader, Generation, Generation
+ *   <li><tt>segments_N</tt>: Header, Version, NameCounter, SegCount,
+ *    &lt;SegName, SegCodec, DelGen, DeletionCount&gt;<sup>SegCount</sup>, 
+ *    CommitUserData, Checksum
+ * </ul>
+ * </p>
+ * Data types:
+ * <p>
+ * <ul>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *   <li>GenHeader, NameCounter, SegCount, DeletionCount --&gt; {@link DataOutput#writeInt Int32}</li>
+ *   <li>Generation, Version, DelGen, Checksum --&gt; {@link DataOutput#writeLong Int64}</li>
+ *   <li>SegName, SegCodec --&gt; {@link DataOutput#writeString String}</li>
+ *   <li>CommitUserData --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
+ * </ul>
+ * </p>
+ * Field Descriptions:
+ * <p>
+ * <ul>
+ *   <li>Version counts how often the index has been changed by adding or deleting
+ *       documents.</li>
+ *   <li>NameCounter is used to generate names for new segment files.</li>
+ *   <li>SegName is the name of the segment, and is used as the file name prefix for
+ *       all of the files that compose the segment's index.</li>
+ *   <li>DelGen is the generation count of the deletes file. If this is -1,
+ *       there are no deletes. Anything above zero means there are deletes 
+ *       stored by {@link LiveDocsFormat}.</li>
+ *   <li>DeletionCount records the number of deleted documents in this segment.</li>
+ *   <li>Checksum contains the CRC32 checksum of all bytes in the segments_N file up
+ *       until the checksum. This is used to verify integrity of the file on opening the
+ *       index.</li>
+ *   <li>SegCodec is the {@link Codec#getName() name} of the Codec that encoded
+ *       this segment.</li>
+ *   <li>CommitUserData stores an optional user-supplied opaque
+ *       Map&lt;String,String&gt; that was passed to {@link IndexWriter#commit(java.util.Map)} 
+ *       or {@link IndexWriter#prepareCommit(java.util.Map)}.</li>
+ * </ul>
+ * </p>
  * 
  * @lucene.experimental
  */
 public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
-  /* 
-   * The file format version, a negative number.
-   *  
-   * NOTE: future format numbers must always be one smaller 
-   * than the latest. With time, support for old formats will
-   * be removed, however the numbers should continue to decrease. 
+  /**
+   * The file format version for the segments_N codec header
    */
-
-  // TODO: i don't think we need *all* these version numbers here?
-  // most codecs only need FORMAT_CURRENT? and we should rename it 
-  // to FORMAT_FLEX? because the 'preamble' is just FORMAT_CURRENT + codecname
-  // after that the codec takes over. 
-  
-  // also i think this class should write this, somehow we let 
-  // preflexrw hackishly override this (like seek backwards and overwrite it)
-
   public static final int VERSION_40 = 0;
 
   /** Used for the segments.gen file only!
@@ -248,13 +273,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
     lastGeneration = generation;
 
-    // TODO: scary to have default impl reopen the file... but to make it a bit more flexible,
-    // maybe we could use a plain indexinput here... could default impl rewind/wrap with checksumII,
-    // and any checksumming is then up to implementation?
     ChecksumIndexInput input = new ChecksumIndexInput(directory.openInput(segmentFileName, IOContext.READ));
     try {
       final int format = input.readInt();
-      final boolean checkCheckSum;
       if (format == CodecUtil.CODEC_MAGIC) {
         // 4.0+
         CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_40);
@@ -274,7 +295,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         }
         userData = input.readStringStringMap();
       } else {
-        Lucene3xSegmentInfosReader.readLegacyInfos(this, directory, input, format);
+        Lucene3xSegmentInfoReader.readLegacyInfos(this, directory, input, format);
         Codec codec = Codec.forName("Lucene3x");
         for (SegmentInfo info : this) {
           info.setCodec(codec);
@@ -331,7 +352,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     ChecksumIndexOutput segnOutput = null;
     boolean success = false;
 
-    // nocommit document somewhere taht we store this
+    // nocommit document somewhere that we store this
     // list-of-segs plus delGen plus other stuff
     // "generically" and then codec gets to write SI
 
@@ -343,7 +364,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
-      Codec codec3X = Codec.forName("Lucene3x");
       for (SegmentInfo si : this) {
         segnOutput.writeString(si.name);
         segnOutput.writeString(si.getCodec().getName());
@@ -355,7 +375,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         // "ugprade" to write the .si file for it:
         String version = si.getVersion();
         if (version == null || version.startsWith("3.")) {
-          String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
+          String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfoFormat.SI_EXTENSION);
           if (!directory.fileExists(fileName)) {
             upgradedSIFiles.add(write3xInfo(directory, si, IOContext.DEFAULT));
           }
@@ -393,7 +413,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   public static String write3xInfo(Directory dir, SegmentInfo si, IOContext context) throws IOException {
 
     // NOTE: this is NOT how 3.x is really written...
-    String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfosFormat.SI_EXTENSION);
+    String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfoFormat.SI_EXTENSION);
     si.getFiles().add(fileName);
 
     //System.out.println("UPGRADE write " + fileName);
