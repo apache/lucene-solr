@@ -94,7 +94,6 @@ public final class FieldInfo {
   }
 
   private boolean checkConsistency() {
-    // nocommit more checks here
     if (!indexed) {
       assert !storeTermVector;
       assert !storePayloads;
@@ -103,6 +102,9 @@ public final class FieldInfo {
       assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     } else {
       assert indexOptions != null;
+      if (omitNorms) {
+        assert normType == null;
+      }
     }
 
     // Cannot store payloads unless positions are indexed:
@@ -126,6 +128,7 @@ public final class FieldInfo {
       }
       if (this.omitNorms != omitNorms) {
         this.omitNorms = true;                // if one require omitNorms at least once, it remains off for life
+        this.normType = null;
       }
       if (this.indexOptions != indexOptions) {
         // downgrade
@@ -199,7 +202,7 @@ public final class FieldInfo {
    * @return true if this field actually has any norms.
    */
   public boolean hasNorms() {
-    return indexed && !omitNorms && normType != null;
+    return normType != null;
   }
   
   /**

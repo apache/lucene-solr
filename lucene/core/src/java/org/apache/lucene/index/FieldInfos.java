@@ -278,7 +278,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         if (docValues != null) {
           fi.setDocValuesType(docValues);
         }
-        if (normType != null) {
+        if (!fi.omitsNorms() && normType != null) {
           fi.setNormValueType(normType);
         }
       }

@@ -239,7 +239,7 @@ final class SegmentMerger {
       } else {
         assert promoter != TypePromoter.getIdentityPromoter();
         if (norms) {
-          if (fi.getNormType() != promoter.type()) {
+          if (fi.getNormType() != promoter.type() && !fi.omitsNorms()) {
             // reset the type if we got promoted
             fi.setNormValueType(promoter.type());
           }  
