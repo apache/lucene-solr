@@ -2299,7 +2299,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       MergeState mergeState = merger.merge();                // merge 'em
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, mergeState.mergedDocCount,
                                          -1, mergedName, false, null, false,
-                                         codec, null);
+                                         codec, null, null);
       SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, 0, -1L);
 
       info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
@@ -2398,7 +2398,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // Same SI as before but we change directory, name and docStoreSegment:
     SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.docCount, info.info.getDocStoreOffset(),
                                           newDsName, info.info.getDocStoreIsCompoundFile(), info.info.getNormGen(), info.info.getUseCompoundFile(),
-                                          info.info.getCodec(), info.info.getDiagnostics());
+                                          info.info.getCodec(), info.info.getDiagnostics(), info.info.attributes());
     SegmentInfoPerCommit newInfoPerCommit = new SegmentInfoPerCommit(newInfo, info.getDelCount(), info.getDelGen());
 
     Set<String> segFiles = new HashSet<String>();
@@ -3316,7 +3316,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     final String mergeSegmentName = newSegmentName();
-    SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, 0, -1, mergeSegmentName, false, null, false, codec, details);
+    SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, 0, -1, mergeSegmentName, false, null, false, codec, details, null);
     merge.info = new SegmentInfoPerCommit(si, 0, -1L);
 
     // Lock order: IW -> BD

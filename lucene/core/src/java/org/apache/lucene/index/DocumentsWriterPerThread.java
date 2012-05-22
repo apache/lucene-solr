@@ -487,7 +487,7 @@ class DocumentsWriterPerThread {
       final SegmentInfo newSegment = new SegmentInfo(directoryOrig, Constants.LUCENE_MAIN_VERSION, segment, flushState.numDocs,
                                                      -1, segment, false, null, false,
                                                      flushState.codec,
-                                                     null);
+                                                     null, null);
       newSegment.setFiles(new HashSet<String>(directory.getCreatedFiles()));
 
       if (infoStream.isEnabled("DWPT")) {

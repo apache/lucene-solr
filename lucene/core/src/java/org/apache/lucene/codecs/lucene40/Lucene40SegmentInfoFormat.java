@@ -29,7 +29,7 @@ import org.apache.lucene.store.DataOutput; // javadocs
  * <p>
  * Files:
  * <ul>
- *   <li><tt>.si</tt>: SegVersion, SegSize, IsCompoundFile, Diagnostics, Files
+ *   <li><tt>.si</tt>: SegVersion, SegSize, IsCompoundFile, Diagnostics, Attributes, Files
  * </ul>
  * </p>
  * Data types:
@@ -38,7 +38,7 @@ import org.apache.lucene.store.DataOutput; // javadocs
  *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
  *   <li>SegVersion --&gt; {@link DataOutput#writeString String}</li>
  *   <li>Files --&gt; {@link DataOutput#writeStringSet Set&lt;String&gt;}</li>
- *   <li>Diagnostics--&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
+ *   <li>Diagnostics, Attributes --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
  * </ul>
  * </p>
@@ -57,6 +57,7 @@ import org.apache.lucene.store.DataOutput; // javadocs
  *       for each segment it creates. It includes metadata like the current Lucene
  *       version, OS, Java version, why the segment was created (merge, flush,
  *       addIndexes), etc.</li>
+ *   <li>Attributes: a key-value map of codec-private attributes.</li>
  *   <li>Files is a list of files referred to by this segment.</li>
  * </ul>
  * </p>

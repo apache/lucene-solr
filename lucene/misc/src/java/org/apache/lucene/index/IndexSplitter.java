@@ -147,7 +147,7 @@ public class IndexSplitter {
       // Same info just changing the dir:
       SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.docCount, info.getDocStoreOffset(),
                                             info.getDocStoreSegment(), info.getDocStoreIsCompoundFile(), info.getNormGen(), info.getUseCompoundFile(),
-                                            info.getCodec(), info.getDiagnostics());
+                                            info.getCodec(), info.getDiagnostics(), info.attributes());
       destInfos.add(new SegmentInfoPerCommit(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getDelGen()));
       // nocommit is this right...?
       // now copy files over

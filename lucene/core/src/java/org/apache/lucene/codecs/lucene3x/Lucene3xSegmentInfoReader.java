@@ -244,9 +244,10 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
       }
     }
 
+    // nocommit: convert 3.x specific stuff (shared docstores, normgen, etc) into attributes
     SegmentInfo info = new SegmentInfo(dir, version, segmentName, docCount, docStoreOffset,
                                        docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-                                       null, diagnostics);
+                                       null, diagnostics, null);
     info.setFiles(files);
 
     SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, delCount, delGen);

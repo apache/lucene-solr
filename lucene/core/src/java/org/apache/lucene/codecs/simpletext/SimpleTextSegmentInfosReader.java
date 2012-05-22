@@ -84,6 +84,22 @@ public class SimpleTextSegmentInfosReader extends SegmentInfoReader {
         String value = readString(SI_DIAG_VALUE.length, scratch);
         diagnostics.put(key, value);
       }
+      
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_NUM_ATTS);
+      int numAtts = Integer.parseInt(readString(SI_NUM_ATTS.length, scratch));
+      Map<String,String> attributes = new HashMap<String,String>();
+
+      for (int i = 0; i < numAtts; i++) {
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch, SI_ATT_KEY);
+        String key = readString(SI_ATT_KEY.length, scratch);
+      
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch, SI_ATT_VALUE);
+        String value = readString(SI_ATT_VALUE.length, scratch);
+        attributes.put(key, value);
+      }
 
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch, SI_NUM_FILES);
@@ -99,7 +115,7 @@ public class SimpleTextSegmentInfosReader extends SegmentInfoReader {
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, -1,
                                          segmentName, false, null, isCompoundFile,
-                                         null, diagnostics);
+                                         null, diagnostics, attributes);
       info.setFiles(files);
       success = true;
       return info;

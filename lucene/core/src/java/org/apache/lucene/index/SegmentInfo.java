@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,16 +31,13 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
 // nocommit fix codec api to pass this around so they can
 // store attrs
 
-// nocommit add attrs api like FI
-
 /**
  * Information about a segment such as it's name, directory, and files related
  * to the segment.
  *
  * @lucene.experimental
  */
-// nocommit make final again once atts are working here
-public class SegmentInfo {
+public final class SegmentInfo {
   
   // TODO: remove these from this class, for now this is the representation
   public static final int NO = -1;          // e.g. no norms; no deletes;
@@ -76,6 +74,8 @@ public class SegmentInfo {
   private Codec codec;
 
   private Map<String,String> diagnostics;
+  
+  private Map<String,String> attributes;
 
   // Tracks the Lucene version this segment was created with, since 3.1. Null
   // indicates an older than 3.0 index, and it's used to detect a too old index.
@@ -100,7 +100,7 @@ public class SegmentInfo {
    */
   public SegmentInfo(Directory dir, String version, String name, int docCount, int docStoreOffset,
                      String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
-                     Codec codec, Map<String,String> diagnostics) {
+                     Codec codec, Map<String,String> diagnostics, Map<String,String> attributes) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
     this.version = version;
@@ -113,6 +113,7 @@ public class SegmentInfo {
     this.isCompoundFile = isCompoundFile;
     this.codec = codec;
     this.diagnostics = diagnostics;
+    this.attributes = attributes;
   }
 
   /**
@@ -330,5 +331,40 @@ public class SegmentInfo {
   // clearing/adding the files set...
   public Set<String> getFiles() {
     return setFiles;
+  }
+  
+  /**
+   * Get a codec attribute value, or null if it does not exist
+   */
+  public String getAttribute(String key) {
+    if (attributes == null) {
+      return null;
+    } else {
+      return attributes.get(key);
+    }
+  }
+  
+  /**
+   * Puts a codec attribute value.
+   * <p>
+   * This is a key-value mapping for the field that the codec can use
+   * to store additional metadata, and will be available to the codec
+   * when reading the segment via {@link #getAttribute(String)}
+   * <p>
+   * If a value already exists for the field, it will be replaced with 
+   * the new value.
+   */
+  public String putAttribute(String key, String value) {
+    if (attributes == null) {
+      attributes = new HashMap<String,String>();
+    }
+    return attributes.put(key, value);
+  }
+  
+  /**
+   * @return internal codec attributes map. May be null if no mappings exist.
+   */
+  public Map<String,String> attributes() {
+    return attributes;
   }
 }

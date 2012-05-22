@@ -86,7 +86,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     //Should be able to open a new SegmentReader against the new directory
     SegmentReader mergedReader = new SegmentReader(new SegmentInfoPerCommit(
                                                          new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, docsMerged, -1, mergedSegment,
-                                                                         false, null, false, codec, null),
+                                                                         false, null, false, codec, null, null),
                                                          0, -1L),
                                                    DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
     assertTrue(mergedReader != null);

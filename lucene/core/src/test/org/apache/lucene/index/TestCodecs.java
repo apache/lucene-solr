@@ -257,7 +257,7 @@ public class TestCodecs extends LuceneTestCase {
     this.write(fieldInfos, dir, fields, true);
     Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000, -1, SEGMENT, false, null, false,
-                                           codec, null);
+                                           codec, null, null);
 
     final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random()), DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
@@ -315,7 +315,7 @@ public class TestCodecs extends LuceneTestCase {
     Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000, -1,
                                            SEGMENT, false, null, false,
-                                           codec, null);
+                                           codec, null, null);
 
     if (VERBOSE) {
       System.out.println("TEST: now read postings");

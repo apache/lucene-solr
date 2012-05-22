@@ -91,6 +91,7 @@ import org.apache.lucene.store.DataOutput; // javadoc
  *          <li>13: variable-length sorted byte array values. ({@link Type#BYTES_VAR_SORTED BYTES_VAR_SORTED})</li>
  *        </ul>
  *    </li>
+ *    <li>Attributes: a key-value map of codec-private attributes.</li>
  * </ul>
  *
  * @lucene.experimental
