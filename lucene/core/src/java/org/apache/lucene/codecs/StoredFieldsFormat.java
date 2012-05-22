@@ -25,6 +25,8 @@ import org.apache.lucene.store.IOContext;
  * limitations under the License.
  */
 
+// nocommit fix other formats to get SI/FIS too...
+
 /**
  * Controls the format of stored fields
  */
@@ -35,5 +37,5 @@ public abstract class StoredFieldsFormat {
 
   /** Returns a {@link StoredFieldsWriter} to write stored
    *  fields. */
-  public abstract StoredFieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException;
+  public abstract StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException;
 }

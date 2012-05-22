@@ -55,8 +55,13 @@ final class SegmentMerger {
   
   private final MergeState mergeState = new MergeState();
   private final FieldInfos.Builder fieldInfosBuilder;
-  
-  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider, FieldInfos.Builder fieldInfosBuilder, Codec codec, IOContext context) {
+
+  // nocommit nuke name since SI has it.... but Directory is
+  // NOT the same!!
+  SegmentMerger(SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval, String name,
+                MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider,
+                FieldInfos.Builder fieldInfosBuilder, Codec codec, IOContext context) {
+    mergeState.segmentInfo = segmentInfo;
     mergeState.infoStream = infoStream;
     mergeState.readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
     mergeState.checkAbort = checkAbort;
@@ -107,12 +112,14 @@ final class SegmentMerger {
     
     mergeState.mergedDocCount = setDocMaps();
 
-    mergeFieldInfos();
+    mergeDocValuesAndNormsFieldInfos();
     setMatchingSegmentReaders();
     int numMerged = mergeFields();
     assert numMerged == mergeState.mergedDocCount;
 
-    final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, segment, mergeState.fieldInfos, mergeState.mergedDocCount, termIndexInterval, codec, null, context);
+    final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
+                                                                      mergeState.fieldInfos, mergeState.mergedDocCount,
+                                                                      termIndexInterval, codec, null, context);
     mergeTerms(segmentWriteState);
     mergePerDoc(segmentWriteState);
     
@@ -192,10 +199,6 @@ final class SegmentMerger {
     }
   }
 
-  private void mergeFieldInfos() throws IOException {
-    mergeDocValuesAndNormsFieldInfos();
-  }
-
   // NOTE: this is actually merging all the fieldinfos
   public void mergeDocValuesAndNormsFieldInfos() throws IOException {
     // mapping from all docvalues fields found to their promoted types
@@ -261,7 +264,7 @@ final class SegmentMerger {
    * @throws IOException if there is a low-level IO error
    */
   private int mergeFields() throws CorruptIndexException, IOException {
-    final StoredFieldsWriter fieldsWriter = codec.storedFieldsFormat().fieldsWriter(directory, segment, context);
+    final StoredFieldsWriter fieldsWriter = codec.storedFieldsFormat().fieldsWriter(directory, mergeState.segmentInfo, context);
     
     try {
       return fieldsWriter.merge(mergeState);

@@ -197,7 +197,10 @@ public class TestDoc extends LuceneTestCase {
 
       final Codec codec = Codec.getDefault();
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
-      SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), trackingDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, MergeState.CheckAbort.NONE, null, new FieldInfos.Builder(), codec, context);
+      final SegmentInfo si = new SegmentInfo(si1.info.dir, Constants.LUCENE_MAIN_VERSION, merged, 10000, -1, merged, false, null, false, codec, null, null);
+
+      SegmentMerger merger = new SegmentMerger(si, InfoStream.getDefault(), trackingDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL,
+                                               merged, MergeState.CheckAbort.NONE, null, new FieldInfos.Builder(), codec, context);
 
       merger.add(r1);
       merger.add(r2);

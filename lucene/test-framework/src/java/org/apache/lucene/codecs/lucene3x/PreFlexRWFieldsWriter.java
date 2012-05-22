@@ -43,13 +43,13 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
 
   public PreFlexRWFieldsWriter(SegmentWriteState state) throws IOException {
     termsOut = new TermInfosWriter(state.directory,
-                                   state.segmentName,
+                                   state.segmentInfo.name,
                                    state.fieldInfos,
                                    state.termIndexInterval);
 
     boolean success = false;
     try {
-      final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.FREQ_EXTENSION);
+      final String freqFile = IndexFileNames.segmentFileName(state.segmentInfo.name, "", Lucene3xPostingsFormat.FREQ_EXTENSION);
       freqOut = state.directory.createOutput(freqFile, state.context);
       totalNumDocs = state.numDocs;
       success = true;
@@ -62,7 +62,7 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
     success = false;
     try {
       if (state.fieldInfos.hasProx()) {
-        final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.PROX_EXTENSION);
+        final String proxFile = IndexFileNames.segmentFileName(state.segmentInfo.name, "", Lucene3xPostingsFormat.PROX_EXTENSION);
         proxOut = state.directory.createOutput(proxFile, state.context);
       } else {
         proxOut = null;

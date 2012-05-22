@@ -2288,7 +2288,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // TODO: somehow we should fix this merge so it's
       // abortable so that IW.close(false) is able to stop it
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
-      SegmentMerger merger = new SegmentMerger(infoStream, trackingDir, config.getTermIndexInterval(),
+
+      SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, 0,
+                                         -1, mergedName, false, null, false,
+                                         codec, null, null);
+
+      SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir, config.getTermIndexInterval(),
                                                mergedName, MergeState.CheckAbort.NONE, payloadProcessorProvider,
                                                new FieldInfos.Builder(globalFieldNumberMap), codec, context);
 
@@ -2297,9 +2302,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       MergeState mergeState = merger.merge();                // merge 'em
-      SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, mergeState.mergedDocCount,
-                                         -1, mergedName, false, null, false,
-                                         codec, null, null);
+      info.docCount = mergeState.mergedDocCount;
+
       SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, 0, -1L);
 
       info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
@@ -3433,7 +3437,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final MergeState.CheckAbort checkAbort = new MergeState.CheckAbort(merge, directory);
     final TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(directory);
-    SegmentMerger merger = new SegmentMerger(infoStream, dirWrapper, config.getTermIndexInterval(), mergedName, checkAbort,
+
+    SegmentMerger merger = new SegmentMerger(merge.info.info, infoStream, dirWrapper, config.getTermIndexInterval(), mergedName, checkAbort,
                                              payloadProcessorProvider, new FieldInfos.Builder(globalFieldNumberMap), codec, context);
 
     if (infoStream.isEnabled("IW")) {

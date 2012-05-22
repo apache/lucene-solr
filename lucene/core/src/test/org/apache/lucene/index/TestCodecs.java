@@ -619,7 +619,8 @@ public class TestCodecs extends LuceneTestCase {
 
     final int termIndexInterval = _TestUtil.nextInt(random(), 13, 27);
     final Codec codec = Codec.getDefault();
-    final SegmentWriteState state = new SegmentWriteState(InfoStream.getDefault(), dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codec, null, newIOContext(random()));
+    final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000, -1, SEGMENT, false, null, false, codec, null, null);
+    final SegmentWriteState state = new SegmentWriteState(InfoStream.getDefault(), dir, si, fieldInfos, 10000, termIndexInterval, codec, null, newIOContext(random()));
 
     final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(state);
     Arrays.sort(fields);

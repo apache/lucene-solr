@@ -51,7 +51,7 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
   @Override
   public DocValuesConsumer addValuesField(Type type, FieldInfo field)
       throws IOException {
-    return new SimpleTextDocValuesConsumer(SimpleTextDocValuesFormat.docValuesId(state.segmentName,
+    return new SimpleTextDocValuesConsumer(SimpleTextDocValuesFormat.docValuesId(state.segmentInfo.name,
         field.number), state.directory, state.context, type, segmentSuffix);
   }
 

@@ -28,7 +28,6 @@ class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new PreFlexRWNormsConsumer(state.directory, state.segmentName, state.context);
+    return new PreFlexRWNormsConsumer(state.directory, state.segmentInfo.name, state.context);
   }
-
 }

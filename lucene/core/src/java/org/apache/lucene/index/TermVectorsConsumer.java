@@ -54,7 +54,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
       // At least one doc in this run had term vectors enabled
       try {
         fill(state.numDocs);
-        assert state.segmentName != null;
+        assert state.segmentInfo != null;
         writer.finish(state.numDocs);
       } finally {
         IOUtils.close(writer);
@@ -84,7 +84,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   private final void initTermVectorsWriter() throws IOException {
     if (writer == null) {
       IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
-      writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegment(), context);
+      writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegmentInfo().name, context);
       lastDocID = 0;
     }
   }

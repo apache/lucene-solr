@@ -30,7 +30,7 @@ import org.apache.lucene.util.MutableBits;
 public class SegmentWriteState {
   public final InfoStream infoStream;
   public final Directory directory;
-  public final String segmentName;
+  public final SegmentInfo segmentInfo;
   public final FieldInfos fieldInfos;
   public final int numDocs;
   public int delCountOnFlush;
@@ -57,12 +57,14 @@ public class SegmentWriteState {
   
   public final IOContext context;
 
-  public SegmentWriteState(InfoStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
+  public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
       int numDocs, int termIndexInterval, Codec codec, BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
-    this.segmentName = segmentName;
+    // nocommit a lot of this is redundant w/ SI!  BUT not
+    // the Directory!!!!  one is tracking one is not!!!
+    this.segmentInfo = segmentInfo;
     this.fieldInfos = fieldInfos;
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
@@ -77,7 +79,7 @@ public class SegmentWriteState {
   public SegmentWriteState(SegmentWriteState state, String segmentSuffix) {
     infoStream = state.infoStream;
     directory = state.directory;
-    segmentName = state.segmentName;
+    segmentInfo = state.segmentInfo;
     fieldInfos = state.fieldInfos;
     numDocs = state.numDocs;
     termIndexInterval = state.termIndexInterval;

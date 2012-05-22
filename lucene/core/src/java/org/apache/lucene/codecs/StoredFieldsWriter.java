@@ -1,15 +1,5 @@
 package org.apache.lucene.codecs;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MergeState;
-import org.apache.lucene.util.Bits;
-
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -25,6 +15,16 @@ import org.apache.lucene.util.Bits;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MergeState;
+import org.apache.lucene.util.Bits;
 
 /**
  * Codec API for writing stored fields:
@@ -63,7 +63,7 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  calls to {@link #startDocument(int)}, but a Codec should
    *  check that this is the case to detect the JRE bug described 
    *  in LUCENE-1282. */
-  public abstract void finish(int numDocs) throws IOException;
+  public abstract void finish(FieldInfos fis, int numDocs) throws IOException;
   
   /** Merges in the stored fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
@@ -94,7 +94,7 @@ public abstract class StoredFieldsWriter implements Closeable {
         mergeState.checkAbort.work(300);
       }
     }
-    finish(docCount);
+    finish(mergeState.fieldInfos, docCount);
     return docCount;
   }
   

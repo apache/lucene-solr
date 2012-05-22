@@ -115,27 +115,27 @@ public final class SepPostingsWriter extends PostingsWriterBase {
     try {
       this.skipInterval = skipInterval;
       this.skipMinimum = skipInterval; /* set to the same for now */
-      final String docFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, DOC_EXTENSION);
+      final String docFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, DOC_EXTENSION);
       docOut = factory.createOutput(state.directory, docFileName, state.context);
       docIndex = docOut.index();
       
       if (state.fieldInfos.hasFreq()) {
-        final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, FREQ_EXTENSION);
+        final String frqFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, FREQ_EXTENSION);
         freqOut = factory.createOutput(state.directory, frqFileName, state.context);
         freqIndex = freqOut.index();
       }
 
       if (state.fieldInfos.hasProx()) {      
-        final String posFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, POS_EXTENSION);
+        final String posFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, POS_EXTENSION);
         posOut = factory.createOutput(state.directory, posFileName, state.context);
         posIndex = posOut.index();
         
         // TODO: -- only if at least one field stores payloads?
-        final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, PAYLOAD_EXTENSION);
+        final String payloadFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, PAYLOAD_EXTENSION);
         payloadOut = state.directory.createOutput(payloadFileName, state.context);
       }
       
-      final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, SKIP_EXTENSION);
+      final String skipFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SKIP_EXTENSION);
       skipOut = state.directory.createOutput(skipFileName, state.context);
       
       totalNumDocs = state.numDocs;

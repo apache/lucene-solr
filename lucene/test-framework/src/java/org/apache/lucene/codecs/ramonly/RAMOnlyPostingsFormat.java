@@ -540,7 +540,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     // TODO -- ok to do this up front instead of
     // on close....?  should be ok?
     // Write our ID:
-    final String idFileName = IndexFileNames.segmentFileName(writeState.segmentName, writeState.segmentSuffix, ID_EXTENSION);
+    final String idFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, ID_EXTENSION);
     IndexOutput out = writeState.directory.createOutput(idFileName, writeState.context);
     boolean success = false;
     try {

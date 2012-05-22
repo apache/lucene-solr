@@ -39,7 +39,7 @@ class Lucene3xStoredFieldsFormat extends StoredFieldsFormat {
   }
 
   @Override
-  public StoredFieldsWriter fieldsWriter(Directory directory, String segment,
+  public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }

@@ -138,10 +138,10 @@ public class MockRandomPostingsFormat extends PostingsFormat {
     final long seed = seedRandom.nextLong();
 
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: writing to seg=" + state.segmentName + " formatID=" + state.segmentSuffix + " seed=" + seed);
+      System.out.println("MockRandomCodec: writing to seg=" + state.segmentInfo.name + " formatID=" + state.segmentSuffix + " seed=" + seed);
     }
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, SEED_EXT);
+    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
     final IndexOutput out = state.directory.createOutput(seedFileName, state.context);
     try {
       out.writeLong(seed);

@@ -69,7 +69,7 @@ final class StoredFieldsConsumer {
 
     if (fieldsWriter != null) {
       try {
-        fieldsWriter.finish(state.numDocs);
+        fieldsWriter.finish(state.fieldInfos, state.numDocs);
       } finally {
         fieldsWriter.close();
         fieldsWriter = null;
@@ -80,7 +80,7 @@ final class StoredFieldsConsumer {
 
   private synchronized void initFieldsWriter(IOContext context) throws IOException {
     if (fieldsWriter == null) {
-      fieldsWriter = codec.storedFieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegment(), context);
+      fieldsWriter = codec.storedFieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegmentInfo(), context);
       lastDocID = 0;
     }
   }

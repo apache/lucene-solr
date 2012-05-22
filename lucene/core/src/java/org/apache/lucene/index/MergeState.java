@@ -40,6 +40,7 @@ public class MergeState {
     }
   }
 
+  public SegmentInfo segmentInfo;
   public FieldInfos fieldInfos;
   public List<IndexReaderAndLiveDocs> readers;        // Readers & liveDocs being merged
   public int[][] docMaps;                             // Maps docIDs around deletions

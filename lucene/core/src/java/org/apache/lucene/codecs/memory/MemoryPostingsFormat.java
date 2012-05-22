@@ -285,7 +285,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
 
-    final String fileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
     final IndexOutput out = state.directory.createOutput(fileName, state.context);
     
     return new FieldsConsumer() {
