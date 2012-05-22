@@ -45,12 +45,13 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   private final String name;
 
   public Codec(String name) {
+    NamedSPILoader.checkServiceName(name);
     this.name = name;
   }
   
   /** Returns this codec's name */
   @Override
-  public String getName() {
+  public final String getName() {
     return name;
   }
   

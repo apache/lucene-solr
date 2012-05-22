@@ -96,9 +96,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         formats.put(format, consumer);
       }
 
-      // nocommit we should only provide the "slice" of FIS
+      // TODO: we should only provide the "slice" of FIS
       // that this PF actually sees ... then stuff like
       // .hasProx could work correctly?
+      // NOTE: .hasProx is already broken in the same way for the non-perfield case,
+      // if there is a fieldinfo with prox that has no postings, you get a 0 byte file.
       return consumer.addField(field);
     }
 
