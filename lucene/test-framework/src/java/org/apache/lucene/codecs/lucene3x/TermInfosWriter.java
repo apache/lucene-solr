@@ -156,7 +156,7 @@ final class TermInfosWriter implements Closeable {
     return true;
   }
   
-  // nocommit: temporary hacknuke this.
+  /** note: -1 is the empty field: "" !!!! */
   static String fieldName(FieldInfos infos, int fieldNumber) {
     FieldInfo fi = infos.fieldInfo(fieldNumber);
     return (fi != null) ? fi.name : "";

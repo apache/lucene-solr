@@ -103,8 +103,9 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     freqOut = state.directory.createOutput(fileName, state.context);
     boolean success = false;
     try {
-      // nocommit this isn't quite right: it should be only
-      // the fields indexed by us...?  maybe... we shouldn't
+      // TODO: this is a best effort, if one of these fields has no postings
+      // then we make an empty prx file, same as if we are wrapped in 
+      // per-field postingsformat. maybe... we shouldn't
       // bother w/ this opto?  just create empty prx file...?
       if (state.fieldInfos.hasProx()) {
         // At least one field does not omit TF, so create the

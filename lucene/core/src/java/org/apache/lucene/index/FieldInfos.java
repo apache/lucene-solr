@@ -243,7 +243,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * @param storePayloads true if payloads should be stored for this field
      * @param indexOptions if term freqs should be omitted for this field
      */
-    // nocommit: fix testCodecs to do this another way, its the only user of this
+    // TODO: fix testCodecs to do this another way, its the only user of this
     FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                          boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
       return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);

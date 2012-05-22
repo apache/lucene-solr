@@ -350,10 +350,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     ChecksumIndexOutput segnOutput = null;
     boolean success = false;
 
-    // nocommit document somewhere that we store this
-    // list-of-segs plus delGen plus other stuff
-    // "generically" and then codec gets to write SI
-
     final Set<String> upgradedSIFiles = new HashSet<String>();
 
     try {
