@@ -134,7 +134,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
       
-      if (close) retries = INTERRUPTED; 
+      if (isClosed()) retries = INTERRUPTED;
       boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making sure force=true does not download files we already have
 
       if (!success) {
@@ -269,7 +269,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
       }
     }
 
-    while (!successfulRecovery && !close && !isInterrupted()) { // don't use interruption or it will close channels though
+    while (!successfulRecovery && !isClosed() && !isInterrupted()) { // don't use interruption or it will close channels though
       try {
         // first thing we just try to sync
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
