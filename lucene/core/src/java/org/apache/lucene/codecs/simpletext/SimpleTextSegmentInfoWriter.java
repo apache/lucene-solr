@@ -59,7 +59,7 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
 
     String segFileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
-    si.getFiles().add(segFileName);
+    si.addFile(segFileName);
 
     boolean success = false;
     IndexOutput output = dir.createOutput(segFileName,  ioContext);
@@ -115,7 +115,7 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
         }
       }
 
-      Set<String> files = si.getFiles();
+      Set<String> files = si.files();
       int numFiles = files == null ? 0 : files.size();
       SimpleTextUtil.write(output, SI_NUM_FILES);
       SimpleTextUtil.write(output, Integer.toString(numFiles), scratch);

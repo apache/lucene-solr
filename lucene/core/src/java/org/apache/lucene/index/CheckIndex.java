@@ -479,8 +479,8 @@ public class CheckIndex {
         segInfoStat.codec = codec;
         msg("    compound=" + info.info.getUseCompoundFile());
         segInfoStat.compound = info.info.getUseCompoundFile();
-        msg("    numFiles=" + info.info.files().size());
-        segInfoStat.numFiles = info.info.files().size();
+        msg("    numFiles=" + info.files().size());
+        segInfoStat.numFiles = info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
         msg("    size (MB)=" + nf.format(segInfoStat.sizeMB));
         Map<String,String> diagnostics = info.info.getDiagnostics();

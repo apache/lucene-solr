@@ -411,7 +411,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
 
     // NOTE: this is NOT how 3.x is really written...
     String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfoFormat.SI_EXTENSION);
-    si.getFiles().add(fileName);
+    si.addFile(fileName);
 
     //System.out.println("UPGRADE write " + fileName);
     boolean success = false;
@@ -456,7 +456,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
       output.writeStringStringMap(si.getDiagnostics());
       // hasVectors (lie):
       output.writeByte((byte) 1);
-      output.writeStringSet(si.getFiles());
+      output.writeStringSet(si.files());
 
       success = true;
     } finally {

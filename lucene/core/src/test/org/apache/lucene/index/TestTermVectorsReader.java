@@ -189,16 +189,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
     for (IndexReader r : reader.getSequentialSubReaders()) {
       SegmentInfoPerCommit s = ((SegmentReader) r).getSegmentInfo();
       assertTrue(((SegmentReader) r).getFieldInfos().hasVectors());
-
-      // nocommit
-      /*
-      Set<String> files = new HashSet<String>();
-      s.getCodec().termVectorsFormat().files(s, files);
-      assertFalse(files.isEmpty());
-      for (String file : files) {
-        assertTrue(dir.fileExists(file));
-      }
-      */
     }
     reader.close();
   }

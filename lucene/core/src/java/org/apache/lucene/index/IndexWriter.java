@@ -1505,15 +1505,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // merge:
       for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.maxNumSegments = maxNumSegments;
-        // nocommit: remove this, except it causes
-        // TestExternalCodecs.testPerFieldCodec failures:
         segmentsToMerge.put(merge.info, Boolean.TRUE);
       }
 
       for (final MergePolicy.OneMerge merge: runningMerges) {
         merge.maxNumSegments = maxNumSegments;
-        // nocommit: remove this, except it causes
-        // TestExternalCodecs.testPerFieldCodec failures:
         segmentsToMerge.put(merge.info, Boolean.TRUE);
       }
     }
@@ -2046,7 +2042,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // above:
       codec.segmentInfoFormat().getSegmentInfosWriter().write(directory, newSegment.info, flushedSegment.fieldInfos, context);
 
-      // nocommit ideally we would freeze newSegment here!!
+      // TODO: ideally we would freeze newSegment here!!
       // because any changes after writing the .si will be
       // lost... 
 
@@ -2341,7 +2337,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // and 2) .si reflects useCompoundFile=true change
       // above:
       codec.segmentInfoFormat().getSegmentInfosWriter().write(trackingDir, info, mergeState.fieldInfos, context);
-      info.getFiles().addAll(trackingDir.getCreatedFiles());
+      info.addFiles(trackingDir.getCreatedFiles());
 
       // Register the new segment
       synchronized(this) {
@@ -2410,7 +2406,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     Set<String> segFiles = new HashSet<String>();
 
-    // Build up new segment's file names:
+    // Build up new segment's file names.  Must do this
+    // before writing SegmentInfo:
     for (String file: info.files()) {
       final String newFileName;
       if (codecDocStoreFiles.contains(file)) {
@@ -2421,16 +2418,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       segFiles.add(newFileName);
     }
     newInfo.setFiles(segFiles);
-    
+
     // We must rewrite the SI file because it references
     // segment name (its own name, if its 3.x, and doc
     // store segment name):
+    TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
     try {
-      newInfo.getCodec().segmentInfoFormat().getSegmentInfosWriter().write(directory, newInfo, null, context);
+      newInfo.getCodec().segmentInfoFormat().getSegmentInfosWriter().write(trackingDir, newInfo, null, context);
     } catch (UnsupportedOperationException uoe) {
       // OK: 3x codec cannot write a new SI file;
       // SegmentInfos will write this on commit
     }
+
+    final Collection<String> siFiles = trackingDir.getCreatedFiles();
 
     // Copy the segment's files
     for (String file: info.files()) {
@@ -2446,14 +2446,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         newFileName = segName + IndexFileNames.stripSegmentName(file);
       }
 
-      // nocommit hack
-      //if (siFileNames != null && siFileNames.contains(newFileName)) {
-      if (newFileName.endsWith(".si")) {
+      if (siFiles.contains(newFileName)) {
         // We already rewrote this above
         continue;
       }
 
-      assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+      assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists; siFiles=" + siFiles;
       assert !copiedFiles.contains(file): "file \"" + file + "\" is being copied more than once";
       copiedFiles.add(file);
       info.info.dir.copy(directory, file, newFileName, context);
@@ -3501,7 +3499,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // This is where all the work happens:
       MergeState mergeState = merger.merge();
-      // nocommit use setter and make this a SetOnce:
       merge.info.info.docCount = mergeState.mergedDocCount;
       merge.info.info.setFiles(new HashSet<String>(dirWrapper.getCreatedFiles()));
 
@@ -3597,7 +3594,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
       }
 
-      // nocommit ideally we would freeze merge.info here!!
+      // TODO: ideally we would freeze merge.info here!!
       // because any changes after writing the .si will be
       // lost... 
 
@@ -4031,6 +4028,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       IOUtils.closeWhileHandlingException(prior, cfsDir);
     }
 
+    // Replace all previous files with the CFS/CFE files:
     Set<String> siFiles = new HashSet<String>();
     siFiles.add(fileName);
     siFiles.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));

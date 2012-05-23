@@ -61,10 +61,14 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   public Lucene40PostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
     freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION),
                            ioContext);
-    // nocommit don't consult FieldInfos here... then nuke
-    // fieldInfos arg...
-    // nocommit we can assert FIS.hasProx == our hasProx here...
-    // this.segment = segmentInfo.name;
+    // TODO: hasProx should (somehow!) become codec private,
+    // but it's tricky because 1) FIS.hasProx is global (it
+    // could be all fields that have prox are written by a
+    // different codec), 2) the field may have had prox in
+    // the past but all docs w/ that field were deleted.
+    // Really we'd need to init prxOut lazily on write, and
+    // then somewhere record that we actually wrote it so we
+    // know whether to open on read:
     if (fieldInfos.hasProx()) {
       boolean success = false;
       try {

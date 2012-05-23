@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -27,9 +28,6 @@ import java.util.Set;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
-
-// nocommit fix codec api to pass this around so they can
-// store attrs
 
 /**
  * Information about a segment such as it's name, directory, and files related
@@ -44,11 +42,8 @@ public final class SegmentInfo {
   public static final int YES = 1;          // e.g. have norms; have deletes;
 
   public final String name;				  // unique name in dir
-  // nocommit make me final:
   public int docCount;				  // number of docs in seg
   public final Directory dir;				  // where segment resides
-
-  // nocommit what other members can we make final?
 
   /*
    * Current generation of each field's norm file. If this array is null,
@@ -82,7 +77,6 @@ public final class SegmentInfo {
   // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and
   // specific versions afterwards ("3.0", "3.1" etc.).
   // see Constants.LUCENE_MAIN_VERSION.
-  // nocommit final?
   private String version;
 
   void setDiagnostics(Map<String, String> diagnostics) {
@@ -117,9 +111,11 @@ public final class SegmentInfo {
   }
 
   /**
-   * Returns total size in bytes of all of files used by this segment
+   * Returns total size in bytes of all of files used by
+   * this segment.  Note that this will not include any live
+   * docs for the segment; to include that use {@link
+   * SegmentInfoPerCommit.sizeInBytes} instead.
    */
-  // nocommit fails to take live docs into account... hmmm
   public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {
       long sum = 0;
@@ -129,10 +125,6 @@ public final class SegmentInfo {
       sizeInBytes = sum;
     }
     return sizeInBytes;
-  }
-
-  void clearSizeInBytes() {
-    sizeInBytes = -1;
   }
 
   /**
@@ -217,15 +209,11 @@ public final class SegmentInfo {
    * modify it.
    */
 
-  // nocommit remove this temporarily to see who is calling
-  // it ...  very dangerous having this one AND SIPC.files()
-  public Collection<String> files() throws IOException {
-    // nocommit make sure when we are called we really have
-    // files set ...
+  public Set<String> files() throws IOException {
     if (setFiles == null) {
       throw new IllegalStateException("files were not computed yet");
     }
-    return setFiles;
+    return Collections.unmodifiableSet(setFiles);
   }
 
   /** {@inheritDoc} */
@@ -320,19 +308,19 @@ public final class SegmentInfo {
 
   private Set<String> setFiles;
 
-  // nocommit now on building a CFS we erase the files that
-  // are in it... maybe we should somehow preserve it...
   public void setFiles(Set<String> files) {
     setFiles = files;
     sizeInBytes = -1;
   }
 
-  // nocommit remove this!  it's only needed for
-  // clearing/adding the files set...
-  public Set<String> getFiles() {
-    return setFiles;
+  public void addFiles(Collection<String> files) {
+    setFiles.addAll(files);
   }
-  
+
+  public void addFile(String file) {
+    setFiles.add(file);
+  }
+    
   /**
    * Get a codec attribute value, or null if it does not exist
    */

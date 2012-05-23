@@ -489,6 +489,7 @@ class DocumentsWriterPerThread {
       segmentInfo.docCount = flushState.numDocs;
       segmentInfo.setFiles(new HashSet<String>(directory.getCreatedFiles()));
 
+      final SegmentInfoPerCommit segmentInfoPerCommit = new SegmentInfoPerCommit(segmentInfo, 0, -1L);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.delCountOnFlush)) + " deleted docs");
         infoStream.message("DWPT", "new segment has " +
@@ -497,7 +498,7 @@ class DocumentsWriterPerThread {
                            (flushState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
                            (flushState.fieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
                            (flushState.fieldInfos.hasFreq() ? "freqs" : "no freqs"));
-        infoStream.message("DWPT", "flushedFiles=" + segmentInfo.files());
+        infoStream.message("DWPT", "flushedFiles=" + segmentInfoPerCommit.files());
         infoStream.message("DWPT", "flushed codec=" + codec);
       }
 
@@ -522,7 +523,7 @@ class DocumentsWriterPerThread {
 
       assert segmentInfo != null;
 
-      FlushedSegment fs = new FlushedSegment(new SegmentInfoPerCommit(segmentInfo, 0, -1L), flushState.fieldInfos,
+      FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit, flushState.fieldInfos,
                                              segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
       doAfterFlush();
       success = true;

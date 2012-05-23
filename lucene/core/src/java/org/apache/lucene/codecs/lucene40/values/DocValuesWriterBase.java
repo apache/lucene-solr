@@ -67,7 +67,6 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
    *                         docvalues of type {@link Type#BYTES_FIXED_SORTED} and {@link Type#BYTES_VAR_SORTED}.
    */
   protected DocValuesWriterBase(PerDocWriteState state, boolean fasterButMoreRam) {
-    // nocommit save away SegmentInfo instead?
     this.segmentName = state.segmentInfo.name;
     this.bytesUsed = state.bytesUsed;
     this.context = state.context;

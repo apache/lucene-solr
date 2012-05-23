@@ -41,6 +41,8 @@ public class SegmentInfoPerCommit {
   // are no deletes yet):
   private long delGen;
 
+  private volatile long sizeInBytes = -1;
+
   public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen) {
     this.info = info;
     this.delCount = delCount;
@@ -53,18 +55,26 @@ public class SegmentInfoPerCommit {
     } else {
       delGen++;
     }
-    info.clearSizeInBytes();
+    sizeInBytes = -1;
   }
 
   public long sizeInBytes() throws IOException {
-    // nocommit add in live docs size
-    return info.sizeInBytes();
+    if (sizeInBytes == -1) {
+      final Collection<String> files = new HashSet<String>();
+      info.getCodec().liveDocsFormat().files(this, files);
+      long sum = info.sizeInBytes();
+      for (final String fileName : files()) {
+        sum += info.dir.fileLength(fileName);
+      }
+      sizeInBytes = sum;
+    }
+
+    return sizeInBytes;
   }
 
   public Collection<String> files() throws IOException {
     Collection<String> files = new HashSet<String>(info.files());
 
-    // nocommit make this take list instead...?
     // Must separately add any live docs files:
     info.getCodec().liveDocsFormat().files(this, files);
 
@@ -81,16 +91,17 @@ public class SegmentInfoPerCommit {
 
   void setBufferedDeletesGen(long v) {
     bufferedDeletesGen = v;
+    sizeInBytes =  -1;
   }
   
   void clearDelGen() {
     delGen = -1;
-    info.clearSizeInBytes();
+    sizeInBytes =  -1;
   }
 
   public void setDelGen(long delGen) {
     this.delGen = delGen;
-    info.clearSizeInBytes();
+    sizeInBytes =  -1;
   }
 
   public boolean hasDeletions() {

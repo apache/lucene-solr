@@ -40,8 +40,7 @@ public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
   @Override
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfoFormat.SI_EXTENSION);
-    assert si.getFiles() != null;
-    si.getFiles().add(fileName);
+    si.addFile(fileName);
 
     final IndexOutput output = dir.createOutput(fileName, ioContext);
 
@@ -57,7 +56,7 @@ public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeStringStringMap(si.getDiagnostics());
       output.writeStringStringMap(si.attributes());
-      output.writeStringSet(si.getFiles());
+      output.writeStringSet(si.files());
 
       success = true;
     } finally {
