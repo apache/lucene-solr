@@ -20,15 +20,19 @@ Bug Fixes
    to reset() all state. Protect against AIOOBE in ReversePathHierarchyTokenizer 
    if skip is large. Fixed wrong final offset calculation in 
    PathHierarchyTokenizer. (Uwe Schindler, Mike McCandless, Robert Muir)
-
-  * LUCENE-4022: Offline Sorter used to build spellcheck & suggest dictionaries
-    wrongly used minimum sort buffer resulting in potentially slow FST &
-    Dictionary building. (Simon Willnauer) 
+  
+ * LUCENE-4022: Offline Sorter used to build spellcheck & suggest dictionaries
+   wrongly used minimum sort buffer resulting in potentially slow FST &
+   Dictionary building. (Simon Willnauer) 
 
  * LUCENE-4060: Fix a synchronization bug in 
    DirectoryTaxonomyWriter.addTaxonomies(). Also, the method has been renamed to
    addTaxonomy and now takes only one Directory and one OrdinalMap.
    (Shai Erera, Gilad Barkai)
+
+ * LUCENE-4074: FST Sorter BufferSize creates a negative buffer size due to an
+   32 bit signed integer overflow if BufferSize >= 2048MB is passed.
+   (Simon Willnauer)
  
 Tests
  

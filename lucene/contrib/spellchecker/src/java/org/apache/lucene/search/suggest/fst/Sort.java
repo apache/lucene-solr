@@ -1,6 +1,6 @@
 package org.apache.lucene.search.suggest.fst;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,18 +37,18 @@ import org.apache.lucene.util.PriorityQueue;
  * @lucene.internal
  */
 public final class Sort {
-  public final static int MB = 1024 * 1024;
-  public final static int GB = MB * 1024;
+  public final static long MB = 1024 * 1024;
+  public final static long GB = MB * 1024;
   
   /**
    * Minimum recommended buffer size for sorting.
    */
-  public final static int MIN_BUFFER_SIZE_MB = 32;
+  public final static long MIN_BUFFER_SIZE_MB = 32;
 
   /**
    * Absolute minimum required buffer size for sorting.
    */
-  public static final int ABSOLUTE_MIN_SORT_BUFFER_SIZE = MB / 2;
+  public static final long ABSOLUTE_MIN_SORT_BUFFER_SIZE = MB / 2;
   private static final String MIN_BUFFER_SIZE_MSG = "At least 0.5MB RAM buffer is needed";
 
   /**
@@ -60,7 +60,7 @@ public final class Sort {
    * A bit more descriptive unit for constructors.
    * 
    * @see #automatic()
-   * @see #megabytes(int)
+   * @see #megabytes(long)
    */
   public static final class BufferSize {
     final int bytes;
@@ -70,11 +70,19 @@ public final class Sort {
         throw new IllegalArgumentException("Buffer too large for Java ("
             + (Integer.MAX_VALUE / MB) + "mb max): " + bytes);
       }
+      
+      if (bytes < ABSOLUTE_MIN_SORT_BUFFER_SIZE) {
+        throw new IllegalArgumentException(MIN_BUFFER_SIZE_MSG + ": " + bytes);
+      }
   
       this.bytes = (int) bytes;
     }
-  
-    public static BufferSize megabytes(int mb) {
+    
+    /**
+     * Creates a {@link BufferSize} in MB. The given 
+     * values must be $gt; 0 and &lt; 2048.
+     */
+    public static BufferSize megabytes(long mb) {
       return new BufferSize(mb * MB);
     }
   
@@ -105,7 +113,7 @@ public final class Sort {
           sortBufferByteSize = Math.max(ABSOLUTE_MIN_SORT_BUFFER_SIZE, sortBufferByteSize);
         }
       }
-      return new BufferSize(Math.min(Integer.MAX_VALUE, sortBufferByteSize));
+      return new BufferSize(Math.min((long)Integer.MAX_VALUE, sortBufferByteSize));
     }
   }
   

@@ -63,7 +63,7 @@ public class TestSort extends LuceneTestCase {
   public void testIntermediateMerges() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer, binary merging.
     SortInfo info = checkSort(new Sort(Sort.DEFAULT_COMPARATOR, BufferSize.megabytes(1), Sort.defaultTempDir(), 2), 
-        generateRandom(Sort.MB * 20));
+        generateRandom((int)Sort.MB * 20));
     assertTrue(info.mergeRounds > 10);
   }
 
@@ -71,7 +71,7 @@ public class TestSort extends LuceneTestCase {
   public void testSmallRandom() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer.
     SortInfo sortInfo = checkSort(new Sort(Sort.DEFAULT_COMPARATOR, BufferSize.megabytes(1), Sort.defaultTempDir(), Sort.MAX_TEMPFILES), 
-        generateRandom(Sort.MB * 20));
+        generateRandom((int)Sort.MB * 20));
     assertEquals(1, sortInfo.mergeRounds);
   }
 
@@ -79,7 +79,7 @@ public class TestSort extends LuceneTestCase {
   public void testLargerRandom() throws Exception {
     // Sort 100MB worth of data with 15mb buffer.
     checkSort(new Sort(Sort.DEFAULT_COMPARATOR, BufferSize.megabytes(16), Sort.defaultTempDir(), Sort.MAX_TEMPFILES), 
-        generateRandom(Sort.MB * 100));
+        generateRandom((int)Sort.MB * 100));
   }
 
   private byte[][] generateRandom(int howMuchData) {
@@ -151,5 +151,32 @@ public class TestSort extends LuceneTestCase {
     }
     w.close();
     return file;
+  }
+  
+  public void testRamBuffer() {
+    int numIters = atLeast(10000);
+    for (int i = 0; i < numIters; i++) {
+      BufferSize.megabytes(1+random().nextInt(2047));
+    }
+    BufferSize.megabytes(2047);
+    BufferSize.megabytes(1);
+    
+    try {
+      BufferSize.megabytes(2048);
+      fail("max mb is 2047");
+    } catch (IllegalArgumentException e) {
+    }
+    
+    try {
+      BufferSize.megabytes(0);
+      fail("min mb is 0.5");
+    } catch (IllegalArgumentException e) {
+    }
+    
+    try {
+      BufferSize.megabytes(-1);
+      fail("min mb is 0.5");
+    } catch (IllegalArgumentException e) {
+    }
   }
 }
