@@ -485,6 +485,7 @@ class DocumentsWriterPerThread {
     try {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
+      // nocommit use setter and make this a SetOnce:
       segmentInfo.docCount = flushState.numDocs;
       segmentInfo.setFiles(new HashSet<String>(directory.getCreatedFiles()));
 

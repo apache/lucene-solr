@@ -2302,6 +2302,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       MergeState mergeState = merger.merge();                // merge 'em
+
+      // nocommit use setter and make this a SetOnce:
       info.docCount = mergeState.mergedDocCount;
 
       SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, 0, -1L);
@@ -3499,6 +3501,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // This is where all the work happens:
       MergeState mergeState = merger.merge();
+      // nocommit use setter and make this a SetOnce:
       merge.info.info.docCount = mergeState.mergedDocCount;
       merge.info.info.setFiles(new HashSet<String>(dirWrapper.getCreatedFiles()));
 

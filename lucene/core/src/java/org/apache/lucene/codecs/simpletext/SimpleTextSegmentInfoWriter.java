@@ -35,8 +35,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-// nocommit rename (remove s)
-
 /**
  * writes plaintext segments files
  * <p>

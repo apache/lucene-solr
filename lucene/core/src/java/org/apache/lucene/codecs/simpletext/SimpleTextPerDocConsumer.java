@@ -57,8 +57,8 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
 
   @Override
   public void abort() {
-    // nocommit must we really delete the files...?  IFD
-    // will do so I think?
+    // We don't have to remove files here: IndexFileDeleter
+    // will do so
   }
   
   static String docValuesId(String segmentsName, int fieldId) {

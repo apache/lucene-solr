@@ -40,8 +40,6 @@ import org.apache.lucene.util.StringHelper;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.*;
 
-// nocommit rename (remove s)
-
 /**
  * reads plaintext segments files
  * <p>
