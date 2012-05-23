@@ -45,7 +45,6 @@ public class MergeState {
   public List<IndexReaderAndLiveDocs> readers;        // Readers & liveDocs being merged
   public int[][] docMaps;                             // Maps docIDs around deletions
   public int[] docBase;                               // New docID base per reader
-  public int mergedDocCount;                          // Total # merged docs
   public CheckAbort checkAbort;
   public InfoStream infoStream;
 

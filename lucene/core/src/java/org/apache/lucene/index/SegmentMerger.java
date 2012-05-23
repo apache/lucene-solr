@@ -107,13 +107,11 @@ final class SegmentMerger {
     // IndexWriter.close(false) takes to actually stop the
     // threads.
     
-    // nocommit: can we nuke this count too?
-    mergeState.mergedDocCount = setDocMaps();
-    mergeState.segmentInfo.setDocCount(mergeState.mergedDocCount);
+    mergeState.segmentInfo.setDocCount(setDocMaps());
     mergeDocValuesAndNormsFieldInfos();
     setMatchingSegmentReaders();
     int numMerged = mergeFields();
-    assert numMerged == mergeState.mergedDocCount;
+    assert numMerged == mergeState.segmentInfo.getDocCount();
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
                                                                       mergeState.fieldInfos, termIndexInterval, null, context);
@@ -126,7 +124,7 @@ final class SegmentMerger {
 
     if (mergeState.fieldInfos.hasVectors()) {
       numMerged = mergeVectors();
-      assert numMerged == mergeState.mergedDocCount;
+      assert numMerged == mergeState.segmentInfo.getDocCount();
     }
     
     // write the merged infos

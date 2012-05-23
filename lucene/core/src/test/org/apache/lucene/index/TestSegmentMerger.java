@@ -84,7 +84,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     merger.add(reader1);
     merger.add(reader2);
     MergeState mergeState = merger.merge();
-    int docsMerged = mergeState.mergedDocCount;
+    int docsMerged = mergeState.segmentInfo.getDocCount();
     assertTrue(docsMerged == 2);
     //Should be able to open a new SegmentReader against the new directory
     SegmentReader mergedReader = new SegmentReader(new SegmentInfoPerCommit(

@@ -79,7 +79,7 @@ public abstract class TermsConsumer {
     long sumTotalTermFreq = 0;
     long sumDocFreq = 0;
     long sumDFsinceLastAbortCheck = 0;
-    FixedBitSet visitedDocs = new FixedBitSet(mergeState.mergedDocCount);
+    FixedBitSet visitedDocs = new FixedBitSet(mergeState.segmentInfo.getDocCount());
 
     IndexOptions indexOptions = mergeState.fieldInfo.getIndexOptions();
     if (indexOptions == IndexOptions.DOCS_ONLY) {
