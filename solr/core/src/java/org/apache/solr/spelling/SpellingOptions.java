@@ -2,9 +2,11 @@ package org.apache.solr.spelling;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.solr.common.params.SolrParams;
 
 import java.util.Collection;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,13 +24,12 @@ import java.util.Collection;
  * limitations under the License.
  */
 
-
 /**
  *
  *
  **/
 public class SpellingOptions {
-
+  
   /**
    * The tokens to spell check
    */
@@ -38,55 +39,69 @@ public class SpellingOptions {
    */
   public IndexReader reader;
   /**
-   * The number of suggestions to return, if there are any.  Defaults to 1.
+   * The number of suggestions to return, if there are any. Defaults to 1.
    */
   public int count = 1;
-  /**
-   * Return only those results that are more popular, as defined by the implementation
-   */
-  public boolean onlyMorePopular;
+  
+  public Integer alternativeTermCount = null;
+  
+  public SuggestMode suggestMode = SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
   /**
    * Provide additional, per implementation, information about the results
    */
   public boolean extendedResults;
-
+  
   /**
-   * Optionally restrict the results to have a minimum accuracy level.  Per Implementation.
-   * By default set to Float.MIN_VALUE.
+   * Optionally restrict the results to have a minimum accuracy level. Per
+   * Implementation. By default set to Float.MIN_VALUE.
    */
   public float accuracy = Float.MIN_VALUE;
-
+  
   /**
-   * Any other custom params can be passed through.  May be null and is null by default.
+   * Any other custom params can be passed through. May be null and is null by
+   * default.
    */
   public SolrParams customParams;
-
-  public SpellingOptions() {
-  }
-
-  //A couple of convenience ones
+  
+  public SpellingOptions() {}
+  
+  // A couple of convenience ones
   public SpellingOptions(Collection<Token> tokens, int count) {
     this.tokens = tokens;
     this.count = count;
   }
-
+  
   public SpellingOptions(Collection<Token> tokens, IndexReader reader) {
     this.tokens = tokens;
     this.reader = reader;
   }
-
+  
   public SpellingOptions(Collection<Token> tokens, IndexReader reader, int count) {
     this.tokens = tokens;
     this.reader = reader;
     this.count = count;
   }
-
-
-  public SpellingOptions(Collection<Token> tokens, IndexReader reader, int count, boolean onlyMorePopular, boolean extendedResults, float accuracy, SolrParams customParams) {
+  
+  public SpellingOptions(Collection<Token> tokens, IndexReader reader,
+      int count, SuggestMode suggestMode, boolean extendedResults,
+      float accuracy, SolrParams customParams) {
     this.tokens = tokens;
     this.reader = reader;
     this.count = count;
-    this.onlyMorePopular = onlyMorePopular;
+    this.suggestMode = suggestMode;
+    this.extendedResults = extendedResults;
+    this.accuracy = accuracy;
+    this.customParams = customParams;
+  }
+  
+  public SpellingOptions(Collection<Token> tokens, IndexReader reader,
+      int count, Integer alternativeTermCount, SuggestMode suggestMode,
+      boolean extendedResults, float accuracy, SolrParams customParams) {
+    this.tokens = tokens;
+    this.reader = reader;
+    this.count = count;
+    this.alternativeTermCount = alternativeTermCount;
+    this.suggestMode = suggestMode;
     this.extendedResults = extendedResults;
     this.accuracy = accuracy;
     this.customParams = customParams;
