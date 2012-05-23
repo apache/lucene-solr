@@ -123,11 +123,11 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
       }
     }
 
-    totalNumDocs = state.numDocs;
+    totalNumDocs = state.segmentInfo.getDocCount();
 
     skipListWriter = new Lucene40SkipListWriter(skipInterval,
                                                maxSkipLevels,
-                                               state.numDocs,
+                                               totalNumDocs,
                                                freqOut,
                                                proxOut);
   }

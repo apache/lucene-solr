@@ -138,11 +138,11 @@ public final class SepPostingsWriter extends PostingsWriterBase {
       final String skipFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SKIP_EXTENSION);
       skipOut = state.directory.createOutput(skipFileName, state.context);
       
-      totalNumDocs = state.numDocs;
+      totalNumDocs = state.segmentInfo.getDocCount();
       
       skipListWriter = new SepSkipListWriter(skipInterval,
           maxSkipLevels,
-          state.numDocs,
+          totalNumDocs,
           freqOut, docOut,
           posOut, payloadOut);
       

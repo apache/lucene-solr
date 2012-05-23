@@ -367,7 +367,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     final ByteSliceReader freq = new ByteSliceReader();
     final ByteSliceReader prox = new ByteSliceReader();
 
-    FixedBitSet visitedDocs = new FixedBitSet(state.numDocs);
+    FixedBitSet visitedDocs = new FixedBitSet(state.segmentInfo.getDocCount());
     long sumTotalTermFreq = 0;
     long sumDocFreq = 0;
 
@@ -445,7 +445,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         }
 
         numDocs++;
-        assert docID < state.numDocs: "doc=" + docID + " maxDoc=" + state.numDocs;
+        assert docID < state.segmentInfo.getDocCount(): "doc=" + docID + " maxDoc=" + state.segmentInfo.getDocCount();
 
         // NOTE: we could check here if the docID was
         // deleted, and skip it.  However, this is somewhat
@@ -467,7 +467,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           
           // TODO: can we do this reach-around in a cleaner way????
           if (state.liveDocs == null) {
-            state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.numDocs);
+            state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.segmentInfo.getDocCount());
           }
           if (state.liveDocs.get(docID)) {
             state.delCountOnFlush++;

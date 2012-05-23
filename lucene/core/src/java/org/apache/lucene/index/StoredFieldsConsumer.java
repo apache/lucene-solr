@@ -58,18 +58,19 @@ final class StoredFieldsConsumer {
   }
 
   public void flush(SegmentWriteState state) throws IOException {
+    int numDocs = state.segmentInfo.getDocCount();
 
-    if (state.numDocs > 0) {
+    if (numDocs > 0) {
       // It's possible that all documents seen in this segment
       // hit non-aborting exceptions, in which case we will
       // not have yet init'd the FieldsWriter:
       initFieldsWriter(state.context);
-      fill(state.numDocs);
+      fill(numDocs);
     }
 
     if (fieldsWriter != null) {
       try {
-        fieldsWriter.finish(state.fieldInfos, state.numDocs);
+        fieldsWriter.finish(state.fieldInfos, numDocs);
       } finally {
         fieldsWriter.close();
         fieldsWriter = null;

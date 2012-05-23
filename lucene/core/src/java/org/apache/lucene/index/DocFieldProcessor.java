@@ -81,7 +81,7 @@ final class DocFieldProcessor extends DocConsumer {
     consumer.flush(childFields, state);
 
     for (DocValuesConsumerAndDocID consumer : docValues.values()) {
-      consumer.docValuesConsumer.finish(state.numDocs);
+      consumer.docValuesConsumer.finish(state.segmentInfo.getDocCount());
     }
     
     // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS

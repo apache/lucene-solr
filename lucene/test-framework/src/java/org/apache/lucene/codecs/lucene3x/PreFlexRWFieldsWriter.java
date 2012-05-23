@@ -51,7 +51,7 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
     try {
       final String freqFile = IndexFileNames.segmentFileName(state.segmentInfo.name, "", Lucene3xPostingsFormat.FREQ_EXTENSION);
       freqOut = state.directory.createOutput(freqFile, state.context);
-      totalNumDocs = state.numDocs;
+      totalNumDocs = state.segmentInfo.getDocCount();
       success = true;
     } finally {
       if (!success) {

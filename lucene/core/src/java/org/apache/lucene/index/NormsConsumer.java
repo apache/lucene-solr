@@ -64,7 +64,7 @@ final class NormsConsumer extends InvertedDocEndConsumer {
           if (!fi.omitsNorms()) {
             if (toWrite != null && toWrite.initialized()) {
               anythingFlushed = true;
-              final Type type = toWrite.flush(state.numDocs);
+              final Type type = toWrite.flush(state.segmentInfo.getDocCount());
               assert fi.getNormType() == type;
             } else if (fi.isIndexed()) {
               anythingFlushed = true;

@@ -2299,8 +2299,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       MergeState mergeState = merger.merge();                // merge 'em
 
-      info.setDocCount(mergeState.mergedDocCount);
-
       SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, 0, -1L);
 
       info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
@@ -3498,7 +3496,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // This is where all the work happens:
       MergeState mergeState = merger.merge();
-      merge.info.info.setDocCount(mergeState.mergedDocCount);
+      assert mergeState.segmentInfo == merge.info.info;
       merge.info.info.setFiles(new HashSet<String>(dirWrapper.getCreatedFiles()));
 
       // Record which codec was used to write the segment

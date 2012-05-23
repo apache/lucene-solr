@@ -31,7 +31,6 @@ public class SegmentWriteState {
   public final Directory directory;
   public final SegmentInfo segmentInfo;
   public final FieldInfos fieldInfos;
-  public final int numDocs;
   public int delCountOnFlush;
 
   // Deletes to apply while we are flushing the segment.  A
@@ -56,15 +55,12 @@ public class SegmentWriteState {
   public final IOContext context;
 
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
-      int numDocs, int termIndexInterval, BufferedDeletes segDeletes, IOContext context) {
+      int termIndexInterval, BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
-    // nocommit a lot of this is redundant w/ SI!  BUT not
-    // the Directory!!!!  one is tracking one is not!!!
     this.segmentInfo = segmentInfo;
     this.fieldInfos = fieldInfos;
-    this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
     segmentSuffix = "";
     this.context = context;
@@ -78,7 +74,6 @@ public class SegmentWriteState {
     directory = state.directory;
     segmentInfo = state.segmentInfo;
     fieldInfos = state.fieldInfos;
-    numDocs = state.numDocs;
     termIndexInterval = state.termIndexInterval;
     context = state.context;
     this.segmentSuffix = segmentSuffix;

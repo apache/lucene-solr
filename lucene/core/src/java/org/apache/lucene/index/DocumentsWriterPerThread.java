@@ -447,8 +447,9 @@ class DocumentsWriterPerThread {
   FlushedSegment flush() throws IOException {
     assert numDocsInRAM > 0;
     assert deleteSlice == null : "all deletes must be applied in prepareFlush";
+    segmentInfo.setDocCount(numDocsInRAM);
     flushState = new SegmentWriteState(infoStream, directory, segmentInfo, fieldInfos.finish(),
-        numDocsInRAM, writer.getConfig().getTermIndexInterval(),
+        writer.getConfig().getTermIndexInterval(),
         pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
     final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;
 
@@ -481,13 +482,11 @@ class DocumentsWriterPerThread {
     try {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
-      // nocommit use setter and make this a SetOnce:
-      segmentInfo.setDocCount(flushState.numDocs);
       segmentInfo.setFiles(new HashSet<String>(directory.getCreatedFiles()));
 
       final SegmentInfoPerCommit segmentInfoPerCommit = new SegmentInfoPerCommit(segmentInfo, 0, -1L);
       if (infoStream.isEnabled("DWPT")) {
-        infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.delCountOnFlush)) + " deleted docs");
+        infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.segmentInfo.getDocCount() - flushState.delCountOnFlush)) + " deleted docs");
         infoStream.message("DWPT", "new segment has " +
                            (flushState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
                            (flushState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
@@ -498,7 +497,7 @@ class DocumentsWriterPerThread {
         infoStream.message("DWPT", "flushed codec=" + codec);
       }
 
-      flushedDocCount += flushState.numDocs;
+      flushedDocCount += flushState.segmentInfo.getDocCount();
 
       final BufferedDeletes segmentDeletes;
       if (pendingDeletes.queries.isEmpty()) {
