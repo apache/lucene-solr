@@ -465,11 +465,11 @@ public class CheckIndex {
       }
       Status.SegmentInfoStatus segInfoStat = new Status.SegmentInfoStatus();
       result.segmentInfos.add(segInfoStat);
-      msg("  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.docCount);
+      msg("  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.getDocCount());
       segInfoStat.name = info.info.name;
-      segInfoStat.docCount = info.info.docCount;
+      segInfoStat.docCount = info.info.getDocCount();
 
-      int toLoseDocCount = info.info.docCount;
+      int toLoseDocCount = info.info.getDocCount();
 
       SegmentReader reader = null;
 
@@ -517,14 +517,14 @@ public class CheckIndex {
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         if (reader.hasDeletions()) {
-          if (reader.numDocs() != info.info.docCount - info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + (info.info.docCount - info.getDelCount()) + " vs reader=" + reader.numDocs());
+          if (reader.numDocs() != info.info.getDocCount() - info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + (info.info.getDocCount() - info.getDelCount()) + " vs reader=" + reader.numDocs());
           }
-          if ((info.info.docCount-reader.numDocs()) > reader.maxDoc()) {
-            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.docCount-reader.numDocs()));
+          if ((info.info.getDocCount()-reader.numDocs()) > reader.maxDoc()) {
+            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.getDocCount()-reader.numDocs()));
           }
-          if (info.info.docCount - numDocs != info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.docCount - numDocs));
+          if (info.info.getDocCount() - numDocs != info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - numDocs));
           }
           Bits liveDocs = reader.getLiveDocs();
           if (liveDocs == null) {
@@ -541,11 +541,11 @@ public class CheckIndex {
             }
           }
           
-          segInfoStat.numDeleted = info.info.docCount - numDocs;
+          segInfoStat.numDeleted = info.info.getDocCount() - numDocs;
           msg("OK [" + (segInfoStat.numDeleted) + " deleted docs]");
         } else {
           if (info.getDelCount() != 0) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.docCount - numDocs));
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - numDocs));
           }
           Bits liveDocs = reader.getLiveDocs();
           if (liveDocs != null) {
@@ -558,8 +558,8 @@ public class CheckIndex {
           }
           msg("OK");
         }
-        if (reader.maxDoc() != info.info.docCount) {
-          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.docCount);
+        if (reader.maxDoc() != info.info.getDocCount()) {
+          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.getDocCount());
         }
 
         // Test getFieldInfos()
@@ -1170,7 +1170,7 @@ public class CheckIndex {
 
       // Scan stored fields for all documents
       final Bits liveDocs = reader.getLiveDocs();
-      for (int j = 0; j < info.info.docCount; ++j) {
+      for (int j = 0; j < info.info.getDocCount(); ++j) {
         // Intentionally pull even deleted documents to
         // make sure they too are not corrupt:
         Document doc = reader.document(j);
@@ -1349,7 +1349,7 @@ public class CheckIndex {
       TermsEnum termsEnum = null;
       TermsEnum postingsTermsEnum = null;
 
-      for (int j = 0; j < info.info.docCount; ++j) {
+      for (int j = 0; j < info.info.getDocCount(); ++j) {
         // Intentionally pull/visit (but don't count in
         // stats) deleted documents to make sure they too
         // are not corrupt:

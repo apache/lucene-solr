@@ -116,7 +116,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     throws CorruptIndexException, IOException {
     final String segment = si.getDocStoreSegment();
     final int docStoreOffset = si.getDocStoreOffset();
-    final int size = si.docCount;
+    final int size = si.getDocCount();
     
     boolean success = false;
 

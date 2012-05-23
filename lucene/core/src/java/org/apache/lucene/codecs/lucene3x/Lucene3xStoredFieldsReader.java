@@ -141,7 +141,7 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
   public Lucene3xStoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     final String segment = si.getDocStoreSegment();
     final int docStoreOffset = si.getDocStoreOffset();
-    final int size = si.docCount;
+    final int size = si.getDocCount();
     boolean success = false;
     fieldInfos = fn;
     try {
@@ -176,8 +176,8 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
         this.docStoreOffset = 0;
         this.size = (int) (indexSize >> 3);
         // Verify two sources of "maxDoc" agree:
-        if (this.size != si.docCount) {
-          throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + this.size + " but segmentInfo shows " + si.docCount);
+        if (this.size != si.getDocCount()) {
+          throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + this.size + " but segmentInfo shows " + si.getDocCount());
         }
       }
       numTotalDocs = (int) (indexSize >> 3);

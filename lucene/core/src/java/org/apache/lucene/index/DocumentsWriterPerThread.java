@@ -270,7 +270,7 @@ class DocumentsWriterPerThread {
 
   private void initSegmentInfo() {
     String segment = writer.newSegmentName();
-    segmentInfo = new SegmentInfo(directoryOrig, Constants.LUCENE_MAIN_VERSION, segment, 0,
+    segmentInfo = new SegmentInfo(directoryOrig, Constants.LUCENE_MAIN_VERSION, segment, -1,
                                   -1, segment, false, null, false,
                                   codec,
                                   null, null);
@@ -486,7 +486,7 @@ class DocumentsWriterPerThread {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
       // nocommit use setter and make this a SetOnce:
-      segmentInfo.docCount = flushState.numDocs;
+      segmentInfo.setDocCount(flushState.numDocs);
       segmentInfo.setFiles(new HashSet<String>(directory.getCreatedFiles()));
 
       final SegmentInfoPerCommit segmentInfoPerCommit = new SegmentInfoPerCommit(segmentInfo, 0, -1L);

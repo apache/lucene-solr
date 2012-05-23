@@ -288,7 +288,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
           info.setCodec(codec);
           long delGen = input.readLong();
           int delCount = input.readInt();
-          assert delCount <= info.docCount;
+          assert delCount <= info.getDocCount();
           add(new SegmentInfoPerCommit(info, delCount, delGen));
         }
         userData = input.readStringStringMap();
@@ -366,7 +366,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         segnOutput.writeInt(siPerCommit.getDelCount());
         assert si.dir == directory;
 
-        assert siPerCommit.getDelCount() <= si.docCount;
+        assert siPerCommit.getDelCount() <= si.getDocCount();
 
         // If this segment is pre-4.x, perform a one-time
         // "ugprade" to write the .si file for it:
@@ -423,7 +423,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(si.getVersion());
       output.writeString(si.name);
-      output.writeInt(si.docCount);
+      output.writeInt(si.getDocCount());
 
       // NOTE: a lie
       output.writeLong(0L);
@@ -987,7 +987,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   public int totalDocCount() {
     int count = 0;
     for(SegmentInfoPerCommit info : this) {
-      count += info.info.docCount;
+      count += info.info.getDocCount();
     }
     return count;
   }

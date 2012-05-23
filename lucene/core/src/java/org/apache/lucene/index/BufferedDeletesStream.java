@@ -225,8 +225,8 @@ class BufferedDeletesStream {
           // already did that on flush:
           delCount += applyQueryDeletes(packet.queriesIterable(), rld, reader);
           final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
-          assert fullDelCount <= rld.info.info.docCount;
-          segAllDeletes = fullDelCount == rld.info.info.docCount;
+          assert fullDelCount <= rld.info.info.getDocCount();
+          segAllDeletes = fullDelCount == rld.info.info.getDocCount();
         } finally {
           rld.release(reader);
           readerPool.release(rld);
@@ -271,8 +271,8 @@ class BufferedDeletesStream {
             delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
             final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
-            assert fullDelCount <= rld.info.info.docCount;
-            segAllDeletes = fullDelCount == rld.info.info.docCount;
+            assert fullDelCount <= rld.info.info.getDocCount();
+            segAllDeletes = fullDelCount == rld.info.info.getDocCount();
           } finally {   
             rld.release(reader);
             readerPool.release(rld);

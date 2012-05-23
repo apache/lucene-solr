@@ -126,7 +126,7 @@ public class SegmentInfoPerCommit {
 
   void setDelCount(int delCount) {
     this.delCount = delCount;
-    assert delCount <= info.docCount;
+    assert delCount <= info.getDocCount();
   }
 
   public String toString(Directory dir, int pendingDelCount) {

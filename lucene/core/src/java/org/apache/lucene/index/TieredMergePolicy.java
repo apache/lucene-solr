@@ -563,7 +563,7 @@ public class TieredMergePolicy extends MergePolicy {
     final List<SegmentInfoPerCommit> eligible = new ArrayList<SegmentInfoPerCommit>();
     final Collection<SegmentInfoPerCommit> merging = writer.get().getMergingSegments();
     for(SegmentInfoPerCommit info : infos) {
-      double pctDeletes = 100.*((double) writer.get().numDeletedDocs(info))/info.info.docCount;
+      double pctDeletes = 100.*((double) writer.get().numDeletedDocs(info))/info.info.getDocCount();
       if (pctDeletes > forceMergeDeletesPctAllowed && !merging.contains(info)) {
         eligible.add(info);
       }
@@ -640,7 +640,7 @@ public class TieredMergePolicy extends MergePolicy {
   private long size(SegmentInfoPerCommit info) throws IOException {
     final long byteSize = info.info.sizeInBytes();    
     final int delCount = writer.get().numDeletedDocs(info);
-    final double delRatio = (info.info.docCount <= 0 ? 0.0f : ((double)delCount / (double)info.info.docCount));    
+    final double delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((double)delCount / (double)info.info.getDocCount()));    
     assert delRatio <= 1.0;
     return (long) (byteSize * (1.0-delRatio));
   }

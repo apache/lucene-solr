@@ -100,7 +100,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
   public Lucene40TermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
     throws CorruptIndexException, IOException {
     final String segment = si.name;
-    final int size = si.docCount;
+    final int size = si.getDocCount();
     
     boolean success = false;
 

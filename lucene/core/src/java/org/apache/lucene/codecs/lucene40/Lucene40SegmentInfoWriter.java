@@ -48,7 +48,7 @@ public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
     try {
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(si.getVersion());
-      output.writeInt(si.docCount);
+      output.writeInt(si.getDocCount());
 
       assert si.getDocStoreOffset() == -1;
       assert si.getNormGen() == null;

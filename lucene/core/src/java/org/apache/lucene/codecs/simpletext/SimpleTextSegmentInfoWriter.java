@@ -72,7 +72,7 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
       SimpleTextUtil.writeNewline(output);
     
       SimpleTextUtil.write(output, SI_DOCCOUNT);
-      SimpleTextUtil.write(output, Integer.toString(si.docCount), scratch);
+      SimpleTextUtil.write(output, Integer.toString(si.getDocCount()), scratch);
       SimpleTextUtil.writeNewline(output);
     
       SimpleTextUtil.write(output, SI_USECOMPOUND);

@@ -208,7 +208,7 @@ public class TestDoc extends LuceneTestCase {
       r1.close();
       r2.close();
       final SegmentInfo info = new SegmentInfo(si1.info.dir, Constants.LUCENE_MAIN_VERSION, merged,
-                                               si1.info.docCount + si2.info.docCount, -1, merged,
+                                               si1.info.getDocCount() + si2.info.getDocCount(), -1, merged,
                                                false, null, false, codec, null, null);
       info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
       

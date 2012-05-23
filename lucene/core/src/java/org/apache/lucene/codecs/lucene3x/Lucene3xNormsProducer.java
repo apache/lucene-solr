@@ -69,7 +69,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
   // but we just don't do any seeks or reading yet.
   public Lucene3xNormsProducer(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context) throws IOException {
     Directory separateNormsDir = info.dir; // separate norms are never inside CFS
-    maxdoc = info.docCount;
+    maxdoc = info.getDocCount();
     String segmentName = info.name;
     Map<Integer,Long> normGen = info.getNormGen();
     boolean success = false;

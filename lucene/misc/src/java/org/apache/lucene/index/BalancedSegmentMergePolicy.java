@@ -59,8 +59,8 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   @Override
   protected long size(SegmentInfoPerCommit info) throws IOException {
     long byteSize = info.sizeInBytes();
-    float delRatio = (info.info.docCount <= 0 ? 0.0f : ((float)info.getDelCount() / (float)info.info.docCount));
-    return (info.info.docCount <= 0 ?  byteSize : (long)((1.0f - delRatio) * byteSize));
+    float delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((float)info.getDelCount() / (float)info.info.getDocCount()));
+    return (info.info.getDocCount() <= 0 ?  byteSize : (long)((1.0f - delRatio) * byteSize));
   }
   
   public void setPartialExpunge(boolean doPartialExpunge) {

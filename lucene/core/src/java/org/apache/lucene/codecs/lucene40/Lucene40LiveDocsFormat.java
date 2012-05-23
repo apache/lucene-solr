@@ -86,9 +86,9 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   public Bits readLiveDocs(Directory dir, SegmentInfoPerCommit info, IOContext context) throws IOException {
     String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen());
     final BitVector liveDocs = new BitVector(dir, filename, context);
-    assert liveDocs.count() == info.info.docCount - info.getDelCount():
-        "liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.docCount + " info.getDelCount()=" + info.getDelCount();
-    assert liveDocs.length() == info.info.docCount;
+    assert liveDocs.count() == info.info.getDocCount() - info.getDelCount():
+      "liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.getDocCount() + " info.getDelCount()=" + info.getDelCount();
+    assert liveDocs.length() == info.info.getDocCount();
     return liveDocs;
   }
 
@@ -96,8 +96,8 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfoPerCommit info, int newDelCount, IOContext context) throws IOException {
     String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getNextDelGen());
     final BitVector liveDocs = (BitVector) bits;
-    assert liveDocs.count() == info.info.docCount - info.getDelCount() - newDelCount;
-    assert liveDocs.length() == info.info.docCount;
+    assert liveDocs.count() == info.info.getDocCount() - info.getDelCount() - newDelCount;
+    assert liveDocs.length() == info.info.getDocCount();
     liveDocs.write(dir, filename, context);
   }
 

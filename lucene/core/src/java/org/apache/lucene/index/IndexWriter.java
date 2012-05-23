@@ -735,7 +735,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     SegmentInfoPerCommit biggest = null;
     for(SegmentInfoPerCommit info : segmentInfos) {
-      if (biggest == null || (info.info.docCount-info.getDelCount()) > (biggest.info.docCount-biggest.getDelCount())) {
+      if (biggest == null || (info.info.getDocCount()-info.getDelCount()) > (biggest.info.getDocCount()-biggest.getDelCount())) {
         biggest = info;
       }
     }
@@ -999,7 +999,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       count = 0;
 
     for (final SegmentInfoPerCommit info : segmentInfos) {
-      count += info.info.docCount - numDeletedDocs(info);
+      count += info.info.getDocCount() - numDeletedDocs(info);
     }
     return count;
   }
@@ -1367,7 +1367,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // for test purpose
   final synchronized int getDocCount(int i) {
     if (i >= 0 && i < segmentInfos.size()) {
-      return segmentInfos.info(i).info.docCount;
+      return segmentInfos.info(i).info.getDocCount();
     } else {
       return -1;
     }
@@ -2021,7 +2021,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     setDiagnostics(newSegment.info, "flush");
     
-    IOContext context = new IOContext(new FlushInfo(newSegment.info.docCount, newSegment.info.sizeInBytes()));
+    IOContext context = new IOContext(new FlushInfo(newSegment.info.getDocCount(), newSegment.info.sizeInBytes()));
 
     boolean success = false;
     try {
@@ -2225,7 +2225,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             infoStream.message("IW", "addIndexes: process segment origName=" + info.info.name + " newName=" + newSegName + " dsName=" + dsName + " info=" + info);
           }
 
-          IOContext context = new IOContext(new MergeInfo(info.info.docCount, info.info.sizeInBytes(), true, -1));
+          IOContext context = new IOContext(new MergeInfo(info.info.getDocCount(), info.info.sizeInBytes(), true, -1));
           
           infos.add(copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied, context, copiedFiles));
         }
@@ -2285,7 +2285,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // abortable so that IW.close(false) is able to stop it
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
 
-      SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, 0,
+      SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, -1,
                                          -1, mergedName, false, null, false,
                                          codec, null, null);
 
@@ -2299,8 +2299,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       MergeState mergeState = merger.merge();                // merge 'em
 
-      // nocommit use setter and make this a SetOnce:
-      info.docCount = mergeState.mergedDocCount;
+      info.setDocCount(mergeState.mergedDocCount);
 
       SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, 0, -1L);
 
@@ -2399,7 +2398,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
 
     // Same SI as before but we change directory, name and docStoreSegment:
-    SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.docCount, info.info.getDocStoreOffset(),
+    SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(), info.info.getDocStoreOffset(),
                                           newDsName, info.info.getDocStoreIsCompoundFile(), info.info.getNormGen(), info.info.getUseCompoundFile(),
                                           info.info.getCodec(), info.info.getDiagnostics(), info.info.attributes());
     SegmentInfoPerCommit newInfoPerCommit = new SegmentInfoPerCommit(newInfo, info.getDelCount(), info.getDelGen());
@@ -2896,7 +2895,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     for(int i=0; i < sourceSegments.size(); i++) {
       SegmentInfoPerCommit info = sourceSegments.get(i);
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
-      final int docCount = info.info.docCount;
+      final int docCount = info.info.getDocCount();
       final Bits prevLiveDocs = merge.readerLiveDocs.get(i);
       final Bits currentLiveDocs;
       final ReadersAndLiveDocs rld = readerPool.get(info, false);
@@ -2944,7 +2943,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         } else {
-          docUpto += info.info.docCount - info.getDelCount() - rld.getPendingDeleteCount();
+          docUpto += info.info.getDocCount() - info.getDelCount() - rld.getPendingDeleteCount();
         }
       } else if (currentLiveDocs != null) {
         assert currentLiveDocs.length() == docCount;
@@ -2962,11 +2961,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
       } else {
         // No deletes before or after
-        docUpto += info.info.docCount;
+        docUpto += info.info.getDocCount();
       }
     }
 
-    assert docUpto == merge.info.info.docCount;
+    assert docUpto == merge.info.info.getDocCount();
 
     if (infoStream.isEnabled("IW")) {
       if (mergedDeletes == null) {
@@ -3015,7 +3014,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return false;
     }
 
-    final ReadersAndLiveDocs mergedDeletes =  merge.info.info.docCount == 0 ? null : commitMergedDeletes(merge);
+    final ReadersAndLiveDocs mergedDeletes =  merge.info.info.getDocCount() == 0 ? null : commitMergedDeletes(merge);
 
     assert mergedDeletes == null || mergedDeletes.getPendingDeleteCount() != 0;
 
@@ -3027,9 +3026,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     assert !segmentInfos.contains(merge.info);
 
     final boolean allDeleted = merge.segments.size() == 0 ||
-      merge.info.info.docCount == 0 ||
+      merge.info.info.getDocCount() == 0 ||
       (mergedDeletes != null &&
-       mergedDeletes.getPendingDeleteCount() == merge.info.info.docCount);
+       mergedDeletes.getPendingDeleteCount() == merge.info.info.getDocCount());
 
     if (infoStream.isEnabled("IW")) {
       if (allDeleted) {
@@ -3043,7 +3042,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // the new segment:
     assert merge.segments.size() > 0 || dropSegment;
 
-    assert merge.info.info.docCount != 0 || keepFullyDeletedSegments || dropSegment;
+    assert merge.info.info.getDocCount() != 0 || keepFullyDeletedSegments || dropSegment;
 
     segmentInfos.applyMergeChanges(merge, dropSegment);
 
@@ -3164,9 +3163,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "merge");
     }
-    if (merge.info != null) {
+    if (merge.info != null && !merge.isAborted()) {
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.info.docCount + " docs");
+        infoStream.message("IW", "merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.info.getDocCount() + " docs");
       }
     }
   }
@@ -3321,7 +3320,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     final String mergeSegmentName = newSegmentName();
-    SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, 0, -1, mergeSegmentName, false, null, false, codec, details, null);
+    SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, -1, -1, mergeSegmentName, false, null, false, codec, details, null);
     merge.info = new SegmentInfoPerCommit(si, 0, -1L);
 
     // Lock order: IW -> BD
@@ -3333,10 +3332,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     assert merge.estimatedMergeBytes == 0;
     for(SegmentInfoPerCommit info : merge.segments) {
-      if (info.info.docCount > 0) {
+      if (info.info.getDocCount() > 0) {
         final int delCount = numDeletedDocs(info);
-        assert delCount <= info.info.docCount;
-        final double delRatio = ((double) delCount)/info.info.docCount;
+        assert delCount <= info.info.getDocCount();
+        final double delRatio = ((double) delCount)/info.info.getDocCount();
         merge.estimatedMergeBytes += info.info.sizeInBytes() * (1.0 - delRatio);
       }
     }
@@ -3488,8 +3487,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
         merge.readerLiveDocs.add(liveDocs);
         merge.readers.add(reader);
-        assert delCount <= info.info.docCount: "delCount=" + delCount + " info.docCount=" + info.info.docCount + " rld.pendingDeleteCount=" + rld.getPendingDeleteCount() + " info.getDelCount()=" + info.getDelCount();
-        if (delCount < info.info.docCount) {
+        assert delCount <= info.info.getDocCount(): "delCount=" + delCount + " info.docCount=" + info.info.getDocCount() + " rld.pendingDeleteCount=" + rld.getPendingDeleteCount() + " info.getDelCount()=" + info.getDelCount();
+        if (delCount < info.info.getDocCount()) {
           merger.add(reader, liveDocs);
         }
         segUpto++;
@@ -3499,13 +3498,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // This is where all the work happens:
       MergeState mergeState = merger.merge();
-      merge.info.info.docCount = mergeState.mergedDocCount;
+      merge.info.info.setDocCount(mergeState.mergedDocCount);
       merge.info.info.setFiles(new HashSet<String>(dirWrapper.getCreatedFiles()));
 
       // Record which codec was used to write the segment
 
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.info.docCount + "; merged segment has " +
+        infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.info.getDocCount() + "; merged segment has " +
                            (mergeState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
                            (mergeState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
                            (mergeState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
@@ -3634,7 +3633,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
-    return merge.info.info.docCount;
+    return merge.info.info.getDocCount();
   }
 
   synchronized void addMergeException(MergePolicy.OneMerge merge) {

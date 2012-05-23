@@ -185,10 +185,10 @@ public abstract class LogMergePolicy extends MergePolicy {
   protected long sizeDocs(SegmentInfoPerCommit info) throws IOException {
     if (calibrateSizeByDeletes) {
       int delCount = writer.get().numDeletedDocs(info);
-      assert delCount <= info.info.docCount;
-      return (info.info.docCount - (long)delCount);
+      assert delCount <= info.info.getDocCount();
+      return (info.info.getDocCount() - (long)delCount);
     } else {
-      return info.info.docCount;
+      return info.info.getDocCount();
     }
   }
   
@@ -196,9 +196,9 @@ public abstract class LogMergePolicy extends MergePolicy {
     long byteSize = info.sizeInBytes();
     if (calibrateSizeByDeletes) {
       int delCount = writer.get().numDeletedDocs(info);
-      double delRatio = (info.info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.info.docCount));
+      double delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((float)delCount / (float)info.info.getDocCount()));
       assert delRatio <= 1.0;
-      return (info.info.docCount <= 0 ?  byteSize : (long)(byteSize * (1.0 - delRatio)));
+      return (info.info.getDocCount() <= 0 ?  byteSize : (long)(byteSize * (1.0 - delRatio)));
     } else {
       return byteSize;
     }

@@ -62,7 +62,7 @@ public final class SegmentReader extends AtomicReader {
         assert si.getDelCount() == 0;
         liveDocs = null;
       }
-      numDocs = si.info.docCount - si.getDelCount();
+      numDocs = si.info.getDocCount() - si.getDelCount();
       success = true;
     } finally {
       // With lock-less commits, it's entirely possible (and
@@ -82,7 +82,7 @@ public final class SegmentReader extends AtomicReader {
   SegmentReader(SegmentInfoPerCommit si, SegmentCoreReaders core, IOContext context) throws IOException {
     this(si, core,
          si.info.getCodec().liveDocsFormat().readLiveDocs(si.info.dir, si, context),
-         si.info.docCount - si.getDelCount());
+         si.info.getDocCount() - si.getDelCount());
   }
 
   // Create new SegmentReader sharing core from a previous
@@ -153,7 +153,7 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
-    return si.info.docCount;
+    return si.info.getDocCount();
   }
 
   /** @lucene.internal */
@@ -181,7 +181,7 @@ public final class SegmentReader extends AtomicReader {
   public String toString() {
     // SegmentInfo.toString takes dir and number of
     // *pending* deletions; so we reverse compute that here:
-    return si.toString(si.info.dir, si.info.docCount - numDocs - si.getDelCount());
+    return si.toString(si.info.dir, si.info.getDocCount() - numDocs - si.getDelCount());
   }
   
   /**

@@ -98,16 +98,16 @@ class ReadersAndLiveDocs {
     int count;
     if (liveDocs != null) {
       count = 0;
-      for(int docID=0;docID<info.info.docCount;docID++) {
+      for(int docID=0;docID<info.info.getDocCount();docID++) {
         if (liveDocs.get(docID)) {
           count++;
         }
       }
     } else {
-      count = info.info.docCount;
+      count = info.info.getDocCount();
     }
 
-    assert info.info.docCount - info.getDelCount() - pendingDeleteCount == count: "info.docCount=" + info.info.docCount + " info.getDelCount()=" + info.getDelCount() + " pendingDeleteCount=" + pendingDeleteCount + " count=" + count;
+    assert info.info.getDocCount() - info.getDelCount() - pendingDeleteCount == count: "info.docCount=" + info.info.getDocCount() + " info.getDelCount()=" + info.getDelCount() + " pendingDeleteCount=" + pendingDeleteCount + " count=" + count;
     return true;
   }
 
@@ -169,7 +169,7 @@ class ReadersAndLiveDocs {
   public synchronized boolean delete(int docID) {
     assert liveDocs != null;
     assert Thread.holdsLock(writer);
-    assert docID >= 0 && docID < liveDocs.length() : "out of bounds: docid=" + docID + " liveDocsLength=" + liveDocs.length() + " seg=" + info.info.name + " docCount=" + info.info.docCount;
+    assert docID >= 0 && docID < liveDocs.length() : "out of bounds: docid=" + docID + " liveDocsLength=" + liveDocs.length() + " seg=" + info.info.name + " docCount=" + info.info.getDocCount();
     assert !shared;
     final boolean didDelete = liveDocs.get(docID);
     if (didDelete) {
@@ -207,7 +207,7 @@ class ReadersAndLiveDocs {
     }
     shared = true;
     if (liveDocs != null) {
-      return new SegmentReader(reader.getSegmentInfo(), reader.core, liveDocs, info.info.docCount - info.getDelCount() - pendingDeleteCount);
+      return new SegmentReader(reader.getSegmentInfo(), reader.core, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
     } else {
       assert reader.getLiveDocs() == liveDocs;
       reader.incRef();
@@ -217,7 +217,7 @@ class ReadersAndLiveDocs {
 
   public synchronized void initWritableLiveDocs() throws IOException {
     assert Thread.holdsLock(writer);
-    assert info.info.docCount > 0;
+    assert info.info.getDocCount() > 0;
     //System.out.println("initWritableLivedocs seg=" + info + " liveDocs=" + liveDocs + " shared=" + shared);
     if (shared) {
       // Copy on write: this means we've cloned a
@@ -227,7 +227,7 @@ class ReadersAndLiveDocs {
       LiveDocsFormat liveDocsFormat = info.info.getCodec().liveDocsFormat();
       if (liveDocs == null) {
         //System.out.println("create BV seg=" + info);
-        liveDocs = liveDocsFormat.newLiveDocs(info.info.docCount);
+        liveDocs = liveDocsFormat.newLiveDocs(info.info.getDocCount());
       } else {
         liveDocs = liveDocsFormat.newLiveDocs(liveDocs);
       }
@@ -270,7 +270,7 @@ class ReadersAndLiveDocs {
     //System.out.println("rld.writeLiveDocs seg=" + info + " pendingDelCount=" + pendingDeleteCount);
     if (pendingDeleteCount != 0) {
       // We have new deletes
-      assert liveDocs.length() == info.info.docCount;
+      assert liveDocs.length() == info.info.getDocCount();
 
       // We can write directly to the actual name (vs to a
       // .tmp & renaming it) because the file is not live

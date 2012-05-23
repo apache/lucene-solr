@@ -42,7 +42,7 @@ public final class SegmentInfo {
   public static final int YES = 1;          // e.g. have norms; have deletes;
 
   public final String name;				  // unique name in dir
-  public int docCount;				  // number of docs in seg
+  private int docCount;				  // number of docs in seg
   public final Directory dir;				  // where segment resides
 
   /*
@@ -201,6 +201,21 @@ public final class SegmentInfo {
 
   public Codec getCodec() {
     return codec;
+  }
+
+  public int getDocCount() {
+    if (this.docCount == -1) {
+      throw new IllegalStateException("docCount isn't set yet");
+    }
+    return docCount;
+  }
+
+  // NOTE: leave package private
+  void setDocCount(int docCount) {
+    if (this.docCount != -1) {
+      throw new IllegalStateException("docCount was already set");
+    }
+    this.docCount = docCount;
   }
 
   /*

@@ -88,7 +88,7 @@ public abstract class MergePolicy implements java.io.Closeable {
       this.segments = new ArrayList<SegmentInfoPerCommit>(segments);
       int count = 0;
       for(SegmentInfoPerCommit info : segments) {
-        count += info.info.docCount;
+        count += info.info.getDocCount();
       }
       totalDocCount = count;
     }
@@ -186,7 +186,7 @@ public abstract class MergePolicy implements java.io.Closeable {
     public int totalNumDocs() throws IOException {
       int total = 0;
       for (SegmentInfoPerCommit info : segments) {
-        total += info.info.docCount;
+        total += info.info.getDocCount();
       }
       return total;
     }
