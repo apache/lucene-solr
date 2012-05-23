@@ -27,6 +27,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.ConjunctionTermScorer.DocsAndFreqs;
+import org.apache.lucene.search.TermQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.TermQuery.TermWeight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
@@ -375,10 +376,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           // and fallback to full match-only scorer:
           return createMatchOnlyConjunctionTermScorer(context, acceptDocs);
         }
-
-        docsAndFreqs[i] = new DocsAndFreqs(docsAndFreqsEnum,
-                                           docsAndFreqsEnum,
-                                           termsEnum.docFreq(), docScorer);
+        TermDocsEnumFactory factory = new TermDocsEnumFactory(termsEnum, docsAndFreqsEnum, docsAndFreqsEnum, acceptDocs);
+        docsAndFreqs[i] = new DocsAndFreqs(termsEnum.docFreq(), docScorer, factory);
       }
       return new ConjunctionTermScorer(this, disableCoord ? 1.0f : coord(
           docsAndFreqs.length, docsAndFreqs.length), docsAndFreqs);
@@ -395,9 +394,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           return null;
         }
         final ExactSimScorer docScorer = weight.createDocScorer(context);
-        docsAndFreqs[i] = new DocsAndFreqs(null,
-                                           termsEnum.docs(acceptDocs, null, false),
-                                           termsEnum.docFreq(), docScorer);
+        TermDocsEnumFactory factory = new TermDocsEnumFactory(termsEnum, termsEnum.docs(acceptDocs, null, false), null, acceptDocs);
+        docsAndFreqs[i] = new DocsAndFreqs(termsEnum.docFreq(), docScorer, factory);
       }
 
       return new MatchOnlyConjunctionTermScorer(this, disableCoord ? 1.0f : coord(

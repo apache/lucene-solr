@@ -48,7 +48,7 @@ final class TermScorer extends Scorer {
   TermScorer(Weight weight, TermDocsEnumFactory factory, Similarity.ExactSimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
-    this.docsEnum = factory.docsEnum();
+    this.docsEnum = factory.docsAndFreqsEnum();
     this.factory = factory;
   }
 
@@ -100,7 +100,7 @@ final class TermScorer extends Scorer {
   public PositionIntervalIterator positions() throws IOException {
     boolean doPayloads = false; // nocommit - we need to pass this info somehow
     boolean doOffsets = false;
-    return new TermPositions(this, factory.docsAndPositionsEnum(doOffsets), false);
+    return new TermPositions(this, factory.docsAndPositionsEnum(doOffsets), doPayloads);
   }
 
  static final class TermPositions extends PositionIntervalIterator {

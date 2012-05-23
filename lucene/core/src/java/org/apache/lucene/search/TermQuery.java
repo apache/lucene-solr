@@ -94,7 +94,7 @@ public class TermQuery extends Query {
       }
       DocsEnum docs = termsEnum.docs(acceptDocs, null, true);
       if (docs != null) {
-        return new TermScorer(this, new TermDocsEnumFactory(termsEnum, docs, acceptDocs), createDocScorer(context));
+        return new TermScorer(this, new TermDocsEnumFactory(termsEnum, docs, docs, acceptDocs), createDocScorer(context));
       } else {
         // Index does not store freq info
         docs = termsEnum.docs(acceptDocs, null, false);
@@ -251,11 +251,13 @@ public class TermQuery extends Query {
     private final TermsEnum termsEnum;
     private final Bits liveDocs;
     private final DocsEnum docs;
+    private final DocsEnum docsAndFreqs;
     
-    TermDocsEnumFactory(TermsEnum termsEnum, DocsEnum docs, Bits liveDocs) {
+    TermDocsEnumFactory(TermsEnum termsEnum, DocsEnum docs, DocsEnum docsAndFreqs, Bits liveDocs) {
       this.termsEnum = termsEnum;
       this.liveDocs = liveDocs;
       this.docs = docs;
+      this.docsAndFreqs = docsAndFreqs;
     }
     
     public DocsEnum docsEnum() throws IOException {
@@ -264,6 +266,10 @@ public class TermQuery extends Query {
     
     public DocsAndPositionsEnum docsAndPositionsEnum(boolean offsets) throws IOException {
       return termsEnum.docsAndPositions(liveDocs, null, offsets);
+    }
+
+    public DocsEnum docsAndFreqsEnum() throws IOException{
+      return docsAndFreqs;
     }
   }
 }

@@ -21,10 +21,13 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.TermQuery.TermDocsEnumFactory;
+import org.apache.lucene.search.TermScorer.TermPositions;
 import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
 import org.apache.lucene.util.ArrayUtil;
+
 
 /** Scorer for conjunctions, sets of terms, all of which are required. */
 class ConjunctionTermScorer extends Scorer {
@@ -32,12 +35,15 @@ class ConjunctionTermScorer extends Scorer {
   protected int lastDoc = -1;
   protected final DocsAndFreqs[] docsAndFreqs;
   private final DocsAndFreqs lead;
+  private DocsAndFreqs[] origDocsAndFreqs;
 
   ConjunctionTermScorer(Weight weight, float coord,
       DocsAndFreqs[] docsAndFreqs) throws IOException {
     super(weight);
     this.coord = coord;
     this.docsAndFreqs = docsAndFreqs;
+    this.origDocsAndFreqs = new DocsAndFreqs[docsAndFreqs.length];
+    System.arraycopy(docsAndFreqs, 0,origDocsAndFreqs, 0, docsAndFreqs.length);
     // Sort the array the first time to allow the least frequent DocsEnum to
     // lead the matching.
     ArrayUtil.mergeSort(docsAndFreqs, new Comparator<DocsAndFreqs>() {
@@ -104,24 +110,26 @@ class ConjunctionTermScorer extends Scorer {
     final int docFreq;
     final ExactSimScorer docScorer;
     int doc = -1;
+    private final TermDocsEnumFactory factory;
 
-    DocsAndFreqs(DocsEnum docsAndFreqs, DocsEnum docs, int docFreq, ExactSimScorer docScorer) {
-      this.docsAndFreqs = docsAndFreqs;
-      this.docs = docs;
+    DocsAndFreqs( int docFreq, ExactSimScorer docScorer, TermDocsEnumFactory factory) throws IOException {
+      this.docsAndFreqs = factory.docsAndFreqsEnum();
+      this.docs = factory.docsEnum();
       this.docFreq = docFreq;
       this.docScorer = docScorer;
+      this.factory = factory;
     }
   }
 
   @Override
   public PositionIntervalIterator positions() throws IOException {
-    throw new UnsupportedOperationException();
-    // nocommit cut over to Docs&Pos Iter factories etc.
-//    if (scorersOrdered == null) {
-//      throw new IllegalStateException("no positions requested for this scorer");
-//    }
-//      // only created if needed for this scorer - no penalty for non-positional queries
-//    return new ConjunctionPositionIterator(this, scorersOrdered);
+    TermPositions[] positionIters = new TermPositions[origDocsAndFreqs.length];
+    for (int i = 0; i < positionIters.length; i++) {
+      DocsAndFreqs d = origDocsAndFreqs[i];
+      // nocommit - offsets ? payloads ?
+      positionIters[i] = new TermPositions(this, d.factory.docsAndPositionsEnum(false), false);
+    }
+    return new ConjunctionPositionIterator(this, positionIters);
   }
 
 }
