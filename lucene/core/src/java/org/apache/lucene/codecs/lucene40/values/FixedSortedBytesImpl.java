@@ -49,7 +49,8 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 class FixedSortedBytesImpl {
 
-  static final String CODEC_NAME = "FixedSortedBytes";
+  static final String CODEC_NAME_IDX = "FixedSortedBytesIdx";
+  static final String CODEC_NAME_DAT = "FixedSortedBytesDat";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
@@ -58,7 +59,7 @@ class FixedSortedBytesImpl {
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         Counter bytesUsed, IOContext context, boolean fasterButMoreRam) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam, Type.BYTES_FIXED_SORTED);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam, Type.BYTES_FIXED_SORTED);
       this.comp = comp;
     }
 
@@ -127,7 +128,7 @@ class FixedSortedBytesImpl {
 
     public Reader(Directory dir, String id, int maxDoc, IOContext context,
         Type type, Comparator<BytesRef> comparator) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context, type);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_START, true, context, type);
       size = datIn.readInt();
       valueCount = idxIn.readInt();
       this.comparator = comparator;

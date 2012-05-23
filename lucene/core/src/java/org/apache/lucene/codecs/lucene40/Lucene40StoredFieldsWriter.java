@@ -35,6 +35,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 /** 
@@ -63,16 +64,14 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   // currently unused: static final int FIELD_IS_NUMERIC_SHORT = 5 << _NUMERIC_BIT_SHIFT;
   // currently unused: static final int FIELD_IS_NUMERIC_BYTE = 6 << _NUMERIC_BIT_SHIFT;
 
-  // (Happens to be the same as for now) Lucene 3.2: NumericFields are stored in binary format
-  static final int FORMAT_LUCENE_3_2_NUMERIC_FIELDS = 3;
+  static final String CODEC_NAME_IDX = "Lucene40StoredFieldsIndex";
+  static final String CODEC_NAME_DAT = "Lucene40StoredFieldsData";
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
+  static final long HEADER_LENGTH_IDX = CodecUtil.headerLength(CODEC_NAME_IDX);
+  static final long HEADER_LENGTH_DAT = CodecUtil.headerLength(CODEC_NAME_DAT);
 
-  // NOTE: if you introduce a new format, make it 1 higher
-  // than the current one, and always change this if you
-  // switch to a new format!
-  static final int FORMAT_CURRENT = FORMAT_LUCENE_3_2_NUMERIC_FIELDS;
 
-  // when removing support for old versions, leave the last supported version here
-  static final int FORMAT_MINIMUM = FORMAT_LUCENE_3_2_NUMERIC_FIELDS;
 
   /** Extension of stored fields file */
   public static final String FIELDS_EXTENSION = "fdt";
@@ -95,9 +94,10 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
       indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION), context);
 
-      fieldsStream.writeInt(FORMAT_CURRENT);
-      indexStream.writeInt(FORMAT_CURRENT);
-
+      CodecUtil.writeHeader(fieldsStream, CODEC_NAME_DAT, VERSION_CURRENT);
+      CodecUtil.writeHeader(indexStream, CODEC_NAME_IDX, VERSION_CURRENT);
+      assert HEADER_LENGTH_DAT == fieldsStream.getFilePointer();
+      assert HEADER_LENGTH_IDX == indexStream.getFilePointer();
       success = true;
     } finally {
       if (!success) {
@@ -210,7 +210,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
 
   @Override
   public void finish(FieldInfos fis, int numDocs) throws IOException {
-    if (4+((long) numDocs)*8 != indexStream.getFilePointer())
+    if (HEADER_LENGTH_IDX+((long) numDocs)*8 != indexStream.getFilePointer())
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and
       // throw an exception to prevent the corruption from

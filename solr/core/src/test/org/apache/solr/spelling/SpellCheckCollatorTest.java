@@ -40,7 +40,7 @@ import org.junit.Test;
 public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 	@BeforeClass
 	public static void beforeClass() throws Exception {
-		initCore("solrconfig.xml", "schema.xml");
+ 		initCore("solrconfig-spellcheckcomponent.xml", "schema.xml");
 		assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "faith hope and love")));
 		assertNull(h.validateUpdate(adoc("id", "1", "lowerfilt", "faith hope and loaves")));
 		assertNull(h.validateUpdate(adoc("id", "2", "lowerfilt", "fat hops and loaves")));
@@ -48,6 +48,12 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		assertNull(h.validateUpdate(adoc("id", "4", "lowerfilt", "fat of homer")));
 		assertNull(h.validateUpdate(adoc("id", "5", "lowerfilt1", "peace")));
 		assertNull(h.validateUpdate(adoc("id", "6", "lowerfilt", "hyphenated word")));
+ 		assertNull(h.validateUpdate(adoc("id", "7", "teststop", "Jane filled out a form at Charles De Gaulle")));
+ 		assertNull(h.validateUpdate(adoc("id", "8", "teststop", "Dick flew from Heathrow")));
+ 		assertNull(h.validateUpdate(adoc("id", "9", "teststop", "Jane is stuck in customs because Spot chewed up the form")));
+ 		assertNull(h.validateUpdate(adoc("id", "10", "teststop", "Once in Paris Dick built a fire on the hearth")));
+ 		assertNull(h.validateUpdate(adoc("id", "11", "teststop", "Dick waited for Jane as he watched the sparks flow upward")));
+ 		assertNull(h.validateUpdate(adoc("id", "12", "teststop", "This June parisian rendez-vous is ruined because of a customs snafu")));
 		assertNull(h.validateUpdate(commit()));
 	}
 
@@ -323,5 +329,63 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		NamedList suggestions = (NamedList) spellCheck.get("suggestions");
 		List<String> collations = suggestions.getAll("collation");
 		assertTrue(collations.size() == 1);
+	}
+	
+	@Test
+	public void testContextSensitiveCollate() throws Exception {
+		//                     DirectSolrSpellChecker   IndexBasedSpellChecker
+		String[] dictionary = {"direct",                "default_teststop" };
+		for(int i=0 ; i<1 ; i++) {		
+			assertQ(
+				req(
+					"q", "teststop:(flew AND form AND heathrow)", 
+					"qt", "spellCheckCompRH",
+					"indent", "true",
+					SpellCheckComponent.COMPONENT_NAME, "true",
+					SpellCheckComponent.SPELLCHECK_DICT, dictionary[i],
+					SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", 
+					SpellCheckComponent.SPELLCHECK_COUNT, "10",
+					SpellCheckComponent.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "5",
+					SpellCheckComponent.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "0",
+					SpellCheckComponent.SPELLCHECK_COLLATE, "true",
+					SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10",
+					SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1",
+					SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true"
+				),
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='flew']/arr[@name='suggestion']/lst/str[@name='word']='flow'",
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='form']/arr[@name='suggestion']/lst/str[@name='word']='from'",
+/* DirectSolrSpellChecker won't suggest if the edit distance > 2, so we can't test for this one...
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='heathrow']/arr[@name='suggestion']/lst/str[@name='word']='hearth'",
+*/
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/bool[@name='correctlySpelled']='false'",
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:(flew AND from AND heathrow)'",
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=1",
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='form']='from'"		
+			);
+			
+			assertQ(
+				req(
+					"q", "teststop:(june AND customs)", 
+					"qt", "spellCheckCompRH",
+					"indent", "true",
+					SpellCheckComponent.COMPONENT_NAME, "true",
+					SpellCheckComponent.SPELLCHECK_DICT, dictionary[i],
+					SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", 
+					SpellCheckComponent.SPELLCHECK_COUNT, "10",
+					SpellCheckComponent.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "5",
+					SpellCheckComponent.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "1",
+					SpellCheckComponent.SPELLCHECK_COLLATE, "true",
+					SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10",
+					SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1",
+					SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true"
+				),
+				"//result[@numFound=1]",
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='june']/arr[@name='suggestion']/lst/str[@name='word']='jane'",
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/bool[@name='correctlySpelled']='false'",
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:(jane AND customs)'",
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=1",
+				"//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='june']='jane'"
+			);
+		}				
 	}
 }

@@ -153,7 +153,6 @@ public final class DefaultSolrCoreState extends SolrCoreState {
     synchronized (recoveryLock) {
       if (recoveryStrat != null) {
         recoveryStrat.close();
-        
         try {
           recoveryStrat.join();
         } catch (InterruptedException e) {

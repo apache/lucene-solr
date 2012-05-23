@@ -233,7 +233,7 @@ public class PeerSync  {
       }
 
       // let's merge the lists
-      List<Long> newList = new ArrayList(ourUpdates);
+      List<Long> newList = new ArrayList<Long>(ourUpdates);
       for (Long ver : startingVersions) {
         if (Math.abs(ver) < smallestNewUpdate) {
           newList.add(ver);
@@ -457,8 +457,8 @@ public class PeerSync  {
         if (debug) {
           log.debug(msg() + "raw update record " + o);
         }
-        
-        int oper = (Integer)entry.get(0);
+
+        int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
         long version = (Long) entry.get(1);
         if (version == lastVersion && version != 0) continue;
         lastVersion = version;

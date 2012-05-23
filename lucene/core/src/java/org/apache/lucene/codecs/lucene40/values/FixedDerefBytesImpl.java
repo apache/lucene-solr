@@ -39,14 +39,16 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 class FixedDerefBytesImpl {
 
-  static final String CODEC_NAME = "FixedDerefBytes";
+  static final String CODEC_NAME_IDX = "FixedDerefBytesIdx";
+  static final String CODEC_NAME_DAT = "FixedDerefBytesDat";
+
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
   public static class Writer extends DerefBytesWriterBase {
     public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, Type.BYTES_FIXED_DEREF);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, Type.BYTES_FIXED_DEREF);
     }
 
     @Override
@@ -71,7 +73,7 @@ class FixedDerefBytesImpl {
     private final int size;
     private final int numValuesStored;
     FixedDerefReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context, Type.BYTES_FIXED_DEREF);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_START, true, context, Type.BYTES_FIXED_DEREF);
       size = datIn.readInt();
       numValuesStored = idxIn.readInt();
     }

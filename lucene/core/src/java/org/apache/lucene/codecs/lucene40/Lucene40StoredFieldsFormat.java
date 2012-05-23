@@ -28,6 +28,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.CodecUtil;
 
 /** 
  * Lucene 4.0 Stored Fields Format.
@@ -42,7 +43,8 @@ import org.apache.lucene.store.IOContext;
  * <p>This contains, for each document, a pointer to its field data, as
  * follows:</p>
  * <ul>
- * <li>FieldIndex (.fdx) --&gt; &lt;FieldValuesPosition&gt; <sup>SegSize</sup></li>
+ * <li>FieldIndex (.fdx) --&gt; &lt;Header&gt;, &lt;FieldValuesPosition&gt; <sup>SegSize</sup></li>
+ * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  * <li>FieldValuesPosition --&gt; {@link DataOutput#writeLong Uint64}</li>
  * </ul>
  * </li>
@@ -50,7 +52,8 @@ import org.apache.lucene.store.IOContext;
  * <p><a name="field_data" id="field_data"></a>The field data, or <tt>.fdt</tt> file.</p>
  * <p>This contains the stored fields of each document, as follows:</p>
  * <ul>
- * <li>FieldData (.fdt) --&gt; &lt;DocFieldData&gt; <sup>SegSize</sup></li>
+ * <li>FieldData (.fdt) --&gt; &lt;Header&gt;, &lt;DocFieldData&gt; <sup>SegSize</sup></li>
+ * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  * <li>DocFieldData --&gt; FieldCount, &lt;FieldNum, Bits, Value&gt;
  * <sup>FieldCount</sup></li>
  * <li>FieldCount --&gt; {@link DataOutput#writeVInt VInt}</li>

@@ -829,6 +829,7 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   public static Field newField(Random random, String name, String value, FieldType type) {
+    name = new String(name);
     if (usually(random) || !type.indexed()) {
       // most of the time, don't modify the params
       return new Field(name, value, type);

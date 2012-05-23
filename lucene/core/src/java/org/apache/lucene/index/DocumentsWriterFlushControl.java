@@ -190,10 +190,13 @@ final class DocumentsWriterFlushControl implements MemoryController {
       Long bytes = flushingWriters.remove(dwpt);
       flushBytes -= bytes.longValue();
       perThreadPool.recycle(dwpt);
-      stallControl.updateStalled(this);
       assert assertMemory();
     } finally {
-      notifyAll();
+      try {
+        stallControl.updateStalled(this);
+      } finally {
+        notifyAll();
+      }
     }
   }
   

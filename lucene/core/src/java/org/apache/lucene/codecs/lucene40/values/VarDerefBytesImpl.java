@@ -41,7 +41,9 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 class VarDerefBytesImpl {
 
-  static final String CODEC_NAME = "VarDerefBytes";
+  static final String CODEC_NAME_IDX = "VarDerefBytesIdx";
+  static final String CODEC_NAME_DAT = "VarDerefBytesDat";
+
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
@@ -57,7 +59,7 @@ class VarDerefBytesImpl {
   static class Writer extends DerefBytesWriterBase {
     public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, Type.BYTES_VAR_DEREF);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, Type.BYTES_VAR_DEREF);
       size = 0;
     }
     
@@ -93,7 +95,7 @@ class VarDerefBytesImpl {
   public static class VarDerefReader extends BytesReaderBase {
     private final long totalBytes;
     VarDerefReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context, Type.BYTES_VAR_DEREF);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_START, true, context, Type.BYTES_VAR_DEREF);
       totalBytes = idxIn.readLong();
     }
 

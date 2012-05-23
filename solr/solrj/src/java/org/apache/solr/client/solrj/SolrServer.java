@@ -179,6 +179,17 @@ public abstract class SolrServer implements Serializable
     return new UpdateRequest().setAction( UpdateRequest.ACTION.COMMIT, waitFlush, waitSearcher ).process( this );
   }
 
+  /**
+   * Performs an explicit commit, causing pending documents to be committed for indexing
+   * @param waitFlush  block until index changes are flushed to disk
+   * @param waitSearcher  block until a new searcher is opened and registered as the main query searcher, making the changes visible
+   * @throws SolrServerException
+   * @throws IOException
+   */
+  public UpdateResponse commit( boolean waitFlush, boolean waitSearcher, boolean softCommit ) throws SolrServerException, IOException {
+    return new UpdateRequest().setAction( UpdateRequest.ACTION.COMMIT, waitFlush, waitSearcher, softCommit ).process( this );
+  }
+
   /** 
    * Performs an explicit optimize, causing a merge of all segments to one.
    * <p>

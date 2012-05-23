@@ -28,6 +28,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.CodecUtil;
 
 /**
  * Lucene 4.0 Term Vectors format.
@@ -38,10 +39,10 @@ import org.apache.lucene.store.IOContext;
  * <p>The Document Index or .tvx file.</p>
  * <p>For each document, this stores the offset into the document data (.tvd) and
  * field data (.tvf) files.</p>
- * <p>DocumentIndex (.tvx) --&gt; TVXVersion&lt;DocumentPosition,FieldPosition&gt;
+ * <p>DocumentIndex (.tvx) --&gt; Header,&lt;DocumentPosition,FieldPosition&gt;
  * <sup>NumDocs</sup></p>
  * <ul>
- *   <li>TVXVersion --&gt; {@link DataOutput#writeInt Int32} (<code>Lucene40TermVectorsReader.FORMAT_CURRENT</code>)</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>DocumentPosition --&gt; {@link DataOutput#writeLong UInt64} (offset in the .tvd file)</li>
  *   <li>FieldPosition --&gt; {@link DataOutput#writeLong UInt64} (offset in the .tvf file)</li>
  * </ul>
@@ -53,10 +54,10 @@ import org.apache.lucene.store.IOContext;
  * in the .tvf (Term Vector Fields) file.</p>
  * <p>The .tvd file is used to map out the fields that have term vectors stored
  * and where the field information is in the .tvf file.</p>
- * <p>Document (.tvd) --&gt; TVDVersion&lt;NumFields, FieldNums,
+ * <p>Document (.tvd) --&gt; Header,&lt;NumFields, FieldNums,
  * FieldPositions&gt; <sup>NumDocs</sup></p>
  * <ul>
- *   <li>TVDVersion --&gt; {@link DataOutput#writeInt Int32} (<code>Lucene40TermVectorsReader.FORMAT_CURRENT</code>)</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>NumFields --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>FieldNums --&gt; &lt;FieldNumDelta&gt; <sup>NumFields</sup></li>
  *   <li>FieldNumDelta --&gt; {@link DataOutput#writeVInt VInt}</li>
@@ -69,10 +70,10 @@ import org.apache.lucene.store.IOContext;
  * <p>This file contains, for each field that has a term vector stored, a list of
  * the terms, their frequencies and, optionally, position and offset
  * information.</p>
- * <p>Field (.tvf) --&gt; TVFVersion&lt;NumTerms, Position/Offset, TermFreqs&gt;
+ * <p>Field (.tvf) --&gt; Header,&lt;NumTerms, Position/Offset, TermFreqs&gt;
  * <sup>NumFields</sup></p>
  * <ul>
- *   <li>TVFVersion --&gt; {@link DataOutput#writeInt Int32} (<code>Lucene40TermVectorsReader.FORMAT_CURRENT</code>)</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>NumTerms --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>Position/Offset --&gt; {@link DataOutput#writeByte Byte}</li>
  *   <li>TermFreqs --&gt; &lt;TermText, TermFreq, Positions?, Offsets?&gt;

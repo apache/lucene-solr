@@ -100,9 +100,19 @@ final class DocumentsWriterStallControl {
    */
   void updateStalled(MemoryController controller) {
     do {
-      // if we have more flushing / blocked DWPT than numActiveDWPT we stall!
-      // don't stall if we have queued flushes - threads should be hijacked instead
-      while (controller.netBytes() > controller.stallLimitBytes()) {
+      final long netBytes = controller.netBytes();
+      final long flushBytes = controller.flushBytes();
+      final long limit = controller.stallLimitBytes();
+      assert netBytes >= flushBytes;
+      assert limit > 0;
+      /*
+       * we block indexing threads if net byte grows due to slow flushes
+       * yet, for small ram buffers and large documents we can easily
+       * reach the limit without any ongoing flushes. we need to ensure
+       * that we don't stall/block if an ongoing or pending flush can 
+       * not free up enough memory to release the stall lock.
+       */
+      while (netBytes > limit && (netBytes - flushBytes) < limit) {
         if (sync.trySetStalled()) {
           assert wasStalled = true;
           return;
@@ -125,6 +135,7 @@ final class DocumentsWriterStallControl {
   
   static interface MemoryController {
     long netBytes();
+    long flushBytes();
     long stallLimitBytes();
   }
 }

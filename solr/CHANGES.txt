@@ -302,6 +302,13 @@ New Features
   choose the correct ContentStreamLoader based on Content-Type header.  This
   also deprecates the existing [Xml,JSON,CSV,Binary,Xslt]UpdateRequestHandler.
   (ryan)
+  
+* SOLR-2585: Context-Sensitive Spelling Suggestions & Collations.  This adds support
+  for the "spellcheck.alternativeTermCount" & "spellcheck.maxResultsForSuggest" 
+  parameters, letting users receive suggestions even when all the queried terms 
+  exist in the dictionary.  This differs from "spellcheck.onlyMorePopular" in
+  that the suggestions need not consist entirely of terms with a greater document
+  frequency than the queried terms. (James Dyer)
 
 
 Optimizations

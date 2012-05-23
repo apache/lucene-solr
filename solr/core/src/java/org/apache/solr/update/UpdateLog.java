@@ -64,6 +64,12 @@ public class UpdateLog implements PluginInfoInitialized {
   public static final int DELETE = 0x02;
   public static final int DELETE_BY_QUERY = 0x03;
   public static final int COMMIT = 0x04;
+  // Flag indicating that this is a buffered operation, and that a gap exists before buffering started.
+  // for example, if full index replication starts and we are buffering updates, then this flag should
+  // be set to indicate that replaying the log would not bring us into sync (i.e. peersync should
+  // fail if this flag is set on the last update in the tlog).
+  public static final int FLAG_GAP = 0x10;
+  public static final int OPERATION_MASK = 0x0f;  // mask off flags to get the operation
 
   public static class RecoveryInfo {
     public long positionOfStart;
@@ -81,6 +87,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   long id = -1;
   private State state = State.ACTIVE;
+  private int operationFlags;  // flags to write in the transaction log with operations (i.e. FLAG_GAP)
 
   private TransactionLog tlog;
   private TransactionLog prevTlog;
@@ -117,7 +124,7 @@ public class UpdateLog implements PluginInfoInitialized {
   private volatile UpdateHandler uhandler;    // a core reload can change this reference!
   private volatile boolean cancelApplyBufferUpdate;
   List<Long> startingVersions;
-
+  int startingOperation;  // last operation in the logs on startup
 
   public static class LogPtr {
     final long pointer;
@@ -188,16 +195,18 @@ public class UpdateLog implements PluginInfoInitialized {
     versionInfo = new VersionInfo(uhandler, 256);
 
     // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
-    UpdateLog.RecentUpdates startingRecentUpdates = getRecentUpdates();
+    UpdateLog.RecentUpdates startingUpdates = getRecentUpdates();
     try {
-      startingVersions = startingRecentUpdates.getVersions(numRecordsToKeep);
+      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
+      startingOperation = startingUpdates.getLatestOperation();
+
       // populate recent deletes list (since we can't get that info from the index)
-      for (int i=startingRecentUpdates.deleteList.size()-1; i>=0; i--) {
-        DeleteUpdate du = startingRecentUpdates.deleteList.get(i);
+      for (int i=startingUpdates.deleteList.size()-1; i>=0; i--) {
+        DeleteUpdate du = startingUpdates.deleteList.get(i);
         oldDeletes.put(new BytesRef(du.id), new LogPtr(-1,du.version));
       }
     } finally {
-      startingRecentUpdates.close();
+      startingUpdates.close();
     }
 
   }
@@ -208,6 +217,10 @@ public class UpdateLog implements PluginInfoInitialized {
   
   public List<Long> getStartingVersions() {
     return startingVersions;
+  }
+
+  public int getStartingOperation() {
+    return startingOperation;
   }
 
   /* Takes over ownership of the log, keeping it until no longer needed
@@ -275,7 +288,7 @@ public class UpdateLog implements PluginInfoInitialized {
       // don't log if we are replaying from another log
       if ((cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
         ensureLog();
-        pos = tlog.write(cmd);
+        pos = tlog.write(cmd, operationFlags);
       }
 
       // TODO: in the future we could support a real position for a REPLAY update.
@@ -302,7 +315,7 @@ public class UpdateLog implements PluginInfoInitialized {
       // don't log if we are replaying from another log
       if ((cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
         ensureLog();
-        pos = tlog.writeDelete(cmd);
+        pos = tlog.writeDelete(cmd, operationFlags);
       }
 
       LogPtr ptr = new LogPtr(pos, cmd.version);
@@ -326,7 +339,7 @@ public class UpdateLog implements PluginInfoInitialized {
       // don't log if we are replaying from another log
       if ((cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
         ensureLog();
-        pos = tlog.writeDeleteByQuery(cmd);
+        pos = tlog.writeDeleteByQuery(cmd, operationFlags);
       }
 
       // only change our caches if we are not buffering
@@ -417,7 +430,7 @@ public class UpdateLog implements PluginInfoInitialized {
       if (prevTlog != null) {
         // if we made it through the commit, write a commit command to the log
         // TODO: check that this works to cap a tlog we were using to buffer so we don't replay on startup.
-        prevTlog.writeCommit(cmd);
+        prevTlog.writeCommit(cmd, operationFlags);
 
         addOldLog(prevTlog, true);
         // the old log list will decref when no longer needed
@@ -630,7 +643,7 @@ public class UpdateLog implements PluginInfoInitialized {
         // record a commit
         log.info("Recording current closed for " + uhandler.core + " log=" + theLog);
         CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams((SolrParams)null)), false);
-        theLog.writeCommit(cmd);
+        theLog.writeCommit(cmd, operationFlags);
       }
 
       theLog.deleteOnClose = false;
@@ -685,7 +698,7 @@ public class UpdateLog implements PluginInfoInitialized {
     HashMap<Long, Update> updates;
     List<Update> deleteByQueryList;
     List<DeleteUpdate> deleteList;
-
+    int latestOperation;
 
     public List<Long> getVersions(int n) {
       List<Long> ret = new ArrayList(n);
@@ -719,6 +732,10 @@ public class UpdateLog implements PluginInfoInitialized {
       return result;
     }
 
+    public int getLatestOperation() {
+      return latestOperation;
+    }
+
 
     private void update() {
       int numUpdates = 0;
@@ -743,7 +760,11 @@ public class UpdateLog implements PluginInfoInitialized {
               List entry = (List)o;
 
               // TODO: refactor this out so we get common error handling
-              int oper = (Integer)entry.get(0);
+              int opAndFlags = (Integer)entry.get(0);
+              if (latestOperation == 0) {
+                latestOperation = opAndFlags;
+              }
+              int oper = opAndFlags & UpdateLog.OPERATION_MASK;
               long version = (Long) entry.get(1);
 
               switch (oper) {
@@ -849,6 +870,9 @@ public class UpdateLog implements PluginInfoInitialized {
       }
 
       state = State.BUFFERING;
+
+      // currently, buffering is only called by recovery, meaning that there is most likely a gap in updates
+      operationFlags |= FLAG_GAP;
     } finally {
       versionInfo.unblockUpdates();
     }
@@ -872,6 +896,7 @@ public class UpdateLog implements PluginInfoInitialized {
       }
 
       state = State.ACTIVE;
+      operationFlags &= ~FLAG_GAP;
     } catch (IOException e) {
       SolrException.log(log,"Error attempting to roll back log", e);
       return false;
@@ -904,6 +929,7 @@ public class UpdateLog implements PluginInfoInitialized {
       }
       tlog.incref();
       state = State.APPLYING_BUFFERED;
+      operationFlags &= ~FLAG_GAP;
     } finally {
       versionInfo.unblockUpdates();
     }
@@ -1002,6 +1028,7 @@ public class UpdateLog implements PluginInfoInitialized {
         UpdateRequestProcessor proc = magicFac.getInstance(req, rsp, runFac.getInstance(req, rsp, null));
 
         long commitVersion = 0;
+        int operationAndFlags = 0;
 
         for(;;) {
           Object o = null;
@@ -1046,7 +1073,8 @@ public class UpdateLog implements PluginInfoInitialized {
             // should currently be a List<Oper,Ver,Doc/Id>
             List entry = (List)o;
 
-            int oper = (Integer)entry.get(0);
+            operationAndFlags = (Integer)entry.get(0);
+            int oper = operationAndFlags & OPERATION_MASK;
             long version = (Long) entry.get(1);
 
             switch (oper) {
@@ -1136,7 +1164,10 @@ public class UpdateLog implements PluginInfoInitialized {
         if (!activeLog) {
           // if we are replaying an old tlog file, we need to add a commit to the end
           // so we don't replay it again if we restart right after.
-          translog.writeCommit(cmd);
+
+          // if the last operation we replayed had FLAG_GAP set, we want to use that again so we don't lose it
+          // as the flag on the last operation.
+          translog.writeCommit(cmd, operationFlags | (operationAndFlags & ~OPERATION_MASK));
         }
 
         try {

@@ -36,8 +36,12 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
+
+import static org.apache.lucene.codecs.lucene40.Lucene40TermVectorsReader.*;
+
 
 // TODO: make a new 4.0 TV format that encodes better
 //   - use startOffset (not endOffset) as base for delta on
@@ -59,6 +63,8 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   private final Directory directory;
   private final String segment;
   private IndexOutput tvx = null, tvd = null, tvf = null;
+  
+ 
 
   public Lucene40TermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
@@ -67,11 +73,14 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     try {
       // Open files for TermVector storage
       tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_INDEX_EXTENSION), context);
-      tvx.writeInt(Lucene40TermVectorsReader.FORMAT_CURRENT);
+      CodecUtil.writeHeader(tvx, CODEC_NAME_INDEX, VERSION_CURRENT);
       tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_DOCUMENTS_EXTENSION), context);
-      tvd.writeInt(Lucene40TermVectorsReader.FORMAT_CURRENT);
+      CodecUtil.writeHeader(tvd, CODEC_NAME_DOCS, VERSION_CURRENT);
       tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_FIELDS_EXTENSION), context);
-      tvf.writeInt(Lucene40TermVectorsReader.FORMAT_CURRENT);
+      CodecUtil.writeHeader(tvf, CODEC_NAME_FIELDS, VERSION_CURRENT);
+      assert HEADER_LENGTH_INDEX == tvx.getFilePointer();
+      assert HEADER_LENGTH_DOCS == tvd.getFilePointer();
+      assert HEADER_LENGTH_FIELDS == tvf.getFilePointer();
       success = true;
     } finally {
       if (!success) {
@@ -253,10 +262,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
         TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReader();
 
         if (vectorsReader != null && vectorsReader instanceof Lucene40TermVectorsReader) {
-          // If the TV* files are an older format then they cannot read raw docs:
-          if (((Lucene40TermVectorsReader)vectorsReader).canReadRawDocs()) {
             matchingVectorsReader = (Lucene40TermVectorsReader) vectorsReader;
-          }
         }
       }
       if (reader.liveDocs != null) {
@@ -357,7 +363,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   
   @Override
   public void finish(FieldInfos fis, int numDocs) throws IOException {
-    if (4+((long) numDocs)*16 != tvx.getFilePointer())
+    if (HEADER_LENGTH_INDEX+((long) numDocs)*16 != tvx.getFilePointer())
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and
       // throw an exception to prevent the corruption from

@@ -92,6 +92,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   // make sure any threads stop retrying
   public void close() {
     close = true;
+    log.warn("Stopping recovery for core " + coreName + " zkNodeName=" + coreZkNodeName);
   }
 
   
@@ -99,9 +100,12 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
       final ZkController zkController, final String baseUrl,
       final String shardZkNodeName, final CoreDescriptor cd) {
     SolrException.log(log, "Recovery failed - I give up.");
-    zkController.publishAsRecoveryFailed(baseUrl, cd,
-        shardZkNodeName, core.getName());
-    close = true;
+    try {
+      zkController.publishAsRecoveryFailed(baseUrl, cd,
+          shardZkNodeName, core.getName());
+    } finally {
+      close();
+    }
   }
   
   private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops, String baseUrl)
@@ -134,7 +138,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
       
-      if (close) retries = INTERRUPTED; 
+      if (isClosed()) retries = INTERRUPTED;
       boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making sure force=true does not download files we already have
 
       if (!success) {
@@ -226,42 +230,50 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     }
 
 
-    List<Long> startingRecentVersions;
-    UpdateLog.RecentUpdates startingRecentUpdates = ulog.getRecentUpdates();
+    List<Long> recentVersions;
+    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
     try {
-      startingRecentVersions = startingRecentUpdates.getVersions(ulog.numRecordsToKeep);
+      recentVersions = recentUpdates.getVersions(ulog.numRecordsToKeep);
     } finally {
-      startingRecentUpdates.close();
+      recentUpdates.close();
     }
 
-    List<Long> reallyStartingVersions = ulog.getStartingVersions();
+    List<Long> startingVersions = ulog.getStartingVersions();
 
 
-    if (reallyStartingVersions != null && recoveringAfterStartup) {
+    if (startingVersions != null && recoveringAfterStartup) {
       int oldIdx = 0;  // index of the start of the old list in the current list
-      long firstStartingVersion = reallyStartingVersions.size() > 0 ? reallyStartingVersions.get(0) : 0;
+      long firstStartingVersion = startingVersions.size() > 0 ? startingVersions.get(0) : 0;
 
-      for (; oldIdx<startingRecentVersions.size(); oldIdx++) {
-        if (startingRecentVersions.get(oldIdx) == firstStartingVersion) break;
+      for (; oldIdx<recentVersions.size(); oldIdx++) {
+        if (recentVersions.get(oldIdx) == firstStartingVersion) break;
       }
 
       if (oldIdx > 0) {
         log.info("####### Found new versions added after startup: num=" + oldIdx);
-        log.info("###### currentVersions=" + startingRecentVersions);
+        log.info("###### currentVersions=" + recentVersions);
       }
 
-      log.info("###### startupVersions=" + reallyStartingVersions);
+      log.info("###### startupVersions=" + startingVersions);
     }
 
-    if (recoveringAfterStartup) {
-      // if we're recovering after startup (i.e. we have been down), then we need to know what the last versions were
-      // when we went down.
-      startingRecentVersions = reallyStartingVersions;
-    }
 
     boolean firstTime = true;
 
-    while (!successfulRecovery && !close && !isInterrupted()) { // don't use interruption or it will close channels though
+    if (recoveringAfterStartup) {
+      // if we're recovering after startup (i.e. we have been down), then we need to know what the last versions were
+      // when we went down.  We may have received updates since then.
+      recentVersions = startingVersions;
+
+      if ((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0) {
+        // last operation at the time of startup had the GAP flag set...
+        // this means we were previously doing a full index replication
+        // that probably didn't complete and buffering updates in the meantime.
+        firstTime = false;    // skip peersync
+      }
+    }
+
+    while (!successfulRecovery && !isClosed() && !isInterrupted()) { // don't use interruption or it will close channels though
       try {
         // first thing we just try to sync
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
@@ -287,7 +299,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           // + " i am:" + zkController.getNodeName());
           PeerSync peerSync = new PeerSync(core,
               Collections.singletonList(leaderUrl), ulog.numRecordsToKeep);
-          peerSync.setStartingVersions(startingRecentVersions);
+          peerSync.setStartingVersions(recentVersions);
           boolean syncSuccess = peerSync.sync();
           if (syncSuccess) {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
@@ -385,11 +397,15 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           }
 
         } catch (Exception e) {
-          SolrException.log(log, "", e);
+          log.error("", e);
         }
 
         try {
-          Thread.sleep(Math.min(START_TIMEOUT * retries, 60000));
+          // if (!isClosed()) Thread.sleep(Math.min(START_TIMEOUT * retries, 60000));
+          for (int i = 0; i<Math.min(retries, 600); i++) {
+            if (isClosed()) break; // check if someone closed us
+            Thread.sleep(START_TIMEOUT);
+          }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           log.warn("Recovery was interrupted", e);
