@@ -59,7 +59,7 @@ final class SegmentMerger {
   // NOT the same!!
   SegmentMerger(SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval,
                 MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider,
-                FieldInfos.FieldNumbers fieldNumbers, Codec codec, IOContext context) {
+                FieldInfos.FieldNumbers fieldNumbers, IOContext context) {
     mergeState.segmentInfo = segmentInfo;
     mergeState.infoStream = infoStream;
     mergeState.readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
@@ -67,7 +67,7 @@ final class SegmentMerger {
     mergeState.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     this.termIndexInterval = termIndexInterval;
-    this.codec = codec;
+    this.codec = segmentInfo.getCodec();
     this.context = context;
     this.fieldInfosBuilder = new FieldInfos.Builder(fieldNumbers);
   }
