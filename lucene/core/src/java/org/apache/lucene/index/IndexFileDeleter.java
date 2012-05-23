@@ -331,7 +331,6 @@ final class IndexFileDeleter {
 
     for(int i=0;i<files.length;i++) {
       String fileName = files[i];
-      // nocommit nuke this filtering
       if ((segmentName == null || fileName.startsWith(segmentPrefix1) || fileName.startsWith(segmentPrefix2)) &&
           !fileName.endsWith("write.lock") &&
           !refCounts.containsKey(fileName) &&

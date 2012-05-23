@@ -746,10 +746,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
-    // nocommit we can also pull the DV types of the
-    // fields... and catch DV type change on addDoc
-    // instead of much later in merge
-    //}
+    // TODO: we could also pull DV type of each field here,
+    // and use that to make sure new segment(s) don't change
+    // the type...
 
     return map;
   }
@@ -3553,7 +3552,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
         }
 
-        // nocommit why on earth do we suddenly set success back to false here!?
+        // So that, if we hit exc in deleteNewFiles (next)
+        // or in commitMerge (later), we close the
+        // per-segment readers in the finally clause below:
         success = false;
 
         synchronized(this) {
@@ -3573,6 +3574,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
 
         merge.info.info.setUseCompoundFile(true);
+      } else {
+        // So that, if we hit exc in commitMerge (later),
+        // we close the per-segment readers in the finally
+        // clause below:
+        success = false;
       }
 
       // Have codec write SegmentInfo.  Must do this after

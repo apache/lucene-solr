@@ -28,8 +28,6 @@ import org.apache.lucene.store.Directory;
  *
  *  @lucene.experimental */
 
-// nocommit this class feels alot like ReaderAndLiveDocs...?
-// like it carries mutable per-segment state....?
 public class SegmentInfoPerCommit {
 
   public final SegmentInfo info;
@@ -135,7 +133,6 @@ public class SegmentInfoPerCommit {
 
   @Override
   public SegmentInfoPerCommit clone() {
-    // nocommit ok?  SI is immutable!?
     return new SegmentInfoPerCommit(info, delCount, delGen);
   }
 }
