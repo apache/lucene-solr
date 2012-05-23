@@ -1,13 +1,5 @@
 package org.apache.lucene.codecs;
 
-import java.io.IOException;
-import java.util.Set;
-
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,7 +17,12 @@ import org.apache.lucene.store.IOContext;
  * limitations under the License.
  */
 
-// nocommit fix other formats to get SI/FIS too...
+import java.io.IOException;
+
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * Controls the format of stored fields
