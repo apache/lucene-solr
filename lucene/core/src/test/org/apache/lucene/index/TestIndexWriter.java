@@ -1528,13 +1528,6 @@ public class TestIndexWriter extends LuceneTestCase {
     for (IndexReader r : r0.getSequentialSubReaders()) {
       SegmentInfoPerCommit s = ((SegmentReader) r).getSegmentInfo();
       assertFalse(((SegmentReader) r).getFieldInfos().hasVectors());
-      // nocommit
-      /*
-      Set<String> files = new HashSet<String>();
-      s.getCodec().termVectorsFormat().files(s, files);
-      List<String> filesExisting = SegmentInfo.findMatchingFiles(s.name, dir, files);
-      assertTrue(filesExisting.isEmpty());
-      */
     }
     
     r0.close();
