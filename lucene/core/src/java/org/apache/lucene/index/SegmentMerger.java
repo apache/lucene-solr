@@ -116,7 +116,7 @@ final class SegmentMerger {
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
                                                                       mergeState.fieldInfos, mergeState.mergedDocCount,
-                                                                      termIndexInterval, codec, null, context);
+                                                                      termIndexInterval, null, context);
     mergeTerms(segmentWriteState);
     mergePerDoc(segmentWriteState);
     

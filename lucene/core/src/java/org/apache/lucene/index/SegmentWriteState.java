@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.InfoStream;
@@ -45,7 +44,6 @@ public class SegmentWriteState {
   // Lazily created:
   public MutableBits liveDocs;
 
-  public final Codec codec;
   public final String segmentSuffix;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
@@ -58,7 +56,7 @@ public class SegmentWriteState {
   public final IOContext context;
 
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
-      int numDocs, int termIndexInterval, Codec codec, BufferedDeletes segDeletes, IOContext context) {
+      int numDocs, int termIndexInterval, BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
@@ -68,7 +66,6 @@ public class SegmentWriteState {
     this.fieldInfos = fieldInfos;
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
-    this.codec = codec;
     segmentSuffix = "";
     this.context = context;
   }
@@ -84,7 +81,6 @@ public class SegmentWriteState {
     numDocs = state.numDocs;
     termIndexInterval = state.termIndexInterval;
     context = state.context;
-    codec = state.codec;
     this.segmentSuffix = segmentSuffix;
     segDeletes = state.segDeletes;
     delCountOnFlush = state.delCountOnFlush;

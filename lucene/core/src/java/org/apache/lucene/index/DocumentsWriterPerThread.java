@@ -414,10 +414,6 @@ class DocumentsWriterPerThread {
     return numDocsInRAM;
   }
 
-  Codec getCodec() {
-    return flushState.codec;
-  }
-
   /** Reset after a flush */
   private void doAfterFlush() throws IOException {
     segmentInfo = null;
@@ -453,7 +449,7 @@ class DocumentsWriterPerThread {
     assert deleteSlice == null : "all deletes must be applied in prepareFlush";
     flushState = new SegmentWriteState(infoStream, directory, segmentInfo, fieldInfos.finish(),
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
-        codec, pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
+        pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
     final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;
 
     // Apply delete-by-docID now (delete-byDocID only
