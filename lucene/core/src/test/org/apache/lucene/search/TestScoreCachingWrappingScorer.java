@@ -23,6 +23,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -54,7 +55,11 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       doc = target;
       return doc < scores.length ? doc : NO_MORE_DOCS;
     }
-    
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      throw new UnsupportedOperationException(); 
+    }
   }
   
   private static final class ScoreCachingCollector extends Collector {

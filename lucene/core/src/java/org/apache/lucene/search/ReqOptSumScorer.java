@@ -18,6 +18,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+
 /** A Scorer for queries with a required part and an optional part.
  * Delays skipTo() on the optional part until a score() is needed.
  * <br>
@@ -78,6 +80,12 @@ class ReqOptSumScorer extends Scorer {
     }
     
     return optScorerDoc == curDoc ? reqScore + optScorer.score() : reqScore;
+  }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    // nocommit implement this
+    throw new UnsupportedOperationException();
   }
 
 }

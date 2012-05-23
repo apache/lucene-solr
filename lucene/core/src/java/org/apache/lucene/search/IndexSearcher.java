@@ -40,6 +40,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
@@ -769,6 +770,12 @@ public class IndexSearcher {
       @Override
       public float score() {
         return score;
+      }
+
+      @Override
+      public PositionIntervalIterator positions() throws IOException {
+        // nocommit is this ok in this case?
+        throw new UnsupportedOperationException();
       }
     }
 

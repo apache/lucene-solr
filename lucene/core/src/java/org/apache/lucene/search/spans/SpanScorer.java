@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 /**
@@ -96,5 +97,10 @@ public class SpanScorer extends Scorer {
   @Override
   public float freq() throws IOException {
     return freq;
+  }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    return null;
   }
 }

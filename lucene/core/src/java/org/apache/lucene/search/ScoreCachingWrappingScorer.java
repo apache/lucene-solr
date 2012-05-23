@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+
 /**
  * A {@link Scorer} which wraps another scorer and caches the score of the
  * current document. Successive calls to {@link #score()} will return the same
@@ -76,6 +78,11 @@ public class ScoreCachingWrappingScorer extends Scorer {
   @Override
   public int advance(int target) throws IOException {
     return scorer.advance(target);
+  }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    return scorer.positions();
   }
   
 }

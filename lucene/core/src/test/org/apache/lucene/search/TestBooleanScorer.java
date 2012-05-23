@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -90,6 +91,10 @@ public class TestBooleanScorer extends LuceneTestCase
 
       @Override public int advance(int target) throws IOException {
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
+      }
+      @Override
+      public PositionIntervalIterator positions() throws IOException {
+        throw new UnsupportedOperationException();
       }
       
     }};

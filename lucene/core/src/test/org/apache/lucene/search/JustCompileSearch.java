@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Norm;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -202,6 +203,11 @@ final class JustCompileSearch {
     protected float phraseFreq() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
     
   }
 
@@ -243,6 +249,11 @@ final class JustCompileSearch {
     
     @Override
     public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }

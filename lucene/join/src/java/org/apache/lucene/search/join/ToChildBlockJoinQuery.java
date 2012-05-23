@@ -34,6 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
@@ -284,6 +285,12 @@ public class ToChildBlockJoinQuery extends Query {
         nextDoc();
       }
       return childDoc;
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      // nocommit is that correct here?
+      return parentScorer.positions();
     }
   }
 

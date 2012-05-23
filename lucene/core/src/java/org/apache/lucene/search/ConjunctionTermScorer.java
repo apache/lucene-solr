@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.positions.ConjunctionPositionIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -110,4 +112,16 @@ class ConjunctionTermScorer extends Scorer {
       this.docScorer = docScorer;
     }
   }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    throw new UnsupportedOperationException();
+    // nocommit cut over to Docs&Pos Iter factories etc.
+//    if (scorersOrdered == null) {
+//      throw new IllegalStateException("no positions requested for this scorer");
+//    }
+//      // only created if needed for this scorer - no penalty for non-positional queries
+//    return new ConjunctionPositionIterator(this, scorersOrdered);
+  }
+
 }

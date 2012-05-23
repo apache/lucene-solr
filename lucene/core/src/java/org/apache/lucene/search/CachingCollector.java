@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
@@ -89,6 +90,9 @@ public abstract class CachingCollector extends Collector {
     
     @Override
     public final int nextDoc() { throw new UnsupportedOperationException(); }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException { throw new UnsupportedOperationException(); }
     }
 
   // A CachingCollector which caches scores

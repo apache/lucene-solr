@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+
 
 /** A Scorer for queries with a required subscorer
  * and an excluding (prohibited) sub DocIdSetIterator.
@@ -116,5 +118,11 @@ class ReqExclScorer extends Scorer {
       return doc = NO_MORE_DOCS;
     }
     return doc = toNonExcluded();
+  }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    // nocommit implement this
+    throw new UnsupportedOperationException();
   }
 }

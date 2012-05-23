@@ -18,13 +18,25 @@ package org.apache.lucene.search.grouping;
  */
 
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
-
-import java.io.IOException;
 
 // TODO: this sentence is too long for the class summary.
 /** BlockGroupingCollector performs grouping with a
@@ -110,6 +122,11 @@ public class BlockGroupingCollector extends Collector {
 
     @Override
     public int nextDoc() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException();
     }
   }

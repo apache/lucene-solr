@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -220,6 +221,12 @@ public class FilteredQuery extends Query {
             @Override
             public float score() throws IOException {
               return scorer.score();
+            }
+
+            @Override
+            public PositionIntervalIterator positions() throws IOException {
+              // nocommit what should we do in this case with positions?
+              throw new UnsupportedOperationException();
             }
           };
         }

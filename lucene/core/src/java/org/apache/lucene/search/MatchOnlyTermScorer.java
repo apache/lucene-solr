@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 /** Expert: A <code>Scorer</code> for documents matching a
@@ -91,4 +92,10 @@ final class MatchOnlyTermScorer extends Scorer {
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
   public String toString() { return "scorer(" + weight + ")"; }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    // nocommit is this ok here?
+    throw new UnsupportedOperationException();
+  }
 }

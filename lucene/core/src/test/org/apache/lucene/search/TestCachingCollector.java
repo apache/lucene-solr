@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
@@ -43,6 +44,11 @@ public class TestCachingCollector extends LuceneTestCase {
 
     @Override
     public int advance(int target) throws IOException { return 0; }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      return PositionIntervalIterator.NO_MORE_POSITIONS;
+    }
     
   }
   

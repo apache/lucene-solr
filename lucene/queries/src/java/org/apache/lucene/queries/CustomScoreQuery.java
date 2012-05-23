@@ -30,6 +30,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -333,6 +334,11 @@ public class CustomScoreQuery extends Query {
         }
       }
       return doc;
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      return subQueryScorer.positions();
     }
   }
 

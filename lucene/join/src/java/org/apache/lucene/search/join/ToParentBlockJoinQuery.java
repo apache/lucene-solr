@@ -36,6 +36,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -399,6 +400,12 @@ public class ToParentBlockJoinQuery extends Query {
       final int nd = nextDoc();
       //System.out.println("  return nextParentDoc=" + nd);
       return nd;
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      //nocommit - what can we do here?
+      throw new UnsupportedOperationException();
     }
   }
 

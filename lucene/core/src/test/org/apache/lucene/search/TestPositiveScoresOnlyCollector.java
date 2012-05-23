@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -47,6 +48,11 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     @Override public int advance(int target) throws IOException {
       idx = target;
       return idx < scores.length ? idx : NO_MORE_DOCS;
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      throw new UnsupportedOperationException();
     }
   }
 

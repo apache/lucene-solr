@@ -21,6 +21,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.Bits;
 
@@ -168,6 +169,12 @@ public class FunctionQuery extends Query {
       result.addDetail(new Explanation(getBoost(), "boost"));
       result.addDetail(new Explanation(weight.queryNorm,"queryNorm"));
       return result;
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      throw new UnsupportedOperationException();
+      //nocommit - is that correct here?
     }
   }
 

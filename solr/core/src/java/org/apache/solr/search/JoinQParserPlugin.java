@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -536,6 +537,15 @@ class JoinQuery extends Query {
     @Override
     public int advance(int target) throws IOException {
       return iter.advance(target);
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      if (iter instanceof Scorer) {
+        return ((Scorer) iter).positions();
+      }
+      throw new UnsupportedOperationException("Positions are only supported for Scorers");
+
     }
   }
 

@@ -18,6 +18,7 @@ package org.apache.lucene.queries.function;
  */
 
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -175,6 +176,11 @@ public class BoostedQuery extends Query {
       res.addDetail(subQueryExpl);
       res.addDetail(vals.explain(doc));
       return res;
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      return scorer.positions();
     }
   }
 

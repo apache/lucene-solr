@@ -24,6 +24,8 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+
 import com.spatial4j.core.context.ParseUtils;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
@@ -502,6 +504,11 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       result.addDetail(new Explanation(getBoost(), "boost"));
       result.addDetail(new Explanation(weight.queryNorm,"queryNorm"));
       return result;
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      throw new UnsupportedOperationException();
     }
   }
 

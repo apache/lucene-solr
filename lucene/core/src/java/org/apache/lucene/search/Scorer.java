@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+
 /**
  * Expert: Common scoring functionality for different types of queries.
  *
@@ -60,6 +62,8 @@ public abstract class Scorer extends DocIdSetIterator {
       collector.collect(doc);
     }
   }
+  
+  public abstract PositionIntervalIterator positions() throws IOException;
 
   /**
    * Expert: Collects matching documents in a range. Hook for optimization.

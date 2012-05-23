@@ -25,6 +25,9 @@ import java.util.List;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.positions.ConjunctionPositionIterator;
+import org.apache.lucene.search.positions.DisjunctionPositionIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
@@ -135,6 +138,11 @@ final class BooleanScorer extends Scorer {
     
     @Override
     public float score() throws IOException { return score; }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      return PositionIntervalIterator.NO_MORE_POSITIONS;
+    }
     
   }
 
@@ -316,6 +324,23 @@ final class BooleanScorer extends Scorer {
   @Override
   public float score() {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    final List<Scorer> scorers = new ArrayList<Scorer>();
+    SubScorer sub = this.scorers;
+    while(sub != null) {
+      if (!sub.prohibited) {
+        scorers.add(sub.scorer);
+      }
+      sub = sub.next;
+    }
+    if (this.minNrShouldMatch > 1) {
+      return new ConjunctionPositionIterator(this,
+          scorers.toArray(new Scorer[0]), this.minNrShouldMatch);
+    }
+    return new DisjunctionPositionIterator(this, scorers.toArray(new Scorer[0]));
   }
 
   @Override

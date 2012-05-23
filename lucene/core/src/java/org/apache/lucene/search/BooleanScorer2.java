@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 /* See the description in BooleanScorer.java, comparing
@@ -143,6 +144,11 @@ class BooleanScorer2 extends Scorer {
     @Override
     public int advance(int target) throws IOException {
       return scorer.advance(target);
+    }
+    
+    @Override
+    public PositionIntervalIterator positions() throws IOException {     
+      return scorer.positions();
     }
   }
 
@@ -275,7 +281,7 @@ class BooleanScorer2 extends Scorer {
    */
   @Override
   public void score(Collector collector) throws IOException {
-    collector.setScorer(this);
+    collector.setScorer(this);    
     while ((doc = countingSumScorer.nextDoc()) != NO_MORE_DOCS) {
       collector.collect(doc);
     }
@@ -317,6 +323,11 @@ class BooleanScorer2 extends Scorer {
   @Override
   public int advance(int target) throws IOException {
     return doc = countingSumScorer.advance(target);
+  }
+  
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    return countingSumScorer.positions();
   }
 
   @Override

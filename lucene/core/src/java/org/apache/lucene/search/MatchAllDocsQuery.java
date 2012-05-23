@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
 
@@ -71,6 +72,12 @@ public class MatchAllDocsQuery extends Query {
     public int advance(int target) throws IOException {
       doc = target-1;
       return nextDoc();
+    }
+
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      // nocommit this is tricky - I think we can't really provide positions here?
+      throw new UnsupportedOperationException();
     }
   }
 

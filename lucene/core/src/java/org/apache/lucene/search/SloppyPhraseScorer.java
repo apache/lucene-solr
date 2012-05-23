@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -481,6 +482,12 @@ final class SloppyPhraseScorer extends PhraseScorer {
       }
     }
     return tg;
+  }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    // nocommit implement this (and get a beer before you do so!)
+    throw new UnsupportedOperationException();
   }
   
 //  private void printQueue(PrintStream ps, PhrasePositions ext, String title) {
