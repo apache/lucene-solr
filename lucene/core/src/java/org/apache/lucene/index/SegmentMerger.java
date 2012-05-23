@@ -55,8 +55,7 @@ final class SegmentMerger {
   private final MergeState mergeState = new MergeState();
   private final FieldInfos.Builder fieldInfosBuilder;
 
-  // nocommit nuke name since SI has it.... but Directory is
-  // NOT the same!!
+  // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
   SegmentMerger(SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval,
                 MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider,
                 FieldInfos.FieldNumbers fieldNumbers, IOContext context) {
