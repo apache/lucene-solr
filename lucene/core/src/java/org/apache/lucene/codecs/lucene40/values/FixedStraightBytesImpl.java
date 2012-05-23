@@ -61,14 +61,14 @@ class FixedStraightBytesImpl {
     private final int byteBlockSize = BYTE_BLOCK_SIZE;
     private final ByteBlockPool pool;
 
-    protected FixedBytesWriterBase(Directory dir, String id, String codecName,
+    protected FixedBytesWriterBase(Directory dir, String id, String codecNameDat,
         int version, Counter bytesUsed, IOContext context) throws IOException {
-     this(dir, id, codecName, version, bytesUsed, context, Type.BYTES_FIXED_STRAIGHT);
+     this(dir, id, codecNameDat, version, bytesUsed, context, Type.BYTES_FIXED_STRAIGHT);
     }
     
-    protected FixedBytesWriterBase(Directory dir, String id, String codecName,
+    protected FixedBytesWriterBase(Directory dir, String id, String codecNameDat,
         int version, Counter bytesUsed, IOContext context, Type type) throws IOException {
-      super(dir, id, codecName, version, bytesUsed, context, type);
+      super(dir, id, null, codecNameDat, version, bytesUsed, context, type);
       pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
       pool.nextBuffer();
     }
@@ -139,8 +139,8 @@ class FixedStraightBytesImpl {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
     }
 
-    public Writer(Directory dir, String id, String codecName, int version, Counter bytesUsed, IOContext context) throws IOException {
-      super(dir, id, codecName, version, bytesUsed, context);
+    public Writer(Directory dir, String id, String codecNameDat, int version, Counter bytesUsed, IOContext context) throws IOException {
+      super(dir, id, codecNameDat, version, bytesUsed, context);
     }
 
 
@@ -268,8 +268,8 @@ class FixedStraightBytesImpl {
       this(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc, context, Type.BYTES_FIXED_STRAIGHT);
     }
 
-    protected FixedStraightReader(Directory dir, String id, String codec, int version, int maxDoc, IOContext context, Type type) throws IOException {
-      super(dir, id, codec, version, false, context, type);
+    protected FixedStraightReader(Directory dir, String id, String codecNameDat, int version, int maxDoc, IOContext context, Type type) throws IOException {
+      super(dir, id, null, codecNameDat, version, false, context, type);
       size = datIn.readInt();
       this.maxDoc = maxDoc;
     }

@@ -236,27 +236,34 @@ public final class Bytes {
     private IndexOutput datOut;
     protected BytesRef bytesRef = new BytesRef();
     private final Directory dir;
-    private final String codecName;
+    private final String codecNameIdx;
+    private final String codecNameDat;
     private final int version;
     private final IOContext context;
 
-    protected BytesWriterBase(Directory dir, String id, String codecName,
+    protected BytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat,
         int version, Counter bytesUsed, IOContext context, Type type) throws IOException {
       super(bytesUsed, type);
       this.id = id;
       this.dir = dir;
-      this.codecName = codecName;
+      this.codecNameIdx = codecNameIdx;
+      this.codecNameDat = codecNameDat;
       this.version = version;
       this.context = context;
+      assert codecNameDat != null || codecNameIdx != null: "both codec names are null";
+      assert (codecNameDat != null && !codecNameDat.equals(codecNameIdx)) 
+      || (codecNameIdx != null && !codecNameIdx.equals(codecNameDat)):
+        "index and data codec names must not be equal";
     }
     
     protected IndexOutput getOrCreateDataOut() throws IOException {
       if (datOut == null) {
         boolean success = false;
+        assert codecNameDat != null;
         try {
           datOut = dir.createOutput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
               DocValuesWriterBase.DATA_EXTENSION), context);
-          CodecUtil.writeHeader(datOut, codecName, version);
+          CodecUtil.writeHeader(datOut, codecNameDat, version);
           success = true;
         } finally {
           if (!success) {
@@ -279,9 +286,10 @@ public final class Bytes {
       boolean success = false;
       try {
         if (idxOut == null) {
+          assert codecNameIdx != null;
           idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
               DocValuesWriterBase.INDEX_EXTENSION), context);
-          CodecUtil.writeHeader(idxOut, codecName, version);
+          CodecUtil.writeHeader(idxOut, codecNameIdx, version);
         }
         success = true;
       } finally {
@@ -308,8 +316,8 @@ public final class Bytes {
     protected final int version;
     protected final String id;
     protected final Type type;
-
-    protected BytesReaderBase(Directory dir, String id, String codecName,
+    
+    protected BytesReaderBase(Directory dir, String id, String codecNameIdx, String codecNameDat,
         int maxVersion, boolean doIndex, IOContext context, Type type) throws IOException {
       IndexInput dataIn = null;
       IndexInput indexIn = null;
@@ -317,11 +325,11 @@ public final class Bytes {
       try {
         dataIn = dir.openInput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
                                                               DocValuesWriterBase.DATA_EXTENSION), context);
-        version = CodecUtil.checkHeader(dataIn, codecName, maxVersion, maxVersion);
+        version = CodecUtil.checkHeader(dataIn, codecNameDat, maxVersion, maxVersion);
         if (doIndex) {
           indexIn = dir.openInput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
                                                                  DocValuesWriterBase.INDEX_EXTENSION), context);
-          final int version2 = CodecUtil.checkHeader(indexIn, codecName,
+          final int version2 = CodecUtil.checkHeader(indexIn, codecNameIdx,
                                                      maxVersion, maxVersion);
           assert version == version2;
         }
@@ -377,23 +385,23 @@ public final class Bytes {
     protected final boolean fasterButMoreRam;
     protected long maxBytes = 0;
     
-    protected DerefBytesWriterBase(Directory dir, String id, String codecName,
+    protected DerefBytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat,
         int codecVersion, Counter bytesUsed, IOContext context, Type type)
         throws IOException {
-      this(dir, id, codecName, codecVersion, new DirectTrackingAllocator(
+      this(dir, id, codecNameIdx, codecNameDat, codecVersion, new DirectTrackingAllocator(
           ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, false, type);
     }
 
-    protected DerefBytesWriterBase(Directory dir, String id, String codecName,
+    protected DerefBytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat,
                                    int codecVersion, Counter bytesUsed, IOContext context, boolean fasterButMoreRam, Type type)
         throws IOException {
-      this(dir, id, codecName, codecVersion, new DirectTrackingAllocator(
+      this(dir, id, codecNameIdx, codecNameDat, codecVersion, new DirectTrackingAllocator(
           ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, fasterButMoreRam,type);
     }
 
-    protected DerefBytesWriterBase(Directory dir, String id, String codecName, int codecVersion, Allocator allocator,
+    protected DerefBytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat, int codecVersion, Allocator allocator,
         Counter bytesUsed, IOContext context, boolean fasterButMoreRam, Type type) throws IOException {
-      super(dir, id, codecName, codecVersion, bytesUsed, context, type);
+      super(dir, id, codecNameIdx, codecNameDat, codecVersion, bytesUsed, context, type);
       hash = new BytesRefHash(new ByteBlockPool(allocator),
           BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
               BytesRefHash.DEFAULT_CAPACITY, bytesUsed));

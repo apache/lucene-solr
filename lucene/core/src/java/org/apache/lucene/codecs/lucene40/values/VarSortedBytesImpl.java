@@ -50,7 +50,9 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 final class VarSortedBytesImpl {
 
-  static final String CODEC_NAME = "VarDerefBytes";
+  static final String CODEC_NAME_IDX = "VarDerefBytesIdx";
+  static final String CODEC_NAME_DAT = "VarDerefBytesDat";
+
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
@@ -59,7 +61,7 @@ final class VarSortedBytesImpl {
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         Counter bytesUsed, IOContext context, boolean fasterButMoreRam) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam, Type.BYTES_VAR_SORTED);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam, Type.BYTES_VAR_SORTED);
       this.comp = comp;
       size = 0;
     }
@@ -154,7 +156,7 @@ final class VarSortedBytesImpl {
     Reader(Directory dir, String id, int maxDoc,
         IOContext context, Type type, Comparator<BytesRef> comparator)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context, type);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_START, true, context, type);
       this.comparator = comparator;
     }
 

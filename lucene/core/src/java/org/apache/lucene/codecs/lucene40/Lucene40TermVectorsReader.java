@@ -33,8 +33,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexFormatTooNewException;
-import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -43,7 +41,9 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
+
 
 /**
  * Lucene 4.0 Term Vectors reader.
@@ -53,22 +53,6 @@ import org.apache.lucene.util.IOUtils;
  * @see Lucene40TermVectorsFormat
  */
 public class Lucene40TermVectorsReader extends TermVectorsReader {
-
-  // NOTE: if you make a new format, it must be larger than
-  // the current format
-
-  // Changed strings to UTF8 with length-in-bytes not length-in-chars
-  static final int FORMAT_UTF8_LENGTH_IN_BYTES = 4;
-
-  // NOTE: always change this if you switch to a new format!
-  // whenever you add a new format, make it 1 larger (positive version logic)!
-  static final int FORMAT_CURRENT = FORMAT_UTF8_LENGTH_IN_BYTES;
-  
-  // when removing support for old versions, leave the last supported version here
-  static final int FORMAT_MINIMUM = FORMAT_UTF8_LENGTH_IN_BYTES;
-
-  //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
-  static final int FORMAT_SIZE = 4;
 
   static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
 
@@ -82,6 +66,17 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
   /** Extension of vectors index file */
   static final String VECTORS_INDEX_EXTENSION = "tvx";
+  
+  static final String CODEC_NAME_FIELDS = "Lucene40TermVectorsFields";
+  static final String CODEC_NAME_DOCS = "Lucene40TermVectorsDocs";
+  static final String CODEC_NAME_INDEX = "Lucene40TermVectorsIndex";
+
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
+  
+  static final long HEADER_LENGTH_FIELDS = CodecUtil.headerLength(CODEC_NAME_FIELDS);
+  static final long HEADER_LENGTH_DOCS = CodecUtil.headerLength(CODEC_NAME_DOCS);
+  static final long HEADER_LENGTH_INDEX = CodecUtil.headerLength(CODEC_NAME_INDEX);
 
   private FieldInfos fieldInfos;
 
@@ -91,17 +86,15 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
   private int size;
   private int numTotalDocs;
   
-  private final int format;
 
   // used by clone
-  Lucene40TermVectorsReader(FieldInfos fieldInfos, IndexInput tvx, IndexInput tvd, IndexInput tvf, int size, int numTotalDocs, int format) {
+  Lucene40TermVectorsReader(FieldInfos fieldInfos, IndexInput tvx, IndexInput tvd, IndexInput tvf, int size, int numTotalDocs) {
     this.fieldInfos = fieldInfos;
     this.tvx = tvx;
     this.tvd = tvd;
     this.tvf = tvf;
     this.size = size;
     this.numTotalDocs = numTotalDocs;
-    this.format = format;
   }
     
   public Lucene40TermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
@@ -114,18 +107,21 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     try {
       String idxName = IndexFileNames.segmentFileName(segment, "", VECTORS_INDEX_EXTENSION);
       tvx = d.openInput(idxName, context);
-      format = checkValidFormat(tvx);
+      final int tvxVersion = CodecUtil.checkHeader(tvx, CODEC_NAME_INDEX, VERSION_START, VERSION_CURRENT);
+      
       String fn = IndexFileNames.segmentFileName(segment, "", VECTORS_DOCUMENTS_EXTENSION);
       tvd = d.openInput(fn, context);
-      final int tvdFormat = checkValidFormat(tvd);
+      final int tvdVersion = CodecUtil.checkHeader(tvd, CODEC_NAME_DOCS, VERSION_START, VERSION_CURRENT);
       fn = IndexFileNames.segmentFileName(segment, "", VECTORS_FIELDS_EXTENSION);
       tvf = d.openInput(fn, context);
-      final int tvfFormat = checkValidFormat(tvf);
+      final int tvfVersion = CodecUtil.checkHeader(tvf, CODEC_NAME_FIELDS, VERSION_START, VERSION_CURRENT);
+      assert HEADER_LENGTH_INDEX == tvx.getFilePointer();
+      assert HEADER_LENGTH_DOCS == tvd.getFilePointer();
+      assert HEADER_LENGTH_FIELDS == tvf.getFilePointer();
+      assert tvxVersion == tvdVersion;
+      assert tvxVersion == tvfVersion;
 
-      assert format == tvdFormat;
-      assert format == tvfFormat;
-
-      numTotalDocs = (int) (tvx.length() >> 4);
+      numTotalDocs = (int) (tvx.length()-HEADER_LENGTH_INDEX >> 4);
 
       this.size = numTotalDocs;
       assert size == 0 || numTotalDocs == size;
@@ -156,13 +152,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
   // Not private to avoid synthetic access$NNN methods
   void seekTvx(final int docNum) throws IOException {
-    tvx.seek(docNum * 16L + FORMAT_SIZE);
-  }
-
-  boolean canReadRawDocs() {
-    // we can always read raw docs, unless the term vectors
-    // didn't exist
-    return format != 0;
+    tvx.seek(docNum * 16L + HEADER_LENGTH_INDEX);
   }
 
   /** Retrieve the length (in bytes) of the tvd and tvf
@@ -208,16 +198,6 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       lastTvdPosition = tvdPosition;
       lastTvfPosition = tvfPosition;
     }
-  }
-
-  private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException
-  {
-    int format = in.readInt();
-    if (format < FORMAT_MINIMUM)
-      throw new IndexFormatTooOldException(in, format, FORMAT_MINIMUM, FORMAT_CURRENT);
-    if (format > FORMAT_CURRENT)
-      throw new IndexFormatTooNewException(in, format, FORMAT_MINIMUM, FORMAT_CURRENT);
-    return format;
   }
 
   public void close() throws IOException {
@@ -708,7 +688,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       cloneTvf = (IndexInput) tvf.clone();
     }
     
-    return new Lucene40TermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, format);
+    return new Lucene40TermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs);
   }
   
   public static void files(SegmentInfo info, Set<String> files) throws IOException {

@@ -50,7 +50,9 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 class VarStraightBytesImpl {
 
-  static final String CODEC_NAME = "VarStraightBytes";
+  static final String CODEC_NAME_IDX = "VarStraightBytesIdx";
+  static final String CODEC_NAME_DAT = "VarStraightBytesDat";
+
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
@@ -64,7 +66,7 @@ class VarStraightBytesImpl {
     private boolean merge = false;
     public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, Type.BYTES_VAR_STRAIGHT);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, Type.BYTES_VAR_STRAIGHT);
       pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
       docToAddress = new long[1];
       pool.nextBuffer(); // init
@@ -236,7 +238,7 @@ class VarStraightBytesImpl {
     final int maxDoc;
 
     VarStraightReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context, Type.BYTES_VAR_STRAIGHT);
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_START, true, context, Type.BYTES_VAR_STRAIGHT);
       this.maxDoc = maxDoc;
     }
 
