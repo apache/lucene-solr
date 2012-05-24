@@ -976,7 +976,7 @@
        http://wiki.apache.org/solr/AnalysisRequestHandler
 
        An analysis handler that provides a breakdown of the analysis
-       process of provided docuemnts. This handler expects a (single)
+       process of provided documents. This handler expects a (single)
        content stream with the following format:
 
        <docs>
