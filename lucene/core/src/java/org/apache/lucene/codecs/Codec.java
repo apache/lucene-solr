@@ -17,13 +17,10 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Set;
 import java.util.ServiceLoader; // javadocs
 
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriterConfig; // javadocs
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.NamedSPILoader;
 
 /**

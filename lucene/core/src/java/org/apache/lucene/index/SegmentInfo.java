@@ -93,7 +93,7 @@ public final class SegmentInfo {
    * Returns total size in bytes of all of files used by
    * this segment.  Note that this will not include any live
    * docs for the segment; to include that use {@link
-   * SegmentInfoPerCommit.sizeInBytes} instead.
+   * SegmentInfoPerCommit#sizeInBytes()} instead.
    */
   public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {

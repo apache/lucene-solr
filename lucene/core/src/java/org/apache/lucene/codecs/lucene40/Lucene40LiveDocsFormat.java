@@ -19,11 +19,9 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Set;
 
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.store.Directory;

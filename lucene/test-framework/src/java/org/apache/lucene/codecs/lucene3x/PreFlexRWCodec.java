@@ -17,9 +17,6 @@ package org.apache.lucene.codecs.lucene3x;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Set;
-
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
@@ -28,10 +25,7 @@ import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Writes 3.x-like indexes (not perfect emulation yet) for testing only!

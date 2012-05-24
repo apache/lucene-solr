@@ -18,12 +18,10 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.index.SegmentInfo;
 
 /**
  * Lucene3x ReadOnly FieldInfosFromat implementation

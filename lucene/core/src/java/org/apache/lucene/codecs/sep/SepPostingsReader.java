@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.sep;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;

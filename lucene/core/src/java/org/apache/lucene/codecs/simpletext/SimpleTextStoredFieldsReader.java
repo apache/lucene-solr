@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Set;
 
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.index.CorruptIndexException;

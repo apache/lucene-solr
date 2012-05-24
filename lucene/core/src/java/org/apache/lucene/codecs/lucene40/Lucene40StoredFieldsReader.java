@@ -34,7 +34,6 @@ import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
-import java.util.Set;
 
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.*;
 

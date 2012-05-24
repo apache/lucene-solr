@@ -34,7 +34,7 @@ import org.apache.lucene.util.Bits;
  *       informing the Codec how many fields will be written.
  *   <li>{@link #writeField(FieldInfo, IndexableField)} is called for 
  *       each field in the document.
- *   <li>After all documents have been written, {@link #finish(int)} 
+ *   <li>After all documents have been written, {@link #finish(FieldInfos, int)} 
  *       is called for verification/sanity-checks.
  *   <li>Finally the writer is closed ({@link #close()})
  * </ol>
@@ -68,7 +68,7 @@ public abstract class StoredFieldsWriter implements Closeable {
   /** Merges in the stored fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
    *  over deleted documents, and uses {@link #startDocument(int)},
-   *  {@link #writeField(FieldInfo, IndexableField)}, and {@link #finish(int)},
+   *  {@link #writeField(FieldInfo, IndexableField)}, and {@link #finish(FieldInfos, int)},
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */

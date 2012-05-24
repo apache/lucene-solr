@@ -19,7 +19,6 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Set;
 
 import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.store.Directory;
@@ -44,7 +43,6 @@ public abstract class LiveDocsFormat {
    *  generation of the deletes file you should write to. */
   public abstract void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfoPerCommit info, int newDelCount, IOContext context) throws IOException;
 
-  /** Records all files (exact file name or a Pattern regex)
-   *  in use by this {@link SegmentInfoPerCommit} into the files argument. */
+  /** Records all files in use by this {@link SegmentInfoPerCommit} into the files argument. */
   public abstract void files(SegmentInfoPerCommit info, Collection<String> files) throws IOException;
 }

@@ -17,13 +17,9 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import java.util.Set;
-
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.codecs.SegmentInfoWriter;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 
 /**
  * plain text segments file format.

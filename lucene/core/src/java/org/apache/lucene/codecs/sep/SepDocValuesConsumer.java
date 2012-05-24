@@ -18,18 +18,10 @@ package org.apache.lucene.codecs.sep;
  */
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
-import org.apache.lucene.codecs.PerDocProducerBase;
 import org.apache.lucene.codecs.lucene40.values.DocValuesWriterBase;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.IOUtils;
 
 /**
  * Implementation of PerDocConsumer that uses separate files.

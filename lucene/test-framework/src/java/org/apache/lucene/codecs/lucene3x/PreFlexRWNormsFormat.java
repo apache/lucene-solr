@@ -1,4 +1,5 @@
 package org.apache.lucene.codecs.lucene3x;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,6 +16,7 @@ package org.apache.lucene.codecs.lucene3x;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 
 import org.apache.lucene.codecs.PerDocConsumer;

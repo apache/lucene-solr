@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.SegmentInfos; // javadocs
 import org.apache.lucene.store.DataOutput; // javadocs
+import org.apache.lucene.util.CodecUtil; // javadocs
 
 /**
  * Lucene 4.0 Segment info format.
@@ -54,7 +55,7 @@ import org.apache.lucene.store.DataOutput; // javadocs
  *   <li>Checksum contains the CRC32 checksum of all bytes in the segments_N file up
  *       until the checksum. This is used to verify integrity of the file on opening the
  *       index.</li>
- *   <li>The Diagnostics Map is privately written by IndexWriter, as a debugging aid,
+ *   <li>The Diagnostics Map is privately written by {@link IndexWriter}, as a debugging aid,
  *       for each segment it creates. It includes metadata like the current Lucene
  *       version, OS, Java version, why the segment was created (merge, flush,
  *       addIndexes), etc.</li>

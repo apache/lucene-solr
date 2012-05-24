@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
@@ -26,7 +25,6 @@ import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.index.DocValues; // javadocs
 import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.CompoundFileDirectory; // javadocs
 import org.apache.lucene.store.DataOutput; // javadocs

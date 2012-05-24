@@ -20,11 +20,9 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.Set;
 
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
