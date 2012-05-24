@@ -657,7 +657,7 @@ public class SnapPuller {
     if(!success){
       try {
         LOG.error("Unable to move index file from: " + indexFileInTmpDir
-              + " to: " + indexFileInIndex + "Trying to do a copy");
+              + " to: " + indexFileInIndex + " Trying to do a copy");
         FileUtils.copyFile(indexFileInTmpDir,indexFileInIndex);
         success = true;
       } catch (IOException e) {
