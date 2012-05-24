@@ -706,22 +706,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
   }
 
-  private FieldInfos getFieldInfos(SegmentInfoPerCommit info) throws IOException {
+  private FieldInfos getFieldInfos(SegmentInfo info) throws IOException {
     Directory cfsDir = null;
     try {
-      if (info.info.getUseCompoundFile()) {
-        cfsDir = new CompoundFileDirectory(directory,
-                                           IndexFileNames.segmentFileName(info.info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION),
+      if (info.getUseCompoundFile()) {
+        cfsDir = new CompoundFileDirectory(info.dir,
+                                           IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION),
                                            IOContext.READONCE,
                                            false);
       } else {
-        cfsDir = directory;
+        cfsDir = info.dir;
       }
-      return info.info.getCodec().fieldInfosFormat().getFieldInfosReader().read(cfsDir,
-                                                                                info.info.name,
+      return info.getCodec().fieldInfosFormat().getFieldInfosReader().read(cfsDir,
+                                                                                info.name,
                                                                                 IOContext.READONCE);
     } finally {
-      if (info.info.getUseCompoundFile() && cfsDir != null) {
+      if (info.getUseCompoundFile() && cfsDir != null) {
         cfsDir.close();
       }
     }
@@ -742,7 +742,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     if (biggest != null) {
-      for(FieldInfo fi : getFieldInfos(biggest)) {
+      for(FieldInfo fi : getFieldInfos(biggest.info)) {
         map.addOrGet(fi.name, fi.number);
       }
     }
@@ -2351,7 +2351,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
-  // nocommit: this gets insanely crazy: if there is any 3.x can we just open a reader and AddIndexes(Reader) ?!
   private SegmentInfoPerCommit copySegmentAsIs(SegmentInfoPerCommit info, String segName,
                                                Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context,
                                                Set<String> copiedFiles)
@@ -2370,31 +2369,32 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       newDsName = segName;
     }
 
+    // note: we don't really need this fis (its copied), but we load it up
+    // so we don't pass a null value to the si writer
+    FieldInfos fis = getFieldInfos(info.info);
+    
     Set<String> docStoreFiles3xOnly = Lucene3xCodec.getDocStoreFiles(info.info);
 
     final Map<String,String> attributes;
+    // copy the attributes map, we might modify it below.
+    // also we need to ensure its read-write, since we will invoke the SIwriter (which might want to set something).
+    if (info.info.attributes() == null) {
+      attributes = new HashMap<String,String>();
+    } else {
+      attributes = new HashMap<String,String>(info.info.attributes());
+    }
     if (docStoreFiles3xOnly != null) {
       // only violate the codec this way if it's preflex &
       // shares doc stores
       // change docStoreSegment to newDsName
-      // copy the attributes map, we modify it below:
-      if (info.info.attributes() == null) {
-        attributes = new HashMap<String,String>();
-      } else {
-        attributes = new HashMap<String,String>(info.info.attributes());
-      }
-      // change docStoreSegment to newDsName
       attributes.put(Lucene3xSegmentInfoFormat.DS_NAME_KEY, newDsName);
-    } else {
-      attributes = info.info.attributes();
     }
 
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
-
     // Same SI as before but we change directory, name and docStoreSegment:
     SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(),
                                           info.info.getUseCompoundFile(),
-                                          info.info.getCodec(), info.info.getDiagnostics(), Collections.unmodifiableMap(attributes));
+                                          info.info.getCodec(), info.info.getDiagnostics(), attributes);
     SegmentInfoPerCommit newInfoPerCommit = new SegmentInfoPerCommit(newInfo, info.getDelCount(), info.getDelGen());
 
     Set<String> segFiles = new HashSet<String>();
@@ -2417,7 +2417,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // store segment name):
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
     try {
-      newInfo.getCodec().segmentInfoFormat().getSegmentInfosWriter().write(trackingDir, newInfo, null, context);
+      newInfo.getCodec().segmentInfoFormat().getSegmentInfosWriter().write(trackingDir, newInfo, fis, context);
     } catch (UnsupportedOperationException uoe) {
       // OK: 3x codec cannot write a new SI file;
       // SegmentInfos will write this on commit
