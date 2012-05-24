@@ -18,6 +18,8 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -31,7 +33,9 @@ import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
@@ -122,5 +126,26 @@ public class Lucene3xCodec extends Codec {
   @Override
   public LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
+  }
+
+  /** Returns file names for shared doc stores, if any, else
+   * null. */
+  public static Set<String> getDocStoreFiles(SegmentInfo info) {
+    if (Lucene3xSegmentInfoFormat.getDocStoreOffset(info) != -1) {
+      final String dsName = Lucene3xSegmentInfoFormat.getDocStoreSegment(info);
+      Set<String> files = new HashSet<String>();
+      if (Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(info)) {
+        files.add(IndexFileNames.segmentFileName(dsName, "", COMPOUND_FILE_STORE_EXTENSION));
+      } else {
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xStoredFieldsReader.FIELDS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xStoredFieldsReader.FIELDS_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
+      }
+      return files;
+    } else {
+      return null;
+    }
   }
 }

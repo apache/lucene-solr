@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
@@ -2368,34 +2369,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       dsNames.put(dsName, segName);
       newDsName = segName;
     }
-    
-    Set<String> codecDocStoreFiles = new HashSet<String>();
-    final boolean hasSharedDocStore = Lucene3xSegmentInfoFormat.getDocStoreOffset(info.info) != -1;
 
-    // copy the attributes map, we modify it for the preflex case
+    Set<String> docStoreFiles3xOnly = Lucene3xCodec.getDocStoreFiles(info.info);
+
     final Map<String,String> attributes;
-    if (info.info.attributes() == null) {
-      attributes = new HashMap<String,String>();
-    } else {
-      attributes = new HashMap<String,String>(info.info.attributes());
-    }
-    if (hasSharedDocStore) {
+    if (docStoreFiles3xOnly != null) {
       // only violate the codec this way if it's preflex &
       // shares doc stores
-      // nocommit what to do....
-      // cant we determine a file is a 3.x shared doc store file if hasSharedDocStore=true
-      // and the segment prefix != info.info.name instead of this stuff?
-      if (Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(info.info)) {
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "cfx"));
+      // change docStoreSegment to newDsName
+      // copy the attributes map, we modify it below:
+      if (info.info.attributes() == null) {
+        attributes = new HashMap<String,String>();
       } else {
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "fdt"));
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "fdx"));
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "tvx"));
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "tvf"));
-        codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "tvd"));
+        attributes = new HashMap<String,String>(info.info.attributes());
       }
       // change docStoreSegment to newDsName
       attributes.put(Lucene3xSegmentInfoFormat.DS_NAME_KEY, newDsName);
+    } else {
+      attributes = info.info.attributes();
     }
 
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
@@ -2412,7 +2403,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // before writing SegmentInfo:
     for (String file: info.files()) {
       final String newFileName;
-      if (codecDocStoreFiles.contains(file)) {
+      if (docStoreFiles3xOnly != null && docStoreFiles3xOnly.contains(file)) {
         newFileName = newDsName + IndexFileNames.stripSegmentName(file);
       } else {
         newFileName = segName + IndexFileNames.stripSegmentName(file);
@@ -2438,7 +2429,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     for (String file: info.files()) {
 
       final String newFileName;
-      if (codecDocStoreFiles.contains(file)) {
+      if (docStoreFiles3xOnly != null && docStoreFiles3xOnly.contains(file)) {
         newFileName = newDsName + IndexFileNames.stripSegmentName(file);
         if (dsFilesCopied.contains(newFileName)) {
           continue;
