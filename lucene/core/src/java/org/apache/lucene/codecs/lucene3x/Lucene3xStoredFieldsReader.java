@@ -36,7 +36,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
-import java.util.Set;
 
 /**
  * Class responsible for access to stored document fields.
@@ -139,13 +138,13 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
   }
 
   public Lucene3xStoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
-    final String segment = si.getDocStoreSegment();
-    final int docStoreOffset = si.getDocStoreOffset();
+    final String segment = Lucene3xSegmentInfoFormat.getDocStoreSegment(si);
+    final int docStoreOffset = Lucene3xSegmentInfoFormat.getDocStoreOffset(si);
     final int size = si.getDocCount();
     boolean success = false;
     fieldInfos = fn;
     try {
-      if (docStoreOffset != -1 && si.getDocStoreIsCompoundFile()) {
+      if (docStoreOffset != -1 && Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(si)) {
         d = storeCFSReader = new CompoundFileDirectory(si.dir, 
             IndexFileNames.segmentFileName(segment, "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION), context, false);
       } else {

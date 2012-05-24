@@ -145,8 +145,8 @@ public class IndexSplitter {
       SegmentInfoPerCommit infoPerCommit = getInfo(n);
       SegmentInfo info = infoPerCommit.info;
       // Same info just changing the dir:
-      SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.getDocCount(), info.getDocStoreOffset(),
-                                            info.getDocStoreSegment(), info.getDocStoreIsCompoundFile(), info.getNormGen(), info.getUseCompoundFile(),
+      SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.getDocCount(), 
+                                            info.getNormGen(), info.getUseCompoundFile(),
                                             info.getCodec(), info.getDiagnostics(), info.attributes());
       destInfos.add(new SegmentInfoPerCommit(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getDelGen()));
       // now copy files over

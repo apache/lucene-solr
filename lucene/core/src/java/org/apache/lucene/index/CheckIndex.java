@@ -489,15 +489,7 @@ public class CheckIndex {
           msg("    diagnostics = " + diagnostics);
         }
 
-        final int docStoreOffset = info.info.getDocStoreOffset();
-        if (docStoreOffset != -1) {
-          msg("    docStoreOffset=" + docStoreOffset);
-          segInfoStat.docStoreOffset = docStoreOffset;
-          msg("    docStoreSegment=" + info.info.getDocStoreSegment());
-          segInfoStat.docStoreSegment = info.info.getDocStoreSegment();
-          msg("    docStoreIsCompoundFile=" + info.info.getDocStoreIsCompoundFile());
-          segInfoStat.docStoreCompoundFile = info.info.getDocStoreIsCompoundFile();
-        }
+        // TODO: we could append the info attributes() to the msg?
 
         if (info.hasDeletions()) {
           msg("    no deletions");

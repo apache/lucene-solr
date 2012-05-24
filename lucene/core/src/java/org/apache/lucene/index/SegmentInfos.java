@@ -428,11 +428,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
       // NOTE: a lie
       output.writeLong(0L);
 
-      output.writeInt(si.getDocStoreOffset());
-      if (si.getDocStoreOffset() != -1) {
-        output.writeString(si.getDocStoreSegment());
-        output.writeByte((byte) (si.getDocStoreIsCompoundFile() ? 1:0));
-      }
+      output.writeStringStringMap(si.attributes());
       // pre-4.0 indexes write a byte if there is a single norms file
       output.writeByte((byte) 1);
 

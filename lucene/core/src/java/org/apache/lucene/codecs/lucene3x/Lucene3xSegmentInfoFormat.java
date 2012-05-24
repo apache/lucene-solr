@@ -17,12 +17,9 @@ package org.apache.lucene.codecs.lucene3x;
  * limitations under the License.
  */
 
-import java.util.Set;
-
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.codecs.SegmentInfoWriter;
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 
 /**
@@ -61,5 +58,31 @@ public class Lucene3xSegmentInfoFormat extends SegmentInfoFormat {
   @Override
   public SegmentInfoWriter getSegmentInfosWriter() {
     throw new UnsupportedOperationException("this codec can only be used for reading");
+  }
+  
+  // only for backwards compat
+  public static final String DS_OFFSET_KEY = Lucene3xSegmentInfoFormat.class.getSimpleName() + ".dsoffset";
+  public static final String DS_NAME_KEY = Lucene3xSegmentInfoFormat.class.getSimpleName() + ".dsname";
+  public static final String DS_COMPOUND_KEY = Lucene3xSegmentInfoFormat.class.getSimpleName() + ".dscompound";
+  
+  /** 
+   * @return if this segment shares stored fields & vectors, this
+   *         offset is where in that file this segment's docs begin 
+   */
+  public static int getDocStoreOffset(SegmentInfo si) {
+    String v = si.getAttribute(DS_OFFSET_KEY);
+    return v == null ? -1 : Integer.parseInt(v);
+  }
+  
+  /** @return name used to derive fields/vectors file we share with other segments */
+  public static String getDocStoreSegment(SegmentInfo si) {
+    String v = si.getAttribute(DS_NAME_KEY);
+    return v == null ? si.name : v;
+  }
+  
+  /** @return whether doc store files are stored in compound file (*.cfx) */
+  public static boolean getDocStoreIsCompoundFile(SegmentInfo si) {
+    String v = si.getAttribute(DS_COMPOUND_KEY);
+    return v == null ? false : Boolean.parseBoolean(v);
   }
 }

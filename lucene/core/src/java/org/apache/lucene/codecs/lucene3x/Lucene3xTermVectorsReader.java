@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CorruptIndexException;
@@ -114,14 +113,14 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     
   public Lucene3xTermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
     throws CorruptIndexException, IOException {
-    final String segment = si.getDocStoreSegment();
-    final int docStoreOffset = si.getDocStoreOffset();
+    final String segment = Lucene3xSegmentInfoFormat.getDocStoreSegment(si);
+    final int docStoreOffset = Lucene3xSegmentInfoFormat.getDocStoreOffset(si);
     final int size = si.getDocCount();
     
     boolean success = false;
 
     try {
-      if (docStoreOffset != -1 && si.getDocStoreIsCompoundFile()) {
+      if (docStoreOffset != -1 && Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(si)) {
         d = storeCFSReader = new CompoundFileDirectory(si.dir, 
             IndexFileNames.segmentFileName(segment, "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION), context, false);
       } else {

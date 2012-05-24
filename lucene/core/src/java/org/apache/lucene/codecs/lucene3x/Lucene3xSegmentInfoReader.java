@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
@@ -31,7 +30,6 @@ import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -59,10 +57,10 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
         // 2.x segment, and an IndexFormatTooOldException will be thrown,
         // which is what we want.
         Directory dir = directory;
-        if (si.getDocStoreOffset() != -1) {
-          if (si.getDocStoreIsCompoundFile()) {
+        if (Lucene3xSegmentInfoFormat.getDocStoreOffset(si) != -1) {
+          if (Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(si)) {
             dir = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(
-                si.getDocStoreSegment(), "",
+                Lucene3xSegmentInfoFormat.getDocStoreSegment(si), "",
                 Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION), IOContext.READONCE, false);
           }
         } else if (si.getUseCompoundFile()) {
@@ -71,7 +69,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
         }
 
         try {
-          Lucene3xStoredFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
+          Lucene3xStoredFieldsReader.checkCodeVersion(dir, Lucene3xSegmentInfoFormat.getDocStoreSegment(si));
         } finally {
           // If we opened the directory, close it
           if (dir != directory) dir.close();
@@ -152,15 +150,37 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
 
     final int docCount = input.readInt();
     final long delGen = input.readLong();
-    final int docStoreOffset = input.readInt();
+    
+    final int docStoreOffset;
     final String docStoreSegment;
     final boolean docStoreIsCompoundFile;
-    if (docStoreOffset != -1) {
-      docStoreSegment = input.readString();
-      docStoreIsCompoundFile = input.readByte() == SegmentInfo.YES;
+    final Map<String,String> attributes;
+    
+    if (format == Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE) {
+      // we already upgraded to 4.x si format: so shared docstore stuff is in the attributes map.
+      attributes = input.readStringStringMap();
+      String v = attributes.get(Lucene3xSegmentInfoFormat.DS_OFFSET_KEY);
+      docStoreOffset = v == null ? -1 : Integer.parseInt(v);
+      
+      v = attributes.get(Lucene3xSegmentInfoFormat.DS_NAME_KEY);
+      docStoreSegment = v == null ? segmentName : v;
+      
+      v = attributes.get(Lucene3xSegmentInfoFormat.DS_COMPOUND_KEY);
+      docStoreIsCompoundFile = v == null ? false : Boolean.parseBoolean(v);
     } else {
-      docStoreSegment = name;
-      docStoreIsCompoundFile = false;
+      // for older formats, parse the docstore stuff and shove it into attributes
+      attributes = new HashMap<String,String>();
+      docStoreOffset = input.readInt();
+      if (docStoreOffset != -1) {
+        docStoreSegment = input.readString();
+        docStoreIsCompoundFile = input.readByte() == SegmentInfo.YES;
+        attributes.put(Lucene3xSegmentInfoFormat.DS_OFFSET_KEY, Integer.toString(docStoreOffset));
+        attributes.put(Lucene3xSegmentInfoFormat.DS_NAME_KEY, docStoreSegment);
+        attributes.put(Lucene3xSegmentInfoFormat.DS_COMPOUND_KEY, Boolean.toString(docStoreIsCompoundFile));
+      } else {
+        docStoreSegment = name;
+        docStoreIsCompoundFile = false;
+      }
     }
 
     // pre-4.0 indexes write a byte if there is a single norms file
@@ -237,17 +257,16 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
           } else if (gen == SegmentInfo.NO) {
             // No separate norm
           } else {
-            // nocommit -- i thought _X_N.sY files were pre-3.0...????
+            // We should have already hit indexformat too old exception
             assert false;
           }
         }
       }
     }
 
-    // nocommit: convert 3.x specific stuff (shared docstores, normgen, etc) into attributes
-    SegmentInfo info = new SegmentInfo(dir, version, segmentName, docCount, docStoreOffset,
-                                       docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-                                       null, diagnostics, null);
+    // nocommit: convert normgen into attributes?
+    SegmentInfo info = new SegmentInfo(dir, version, segmentName, docCount, normGen, isCompoundFile,
+                                       null, diagnostics, attributes);
     info.setFiles(files);
 
     SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, delCount, delGen);

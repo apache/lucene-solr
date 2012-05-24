@@ -2218,7 +2218,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
 
           String newSegName = newSegmentName();
-          String dsName = info.info.getDocStoreSegment();
+          String dsName = Lucene3xSegmentInfoFormat.getDocStoreSegment(info.info);
 
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "addIndexes: process segment origName=" + info.info.name + " newName=" + newSegName + " dsName=" + dsName + " info=" + info);
@@ -2285,8 +2285,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
 
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, -1,
-                                         -1, mergedName, false, null, false,
-                                         codec, null, null);
+                                         null, false, codec, null, null);
 
       SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir, config.getTermIndexInterval(),
                                                MergeState.CheckAbort.NONE, payloadProcessorProvider,
@@ -2360,7 +2359,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // only relevant for segments that share doc store with others,
     // because the DS might have been copied already, in which case we
     // just want to update the DS name of this SegmentInfo.
-    final String dsName = info.info.getDocStoreSegment();
+    final String dsName = Lucene3xSegmentInfoFormat.getDocStoreSegment(info.info);
     assert dsName != null;
     final String newDsName;
     if (dsNames.containsKey(dsName)) {
@@ -2371,7 +2370,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
     
     Set<String> codecDocStoreFiles = new HashSet<String>();
-    final boolean hasSharedDocStore = info.info.getDocStoreOffset() != -1;
+    final boolean hasSharedDocStore = Lucene3xSegmentInfoFormat.getDocStoreOffset(info.info) != -1;
     final String segmentInfoFileName3X = IndexFileNames.segmentFileName(info.info.name,
                                                                         "",
                                                                         Lucene3xSegmentInfoFormat.SI_EXTENSION);
@@ -2379,9 +2378,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     if (hasSharedDocStore) {
       // only violate the codec this way if it's preflex &
       // shares doc stores
-      assert info.info.getDocStoreSegment() != null;
       // nocommit what to do....
-      if (info.info.getDocStoreIsCompoundFile()) {
+      if (Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(info.info)) {
         codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "cfx"));
       } else {
         codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "fdt"));
@@ -2390,13 +2388,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "tvf"));
         codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "tvd"));
       }
+      // change docStoreSegment to newDsName
+      info.info.putAttribute(Lucene3xSegmentInfoFormat.DS_NAME_KEY, newDsName);
     }
 
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
 
     // Same SI as before but we change directory, name and docStoreSegment:
-    SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(), info.info.getDocStoreOffset(),
-                                          newDsName, info.info.getDocStoreIsCompoundFile(), info.info.getNormGen(), info.info.getUseCompoundFile(),
+    SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(),
+                                          info.info.getNormGen(), info.info.getUseCompoundFile(),
                                           info.info.getCodec(), info.info.getDiagnostics(), info.info.attributes());
     SegmentInfoPerCommit newInfoPerCommit = new SegmentInfoPerCommit(newInfo, info.getDelCount(), info.getDelGen());
 
@@ -3317,7 +3317,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     final String mergeSegmentName = newSegmentName();
-    SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, -1, -1, mergeSegmentName, false, null, false, codec, details, null);
+    SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, -1, null, false, codec, details, null);
     merge.info = new SegmentInfoPerCommit(si, 0, -1L);
 
     // Lock order: IW -> BD
@@ -4015,7 +4015,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "create compound file " + fileName);
     }
-    assert info.getDocStoreOffset() == -1;
+    assert Lucene3xSegmentInfoFormat.getDocStoreOffset(info) == -1;
     // Now merge all added files
     Collection<String> files = info.files();
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);

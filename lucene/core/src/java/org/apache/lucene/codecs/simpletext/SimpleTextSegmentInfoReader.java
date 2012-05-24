@@ -23,14 +23,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.SegmentInfoReader;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -111,9 +106,8 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
         files.add(fileName);
       }
 
-      SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, -1,
-                                         segmentName, false, null, isCompoundFile,
-                                         null, diagnostics, attributes);
+      SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, 
+                                         null, isCompoundFile, null, diagnostics, attributes);
       info.setFiles(files);
       success = true;
       return info;

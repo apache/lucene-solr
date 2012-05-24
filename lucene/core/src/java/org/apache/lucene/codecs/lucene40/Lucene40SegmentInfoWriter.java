@@ -50,7 +50,6 @@ public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
       output.writeString(si.getVersion());
       output.writeInt(si.getDocCount());
 
-      assert si.getDocStoreOffset() == -1;
       assert si.getNormGen() == null;
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));

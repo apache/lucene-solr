@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -41,7 +40,7 @@ class Lucene3xTermVectorsFormat extends TermVectorsFormat {
 
   @Override
   public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentInfo.getDocStoreSegment(), "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(Lucene3xSegmentInfoFormat.getDocStoreSegment(segmentInfo), "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION);
 
     // Unfortunately, for 3.x indices, each segment's
     // FieldInfos can lie about hasVectors (claim it's true
@@ -49,8 +48,8 @@ class Lucene3xTermVectorsFormat extends TermVectorsFormat {
     // check if the files really exist before trying to open
     // them (4.x has fixed this):
     final boolean exists;
-    if (segmentInfo.getDocStoreOffset() != -1 && segmentInfo.getDocStoreIsCompoundFile()) {
-      String cfxFileName = IndexFileNames.segmentFileName(segmentInfo.getDocStoreSegment(), "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION);
+    if (Lucene3xSegmentInfoFormat.getDocStoreOffset(segmentInfo) != -1 && Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(segmentInfo)) {
+      String cfxFileName = IndexFileNames.segmentFileName(Lucene3xSegmentInfoFormat.getDocStoreSegment(segmentInfo), "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION);
       if (segmentInfo.dir.fileExists(cfxFileName)) {
         Directory cfsDir = new CompoundFileDirectory(segmentInfo.dir, cfxFileName, context, false);
         try {

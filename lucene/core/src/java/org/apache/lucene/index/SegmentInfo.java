@@ -57,15 +57,6 @@ public final class SegmentInfo {
 
   private volatile long sizeInBytes = -1;         // total byte size of all files (computed on demand)
 
-  //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-  private final int docStoreOffset;                     // if this segment shares stored fields & vectors, this
-                                                  // offset is where in that file this segment's docs begin
-  //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-  private final String docStoreSegment;                 // name used to derive fields/vectors file we share with
-                                                  // other segments
-  //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-  private final boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
-
   private Codec codec;
 
   private Map<String,String> diagnostics;
@@ -92,17 +83,14 @@ public final class SegmentInfo {
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
    */
-  public SegmentInfo(Directory dir, String version, String name, int docCount, int docStoreOffset,
-                     String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
+  public SegmentInfo(Directory dir, String version, String name, int docCount, 
+                     Map<Integer,Long> normGen, boolean isCompoundFile,
                      Codec codec, Map<String,String> diagnostics, Map<String,String> attributes) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
     this.version = version;
     this.name = name;
     this.docCount = docCount;
-    this.docStoreOffset = docStoreOffset;
-    this.docStoreSegment = docStoreSegment;
-    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     this.normGen = normGen;
     this.isCompoundFile = isCompoundFile;
     this.codec = codec;
@@ -163,33 +151,6 @@ public final class SegmentInfo {
     return isCompoundFile;
   }
 
-  /**
-   * @deprecated shared doc stores are not supported in >= 4.0
-   */
-  @Deprecated
-  public int getDocStoreOffset() {
-    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-    return docStoreOffset;
-  }
-
-  /**
-   * @deprecated shared doc stores are not supported in >= 4.0
-   */
-  @Deprecated
-  public boolean getDocStoreIsCompoundFile() {
-    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-    return docStoreIsCompoundFile;
-  }
-
-  /**
-   * @deprecated shared doc stores are not supported in >= 4.0
-   */
-  @Deprecated
-  public String getDocStoreSegment() {
-    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-    return docStoreSegment;
-  }
-
   /** Can only be called once. */
   public void setCodec(Codec codec) {
     assert this.codec == null;
@@ -240,14 +201,12 @@ public final class SegmentInfo {
   /** Used for debugging.  Format may suddenly change.
    *
    *  <p>Current format looks like
-   *  <code>_a(3.1):c45/4->_1</code>, which means the segment's
+   *  <code>_a(3.1):c45/4</code>, which means the segment's
    *  name is <code>_a</code>; it was created with Lucene 3.1 (or
    *  '?' if it's unknown); it's using compound file
    *  format (would be <code>C</code> if not compound); it
    *  has 45 documents; it has 4 deletions (this part is
-   *  left off when there are no deletions); it's using the
-   *  shared doc stores named <code>_1</code> (this part is
-   *  left off if doc stores are private).</p>
+   *  left off when there are no deletions).</p>
    */
   public String toString(Directory dir, int delCount) {
 
@@ -265,15 +224,7 @@ public final class SegmentInfo {
       s.append('/').append(delCount);
     }
 
-    if (docStoreOffset != -1) {
-      s.append("->").append(docStoreSegment);
-      if (docStoreIsCompoundFile) {
-        s.append('c');
-      } else {
-        s.append('C');
-      }
-      s.append('+').append(docStoreOffset);
-    }
+    // TODO: we could append toString of attributes() here?
 
     return s.toString();
   }
