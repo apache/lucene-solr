@@ -2386,6 +2386,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // only violate the codec this way if it's preflex &
       // shares doc stores
       // nocommit what to do....
+      // cant we determine a file is a 3.x shared doc store file if hasSharedDocStore=true
+      // and the segment prefix != info.info.name instead of this stuff?
       if (Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(info.info)) {
         codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "cfx"));
       } else {

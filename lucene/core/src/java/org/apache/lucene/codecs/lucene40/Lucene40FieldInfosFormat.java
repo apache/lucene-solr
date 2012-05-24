@@ -18,25 +18,25 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.DocValues; // javadoc
 import org.apache.lucene.index.DocValues.Type; // javadoc
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataOutput; // javadoc
+import org.apache.lucene.util.CodecUtil; // javadoc
 
 /**
  * Lucene 4.0 Field Infos format.
  * <p>
  * <p>Field names are stored in the field info file, with suffix <tt>.fnm</tt>.</p>
- * <p>FieldInfos (.fnm) --&gt; FNMVersion,FieldsCount, &lt;FieldName,FieldNumber,
+ * <p>FieldInfos (.fnm) --&gt; Header,FieldsCount, &lt;FieldName,FieldNumber,
  * FieldBits,DocValuesBits,Attributes&gt; <sup>FieldsCount</sup></p>
  * <p>Data types:
  * <ul>
- *   <li>FNMVersion, FieldsCount --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *   <li>Header --&gt; {@link CodecUtil#checkHeader CodecHeader}</li>
+ *   <li>FieldsCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>FieldName --&gt; {@link DataOutput#writeString String}</li>
  *   <li>FieldBits, DocValuesBits --&gt; {@link DataOutput#writeByte Byte}</li>
  *   <li>FieldNumber --&gt; {@link DataOutput#writeInt VInt}</li>
@@ -45,7 +45,6 @@ import org.apache.lucene.store.DataOutput; // javadoc
  * </p>
  * Field Descriptions:
  * <ul>
- *   <li>FNMVersion is <code>Lucene40FieldInfosWriter.FORMAT_CURRENT</code>.</li>
  *   <li>FieldsCount: the number of fields in this file.</li>
  *   <li>FieldName: name of the field as a UTF-8 String.</li>
  *   <li>FieldNumber: the field's number. Note that unlike previous versions of

@@ -18,6 +18,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.CodecUtil;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -44,22 +45,15 @@ import org.apache.lucene.store.IndexInput;
  */
 public class Lucene40FieldInfosReader extends FieldInfosReader {
 
-  static final int FORMAT_MINIMUM = Lucene40FieldInfosWriter.FORMAT_START;
-
   @Override
   public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosWriter.FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     
     try {
-      final int format = input.readVInt();
-
-      if (format > FORMAT_MINIMUM) {
-        throw new IndexFormatTooOldException(input, format, FORMAT_MINIMUM, Lucene40FieldInfosWriter.FORMAT_CURRENT);
-      }
-      if (format < Lucene40FieldInfosWriter.FORMAT_CURRENT) {
-        throw new IndexFormatTooNewException(input, format, FORMAT_MINIMUM, Lucene40FieldInfosWriter.FORMAT_CURRENT);
-      }
+      CodecUtil.checkHeader(input, Lucene40FieldInfosWriter.CODEC_NAME, 
+                                   Lucene40FieldInfosWriter.FORMAT_START, 
+                                   Lucene40FieldInfosWriter.FORMAT_CURRENT);
 
       final int size = input.readVInt(); //read in the size
       FieldInfo infos[] = new FieldInfo[size];

@@ -27,6 +27,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.CodecUtil;
 
 /**
  * Lucene 4.0 FieldInfos writer.
@@ -39,10 +40,8 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
   /** Extension of field infos */
   static final String FIELD_INFOS_EXTENSION = "fnm";
   
-  // per-field codec support, records index values for fields
-  static final int FORMAT_START = -4;
-
-  // whenever you add a new format, make it 1 smaller (negative version logic)!
+  static final String CODEC_NAME = "Lucene40FieldInfos";
+  static final int FORMAT_START = 0;
   static final int FORMAT_CURRENT = FORMAT_START;
   
   static final byte IS_INDEXED = 0x1;
@@ -58,7 +57,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
     try {
-      output.writeVInt(FORMAT_CURRENT);
+      CodecUtil.writeHeader(output, CODEC_NAME, FORMAT_CURRENT);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
         IndexOptions indexOptions = fi.getIndexOptions();
