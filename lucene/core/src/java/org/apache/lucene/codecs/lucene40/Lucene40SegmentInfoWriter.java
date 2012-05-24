@@ -26,6 +26,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -46,6 +47,7 @@ public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
 
     boolean success = false;
     try {
+      CodecUtil.writeHeader(output, Lucene40SegmentInfoFormat.CODEC_NAME, Lucene40SegmentInfoFormat.VERSION_CURRENT);
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(si.getVersion());
       output.writeInt(si.getDocCount());

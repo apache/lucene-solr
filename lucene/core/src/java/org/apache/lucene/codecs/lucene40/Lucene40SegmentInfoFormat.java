@@ -29,12 +29,13 @@ import org.apache.lucene.store.DataOutput; // javadocs
  * <p>
  * Files:
  * <ul>
- *   <li><tt>.si</tt>: SegVersion, SegSize, IsCompoundFile, Diagnostics, Attributes, Files
+ *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Attributes, Files
  * </ul>
  * </p>
  * Data types:
  * <p>
  * <ul>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
  *   <li>SegVersion --&gt; {@link DataOutput#writeString String}</li>
  *   <li>Files --&gt; {@link DataOutput#writeStringSet Set&lt;String&gt;}</li>
@@ -80,4 +81,7 @@ public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
   }
 
   public final static String SI_EXTENSION = "si";
+  static final String CODEC_NAME = "Lucene40SegmentInfo";
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
 }

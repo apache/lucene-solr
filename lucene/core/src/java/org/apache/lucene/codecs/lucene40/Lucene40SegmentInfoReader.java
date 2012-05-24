@@ -28,6 +28,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -44,6 +45,9 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
     final IndexInput input = dir.openInput(fileName, context);
     boolean success = false;
     try {
+      CodecUtil.checkHeader(input, Lucene40SegmentInfoFormat.CODEC_NAME,
+                                   Lucene40SegmentInfoFormat.VERSION_START,
+                                   Lucene40SegmentInfoFormat.VERSION_CURRENT);
       final String version = input.readString();
       final int docCount = input.readInt();
       final Map<Integer,Long> normGen = null;
