@@ -50,7 +50,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     infos.counter = input.readInt(); // read counter
     Lucene3xSegmentInfoReader reader = new Lucene3xSegmentInfoReader();
     for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
-      SegmentInfoPerCommit siPerCommit = reader.readSegmentInfo(null, directory, format, input);
+      SegmentInfoPerCommit siPerCommit = reader.readLegacySegmentInfo(directory, format, input);
       SegmentInfo si = siPerCommit.info;
 
       if (si.getVersion() == null) {
@@ -94,11 +94,6 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
 
   @Override
   public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException { 
-    return read(directory, segmentName, Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE, context);
-  }
-
-  public SegmentInfo read(Directory directory, String segmentName, int format, IOContext context) throws IOException { 
-
     // NOTE: this is NOT how 3.x is really written...
     String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene3xSegmentInfoFormat.SI_EXTENSION);
 
@@ -107,7 +102,8 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     IndexInput input = directory.openInput(fileName, context);
 
     try {
-      SegmentInfo si = readSegmentInfo(segmentName, directory, format, input).info;
+      // nocommit: we need a version header
+      SegmentInfo si = readUpgradedSegmentInfo(segmentName, directory, input);
       success = true;
       return si;
     } finally {
@@ -124,14 +120,16 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
       files.add(fileName);
     }
   }
-
-  private SegmentInfoPerCommit readSegmentInfo(String segmentName, Directory dir, int format, IndexInput input) throws IOException {
+  
+  /** reads from legacy 3.x segments_N */
+  private SegmentInfoPerCommit readLegacySegmentInfo(Directory dir, int format, IndexInput input) throws IOException {
     // check that it is a format we can understand
+    assert format != Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE;
     if (format > Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS) {
       throw new IndexFormatTooOldException(input, format,
                                            Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE);
     }
-    if (format < Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE) {
+    if (format < Lucene3xSegmentInfoFormat.FORMAT_3_1) {
       throw new IndexFormatTooNewException(input, format,
                                            Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE);
     }
@@ -142,46 +140,26 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
       version = null;
     }
 
-    // NOTE: we ignore this and use the incoming arg
-    // instead, if it's non-null:
     final String name = input.readString();
-    if (segmentName == null) {
-      segmentName = name;
-    }
 
     final int docCount = input.readInt();
     final long delGen = input.readLong();
     
-    final int docStoreOffset;
+    final int docStoreOffset = input.readInt();
+    final Map<String,String> attributes = new HashMap<String,String>();
+    
+    // parse the docstore stuff and shove it into attributes
     final String docStoreSegment;
     final boolean docStoreIsCompoundFile;
-    final Map<String,String> attributes;
-    
-    if (format == Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE) {
-      // we already upgraded to 4.x si format: so shared docstore stuff is in the attributes map.
-      attributes = input.readStringStringMap();
-      String v = attributes.get(Lucene3xSegmentInfoFormat.DS_OFFSET_KEY);
-      docStoreOffset = v == null ? -1 : Integer.parseInt(v);
-      
-      v = attributes.get(Lucene3xSegmentInfoFormat.DS_NAME_KEY);
-      docStoreSegment = v == null ? segmentName : v;
-      
-      v = attributes.get(Lucene3xSegmentInfoFormat.DS_COMPOUND_KEY);
-      docStoreIsCompoundFile = v == null ? false : Boolean.parseBoolean(v);
+    if (docStoreOffset != -1) {
+      docStoreSegment = input.readString();
+      docStoreIsCompoundFile = input.readByte() == SegmentInfo.YES;
+      attributes.put(Lucene3xSegmentInfoFormat.DS_OFFSET_KEY, Integer.toString(docStoreOffset));
+      attributes.put(Lucene3xSegmentInfoFormat.DS_NAME_KEY, docStoreSegment);
+      attributes.put(Lucene3xSegmentInfoFormat.DS_COMPOUND_KEY, Boolean.toString(docStoreIsCompoundFile));
     } else {
-      // for older formats, parse the docstore stuff and shove it into attributes
-      attributes = new HashMap<String,String>();
-      docStoreOffset = input.readInt();
-      if (docStoreOffset != -1) {
-        docStoreSegment = input.readString();
-        docStoreIsCompoundFile = input.readByte() == SegmentInfo.YES;
-        attributes.put(Lucene3xSegmentInfoFormat.DS_OFFSET_KEY, Integer.toString(docStoreOffset));
-        attributes.put(Lucene3xSegmentInfoFormat.DS_NAME_KEY, docStoreSegment);
-        attributes.put(Lucene3xSegmentInfoFormat.DS_COMPOUND_KEY, Boolean.toString(docStoreIsCompoundFile));
-      } else {
-        docStoreSegment = name;
-        docStoreIsCompoundFile = false;
-      }
+      docStoreSegment = name;
+      docStoreIsCompoundFile = false;
     }
 
     // pre-4.0 indexes write a byte if there is a single norms file
@@ -214,63 +192,110 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
       final int hasVectors = input.readByte();
     }
 
-    final Set<String> files;
-    if (format == Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE) {
-      files = input.readStringSet();
+    // Replicate logic from 3.x's SegmentInfo.files():
+    final Set<String> files = new HashSet<String>();
+    if (isCompoundFile) {
+      files.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
     } else {
-      // Replicate logic from 3.x's SegmentInfo.files():
-      files = new HashSet<String>();
-      if (isCompoundFile) {
-        files.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+      addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xFieldInfosReader.FIELD_INFOS_EXTENSION));
+      addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xPostingsFormat.FREQ_EXTENSION));
+      addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xPostingsFormat.PROX_EXTENSION));
+      addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xPostingsFormat.TERMS_EXTENSION));
+      addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION));
+      addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xNormsProducer.NORMS_EXTENSION));
+    }
+    
+    if (docStoreOffset != -1) {
+      if (docStoreIsCompoundFile) {
+        files.add(IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION));
       } else {
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xFieldInfosReader.FIELD_INFOS_EXTENSION));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xPostingsFormat.FREQ_EXTENSION));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xPostingsFormat.PROX_EXTENSION));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xPostingsFormat.TERMS_EXTENSION));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xNormsProducer.NORMS_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xStoredFieldsReader.FIELDS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xStoredFieldsReader.FIELDS_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION));
+        addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
       }
-
-      if (docStoreOffset != -1) {
-        if (docStoreIsCompoundFile) {
-          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION));
+    } else if (!isCompoundFile) {
+      files.add(IndexFileNames.segmentFileName(name, "", Lucene3xStoredFieldsReader.FIELDS_INDEX_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(name, "", Lucene3xStoredFieldsReader.FIELDS_EXTENSION));
+      addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
+      addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION));
+      addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
+    }
+    
+    if (normGen != null) {
+      for(Map.Entry<Integer,Long> ent : normGen.entrySet()) {
+        long gen = ent.getValue();
+        if (gen >= SegmentInfo.YES) {
+          // Definitely a separate norm file, with generation:
+          files.add(IndexFileNames.fileNameFromGeneration(name, "s" + ent.getKey(), gen));
+        } else if (gen == SegmentInfo.NO) {
+          // No separate norm
         } else {
-          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xStoredFieldsReader.FIELDS_INDEX_EXTENSION));
-          files.add(IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xStoredFieldsReader.FIELDS_EXTENSION));
-          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
-          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION));
-          addIfExists(dir, files, IndexFileNames.segmentFileName(docStoreSegment, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
-        }
-      } else if (!isCompoundFile) {
-        files.add(IndexFileNames.segmentFileName(segmentName, "", Lucene3xStoredFieldsReader.FIELDS_INDEX_EXTENSION));
-        files.add(IndexFileNames.segmentFileName(segmentName, "", Lucene3xStoredFieldsReader.FIELDS_EXTENSION));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION));
-        addIfExists(dir, files, IndexFileNames.segmentFileName(segmentName, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
-      }
-
-      if (normGen != null) {
-        for(Map.Entry<Integer,Long> ent : normGen.entrySet()) {
-          long gen = ent.getValue();
-          if (gen >= SegmentInfo.YES) {
-            // Definitely a separate norm file, with generation:
-            files.add(IndexFileNames.fileNameFromGeneration(segmentName, "s" + ent.getKey(), gen));
-          } else if (gen == SegmentInfo.NO) {
-            // No separate norm
-          } else {
-            // We should have already hit indexformat too old exception
-            assert false;
-          }
+          // We should have already hit indexformat too old exception
+          assert false;
         }
       }
     }
 
     // nocommit: convert normgen into attributes?
-    SegmentInfo info = new SegmentInfo(dir, version, segmentName, docCount, normGen, isCompoundFile,
+    SegmentInfo info = new SegmentInfo(dir, version, name, docCount, normGen, isCompoundFile,
                                        null, diagnostics, Collections.unmodifiableMap(attributes));
     info.setFiles(files);
 
     SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, delCount, delGen);
     return infoPerCommit;
+  }
+
+  private SegmentInfo readUpgradedSegmentInfo(String name, Directory dir, IndexInput input) throws IOException {
+
+    final String version = input.readString();
+
+    // nocommit: we ignore this and use the incoming arg: don't write this
+    input.readString();
+
+    final int docCount = input.readInt();
+    // nocommit: dont write this
+    final long delGen = input.readLong();
+    
+    final Map<String,String> attributes = input.readStringStringMap();
+
+    // pre-4.0 indexes write a byte if there is a single norms file
+    byte b = input.readByte();
+
+    //System.out.println("version=" + version + " name=" + name + " docCount=" + docCount + " delGen=" + delGen + " dso=" + docStoreOffset + " dss=" + docStoreSegment + " dssCFs=" + docStoreIsCompoundFile + " b=" + b + " format=" + format);
+
+    // nocommit: don't write this
+    assert 1 == b : "expected 1 but was: "+ b;
+    final int numNormGen = input.readInt();
+    final Map<Integer,Long> normGen;
+    if (numNormGen == SegmentInfo.NO) {
+      normGen = null;
+    } else {
+      normGen = new HashMap<Integer, Long>();
+      for(int j=0;j<numNormGen;j++) {
+        normGen.put(j, input.readLong());
+      }
+    }
+    final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
+
+    final int delCount = input.readInt();
+    assert delCount <= docCount;
+
+    // nocommit: unused, dont write this
+    final boolean hasProx = input.readByte() == 1;
+
+    final Map<String,String> diagnostics = input.readStringStringMap();
+
+    // nocommit: unused, dont write this
+    final int hasVectors = input.readByte();
+
+    final Set<String> files = input.readStringSet();
+
+    // nocommit: convert normgen into attributes?
+    SegmentInfo info = new SegmentInfo(dir, version, name, docCount, normGen, isCompoundFile,
+                                       null, diagnostics, Collections.unmodifiableMap(attributes));
+    info.setFiles(files);
+    return info;
   }
 }
