@@ -2371,9 +2371,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     
     Set<String> codecDocStoreFiles = new HashSet<String>();
     final boolean hasSharedDocStore = Lucene3xSegmentInfoFormat.getDocStoreOffset(info.info) != -1;
-    final String segmentInfoFileName3X = IndexFileNames.segmentFileName(info.info.name,
-                                                                        "",
-                                                                        Lucene3xSegmentInfoFormat.SI_EXTENSION);
 
     // copy the attributes map, we modify it for the preflex case
     final Map<String,String> attributes;

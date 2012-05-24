@@ -42,13 +42,12 @@ public class Lucene3xSegmentInfoFormat extends SegmentInfoFormat {
   /** Each segment records the Lucene version that created it. */
   public static final int FORMAT_3_1 = -11;
 
-  /** Each segment records whether its postings are written
-   *  in the new flex format */
-  public static final int FORMAT_4X_UPGRADE = -12;
-
   /** Extension used for saving each SegmentInfo, once a 3.x
    *  index is first committed to with 4.0. */
-  public static final String SI_EXTENSION = "si";
+  public static final String UPGRADED_SI_EXTENSION = "si";
+  public static final String UPGRADED_SI_CODEC_NAME = "Lucene3xSegmentInfo";
+  public static final int UPGRADED_SI_VERSION_START = 0;
+  public static final int UPGRADED_SI_VERSION_CURRENT = UPGRADED_SI_VERSION_START;
   
   @Override
   public SegmentInfoReader getSegmentInfosReader() {

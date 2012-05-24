@@ -35,6 +35,7 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -95,14 +96,13 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
   @Override
   public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException { 
     // NOTE: this is NOT how 3.x is really written...
-    String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene3xSegmentInfoFormat.SI_EXTENSION);
+    String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
 
     boolean success = false;
 
     IndexInput input = directory.openInput(fileName, context);
 
     try {
-      // nocommit: we need a version header
       SegmentInfo si = readUpgradedSegmentInfo(segmentName, directory, input);
       success = true;
       return si;
@@ -124,14 +124,13 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
   /** reads from legacy 3.x segments_N */
   private SegmentInfoPerCommit readLegacySegmentInfo(Directory dir, int format, IndexInput input) throws IOException {
     // check that it is a format we can understand
-    assert format != Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE;
     if (format > Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS) {
       throw new IndexFormatTooOldException(input, format,
-                                           Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE);
+                                           Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfoFormat.FORMAT_3_1);
     }
     if (format < Lucene3xSegmentInfoFormat.FORMAT_3_1) {
       throw new IndexFormatTooNewException(input, format,
-                                           Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfoFormat.FORMAT_4X_UPGRADE);
+                                           Lucene3xSegmentInfoFormat.FORMAT_DIAGNOSTICS, Lucene3xSegmentInfoFormat.FORMAT_3_1);
     }
     final String version;
     if (format <= Lucene3xSegmentInfoFormat.FORMAT_3_1) {
@@ -248,7 +247,9 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
   }
 
   private SegmentInfo readUpgradedSegmentInfo(String name, Directory dir, IndexInput input) throws IOException {
-
+    CodecUtil.checkHeader(input, Lucene3xSegmentInfoFormat.UPGRADED_SI_CODEC_NAME,
+                                 Lucene3xSegmentInfoFormat.UPGRADED_SI_VERSION_START,
+                                 Lucene3xSegmentInfoFormat.UPGRADED_SI_VERSION_CURRENT);
     final String version = input.readString();
 
     final int docCount = input.readInt();
