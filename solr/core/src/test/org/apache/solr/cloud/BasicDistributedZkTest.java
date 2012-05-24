@@ -123,7 +123,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @Override
   public void doTest() throws Exception {
-    setLoggingLevel(null);
+    // setLoggingLevel(null);
 
     del("*:*");
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
