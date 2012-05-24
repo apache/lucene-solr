@@ -46,6 +46,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -371,7 +372,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         // If this segment is pre-4.x, perform a one-time
         // "ugprade" to write the .si file for it:
         String version = si.getVersion();
-        if (version == null || version.startsWith("3.")) {
+        if (version == null || StringHelper.getVersionComparator().compare(version, "4.0") < 0) {
           String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfoFormat.SI_EXTENSION);
           if (!directory.fileExists(fileName)) {
             upgradedSIFiles.add(write3xInfo(directory, si, IOContext.DEFAULT));
