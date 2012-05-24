@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -266,7 +267,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
 
     // nocommit: convert normgen into attributes?
     SegmentInfo info = new SegmentInfo(dir, version, segmentName, docCount, normGen, isCompoundFile,
-                                       null, diagnostics, attributes);
+                                       null, diagnostics, Collections.unmodifiableMap(attributes));
     info.setFiles(files);
 
     SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, delCount, delGen);

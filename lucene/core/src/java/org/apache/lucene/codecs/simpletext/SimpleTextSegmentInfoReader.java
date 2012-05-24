@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -107,7 +108,7 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
       }
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, 
-                                         null, isCompoundFile, null, diagnostics, attributes);
+                                         null, isCompoundFile, null, diagnostics, Collections.unmodifiableMap(attributes));
       info.setFiles(files);
       success = true;
       return info;

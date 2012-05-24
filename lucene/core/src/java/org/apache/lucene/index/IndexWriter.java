@@ -2375,6 +2375,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                                                                         "",
                                                                         Lucene3xSegmentInfoFormat.SI_EXTENSION);
 
+    // copy the attributes map, we modify it for the preflex case
+    final Map<String,String> attributes;
+    if (info.info.attributes() == null) {
+      attributes = new HashMap<String,String>();
+    } else {
+      attributes = new HashMap<String,String>(info.info.attributes());
+    }
     if (hasSharedDocStore) {
       // only violate the codec this way if it's preflex &
       // shares doc stores
@@ -2389,7 +2396,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         codecDocStoreFiles.add(IndexFileNames.segmentFileName(dsName, "", "tvd"));
       }
       // change docStoreSegment to newDsName
-      info.info.putAttribute(Lucene3xSegmentInfoFormat.DS_NAME_KEY, newDsName);
+      attributes.put(Lucene3xSegmentInfoFormat.DS_NAME_KEY, newDsName);
     }
 
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
@@ -2397,7 +2404,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // Same SI as before but we change directory, name and docStoreSegment:
     SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(),
                                           info.info.getNormGen(), info.info.getUseCompoundFile(),
-                                          info.info.getCodec(), info.info.getDiagnostics(), info.info.attributes());
+                                          info.info.getCodec(), info.info.getDiagnostics(), Collections.unmodifiableMap(attributes));
     SegmentInfoPerCommit newInfoPerCommit = new SegmentInfoPerCommit(newInfo, info.getDelCount(), info.getDelGen());
 
     Set<String> segFiles = new HashSet<String>();

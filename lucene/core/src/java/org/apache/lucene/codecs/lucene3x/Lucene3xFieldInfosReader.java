@@ -16,6 +16,7 @@ package org.apache.lucene.codecs.lucene3x;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.codecs.FieldInfosReader;
@@ -100,7 +101,7 @@ class Lucene3xFieldInfosReader extends FieldInfosReader {
           storePayloads = false;
         }
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, null, isIndexed && !omitNorms? Type.FIXED_INTS_8 : null, null);
+          omitNorms, storePayloads, indexOptions, null, isIndexed && !omitNorms? Type.FIXED_INTS_8 : null, Collections.<String,String>emptyMap());
       }
 
       if (input.getFilePointer() != input.length()) {
