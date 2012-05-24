@@ -59,7 +59,6 @@ import org.junit.Ignore;
  * what we test now - the default update chain
  * 
  */
-@Ignore
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @BeforeClass
   public static void beforeFullSolrCloudTest() throws Exception {

@@ -20,6 +20,8 @@ package org.apache.lucene.codecs;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiDocsEnum;
+import org.apache.lucene.index.MultiDocsEnum.EnumWithSlice;
+
 import java.io.IOException;
 
 /**
@@ -49,6 +51,14 @@ public final class MappingMultiDocsEnum extends DocsEnum {
 
   public void setMergeState(MergeState mergeState) {
     this.mergeState = mergeState;
+  }
+  
+  public int getNumSubs() {
+    return numSubs;
+  }
+
+  public EnumWithSlice[] getSubs() {
+    return subs;
   }
 
   @Override
