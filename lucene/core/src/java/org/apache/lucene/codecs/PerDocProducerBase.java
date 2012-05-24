@@ -97,10 +97,6 @@ public abstract class PerDocProducerBase extends PerDocProducer {
   public static String docValuesId(String segmentsName, int fieldId) {
     return segmentsName + "_" + fieldId;
   }
-
-  public static String docValuesRegex(String segmentsName) {
-    return segmentsName + "_\\d+";
-  }
   
   /**
    * Loads a {@link DocValues} instance depending on the given {@link Type}.

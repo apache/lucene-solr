@@ -59,8 +59,4 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
   static String docValuesId(String segmentsName, int fieldId) {
     return segmentsName + "_" + fieldId;
   }
-
-  static String docValuesIdRegexp(String segmentsName) {
-    return segmentsName + "_\\d+";
-  }
 }
