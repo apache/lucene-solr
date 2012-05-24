@@ -243,7 +243,7 @@ class DisjunctionSumScorer extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions() throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
     if (minimumNrMatchers > 1) {
       return new ConjunctionPositionIterator(this,
           subScorers.toArray(new Scorer[0]), minimumNrMatchers);

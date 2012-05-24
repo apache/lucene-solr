@@ -16,9 +16,9 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-
 import org.apache.lucene.search.Scorer;
+
+import java.io.IOException;
 
 /**
  * 
@@ -36,7 +36,8 @@ abstract class BooleanPositionIterator extends PositionIntervalIterator {
     this.queue = queue;
     iterators = new PositionIntervalIterator[subScorers.length];
     for (int i = 0; i < subScorers.length; i++) {
-      iterators[i] = subScorers[i].positions();
+      // nocommit - offsets and payloads?
+      iterators[i] = subScorers[i].positions(false, false);
     }
   }
   

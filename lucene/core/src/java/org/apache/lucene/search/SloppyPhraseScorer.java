@@ -17,18 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.OpenBitSet;
+
+import java.io.IOException;
+import java.util.*;
 
 final class SloppyPhraseScorer extends PhraseScorer {
   
@@ -485,7 +480,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
   }
 
   @Override
-  public PositionIntervalIterator positions() throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
     // nocommit implement this (and get a beer before you do so!)
     throw new UnsupportedOperationException();
   }

@@ -403,7 +403,7 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       //nocommit - what can we do here?
       throw new UnsupportedOperationException();
     }

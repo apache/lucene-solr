@@ -17,19 +17,15 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Set;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.Set;
 
 /**
  *
@@ -118,8 +114,10 @@ public class PositionFilterQuery extends Query implements Cloneable {
     public PositionFilterScorer(Weight weight, Scorer other) throws IOException {
       super(weight);
       this.other = other;
-      this.filter = PositionFilterQuery.this.filter != null ? PositionFilterQuery.this.filter.filter(other.positions())
-          : other.positions();
+      // nocommit - offsets and payloads?
+      this.filter = PositionFilterQuery.this.filter != null
+          ? PositionFilterQuery.this.filter.filter(other.positions(false, false))
+          : other.positions(false, false);
       filtered = new FilteredPositions(this, filter);
     }
 
@@ -129,9 +127,9 @@ public class PositionFilterQuery extends Query implements Cloneable {
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       return PositionFilterQuery.this.filter != null ? PositionFilterQuery.this.filter
-          .filter(other.positions()) : other.positions();
+          .filter(other.positions(needsPayloads, needsOffsets)) : other.positions(needsPayloads, needsOffsets);
     }
 
     @Override

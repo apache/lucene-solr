@@ -17,9 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.search.positions.PositionIntervalIterator;
+
+import java.io.IOException;
 
 /**
  * A {@link Scorer} which wraps another scorer and caches the score of the
@@ -81,8 +81,8 @@ public class ScoreCachingWrappingScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions() throws IOException {
-    return scorer.positions();
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+    return scorer.positions(needsPayloads, needsOffsets);
   }
   
 }

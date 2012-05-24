@@ -17,15 +17,9 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.ComplexExplanation;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -36,6 +30,8 @@ import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.SpansScorerWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
 
 /**
  * This class is very similar to
@@ -85,7 +81,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
-      protected BytesRef payload;
+      protected BytesRef payload = new BytesRef();
       protected float payloadScore;
       protected int payloadsSeen;
       private final SpansScorerWrapper termSpans;

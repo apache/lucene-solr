@@ -17,11 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -33,6 +28,11 @@ import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class TestBooleanScorer extends LuceneTestCase
 {
@@ -93,7 +93,7 @@ public class TestBooleanScorer extends LuceneTestCase
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
       }
       @Override
-      public PositionIntervalIterator positions() throws IOException {
+      public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
         throw new UnsupportedOperationException();
       }
       

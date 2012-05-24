@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -26,6 +24,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
 
 public class TestScoreCachingWrappingScorer extends LuceneTestCase {
 
@@ -57,7 +57,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       throw new UnsupportedOperationException(); 
     }
   }

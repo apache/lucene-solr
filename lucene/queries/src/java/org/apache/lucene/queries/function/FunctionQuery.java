@@ -172,7 +172,7 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       throw new UnsupportedOperationException();
       //nocommit - is that correct here?
     }

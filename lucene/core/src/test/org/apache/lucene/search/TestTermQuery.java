@@ -16,29 +16,22 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * This class contains tests related to {@link TermQuery}
@@ -48,7 +41,7 @@ public class TestTermQuery extends LuceneTestCase {
   private String fieldName = "field";
 
   /**
-   * Simple testcase for {@link TermScorer#positions()}
+   * Simple testcase for {@link TermScorer#positions(boolean, boolean)}
    */
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
@@ -87,7 +80,7 @@ public class TestTermQuery extends LuceneTestCase {
         assertNotNull(scorer);
         int toDoc = 1 + random().nextInt(atomicReaderContext.reader().docFreq(new Term(fieldName, "1")) - 1 );
         final int advance = scorer.advance(toDoc);
-        PositionIntervalIterator positions = scorer.positions();
+        PositionIntervalIterator positions = scorer.positions(false, false);
 
         do {
           assertEquals(scorer.docID(), positions.advanceTo(scorer.docID()));
@@ -203,7 +196,7 @@ public class TestTermQuery extends LuceneTestCase {
           if (docID == Scorer.NO_MORE_DOCS) {
             break;
           }
-          PositionIntervalIterator positions = scorer.positions();
+          PositionIntervalIterator positions = scorer.positions(false, false);
           Integer[] pos = positionsInDoc[atomicReaderContext.docBase + docID];
 
           assertEquals((float) pos.length, positions.getScorer().freq(), 0.0f);
@@ -285,7 +278,7 @@ public class TestTermQuery extends LuceneTestCase {
           initDoc = scorer.advance(random().nextInt(maxDoc));
         }
         String msg = "Iteration: " + i + " initDoc: " + initDoc;
-        PositionIntervalIterator positions = scorer.positions();
+        PositionIntervalIterator positions = scorer.positions(false, false);
         assertEquals(howMany / 2.f, positions.getScorer().freq(), 0.0);
         assertEquals(scorer.docID(), positions.advanceTo(scorer.docID()));
         for (int j = 0; j < howMany; j += 2) {

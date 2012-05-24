@@ -97,10 +97,8 @@ final class TermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
   
   @Override
-  public PositionIntervalIterator positions() throws IOException {
-    boolean doPayloads = false; // nocommit - we need to pass this info somehow
-    boolean doOffsets = false;
-    return new TermPositions(this, factory.docsAndPositionsEnum(doOffsets), doPayloads);
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+    return new TermPositions(this, factory.docsAndPositionsEnum(needsOffsets), needsPayloads);
   }
 
  static final class TermPositions extends PositionIntervalIterator {

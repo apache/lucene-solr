@@ -17,37 +17,23 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.*;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.TermContext;
+import org.apache.lucene.util.ThreadInterruptedException;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DirectoryReader; // javadocs
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.NIOFSDirectory;    // javadoc
-import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util.TermContext;
-import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.index.IndexWriter; // javadocs
 
 /** Implements search over a single IndexReader.
  *
@@ -773,7 +759,7 @@ public class IndexSearcher {
       }
 
       @Override
-      public PositionIntervalIterator positions() throws IOException {
+      public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
         // nocommit is this ok in this case?
         throw new UnsupportedOperationException();
       }

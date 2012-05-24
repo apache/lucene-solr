@@ -17,12 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 final class ExactPhraseScorer extends Scorer {
   private final int endMinus1;
@@ -322,7 +322,7 @@ final class ExactPhraseScorer extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions() throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
     // nocommit implement this
     throw new UnsupportedOperationException();
   }

@@ -288,9 +288,8 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
-      // nocommit is that correct here?
-      return parentScorer.positions();
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {      // nocommit is that correct here?
+      return parentScorer.positions(needsPayloads, needsOffsets);
     }
   }
 

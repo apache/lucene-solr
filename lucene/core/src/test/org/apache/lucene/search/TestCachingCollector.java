@@ -46,7 +46,7 @@ public class TestCachingCollector extends LuceneTestCase {
     public int advance(int target) throws IOException { return 0; }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       return PositionIntervalIterator.NO_MORE_POSITIONS;
     }
     

@@ -144,7 +144,7 @@ class ConjunctionScorer extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions() throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
     if (scorersOrdered == null) {
       throw new IllegalStateException("no positions requested for this scorer");
     }

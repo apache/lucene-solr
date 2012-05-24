@@ -126,7 +126,7 @@ public class BlockGroupingCollector extends Collector {
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       throw new UnsupportedOperationException();
     }
   }

@@ -16,10 +16,10 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import org.apache.lucene.search.Scorer;
+
 import java.io.IOException;
 import java.util.Arrays;
-
-import org.apache.lucene.search.Scorer;
 
 /**
  * 
@@ -70,7 +70,8 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
     iterators = new PositionIntervalIterator[subScorers.length];
     intervals = new PositionInterval[subScorers.length];
     for (int i = 0; i < subScorers.length; i++) {
-      iterators[i] = subScorers[i].positions();
+      // nocommit - offsets and payloads?
+      iterators[i] = subScorers[i].positions(false, false);
       assert iterators[i] != null;
     }
     lastIter = iterators.length - 1;

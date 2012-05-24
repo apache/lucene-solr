@@ -17,11 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
-import org.apache.lucene.search.positions.PositionIntervalIterator;
 
 /**
  * Expert: Common scoring functionality for different types of queries.
@@ -63,7 +63,7 @@ public abstract class Scorer extends DocIdSetIterator {
     }
   }
   
-  public abstract PositionIntervalIterator positions() throws IOException;
+  public abstract PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException;
 
   /**
    * Expert: Collects matching documents in a range. Hook for optimization.

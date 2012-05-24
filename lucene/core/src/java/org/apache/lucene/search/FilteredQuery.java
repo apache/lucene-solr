@@ -224,7 +224,7 @@ public class FilteredQuery extends Query {
             }
 
             @Override
-            public PositionIntervalIterator positions() throws IOException {
+            public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
               // nocommit what should we do in this case with positions?
               throw new UnsupportedOperationException();
             }

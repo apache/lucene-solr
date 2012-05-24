@@ -17,17 +17,17 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.DisjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
@@ -140,7 +140,7 @@ final class BooleanScorer extends Scorer {
     public float score() throws IOException { return score; }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       return PositionIntervalIterator.NO_MORE_POSITIONS;
     }
     
@@ -327,7 +327,7 @@ final class BooleanScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions() throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
     final List<Scorer> scorers = new ArrayList<Scorer>();
     SubScorer sub = this.scorers;
     while(sub != null) {

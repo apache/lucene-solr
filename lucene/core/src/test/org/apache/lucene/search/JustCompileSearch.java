@@ -17,16 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.PriorityQueue;
+
+import java.io.IOException;
 
 /**
  * Holds all implementations of classes in the o.a.l.search package as a
@@ -205,7 +205,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -253,7 +253,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }

@@ -179,8 +179,8 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
-      return scorer.positions();
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+      return scorer.positions(needsPayloads, needsOffsets);
     }
   }
 

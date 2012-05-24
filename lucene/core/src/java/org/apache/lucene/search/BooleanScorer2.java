@@ -147,8 +147,8 @@ class BooleanScorer2 extends Scorer {
     }
     
     @Override
-    public PositionIntervalIterator positions() throws IOException {     
-      return scorer.positions();
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+      return scorer.positions(needsPayloads, needsOffsets);
     }
   }
 
@@ -326,8 +326,8 @@ class BooleanScorer2 extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions() throws IOException {
-    return countingSumScorer.positions();
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+    return countingSumScorer.positions(needsPayloads, needsOffsets);
   }
 
   @Override

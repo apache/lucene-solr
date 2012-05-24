@@ -17,9 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.search.positions.PositionIntervalIterator;
+
+import java.io.IOException;
 
 
 /** A Scorer for queries with a required subscorer
@@ -121,7 +121,7 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions() throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
     // nocommit implement this
     throw new UnsupportedOperationException();
   }

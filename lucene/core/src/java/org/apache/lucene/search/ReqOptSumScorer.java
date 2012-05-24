@@ -16,9 +16,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.search.positions.PositionIntervalIterator;
+
+import java.io.IOException;
 
 /** A Scorer for queries with a required part and an optional part.
  * Delays skipTo() on the optional part until a score() is needed.
@@ -83,7 +83,7 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions() throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
     // nocommit implement this
     throw new UnsupportedOperationException();
   }

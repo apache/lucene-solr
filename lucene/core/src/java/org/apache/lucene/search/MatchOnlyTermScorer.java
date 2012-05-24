@@ -17,11 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
+
+import java.io.IOException;
 
 /** Expert: A <code>Scorer</code> for documents matching a
  * <code>Term</code>.  It treats all documents as having
@@ -94,7 +94,7 @@ final class MatchOnlyTermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override
-  public PositionIntervalIterator positions() throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
     // nocommit is this ok here?
     throw new UnsupportedOperationException();
   }
