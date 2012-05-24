@@ -251,22 +251,10 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
 
     final String version = input.readString();
 
-    // nocommit: we ignore this and use the incoming arg: don't write this
-    input.readString();
-
     final int docCount = input.readInt();
-    // nocommit: dont write this
-    final long delGen = input.readLong();
     
     final Map<String,String> attributes = input.readStringStringMap();
 
-    // pre-4.0 indexes write a byte if there is a single norms file
-    byte b = input.readByte();
-
-    //System.out.println("version=" + version + " name=" + name + " docCount=" + docCount + " delGen=" + delGen + " dso=" + docStoreOffset + " dss=" + docStoreSegment + " dssCFs=" + docStoreIsCompoundFile + " b=" + b + " format=" + format);
-
-    // nocommit: don't write this
-    assert 1 == b : "expected 1 but was: "+ b;
     final int numNormGen = input.readInt();
     final Map<Integer,Long> normGen;
     if (numNormGen == SegmentInfo.NO) {
@@ -279,16 +267,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     }
     final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
 
-    final int delCount = input.readInt();
-    assert delCount <= docCount;
-
-    // nocommit: unused, dont write this
-    final boolean hasProx = input.readByte() == 1;
-
     final Map<String,String> diagnostics = input.readStringStringMap();
-
-    // nocommit: unused, dont write this
-    final int hasVectors = input.readByte();
 
     final Set<String> files = input.readStringSet();
 

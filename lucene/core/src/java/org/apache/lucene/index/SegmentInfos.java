@@ -423,15 +423,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
       assert si.getCodec() instanceof Lucene3xCodec : "broken test, trying to mix preflex with other codecs";
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(si.getVersion());
-      output.writeString(si.name);
       output.writeInt(si.getDocCount());
 
-      // NOTE: a lie
-      output.writeLong(0L);
-
       output.writeStringStringMap(si.attributes());
-      // pre-4.0 indexes write a byte if there is a single norms file
-      output.writeByte((byte) 1);
 
       Map<Integer,Long> normGen = si.getNormGen();
       if (normGen == null) {
@@ -444,15 +438,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
       }
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
-
-      // NOTE: a lie
-      output.writeInt(0);
-
-      // hasProx (lie):
-      output.writeByte((byte) 1);
       output.writeStringStringMap(si.getDiagnostics());
-      // hasVectors (lie):
-      output.writeByte((byte) 1);
       output.writeStringSet(si.files());
 
       success = true;
