@@ -271,7 +271,7 @@ class DocumentsWriterPerThread {
   private void initSegmentInfo() {
     String segment = writer.newSegmentName();
     segmentInfo = new SegmentInfo(directoryOrig, Constants.LUCENE_MAIN_VERSION, segment, -1,
-                                  null, false, codec, null, null);
+                                  false, codec, null, null);
     assert numDocsInRAM == 0;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segment + " delQueue=" + deleteQueue);  

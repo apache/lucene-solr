@@ -222,12 +222,15 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
       addIfExists(dir, files, IndexFileNames.segmentFileName(name, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
     }
     
+    // parse the normgen stuff and shove it into attributes
     if (normGen != null) {
+      attributes.put(Lucene3xSegmentInfoFormat.NORMGEN_KEY, Integer.toString(numNormGen));
       for(Map.Entry<Integer,Long> ent : normGen.entrySet()) {
         long gen = ent.getValue();
         if (gen >= SegmentInfo.YES) {
           // Definitely a separate norm file, with generation:
           files.add(IndexFileNames.fileNameFromGeneration(name, "s" + ent.getKey(), gen));
+          attributes.put(Lucene3xSegmentInfoFormat.NORMGEN_PREFIX + ent.getKey(), Long.toString(gen));
         } else if (gen == SegmentInfo.NO) {
           // No separate norm
         } else {
@@ -237,8 +240,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
       }
     }
 
-    // nocommit: convert normgen into attributes?
-    SegmentInfo info = new SegmentInfo(dir, version, name, docCount, normGen, isCompoundFile,
+    SegmentInfo info = new SegmentInfo(dir, version, name, docCount, isCompoundFile,
                                        null, diagnostics, Collections.unmodifiableMap(attributes));
     info.setFiles(files);
 
@@ -256,24 +258,13 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     
     final Map<String,String> attributes = input.readStringStringMap();
 
-    final int numNormGen = input.readInt();
-    final Map<Integer,Long> normGen;
-    if (numNormGen == SegmentInfo.NO) {
-      normGen = null;
-    } else {
-      normGen = new HashMap<Integer, Long>();
-      for(int j=0;j<numNormGen;j++) {
-        normGen.put(j, input.readLong());
-      }
-    }
     final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
 
     final Map<String,String> diagnostics = input.readStringStringMap();
 
     final Set<String> files = input.readStringSet();
 
-    // nocommit: convert normgen into attributes?
-    SegmentInfo info = new SegmentInfo(dir, version, name, docCount, normGen, isCompoundFile,
+    SegmentInfo info = new SegmentInfo(dir, version, name, docCount, isCompoundFile,
                                        null, diagnostics, Collections.unmodifiableMap(attributes));
     info.setFiles(files);
     return info;

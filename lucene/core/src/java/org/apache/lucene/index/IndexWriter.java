@@ -2285,7 +2285,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
 
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, -1,
-                                         null, false, codec, null, null);
+                                         false, codec, null, null);
 
       SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir, config.getTermIndexInterval(),
                                                MergeState.CheckAbort.NONE, payloadProcessorProvider,
@@ -2402,7 +2402,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     // Same SI as before but we change directory, name and docStoreSegment:
     SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(),
-                                          info.info.getNormGen(), info.info.getUseCompoundFile(),
+                                          info.info.getUseCompoundFile(),
                                           info.info.getCodec(), info.info.getDiagnostics(), Collections.unmodifiableMap(attributes));
     SegmentInfoPerCommit newInfoPerCommit = new SegmentInfoPerCommit(newInfo, info.getDelCount(), info.getDelGen());
 
@@ -3323,7 +3323,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     final String mergeSegmentName = newSegmentName();
-    SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, -1, null, false, codec, details, null);
+    SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, -1, false, codec, details, null);
     merge.info = new SegmentInfoPerCommit(si, 0, -1L);
 
     // Lock order: IW -> BD

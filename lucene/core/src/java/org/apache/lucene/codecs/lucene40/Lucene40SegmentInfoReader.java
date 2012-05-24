@@ -50,13 +50,12 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
                                    Lucene40SegmentInfoFormat.VERSION_CURRENT);
       final String version = input.readString();
       final int docCount = input.readInt();
-      final Map<Integer,Long> normGen = null;
       final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
       final Map<String,String> diagnostics = input.readStringStringMap();
       final Map<String,String> attributes = input.readStringStringMap();
       final Set<String> files = input.readStringSet();
 
-      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, normGen, isCompoundFile,
+      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile,
                                              null, diagnostics, Collections.unmodifiableMap(attributes));
       si.setFiles(files);
 

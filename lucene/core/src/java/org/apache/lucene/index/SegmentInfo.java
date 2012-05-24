@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 
@@ -44,14 +45,6 @@ public final class SegmentInfo {
   public final String name;				  // unique name in dir
   private int docCount;				  // number of docs in seg
   public final Directory dir;				  // where segment resides
-
-  /*
-   * Current generation of each field's norm file. If this array is null,
-   * means no separate norms. If this array is not null, its values mean:
-   * - NO says this field has no separate norms
-   * >= YES says this field has separate norms with the specified generation
-   */
-  private final Map<Integer,Long> normGen;
 
   private boolean isCompoundFile;
 
@@ -84,14 +77,12 @@ public final class SegmentInfo {
    * the codecs package.</p>
    */
   public SegmentInfo(Directory dir, String version, String name, int docCount, 
-                     Map<Integer,Long> normGen, boolean isCompoundFile,
-                     Codec codec, Map<String,String> diagnostics, Map<String,String> attributes) {
+                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics, Map<String,String> attributes) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
     this.version = version;
     this.name = name;
     this.docCount = docCount;
-    this.normGen = normGen;
     this.isCompoundFile = isCompoundFile;
     this.codec = codec;
     this.diagnostics = diagnostics;
@@ -120,17 +111,7 @@ public final class SegmentInfo {
    */
   @Deprecated
   boolean hasSeparateNorms() {
-    if (normGen == null) {
-      return false;
-    } else {
-      for (long fieldNormGen : normGen.values()) {
-        if (fieldNormGen >= YES) {
-          return true;
-        }
-      }
-    }
-
-    return false;
+    return getAttribute(Lucene3xSegmentInfoFormat.NORMGEN_KEY) != null;
   }
 
   /**
@@ -265,11 +246,6 @@ public final class SegmentInfo {
   /** Returns the version of the code which wrote the segment. */
   public String getVersion() {
     return version;
-  }
-
-  /** @lucene.internal */
-  public Map<Integer,Long> getNormGen() {
-    return normGen;
   }
 
   private Set<String> setFiles;

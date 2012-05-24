@@ -429,16 +429,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
 
       output.writeStringStringMap(si.attributes());
 
-      Map<Integer,Long> normGen = si.getNormGen();
-      if (normGen == null) {
-        output.writeInt(SegmentInfo.NO);
-      } else {
-        output.writeInt(normGen.size());
-        for (Map.Entry<Integer,Long> entry : normGen.entrySet()) {
-          output.writeLong(entry.getValue());
-        }
-      }
-
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeStringStringMap(si.getDiagnostics());
       output.writeStringSet(si.files());

@@ -108,7 +108,7 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
       }
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, 
-                                         null, isCompoundFile, null, diagnostics, Collections.unmodifiableMap(attributes));
+                                         isCompoundFile, null, diagnostics, Collections.unmodifiableMap(attributes));
       info.setFiles(files);
       success = true;
       return info;
