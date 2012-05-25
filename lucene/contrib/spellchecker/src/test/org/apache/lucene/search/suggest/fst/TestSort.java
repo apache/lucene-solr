@@ -21,7 +21,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-
 import org.apache.lucene.search.suggest.fst.Sort.BufferSize;
 import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesWriter;
 import org.apache.lucene.search.suggest.fst.Sort.SortInfo;
@@ -156,7 +155,7 @@ public class TestSort extends LuceneTestCase {
   public void testRamBuffer() {
     int numIters = atLeast(10000);
     for (int i = 0; i < numIters; i++) {
-      BufferSize.megabytes(1+random().nextInt(2047));
+      BufferSize.megabytes(1+random.nextInt(2047));
     }
     BufferSize.megabytes(2047);
     BufferSize.megabytes(1);
