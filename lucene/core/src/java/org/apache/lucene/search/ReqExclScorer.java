@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 
 import java.io.IOException;
@@ -122,7 +123,6 @@ class ReqExclScorer extends Scorer {
 
   @Override
   public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
-    // nocommit implement this
-    throw new UnsupportedOperationException();
+    return new ConjunctionPositionIterator(this, new Scorer[] { reqScorer });
   }
 }

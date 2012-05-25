@@ -1,7 +1,5 @@
 package org.apache.lucene.search.poshighlight;
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -20,15 +18,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.SimpleFragmenter;
@@ -41,6 +32,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Ignore;
+
+import java.io.IOException;
 
 /**
  * TODO: FIX THIS TEST Phrase and Span Queries positions callback API
@@ -297,6 +290,34 @@ public class PosHighlighterTest extends LuceneTestCase {
     insertDocs(analyzer, "This is a test");
     String frags[] = doSearch(new WildcardQuery(new Term(F, "t*t")));
     assertEquals("This is a <B>test</B>", frags[0]);
+    close();
+  }
+
+  public void testMixedBooleanNot() throws Exception {
+    insertDocs(analyzer, "this is a test", "that is an elephant");
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.MUST));
+    bq.add(new BooleanClause(new TermQuery(new Term(F, "that")), Occur.MUST_NOT));
+    String frags[] = doSearch(bq);
+    assertEquals("this is a <B>test</B>", frags[0]);
+    close();
+  }
+
+  public void testMixedBooleanShould() throws Exception {
+    insertDocs(analyzer, "this is a test", "that is an elephant", "the other was a rhinoceros");
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new BooleanClause(new TermQuery(new Term(F, "is")), Occur.MUST));
+    bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.SHOULD));
+    String frags[] = doSearch(bq, 50, 0);
+    assertEquals("this <B>is</B> a <B>test</B>", frags[0]);
+    frags = doSearch(bq, 50, 1);
+    assertEquals("that <B>is</B> an elephant", frags[0]);
+
+    bq.add(new BooleanClause(new TermQuery(new Term(F, "rhinoceros")), Occur.SHOULD));
+    frags = doSearch(bq, 50, 0);
+    assertEquals("this <B>is</B> a <B>test</B>", frags[0]);
+    frags = doSearch(bq, 50, 1);
+    assertEquals("that <B>is</B> an elephant", frags[0]);
     close();
   }
   
