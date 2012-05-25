@@ -1097,7 +1097,7 @@ public class QueryParser implements QueryParserConstants {
         }
         lastCharWasEscapeChar = false;
       } else {
-        if (curChar == '\\') {
+        if (curChar == '\u005c\u005c') {
           lastCharWasEscapeChar = true;
         } else {
           output[length] = curChar;
@@ -1139,10 +1139,10 @@ public class QueryParser implements QueryParserConstants {
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
       // These characters are part of the query syntax and must be escaped
-      if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
-        || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
+      if (c == '\u005c\u005c' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
+        || c == '^' || c == '[' || c == ']' || c == '\u005c"' || c == '{' || c == '}' || c == '~'
         || c == '*' || c == '?' || c == '|' || c == '&') {
-        sb.append('\\');
+        sb.append('\u005c\u005c');
       }
       sb.append(c);
     }
@@ -1254,6 +1254,7 @@ public class QueryParser implements QueryParserConstants {
       case NOT:
       case PLUS:
       case MINUS:
+      case BAREOPER:
       case LPAREN:
       case STAR:
       case QUOTED:
@@ -1306,6 +1307,7 @@ public class QueryParser implements QueryParserConstants {
       ;
     }
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case BAREOPER:
     case STAR:
     case QUOTED:
     case TERM:
@@ -1353,6 +1355,7 @@ public class QueryParser implements QueryParserConstants {
   boolean fuzzy = false;
   Query q;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case BAREOPER:
     case STAR:
     case TERM:
     case PREFIXTERM:
@@ -1376,6 +1379,10 @@ public class QueryParser implements QueryParserConstants {
         break;
       case NUMBER:
         term = jj_consume_token(NUMBER);
+        break;
+      case BAREOPER:
+        term = jj_consume_token(BAREOPER);
+                           term.image = term.image.substring(0,1);
         break;
       default:
         jj_la1[8] = jj_gen;
@@ -1611,12 +1618,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3R_2() {
-    if (jj_scan_token(TERM)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
   private boolean jj_3_1() {
     Token xsp;
     xsp = jj_scanpos;
@@ -1629,6 +1630,12 @@ public class QueryParser implements QueryParserConstants {
 
   private boolean jj_3R_3() {
     if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_2() {
+    if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
     return false;
   }
@@ -1651,10 +1658,10 @@ public class QueryParser implements QueryParserConstants {
       jj_la1_init_1();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0x3ed3f00,0x90000,0x20000,0x3ed2000,0x2690000,0x100000,0x100000,0x20000,0x30000000,0x4000000,0x30000000,0x20000,0x0,0x40000000,0x0,0x20000,0x100000,0x20000,0x3ed0000,};
+      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0x7da7f00,0x120000,0x40000,0x7da6000,0x4d22000,0x200000,0x200000,0x40000,0x60000000,0x8000000,0x60000000,0x40000,0x0,0x80000000,0x0,0x40000,0x200000,0x40000,0x7da2000,};
    }
    private static void jj_la1_init_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x3,0x0,0x3,0x0,0x0,0x0,0x0,};
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x6,0x0,0x6,0x0,0x0,0x0,0x0,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -1789,7 +1796,7 @@ public class QueryParser implements QueryParserConstants {
       for (int i = 0; i < jj_endpos; i++) {
         jj_expentry[i] = jj_lasttokens[i];
       }
-      jj_entries_loop: for (java.util.Iterator it = jj_expentries.iterator(); it.hasNext();) {
+      jj_entries_loop: for (java.util.Iterator<?> it = jj_expentries.iterator(); it.hasNext();) {
         int[] oldentry = (int[])(it.next());
         if (oldentry.length == jj_expentry.length) {
           for (int i = 0; i < jj_expentry.length; i++) {
@@ -1808,7 +1815,7 @@ public class QueryParser implements QueryParserConstants {
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[34];
+    boolean[] la1tokens = new boolean[35];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -1825,7 +1832,7 @@ public class QueryParser implements QueryParserConstants {
         }
       }
     }
-    for (int i = 0; i < 34; i++) {
+    for (int i = 0; i < 35; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

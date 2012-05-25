@@ -17,6 +17,8 @@ Bug Fixes:
 * LUCENE-4023: DisjunctionMaxScorer now implements visitSubScorers().
   (Uwe Schindler)
 
+* LUCENE-2566: + - operators allow any amount of whitespace (yonik, janhoy)
+
 API Changes
 
 * LUCENE-4023: Changed the visibility of Scorer#visitSubScorers() to
