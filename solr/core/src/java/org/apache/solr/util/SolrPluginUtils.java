@@ -377,6 +377,9 @@ public class SolrPluginUtils {
     }
 
   }
+  private static final Pattern whitespacePattern = Pattern.compile("\\s+");
+  private static final Pattern caratPattern = Pattern.compile("\\^");
+  private static final Pattern tildePattern = Pattern.compile("[~]");
 
   /**
    * Given a string containing fieldNames and boost info,
@@ -408,16 +411,58 @@ public class SolrPluginUtils {
     }
     Map<String, Float> out = new HashMap<String,Float>(7);
     for (String in : fieldLists) {
-      if (null == in || "".equals(in.trim()))
+      if (null == in) {
         continue;
-      String[] bb = in.trim().split("\\s+");
+      }
+      in = in.trim();
+      if(in.length()==0) {
+        continue;
+      }
+      
+      String[] bb = whitespacePattern.split(in);
       for (String s : bb) {
-        String[] bbb = s.split("\\^");
+        String[] bbb = caratPattern.split(s);
         out.put(bbb[0], 1 == bbb.length ? null : Float.valueOf(bbb[1]));
       }
     }
     return out;
   }
+  /**
+  
+  /**
+   * Like {@link #parseFieldBoosts}, but allows for an optional slop value prefixed by "~".
+   *
+   * @param fieldLists - an array of Strings eg. <code>{"fieldOne^2.3", "fieldTwo", fieldThree~5^-0.4}</code>
+   * @param wordGrams - (0=all words, 2,3 = shingle size)
+   * @return - FieldParams containing the fieldname,boost,slop,and shingle size
+   */
+  public static List<FieldParams> parseFieldBoostsAndSlop(String[] fieldLists,int wordGrams) {
+    if (null == fieldLists || 0 == fieldLists.length) {
+        return new ArrayList<FieldParams>();
+    }
+    List<FieldParams> out = new ArrayList<FieldParams>();
+    for (String in : fieldLists) {
+      if (null == in) {
+        continue;
+      }
+      in = in.trim();
+      if(in.length()==0) {
+        continue;
+      }
+      String[] fieldConfigs = whitespacePattern.split(in);
+      for (String s : fieldConfigs) {
+        String[] fieldAndSlopVsBoost = caratPattern.split(s);
+        String[] fieldVsSlop = tildePattern.split(fieldAndSlopVsBoost[0]);
+        String field = fieldVsSlop[0];
+        int slop  = (2 == fieldVsSlop.length) ? Integer.valueOf(fieldVsSlop[1]) : 0;
+        Float boost = (1 == fieldAndSlopVsBoost.length) ? 1  : Float.valueOf(fieldAndSlopVsBoost[1]);
+        FieldParams fp = new FieldParams(field,wordGrams,slop,boost);
+        out.add(fp);
+      }
+    }
+    return out;
+  }
+
 
   /**
    * Checks the number of optional clauses in the query, and compares it

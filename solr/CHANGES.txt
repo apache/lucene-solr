@@ -310,6 +310,11 @@ New Features
   that the suggestions need not consist entirely of terms with a greater document
   frequency than the queried terms. (James Dyer)
 
+* SOLR-2058: Edismax query parser to allow "phrase slop" to be specified per-field
+  on the pf/pf2/pf3 parameters using optional "FieldName~slop^boost" syntax.  The
+  prior "FieldName^boost" syntax is still accepted.  In such cases the value on the
+  "ps" parameter serves as the default slop.  (Ron Mayer via James Dyer)
+
 
 Optimizations
 ----------------------

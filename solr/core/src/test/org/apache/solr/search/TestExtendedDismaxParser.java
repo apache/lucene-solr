@@ -597,5 +597,29 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
             "debugQuery",  "true",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s1']"); 
+    
+    assertQ("ps/ps2/ps3 with default slop overrides not working",
+        req("q", "zzzz xxxx cccc vvvv",
+            "qf", "phrase_sw",
+            "pf", "phrase_sw~1^10 phrase_sw~2^20 phrase_sw^30",
+            "pf2", "phrase_sw~2^22 phrase_sw^33",
+            "pf3", "phrase_sw~2^222 phrase_sw^333",
+            "ps", "3",
+            "defType", "edismax",
+            "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc vvvv\"~1^10.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc vvvv\"~2^20.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc vvvv\"~3^30.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx\"~2^22.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc\"~2^22.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"cccc vvvv\"~2^22.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx\"~3^33.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc\"~3^33.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"cccc vvvv\"~3^33.0')]",        
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc\"~2^222.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc vvvv\"~2^222.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc\"~3^333.0')]",
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc vvvv\"~3^333.0')]"
+     );
   }
 }
