@@ -1784,7 +1784,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   }
 
   protected DocList sortDocSet(DocSet set, Sort sort, int nDocs) throws IOException {
-    // bit of a hack to tell if a set is sorted - do it better in the futute.
+    if (nDocs == 0) {
+      // SOLR-2923
+      return new DocSlice(0, 0, new int[0], null, 0, 0f);
+    }
+
+    // bit of a hack to tell if a set is sorted - do it better in the future.
     boolean inOrder = set instanceof BitDocSet || set instanceof SortedIntDocSet;
 
     TopDocsCollector topCollector = TopFieldCollector.create(weightSort(sort), nDocs, false, false, false, inOrder);

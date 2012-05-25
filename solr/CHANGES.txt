@@ -446,6 +446,9 @@ Bug Fixes
 
 * LUCENE-4075: Cleaner path usage in TestXPathEntityProcessor
   (Greg Bowyer via hossman)
+  
+* SOLR-2923: IllegalArgumentException when using useFilterForSortedQuery on an 
+  empty index. (Adrien Grand via Mark Miller)
 
 Other Changes
 ----------------------
