@@ -328,8 +328,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
             // we'd have to try @ fewer bits and then grow
             // if we overflowed it.
 
-            PackedInts.Mutable termsDictOffsetsM = PackedInts.getMutable(this.numIndexTerms, termsDictOffsetsIter.getBitsPerValue());
-            PackedInts.Mutable termOffsetsM = PackedInts.getMutable(this.numIndexTerms+1, termOffsetsIter.getBitsPerValue());
+            PackedInts.Mutable termsDictOffsetsM = PackedInts.getMutable(this.numIndexTerms, termsDictOffsetsIter.getBitsPerValue(), PackedInts.DEFAULT);
+            PackedInts.Mutable termOffsetsM = PackedInts.getMutable(this.numIndexTerms+1, termOffsetsIter.getBitsPerValue(), PackedInts.DEFAULT);
 
             termsDictOffsets = termsDictOffsetsM;
             termOffsets = termOffsetsM;

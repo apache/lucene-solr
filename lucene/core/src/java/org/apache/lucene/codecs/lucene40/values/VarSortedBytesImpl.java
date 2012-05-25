@@ -60,8 +60,8 @@ final class VarSortedBytesImpl {
     private final Comparator<BytesRef> comp;
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
-        Counter bytesUsed, IOContext context, boolean fasterButMoreRam) throws IOException {
-      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam, Type.BYTES_VAR_SORTED);
+        Counter bytesUsed, IOContext context, float acceptableOverheadRatio) throws IOException {
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, acceptableOverheadRatio, Type.BYTES_VAR_SORTED);
       this.comp = comp;
       size = 0;
     }
@@ -83,7 +83,7 @@ final class VarSortedBytesImpl {
         
         idxOut.writeLong(maxBytes);
         final PackedInts.Writer offsetWriter = PackedInts.getWriter(idxOut, maxOrd+1,
-            PackedInts.bitsRequired(maxBytes));
+            PackedInts.bitsRequired(maxBytes), PackedInts.DEFAULT);
         offsetWriter.add(0);
         for (int i = 0; i < maxOrd; i++) {
           offsetWriter.add(offsets[i]);
@@ -91,7 +91,7 @@ final class VarSortedBytesImpl {
         offsetWriter.finish();
         
         final PackedInts.Writer ordsWriter = PackedInts.getWriter(idxOut, ctx.docToEntry.length,
-            PackedInts.bitsRequired(maxOrd-1));
+            PackedInts.bitsRequired(maxOrd-1), PackedInts.DEFAULT);
         for (SortedSourceSlice slice : slices) {
           slice.writeOrds(ordsWriter);
         }
@@ -127,7 +127,7 @@ final class VarSortedBytesImpl {
       // total bytes of data
       idxOut.writeLong(maxBytes);
       PackedInts.Writer offsetWriter = PackedInts.getWriter(idxOut, count+1,
-          bitsRequired(maxBytes));
+          PackedInts.bitsRequired(maxBytes), PackedInts.DEFAULT);
       // first dump bytes data, recording index & write offset as
       // we go
       final BytesRef spare = new BytesRef();

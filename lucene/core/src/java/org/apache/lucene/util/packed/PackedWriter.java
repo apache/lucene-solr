@@ -52,6 +52,11 @@ class PackedWriter extends PackedInts.Writer {
     }
   }
 
+  @Override
+  protected int getFormat() {
+    return PackedInts.PACKED;
+  }
+
   /**
    * Do not call this after finish
    */

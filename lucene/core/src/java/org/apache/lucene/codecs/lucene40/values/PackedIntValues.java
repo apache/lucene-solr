@@ -103,7 +103,7 @@ class PackedIntValues {
           : ++maxValue - minValue;
       datOut.writeLong(defaultValue);
       PackedInts.Writer w = PackedInts.getWriter(datOut, docCount,
-          PackedInts.bitsRequired(maxValue - minValue));
+          PackedInts.bitsRequired(maxValue - minValue), PackedInts.DEFAULT);
       for (int i = 0; i < lastDocID + 1; i++) {
         set(bytesRef, i);
         byte[] bytes = bytesRef.bytes;

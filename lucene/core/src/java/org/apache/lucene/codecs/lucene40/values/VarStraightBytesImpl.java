@@ -198,7 +198,7 @@ class VarStraightBytesImpl {
         if (lastDocID == -1) {
           idxOut.writeVLong(0);
           final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount+1,
-              PackedInts.bitsRequired(0));
+              PackedInts.bitsRequired(0), PackedInts.DEFAULT);
           // docCount+1 so we write sentinel
           for (int i = 0; i < docCount+1; i++) {
             w.add(0);
@@ -208,7 +208,7 @@ class VarStraightBytesImpl {
           fill(docCount, address);
           idxOut.writeVLong(address);
           final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount+1,
-              PackedInts.bitsRequired(address));
+              PackedInts.bitsRequired(address), PackedInts.DEFAULT);
           for (int i = 0; i < docCount; i++) {
             w.add(docToAddress[i]);
           }

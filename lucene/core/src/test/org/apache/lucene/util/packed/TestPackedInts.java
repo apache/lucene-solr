@@ -19,6 +19,7 @@ package org.apache.lucene.util.packed;
 
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.packed.PackedInts.Reader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,10 +54,10 @@ public class TestPackedInts extends LuceneTestCase {
       for(int nbits=1;nbits<63;nbits++) {
         final int valueCount = 100+random().nextInt(500);
         final Directory d = newDirectory();
-
+        
         IndexOutput out = d.createOutput("out.bin", newIOContext(random()));
         PackedInts.Writer w = PackedInts.getWriter(
-                out, valueCount, nbits);
+                                out, valueCount, nbits, random().nextFloat()*PackedInts.FASTEST);
 
         final long[] values = new long[valueCount];
         for(int i=0;i<valueCount;i++) {
@@ -188,16 +189,24 @@ public class TestPackedInts extends LuceneTestCase {
     if (bitsPerValue <= 16) {
       packedInts.add(new Direct16(valueCount));
     }
-    if (bitsPerValue <= 31) {
-      packedInts.add(new Packed32(valueCount, bitsPerValue));
+    if (bitsPerValue <= 24 && valueCount <= Packed8ThreeBlocks.MAX_SIZE) {
+      packedInts.add(new Packed8ThreeBlocks(valueCount));
     }
     if (bitsPerValue <= 32) {
       packedInts.add(new Direct32(valueCount));
+    }
+    if (bitsPerValue <= 48 && valueCount <= Packed16ThreeBlocks.MAX_SIZE) {
+      packedInts.add(new Packed16ThreeBlocks(valueCount));
     }
     if (bitsPerValue <= 63) {
       packedInts.add(new Packed64(valueCount, bitsPerValue));
     }
     packedInts.add(new Direct64(valueCount));
+    for (int bpv = bitsPerValue; bpv <= 64; ++bpv) {
+      if (Packed64SingleBlock.isSupported(bpv)) {
+        packedInts.add(Packed64SingleBlock.create(valueCount, bpv));
+      }
+    }
     return packedInts;
   }
 
@@ -242,20 +251,26 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testSingleValue() throws Exception {
-    Directory dir = newDirectory();
-    IndexOutput out = dir.createOutput("out", newIOContext(random()));
-    PackedInts.Writer w = PackedInts.getWriter(out, 1, 8);
-    w.add(17);
-    w.finish();
-    final long end = out.getFilePointer();
-    out.close();
+    for (int bitsPerValue = 1; bitsPerValue <= 64; ++bitsPerValue) {
+      Directory dir = newDirectory();
+      IndexOutput out = dir.createOutput("out", newIOContext(random()));
+      PackedInts.Writer w = PackedInts.getWriter(out, 1, bitsPerValue, PackedInts.DEFAULT);
+      long value = 17L & PackedInts.maxValue(bitsPerValue);
+      w.add(value);
+      w.finish();
+      final long end = out.getFilePointer();
+      out.close();
 
-    IndexInput in = dir.openInput("out", newIOContext(random()));
-    PackedInts.getReader(in);
-    assertEquals(end, in.getFilePointer());
-    in.close();
+      IndexInput in = dir.openInput("out", newIOContext(random()));
+      Reader reader = PackedInts.getReader(in);
+      String msg = "Impl=" + w.getClass().getSimpleName() + ", bitsPerValue=" + bitsPerValue;
+      assertEquals(msg, 1, reader.size());
+      assertEquals(msg, value, reader.get(0));
+      assertEquals(msg, end, in.getFilePointer());
+      in.close();
 
-    dir.close();
+      dir.close();
+    }
   }
 
   public void testSecondaryBlockChange() throws IOException {
@@ -276,15 +291,36 @@ public class TestPackedInts extends LuceneTestCase {
     int INDEX = (int)Math.pow(2, 30)+1;
     int BITS = 2;
 
-    Packed32 p32 = new Packed32(INDEX, BITS);
-    p32.set(INDEX-1, 1);
-    assertEquals("The value at position " + (INDEX-1)
-        + " should be correct for Packed32", 1, p32.get(INDEX-1));
-    p32 = null; // To free the 256MB used
-
     Packed64 p64 = new Packed64(INDEX, BITS);
     p64.set(INDEX-1, 1);
     assertEquals("The value at position " + (INDEX-1)
         + " should be correct for Packed64", 1, p64.get(INDEX-1));
+    p64 = null;
+
+    for (int bits = 1; bits <=64; ++bits) {
+      if (Packed64SingleBlock.isSupported(bits)) {
+        int index = Integer.MAX_VALUE / bits + (bits == 1 ? 0 : 1);
+        Packed64SingleBlock p64sb = Packed64SingleBlock.create(index, bits);
+        p64sb.set(index - 1, 1);
+        assertEquals("The value at position " + (index-1)
+            + " should be correct for " + p64sb.getClass().getSimpleName(),
+            1, p64sb.get(index-1));
+      }
+    }
+
+    int index = Integer.MAX_VALUE / 24 + 1;
+    Packed8ThreeBlocks p8 = new Packed8ThreeBlocks(index);
+    p8.set(index - 1, 1);
+    assertEquals("The value at position " + (index-1)
+        + " should be correct for Packed8ThreeBlocks", 1, p8.get(index-1));
+    p8 = null;
+
+    index = Integer.MAX_VALUE / 48 + 1;
+    Packed16ThreeBlocks p16 = new Packed16ThreeBlocks(index);
+    p16.set(index - 1, 1);
+    assertEquals("The value at position " + (index-1)
+        + " should be correct for Packed16ThreeBlocks", 1, p16.get(index-1));
+    p16 = null;
   }
+
 }

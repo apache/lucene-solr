@@ -21,24 +21,18 @@ import org.apache.lucene.store.IndexInput;
 
 import java.io.IOException;
 
-final class PackedReaderIterator implements PackedInts.ReaderIterator {
+final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
   private long pending;
   private int pendingBitsLeft;
-  private final IndexInput in;
-  private final int bitsPerValue;
-  private final int valueCount;
   private int position = -1;
 
   // masks[n-1] masks for bottom n bits
   private final long[] masks;
 
-  public PackedReaderIterator(int bitsPerValue, int valueCount, IndexInput in)
+  public PackedReaderIterator(int valueCount, int bitsPerValue, IndexInput in)
     throws IOException {
+    super(valueCount, bitsPerValue, in);
 
-    this.valueCount = valueCount;
-    this.bitsPerValue = bitsPerValue;
-    
-    this.in = in;
     masks = new long[bitsPerValue];
 
     long v = 1;
@@ -46,14 +40,6 @@ final class PackedReaderIterator implements PackedInts.ReaderIterator {
       v *= 2;
       masks[i] = v - 1;
     }
-  }
-
-  public int getBitsPerValue() {
-    return bitsPerValue;
-  }
-
-  public int size() {
-    return valueCount;
   }
 
   public long next() throws IOException {
@@ -77,10 +63,6 @@ final class PackedReaderIterator implements PackedInts.ReaderIterator {
     
     ++position;
     return result;
-  }
-
-  public void close() throws IOException {
-    in.close();
   }
 
   public int ord() {

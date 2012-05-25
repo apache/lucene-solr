@@ -58,8 +58,8 @@ class FixedSortedBytesImpl {
     private final Comparator<BytesRef> comp;
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
-        Counter bytesUsed, IOContext context, boolean fasterButMoreRam) throws IOException {
-      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam, Type.BYTES_FIXED_SORTED);
+        Counter bytesUsed, IOContext context, float acceptableOverheadRatio) throws IOException {
+      super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, acceptableOverheadRatio, Type.BYTES_FIXED_SORTED);
       this.comp = comp;
     }
 
@@ -77,7 +77,7 @@ class FixedSortedBytesImpl {
         final IndexOutput idxOut = getOrCreateIndexOut();
         idxOut.writeInt(maxOrd);
         final PackedInts.Writer ordsWriter = PackedInts.getWriter(idxOut, ctx.docToEntry.length,
-            PackedInts.bitsRequired(maxOrd));
+            PackedInts.bitsRequired(maxOrd), PackedInts.DEFAULT);
         for (SortedSourceSlice slice : slices) {
           slice.writeOrds(ordsWriter);
         }

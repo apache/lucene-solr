@@ -921,6 +921,11 @@ Optimizations
 * LUCENE-4061: improve synchronization in DirectoryTaxonomyWriter.addCategory
   and few general improvements to DirectoryTaxonomyWriter.
   (Shai Erera, Gilad Barkai)
+
+* LUCENE-4062: Add new aligned packed bits impls for faster lookup
+  performance; add float acceptableOverheadRatio to getWriter and
+  getMutable API to give packed ints freedom to pick faster
+  implementations (Adrien Grand via Mike McCandless)
   
 Bug fixes
 

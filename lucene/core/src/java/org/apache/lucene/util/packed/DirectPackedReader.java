@@ -22,11 +22,9 @@ import org.apache.lucene.store.IndexInput;
 import java.io.IOException;
 
 /* Reads directly from disk on each get */
-final class DirectReader implements PackedInts.Reader {
+final class DirectPackedReader extends PackedInts.ReaderImpl {
   private final IndexInput in;
   private final long startPointer;
-  private final int bitsPerValue;
-  private final int valueCount;
 
   private static final int BLOCK_BITS = Packed64.BLOCK_BITS;
   private static final int MOD_MASK = Packed64.MOD_MASK;
@@ -34,10 +32,9 @@ final class DirectReader implements PackedInts.Reader {
   // masks[n-1] masks for bottom n bits
   private final long[] masks;
 
-  public DirectReader(int bitsPerValue, int valueCount, IndexInput in)
+  public DirectPackedReader(int bitsPerValue, int valueCount, IndexInput in)
     throws IOException {
-    this.valueCount = valueCount;
-    this.bitsPerValue = bitsPerValue;
+    super(valueCount, bitsPerValue);
     this.in = in;
 
     long v = 1;
@@ -48,26 +45,6 @@ final class DirectReader implements PackedInts.Reader {
     }
 
     startPointer = in.getFilePointer();
-  }
-
-  @Override
-  public int getBitsPerValue() {
-    return bitsPerValue;
-  }
-
-  @Override
-  public int size() {
-    return valueCount;
-  }
-
-  @Override
-  public boolean hasArray() {
-    return false;
-  }
-
-  @Override
-  public Object getArray() {
-    return null;
   }
 
   @Override

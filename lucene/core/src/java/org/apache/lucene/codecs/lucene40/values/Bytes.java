@@ -115,17 +115,19 @@ public final class Bytes {
    *          {@link Writer}. A call to {@link Writer#finish(int)} will release
    *          all internally used resources and frees the memory tracking
    *          reference.
-   * @param fasterButMoreRam whether packed ints for docvalues should be optimized for speed by rounding up the bytes
-   *                         used for a value to either 8, 16, 32 or 64 bytes. This option is only applicable for
-   *                         docvalues of type {@link Type#BYTES_FIXED_SORTED} and {@link Type#BYTES_VAR_SORTED}.
+   * @param acceptableOverheadRatio
+   *          how to trade space for speed. This option is only applicable for
+   *          docvalues of type {@link Type#BYTES_FIXED_SORTED} and
+   *          {@link Type#BYTES_VAR_SORTED}.
    * @param context I/O Context
    * @return a new {@link Writer} instance
    * @throws IOException
    *           if the files for the writer can not be created.
+   * @see PackedInts#getReader(org.apache.lucene.store.DataInput)
    */
   public static DocValuesConsumer getWriter(Directory dir, String id, Mode mode,
       boolean fixedSize, Comparator<BytesRef> sortComparator,
-      Counter bytesUsed, IOContext context, boolean fasterButMoreRam)
+      Counter bytesUsed, IOContext context, float acceptableOverheadRatio)
       throws IOException {
     // TODO -- i shouldn't have to specify fixed? can
     // track itself & do the write thing at write time?
@@ -139,7 +141,7 @@ public final class Bytes {
       } else if (mode == Mode.DEREF) {
         return new FixedDerefBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.SORTED) {
-        return new FixedSortedBytesImpl.Writer(dir, id, sortComparator, bytesUsed, context, fasterButMoreRam);
+        return new FixedSortedBytesImpl.Writer(dir, id, sortComparator, bytesUsed, context, acceptableOverheadRatio);
       }
     } else {
       if (mode == Mode.STRAIGHT) {
@@ -147,7 +149,7 @@ public final class Bytes {
       } else if (mode == Mode.DEREF) {
         return new VarDerefBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.SORTED) {
-        return new VarSortedBytesImpl.Writer(dir, id, sortComparator, bytesUsed, context, fasterButMoreRam);
+        return new VarSortedBytesImpl.Writer(dir, id, sortComparator, bytesUsed, context, acceptableOverheadRatio);
       }
     }
 
@@ -382,32 +384,32 @@ public final class Bytes {
     protected int lastDocId = -1;
     protected int[] docToEntry;
     protected final BytesRefHash hash;
-    protected final boolean fasterButMoreRam;
+    protected final float acceptableOverheadRatio;
     protected long maxBytes = 0;
     
     protected DerefBytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat,
         int codecVersion, Counter bytesUsed, IOContext context, Type type)
         throws IOException {
       this(dir, id, codecNameIdx, codecNameDat, codecVersion, new DirectTrackingAllocator(
-          ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, false, type);
+          ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, PackedInts.DEFAULT, type);
     }
 
     protected DerefBytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat,
-                                   int codecVersion, Counter bytesUsed, IOContext context, boolean fasterButMoreRam, Type type)
+                                   int codecVersion, Counter bytesUsed, IOContext context, float acceptableOverheadRatio, Type type)
         throws IOException {
       this(dir, id, codecNameIdx, codecNameDat, codecVersion, new DirectTrackingAllocator(
-          ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, fasterButMoreRam,type);
+          ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, acceptableOverheadRatio, type);
     }
 
     protected DerefBytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat, int codecVersion, Allocator allocator,
-        Counter bytesUsed, IOContext context, boolean fasterButMoreRam, Type type) throws IOException {
+        Counter bytesUsed, IOContext context, float acceptableOverheadRatio, Type type) throws IOException {
       super(dir, id, codecNameIdx, codecNameDat, codecVersion, bytesUsed, context, type);
       hash = new BytesRefHash(new ByteBlockPool(allocator),
           BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
               BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
       docToEntry = new int[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
-      this.fasterButMoreRam = fasterButMoreRam;
+      this.acceptableOverheadRatio = acceptableOverheadRatio;
     }
     
     protected static int writePrefixLength(DataOutput datOut, BytesRef bytes)
@@ -506,7 +508,7 @@ public final class Bytes {
     protected void writeIndex(IndexOutput idxOut, int docCount,
         long maxValue, int[] addresses, int[] toEntry) throws IOException {
       final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
-          bitsRequired(maxValue));
+          PackedInts.bitsRequired(maxValue), acceptableOverheadRatio);
       final int limit = docCount > docToEntry.length ? docToEntry.length
           : docCount;
       assert toEntry.length >= limit -1;
@@ -530,7 +532,7 @@ public final class Bytes {
     protected void writeIndex(IndexOutput idxOut, int docCount,
         long maxValue, long[] addresses, int[] toEntry) throws IOException {
       final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
-          bitsRequired(maxValue));
+          PackedInts.bitsRequired(maxValue), acceptableOverheadRatio);
       final int limit = docCount > docToEntry.length ? docToEntry.length
           : docCount;
       assert toEntry.length >= limit -1;
@@ -549,11 +551,6 @@ public final class Bytes {
         w.add(0);
       }
       w.finish();
-    }
-
-    protected int bitsRequired(long maxValue){
-      return fasterButMoreRam ?
-          PackedInts.getNextFixedSize(PackedInts.bitsRequired(maxValue)) : PackedInts.bitsRequired(maxValue);
     }
     
   }
