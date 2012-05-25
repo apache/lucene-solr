@@ -439,6 +439,9 @@ Bug Fixes
   an invalid pattern, and include the 'name' whenever possible in plugin init 
   error messages. (hossman)
 
+* LUCENE-4075: Cleaner path usage in TestXPathEntityProcessor
+  (Greg Bowyer via hossman)
+
 Other Changes
 ----------------------
 
