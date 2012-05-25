@@ -47,6 +47,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
+
+
 /** @lucene.experimental */
 public class UpdateLog implements PluginInfoInitialized {
   public static String LOG_FILENAME_PATTERN = "%s.%019d";
@@ -982,7 +986,7 @@ public class UpdateLog implements PluginInfoInitialized {
     @Override
     public void run() {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(DistributedUpdateProcessor.SEEN_LEADER, true);
+      params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
       req = new LocalSolrQueryRequest(uhandler.core, params);
       rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));    // setting request info will help logging

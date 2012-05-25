@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,21 +25,11 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 
 
 /**
- * A custom class to do custom stuff
+ * A passthrough processor that does nothing.
  */
-public class CustomUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory 
-{
-  public NamedList args = null;
-  
-  @Override
-  public void init( NamedList args )
-  {
-    this.args = args;
-  }
-
-  @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return new CustomUpdateRequestProcessor(next);
+public class CustomUpdateRequestProcessor extends UpdateRequestProcessor {
+  public CustomUpdateRequestProcessor( UpdateRequestProcessor next) {
+    super(next);
   }
 }
 

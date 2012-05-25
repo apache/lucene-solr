@@ -128,6 +128,7 @@ New Features
   SOLR-3080: Remove shard info from zookeeper when SolrCore is explicitly unloaded.
   (yonik, Mark Miller, siren)
   SOLR-3437: Recovery issues a spurious commit to the cluster. (Trym R. Møller via Mark Miller)
+  SOLR-2822: Skip update processors already run on other nodes (hossman)
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries

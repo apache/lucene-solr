@@ -65,14 +65,37 @@ import org.apache.solr.update.VersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public final static Logger log = LoggerFactory.getLogger(DistributedUpdateProcessor.class);
 
-  public static final String SEEN_LEADER = "leader";
+  /**
+   * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
+   * This is an implementation detail exposed solely for tests.
+   * 
+   * @see DistributingUpdateProcessorFactory#DISTRIB_UPDATE_PARAM
+   */
+  public static enum DistribPhase {
+    NONE, TOLEADER, FROMLEADER;
+
+    public static DistribPhase parseParam(final String param) {
+      if (param == null || param.trim().isEmpty()) {
+        return NONE;
+      }
+      try {
+        return valueOf(param);
+      } catch (IllegalArgumentException e) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST, "Illegal value for " + 
+           DISTRIB_UPDATE_PARAM + ": " + param, e);
+      }
+    }
+  }
+
   public static final String COMMIT_END_POINT = "commit_end_point";
-  public static final String DELETE_BY_QUERY_LEVEL = "dbq_level";
 
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
@@ -166,7 +189,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         String coreNodeName = zkController.getNodeName() + "_" + coreName;
         isLeader = coreNodeName.equals(leaderNodeName);
         
-        if (req.getParams().getBool(SEEN_LEADER, false)) {
+        DistribPhase phase = 
+          DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+
+        if (DistribPhase.FROMLEADER == phase) {
           // we are coming from the leader, just go local - add no urls
           forwardToLeader = false;
         } else if (isLeader) {
@@ -254,8 +280,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       hash = hash(cmd);
       nodes = setupRequest(hash);
     } else {
-      // even in non zk mode, tests simulate updates from a leader
-      isLeader = !req.getParams().getBool(SEEN_LEADER, false);
+      isLeader = getNonZkLeaderAssumption(req);
     }
     
     boolean dropCmd = false;
@@ -271,9 +296,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     ModifiableSolrParams params = null;
     if (nodes != null) {
       params = new ModifiableSolrParams(req.getParams());
-      if (isLeader) {
-        params.set(SEEN_LEADER, true);
-      }
+      params.set(DISTRIB_UPDATE_PARAM, 
+                 (isLeader ? 
+                  DistribPhase.FROMLEADER.toString() : 
+                  DistribPhase.TOLEADER.toString()));
       params.remove("commit"); // this will be distributed from the local commit
       cmdDistrib.distribAdd(cmd, nodes, params);
     }
@@ -573,8 +599,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       hash = hash(cmd);
       nodes = setupRequest(hash);
     } else {
-      // even in non zk mode, tests simulate updates from a leader
-      isLeader = !req.getParams().getBool(SEEN_LEADER, false);
+      isLeader = getNonZkLeaderAssumption(req);
     }
     
     boolean dropCmd = false;
@@ -590,9 +615,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     ModifiableSolrParams params = null;
     if (nodes != null) {
       params = new ModifiableSolrParams(req.getParams());
-      if (isLeader) {
-        params.set(SEEN_LEADER, true);
-      }
+      params.set(DISTRIB_UPDATE_PARAM, 
+                 (isLeader ? 
+                  DistribPhase.FROMLEADER.toString() : 
+                  DistribPhase.TOLEADER.toString()));
       params.remove("commit"); // we already will have forwarded this from our local commit
       cmdDistrib.distribDelete(cmd, nodes, params);
     }
@@ -613,23 +639,24 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     // even in non zk mode, tests simulate updates from a leader
     if(!zkEnabled) {
-      isLeader = !req.getParams().getBool(SEEN_LEADER, false);
+      isLeader = getNonZkLeaderAssumption(req);
     } else {
       zkCheck();
     }
 
-    // Lev1: we are the first to receive this deleteByQuery, it must be forwarded to the leader of every shard
-    // Lev2: we are a leader receiving a forwarded deleteByQuery... we must:
+    // NONE: we are the first to receive this deleteByQuery
+    //       - it must be forwarded to the leader of every shard
+    // TO:   we are a leader receiving a forwarded deleteByQuery... we must:
     //       - block all updates (use VersionInfo)
     //       - flush *all* updates going to our replicas
     //       - forward the DBQ to our replicas and wait for the response
     //       - log + execute the local DBQ
-    // Lev3: we are a replica receiving a DBQ from our leader
+    // FROM: we are a replica receiving a DBQ from our leader
     //       - log + execute the local DBQ
+    DistribPhase phase = 
+      DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
-    int dbqlevel = req.getParams().getInt(DELETE_BY_QUERY_LEVEL, 1);
-
-    if (zkEnabled && dbqlevel == 1) {
+    if (zkEnabled && DistribPhase.NONE == phase) {
       boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
 
       Map<String,Slice> slices = zkController.getCloudState().getSlices(collection);
@@ -640,7 +667,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
 
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-      params.set(DELETE_BY_QUERY_LEVEL, 2);
+      params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
 
       List<Node> leaders =  new ArrayList<Node>(slices.size());
       for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
@@ -677,13 +704,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         return;
       }
 
-      // change the level to 2 so we look up and forward to our own replicas (if any)
-      dbqlevel = 2;
+      // change the phase to TOLEADER so we look up and forward to our own replicas (if any)
+      phase = DistribPhase.TOLEADER;
     }
 
     List<Node> replicas = null;
 
-    if (zkEnabled && dbqlevel == 2) {
+    if (zkEnabled && DistribPhase.TOLEADER == phase) {
       // This core should be a leader
       replicas = setupRequest();
     }
@@ -750,9 +777,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // forward to all replicas
     if (leaderLogic && replicas != null) {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-      params.set(DELETE_BY_QUERY_LEVEL, 3);
       params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
-      params.set(SEEN_LEADER, "true");
+      params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
       cmdDistrib.distribDelete(cmd, replicas, params);
       cmdDistrib.finish();
     }
@@ -1029,5 +1055,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return true;
     }
   }
-  
+
+  /**
+   * Returns a boolean indicating wether or not the caller should behave as 
+   * if this is the "leader" even when ZooKeeper is not enabled.  
+   * (Even in non zk mode, tests may simulate updates to/from a leader)
+   */
+  public static boolean getNonZkLeaderAssumption(SolrQueryRequest req) {
+    DistribPhase phase = 
+      DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+
+    // if we have been told we are coming from a leader, then we are 
+    // definitely not the leader.  Otherwise assume we are.
+    return DistribPhase.FROMLEADER != phase;
+  }
 }

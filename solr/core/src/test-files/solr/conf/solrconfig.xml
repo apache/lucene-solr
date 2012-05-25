@@ -507,4 +507,35 @@
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>  
 
+  <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
+    <!-- explicit test using processors before and after distrib -->
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">regex_dup_A_s</str>
+      <str name="pattern">x</str>
+      <str name="replacement">x_x</str>
+    </processor>
+    <processor class="solr.DistributedUpdateProcessorFactory" />
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">regex_dup_B_s</str>
+      <str name="pattern">x</str>
+      <str name="replacement">x_x</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>  
+
+  <updateRequestProcessorChain name="distrib-dup-test-chain-implicit">
+    <!-- implicit test w/o distrib declared-->
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">regex_dup_A_s</str>
+      <str name="pattern">x</str>
+      <str name="replacement">x_x</str>
+    </processor>
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">regex_dup_B_s</str>
+      <str name="pattern">x</str>
+      <str name="replacement">x_x</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>  
+
 </config>

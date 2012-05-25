@@ -55,6 +55,9 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
+
 /** @lucene.experimental */
 public class PeerSync  {
   public static Logger log = LoggerFactory.getLogger(PeerSync.class);
@@ -431,7 +434,7 @@ public class PeerSync  {
     }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(DistributedUpdateProcessor.SEEN_LEADER, true);
+    params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
     // params.set("peersync",true); // debugging
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
     SolrQueryResponse rsp = new SolrQueryResponse();

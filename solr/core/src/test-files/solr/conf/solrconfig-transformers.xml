@@ -52,4 +52,26 @@
    </processor>
 </updateRequestProcessorChain>
 
+<updateRequestProcessorChain name="distrib-chain-explicit">
+  <!-- explicit test using processors before and after distrib -->
+  <processor class="solr.CustomUpdateRequestProcessorFactory" />
+  <processor class="solr.DistributedUpdateProcessorFactory" />
+  <processor class="solr.RemoveBlankFieldUpdateProcessorFactory" />
+  <processor class="solr.RunUpdateProcessorFactory" />
+</updateRequestProcessorChain>  
+<updateRequestProcessorChain name="distrib-chain-implicit">
+  <!-- implicit test w/o distrib declared -->
+  <processor class="solr.CustomUpdateRequestProcessorFactory" />
+  <processor class="solr.RemoveBlankFieldUpdateProcessorFactory" />
+  <!-- distrib should be injected here -->
+  <processor class="solr.RunUpdateProcessorFactory" />
+</updateRequestProcessorChain>  
+<updateRequestProcessorChain name="distrib-chain-noop">
+  <!-- explicit test using noop distrib -->
+  <processor class="solr.CustomUpdateRequestProcessorFactory" />
+  <processor class="solr.NoOpDistributingUpdateProcessorFactory" />
+  <processor class="solr.RemoveBlankFieldUpdateProcessorFactory" />
+  <processor class="solr.RunUpdateProcessorFactory" />
+</updateRequestProcessorChain>  
+
 </config>
