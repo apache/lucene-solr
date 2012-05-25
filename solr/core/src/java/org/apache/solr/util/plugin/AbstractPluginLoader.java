@@ -133,10 +133,9 @@ public abstract class AbstractPluginLoader<T>
       for (int i=0; i<nodes.getLength(); i++) {
         Node node = nodes.item(i);
   
-        // In a production environment, we can tolerate an error in some request handlers, 
-        // still load the others, and have a working system.
+        String name = null;
         try {
-          String name       = DOMUtil.getAttr(node,"name", requireName?type:null);
+          name              = DOMUtil.getAttr(node,"name", requireName?type:null);
           String className  = DOMUtil.getAttr(node,"class", type);
           String defaultStr = DOMUtil.getAttr(node,"default", null );
             
@@ -168,7 +167,9 @@ public abstract class AbstractPluginLoader<T>
         catch (Exception ex) {
           SolrException e = new SolrException
             (ErrorCode.SERVER_ERROR,
-             "Plugin init failure for " + type + ":" + ex.getMessage(), ex);
+             "Plugin init failure for " + type + 
+             (null != name ? (" \"" + name + "\"") : "") +
+             ": " + ex.getMessage(), ex);
           throw e;
         }
       }

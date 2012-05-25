@@ -435,6 +435,10 @@ Bug Fixes
 * SOLR-3454: Exception when using result grouping with main=true and using
   wt=javabin. (Ludovic Boutros, Martijn van Groningen)
 
+* SOLR-3446: Better errors when PatternTokenizerFactory is configured with 
+  an invalid pattern, and include the 'name' whenever possible in plugin init 
+  error messages. (hossman)
+
 Other Changes
 ----------------------
 

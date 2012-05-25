@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Abstract parent class for analysis factories {@link TokenizerFactory},
@@ -100,6 +102,20 @@ public abstract class AbstractAnalysisFactory {
       throw new InitializationException("Configuration Error: missing parameter '" + name + "'");
     }
     return Boolean.parseBoolean(s);
+  }
+
+  protected Pattern getPattern(String name) {
+    try {
+      String pat = args.get(name);
+      if (null == pat) {
+        throw new InitializationException("Configuration Error: missing parameter '" + name + "'");
+      }
+      return Pattern.compile(args.get(name));
+    } catch (PatternSyntaxException e) {
+      throw new InitializationException
+        ("Configuration Error: '" + name + "' can not be parsed in " +
+         this.getClass().getSimpleName(), e);
+    }
   }
 
   protected CharArraySet getWordSet(ResourceLoader loader,
