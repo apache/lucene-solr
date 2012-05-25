@@ -27,7 +27,7 @@ import org.apache.lucene.util.PriorityQueue;
 // nocommit - javadoc
 abstract class IntervalQueue extends PriorityQueue<IntervalRef> {
   final PositionInterval queueInterval = new PositionInterval(
-      Integer.MIN_VALUE, Integer.MIN_VALUE);
+      Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
 
   public void reset() {
     clear();

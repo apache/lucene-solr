@@ -24,6 +24,7 @@ import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInter
 final class IntervalQueueAnd extends IntervalQueue {
 
   int rightExtreme = Integer.MIN_VALUE;
+  int rightExtremeOffset = Integer.MIN_VALUE;
   
   public IntervalQueueAnd(int size) {
     super(size);
@@ -34,10 +35,12 @@ final class IntervalQueueAnd extends IntervalQueue {
     queueInterval.begin = Integer.MIN_VALUE;
     queueInterval.end = Integer.MIN_VALUE;
     rightExtreme = Integer.MIN_VALUE;
+    rightExtremeOffset = Integer.MIN_VALUE;
   }
 
   public void updateRightExtreme(PositionInterval interval) {
-    rightExtreme = Math.max(rightExtreme, Math.max(interval.end, interval.end));
+    rightExtreme = Math.max(rightExtreme, interval.end);
+    rightExtremeOffset = Math.max(rightExtremeOffset, interval.offsetEnd);
   }
   
   public boolean topContainsQueueInterval() {
@@ -49,7 +52,9 @@ final class IntervalQueueAnd extends IntervalQueue {
   public void updateQueueInterval() {
     PositionInterval interval = top().interval;
     queueInterval.begin = interval.begin;
+    queueInterval.offsetBegin = interval.offsetBegin;
     queueInterval.end = rightExtreme;
+    queueInterval.offsetEnd = rightExtremeOffset;
   }
   
   @Override

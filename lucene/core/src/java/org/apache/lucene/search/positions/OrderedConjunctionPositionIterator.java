@@ -26,11 +26,11 @@ public final class OrderedConjunctionPositionIterator extends
 
   private final PositionIntervalIterator[] iterators;
   private static final PositionInterval INFINITE_INTERVAL = new PositionInterval(
-      Integer.MIN_VALUE, Integer.MIN_VALUE);
+      Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
   private final PositionInterval[] intervals;
   private final int lastIter;
   private final PositionInterval interval = new PositionInterval(
-      Integer.MAX_VALUE, Integer.MAX_VALUE);
+      Integer.MAX_VALUE, Integer.MAX_VALUE, -1, -1);
   private int index = 1;
 
   public OrderedConjunctionPositionIterator(PositionIntervalIterator other) {
@@ -52,6 +52,8 @@ public final class OrderedConjunctionPositionIterator extends
       
     interval.begin = Integer.MAX_VALUE;
     interval.end = Integer.MAX_VALUE;
+    interval.offsetBegin = -1;
+    interval.offsetEnd = -1;
     int b = Integer.MAX_VALUE;
     while (true) {
       while (true) {
@@ -74,6 +76,8 @@ public final class OrderedConjunctionPositionIterator extends
       }
       interval.begin = intervals[0].begin;
       interval.end = intervals[lastIter].end;
+      interval.offsetBegin = intervals[0].offsetBegin;
+      interval.offsetEnd = intervals[lastIter].offsetEnd;
       b = intervals[lastIter].begin;
       index = 1;
       intervals[0] = iterators[0].next();

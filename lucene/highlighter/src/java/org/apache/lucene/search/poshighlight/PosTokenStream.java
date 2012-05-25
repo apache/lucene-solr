@@ -49,12 +49,10 @@ public class PosTokenStream extends TokenStream {
   
   // the index of the current position interval
   private PositionInterval pos = null;
-  private final PositionOffsetMapper pom;
   
-  public PosTokenStream (String text, PositionIntervalIterator positions, PositionOffsetMapper pom) {
+  public PosTokenStream (String text, PositionIntervalIterator positions) {
     this.text = text;
     this.positions = positions;
-    this.pom = pom;
   }
   
   @Override
@@ -64,8 +62,9 @@ public class PosTokenStream extends TokenStream {
       return false;
     }
     int b, e; 
-    b = pom.getStartOffset(pos.begin);
-    e = pom.getEndOffset(pos.end);
+    b = pos.offsetBegin;
+    e = pos.offsetEnd;
+    assert b >=0;
     termAtt.append(text, b, e);
     offsetAtt.setOffset(b, e);
     posIncrAtt.setPositionIncrement(1);

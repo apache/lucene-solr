@@ -16,10 +16,10 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
 
 /**
  * 
@@ -89,14 +89,18 @@ public abstract class PositionIntervalIterator {
 
     public int begin;
     public int end;
+    public int offsetBegin;
+    public int offsetEnd;
 
-    public PositionInterval(int begin, int end) {
+    public PositionInterval(int begin, int end, int offsetBegin, int offsetEnd) {
       this.begin = begin;
       this.end = end;
+      this.offsetBegin = offsetBegin;
+      this.offsetEnd = offsetEnd;
     }
 
     public PositionInterval() {
-      this(0, 0);
+      this(0, 0, -1, -1);
     }
 
     public boolean nextPayload(BytesRef ref) throws IOException {
@@ -122,7 +126,7 @@ public abstract class PositionIntervalIterator {
 
     @Override
     public String toString() {
-      return "PositionInterval [begin=" + begin + ", end=" + end + "]";
+      return "PositionInterval [begin=" + begin + "(" + offsetBegin + "), end=" + end + "(" + offsetEnd + ")]";
     }
 
   }

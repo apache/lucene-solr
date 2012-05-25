@@ -58,7 +58,7 @@ public class MockSpanQuery extends SpanQuery {
     AtomicReaderContext topReaderContext = context.reader().getTopReaderContext();
 
     Weight weight = other.createWeight(new IndexSearcher(topReaderContext));
-    Scorer scorer = weight.scorer((AtomicReaderContext) topReaderContext, true, false, acceptDocs);
+    Scorer scorer = weight.scorer(topReaderContext, true, false, acceptDocs);
     if (scorer == null) {
       return EMPTY_SPANS;
     }

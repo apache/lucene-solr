@@ -39,7 +39,9 @@ final class IntervalQueueOr extends IntervalQueue {
   public void updateQueueInterval() {
     PositionInterval interval = top().interval;
     queueInterval.begin = interval.begin;
+    queueInterval.offsetBegin = interval.offsetBegin;
     queueInterval.end = interval.end;
+    queueInterval.offsetEnd = interval.offsetEnd;
   }
   
   @Override

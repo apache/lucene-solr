@@ -30,10 +30,10 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
   private final PositionIntervalIterator[] iterators;
 
   private static final PositionInterval INFINITE_INTERVAL = new PositionInterval(
-      Integer.MIN_VALUE, Integer.MIN_VALUE);
+      Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
   private final PositionInterval[] intervals;
   private final PositionInterval interval = new PositionInterval(
-      Integer.MIN_VALUE, Integer.MIN_VALUE);
+      Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
   private final int[] gaps;
 
   private final int lastIter;
@@ -111,6 +111,8 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
     }
     interval.begin = intervals[0].begin;
     interval.end = intervals[lastIter].end;
+    interval.offsetBegin = intervals[0].offsetBegin;
+    interval.offsetEnd = intervals[lastIter].offsetEnd;
     return interval;
   }
 

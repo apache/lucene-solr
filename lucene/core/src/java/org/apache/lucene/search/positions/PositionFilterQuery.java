@@ -50,7 +50,7 @@ public class PositionFilterQuery extends Query implements Cloneable {
   public Query rewrite(IndexReader reader) throws IOException {
     PositionFilterQuery clone = null;
 
-    Query rewritten = (Query) inner.rewrite(reader);
+    Query rewritten =  inner.rewrite(reader);
     if (rewritten != inner) {
       clone = (PositionFilterQuery) this.clone();
       clone.inner = rewritten;

@@ -118,6 +118,8 @@ final class TermScorer extends Scorer {
     public PositionInterval next() throws IOException {
       if (--positionsPending >= 0) {
         interval.begin = interval.end = docsAndPos.nextPosition();
+        interval.offsetBegin = docsAndPos.startOffset();
+        interval.offsetEnd = docsAndPos.endOffset();
         return interval;
       }
       positionsPending = 0;
