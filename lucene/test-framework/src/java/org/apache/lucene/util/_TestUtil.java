@@ -30,6 +30,8 @@ import java.nio.CharBuffer;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -897,6 +899,26 @@ public class _TestUtil {
         // Just report it on the syserr.
         System.err.println("Could not properly shutdown executor service.");
         e.printStackTrace(System.err);
+      }
+    }
+  }
+
+  /**
+   * Returns a valid (compiling) Pattern instance with random stuff inside. Be careful
+   * when applying random patterns to longer strings as certain types of patterns
+   * may explode into exponential times in backtracking implementations (such as Java's).
+   */
+  public static Pattern randomPattern(Random random) {
+    final String nonBmpString = "AB\uD840\uDC00C";
+    while (true) {
+      try {
+        Pattern p = Pattern.compile(_TestUtil.randomRegexpishString(random));
+        // Make sure the result of applying the pattern to a string with extended
+        // unicode characters is a valid utf16 string. See LUCENE-4078 for discussion.
+        if (UnicodeUtil.validUTF16String(p.matcher(nonBmpString).replaceAll("_")))
+          return p;
+      } catch (PatternSyntaxException ignored) {
+        // Loop trying until we hit something that compiles.
       }
     }
   }
