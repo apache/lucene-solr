@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
@@ -39,7 +38,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   // Other writers would presumably share alot of this...
 
   @Override
-  public void flush(Map<FieldInfo, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
+  public void flush(Map<String,TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
 
     // Gather all FieldData's that have postings, across all
     // ThreadStates
@@ -57,7 +56,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     // Sort by field name
     CollectionUtil.quickSort(allFields);
 
-    final FieldsConsumer consumer = state.codec.postingsFormat().fieldsConsumer(state);
+    final FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
 
     boolean success = false;
 
@@ -80,13 +79,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         final FieldInfo fieldInfo = allFields.get(fieldNumber).fieldInfo;
         
         final FreqProxTermsWriterPerField fieldWriter = allFields.get(fieldNumber);
-        
-        // Aggregate the storePayload as seen by the same
-        // field across multiple threads
-        if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-          fieldInfo.storePayloads |= fieldWriter.hasPayloads;
-        }
-        
+
         // If this field has postings then add them to the
         // segment
         fieldWriter.flush(fieldInfo.name, consumer, state);

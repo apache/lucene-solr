@@ -17,26 +17,17 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.SegmentInfos; // javadocs
+import org.apache.lucene.index.SegmentInfo;
 
 /**
  * Expert: Controls the format of the 
- * {@link SegmentInfos} (segments file).
+ * {@link SegmentInfo} (segment metadata file).
  * <p>
- * NOTE: This isn't a per-segment file. If you change the format, other versions
- * of lucene won't be able to read it.
  * 
- * @see SegmentInfos
+ * @see SegmentInfo
  * @lucene.experimental
  */
-// TODO: would be great to handle this situation better.
-// ideally a custom implementation could implement two-phase commit differently,
-// (e.g. atomic rename), and ideally all versions of lucene could still read it.
-// but this is just reflecting reality as it is today...
-//
-// also, perhaps the name should change (to cover all global files like .fnx?)
-// then again, maybe we can just remove that file...
-public abstract class SegmentInfosFormat {
-  public abstract SegmentInfosReader getSegmentInfosReader();
-  public abstract SegmentInfosWriter getSegmentInfosWriter();
+public abstract class SegmentInfoFormat {
+  public abstract SegmentInfoReader getSegmentInfosReader();
+  public abstract SegmentInfoWriter getSegmentInfosWriter();
 }

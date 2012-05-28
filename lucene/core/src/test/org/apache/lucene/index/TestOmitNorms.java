@@ -68,8 +68,8 @@ public class TestOmitNorms extends LuceneTestCase {
 
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
-    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitNorms);
-    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitNorms);
+    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitsNorms());
+    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
         
     reader.close();
     ram.close();
@@ -122,8 +122,8 @@ public class TestOmitNorms extends LuceneTestCase {
 
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
-    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitNorms);
-    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitNorms);
+    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitsNorms());
+    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
         
     reader.close();
     ram.close();
@@ -170,8 +170,8 @@ public class TestOmitNorms extends LuceneTestCase {
 
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
-    assertTrue("OmitNorms field bit should not be set.", !fi.fieldInfo("f1").omitNorms);
-    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitNorms);
+    assertTrue("OmitNorms field bit should not be set.", !fi.fieldInfo("f1").omitsNorms());
+    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
         
     reader.close();
     ram.close();

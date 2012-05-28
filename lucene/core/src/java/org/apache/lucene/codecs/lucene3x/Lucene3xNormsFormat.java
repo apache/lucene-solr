@@ -18,13 +18,11 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 
 /**
@@ -35,17 +33,6 @@ import org.apache.lucene.index.SegmentReadState;
  */
 @Deprecated
 class Lucene3xNormsFormat extends NormsFormat {
-
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xNormsProducer.files(info, files);
-  }
-
-  public void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xNormsProducer.separateFiles(info, files);
-  }
-
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {

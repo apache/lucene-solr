@@ -1,9 +1,5 @@
 package org.apache.lucene.codecs.lucene3x;
 
-import org.apache.lucene.codecs.SegmentInfosFormat;
-import org.apache.lucene.codecs.SegmentInfosReader;
-import org.apache.lucene.codecs.SegmentInfosWriter;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,23 +17,29 @@ import org.apache.lucene.codecs.SegmentInfosWriter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.codecs.SegmentInfoWriter;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+
 /**
- * Lucene3x ReadOnly SegmentInfosFormat implementation
- * @deprecated (4.0) This is only used to read indexes created
- * before 4.0.
+ * PreFlex implementation of {@link SegmentInfoWriter}.
  * @lucene.experimental
  */
-@Deprecated
-class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
-  private final SegmentInfosReader reader = new Lucene3xSegmentInfosReader();
-  
-  @Override
-  public SegmentInfosReader getSegmentInfosReader() {
-    return reader;
-  }
+class PreFlexRWSegmentInfoWriter extends SegmentInfoWriter {
 
+  // NOTE: this is not "really" 3.x format, because we are
+  // writing each SI to its own file, vs 3.x where the list
+  // of segments and SI for each segment is written into a
+  // single segments_N file
+
+  /** Save a single segment's info. */
   @Override
-  public SegmentInfosWriter getSegmentInfosWriter() {
-    throw new UnsupportedOperationException("this codec can only be used for reading");
+  public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
+    SegmentInfos.write3xInfo(dir, si, ioContext);
   }
 }

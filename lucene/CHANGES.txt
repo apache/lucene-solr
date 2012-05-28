@@ -1,3 +1,4 @@
+
 Lucene Change Log
 
 For more information on past and future Lucene versions, please see:
@@ -270,6 +271,8 @@ Changes in backwards compatibility policy
   and replaced with per-search control via new expert search methods
   that take two booleans indicating whether hit scores and max
   score should be computed.  (Mike McCandless)
+
+* LUCENE-4055: You can't put foreign files into the index dir anymore.
 
 Changes in Runtime Behavior
 

@@ -17,19 +17,17 @@ package org.apache.lucene.codecs.lucene3x;
  * limitations under the License.
  */
 
-import java.util.Set;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 
 /** Codec that reads the pre-flex-indexing postings
  *  format.  It does not provide a writer because newly
- *  written segments should use StandardCodec.
+ *  written segments should use the Codec configured on IndexWriter.
  *
  * @deprecated (4.0) This is only used to read indexes created
  * before 4.0.
@@ -62,11 +60,5 @@ class Lucene3xPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new Lucene3xFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor);
-  }
-
-  @Override
-  public void files(SegmentInfo info, String segmentSuffix, Set<String> files) throws IOException {
-    // preflex fields have no segmentSuffix - we ignore it here
-    Lucene3xFields.files(info, files);
   }
 }

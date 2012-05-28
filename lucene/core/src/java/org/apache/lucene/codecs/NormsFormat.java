@@ -18,17 +18,20 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 
 /**
  * format for normalization factors
  */
 public abstract class NormsFormat {
+
+  /** Returns a {@link PerDocConsumer} to write norms to the
+   *  index. */
   public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
+
+  /** Returns a {@link PerDocProducer} to read norms from the
+   *  index. */
   public abstract PerDocProducer docsProducer(SegmentReadState state) throws IOException;
-  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

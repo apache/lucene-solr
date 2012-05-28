@@ -129,8 +129,8 @@ public class TestNorms extends LuceneTestCase {
     AtomicReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(otherDir));
     FieldInfos fieldInfos = reader.getFieldInfos();
     FieldInfo fieldInfo = fieldInfos.fieldInfo(byteTestField);
-    assertFalse(fieldInfo.omitNorms);
-    assertTrue(fieldInfo.isIndexed);
+    assertFalse(fieldInfo.omitsNorms());
+    assertTrue(fieldInfo.isIndexed());
     if (secondWriteNorm) {
       assertTrue(fieldInfo.hasNorms());
     } else {
@@ -146,13 +146,13 @@ public class TestNorms extends LuceneTestCase {
       DocValues normValues = mergedReader.normValues(byteTestField);
       assertNull(normValues);
       FieldInfo fi = mergedReader.getFieldInfos().fieldInfo(byteTestField);
-      assertFalse(fi.omitNorms);
-      assertTrue(fi.isIndexed);
+      assertFalse(fi.omitsNorms());
+      assertTrue(fi.isIndexed());
       assertFalse(fi.hasNorms());
     } else {
       FieldInfo fi = mergedReader.getFieldInfos().fieldInfo(byteTestField);
-      assertFalse(fi.omitNorms);
-      assertTrue(fi.isIndexed);
+      assertFalse(fi.omitsNorms());
+      assertTrue(fi.isIndexed());
       assertTrue(fi.hasNorms());
       
       DocValues normValues = mergedReader.normValues(byteTestField);

@@ -121,9 +121,9 @@ class BufferedDeletesStream {
     public final long gen;
 
     // If non-null, contains segments that are 100% deleted
-    public final List<SegmentInfo> allDeleted;
+    public final List<SegmentInfoPerCommit> allDeleted;
 
-    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentInfo> allDeleted) {
+    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentInfoPerCommit> allDeleted) {
       this.anyDeletes = anyDeletes;
       this.gen = gen;
       this.allDeleted = allDeleted;
@@ -131,9 +131,9 @@ class BufferedDeletesStream {
   }
 
   // Sorts SegmentInfos from smallest to biggest bufferedDelGen:
-  private static final Comparator<SegmentInfo> sortSegInfoByDelGen = new Comparator<SegmentInfo>() {
+  private static final Comparator<SegmentInfoPerCommit> sortSegInfoByDelGen = new Comparator<SegmentInfoPerCommit>() {
     @Override
-    public int compare(SegmentInfo si1, SegmentInfo si2) {
+    public int compare(SegmentInfoPerCommit si1, SegmentInfoPerCommit si2) {
       final long cmp = si1.getBufferedDeletesGen() - si2.getBufferedDeletesGen();
       if (cmp > 0) {
         return 1;
@@ -148,7 +148,7 @@ class BufferedDeletesStream {
   /** Resolves the buffered deleted Term/Query/docIDs, into
    *  actual deleted docIDs in the liveDocs MutableBits for
    *  each SegmentReader. */
-  public synchronized ApplyDeletesResult applyDeletes(IndexWriter.ReaderPool readerPool, List<SegmentInfo> infos) throws IOException {
+  public synchronized ApplyDeletesResult applyDeletes(IndexWriter.ReaderPool readerPool, List<SegmentInfoPerCommit> infos) throws IOException {
     final long t0 = System.currentTimeMillis();
 
     if (infos.size() == 0) {
@@ -168,7 +168,7 @@ class BufferedDeletesStream {
       infoStream.message("BD", "applyDeletes: infos=" + infos + " packetCount=" + deletes.size());
     }
 
-    List<SegmentInfo> infos2 = new ArrayList<SegmentInfo>();
+    List<SegmentInfoPerCommit> infos2 = new ArrayList<SegmentInfoPerCommit>();
     infos2.addAll(infos);
     Collections.sort(infos2, sortSegInfoByDelGen);
 
@@ -178,13 +178,13 @@ class BufferedDeletesStream {
     int infosIDX = infos2.size()-1;
     int delIDX = deletes.size()-1;
 
-    List<SegmentInfo> allDeleted = null;
+    List<SegmentInfoPerCommit> allDeleted = null;
 
     while (infosIDX >= 0) {
       //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
 
       final FrozenBufferedDeletes packet = delIDX >= 0 ? deletes.get(delIDX) : null;
-      final SegmentInfo info = infos2.get(infosIDX);
+      final SegmentInfoPerCommit info = infos2.get(infosIDX);
       final long segGen = info.getBufferedDeletesGen();
 
       if (packet != null && segGen < packet.delGen()) {
@@ -225,8 +225,8 @@ class BufferedDeletesStream {
           // already did that on flush:
           delCount += applyQueryDeletes(packet.queriesIterable(), rld, reader);
           final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
-          assert fullDelCount <= rld.info.docCount;
-          segAllDeletes = fullDelCount == rld.info.docCount;
+          assert fullDelCount <= rld.info.info.getDocCount();
+          segAllDeletes = fullDelCount == rld.info.info.getDocCount();
         } finally {
           rld.release(reader);
           readerPool.release(rld);
@@ -235,7 +235,7 @@ class BufferedDeletesStream {
 
         if (segAllDeletes) {
           if (allDeleted == null) {
-            allDeleted = new ArrayList<SegmentInfo>();
+            allDeleted = new ArrayList<SegmentInfoPerCommit>();
           }
           allDeleted.add(info);
         }
@@ -271,8 +271,8 @@ class BufferedDeletesStream {
             delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
             final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
-            assert fullDelCount <= rld.info.docCount;
-            segAllDeletes = fullDelCount == rld.info.docCount;
+            assert fullDelCount <= rld.info.info.getDocCount();
+            segAllDeletes = fullDelCount == rld.info.info.getDocCount();
           } finally {   
             rld.release(reader);
             readerPool.release(rld);
@@ -281,7 +281,7 @@ class BufferedDeletesStream {
 
           if (segAllDeletes) {
             if (allDeleted == null) {
-              allDeleted = new ArrayList<SegmentInfo>();
+              allDeleted = new ArrayList<SegmentInfoPerCommit>();
             }
             allDeleted.add(info);
           }
@@ -316,7 +316,7 @@ class BufferedDeletesStream {
   public synchronized void prune(SegmentInfos segmentInfos) {
     assert checkDeleteStats();
     long minGen = Long.MAX_VALUE;
-    for(SegmentInfo info : segmentInfos) {
+    for(SegmentInfoPerCommit info : segmentInfos) {
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
     }
 

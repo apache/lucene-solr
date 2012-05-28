@@ -88,9 +88,6 @@ public class CheckIndex {
     /** Number of segments in the index. */
     public int numSegments;
 
-    /** String description of the version of the index. */
-    public String segmentFormat;
-
     /** Empty unless you passed specific segments list to check as optional 3rd argument.
      *  @see CheckIndex#checkIndex(List) */
     public List<String> segmentsChecked = new ArrayList<String>();
@@ -184,11 +181,6 @@ public class CheckIndex {
 
       /** Number of fields in this segment. */
       int numFields;
-
-      /** True if at least one of the fields in this segment
-       *  has position data
-       *  @see FieldType#setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions) */
-      public boolean hasProx;
 
       /** Map that includes certain
        *  debugging details that IndexWriter records into
@@ -369,8 +361,8 @@ public class CheckIndex {
     String oldSegs = null;
     boolean foundNonNullVersion = false;
     Comparator<String> versionComparator = StringHelper.getVersionComparator();
-    for (SegmentInfo si : sis) {
-      String version = si.getVersion();
+    for (SegmentInfoPerCommit si : sis) {
+      String version = si.info.getVersion();
       if (version == null) {
         // pre-3.1 segment
         oldSegs = "pre-3.1";
@@ -415,27 +407,8 @@ public class CheckIndex {
     String sFormat = "";
     boolean skip = false;
 
-    if (format == SegmentInfos.FORMAT_DIAGNOSTICS) {
-      sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
-    } else if (format == SegmentInfos.FORMAT_HAS_VECTORS) {
-      sFormat = "FORMAT_HAS_VECTORS [Lucene 3.1]";
-    } else if (format == SegmentInfos.FORMAT_3_1) {
-      sFormat = "FORMAT_3_1 [Lucene 3.1+]";
-    } else if (format == SegmentInfos.FORMAT_4_0) {
-      sFormat = "FORMAT_4_0 [Lucene 4.0]";
-    } else if (format == SegmentInfos.FORMAT_CURRENT) {
-      throw new RuntimeException("BUG: You should update this tool!");
-    } else if (format < SegmentInfos.FORMAT_CURRENT) {
-      sFormat = "int=" + format + " [newer version of Lucene than this tool supports]";
-      skip = true;
-    } else if (format > SegmentInfos.FORMAT_MINIMUM) {
-      sFormat = "int=" + format + " [older version of Lucene than this tool supports]";
-      skip = true;
-    }
-
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
-    result.segmentFormat = sFormat;
     result.userData = sis.getUserData();
     String userDataString;
     if (sis.getUserData().size() > 0) {
@@ -482,50 +455,41 @@ public class CheckIndex {
     result.maxSegmentName = -1;
 
     for(int i=0;i<numSegments;i++) {
-      final SegmentInfo info = sis.info(i);
-      int segmentName = Integer.parseInt(info.name.substring(1), Character.MAX_RADIX);
+      final SegmentInfoPerCommit info = sis.info(i);
+      int segmentName = Integer.parseInt(info.info.name.substring(1), Character.MAX_RADIX);
       if (segmentName > result.maxSegmentName) {
         result.maxSegmentName = segmentName;
       }
-      if (onlySegments != null && !onlySegments.contains(info.name))
+      if (onlySegments != null && !onlySegments.contains(info.info.name)) {
         continue;
+      }
       Status.SegmentInfoStatus segInfoStat = new Status.SegmentInfoStatus();
       result.segmentInfos.add(segInfoStat);
-      msg("  " + (1+i) + " of " + numSegments + ": name=" + info.name + " docCount=" + info.docCount);
-      segInfoStat.name = info.name;
-      segInfoStat.docCount = info.docCount;
+      msg("  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.getDocCount());
+      segInfoStat.name = info.info.name;
+      segInfoStat.docCount = info.info.getDocCount();
 
-      int toLoseDocCount = info.docCount;
+      int toLoseDocCount = info.info.getDocCount();
 
       SegmentReader reader = null;
 
       try {
-        final Codec codec = info.getCodec();
+        final Codec codec = info.info.getCodec();
         msg("    codec=" + codec);
         segInfoStat.codec = codec;
-        msg("    compound=" + info.getUseCompoundFile());
-        segInfoStat.compound = info.getUseCompoundFile();
-        msg("    hasProx=" + info.getHasProx());
-        segInfoStat.hasProx = info.getHasProx();
+        msg("    compound=" + info.info.getUseCompoundFile());
+        segInfoStat.compound = info.info.getUseCompoundFile();
         msg("    numFiles=" + info.files().size());
         segInfoStat.numFiles = info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
         msg("    size (MB)=" + nf.format(segInfoStat.sizeMB));
-        Map<String,String> diagnostics = info.getDiagnostics();
+        Map<String,String> diagnostics = info.info.getDiagnostics();
         segInfoStat.diagnostics = diagnostics;
         if (diagnostics.size() > 0) {
           msg("    diagnostics = " + diagnostics);
         }
 
-        final int docStoreOffset = info.getDocStoreOffset();
-        if (docStoreOffset != -1) {
-          msg("    docStoreOffset=" + docStoreOffset);
-          segInfoStat.docStoreOffset = docStoreOffset;
-          msg("    docStoreSegment=" + info.getDocStoreSegment());
-          segInfoStat.docStoreSegment = info.getDocStoreSegment();
-          msg("    docStoreIsCompoundFile=" + info.getDocStoreIsCompoundFile());
-          segInfoStat.docStoreCompoundFile = info.getDocStoreIsCompoundFile();
-        }
+        // TODO: we could append the info attributes() to the msg?
 
         if (info.hasDeletions()) {
           msg("    no deletions");
@@ -545,14 +509,14 @@ public class CheckIndex {
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         if (reader.hasDeletions()) {
-          if (reader.numDocs() != info.docCount - info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + (info.docCount - info.getDelCount()) + " vs reader=" + reader.numDocs());
+          if (reader.numDocs() != info.info.getDocCount() - info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + (info.info.getDocCount() - info.getDelCount()) + " vs reader=" + reader.numDocs());
           }
-          if ((info.docCount-reader.numDocs()) > reader.maxDoc()) {
-            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.docCount-reader.numDocs()));
+          if ((info.info.getDocCount()-reader.numDocs()) > reader.maxDoc()) {
+            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.getDocCount()-reader.numDocs()));
           }
-          if (info.docCount - numDocs != info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
+          if (info.info.getDocCount() - numDocs != info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - numDocs));
           }
           Bits liveDocs = reader.getLiveDocs();
           if (liveDocs == null) {
@@ -569,11 +533,11 @@ public class CheckIndex {
             }
           }
           
-          segInfoStat.numDeleted = info.docCount - numDocs;
+          segInfoStat.numDeleted = info.info.getDocCount() - numDocs;
           msg("OK [" + (segInfoStat.numDeleted) + " deleted docs]");
         } else {
           if (info.getDelCount() != 0) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - numDocs));
           }
           Bits liveDocs = reader.getLiveDocs();
           if (liveDocs != null) {
@@ -586,8 +550,9 @@ public class CheckIndex {
           }
           msg("OK");
         }
-        if (reader.maxDoc() != info.docCount)
-          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.docCount);
+        if (reader.maxDoc() != info.info.getDocCount()) {
+          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.getDocCount());
+        }
 
         // Test getFieldInfos()
         if (infoStream != null) {
@@ -609,7 +574,7 @@ public class CheckIndex {
         // Test Term Vectors
         segInfoStat.termVectorStatus = testTermVectors(fieldInfos, info, reader, nf);
         
-        segInfoStat.docValuesStatus = testDocValues(info, reader);
+        segInfoStat.docValuesStatus = testDocValues(info, fieldInfos, reader);
 
         // Rethrow the first exception we encountered
         //  This will cause stats for failed segments to be incremented properly
@@ -706,8 +671,7 @@ public class CheckIndex {
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  // TODO: cutover term vectors to this!
-  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, IndexSearcher searcher) throws IOException {
+  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, IndexSearcher searcher, boolean doPrint) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
@@ -741,7 +705,7 @@ public class CheckIndex {
       if (fi == null) {
         throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, no fieldInfos for: " + field);
       }
-      if (!fi.isIndexed) {
+      if (!fi.isIndexed()) {
         throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, isIndexed == false for: " + field);
       }
       
@@ -1131,8 +1095,10 @@ public class CheckIndex {
     if (status.termCount != uniqueTermCountAllFields) {
       throw new RuntimeException("termCount mismatch " + uniqueTermCountAllFields + " vs " + (status.termCount));
     }
-    
-    msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
+
+    if (doPrint) {
+      msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
+    }
     
     if (verbose && status.blockTreeStats != null && infoStream != null && status.termCount > 0) {
       for(Map.Entry<String,BlockTreeTermsReader.Stats> ent : status.blockTreeStats.entrySet()) {
@@ -1163,13 +1129,13 @@ public class CheckIndex {
       }
 
       final Fields fields = reader.fields();
-      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, is);
+      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, is, true);
       if (liveDocs != null) {
         if (infoStream != null) {
           infoStream.print("    test (ignoring deletes): terms, freq, prox...");
         }
         // TODO: can we make a IS that ignores all deletes?
-        checkFields(fields, null, maxDoc, fieldInfos, null);
+        checkFields(fields, null, maxDoc, fieldInfos, null, true);
       }
     } catch (Throwable e) {
       msg("ERROR: " + e);
@@ -1186,7 +1152,7 @@ public class CheckIndex {
   /**
    * Test stored fields for a segment.
    */
-  private Status.StoredFieldStatus testStoredFields(SegmentInfo info, SegmentReader reader, NumberFormat format) {
+  private Status.StoredFieldStatus testStoredFields(SegmentInfoPerCommit info, SegmentReader reader, NumberFormat format) {
     final Status.StoredFieldStatus status = new Status.StoredFieldStatus();
 
     try {
@@ -1196,7 +1162,7 @@ public class CheckIndex {
 
       // Scan stored fields for all documents
       final Bits liveDocs = reader.getLiveDocs();
-      for (int j = 0; j < info.docCount; ++j) {
+      for (int j = 0; j < info.info.getDocCount(); ++j) {
         // Intentionally pull even deleted documents to
         // make sure they too are not corrupt:
         Document doc = reader.document(j);
@@ -1310,14 +1276,14 @@ public class CheckIndex {
     }
   }
   
-  private Status.DocValuesStatus testDocValues(SegmentInfo info,
-      SegmentReader reader) {
+  private Status.DocValuesStatus testDocValues(SegmentInfoPerCommit info,
+                                               FieldInfos fieldInfos,
+                                               SegmentReader reader) {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
     try {
       if (infoStream != null) {
         infoStream.print("    test: DocValues........");
       }
-      final FieldInfos fieldInfos = info.getFieldInfos();
       for (FieldInfo fieldInfo : fieldInfos) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
@@ -1345,7 +1311,7 @@ public class CheckIndex {
   /**
    * Test term vectors for a segment.
    */
-  private Status.TermVectorStatus testTermVectors(FieldInfos fieldInfos, SegmentInfo info, SegmentReader reader, NumberFormat format) {
+  private Status.TermVectorStatus testTermVectors(FieldInfos fieldInfos, SegmentInfoPerCommit info, SegmentReader reader, NumberFormat format) {
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
 
     final Bits onlyDocIsDeleted = new FixedBitSet(1);
@@ -1375,7 +1341,7 @@ public class CheckIndex {
       TermsEnum termsEnum = null;
       TermsEnum postingsTermsEnum = null;
 
-      for (int j = 0; j < info.docCount; ++j) {
+      for (int j = 0; j < info.info.getDocCount(); ++j) {
         // Intentionally pull/visit (but don't count in
         // stats) deleted documents to make sure they too
         // are not corrupt:
@@ -1386,10 +1352,10 @@ public class CheckIndex {
 
         if (tfv != null) {
           // First run with no deletions:
-          checkFields(tfv, null, 1, fieldInfos, null);
+          checkFields(tfv, null, 1, fieldInfos, null, false);
 
           // Again, with the one doc deleted:
-          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, null);
+          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, null, false);
 
           // Only agg stats if the doc is live:
           final boolean doStats = liveDocs == null || liveDocs.get(j);
@@ -1406,7 +1372,7 @@ public class CheckIndex {
 
             // Make sure FieldInfo thinks this field is vector'd:
             final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-            if (!fieldInfo.storeTermVector) {
+            if (!fieldInfo.hasVectors()) {
               throw new RuntimeException("docID=" + j + " has term vectors for field=" + field + " but FieldInfo has storeTermVector=false");
             }
 
@@ -1594,7 +1560,7 @@ public class CheckIndex {
     if (result.partial)
       throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
-    result.newSegments.commit(result.dir, codec);
+    result.newSegments.commit(result.dir);
   }
 
   private static boolean assertsOn;

@@ -18,12 +18,10 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.PostingsBaseFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -42,16 +40,11 @@ public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
 
   @Override
   public PostingsReaderBase postingsReaderBase(SegmentReadState state) throws IOException {
-    return new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
+    return new Lucene40PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
   }
 
   @Override
   public PostingsWriterBase postingsWriterBase(SegmentWriteState state) throws IOException {
     return new Lucene40PostingsWriter(state);
-  }
-  
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
   }
 }

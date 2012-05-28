@@ -23,7 +23,7 @@ import java.util.Map;
 abstract class DocFieldConsumer {
   /** Called when DocumentsWriterPerThread decides to create a new
    *  segment */
-  abstract void flush(Map<FieldInfo, DocFieldConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
+  abstract void flush(Map<String, DocFieldConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
 
   /** Called when an aborting exception is hit */
   abstract void abort();

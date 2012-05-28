@@ -452,11 +452,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     @Override
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       final FieldType ft = new FieldType(TextField.TYPE_STORED);
-      ft.setStoreTermVectors(fieldInfo.storeTermVector);
-      ft.setStoreTermVectors(fieldInfo.storeTermVector);
-      ft.setIndexed(fieldInfo.isIndexed);
-      ft.setOmitNorms(fieldInfo.omitNorms);
-      ft.setIndexOptions(fieldInfo.indexOptions);
+      ft.setStoreTermVectors(fieldInfo.hasVectors());
+      ft.setIndexed(fieldInfo.isIndexed());
+      ft.setOmitNorms(fieldInfo.omitsNorms());
+      ft.setIndexOptions(fieldInfo.getIndexOptions());
       doc.add(new Field(fieldInfo.name, value, ft));
     }
 
@@ -464,7 +463,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public void intField(FieldInfo fieldInfo, int value) {
       FieldType ft = new FieldType(IntField.TYPE);
       ft.setStored(true);
-      ft.setIndexed(fieldInfo.isIndexed);
+      ft.setIndexed(fieldInfo.isIndexed());
       doc.add(new IntField(fieldInfo.name, value, ft));
     }
 
@@ -472,7 +471,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public void longField(FieldInfo fieldInfo, long value) {
       FieldType ft = new FieldType(LongField.TYPE);
       ft.setStored(true);
-      ft.setIndexed(fieldInfo.isIndexed);
+      ft.setIndexed(fieldInfo.isIndexed());
       doc.add(new LongField(fieldInfo.name, value, ft));
     }
 
@@ -480,7 +479,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public void floatField(FieldInfo fieldInfo, float value) {
       FieldType ft = new FieldType(FloatField.TYPE);
       ft.setStored(true);
-      ft.setIndexed(fieldInfo.isIndexed);
+      ft.setIndexed(fieldInfo.isIndexed());
       doc.add(new FloatField(fieldInfo.name, value, ft));
     }
 
@@ -488,7 +487,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public void doubleField(FieldInfo fieldInfo, double value) {
       FieldType ft = new FieldType(DoubleField.TYPE);
       ft.setStored(true);
-      ft.setIndexed(fieldInfo.isIndexed);
+      ft.setIndexed(fieldInfo.isIndexed());
       doc.add(new DoubleField(fieldInfo.name, value, ft));
     }
   }

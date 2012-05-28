@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
@@ -28,13 +29,14 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfosFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -58,7 +60,7 @@ public class Lucene3xCodec extends Codec {
   
   private final FieldInfosFormat fieldInfosFormat = new Lucene3xFieldInfosFormat();
 
-  private final SegmentInfosFormat infosFormat = new Lucene3xSegmentInfosFormat();
+  private final SegmentInfoFormat infosFormat = new Lucene3xSegmentInfoFormat();
   
   private final Lucene3xNormsFormat normsFormat = new Lucene3xNormsFormat();
   
@@ -68,7 +70,7 @@ public class Lucene3xCodec extends Codec {
   // TODO: this should really be a different impl
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat() {
     @Override
-    public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException {
+    public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfoPerCommit info, int newDelCount, IOContext context) throws IOException {
       throw new UnsupportedOperationException("this codec can only be used for reading");
     }
   };
@@ -84,9 +86,6 @@ public class Lucene3xCodec extends Codec {
     public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
       return null;
     }
-
-    @Override
-    public void files(SegmentInfo info, Set<String> files) throws IOException {}
   };
   
   @Override
@@ -115,7 +114,7 @@ public class Lucene3xCodec extends Codec {
   }
 
   @Override
-  public SegmentInfosFormat segmentInfosFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return infosFormat;
   }
 
@@ -128,31 +127,25 @@ public class Lucene3xCodec extends Codec {
   public LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
   }
-  
-  // overrides the default implementation in codec.java to handle CFS without CFE, 
-  // shared doc stores, compound doc stores, separate norms, etc
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    if (info.getUseCompoundFile()) {
-      files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+
+  /** Returns file names for shared doc stores, if any, else
+   * null. */
+  public static Set<String> getDocStoreFiles(SegmentInfo info) {
+    if (Lucene3xSegmentInfoFormat.getDocStoreOffset(info) != -1) {
+      final String dsName = Lucene3xSegmentInfoFormat.getDocStoreSegment(info);
+      Set<String> files = new HashSet<String>();
+      if (Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(info)) {
+        files.add(IndexFileNames.segmentFileName(dsName, "", COMPOUND_FILE_STORE_EXTENSION));
+      } else {
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xStoredFieldsReader.FIELDS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xStoredFieldsReader.FIELDS_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(dsName, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
+      }
+      return files;
     } else {
-      postingsFormat().files(info, "", files);
-      storedFieldsFormat().files(info, files);
-      termVectorsFormat().files(info, files);
-      fieldInfosFormat().files(info, files);
-      // TODO: segmentInfosFormat should be allowed to declare additional files
-      // if it wants, in addition to segments_N
-      docValuesFormat().files(info, files);
-      normsFormat().files(info, files);
+      return null;
     }
-    // never inside CFS
-    liveDocsFormat().files(info, files);
-    ((Lucene3xNormsFormat)normsFormat()).separateFiles(info, files);
-    
-    // shared docstores: these guys check the hair
-    if (info.getDocStoreOffset() != -1) {
-      storedFieldsFormat().files(info, files);
-      termVectorsFormat().files(info, files);
-    }
-  }  
+  }
 }

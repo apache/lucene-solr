@@ -19,11 +19,11 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.util.BitSet;
-import java.util.Set;
+import java.util.Collection;
 
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -63,12 +63,12 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public Bits readLiveDocs(Directory dir, SegmentInfo info, IOContext context) throws IOException {
+  public Bits readLiveDocs(Directory dir, SegmentInfoPerCommit info, IOContext context) throws IOException {
     assert info.hasDeletions();
     BytesRef scratch = new BytesRef();
     CharsRef scratchUTF16 = new CharsRef();
     
-    String fileName = IndexFileNames.fileNameFromGeneration(info.name, LIVEDOCS_EXTENSION, info.getDelGen());
+    String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen());
     IndexInput in = null;
     boolean success = false;
     try {
@@ -105,12 +105,12 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException {
+  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfoPerCommit info, int newDelCount, IOContext context) throws IOException {
     BitSet set = ((SimpleTextBits) bits).bits;
     int size = bits.length();
     BytesRef scratch = new BytesRef();
     
-    String fileName = IndexFileNames.fileNameFromGeneration(info.name, LIVEDOCS_EXTENSION, info.getDelGen());
+    String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getNextDelGen());
     IndexOutput out = null;
     boolean success = false;
     try {
@@ -138,9 +138,9 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
+  public void files(SegmentInfoPerCommit info, Collection<String> files) throws IOException {
     if (info.hasDeletions()) {
-      files.add(IndexFileNames.fileNameFromGeneration(info.name, LIVEDOCS_EXTENSION, info.getDelGen()));
+      files.add(IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen()));
     }
   }
   

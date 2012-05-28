@@ -1,4 +1,6 @@
-package org.apache.lucene.codecs.appending;
+package org.apache.lucene.codecs.lucene3x;
+
+import org.apache.lucene.codecs.SegmentInfoWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,22 +19,14 @@ package org.apache.lucene.codecs.appending;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.SegmentInfosWriter;
-import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat;
-
 /**
- * Append-only SegmentInfos format.
- * <p>
- * Only a writer is supplied, as the format is written 
- * the same as {@link Lucene40SegmentInfosFormat}.
- * 
- * @see AppendingSegmentInfosWriter
+ * @lucene.experimental
  */
-public class AppendingSegmentInfosFormat extends Lucene40SegmentInfosFormat {
-  private final SegmentInfosWriter writer = new AppendingSegmentInfosWriter();
+class PreFlexRWSegmentInfoFormat extends Lucene3xSegmentInfoFormat {
+  private final SegmentInfoWriter writer = new PreFlexRWSegmentInfoWriter();
 
   @Override
-  public SegmentInfosWriter getSegmentInfosWriter() {
+  public SegmentInfoWriter getSegmentInfosWriter() {
     return writer;
   }
 }

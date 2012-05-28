@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +40,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
@@ -197,7 +195,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
 
     @Override
     public TermsConsumer addField(FieldInfo field) {
-      if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+      if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
         throw new UnsupportedOperationException("this codec cannot index offsets");
       }
       RAMField ramField = new RAMField(field.name);
@@ -540,7 +538,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     // TODO -- ok to do this up front instead of
     // on close....?  should be ok?
     // Write our ID:
-    final String idFileName = IndexFileNames.segmentFileName(writeState.segmentName, writeState.segmentSuffix, ID_EXTENSION);
+    final String idFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, ID_EXTENSION);
     IndexOutput out = writeState.directory.createOutput(idFileName, writeState.context);
     boolean success = false;
     try {
@@ -588,11 +586,5 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     synchronized(state) {
       return state.get(id);
     }
-  }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) {
-    final String idFileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, ID_EXTENSION);
-    files.add(idFileName);
   }
 }

@@ -34,7 +34,6 @@ import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
-import java.util.Set;
 
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.*;
 
@@ -90,8 +89,8 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       final long indexSize = indexStream.length() - HEADER_LENGTH_IDX;
       this.size = (int) (indexSize >> 3);
       // Verify two sources of "maxDoc" agree:
-      if (this.size != si.docCount) {
-        throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + this.size + " but segmentInfo shows " + si.docCount);
+      if (this.size != si.getDocCount()) {
+        throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + this.size + " but segmentInfo shows " + si.getDocCount());
       }
       numTotalDocs = (int) (indexSize >> 3);
       success = true;
@@ -238,10 +237,5 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     fieldsStream.seek(startOffset);
 
     return fieldsStream;
-  }
-
-  public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", FIELDS_INDEX_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, "", FIELDS_EXTENSION));
   }
 }

@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -49,30 +48,26 @@ final class NormsConsumer extends InvertedDocEndConsumer {
     }
   }
 
-  // We only write the _X.nrm file at flush
-  void files(Collection<String> files) {}
-
   /** Produce _X.nrm if any document had a field with norms
    *  not disabled */
   @Override
-  public void flush(Map<FieldInfo,InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
+  public void flush(Map<String,InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
     boolean success = false;
     boolean anythingFlushed = false;
     try {
       if (state.fieldInfos.hasNorms()) {
         for (FieldInfo fi : state.fieldInfos) {
-          final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi);
+          final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi.name);
           // we must check the final value of omitNorms for the fieldinfo, it could have 
           // changed for this field since the first time we added it.
-          if (!fi.omitNorms) {
+          if (!fi.omitsNorms()) {
             if (toWrite != null && toWrite.initialized()) {
               anythingFlushed = true;
-              final Type type = toWrite.flush(state.numDocs);
+              final Type type = toWrite.flush(state.segmentInfo.getDocCount());
               assert fi.getNormType() == type;
-            } else if (fi.isIndexed) {
+            } else if (fi.isIndexed()) {
               anythingFlushed = true;
-              assert fi.getNormType() == null;
-              fi.setNormValueType(null, false);
+              assert fi.getNormType() == null: "got " + fi.getNormType() + "; field=" + fi.name;
             }
           }
         }

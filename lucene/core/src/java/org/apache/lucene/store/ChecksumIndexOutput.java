@@ -71,26 +71,7 @@ public class ChecksumIndexOutput extends IndexOutput {
     throw new UnsupportedOperationException();    
   }
 
-  /**
-   * Starts but does not complete the commit of this file (=
-   * writing of the final checksum at the end).  After this
-   * is called must call {@link #finishCommit} and the
-   * {@link #close} to complete the commit.
-   */
-  public void prepareCommit() throws IOException {
-    final long checksum = getChecksum();
-    // Intentionally write a mismatched checksum.  This is
-    // because we want to 1) test, as best we can, that we
-    // are able to write a long to the file, but 2) not
-    // actually "commit" the file yet.  This (prepare
-    // commit) is phase 1 of a two-phase commit.
-    final long pos = main.getFilePointer();
-    main.writeLong(checksum-1);
-    main.flush();
-    main.seek(pos);
-  }
-
-  /** See {@link #prepareCommit} */
+  /** writes the checksum */
   public void finishCommit() throws IOException {
     main.writeLong(getChecksum());
   }

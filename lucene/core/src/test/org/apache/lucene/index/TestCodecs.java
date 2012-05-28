@@ -31,9 +31,9 @@ import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -41,6 +41,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
@@ -87,14 +88,12 @@ public class TestCodecs extends LuceneTestCase {
     final boolean omitTF;
     final boolean storePayloads;
 
-    public FieldData(final String name, final FieldInfos fieldInfos, final TermData[] terms, final boolean omitTF, final boolean storePayloads) {
+    public FieldData(final String name, final FieldInfos.Builder fieldInfos, final TermData[] terms, final boolean omitTF, final boolean storePayloads) {
       this.omitTF = omitTF;
       this.storePayloads = storePayloads;
-      fieldInfos.addOrUpdate(name, true);
-      fieldInfo = fieldInfos.fieldInfo(name);
       // TODO: change this test to use all three
-      fieldInfo.indexOptions = omitTF ? IndexOptions.DOCS_ONLY : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-      fieldInfo.storePayloads = storePayloads;
+      fieldInfos.addOrUpdate(name, true, false, false, storePayloads, omitTF ? IndexOptions.DOCS_ONLY : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, null);
+      fieldInfo = fieldInfos.fieldInfo(name);
       this.terms = terms;
       for(int i=0;i<terms.length;i++)
         terms[i].field = this;
@@ -249,16 +248,15 @@ public class TestCodecs extends LuceneTestCase {
       terms[i] = new TermData(text, docs, null);
     }
 
-    final FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
+    final FieldInfos.Builder builder = new FieldInfos.Builder();
 
-    final FieldData field = new FieldData("field", fieldInfos, terms, true, false);
+    final FieldData field = new FieldData("field", builder, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
-
+    final FieldInfos fieldInfos = builder.finish();
     final Directory dir = newDirectory();
-    FieldInfos clonedFieldInfos = fieldInfos.clone();
     this.write(fieldInfos, dir, fields, true);
     Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, codec, clonedFieldInfos);
+    final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000, false, codec, null, null);
 
     final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random()), DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
@@ -296,25 +294,26 @@ public class TestCodecs extends LuceneTestCase {
   }
 
   public void testRandomPostings() throws Throwable {
-    final FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
+    final FieldInfos.Builder builder = new FieldInfos.Builder();
 
     final FieldData[] fields = new FieldData[NUM_FIELDS];
     for(int i=0;i<NUM_FIELDS;i++) {
       final boolean omitTF = 0==(i%3);
       final boolean storePayloads = 1==(i%3);
-      fields[i] = new FieldData(fieldNames[i], fieldInfos, this.makeRandomTerms(omitTF, storePayloads), omitTF, storePayloads);
+      fields[i] = new FieldData(fieldNames[i], builder, this.makeRandomTerms(omitTF, storePayloads), omitTF, storePayloads);
     }
 
     final Directory dir = newDirectory();
+    final FieldInfos fieldInfos = builder.finish();
 
     if (VERBOSE) {
       System.out.println("TEST: now write postings");
     }
 
-    FieldInfos clonedFieldInfos = fieldInfos.clone();
     this.write(fieldInfos, dir, fields, false);
     Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, codec, clonedFieldInfos);
+    final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000,
+                                           false, codec, null, null);
 
     if (VERBOSE) {
       System.out.println("TEST: now read postings");
@@ -618,7 +617,8 @@ public class TestCodecs extends LuceneTestCase {
 
     final int termIndexInterval = _TestUtil.nextInt(random(), 13, 27);
     final Codec codec = Codec.getDefault();
-    final SegmentWriteState state = new SegmentWriteState(InfoStream.getDefault(), dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codec, null, newIOContext(random()));
+    final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000, false, codec, null, null);
+    final SegmentWriteState state = new SegmentWriteState(InfoStream.getDefault(), dir, si, fieldInfos, termIndexInterval, null, newIOContext(random()));
 
     final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(state);
     Arrays.sort(fields);

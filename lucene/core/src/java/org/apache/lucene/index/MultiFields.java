@@ -244,21 +244,27 @@ public final class MultiFields extends Fields {
   }
 
   /** Call this to get the (merged) FieldInfos for a
-   *  composite reader */
+   *  composite reader. 
+   *  <p>
+   *  NOTE: the returned field numbers will likely not
+   *  correspond to the actual field numbers in the underlying
+   *  readers, and codec metadata ({@link FieldInfo#getAttribute(String)}
+   *  will be unavailable.
+   */
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
     final List<AtomicReader> subReaders = new ArrayList<AtomicReader>();
     ReaderUtil.gatherSubReaders(subReaders, reader);
-    final FieldInfos fieldInfos = new FieldInfos();
+    final FieldInfos.Builder builder = new FieldInfos.Builder();
     for(AtomicReader subReader : subReaders) {
-      fieldInfos.add(subReader.getFieldInfos());
+      builder.add(subReader.getFieldInfos());
     }
-    return fieldInfos;
+    return builder.finish();
   }
 
   public static Collection<String> getIndexedFields(IndexReader reader) {
     final Collection<String> fields = new HashSet<String>();
     for(FieldInfo fieldInfo : getMergedFieldInfos(reader)) {
-      if (fieldInfo.isIndexed) {
+      if (fieldInfo.isIndexed()) {
         fields.add(fieldInfo.name);
       }
     }

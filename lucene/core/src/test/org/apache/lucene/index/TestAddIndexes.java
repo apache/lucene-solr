@@ -30,7 +30,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfosFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
@@ -38,7 +38,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
@@ -1114,8 +1114,8 @@ public class TestAddIndexes extends LuceneTestCase {
     w3.addIndexes(readers);
     w3.close();
     // we should now see segments_X,
-    // segments.gen,_Y.cfs,_Y.cfe, _Z.fnx
-    assertEquals("Only one compound segment should exist, but got: " + Arrays.toString(dir.listAll()), 4, dir.listAll().length);
+    // segments.gen,_Y.cfs,_Y.cfe, _Z.si
+    assertEquals("Only one compound segment should exist, but got: " + Arrays.toString(dir.listAll()), 5, dir.listAll().length);
     dir.close();
   }
   
@@ -1150,8 +1150,8 @@ public class TestAddIndexes extends LuceneTestCase {
     }
 
     @Override
-    public SegmentInfosFormat segmentInfosFormat() {
-      return new Lucene40SegmentInfosFormat();
+    public SegmentInfoFormat segmentInfoFormat() {
+      return new Lucene40SegmentInfoFormat();
     }
 
     @Override

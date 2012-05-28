@@ -70,7 +70,7 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
    * @see PackedInts#getReader(org.apache.lucene.store.DataInput)
    */
   protected DocValuesWriterBase(PerDocWriteState state, float acceptableOverheadRatio) {
-    this.segmentName = state.segmentName;
+    this.segmentName = state.segmentInfo.name;
     this.bytesUsed = state.bytesUsed;
     this.context = state.context;
     this.acceptableOverheadRatio = acceptableOverheadRatio;

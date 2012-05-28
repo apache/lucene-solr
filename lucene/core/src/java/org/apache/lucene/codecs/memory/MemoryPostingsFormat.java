@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.memory;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -37,7 +36,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
@@ -133,7 +131,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
         lastDocID = docID;
         docCount++;
 
-        if (field.indexOptions == IndexOptions.DOCS_ONLY) {
+        if (field.getIndexOptions() == IndexOptions.DOCS_ONLY) {
           buffer.writeVInt(delta);
         } else if (termDocFreq == 1) {
           buffer.writeVInt((delta<<1) | 1);
@@ -149,7 +147,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
       @Override
       public void addPosition(int pos, BytesRef payload, int startOffset, int endOffset) throws IOException {
-        assert payload == null || field.storePayloads;
+        assert payload == null || field.hasPayloads();
 
         //System.out.println("      addPos pos=" + pos + " payload=" + payload);
 
@@ -159,7 +157,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
         
         int payloadLen = 0;
         
-        if (field.storePayloads) {
+        if (field.hasPayloads()) {
           payloadLen = payload == null ? 0 : payload.length;
           if (payloadLen != lastPayloadLen) {
             lastPayloadLen = payloadLen;
@@ -172,7 +170,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
           buffer.writeVInt(delta);
         }
         
-        if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+        if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
           // don't use startOffset - lastEndOffset, because this creates lots of negative vints for synonyms,
           // and the numbers aren't that much smaller anyways.
           int offsetDelta = startOffset - lastOffset;
@@ -229,7 +227,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       assert buffer2.getFilePointer() == 0;
 
       buffer2.writeVInt(stats.docFreq);
-      if (field.indexOptions != IndexOptions.DOCS_ONLY) {
+      if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
         buffer2.writeVLong(stats.totalTermFreq-stats.docFreq);
       }
       int pos = (int) buffer2.getFilePointer();
@@ -260,7 +258,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       if (termCount > 0) {
         out.writeVInt(termCount);
         out.writeVInt(field.number);
-        if (field.indexOptions != IndexOptions.DOCS_ONLY) {
+        if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
           out.writeVLong(sumTotalTermFreq);
         }
         out.writeVLong(sumDocFreq);
@@ -285,7 +283,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
 
-    final String fileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
     final IndexOutput out = state.directory.createOutput(fileName, state.context);
     
     return new FieldsConsumer() {
@@ -648,7 +646,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       if (!didDecode) {
         buffer.reset(current.output.bytes, 0, current.output.length);
         docFreq = buffer.readVInt();
-        if (field.indexOptions != IndexOptions.DOCS_ONLY) {
+        if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
           totalTermFreq = docFreq + buffer.readVLong();
         } else {
           totalTermFreq = -1;
@@ -697,14 +695,14 @@ public class MemoryPostingsFormat extends PostingsFormat {
       decodeMetaData();
       FSTDocsEnum docsEnum;
 
-      if (needsFreqs && field.indexOptions == IndexOptions.DOCS_ONLY) {
+      if (needsFreqs && field.getIndexOptions() == IndexOptions.DOCS_ONLY) {
         return null;
       } else if (reuse == null || !(reuse instanceof FSTDocsEnum)) {
-        docsEnum = new FSTDocsEnum(field.indexOptions, field.storePayloads);
+        docsEnum = new FSTDocsEnum(field.getIndexOptions(), field.hasPayloads());
       } else {
         docsEnum = (FSTDocsEnum) reuse;        
-        if (!docsEnum.canReuse(field.indexOptions, field.storePayloads)) {
-          docsEnum = new FSTDocsEnum(field.indexOptions, field.storePayloads);
+        if (!docsEnum.canReuse(field.getIndexOptions(), field.hasPayloads())) {
+          docsEnum = new FSTDocsEnum(field.getIndexOptions(), field.hasPayloads());
         }
       }
       return docsEnum.reset(current.output, liveDocs, docFreq);
@@ -713,22 +711,22 @@ public class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
 
-      boolean hasOffsets = field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      boolean hasOffsets = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (needsOffsets && !hasOffsets) {
         return null; // not available
       }
       
-      if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+      if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
         return null;
       }
       decodeMetaData();
       FSTDocsAndPositionsEnum docsAndPositionsEnum;
       if (reuse == null || !(reuse instanceof FSTDocsAndPositionsEnum)) {
-        docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.storePayloads, hasOffsets);
+        docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.hasPayloads(), hasOffsets);
       } else {
         docsAndPositionsEnum = (FSTDocsAndPositionsEnum) reuse;        
-        if (!docsAndPositionsEnum.canReuse(field.storePayloads, hasOffsets)) {
-          docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.storePayloads, hasOffsets);
+        if (!docsAndPositionsEnum.canReuse(field.hasPayloads(), hasOffsets)) {
+          docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.hasPayloads(), hasOffsets);
         }
       }
       //System.out.println("D&P reset this=" + this);
@@ -797,7 +795,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       this.termCount = termCount;
       final int fieldNumber = in.readVInt();
       field = fieldInfos.fieldInfo(fieldNumber);
-      if (field.indexOptions != IndexOptions.DOCS_ONLY) {
+      if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
         sumTotalTermFreq = in.readVLong();
       } else {
         sumTotalTermFreq = -1;
@@ -900,10 +898,5 @@ public class MemoryPostingsFormat extends PostingsFormat {
         }
       }
     };
-  }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION));
   }
 }

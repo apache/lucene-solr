@@ -1,8 +1,5 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.index.DocValues.Type;
-
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +17,11 @@ import org.apache.lucene.index.DocValues.Type;
  * limitations under the License.
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.index.DocValues.Type;
+
 /**
  *  Access to the Fieldable Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Fieldable Info file. Objects
@@ -27,20 +29,23 @@ import org.apache.lucene.index.DocValues.Type;
  *  be adding documents at a time, with no other reader or writer threads
  *  accessing this object.
  **/
+
 public final class FieldInfo {
   public final String name;
   public final int number;
 
-  public boolean isIndexed;
+  private boolean indexed;
   private DocValues.Type docValueType;
 
   // True if any document indexed term vectors
-  public boolean storeTermVector;
+  private boolean storeTermVector;
 
   private DocValues.Type normType;
-  public boolean omitNorms; // omit norms associated with indexed fields  
-  public IndexOptions indexOptions;
-  public boolean storePayloads; // whether this field stores payloads together with term positions
+  private boolean omitNorms; // omit norms associated with indexed fields  
+  private IndexOptions indexOptions;
+  private boolean storePayloads; // whether this field stores payloads together with term positions
+
+  private Map<String,String> attributes;
 
   /**
    * Controls how much information is stored in the postings lists.
@@ -64,13 +69,13 @@ public final class FieldInfo {
   /**
    * @lucene.experimental
    */
-  public FieldInfo(String name, boolean isIndexed, int number, boolean storeTermVector, 
-            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normsType) {
+  public FieldInfo(String name, boolean indexed, int number, boolean storeTermVector, 
+            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normsType, Map<String,String> attributes) {
     this.name = name;
-    this.isIndexed = isIndexed;
+    this.indexed = indexed;
     this.number = number;
     this.docValueType = docValues;
-    if (isIndexed) {
+    if (indexed) {
       this.storeTermVector = storeTermVector;
       this.storePayloads = storePayloads;
       this.omitNorms = omitNorms;
@@ -83,22 +88,38 @@ public final class FieldInfo {
       this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       this.normType = null;
     }
+    this.attributes = attributes;
+    assert checkConsistency();
     assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !storePayloads;
   }
-  
-  @Override
-  public FieldInfo clone() {
-    return new FieldInfo(name, isIndexed, number, storeTermVector,
-                         omitNorms, storePayloads, indexOptions, docValueType, normType);
+
+  private boolean checkConsistency() {
+    if (!indexed) {
+      assert !storeTermVector;
+      assert !storePayloads;
+      assert !omitNorms;
+      assert normType == null;
+      assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    } else {
+      assert indexOptions != null;
+      if (omitNorms) {
+        assert normType == null;
+      }
+    }
+
+    // Cannot store payloads unless positions are indexed:
+    assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
+
+    return true;
   }
 
   // should only be called by FieldInfos#addOrUpdate
-  void update(boolean isIndexed, boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
+  void update(boolean indexed, boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
 
-    if (this.isIndexed != isIndexed) {
-      this.isIndexed = true;                      // once indexed, always index
+    if (this.indexed != indexed) {
+      this.indexed = true;                      // once indexed, always index
     }
-    if (isIndexed) { // if updated field data is not for indexing, leave the updates out
+    if (indexed) { // if updated field data is not for indexing, leave the updates out
       if (this.storeTermVector != storeTermVector) {
         this.storeTermVector = true;                // once vector, always vector
       }
@@ -107,6 +128,7 @@ public final class FieldInfo {
       }
       if (this.omitNorms != omitNorms) {
         this.omitNorms = true;                // if one require omitNorms at least once, it remains off for life
+        this.normType = null;
       }
       if (this.indexOptions != indexOptions) {
         // downgrade
@@ -118,14 +140,17 @@ public final class FieldInfo {
       }
     }
     assert this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
+    assert checkConsistency();
   }
 
-  void setDocValuesType(DocValues.Type type, boolean force) {
-    if (docValueType == null || force) {
-      docValueType = type;
-    } else if (type != docValueType) {
-      throw new IllegalArgumentException("DocValues type already set to " + docValueType + " but was: " + type);
-    }
+  void setDocValuesType(DocValues.Type type) {
+    docValueType = type;
+    assert checkConsistency();
+  }
+  
+  /** @return IndexOptions for the field */
+  public IndexOptions getIndexOptions() {
+    return indexOptions;
   }
   
   /**
@@ -149,22 +174,27 @@ public final class FieldInfo {
     return normType;
   }
 
-  public void setStoreTermVectors() {
+  void setStoreTermVectors() {
     storeTermVector = true;
+    assert checkConsistency();
+  }
+  
+  void setStorePayloads() {
+    if (indexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
+      storePayloads = true;
+    }
+    assert checkConsistency();
   }
 
-  public void setNormValueType(Type type, boolean force) {
-    if (normType == null || force) {
-      normType = type;
-    } else if (type != normType) {
-      throw new IllegalArgumentException("Norm type already set to " + normType);
-    }
+  void setNormValueType(Type type) {
+    normType = type;
+    assert checkConsistency();
   }
   
   /**
    * @return true if norms are explicitly omitted for this field
    */
-  public boolean omitNorms() {
+  public boolean omitsNorms() {
     return omitNorms;
   }
   
@@ -172,7 +202,62 @@ public final class FieldInfo {
    * @return true if this field actually has any norms.
    */
   public boolean hasNorms() {
-    return isIndexed && !omitNorms && normType != null;
+    return normType != null;
   }
   
+  /**
+   * @return true if this field is indexed.
+   */
+  public boolean isIndexed() {
+    return indexed;
+  }
+  
+  /**
+   * @return true if any payloads exist for this field.
+   */
+  public boolean hasPayloads() {
+    return storePayloads;
+  }
+  
+  /**
+   * @return true if any term vectors exist for this field.
+   */
+  public boolean hasVectors() {
+    return storeTermVector;
+  }
+  
+  /**
+   * Get a codec attribute value, or null if it does not exist
+   */
+  public String getAttribute(String key) {
+    if (attributes == null) {
+      return null;
+    } else {
+      return attributes.get(key);
+    }
+  }
+  
+  /**
+   * Puts a codec attribute value.
+   * <p>
+   * This is a key-value mapping for the field that the codec can use
+   * to store additional metadata, and will be available to the codec
+   * when reading the segment via {@link #getAttribute(String)}
+   * <p>
+   * If a value already exists for the field, it will be replaced with 
+   * the new value.
+   */
+  public String putAttribute(String key, String value) {
+    if (attributes == null) {
+      attributes = new HashMap<String,String>();
+    }
+    return attributes.put(key, value);
+  }
+  
+  /**
+   * @return internal codec attributes map. May be null if no mappings exist.
+   */
+  public Map<String,String> attributes() {
+    return attributes;
+  }
 }

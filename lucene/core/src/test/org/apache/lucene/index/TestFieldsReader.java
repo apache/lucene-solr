@@ -49,13 +49,15 @@ import org.junit.BeforeClass;
 public class TestFieldsReader extends LuceneTestCase {
   private static Directory dir;
   private static Document testDoc = new Document();
-  private static FieldInfos fieldInfos = null;
+  private static FieldInfos.Builder fieldInfos = null;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
+    fieldInfos = new FieldInfos.Builder();
     DocHelper.setupDoc(testDoc);
-    _TestUtil.add(testDoc, fieldInfos);
+    for (IndexableField field : testDoc) {
+      fieldInfos.addOrUpdate(field.name(), field.fieldType());
+    }
     dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);

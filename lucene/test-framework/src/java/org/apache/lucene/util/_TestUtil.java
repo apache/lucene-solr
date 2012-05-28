@@ -57,6 +57,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
@@ -64,13 +65,16 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.junit.Assert;
 
 /**
@@ -680,13 +684,6 @@ public class _TestUtil {
     }
   }
   
-  /** Adds field info for a Document. */
-  public static void add(Document doc, FieldInfos fieldInfos) {
-    for (IndexableField field : doc) {
-      fieldInfos.addOrUpdate(field.name(), field.fieldType());
-    }
-  }
-  
   /** 
    * insecure, fast version of File.createTempFile
    * uses Random instead of SecureRandom.
@@ -899,6 +896,27 @@ public class _TestUtil {
         // Just report it on the syserr.
         System.err.println("Could not properly shutdown executor service.");
         e.printStackTrace(System.err);
+      }
+    }
+  }
+
+  public static FieldInfos getFieldInfos(SegmentInfo info) throws IOException {
+    Directory cfsDir = null;
+    try {
+      if (info.getUseCompoundFile()) {
+        cfsDir = new CompoundFileDirectory(info.dir,
+                                           IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION),
+                                           IOContext.READONCE,
+                                           false);
+      } else {
+        cfsDir = info.dir;
+      }
+      return info.getCodec().fieldInfosFormat().getFieldInfosReader().read(cfsDir,
+                                                                           info.name,
+                                                                           IOContext.READONCE);
+    } finally {
+      if (info.getUseCompoundFile() && cfsDir != null) {
+        cfsDir.close();
       }
     }
   }

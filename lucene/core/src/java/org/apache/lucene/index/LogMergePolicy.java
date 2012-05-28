@@ -134,7 +134,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
   // Javadoc inherited
   @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentInfo mergedInfo) throws IOException {
+  public boolean useCompoundFile(SegmentInfos infos, SegmentInfoPerCommit mergedInfo) throws IOException {
     final boolean doCFS;
 
     if (!useCompoundFile) {
@@ -143,8 +143,9 @@ public abstract class LogMergePolicy extends MergePolicy {
       doCFS = true;
     } else {
       long totalSize = 0;
-      for (SegmentInfo info : infos)
+      for (SegmentInfoPerCommit info : infos) {
         totalSize += size(info);
+      }
 
       doCFS = size(mergedInfo) <= noCFSRatio * totalSize;
     }
@@ -179,37 +180,37 @@ public abstract class LogMergePolicy extends MergePolicy {
   @Override
   public void close() {}
 
-  abstract protected long size(SegmentInfo info) throws IOException;
+  abstract protected long size(SegmentInfoPerCommit info) throws IOException;
 
-  protected long sizeDocs(SegmentInfo info) throws IOException {
+  protected long sizeDocs(SegmentInfoPerCommit info) throws IOException {
     if (calibrateSizeByDeletes) {
       int delCount = writer.get().numDeletedDocs(info);
-      assert delCount <= info.docCount;
-      return (info.docCount - (long)delCount);
+      assert delCount <= info.info.getDocCount();
+      return (info.info.getDocCount() - (long)delCount);
     } else {
-      return info.docCount;
+      return info.info.getDocCount();
     }
   }
   
-  protected long sizeBytes(SegmentInfo info) throws IOException {
+  protected long sizeBytes(SegmentInfoPerCommit info) throws IOException {
     long byteSize = info.sizeInBytes();
     if (calibrateSizeByDeletes) {
       int delCount = writer.get().numDeletedDocs(info);
-      double delRatio = (info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.docCount));
+      double delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((float)delCount / (float)info.info.getDocCount()));
       assert delRatio <= 1.0;
-      return (info.docCount <= 0 ?  byteSize : (long)(byteSize * (1.0 - delRatio)));
+      return (info.info.getDocCount() <= 0 ?  byteSize : (long)(byteSize * (1.0 - delRatio)));
     } else {
       return byteSize;
     }
   }
   
-  protected boolean isMerged(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToMerge) throws IOException {
+  protected boolean isMerged(SegmentInfos infos, int maxNumSegments, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) throws IOException {
     final int numSegments = infos.size();
     int numToMerge = 0;
-    SegmentInfo mergeInfo = null;
+    SegmentInfoPerCommit mergeInfo = null;
     boolean segmentIsOriginal = false;
     for(int i=0;i<numSegments && numToMerge <= maxNumSegments;i++) {
-      final SegmentInfo info = infos.info(i);
+      final SegmentInfoPerCommit info = infos.info(i);
       final Boolean isOriginal = segmentsToMerge.get(info);
       if (isOriginal != null) {
         segmentIsOriginal = isOriginal;
@@ -225,15 +226,15 @@ public abstract class LogMergePolicy extends MergePolicy {
   /** Returns true if this single info is already fully merged (has no
    *  pending norms or deletes, is in the same dir as the
    *  writer, and matches the current compound file setting */
-  protected boolean isMerged(SegmentInfo info)
+  protected boolean isMerged(SegmentInfoPerCommit info)
     throws IOException {
     IndexWriter w = writer.get();
     assert w != null;
     boolean hasDeletions = w.numDeletedDocs(info) > 0;
     return !hasDeletions &&
-      !info.hasSeparateNorms() &&
-      info.dir == w.getDirectory() &&
-      (info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0);
+      !info.info.hasSeparateNorms() &&
+      info.info.dir == w.getDirectory() &&
+      (info.info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0);
   }
 
   /**
@@ -247,11 +248,11 @@ public abstract class LogMergePolicy extends MergePolicy {
   private MergeSpecification findForcedMergesSizeLimit(
       SegmentInfos infos, int maxNumSegments, int last) throws IOException {
     MergeSpecification spec = new MergeSpecification();
-    final List<SegmentInfo> segments = infos.asList();
+    final List<SegmentInfoPerCommit> segments = infos.asList();
 
     int start = last - 1;
     while (start >= 0) {
-      SegmentInfo info = infos.info(start);
+      SegmentInfoPerCommit info = infos.info(start);
       if (size(info) > maxMergeSizeForForcedMerge || sizeDocs(info) > maxMergeDocs) {
         if (verbose()) {
           message("findForcedMergesSizeLimit: skip segment=" + info + ": size is > maxMergeSize (" + maxMergeSizeForForcedMerge + ") or sizeDocs is > maxMergeDocs (" + maxMergeDocs + ")");
@@ -288,7 +289,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    */
   private MergeSpecification findForcedMergesMaxNumSegments(SegmentInfos infos, int maxNumSegments, int last) throws IOException {
     MergeSpecification spec = new MergeSpecification();
-    final List<SegmentInfo> segments = infos.asList();
+    final List<SegmentInfoPerCommit> segments = infos.asList();
 
     // First, enroll all "full" merges (size
     // mergeFactor) to potentially be run concurrently:
@@ -326,8 +327,9 @@ public abstract class LogMergePolicy extends MergePolicy {
 
         for(int i=0;i<last-finalMergeSize+1;i++) {
           long sumSize = 0;
-          for(int j=0;j<finalMergeSize;j++)
+          for(int j=0;j<finalMergeSize;j++) {
             sumSize += size(infos.info(j+i));
+          }
           if (i == 0 || (sumSize < 2*size(infos.info(i-1)) && sumSize < bestSize)) {
             bestStart = i;
             bestSize = sumSize;
@@ -352,7 +354,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  in use may make use of concurrency. */
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos infos,
-            int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToMerge) throws IOException {
+            int maxNumSegments, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) throws IOException {
 
     assert maxNumSegments > 0;
     if (verbose()) {
@@ -373,7 +375,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     // since merging started):
     int last = infos.size();
     while (last > 0) {
-      final SegmentInfo info = infos.info(--last);
+      final SegmentInfoPerCommit info = infos.info(--last);
       if (segmentsToMerge.get(info) != null) {
         last++;
         break;
@@ -398,7 +400,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     // Check if there are any segments above the threshold
     boolean anyTooLarge = false;
     for (int i = 0; i < last; i++) {
-      SegmentInfo info = infos.info(i);
+      SegmentInfoPerCommit info = infos.info(i);
       if (size(info) > maxMergeSizeForForcedMerge || sizeDocs(info) > maxMergeDocs) {
         anyTooLarge = true;
         break;
@@ -420,7 +422,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   @Override
   public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos)
       throws CorruptIndexException, IOException {
-    final List<SegmentInfo> segments = segmentInfos.asList();
+    final List<SegmentInfoPerCommit> segments = segmentInfos.asList();
     final int numSegments = segments.size();
 
     if (verbose()) {
@@ -432,11 +434,11 @@ public abstract class LogMergePolicy extends MergePolicy {
     IndexWriter w = writer.get();
     assert w != null;
     for(int i=0;i<numSegments;i++) {
-      final SegmentInfo info = segmentInfos.info(i);
+      final SegmentInfoPerCommit info = segmentInfos.info(i);
       int delCount = w.numDeletedDocs(info);
       if (delCount > 0) {
         if (verbose()) {
-          message("  segment " + info.name + " has deletions");
+          message("  segment " + info.info.name + " has deletions");
         }
         if (firstSegmentWithDeletions == -1)
           firstSegmentWithDeletions = i;
@@ -472,11 +474,11 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
 
   private static class SegmentInfoAndLevel implements Comparable<SegmentInfoAndLevel> {
-    SegmentInfo info;
+    SegmentInfoPerCommit info;
     float level;
     int index;
     
-    public SegmentInfoAndLevel(SegmentInfo info, float level, int index) {
+    public SegmentInfoAndLevel(SegmentInfoPerCommit info, float level, int index) {
       this.info = info;
       this.level = level;
       this.index = index;
@@ -484,12 +486,13 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     // Sorts largest to smallest
     public int compareTo(SegmentInfoAndLevel other) {
-      if (level < other.level)
+      if (level < other.level) {
         return 1;
-      else if (level > other.level)
+      } else if (level > other.level) {
         return -1;
-      else
+      } else {
         return 0;
+      }
     }
   }
 
@@ -513,10 +516,10 @@ public abstract class LogMergePolicy extends MergePolicy {
     final List<SegmentInfoAndLevel> levels = new ArrayList<SegmentInfoAndLevel>();
     final float norm = (float) Math.log(mergeFactor);
 
-    final Collection<SegmentInfo> mergingSegments = writer.get().getMergingSegments();
+    final Collection<SegmentInfoPerCommit> mergingSegments = writer.get().getMergingSegments();
 
     for(int i=0;i<numSegments;i++) {
-      final SegmentInfo info = infos.info(i);
+      final SegmentInfoPerCommit info = infos.info(i);
       long size = size(info);
 
       // Floor tiny segments
@@ -562,22 +565,24 @@ public abstract class LogMergePolicy extends MergePolicy {
       float maxLevel = levels.get(start).level;
       for(int i=1+start;i<numMergeableSegments;i++) {
         final float level = levels.get(i).level;
-        if (level > maxLevel)
+        if (level > maxLevel) {
           maxLevel = level;
+        }
       }
 
       // Now search backwards for the rightmost segment that
       // falls into this level:
       float levelBottom;
-      if (maxLevel <= levelFloor)
+      if (maxLevel <= levelFloor) {
         // All remaining segments fall into the min level
         levelBottom = -1.0F;
-      else {
+      } else {
         levelBottom = (float) (maxLevel - LEVEL_LOG_SPAN);
 
         // Force a boundary at the level floor
-        if (levelBottom < levelFloor && maxLevel >= levelFloor)
+        if (levelBottom < levelFloor && maxLevel >= levelFloor) {
           levelBottom = levelFloor;
+        }
       }
 
       int upto = numMergeableSegments-1;
@@ -597,7 +602,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         boolean anyTooLarge = false;
         boolean anyMerging = false;
         for(int i=start;i<end;i++) {
-          final SegmentInfo info = levels.get(i).info;
+          final SegmentInfoPerCommit info = levels.get(i).info;
           anyTooLarge |= (size(info) >= maxMergeSize || sizeDocs(info) >= maxMergeDocs);
           if (mergingSegments.contains(info)) {
             anyMerging = true;
@@ -610,7 +615,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         } else if (!anyTooLarge) {
           if (spec == null)
             spec = new MergeSpecification();
-          final List<SegmentInfo> mergeInfos = new ArrayList<SegmentInfo>();
+          final List<SegmentInfoPerCommit> mergeInfos = new ArrayList<SegmentInfoPerCommit>();
           for(int i=start;i<end;i++) {
             mergeInfos.add(levels.get(i).info);
             assert infos.contains(levels.get(i).info);

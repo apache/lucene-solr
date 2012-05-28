@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.index.IndexWriter;  // Required for javadocs
@@ -104,23 +105,23 @@ public class IndexSplitter {
   public void listSegments() throws IOException {
     DecimalFormat formatter = new DecimalFormat("###,###.###");
     for (int x = 0; x < infos.size(); x++) {
-      SegmentInfo info = infos.info(x);
+      SegmentInfoPerCommit info = infos.info(x);
       String sizeStr = formatter.format(info.sizeInBytes());
-      System.out.println(info.name + " " + sizeStr);
+      System.out.println(info.info.name + " " + sizeStr);
     }
   }
 
   private int getIdx(String name) {
     for (int x = 0; x < infos.size(); x++) {
-      if (name.equals(infos.info(x).name))
+      if (name.equals(infos.info(x).info.name))
         return x;
     }
     return -1;
   }
 
-  private SegmentInfo getInfo(String name) {
+  private SegmentInfoPerCommit getInfo(String name) {
     for (int x = 0; x < infos.size(); x++) {
-      if (name.equals(infos.info(x).name))
+      if (name.equals(infos.info(x).info.name))
         return infos.info(x);
     }
     return null;
@@ -132,7 +133,7 @@ public class IndexSplitter {
       infos.remove(idx);
     }
     infos.changed();
-    infos.commit(fsDir, infos.codecFormat());
+    infos.commit(fsDir);
   }
 
   public void split(File destDir, String[] segs) throws IOException {
@@ -141,10 +142,15 @@ public class IndexSplitter {
     SegmentInfos destInfos = new SegmentInfos();
     destInfos.counter = infos.counter;
     for (String n : segs) {
-      SegmentInfo info = getInfo(n);
-      destInfos.add(info);
+      SegmentInfoPerCommit infoPerCommit = getInfo(n);
+      SegmentInfo info = infoPerCommit.info;
+      // Same info just changing the dir:
+      SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.getDocCount(), 
+                                            info.getUseCompoundFile(),
+                                            info.getCodec(), info.getDiagnostics(), info.attributes());
+      destInfos.add(new SegmentInfoPerCommit(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getDelGen()));
       // now copy files over
-      List<String> files = info.files();
+      Collection<String> files = infoPerCommit.files();
       for (final String srcName : files) {
         File srcFile = new File(dir, srcName);
         File destFile = new File(destDir, srcName);
@@ -152,7 +158,7 @@ public class IndexSplitter {
       }
     }
     destInfos.changed();
-    destInfos.commit(destFSDir, infos.codecFormat());
+    destInfos.commit(destFSDir);
     // System.out.println("destDir:"+destDir.getAbsolutePath());
   }
 

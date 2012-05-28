@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.mocksep;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
@@ -26,7 +25,6 @@ import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.sep.SepDocValuesConsumer;
 import org.apache.lucene.codecs.sep.SepDocValuesProducer;
 import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 
 /**
@@ -44,10 +42,5 @@ public class MockSepDocValuesFormat extends DocValuesFormat {
   @Override
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
     return new SepDocValuesProducer(state);
-  }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    SepDocValuesConsumer.files(info, files);
   }
 }

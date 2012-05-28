@@ -55,7 +55,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     this.fieldInfo = fieldInfo;
     docState = termsHashPerField.docState;
     fieldState = termsHashPerField.fieldState;
-    setIndexOptions(fieldInfo.indexOptions);
+    setIndexOptions(fieldInfo.getIndexOptions());
   }
 
   @Override
@@ -68,7 +68,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   }
 
   @Override
-  void finish() {}
+  void finish() {
+    if (hasPayloads) {
+      fieldInfo.setStorePayloads();
+    }
+  }
 
   boolean hasPayloads;
 
@@ -83,7 +87,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   void reset() {
     // Record, up front, whether our in-RAM format will be
     // with or without term freqs:
-    setIndexOptions(fieldInfo.indexOptions);
+    setIndexOptions(fieldInfo.getIndexOptions());
     payloadAttribute = null;
   }
 
@@ -330,7 +334,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     // according to this.indexOptions, but then write the
     // new segment to the directory according to
     // currentFieldIndexOptions:
-    final IndexOptions currentFieldIndexOptions = fieldInfo.indexOptions;
+    final IndexOptions currentFieldIndexOptions = fieldInfo.getIndexOptions();
 
     final boolean writeTermFreq = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     final boolean writePositions = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
@@ -363,7 +367,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     final ByteSliceReader freq = new ByteSliceReader();
     final ByteSliceReader prox = new ByteSliceReader();
 
-    FixedBitSet visitedDocs = new FixedBitSet(state.numDocs);
+    FixedBitSet visitedDocs = new FixedBitSet(state.segmentInfo.getDocCount());
     long sumTotalTermFreq = 0;
     long sumDocFreq = 0;
 
@@ -441,7 +445,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         }
 
         numDocs++;
-        assert docID < state.numDocs: "doc=" + docID + " maxDoc=" + state.numDocs;
+        assert docID < state.segmentInfo.getDocCount(): "doc=" + docID + " maxDoc=" + state.segmentInfo.getDocCount();
 
         // NOTE: we could check here if the docID was
         // deleted, and skip it.  However, this is somewhat
@@ -463,7 +467,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           
           // TODO: can we do this reach-around in a cleaner way????
           if (state.liveDocs == null) {
-            state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.numDocs);
+            state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.segmentInfo.getDocCount());
           }
           if (state.liveDocs.get(docID)) {
             state.delCountOnFlush++;

@@ -89,8 +89,8 @@ class SegmentTermDocs {
   void seek(TermInfo ti, Term term) throws IOException {
     count = 0;
     FieldInfo fi = fieldInfos.fieldInfo(term.field());
-    this.indexOptions = (fi != null) ? fi.indexOptions : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
+    this.indexOptions = (fi != null) ? fi.getIndexOptions() : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    currentFieldStoresPayloads = (fi != null) ? fi.hasPayloads() : false;
     if (ti == null) {
       df = 0;
     } else {

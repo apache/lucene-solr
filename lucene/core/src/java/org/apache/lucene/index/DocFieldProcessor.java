@@ -71,28 +71,28 @@ final class DocFieldProcessor extends DocConsumer {
   @Override
   public void flush(SegmentWriteState state) throws IOException {
 
-    Map<FieldInfo, DocFieldConsumerPerField> childFields = new HashMap<FieldInfo, DocFieldConsumerPerField>();
+    Map<String,DocFieldConsumerPerField> childFields = new HashMap<String,DocFieldConsumerPerField>();
     Collection<DocFieldConsumerPerField> fields = fields();
     for (DocFieldConsumerPerField f : fields) {
-      childFields.put(f.getFieldInfo(), f);
+      childFields.put(f.getFieldInfo().name, f);
     }
 
     fieldsWriter.flush(state);
     consumer.flush(childFields, state);
 
     for (DocValuesConsumerAndDocID consumer : docValues.values()) {
-      consumer.docValuesConsumer.finish(state.numDocs);
+      consumer.docValuesConsumer.finish(state.segmentInfo.getDocCount());
     }
+    
+    // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
+    IOUtils.close(perDocConsumer);
 
     // Important to save after asking consumer to flush so
     // consumer can alter the FieldInfo* if necessary.  EG,
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
     FieldInfosWriter infosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
-    infosWriter.write(state.directory, state.segmentName, state.fieldInfos, IOContext.DEFAULT);
-
-    // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
-    IOUtils.close(perDocConsumer);
+    infosWriter.write(state.directory, state.segmentInfo.name, state.fieldInfos, IOContext.DEFAULT);
   }
 
   @Override
@@ -203,7 +203,7 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   @Override
-  public void processDocument(FieldInfos fieldInfos) throws IOException {
+  public void processDocument(FieldInfos.Builder fieldInfos) throws IOException {
 
     consumer.startDocument();
     fieldsWriter.startDocument();
@@ -342,7 +342,8 @@ final class DocFieldProcessor extends DocConsumer {
       }
     }
     DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
-    fieldInfo.setDocValuesType(valueType, false);
+    assert fieldInfo.getDocValuesType() == null || fieldInfo.getDocValuesType() == valueType;
+    fieldInfo.setDocValuesType(valueType);
 
     docValuesConsumerAndDocID = new DocValuesConsumerAndDocID(docValuesConsumer);
     docValuesConsumerAndDocID.docID = docState.docID;

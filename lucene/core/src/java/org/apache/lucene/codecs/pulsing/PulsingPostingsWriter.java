@@ -124,9 +124,9 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   // our parent calls setField whenever the field changes
   @Override
   public void setField(FieldInfo fieldInfo) {
-    this.indexOptions = fieldInfo.indexOptions;
+    this.indexOptions = fieldInfo.getIndexOptions();
     if (DEBUG) System.out.println("PW field=" + fieldInfo.name + " indexOptions=" + indexOptions);
-    storePayloads = fieldInfo.storePayloads;
+    storePayloads = fieldInfo.hasPayloads();
     wrappedPostingsWriter.setField(fieldInfo);
     //DEBUG = BlockTreeTermsWriter.DEBUG;
   }

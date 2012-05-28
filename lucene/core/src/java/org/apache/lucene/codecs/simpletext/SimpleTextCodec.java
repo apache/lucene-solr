@@ -23,7 +23,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfosFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 
@@ -36,7 +36,7 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 public final class SimpleTextCodec extends Codec {
   private final PostingsFormat postings = new SimpleTextPostingsFormat();
   private final StoredFieldsFormat storedFields = new SimpleTextStoredFieldsFormat();
-  private final SegmentInfosFormat segmentInfos = new SimpleTextSegmentInfosFormat();
+  private final SegmentInfoFormat segmentInfos = new SimpleTextSegmentInfoFormat();
   private final FieldInfosFormat fieldInfosFormat = new SimpleTextFieldInfosFormat();
   private final TermVectorsFormat vectorsFormat = new SimpleTextTermVectorsFormat();
   // TODO: need a plain-text impl
@@ -75,7 +75,7 @@ public final class SimpleTextCodec extends Codec {
   }
 
   @Override
-  public SegmentInfosFormat segmentInfosFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return segmentInfos;
   }
 

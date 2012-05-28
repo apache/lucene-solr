@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Set;
 
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.index.CorruptIndexException;
@@ -176,10 +175,6 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
       in = null;
       offsets = null;
     }
-  }
-  
-  public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", SimpleTextStoredFieldsWriter.FIELDS_EXTENSION));
   }
   
   private void readLine() throws IOException {

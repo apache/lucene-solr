@@ -18,12 +18,10 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.IndexFileNames;
@@ -57,10 +55,5 @@ public class SimpleTextPostingsFormat extends PostingsFormat {
 
   static String getPostingsFileName(String segment, String segmentSuffix) {
     return IndexFileNames.segmentFileName(segment, segmentSuffix, POSTINGS_EXTENSION);
-  }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    files.add(getPostingsFileName(segmentInfo.name, segmentSuffix));
   }
 }

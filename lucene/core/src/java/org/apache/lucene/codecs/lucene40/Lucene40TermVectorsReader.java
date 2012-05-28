@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CorruptIndexException;
@@ -43,7 +42,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
-
 
 /**
  * Lucene 4.0 Term Vectors reader.
@@ -100,7 +98,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
   public Lucene40TermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
     throws CorruptIndexException, IOException {
     final String segment = si.name;
-    final int size = si.docCount;
+    final int size = si.getDocCount();
     
     boolean success = false;
 
@@ -256,7 +254,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
         @Override
         public String next() throws IOException {
           if (fieldNumbers != null && fieldUpto < fieldNumbers.length) {
-            return fieldInfos.fieldName(fieldNumbers[fieldUpto++]);
+            return fieldInfos.fieldInfo(fieldNumbers[fieldUpto++]).name;
           } else {
             return null;
           }
@@ -264,7 +262,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
         @Override
         public Terms terms() throws IOException {
-          return TVFields.this.terms(fieldInfos.fieldName(fieldNumbers[fieldUpto-1]));
+          return TVFields.this.terms(fieldInfos.fieldInfo(fieldNumbers[fieldUpto-1]).name);
         }
       };
     }
@@ -689,14 +687,6 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     }
     
     return new Lucene40TermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs);
-  }
-  
-  public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    if (info.getHasVectors()) {
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_INDEX_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_FIELDS_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_DOCUMENTS_EXTENSION));
-    }
   }
 }
 

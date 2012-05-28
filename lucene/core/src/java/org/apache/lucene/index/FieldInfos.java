@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -30,14 +31,119 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  * Collection of {@link FieldInfo}s (accessible by number or by name).
  *  @lucene.experimental
  */
-public final class FieldInfos implements Iterable<FieldInfo> {
-  static final class FieldNumberBiMap {
+public class FieldInfos implements Iterable<FieldInfo> {
+  private final boolean hasFreq;
+  private final boolean hasProx;
+  private final boolean hasVectors;
+  private final boolean hasNorms;
+  private final boolean hasDocValues;
+  
+  private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
+  private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+  private final Collection<FieldInfo> values; // for an unmodifiable iterator
+  
+  public FieldInfos(FieldInfo[] infos) {
+    boolean hasVectors = false;
+    boolean hasProx = false;
+    boolean hasFreq = false;
+    boolean hasNorms = false;
+    boolean hasDocValues = false;
+    
+    for (FieldInfo info : infos) {
+      assert !byNumber.containsKey(info.number);
+      byNumber.put(info.number, info);
+      assert !byName.containsKey(info.name);
+      byName.put(info.name, info);
+      
+      hasVectors |= info.hasVectors();
+      hasProx |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      hasFreq |= info.isIndexed() && info.getIndexOptions() != IndexOptions.DOCS_ONLY;
+      hasNorms |= info.hasNorms();
+      hasDocValues |= info.hasDocValues();
+    }
+    
+    this.hasVectors = hasVectors;
+    this.hasProx = hasProx;
+    this.hasFreq = hasFreq;
+    this.hasNorms = hasNorms;
+    this.hasDocValues = hasDocValues;
+    this.values = Collections.unmodifiableCollection(byNumber.values());
+  }
+  
+  /** Returns true if any fields have freqs */
+  public boolean hasFreq() {
+    return hasFreq;
+  }
+  
+  /** Returns true if any fields have positions */
+  public boolean hasProx() {
+    return hasProx;
+  }
+  
+  /**
+   * @return true if at least one field has any vectors
+   */
+  public boolean hasVectors() {
+    return hasVectors;
+  }
+  
+  /**
+   * @return true if at least one field has any norms
+   */
+  public boolean hasNorms() {
+    return hasNorms;
+  }
+  
+  /**
+   * @return true if at least one field has doc values
+   */
+  public boolean hasDocValues() {
+    return hasDocValues;
+  }
+  
+  /**
+   * @return number of fields
+   */
+  public int size() {
+    assert byNumber.size() == byName.size();
+    return byNumber.size();
+  }
+  
+  /**
+   * Returns an iterator over all the fieldinfo objects present,
+   * ordered by ascending field number
+   */
+  // TODO: what happens if in fact a different order is used?
+  public Iterator<FieldInfo> iterator() {
+    return values.iterator();
+  }
+
+  /**
+   * Return the fieldinfo object referenced by the field name
+   * @return the FieldInfo object or null when the given fieldName
+   * doesn't exist.
+   */  
+  public FieldInfo fieldInfo(String fieldName) {
+    return byName.get(fieldName);
+  }
+
+  /**
+   * Return the fieldinfo object referenced by the fieldNumber.
+   * @param fieldNumber
+   * @return the FieldInfo object or null when the given fieldNumber
+   * doesn't exist.
+   */  
+  public FieldInfo fieldInfo(int fieldNumber) {
+    return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
+  }
+  
+  static final class FieldNumbers {
     
     private final Map<Integer,String> numberToName;
     private final Map<String,Integer> nameToNumber;
     private int lowestUnassignedFieldNumber = -1;
     
-    FieldNumberBiMap() {
+    FieldNumbers() {
       this.nameToNumber = new HashMap<String, Integer>();
       this.numberToName = new HashMap<Integer, String>();
     }
@@ -54,8 +160,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         final Integer preferredBoxed = Integer.valueOf(preferredFieldNumber);
 
         if (preferredFieldNumber != -1 && !numberToName.containsKey(preferredBoxed)) {
-            // cool - we can use this number globally
-            fieldNumber = preferredBoxed;
+          // cool - we can use this number globally
+          fieldNumber = preferredBoxed;
         } else {
           // find a new FieldNumber
           while (numberToName.containsKey(++lowestUnassignedFieldNumber)) {
@@ -66,7 +172,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         
         numberToName.put(fieldNumber, fieldName);
         nameToNumber.put(fieldName, fieldNumber);
-        
       }
 
       return fieldNumber.intValue();
@@ -93,386 +198,115 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
   }
   
-  private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
-  private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
-  private final FieldNumberBiMap globalFieldNumbers;
-  
-  private boolean hasFreq; // only set if readonly
-  private boolean hasProx; // only set if readonly
-  private boolean hasVectors; // only set if readonly
-  private long version; // internal use to track changes
+  static final class Builder {
+    private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+    final FieldNumbers globalFieldNumbers;
 
-  /**
-   * Creates a new read-only FieldInfos: only public to be accessible
-   * from the codecs package
-   * 
-   * @lucene.internal
-   */
-  public FieldInfos(FieldInfo[] infos, boolean hasFreq, boolean hasProx, boolean hasVectors) {
-    this(null);
-    this.hasFreq = hasFreq;
-    this.hasProx = hasProx;
-    this.hasVectors = hasVectors;
-    for (FieldInfo info : infos) {
-      putInternal(info);
+    Builder() {
+      this(new FieldNumbers());
     }
-  }
-
-  public FieldInfos() {
-    this(new FieldNumberBiMap());
-  }
-
-  public void add(FieldInfos other) {
-    for(FieldInfo fieldInfo : other){ 
-      add(fieldInfo);
+    
+    /**
+     * Creates a new instance with the given {@link FieldNumbers}. 
+     */
+    Builder(FieldNumbers globalFieldNumbers) {
+      assert globalFieldNumbers != null;
+      this.globalFieldNumbers = globalFieldNumbers;
     }
-  }
 
-  /**
-   * Creates a new FieldInfos instance with the given {@link FieldNumberBiMap}. 
-   * If the {@link FieldNumberBiMap} is <code>null</code> this instance will be read-only.
-   * @see #isReadOnly()
-   */
-  FieldInfos(FieldNumberBiMap globalFieldNumbers) {
-    this.globalFieldNumbers = globalFieldNumbers;
-  }
-  
-  /**
-   * adds the given field to this FieldInfos name / number mapping. The given FI
-   * must be present in the global field number mapping before this method it
-   * called
-   */
-  private void putInternal(FieldInfo fi) {
-    assert !byNumber.containsKey(fi.number);
-    assert !byName.containsKey(fi.name);
-    assert globalFieldNumbers == null || globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name);
-    byNumber.put(fi.number, fi);
-    byName.put(fi.name, fi);
-  }
-  
-  private int nextFieldNumber(String name, int preferredFieldNumber) {
-    // get a global number for this field
-    final int fieldNumber = globalFieldNumbers.addOrGet(name,
-        preferredFieldNumber);
-    assert byNumber.get(fieldNumber) == null : "field number " + fieldNumber
-        + " already taken";
-    return fieldNumber;
-  }
-
-  /**
-   * Returns a deep clone of this FieldInfos instance.
-   */
-  @Override
-  synchronized public FieldInfos clone() {
-    FieldInfos fis = new FieldInfos(globalFieldNumbers);
-    fis.hasFreq = hasFreq;
-    fis.hasProx = hasProx;
-    fis.hasVectors = hasVectors;
-    for (FieldInfo fi : this) {
-      FieldInfo clone = fi.clone();
-      fis.putInternal(clone);
-    }
-    return fis;
-  }
-
-  /** Returns true if any fields have positions */
-  public boolean hasProx() {
-    if (isReadOnly()) {
-      return hasProx;
-    }
-    // mutable FIs must check!
-    for (FieldInfo fi : this) {
-      if (fi.isIndexed && fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-        return true;
+    public void add(FieldInfos other) {
+      for(FieldInfo fieldInfo : other){ 
+        add(fieldInfo);
       }
     }
-    return false;
-  }
-  
-  /** Returns true if any fields have freqs */
-  public boolean hasFreq() {
-    if (isReadOnly()) {
-      return hasFreq;
+   
+    /**
+     * adds the given field to this FieldInfos name / number mapping. The given FI
+     * must be present in the global field number mapping before this method it
+     * called
+     */
+    private void putInternal(FieldInfo fi) {
+      assert !byName.containsKey(fi.name);
+      assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name);
+      byName.put(fi.name, fi);
     }
-    // mutable FIs must check!
-    for (FieldInfo fi : this) {
-      if (fi.isIndexed && fi.indexOptions != IndexOptions.DOCS_ONLY) {
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  /**
-   * Adds or updates fields that are indexed. Whether they have termvectors has to be specified.
-   * 
-   * @param names The names of the fields
-   * @param storeTermVectors Whether the fields store term vectors or not
-   */
-  synchronized public void addOrUpdateIndexed(Collection<String> names, boolean storeTermVectors) {
-    for (String name : names) {
-      addOrUpdate(name, true, storeTermVectors);
-    }
-  }
-
-  /**
-   * Assumes the fields are not storing term vectors.
-   * 
-   * @param names The names of the fields
-   * @param isIndexed Whether the fields are indexed or not
-   * 
-   * @see #addOrUpdate(String, boolean)
-   */
-  synchronized public void addOrUpdate(Collection<String> names, boolean isIndexed) {
-    for (String name : names) {
-      addOrUpdate(name, isIndexed);
-    }
-  }
-
-  /**
-   * Calls 5 parameter add with false for all TermVector parameters.
-   * 
-   * @param name The name of the IndexableField
-   * @param isIndexed true if the field is indexed
-   * @see #addOrUpdate(String, boolean, boolean)
-   */
-  synchronized public void addOrUpdate(String name, boolean isIndexed) {
-    addOrUpdate(name, isIndexed, false, false);
-  }
-
-  /** If the field is not yet known, adds it. If it is known, checks to make
-   *  sure that the isIndexed flag is the same as was given previously for this
-   *  field. If not - marks it as being indexed.  Same goes for the TermVector
-   * parameters.
-   * 
-   * @param name The name of the field
-   * @param isIndexed true if the field is indexed
-   * @param storeTermVector true if the term vector should be stored
-   */
-  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector) {
-    addOrUpdate(name, isIndexed, storeTermVector, false);
-  }
-
+    
     /** If the field is not yet known, adds it. If it is known, checks to make
-   *  sure that the isIndexed flag is the same as was given previously for this
-   *  field. If not - marks it as being indexed.  Same goes for the TermVector
-   * parameters.
-   *
-   * @param name The name of the field
-   * @param isIndexed true if the field is indexed
-   * @param storeTermVector true if the term vector should be stored
-   * @param omitNorms true if the norms for the indexed field should be omitted
-   */
-  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
-                  boolean omitNorms) {
-    addOrUpdate(name, isIndexed, storeTermVector, omitNorms, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, null);
-  }
-  
-  /** If the field is not yet known, adds it. If it is known, checks to make
-   *  sure that the isIndexed flag is the same as was given previously for this
-   *  field. If not - marks it as being indexed.  Same goes for the TermVector
-   * parameters.
-   *
-   * @param name The name of the field
-   * @param isIndexed true if the field is indexed
-   * @param storeTermVector true if the term vector should be stored
-   * @param omitNorms true if the norms for the indexed field should be omitted
-   * @param storePayloads true if payloads should be stored for this field
-   * @param indexOptions if term freqs should be omitted for this field
-   */
-  synchronized public FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
-                       boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
-    return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
-  }
-
-  // NOTE: this method does not carry over termVector
-  // booleans nor docValuesType; the indexer chain
-  // (TermVectorsConsumerPerField, DocFieldProcessor) must
-  // set these fields when they succeed in consuming
-  // the document:
-  public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType) {
-    // TODO: really, indexer shouldn't even call this
-    // method (it's only called from DocFieldProcessor);
-    // rather, each component in the chain should update
-    // what it "owns".  EG fieldType.indexOptions() should
-    // be updated by maybe FreqProxTermsWriterPerField:
-    return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
-                               fieldType.omitNorms(), false,
-                               fieldType.indexOptions(), null, null);
-  }
-
-  synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
-      boolean storeTermVector,
-      boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
-    if (globalFieldNumbers == null) {
-      throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
+     *  sure that the isIndexed flag is the same as was given previously for this
+     *  field. If not - marks it as being indexed.  Same goes for the TermVector
+     * parameters.
+     *
+     * @param name The name of the field
+     * @param isIndexed true if the field is indexed
+     * @param storeTermVector true if the term vector should be stored
+     * @param omitNorms true if the norms for the indexed field should be omitted
+     * @param storePayloads true if payloads should be stored for this field
+     * @param indexOptions if term freqs should be omitted for this field
+     */
+    // TODO: fix testCodecs to do this another way, its the only user of this
+    FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
+                         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
+      return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
     }
-    FieldInfo fi = fieldInfo(name);
-    if (fi == null) {
-      final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
-      fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
-    } else {
-      fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
-      if (docValues != null) {
-        fi.setDocValuesType(docValues, true);
-      }
-      if (normType != null) {
-        fi.setNormValueType(normType, true);
-      }
+
+    // NOTE: this method does not carry over termVector
+    // booleans nor docValuesType; the indexer chain
+    // (TermVectorsConsumerPerField, DocFieldProcessor) must
+    // set these fields when they succeed in consuming
+    // the document:
+    public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType) {
+      // TODO: really, indexer shouldn't even call this
+      // method (it's only called from DocFieldProcessor);
+      // rather, each component in the chain should update
+      // what it "owns".  EG fieldType.indexOptions() should
+      // be updated by maybe FreqProxTermsWriterPerField:
+      return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
+                                 fieldType.omitNorms(), false,
+                                 fieldType.indexOptions(), null, null);
     }
-    version++;
-    return fi;
-  }
-  
-  synchronized public FieldInfo add(FieldInfo fi) {
-    // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
-    return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed, fi.storeTermVector,
-               fi.omitNorms, fi.storePayloads,
-               fi.indexOptions, fi.getDocValuesType(), fi.getNormType());
-  }
-  
-  /*
-   * NOTE: if you call this method from a public method make sure you check if we are modifiable and throw an exception otherwise
-   */
-  private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
-                                boolean storeTermVector, boolean omitNorms, boolean storePayloads,
-                                IndexOptions indexOptions, DocValues.Type docValuesType, DocValues.Type normType) {
-    // don't check modifiable here since we use that to initially build up FIs
-    if (globalFieldNumbers != null) {
+
+    private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
+        boolean storeTermVector,
+        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
+      FieldInfo fi = fieldInfo(name);
+      if (fi == null) {
+        // get a global number for this field
+        final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber);
+        fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
+      } else {
+        fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
+        if (docValues != null) {
+          fi.setDocValuesType(docValues);
+        }
+        if (!fi.omitsNorms() && normType != null) {
+          fi.setNormValueType(normType);
+        }
+      }
+      return fi;
+    }
+    
+    public FieldInfo add(FieldInfo fi) {
+      // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
+      return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed(), fi.hasVectors(),
+                 fi.omitsNorms(), fi.hasPayloads(),
+                 fi.getIndexOptions(), fi.getDocValuesType(), fi.getNormType());
+    }
+    
+    private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
+                                  boolean storeTermVector, boolean omitNorms, boolean storePayloads,
+                                  IndexOptions indexOptions, DocValues.Type docValuesType, DocValues.Type normType) {
       globalFieldNumbers.setIfNotSet(fieldNumber, name);
-    } 
-    final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType);
-    putInternal(fi);
-    return fi;
-  }
-
-  /**
-   * lookup the number of a field by name.
-   * 
-   * @param fieldName field's name
-   * @return number of field, or -1 if it does not exist.
-   */
-  public int fieldNumber(String fieldName) {
-    FieldInfo fi = fieldInfo(fieldName);
-    return (fi != null) ? fi.number : -1;
-  }
-
-  public FieldInfo fieldInfo(String fieldName) {
-    return byName.get(fieldName);
-  }
-
-  /**
-   * Return the fieldName identified by its number.
-   * 
-   * @param fieldNumber
-   * @return the fieldName or an empty string when the field
-   * with the given number doesn't exist.
-   */  
-  public String fieldName(int fieldNumber) {
-  	FieldInfo fi = fieldInfo(fieldNumber);
-  	return (fi != null) ? fi.name : "";
-  }
-
-  /**
-   * Return the fieldinfo object referenced by the fieldNumber.
-   * @param fieldNumber
-   * @return the FieldInfo object or null when the given fieldNumber
-   * doesn't exist.
-   */  
-  public FieldInfo fieldInfo(int fieldNumber) {
-    return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
-  }
-
-  public Iterator<FieldInfo> iterator() {
-    return byNumber.values().iterator();
-  }
-
-  /**
-   * @return number of fields
-   */
-  public int size() {
-    assert byNumber.size() == byName.size();
-    return byNumber.size();
-  }
-
-  /**
-   * @return true if at least one field has any vectors
-   */
-  public boolean hasVectors() {
-    if (isReadOnly()) {
-      return hasVectors;
-    }
-    // mutable FIs must check
-    for (FieldInfo fi : this) {
-      if (fi.storeTermVector) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * @return true if at least one field has any norms
-   */
-  public boolean hasNorms() {
-    for (FieldInfo fi : this) {
-      if (fi.hasNorms()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Returns <code>true</code> iff this instance is not backed by a
-   * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap}. Instances read from a directory via
-   * {@link FieldInfos#FieldInfos(FieldInfo[], boolean, boolean, boolean)} will always be read-only
-   * since no {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} is supplied, otherwise 
-   * <code>false</code>.
-   */
-  public final boolean isReadOnly() {
-    return globalFieldNumbers == null;
-  }
-  
-  synchronized final long getVersion() {
-    return version;
-  }
-  
-  final FieldInfos asReadOnly() {
-    if (isReadOnly()) {
-      return this;
-    }
-    final FieldInfos roFis = new FieldInfos((FieldNumberBiMap)null);
-    for (FieldInfo fieldInfo : this) {
-      FieldInfo clone = fieldInfo.clone();
-      roFis.putInternal(clone);
-      roFis.hasVectors |= clone.storeTermVector;
-      roFis.hasProx |= clone.isIndexed && clone.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-      roFis.hasFreq |= clone.isIndexed && clone.indexOptions != IndexOptions.DOCS_ONLY;
-    }
-    return roFis;
-  }
-
-  /**
-   * @return true if at least one field has docValues
-   */
-  public boolean hasDocValues() {
-    for (FieldInfo fi : this) {
-      if (fi.hasDocValues()) { 
-        return true;
-      }
+      final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType, null);
+      putInternal(fi);
+      return fi;
     }
 
-    return false;
-  }
-  
-  /**
-   * Creates a new {@link FieldInfo} instance from the given instance. If the given instance is
-   * read-only this instance will be read-only too.
-   * 
-   * @see #isReadOnly()
-   */
-  static FieldInfos from(FieldInfos other) {
-    return new FieldInfos(other.globalFieldNumbers);
+    public FieldInfo fieldInfo(String fieldName) {
+      return byName.get(fieldName);
+    }
+    
+    final FieldInfos finish() {
+      return new FieldInfos(byName.values().toArray(new FieldInfo[byName.size()]));
+    }
   }
 }

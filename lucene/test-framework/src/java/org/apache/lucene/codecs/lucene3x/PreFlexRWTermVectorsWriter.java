@@ -22,6 +22,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
@@ -194,7 +195,7 @@ final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
   }
   
   @Override
-  public void finish(int numDocs) throws IOException {
+  public void finish(FieldInfos fis, int numDocs) throws IOException {
     if (4+((long) numDocs)*16 != tvx.getFilePointer())
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and

@@ -45,7 +45,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     if (segmentInfos.size() > 1 && random.nextInt(5) == 3) {
       
-      List<SegmentInfo> segments = new ArrayList<SegmentInfo>(segmentInfos.asList());
+      List<SegmentInfoPerCommit> segments = new ArrayList<SegmentInfoPerCommit>(segmentInfos.asList());
       Collections.shuffle(segments, random);
 
       // TODO: sometimes make more than 1 merge?
@@ -59,11 +59,11 @@ public class MockRandomMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findForcedMerges(
-       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToMerge)
+       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
     throws CorruptIndexException, IOException {
 
-    final List<SegmentInfo> eligibleSegments = new ArrayList<SegmentInfo>();
-    for(SegmentInfo info : segmentInfos) {
+    final List<SegmentInfoPerCommit> eligibleSegments = new ArrayList<SegmentInfoPerCommit>();
+    for(SegmentInfoPerCommit info : segmentInfos) {
       if (segmentsToMerge.containsKey(info)) {
         eligibleSegments.add(info);
       }
@@ -87,7 +87,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     if (mergeSpec != null) {
       for(OneMerge merge : mergeSpec.merges) {
-        for(SegmentInfo info : merge.segments) {
+        for(SegmentInfoPerCommit info : merge.segments) {
           assert segmentsToMerge.containsKey(info);
         }
       }
@@ -107,7 +107,7 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentInfo mergedInfo) throws IOException {
+  public boolean useCompoundFile(SegmentInfos infos, SegmentInfoPerCommit mergedInfo) throws IOException {
     // 80% of the time we create CFS:
     return random.nextInt(5) != 1;
   }

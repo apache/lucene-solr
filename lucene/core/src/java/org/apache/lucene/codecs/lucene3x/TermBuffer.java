@@ -67,9 +67,15 @@ final class TermBuffer implements Cloneable {
     final int fieldNumber = input.readVInt();
     if (fieldNumber != currentFieldNumber) {
       currentFieldNumber = fieldNumber;
-      field = fieldInfos.fieldName(currentFieldNumber).intern();
+      // NOTE: too much sneakiness here, seriously this is a negative vint?!
+      if (currentFieldNumber == -1) {
+        field = "";
+      } else {
+        assert fieldInfos.fieldInfo(currentFieldNumber) != null : currentFieldNumber;
+        field = fieldInfos.fieldInfo(currentFieldNumber).name.intern();
+      }
     } else {
-      assert field.equals(fieldInfos.fieldName(fieldNumber)): "currentFieldNumber=" + currentFieldNumber + " field=" + field + " vs " + fieldInfos.fieldName(fieldNumber);
+      assert field.equals(fieldInfos.fieldInfo(fieldNumber).name) : "currentFieldNumber=" + currentFieldNumber + " field=" + field + " vs " + fieldInfos.fieldInfo(fieldNumber) == null ? "null" : fieldInfos.fieldInfo(fieldNumber).name;
     }
   }
 

@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.index.DocValues;
@@ -69,16 +68,15 @@ class Lucene3xNormsProducer extends PerDocProducer {
   // but we just don't do any seeks or reading yet.
   public Lucene3xNormsProducer(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context) throws IOException {
     Directory separateNormsDir = info.dir; // separate norms are never inside CFS
-    maxdoc = info.docCount;
+    maxdoc = info.getDocCount();
     String segmentName = info.name;
-    Map<Integer,Long> normGen = info.getNormGen();
     boolean success = false;
     try {
       long nextNormSeek = NORMS_HEADER.length; //skip header (header unused for now)
       for (FieldInfo fi : fields) {
         if (fi.hasNorms()) {
-          String fileName = getNormFilename(segmentName, normGen, fi.number);
-          Directory d = hasSeparateNorms(normGen, fi.number) ? separateNormsDir : dir;
+          String fileName = getNormFilename(info, fi.number);
+          Directory d = hasSeparateNorms(info, fi.number) ? separateNormsDir : dir;
         
           // singleNormFile means multiple norms share this file
           boolean singleNormFile = IndexFileNames.matchesExtension(fileName, NORMS_EXTENSION);
@@ -142,22 +140,24 @@ class Lucene3xNormsProducer extends PerDocProducer {
     }
   }
   
-  private static String getNormFilename(String segmentName, Map<Integer,Long> normGen, int number) {
-    if (hasSeparateNorms(normGen, number)) {
-      return IndexFileNames.fileNameFromGeneration(segmentName, SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
+  private static String getNormFilename(SegmentInfo info, int number) {
+    if (hasSeparateNorms(info, number)) {
+      long gen = Long.parseLong(info.getAttribute(Lucene3xSegmentInfoFormat.NORMGEN_PREFIX + number));
+      return IndexFileNames.fileNameFromGeneration(info.name, SEPARATE_NORMS_EXTENSION + number, gen);
     } else {
       // single file for all norms
-      return IndexFileNames.fileNameFromGeneration(segmentName, NORMS_EXTENSION, SegmentInfo.WITHOUT_GEN);
+      return IndexFileNames.segmentFileName(info.name, "", NORMS_EXTENSION);
     }
   }
   
-  private static boolean hasSeparateNorms(Map<Integer,Long> normGen, int number) {
-    if (normGen == null) {
+  private static boolean hasSeparateNorms(SegmentInfo info, int number) {
+    String v = info.getAttribute(Lucene3xSegmentInfoFormat.NORMGEN_PREFIX + number);
+    if (v == null) {
       return false;
+    } else {
+      assert Long.parseLong(v) != SegmentInfo.NO;
+      return true;
     }
-
-    Long gen = normGen.get(number);
-    return gen != null && gen.longValue() != SegmentInfo.NO;
   }
   
   static final class NormSource extends Source {
@@ -191,29 +191,6 @@ class Lucene3xNormsProducer extends PerDocProducer {
       return bytes;
     }
     
-  }
-  
-  static void files(SegmentInfo info, Set<String> files) throws IOException {
-    // TODO: This is what SI always did... but we can do this cleaner?
-    // like first FI that has norms but doesn't have separate norms?
-    final String normsFileName = IndexFileNames.segmentFileName(info.name, "", NORMS_EXTENSION);
-    if (info.dir.fileExists(normsFileName)) {
-      // only needed to do this in 3x - 4x can decide if the norms are present
-      files.add(normsFileName);
-    }
-  }
-  
-  static void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
-    Map<Integer,Long> normGen = info.getNormGen();
-    if (normGen != null) {
-      for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        long gen = entry.getValue();
-        if (gen >= SegmentInfo.YES) {
-          // Definitely a separate norm file, with generation:
-          files.add(IndexFileNames.fileNameFromGeneration(info.name, SEPARATE_NORMS_EXTENSION + entry.getKey(), gen));
-        }
-      }
-    }
   }
 
   private class NormsDocValues extends DocValues {

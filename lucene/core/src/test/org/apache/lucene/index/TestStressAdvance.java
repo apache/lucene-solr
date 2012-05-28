@@ -42,6 +42,9 @@ public class TestStressAdvance extends LuceneTestCase {
       final Field idField = newField("id", "", StringField.TYPE_STORED);
       doc.add(idField);
       int num = atLeast(4097);
+      if (VERBOSE) {
+        System.out.println("\nTEST: numDocs=" + num);
+      }
       for(int id=0;id<num;id++) {
         if (random().nextInt(4) == 3) {
           f.setStringValue("a");
@@ -51,6 +54,9 @@ public class TestStressAdvance extends LuceneTestCase {
         }
         idField.setStringValue(""+id);
         w.addDocument(doc);
+        if (VERBOSE) {
+          System.out.println("\nTEST: doc upto " + id);
+        }
       }
 
       w.forceMerge(1);

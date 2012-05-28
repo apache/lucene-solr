@@ -103,7 +103,7 @@ public abstract class DocValuesConsumer {
     }
     // only finish if no exception is thrown!
     if (hasMerged) {
-      finish(mergeState.mergedDocCount);
+      finish(mergeState.segmentInfo.getDocCount());
     }
   }
 

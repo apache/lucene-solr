@@ -16,14 +16,13 @@ package org.apache.lucene.codecs.simpletext;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.BytesRef;
 
@@ -48,11 +47,5 @@ public class SimpleTextDocValuesFormat extends DocValuesFormat {
 
   static String docValuesId(String segmentsName, int fieldId) {
     return segmentsName + "_" + fieldId;
-  }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files)
-      throws IOException {
-    SimpleTextPerDocConsumer.files(info, files, DOC_VALUES_SEG_SUFFIX);
   }
 }

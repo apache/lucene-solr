@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Map;
 
 abstract class InvertedDocEndConsumer {
-  abstract void flush(Map<FieldInfo, InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
+  abstract void flush(Map<String, InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
   abstract void abort();
   abstract InvertedDocEndConsumerPerField addField(DocInverterPerField docInverterPerField, FieldInfo fieldInfo);
   abstract void startDocument() throws IOException;

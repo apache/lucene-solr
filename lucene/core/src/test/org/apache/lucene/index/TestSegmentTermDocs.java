@@ -31,7 +31,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestSegmentTermDocs extends LuceneTestCase {
   private Document testDoc = new Document();
   private Directory dir;
-  private SegmentInfo info;
+  private SegmentInfoPerCommit info;
 
   @Override
   public void setUp() throws Exception {

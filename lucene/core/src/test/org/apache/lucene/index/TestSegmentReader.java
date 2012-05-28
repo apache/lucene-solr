@@ -41,7 +41,7 @@ public class TestSegmentReader extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
-    SegmentInfo info = DocHelper.writeDoc(random(), dir, testDoc);
+    SegmentInfoPerCommit info = DocHelper.writeDoc(random(), dir, testDoc);
     reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
   }
   
@@ -84,14 +84,14 @@ public class TestSegmentReader extends LuceneTestCase {
     for(FieldInfo fieldInfo : reader.getFieldInfos()) {
       final String name = fieldInfo.name;
       allFieldNames.add(name);
-      if (fieldInfo.isIndexed) {
+      if (fieldInfo.isIndexed()) {
         indexedFieldNames.add(name);
       } else {
         notIndexedFieldNames.add(name);
       }
-      if (fieldInfo.storeTermVector) {
+      if (fieldInfo.hasVectors()) {
         tvFieldNames.add(name);
-      } else if (fieldInfo.isIndexed) {
+      } else if (fieldInfo.isIndexed()) {
         noTVFieldNames.add(name);
       }
     }
