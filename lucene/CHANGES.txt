@@ -19,6 +19,11 @@ Bug Fixes:
 
 * LUCENE-2566: + - operators allow any amount of whitespace (yonik, janhoy)
 
+* LUCENE-3590: Fix AIOOBE in BytesRef/CharsRef copyBytes/copyChars when 
+  offset is nonzero, fix off-by-one in CharsRef.subSequence, and fix
+  CharsRef's CharSequence methods to throw exceptions in boundary cases
+  to properly meet the specification.  (Robert Muir)
+
 API Changes
 
 * LUCENE-4023: Changed the visibility of Scorer#visitSubScorers() to

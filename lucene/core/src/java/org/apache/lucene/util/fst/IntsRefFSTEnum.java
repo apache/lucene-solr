@@ -17,6 +17,7 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 
 import java.io.IOException;
@@ -110,7 +111,7 @@ public final class IntsRefFSTEnum<T> extends FSTEnum<T> {
 
   @Override
   protected void grow() {
-    current.grow(upto+1);
+    current.ints = ArrayUtil.grow(current.ints, upto+1);
   }
 
   private InputOutput<T> setResult() {

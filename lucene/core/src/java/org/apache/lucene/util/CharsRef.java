@@ -52,6 +52,8 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
    */
   public CharsRef(char[] chars, int offset, int length) {
     assert chars != null;
+    assert offset >= 0;
+    assert length >= 0;
     assert chars.length >= offset + length;
     this.chars = chars;
     this.offset = offset;
@@ -138,50 +140,52 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
   }
   
   /**
-   * Copies the given {@link CharsRef} referenced content into this instance
-   * starting at offset 0.
+   * Copies the given {@link CharsRef} referenced content into this instance.
    * 
    * @param other
    *          the {@link CharsRef} to copy
    */
-  // TODO: why does this behave differently/not invoke copyChars(char[], int, int) ???
   public void copyChars(CharsRef other) {
-    if (chars == null) {
-      chars = new char[other.length];
-    } else {
-      chars = ArrayUtil.grow(chars, other.length);
-    }
-    System.arraycopy(other.chars, other.offset, chars, 0, other.length);
-    length = other.length;
-    offset = 0;
+    copyChars(other.chars, other.offset, other.length);
   }
 
+  /** 
+   * Used to grow the reference array. 
+   * 
+   * In general this should not be used as it does not take the offset into account.
+   * @lucene.internal */
   public void grow(int newLength) {
+    assert offset == 0;
     if (chars.length < newLength) {
       chars = ArrayUtil.grow(chars, newLength);
     }
   }
 
   /**
-   * Copies the given array into this CharsRef starting at offset 0
+   * Copies the given array into this CharsRef.
    */
   public void copyChars(char[] otherChars, int otherOffset, int otherLength) {
-    grow(otherLength);
-    System.arraycopy(otherChars, otherOffset, this.chars, 0,
-        otherLength);
-    this.offset = 0;
-    this.length = otherLength;
+    if (chars.length - offset < otherLength) {
+      chars = new char[otherLength];
+      offset = 0;
+    }
+    System.arraycopy(otherChars, otherOffset, chars, offset, otherLength);
+    length = otherLength;
   }
 
   /**
    * Appends the given array to this CharsRef
    */
   public void append(char[] otherChars, int otherOffset, int otherLength) {
-    final int newLength = length + otherLength;
-    grow(this.offset + newLength);
-    System.arraycopy(otherChars, otherOffset, this.chars, this.offset+length,
-        otherLength);
-    this.length += otherLength;
+    int newLen = length + otherLength;
+    if (chars.length - offset < newLen) {
+      char[] newChars = new char[newLen];
+      System.arraycopy(chars, offset, newChars, 0, length);
+      offset = 0;
+      chars = newChars;
+    }
+    System.arraycopy(otherChars, otherOffset, chars, length+offset, otherLength);
+    length = newLen;
   }
 
   @Override
@@ -194,11 +198,19 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
   }
 
   public char charAt(int index) {
+    // NOTE: must do a real check here to meet the specs of CharSequence
+    if (index < 0 || index >= length) {
+      throw new IndexOutOfBoundsException();
+    }
     return chars[offset + index];
   }
 
   public CharSequence subSequence(int start, int end) {
-    return new CharsRef(chars, offset + start, offset + end - 1);
+    // NOTE: must do a real check here to meet the specs of CharSequence
+    if (start < 0 || end > length || start > end) {
+      throw new IndexOutOfBoundsException();
+    }
+    return new CharsRef(chars, offset + start, offset + end);
   }
   
   private final static Comparator<CharsRef> utf16SortedAsUTF8SortOrder = new UTF16SortedAsUTF8Comparator();
