@@ -18,11 +18,10 @@ package org.apache.solr.handler.dataimport;
  */
 
 import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -83,7 +82,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
    * @return a {@link HttpClient} instance used for interfacing with a source Solr service
    */
   protected HttpClient getHttpClient() {
-    return new DefaultHttpClient(new ThreadSafeClientConnManager());
+    return HttpClientUtil.createClient(null);
   }
 
   @Override

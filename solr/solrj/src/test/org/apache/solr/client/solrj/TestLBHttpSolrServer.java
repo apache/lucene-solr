@@ -19,16 +19,17 @@ package org.apache.solr.client.solrj;
 
 import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -47,7 +48,7 @@ import java.util.Set;
  */
 public class TestLBHttpSolrServer extends LuceneTestCase {
   SolrInstance[] solr = new SolrInstance[3];
-  DefaultHttpClient httpClient;
+  HttpClient httpClient;
 
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
@@ -70,9 +71,8 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    httpClient = new DefaultHttpClient(new ThreadSafeClientConnManager());
-
-    httpClient.getParams().setParameter("http.connection.timeout", new Integer(1000));
+    httpClient = HttpClientUtil.createClient(null);
+    HttpClientUtil.setConnectionTimeout(httpClient,  1000);
     for (int i = 0; i < solr.length; i++) {
       solr[i] = new SolrInstance("solr" + i, 0);
       solr[i].setUp();
@@ -180,10 +180,11 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     for (int i = 0; i < solr.length; i++) {
       s[i] = solr[i].getUrl();
     }
-    DefaultHttpClient myHttpClient = new DefaultHttpClient(new ThreadSafeClientConnManager());
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 250);
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 250);
+    HttpClient myHttpClient = HttpClientUtil.createClient(params);
 
-    myHttpClient.getParams().setParameter("http.connection.timeout", new Integer(250));
-    myHttpClient.getParams().setParameter("http.socket.timeout", new Integer(250));
     LBHttpSolrServer lbHttpSolrServer = new LBHttpSolrServer(myHttpClient, s);
     lbHttpSolrServer.setAliveCheckInterval(500);
 

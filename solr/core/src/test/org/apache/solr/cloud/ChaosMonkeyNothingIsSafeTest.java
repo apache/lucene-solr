@@ -25,11 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.zookeeper.KeeperException;
@@ -203,8 +203,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   }
 
   class FullThrottleStopableIndexingThread extends StopableIndexingThread {
-    ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager();
-    private DefaultHttpClient httpClient = new DefaultHttpClient(cm) ;
+    private HttpClient httpClient = HttpClientUtil.createClient(null);
     private volatile boolean stop = false;
     int clientIndex = 0;
     private ConcurrentUpdateSolrServer suss;
@@ -301,7 +300,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     public void safeStop() {
       stop = true;
       suss.shutdownNow();
-      cm.shutdown();
+      httpClient.getConnectionManager().shutdown();
     }
 
     public int getFails() {

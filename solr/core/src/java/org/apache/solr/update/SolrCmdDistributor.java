@@ -34,8 +34,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
@@ -56,13 +55,13 @@ public class SolrCmdDistributor {
       Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
       new DefaultSolrThreadFactory("cmdDistribExecutor"));
 
-  static HttpClient client;
+  static final HttpClient client;
   
   static {
-    ThreadSafeClientConnManager mgr = new ThreadSafeClientConnManager();
-    mgr.setDefaultMaxPerRoute(8);
-    mgr.setMaxTotal(200);
-    client = new DefaultHttpClient(mgr);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 200);
+    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 8);
+    client = HttpClientUtil.createClient(params);
   }
   
   CompletionService<Request> completionService;

@@ -20,20 +20,16 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.CoreConnectionPNames;
-import org.apache.http.util.EntityUtils;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -122,26 +118,23 @@ public class SnapPuller {
 
   private static synchronized HttpClient createHttpClient(String connTimeout, String readTimeout, String httpBasicAuthUser, String httpBasicAuthPassword) {
     if (connTimeout == null && readTimeout == null && client != null)  return client;
-    ThreadSafeClientConnManager mgr = new ThreadSafeClientConnManager();
+    final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
+    httpClientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connTimeout != null ? connTimeout : "5000");
+    httpClientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, readTimeout != null ? readTimeout : "20000");
+    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
+    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     // Keeping a very high number so that if you have a large number of cores
     // no requests are kept waiting for an idle connection.
-    mgr.setDefaultMaxPerRoute(10000);
-    mgr.setMaxTotal(10000);
-    DefaultHttpClient httpClient = new DefaultHttpClient(mgr);
-    httpClient.getParams().setIntParameter(CoreConnectionPNames.SO_TIMEOUT, readTimeout == null ? 20000 : Integer.parseInt(readTimeout)); //20 secs
-    httpClient.getParams().setIntParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, connTimeout == null ? 5000 : Integer.parseInt(connTimeout)); //5 secs
+    httpClientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
+    httpClientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 10000);
+    HttpClient httpClient = HttpClientUtil.createClient(httpClientParams);
     if (client == null && connTimeout == null && readTimeout == null) client = httpClient;
-    
-    if (httpBasicAuthUser != null && httpBasicAuthPassword != null) {
-      httpClient.getCredentialsProvider().setCredentials(AuthScope.ANY,
-              new UsernamePasswordCredentials(httpBasicAuthUser, httpBasicAuthPassword));
-    }
-
     return httpClient;
   }
 
   public SnapPuller(NamedList initArgs, ReplicationHandler handler, SolrCore sc) {
     solrCore = sc;
+    SolrParams params = SolrParams.toSolrParams(initArgs);
     masterUrl = (String) initArgs.get(MASTER_URL);
     if (masterUrl == null)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -152,10 +145,10 @@ public class SnapPuller {
     String compress = (String) initArgs.get(COMPRESSION);
     useInternal = INTERNAL.equals(compress);
     useExternal = EXTERNAL.equals(compress);
-    String connTimeout = (String) initArgs.get(HTTP_CONN_TIMEOUT);
-    String readTimeout = (String) initArgs.get(HTTP_READ_TIMEOUT);
-    String httpBasicAuthUser = (String) initArgs.get(HTTP_BASIC_AUTH_USER);
-    String httpBasicAuthPassword = (String) initArgs.get(HTTP_BASIC_AUTH_PASSWORD);
+    String connTimeout = (String) initArgs.get(HttpClientUtil.PROP_CONNECTION_TIMEOUT);
+    String readTimeout = (String) initArgs.get(HttpClientUtil.PROP_SO_TIMEOUT);
+    String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
+    String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
     myHttpClient = createHttpClient(connTimeout, readTimeout, httpBasicAuthUser, httpBasicAuthPassword);
     if (pollInterval != null && pollInterval > 0) {
       startExecutorService();
@@ -1250,14 +1243,6 @@ public class SnapPuller {
   public static final String INTERVAL_ERR_MSG = "The " + POLL_INTERVAL + " must be in this format 'HH:mm:ss'";
 
   private static final Pattern INTERVAL_PATTERN = Pattern.compile("(\\d*?):(\\d*?):(\\d*)");
-
-  private static final String HTTP_CONN_TIMEOUT = "httpConnTimeout";
-
-  private static final String HTTP_READ_TIMEOUT = "httpReadTimeout";
-
-  private static final String HTTP_BASIC_AUTH_USER = "httpBasicAuthUser";
-
-  private static final String HTTP_BASIC_AUTH_PASSWORD = "httpBasicAuthPassword";
 
   static final String INDEX_REPLICATED_AT = "indexReplicatedAt";
 

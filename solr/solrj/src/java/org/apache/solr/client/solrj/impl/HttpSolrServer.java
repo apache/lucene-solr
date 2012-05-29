@@ -25,17 +25,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.InflaterInputStream;
 
 import org.apache.http.Header;
-import org.apache.http.HeaderElement;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
-import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.NoHttpResponseException;
@@ -45,12 +37,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.params.ClientPNames;
-import org.apache.http.client.params.ClientParamBean;
-import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.entity.HttpEntityWrapper;
+import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -58,11 +45,8 @@ import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -130,8 +114,9 @@ public class HttpSolrServer extends SolrServer {
   
   private int maxRetries = 0;
   
-  private ThreadSafeClientConnManager ccm;
   private boolean useMultiPartPost;
+  private final boolean internalClient;
+
   
   /**
    * @param baseURL
@@ -160,29 +145,17 @@ public class HttpSolrServer extends SolrServer {
     
     if (client != null) {
       httpClient = client;
+      internalClient = false;
     } else {
-      httpClient = createClient();
+      internalClient = true;
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
+      params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
+      params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, followRedirects);
+      httpClient =  HttpClientUtil.createClient(params);
     }
     
     this.parser = parser;
-  }
-  
-  private DefaultHttpClient createClient() {
-    SchemeRegistry schemeRegistry = new SchemeRegistry();
-    schemeRegistry.register(new Scheme("http", 80, PlainSocketFactory
-        .getSocketFactory()));
-    schemeRegistry.register(new Scheme("https", 443, SSLSocketFactory
-        .getSocketFactory()));
-    
-    ccm = new ThreadSafeClientConnManager(schemeRegistry);
-    // Increase default max connection per route to 32
-    ccm.setDefaultMaxPerRoute(32);
-    // Increase max total connection to 128
-    ccm.setMaxTotal(128);
-    DefaultHttpClient httpClient = new DefaultHttpClient(ccm);
-    httpClient.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS,
-        followRedirects);
-    return httpClient;
   }
   
   /**
@@ -301,7 +274,6 @@ public class HttpSolrServer extends SolrServer {
                 post.setEntity(entity);
               } else {
                 //not using multipart
-                HttpEntity e;
                 post.setEntity(new UrlEncodedFormEntity(postParams, "UTF-8"));
               }
 
@@ -367,7 +339,7 @@ public class HttpSolrServer extends SolrServer {
       throw new SolrServerException("error reading streams", ex);
     }
     
-    // TODO: move to a interceptor?
+    // XXX client already has this set, is this needed?
     method.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS,
         followRedirects);
     method.addHeader("User-Agent", AGENT);
@@ -482,6 +454,9 @@ public class HttpSolrServer extends SolrServer {
     parser = processor;
   }
   
+  /**
+   * Return the HttpClient this instance uses.
+   */
   public HttpClient getHttpClient() {
     return httpClient;
   }
@@ -493,22 +468,22 @@ public class HttpSolrServer extends SolrServer {
    *          Timeout in milliseconds
    **/
   public void setConnectionTimeout(int timeout) {
-    HttpConnectionParams.setConnectionTimeout(httpClient.getParams(), timeout);
+    HttpClientUtil.setConnectionTimeout(httpClient, timeout);
   }
   
   /**
-   * Sets HttpConnectionParams.setSoTimeout (read timeout). This is desirable
+   * Set SoTimeout (read timeout). This is desirable
    * for queries, but probably not for indexing.
    * 
    * @param timeout
    *          Timeout in milliseconds
    **/
   public void setSoTimeout(int timeout) {
-    HttpConnectionParams.setSoTimeout(httpClient.getParams(), timeout);
+    HttpClientUtil.setSoTimeout(httpClient, timeout);
   }
   
   /**
-   * HttpClientParams.setRedirecting
+   * Configure whether the client should follow redirects or not.
    * <p>
    * This defaults to false under the assumption that if you are following a
    * redirect to get to a Solr installation, something is misconfigured
@@ -516,90 +491,19 @@ public class HttpSolrServer extends SolrServer {
    * </p>
    */
   public void setFollowRedirects(boolean followRedirects) {
-    this.followRedirects = followRedirects;
-    new ClientParamBean(httpClient.getParams())
-        .setHandleRedirects(followRedirects);
-  }
-  
-  private static class UseCompressionRequestInterceptor implements
-      HttpRequestInterceptor {
-    
-    @Override
-    public void process(HttpRequest request, HttpContext context)
-        throws HttpException, IOException {
-      if (!request.containsHeader("Accept-Encoding")) {
-        request.addHeader("Accept-Encoding", "gzip, deflate");
-      }
-    }
-  }
-  
-  private static class UseCompressionResponseInterceptor implements
-      HttpResponseInterceptor {
-    
-    public void process(final HttpResponse response, final HttpContext context)
-        throws HttpException, IOException {
-      
-      HttpEntity entity = response.getEntity();
-      Header ceheader = entity.getContentEncoding();
-      if (ceheader != null) {
-        HeaderElement[] codecs = ceheader.getElements();
-        for (int i = 0; i < codecs.length; i++) {
-          if (codecs[i].getName().equalsIgnoreCase("gzip")) {
-            response
-                .setEntity(new GzipDecompressingEntity(response.getEntity()));
-            return;
-          }
-          if (codecs[i].getName().equalsIgnoreCase("deflate")) {
-            response.setEntity(new DeflateDecompressingEntity(response
-                .getEntity()));
-            return;
-          }
-        }
-      }
-    }
-  }
-  
-  private static class GzipDecompressingEntity extends HttpEntityWrapper {
-    public GzipDecompressingEntity(final HttpEntity entity) {
-      super(entity);
-    }
-    
-    public InputStream getContent() throws IOException, IllegalStateException {
-      return new GZIPInputStream(wrappedEntity.getContent());
-    }
-    
-    public long getContentLength() {
-      return -1;
-    }
-  }
-  
-  private static class DeflateDecompressingEntity extends
-      GzipDecompressingEntity {
-    public DeflateDecompressingEntity(final HttpEntity entity) {
-      super(entity);
-    }
-    
-    public InputStream getContent() throws IOException, IllegalStateException {
-      return new InflaterInputStream(wrappedEntity.getContent());
-    }
+    this.followRedirects = true;
+    HttpClientUtil.setFollowRedirects(httpClient,  followRedirects);
   }
   
   /**
    * Allow server->client communication to be compressed. Currently gzip and
    * deflate are supported. If the server supports compression the response will
-   * be compressed.
+   * be compressed. This method is only allowed if the http client is of type
+   * DefatulHttpClient.
    */
   public void setAllowCompression(boolean allowCompression) {
     if (httpClient instanceof DefaultHttpClient) {
-      final DefaultHttpClient client = (DefaultHttpClient) httpClient;
-      client
-          .removeRequestInterceptorByClass(UseCompressionRequestInterceptor.class);
-      client
-          .removeResponseInterceptorByClass(UseCompressionResponseInterceptor.class);
-      if (allowCompression) {
-        client.addRequestInterceptor(new UseCompressionRequestInterceptor());
-        client.addResponseInterceptor(new UseCompressionResponseInterceptor());
-      }
+      HttpClientUtil.setAllowCompression((DefaultHttpClient) httpClient, allowCompression);
     } else {
       throw new UnsupportedOperationException(
           "HttpClient instance was not of type DefaultHttpClient");
@@ -617,7 +521,7 @@ public class HttpSolrServer extends SolrServer {
    */
   public void setMaxRetries(int maxRetries) {
     if (maxRetries > 1) {
-      log.warn("CommonsHttpSolrServer: maximum Retries " + maxRetries
+      log.warn("HttpSolrServer: maximum Retries " + maxRetries
           + " > 1. Maximum recommended retries is 1.");
     }
     this.maxRetries = maxRetries;
@@ -672,15 +576,23 @@ public class HttpSolrServer extends SolrServer {
     return req.process(this);
   }
   
+  /**
+   * Close the {@link ClientConnectionManager} from the internal client.
+   */
   public void shutdown() {
-    if (httpClient != null) {
+    if (httpClient != null && internalClient) {
       httpClient.getConnectionManager().shutdown();
     }
   }
-  
+
+  /**
+   * Set the maximum number of connections that can be open to a single host at
+   * any given time. If http client was created outside the operation is not
+   * allowed.
+   */
   public void setDefaultMaxConnectionsPerHost(int max) {
-    if (ccm != null) {
-      ccm.setDefaultMaxPerRoute(max);
+    if (internalClient) {
+      HttpClientUtil.setMaxConnectionsPerHost(httpClient, max);
     } else {
       throw new UnsupportedOperationException(
           "Client was created outside of HttpSolrServer");
@@ -689,10 +601,11 @@ public class HttpSolrServer extends SolrServer {
   
   /**
    * Set the maximum number of connections that can be open at any given time.
+   * If http client was created outside the operation is not allowed.
    */
   public void setMaxTotalConnections(int max) {
-    if (ccm != null) {
-      ccm.setMaxTotal(max);
+    if (internalClient) {
+      HttpClientUtil.setMaxConnections(httpClient, max);
     } else {
       throw new UnsupportedOperationException(
           "Client was created outside of HttpSolrServer");

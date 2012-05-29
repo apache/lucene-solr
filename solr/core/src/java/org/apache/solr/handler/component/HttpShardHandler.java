@@ -161,7 +161,7 @@ public class HttpShardHandler extends ShardHandler {
           if (urls.size() <= 1) {
             String url = urls.get(0);
             srsp.setShardAddress(url);
-            SolrServer server = new HttpSolrServer(url, httpClient == null ? httpShardHandlerFactory.client : httpClient);
+            SolrServer server = new HttpSolrServer(url, httpClient);
             ssr.nl = server.request(req);
           } else {
             LBHttpSolrServer.Rsp rsp = httpShardHandlerFactory.loadbalancer.request(new LBHttpSolrServer.Req(req, urls));

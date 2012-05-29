@@ -27,10 +27,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
@@ -274,7 +274,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       sidl.add(sd);
     }
     
-    DefaultHttpClient client = new DefaultHttpClient(new ThreadSafeClientConnManager());
+    HttpClient client = HttpClientUtil.createClient(null);
     URL url = new URL(getSourceUrl(jetty.getLocalPort()));
     HttpSolrServer solrServer = new HttpSolrServer(url.toExternalForm(), client);
     solrServer.add(sidl);

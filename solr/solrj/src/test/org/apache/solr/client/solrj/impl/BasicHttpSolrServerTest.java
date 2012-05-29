@@ -32,8 +32,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -384,7 +384,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     HttpGet get = new HttpGet("http://127.0.0.1:" + jetty.getLocalPort()
         + "/solr/select?q=foo&wt=xml");
     get.setHeader("Accept-Encoding", "gzip");
-    DefaultHttpClient client = new DefaultHttpClient();
+    HttpClient client = HttpClientUtil.createClient(null);
     HttpEntity entity = null;
     try {
       HttpResponse response = client.execute(get);
@@ -406,6 +406,20 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     q = new SolrQuery("foo");
     QueryResponse response = server.query(q);
     assertEquals(0, response.getStatus());
+  }
+  
+  @Test
+  public void testSetParametersExternalClient(){
+    HttpClient client = HttpClientUtil.createClient(null);
+    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1/", client);
+    try {
+      server.setMaxTotalConnections(1);
+      fail("Operation should not succeed.");
+    } catch (UnsupportedOperationException e) {}
+    try {
+      server.setDefaultMaxConnectionsPerHost(1);
+      fail("Operation should not succeed.");
+    } catch (UnsupportedOperationException e) {}
   }
   
   private int findUnusedPort() {
