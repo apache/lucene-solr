@@ -522,7 +522,10 @@ API Changes
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
-  are directly supported by the standard queryparser.
+  are directly supported by the standard queryparser via 
+     fieldName:/expression/ OR /expression against default field/
+  Users who wish to search for literal "/" characters are advised to 
+  backslash-escape or quote those characters as needed. 
   (Simon Willnauer, Robert Muir)
 
 * LUCENE-1606, LUCENE-2089: Adds AutomatonQuery, a MultiTermQuery that 
