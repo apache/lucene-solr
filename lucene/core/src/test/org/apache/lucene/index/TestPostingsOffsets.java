@@ -27,11 +27,6 @@ import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
-import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -44,34 +39,19 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 
 // TODO: we really need to test indexingoffsets, but then getting only docs / docs + freqs.
 // not all codecs store prx separate...
+// TODO: fix sep codec to index offsets so we can greatly reduce this list!
+@SuppressCodecs({"Lucene3x", "MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestPostingsOffsets extends LuceneTestCase {
   IndexWriterConfig iwc;
   
   public void setUp() throws Exception {
     super.setUp();
-
-    // Currently only SimpleText and Lucene40 can index offsets into postings:
-    String codecName = Codec.getDefault().getName();
-    assumeTrue("Codec does not support offsets: " + codecName, 
-        codecName.equals("SimpleText") || 
-        codecName.equals("Lucene40"));
-
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    
-    if (codecName.equals("Lucene40")) {
-      // Sep etc are not implemented
-      switch(random().nextInt(4)) {
-        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())); break;
-        case 1: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat())); break;
-        case 2: iwc.setCodec(_TestUtil.alwaysPostingsFormat(
-            new Pulsing40PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
-        case 3: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat())); break;
-      }
-    }
   }
 
   public void testBasic() throws Exception {
@@ -145,16 +125,6 @@ public class TestPostingsOffsets extends LuceneTestCase {
     Directory dir = newDirectory();
     Analyzer analyzer = withPayloads ? new MockPayloadAnalyzer() : new MockAnalyzer(random());
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    if (Codec.getDefault().getName().equals("Lucene40")) {
-      // sep etc are not implemented
-      switch(random().nextInt(4)) {
-        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())); break;
-        case 1: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat())); break;
-        case 2: iwc.setCodec(_TestUtil.alwaysPostingsFormat(
-            new Pulsing40PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
-        case 3: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat())); break;
-      }
-    }
     iwc.setMergePolicy(newLogMergePolicy()); // will rely on docids a bit for skipping
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     
