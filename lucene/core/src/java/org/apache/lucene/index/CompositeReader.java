@@ -28,7 +28,7 @@ import org.apache.lucene.store.*;
   by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
  
  <p>IndexReader instances for indexes on disk are usually constructed
- with a call to one of the static <code>DirectoryReader,open()</code> methods,
+ with a call to one of the static <code>DirectoryReader.open()</code> methods,
  e.g. {@link DirectoryReader#open(Directory)}. {@link DirectoryReader} implements
  the {@code CompositeReader} interface, it is not possible to directly get postings.
  <p> Concrete subclasses of IndexReader are usually constructed with a call to

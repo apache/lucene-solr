@@ -52,7 +52,7 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  </ul>
  
  <p>IndexReader instances for indexes on disk are usually constructed
- with a call to one of the static <code>DirectoryReader,open()</code> methods,
+ with a call to one of the static <code>DirectoryReader.open()</code> methods,
  e.g. {@link DirectoryReader#open(Directory)}. {@link DirectoryReader} implements
  the {@link CompositeReader} interface, it is not possible to directly get postings.
 
