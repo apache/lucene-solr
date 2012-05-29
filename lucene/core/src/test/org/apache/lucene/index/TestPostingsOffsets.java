@@ -33,6 +33,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
@@ -344,6 +345,41 @@ public class TestPostingsOffsets extends LuceneTestCase {
       // TODO: test advance:
     }
     r.close();
+    dir.close();
+  }
+  
+  public void testWithUnindexedFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
+    for (int i = 0; i < 100; i++) {
+      Document doc = new Document();
+      // ensure at least one doc is indexed with offsets
+      if (i < 99 && random().nextInt(2) == 0) {
+        // stored only
+        FieldType ft = new FieldType();
+        ft.setIndexed(false);
+        ft.setStored(true);
+        doc.add(new Field("foo", "boo!", ft));
+      } else {
+        FieldType ft = new FieldType(TextField.TYPE_STORED);
+        ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+        if (random().nextBoolean()) {
+          // store some term vectors for the checkindex cross-check
+          ft.setStoreTermVectors(true);
+          ft.setStoreTermVectorPositions(true);
+          ft.setStoreTermVectorOffsets(true);
+        }
+        doc.add(new Field("foo", "bar", ft));
+      }
+      riw.addDocument(doc);
+    }
+    CompositeReader ir = riw.getReader();
+    SlowCompositeReaderWrapper slow = new SlowCompositeReaderWrapper(ir);
+    FieldInfos fis = slow.getFieldInfos();
+    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, fis.fieldInfo("foo").getIndexOptions());
+    slow.close();
+    ir.close();
+    riw.close();
     dir.close();
   }
 

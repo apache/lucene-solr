@@ -85,12 +85,11 @@ public final class FieldInfo {
       this.storeTermVector = false;
       this.storePayloads = false;
       this.omitNorms = false;
-      this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      this.indexOptions = null;
       this.normType = null;
     }
     this.attributes = attributes;
     assert checkConsistency();
-    assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !storePayloads;
   }
 
   private boolean checkConsistency() {
@@ -99,16 +98,15 @@ public final class FieldInfo {
       assert !storePayloads;
       assert !omitNorms;
       assert normType == null;
-      assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      assert indexOptions == null;
     } else {
       assert indexOptions != null;
       if (omitNorms) {
         assert normType == null;
       }
+      // Cannot store payloads unless positions are indexed:
+      assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
     }
-
-    // Cannot store payloads unless positions are indexed:
-    assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
 
     return true;
   }
@@ -131,15 +129,18 @@ public final class FieldInfo {
         this.normType = null;
       }
       if (this.indexOptions != indexOptions) {
-        // downgrade
-        this.indexOptions = this.indexOptions.compareTo(indexOptions) < 0 ? this.indexOptions : indexOptions;
+        if (this.indexOptions == null) {
+          this.indexOptions = indexOptions;
+        } else {
+          // downgrade
+          this.indexOptions = this.indexOptions.compareTo(indexOptions) < 0 ? this.indexOptions : indexOptions;
+        }
         if (this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           // cannot store payloads if we don't store positions:
           this.storePayloads = false;
         }
       }
     }
-    assert this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
     assert checkConsistency();
   }
 
@@ -148,7 +149,7 @@ public final class FieldInfo {
     assert checkConsistency();
   }
   
-  /** @return IndexOptions for the field */
+  /** @return IndexOptions for the field, or null if the field is not indexed */
   public IndexOptions getIndexOptions() {
     return indexOptions;
   }

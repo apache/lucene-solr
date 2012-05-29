@@ -66,7 +66,9 @@ class PreFlexRWFieldInfosReader extends FieldInfosReader {
         boolean omitNorms = (bits & PreFlexRWFieldInfosWriter.OMIT_NORMS) != 0;
         boolean storePayloads = (bits & PreFlexRWFieldInfosWriter.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
-        if ((bits & PreFlexRWFieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        if (!isIndexed) {
+          indexOptions = null;
+        } else if ((bits & PreFlexRWFieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_ONLY;
         } else if ((bits & PreFlexRWFieldInfosWriter.OMIT_POSITIONS) != 0) {
           if (format <= PreFlexRWFieldInfosWriter.FORMAT_OMIT_POSITIONS) {
