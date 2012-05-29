@@ -22,6 +22,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
 
 import java.io.*;
 import java.lang.annotation.*;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.*;
@@ -625,8 +626,11 @@ public abstract class LuceneTestCase extends Assert {
 
       try {
         if (rarely(r)) {
+          Class<?> clazz = Class.forName("org.apache.lucene.index.RandomDocumentsWriterPerThreadPool");
+          Constructor<?> ctor = clazz.getConstructor(int.class, Random.class);
+          ctor.setAccessible(true);
           // random thread pool
-          setIndexerThreadPoolMethod.invoke(c, new RandomDocumentsWriterPerThreadPool(maxNumThreadStates, r));
+          setIndexerThreadPoolMethod.invoke(c, ctor.newInstance(maxNumThreadStates, r));
         } else {
           // random thread pool
           c.setMaxThreadStates(maxNumThreadStates);

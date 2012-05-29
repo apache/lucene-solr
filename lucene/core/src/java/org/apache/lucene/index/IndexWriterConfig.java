@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.PrintStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -27,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.Version;
 
 /**
@@ -153,6 +155,9 @@ public final class IndexWriterConfig implements Cloneable {
 
   private Version matchVersion;
 
+  // Used directly by IndexWriter:
+  AtomicBoolean inUseByIndexWriter = new AtomicBoolean();
+
   /**
    * Creates a new config that with defaults that match the specified
    * {@link Version} as well as the default {@link
@@ -196,14 +201,26 @@ public final class IndexWriterConfig implements Cloneable {
 
   @Override
   public IndexWriterConfig clone() {
-    // Shallow clone is the only thing that's possible, since parameters like
-    // analyzer, index commit etc. do not implement Cloneable.
+    IndexWriterConfig clone;
+    if (inUseByIndexWriter.get()) {
+      throw new IllegalStateException("cannot clone: this IndexWriterConfig is private to IndexWriter; make a new one instead");
+    }
     try {
-      return (IndexWriterConfig)super.clone();
+      clone = (IndexWriterConfig) super.clone();
     } catch (CloneNotSupportedException e) {
       // should not happen
       throw new RuntimeException(e);
     }
+
+    // Mostly shallow clone, but do a deepish clone of
+    // certain objects that have state that cannot be shared
+    // across IW instances:
+    clone.inUseByIndexWriter = new AtomicBoolean();
+    clone.flushPolicy = flushPolicy.clone();
+    clone.indexerThreadPool = indexerThreadPool.clone();
+    clone.mergePolicy = mergePolicy.clone();
+
+    return clone;
   }
 
   /** Returns the default analyzer to use for indexing documents. */

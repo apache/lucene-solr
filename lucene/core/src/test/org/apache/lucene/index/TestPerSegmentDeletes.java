@@ -86,6 +86,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     // which should apply the delete id:2
     writer.deleteDocuments(new Term("id", "2"));
     writer.flush(false, false);
+    fsmp = (RangeMergePolicy) writer.getConfig().getMergePolicy();
     fsmp.doMerge = true;
     fsmp.start = 0;
     fsmp.length = 2;

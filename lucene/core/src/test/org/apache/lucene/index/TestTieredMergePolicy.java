@@ -57,7 +57,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: forceMergeDeletes2");
     }
-    tmp.setForceMergeDeletesPctAllowed(10.0);
+    ((TieredMergePolicy) w.getConfig().getMergePolicy()).setForceMergeDeletesPctAllowed(10.0);
     w.forceMergeDeletes();
     assertEquals(60, w.maxDoc());
     assertEquals(60, w.numDocs());

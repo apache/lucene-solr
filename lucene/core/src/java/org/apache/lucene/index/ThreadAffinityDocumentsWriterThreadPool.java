@@ -74,4 +74,11 @@ class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPo
     minThreadState.lock();
     return minThreadState;
   }
+
+  @Override
+  public ThreadAffinityDocumentsWriterThreadPool clone() {
+    ThreadAffinityDocumentsWriterThreadPool clone = (ThreadAffinityDocumentsWriterThreadPool) super.clone();
+    clone.threadBindings = new ConcurrentHashMap<Thread, ThreadState>();
+    return clone;
+  }
 }

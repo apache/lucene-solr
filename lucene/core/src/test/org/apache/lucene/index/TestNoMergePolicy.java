@@ -62,6 +62,9 @@ public class TestNoMergePolicy extends LuceneTestCase {
       // context, including ones from Object. So just filter out Object. If in
       // the future MergePolicy will extend a different class than Object, this
       // will need to change.
+      if (m.getName().equals("clone")) {
+        continue;
+      }
       if (m.getDeclaringClass() != Object.class) {
         assertTrue(m + " is not overridden !", m.getDeclaringClass() == NoMergePolicy.class);
       }

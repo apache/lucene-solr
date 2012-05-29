@@ -256,8 +256,6 @@ public class TieredMergePolicy extends MergePolicy {
     }
   }
 
-  private final Comparator<SegmentInfoPerCommit> segmentByteSizeDescending = new SegmentByteSizeDescending();
-
   /** Holds score and explanation for a single candidate
    *  merge. */
   protected static abstract class MergeScore {
@@ -277,7 +275,7 @@ public class TieredMergePolicy extends MergePolicy {
     final Collection<SegmentInfoPerCommit> toBeMerged = new HashSet<SegmentInfoPerCommit>();
 
     final List<SegmentInfoPerCommit> infosSorted = new ArrayList<SegmentInfoPerCommit>(infos.asList());
-    Collections.sort(infosSorted, segmentByteSizeDescending);
+    Collections.sort(infosSorted, new SegmentByteSizeDescending());
 
     // Compute total index bytes & print details about the index
     long totIndexBytes = 0;
@@ -516,7 +514,7 @@ public class TieredMergePolicy extends MergePolicy {
       return null;
     }
 
-    Collections.sort(eligible, segmentByteSizeDescending);
+    Collections.sort(eligible, new SegmentByteSizeDescending());
 
     if (verbose()) {
       message("eligible=" + eligible);
@@ -573,7 +571,7 @@ public class TieredMergePolicy extends MergePolicy {
       return null;
     }
 
-    Collections.sort(eligible, segmentByteSizeDescending);
+    Collections.sort(eligible, new SegmentByteSizeDescending());
 
     if (verbose()) {
       message("eligible=" + eligible);

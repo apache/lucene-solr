@@ -588,26 +588,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public IndexWriter(Directory d, IndexWriterConfig conf)
       throws CorruptIndexException, LockObtainFailedException, IOException {
+    if (conf.inUseByIndexWriter.get()) {
+      throw new IllegalStateException("the provided IndexWriterConfig was previously used by a different IndexWriter; please make a new one instead");
+    }
     config = conf.clone();
+    config.inUseByIndexWriter.set(true);
     directory = d;
-    analyzer = conf.getAnalyzer();
-    infoStream = conf.getInfoStream();
-    mergePolicy = conf.getMergePolicy();
+    analyzer = config.getAnalyzer();
+    infoStream = config.getInfoStream();
+    mergePolicy = config.getMergePolicy();
     mergePolicy.setIndexWriter(this);
-    mergeScheduler = conf.getMergeScheduler();
-    codec = conf.getCodec();
+    mergeScheduler = config.getMergeScheduler();
+    codec = config.getCodec();
 
     bufferedDeletesStream = new BufferedDeletesStream(infoStream);
-    poolReaders = conf.getReaderPooling();
+    poolReaders = config.getReaderPooling();
 
     writeLock = directory.makeLock(WRITE_LOCK_NAME);
 
-    if (!writeLock.obtain(conf.getWriteLockTimeout())) // obtain write lock
+    if (!writeLock.obtain(config.getWriteLockTimeout())) // obtain write lock
       throw new LockObtainFailedException("Index locked for write: " + writeLock);
 
     boolean success = false;
     try {
-      OpenMode mode = conf.getOpenMode();
+      OpenMode mode = config.getOpenMode();
       boolean create;
       if (mode == OpenMode.CREATE) {
         create = true;
@@ -641,7 +645,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       } else {
         segmentInfos.read(directory);
 
-        IndexCommit commit = conf.getIndexCommit();
+        IndexCommit commit = config.getIndexCommit();
         if (commit != null) {
           // Swap out all segments, but, keep metadata in
           // SegmentInfos, like version & generation, to
@@ -671,7 +675,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // KeepOnlyLastCommitDeleter:
       synchronized(this) {
         deleter = new IndexFileDeleter(directory,
-                                       conf.getIndexDeletionPolicy(),
+                                       config.getIndexDeletionPolicy(),
                                        segmentInfos, infoStream, this);
       }
 

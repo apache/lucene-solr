@@ -50,8 +50,8 @@ import org.apache.lucene.util.SetOnce;
  * @see DocumentsWriterPerThread
  * @see IndexWriterConfig#setFlushPolicy(FlushPolicy)
  */
-abstract class FlushPolicy {
-  protected final SetOnce<DocumentsWriter> writer = new SetOnce<DocumentsWriter>();
+abstract class FlushPolicy implements Cloneable {
+  protected SetOnce<DocumentsWriter> writer = new SetOnce<DocumentsWriter>();
   protected IndexWriterConfig indexWriterConfig;
 
   /**
@@ -132,4 +132,17 @@ abstract class FlushPolicy {
     return true;
   }
 
+  @Override
+  public FlushPolicy clone() {
+    FlushPolicy clone;
+    try {
+      clone = (FlushPolicy) super.clone();
+    } catch (CloneNotSupportedException e) {
+      // should not happen
+      throw new RuntimeException(e);
+    }
+    clone.writer = new SetOnce<DocumentsWriter>();
+    clone.indexWriterConfig = null;
+    return clone;
+  }
 }
