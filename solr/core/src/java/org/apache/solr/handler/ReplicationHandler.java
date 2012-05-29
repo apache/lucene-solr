@@ -823,7 +823,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         List<String> files = Arrays.asList(includeConfFiles.split(","));
         for (String file : files) {
           if (file.trim().length() == 0) continue;
-          String[] strs = file.split(":");
+          String[] strs = file.trim().split(":");
           // if there is an alias add it or it is null
           confFileNameAlias.add(strs[0], strs.length > 1 ? strs[1] : null);
         }
