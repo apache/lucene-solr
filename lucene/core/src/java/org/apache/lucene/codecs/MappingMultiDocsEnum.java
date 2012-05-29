@@ -35,7 +35,7 @@ public final class MappingMultiDocsEnum extends DocsEnum {
   private MultiDocsEnum.EnumWithSlice[] subs;
   int numSubs;
   int upto;
-  int[] currentMap;
+  MergeState.DocMap currentMap;
   DocsEnum current;
   int currentBase;
   int doc = -1;
@@ -88,18 +88,16 @@ public final class MappingMultiDocsEnum extends DocsEnum {
           current = subs[upto].docsEnum;
           currentBase = mergeState.docBase[reader];
           currentMap = mergeState.docMaps[reader];
-          assert currentMap == null || currentMap.length == subs[upto].slice.length: "readerIndex=" + reader + " subs.len=" + subs.length + " len1=" + currentMap.length + " vs " + subs[upto].slice.length;
+          assert currentMap.maxDoc() == subs[upto].slice.length: "readerIndex=" + reader + " subs.len=" + subs.length + " len1=" + currentMap.maxDoc() + " vs " + subs[upto].slice.length;
         }
       }
 
       int doc = current.nextDoc();
       if (doc != NO_MORE_DOCS) {
-        if (currentMap != null) {
-          // compact deletions
-          doc = currentMap[doc];
-          if (doc == -1) {
-            continue;
-          }
+        // compact deletions
+        doc = currentMap.get(doc);
+        if (doc == -1) {
+          continue;
         }
         return this.doc = currentBase + doc;
       } else {

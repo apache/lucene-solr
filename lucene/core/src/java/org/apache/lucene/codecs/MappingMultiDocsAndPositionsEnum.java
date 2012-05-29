@@ -36,7 +36,7 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
   private MultiDocsAndPositionsEnum.EnumWithSlice[] subs;
   int numSubs;
   int upto;
-  int[] currentMap;
+  MergeState.DocMap currentMap;
   DocsAndPositionsEnum current;
   int currentBase;
   int doc = -1;
@@ -94,12 +94,10 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
 
       int doc = current.nextDoc();
       if (doc != NO_MORE_DOCS) {
-        if (currentMap != null) {
-          // compact deletions
-          doc = currentMap[doc];
-          if (doc == -1) {
-            continue;
-          }
+        // compact deletions
+        doc = currentMap.get(doc);
+        if (doc == -1) {
+          continue;
         }
         return this.doc = currentBase + doc;
       } else {

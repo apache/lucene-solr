@@ -937,6 +937,9 @@ Optimizations
   performance; add float acceptableOverheadRatio to getWriter and
   getMutable API to give packed ints freedom to pick faster
   implementations (Adrien Grand via Mike McCandless)
+
+* LUCENE-2357: Reduce transient RAM usage when merging segments in
+  IndexWriter. (Adrien Grand via Mike McCandless)
   
 Bug fixes
 
