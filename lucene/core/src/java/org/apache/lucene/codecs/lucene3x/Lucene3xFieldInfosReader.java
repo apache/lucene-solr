@@ -82,7 +82,9 @@ class Lucene3xFieldInfosReader extends FieldInfosReader {
         boolean omitNorms = (bits & OMIT_NORMS) != 0;
         boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
-        if ((bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        if (!isIndexed) {
+          indexOptions = null;
+        } else if ((bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_ONLY;
         } else if ((bits & OMIT_POSITIONS) != 0) {
           if (format <= FORMAT_OMIT_POSITIONS) {

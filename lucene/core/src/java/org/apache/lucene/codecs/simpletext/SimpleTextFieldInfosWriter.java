@@ -68,8 +68,6 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
       SimpleTextUtil.writeNewline(out);
       
       for (FieldInfo fi : infos) {
-        assert fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
-
         SimpleTextUtil.write(out, NAME);
         SimpleTextUtil.write(out, fi.name, scratch);
         SimpleTextUtil.writeNewline(out);
@@ -81,6 +79,13 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.write(out, ISINDEXED);
         SimpleTextUtil.write(out, Boolean.toString(fi.isIndexed()), scratch);
         SimpleTextUtil.writeNewline(out);
+        
+        if (fi.isIndexed()) {
+          assert fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
+          SimpleTextUtil.write(out, INDEXOPTIONS);
+          SimpleTextUtil.write(out, fi.getIndexOptions().toString(), scratch);
+          SimpleTextUtil.writeNewline(out);
+        }
         
         SimpleTextUtil.write(out, STORETV);
         SimpleTextUtil.write(out, Boolean.toString(fi.hasVectors()), scratch);
@@ -101,11 +106,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.write(out, DOCVALUES);
         SimpleTextUtil.write(out, getDocValuesType(fi.getDocValuesType()), scratch);
         SimpleTextUtil.writeNewline(out);
-        
-        SimpleTextUtil.write(out, INDEXOPTIONS);
-        SimpleTextUtil.write(out, fi.getIndexOptions().toString(), scratch);
-        SimpleTextUtil.writeNewline(out);
-        
+               
         Map<String,String> atts = fi.attributes();
         int numAtts = atts == null ? 0 : atts.size();
         SimpleTextUtil.write(out, NUM_ATTS);

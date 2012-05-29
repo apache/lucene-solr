@@ -63,7 +63,9 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         boolean omitNorms = (bits & Lucene40FieldInfosWriter.OMIT_NORMS) != 0;
         boolean storePayloads = (bits & Lucene40FieldInfosWriter.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
-        if ((bits & Lucene40FieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        if (!isIndexed) {
+          indexOptions = null;
+        } else if ((bits & Lucene40FieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_ONLY;
         } else if ((bits & Lucene40FieldInfosWriter.OMIT_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS;
@@ -76,7 +78,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         // LUCENE-3027: past indices were able to write
         // storePayloads=true when omitTFAP is also true,
         // which is invalid.  We correct that, here:
-        if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+        if (isIndexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           storePayloads = false;
         }
         // DV Types are packed in one byte

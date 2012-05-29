@@ -62,16 +62,18 @@ class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
       output.writeVInt(FORMAT_PREFLEX_RW);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
-        assert fi.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.hasPayloads();
         byte bits = 0x0;
-        if (fi.isIndexed()) bits |= IS_INDEXED;
         if (fi.hasVectors()) bits |= STORE_TERMVECTOR;
         if (fi.omitsNorms()) bits |= OMIT_NORMS;
         if (fi.hasPayloads()) bits |= STORE_PAYLOADS;
-        if (fi.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-          bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-        } else if (fi.getIndexOptions() == IndexOptions.DOCS_AND_FREQS) {
-          bits |= OMIT_POSITIONS;
+        if (fi.isIndexed())  {
+          bits |= IS_INDEXED;
+          assert fi.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.hasPayloads();
+          if (fi.getIndexOptions() == IndexOptions.DOCS_ONLY) {
+            bits |= OMIT_TERM_FREQ_AND_POSITIONS;
+          } else if (fi.getIndexOptions() == IndexOptions.DOCS_AND_FREQS) {
+            bits |= OMIT_POSITIONS;
+          }
         }
         output.writeString(fi.name);
         /*

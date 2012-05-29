@@ -42,10 +42,9 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   final FieldInfo fieldInfo;
   final DocumentsWriterPerThread.DocState docState;
   final FieldInvertState fieldState;
-  IndexOptions indexOptions;
-  private boolean writeFreq;
-  private boolean writeProx;
-  private boolean writeOffsets;
+  private boolean hasFreq;
+  private boolean hasProx;
+  private boolean hasOffsets;
   PayloadAttribute payloadAttribute;
   OffsetAttribute offsetAttribute;
 
@@ -60,7 +59,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
   @Override
   int getStreamCount() {
-    if (!writeProx) {
+    if (!hasProx) {
       return 1;
     } else {
       return 2;
@@ -92,10 +91,14 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   }
 
   private void setIndexOptions(IndexOptions indexOptions) {
-    this.indexOptions = indexOptions;
-    writeFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-    writeProx = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    writeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    if (indexOptions == null) {
+      // field could later be updated with indexed=true, so set everything on
+      hasFreq = hasProx = hasOffsets = true;
+    } else {
+      hasFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+      hasProx = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    }
   }
 
   @Override
@@ -115,7 +118,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     } else {
       payloadAttribute = null;
     }
-    if (writeOffsets) {
+    if (hasOffsets) {
       offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
     } else {
       offsetAttribute = null;
@@ -124,7 +127,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
   void writeProx(final int termID, int proxCode) {
     //System.out.println("writeProx termID=" + termID + " proxCode=" + proxCode);
-    assert writeProx;
+    assert hasProx;
     final Payload payload;
     if (payloadAttribute == null) {
       payload = null;
@@ -146,7 +149,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   }
 
   void writeOffsets(final int termID, int prevOffset) {
-    assert writeOffsets;
+    assert hasOffsets;
     final int startOffset = offsetAttribute.startOffset();
     final int endOffset = offsetAttribute.endOffset();
     //System.out.println("writeOffsets termID=" + termID + " prevOffset=" + prevOffset + " startOff=" + startOffset + " endOff=" + endOffset);
@@ -165,18 +168,18 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
     postings.lastDocIDs[termID] = docState.docID;
-    if (!writeFreq) {
+    if (!hasFreq) {
       postings.lastDocCodes[termID] = docState.docID;
     } else {
       postings.lastDocCodes[termID] = docState.docID << 1;
       postings.docFreqs[termID] = 1;
-      if (writeProx) {
+      if (hasProx) {
         writeProx(termID, fieldState.position);
-        if (writeOffsets) {
+        if (hasOffsets) {
           writeOffsets(termID, fieldState.offset);
         }
       } else {
-        assert !writeOffsets;
+        assert !hasOffsets;
       }
     }
     fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
@@ -190,9 +193,9 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
 
-    assert !writeFreq || postings.docFreqs[termID] > 0;
+    assert !hasFreq || postings.docFreqs[termID] > 0;
 
-    if (!writeFreq) {
+    if (!hasFreq) {
       assert postings.docFreqs == null;
       if (docState.docID != postings.lastDocIDs[termID]) {
         assert docState.docID > postings.lastDocIDs[termID];
@@ -218,21 +221,21 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
       postings.lastDocCodes[termID] = (docState.docID - postings.lastDocIDs[termID]) << 1;
       postings.lastDocIDs[termID] = docState.docID;
-      if (writeProx) {
+      if (hasProx) {
         writeProx(termID, fieldState.position);
-        if (writeOffsets) {
+        if (hasOffsets) {
           writeOffsets(termID, fieldState.offset);
         }
       } else {
-        assert !writeOffsets;
+        assert !hasOffsets;
       }
       fieldState.uniqueTermCount++;
     } else {
       fieldState.maxTermFrequency = Math.max(fieldState.maxTermFrequency, ++postings.docFreqs[termID]);
-      if (writeProx) {
+      if (hasProx) {
         writeProx(termID, fieldState.position-postings.lastPositions[termID]);
       }
-      if (writeOffsets) {
+      if (hasOffsets) {
         writeOffsets(termID, postings.lastOffsets[termID]);
       }
     }
@@ -240,7 +243,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
   @Override
   ParallelPostingsArray createPostingsArray(int size) {
-    return new FreqProxPostingsArray(size, writeFreq, writeProx, writeOffsets);
+    return new FreqProxPostingsArray(size, hasFreq, hasProx, hasOffsets);
   }
 
   static final class FreqProxPostingsArray extends ParallelPostingsArray {
@@ -323,6 +326,10 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   void flush(String fieldName, FieldsConsumer consumer,  final SegmentWriteState state)
     throws CorruptIndexException, IOException {
 
+    if (!fieldInfo.isIndexed()) {
+      return; // nothing to flush, don't bother the codec with the unindexed field
+    }
+    
     final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
     final Comparator<BytesRef> termComp = termsConsumer.getComparator();
 
@@ -335,14 +342,15 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     // new segment to the directory according to
     // currentFieldIndexOptions:
     final IndexOptions currentFieldIndexOptions = fieldInfo.getIndexOptions();
+    assert currentFieldIndexOptions != null;
 
     final boolean writeTermFreq = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     final boolean writePositions = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     final boolean writeOffsets = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
 
-    final boolean readTermFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-    final boolean readPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    final boolean readOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    final boolean readTermFreq = this.hasFreq;
+    final boolean readPositions = this.hasProx;
+    final boolean readOffsets = this.hasOffsets;
 
     //System.out.println("flush readTF=" + readTermFreq + " readPos=" + readPositions + " readOffs=" + readOffsets);
 
@@ -517,7 +525,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
                 final int endOffset = startOffset + prox.readVInt();
                 offset = startOffset;
                 if (writePositions) {
-                  postingsConsumer.addPosition(position, thisPayload, startOffset, endOffset);
+                  if (writeOffsets) {
+                    postingsConsumer.addPosition(position, thisPayload, startOffset, endOffset);
+                  } else {
+                    postingsConsumer.addPosition(position, thisPayload, -1, -1);
+                  }
                 }
               } else if (writePositions) {
                 postingsConsumer.addPosition(position, thisPayload, -1, -1);
