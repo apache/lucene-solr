@@ -20,7 +20,11 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
-==================  4.0.0-dev ==================
+==================  5.0.0 ==================
+
+(No changes)
+
+==================  4.0.0 ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
    https://wiki.apache.org/solr/Solr4.0

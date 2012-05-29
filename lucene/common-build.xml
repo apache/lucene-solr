@@ -46,8 +46,8 @@
 
   <property name="name" value="${ant.project.name}"/>
   <property name="Name" value="Lucene"/>
-  <property name="dev.version" value="4.0-SNAPSHOT"/>
-  <property name="tests.luceneMatchVersion" value="4.0"/>
+  <property name="dev.version" value="5.0-SNAPSHOT"/>
+  <property name="tests.luceneMatchVersion" value="5.0"/>
   <property name="version" value="${dev.version}"/>
   <property name="spec.version" value="${version}"/>	
   <property name="year" value="2000-${current.year}"/>

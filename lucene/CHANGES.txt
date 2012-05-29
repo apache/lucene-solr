@@ -4,13 +4,18 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
-For "contrib" changes prior to 4.0, please see:
-http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
+======================= Lucene 5.0.0 =======================
 
-======================= Trunk (not yet released) =======================
+(No changes)
+
+======================= Lucene 4.0.0 =======================
+
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
    https://wiki.apache.org/lucene-java/Lucene4.0
+
+For "contrib" changes prior to 4.0, please see:
+http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
 
 Changes in backwards compatibility policy
 
