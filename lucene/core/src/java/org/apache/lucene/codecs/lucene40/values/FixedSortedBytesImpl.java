@@ -213,10 +213,10 @@ class FixedSortedBytesImpl {
     public BytesRef getByOrd(int ord, BytesRef bytesRef) {
       try {
         datIn.seek(basePointer + size * ord);
+        bytesRef.offset = 0;
         bytesRef.grow(size);
         datIn.readBytes(bytesRef.bytes, 0, size);
         bytesRef.length = size;
-        bytesRef.offset = 0;
         return bytesRef;
       } catch (IOException ex) {
         throw new IllegalStateException("failed to getByOrd", ex);

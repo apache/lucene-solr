@@ -40,6 +40,9 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
 
   public IntsRef(int[] ints, int offset, int length) {
     assert ints != null;
+    assert offset >= 0;
+    assert length >= 0;
+    assert ints.length >= offset + length;
     this.ints = ints;
     this.offset = offset;
     this.length = length;
@@ -114,17 +117,21 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
   }
 
   public void copyInts(IntsRef other) {
-    if (ints == null) {
+    if (ints.length - offset < other.length) {
       ints = new int[other.length];
-    } else {
-      ints = ArrayUtil.grow(ints, other.length);
+      offset = 0;
     }
-    System.arraycopy(other.ints, other.offset, ints, 0, other.length);
+    System.arraycopy(other.ints, other.offset, ints, offset, other.length);
     length = other.length;
-    offset = 0;
   }
 
+  /** 
+   * Used to grow the reference array. 
+   * 
+   * In general this should not be used as it does not take the offset into account.
+   * @lucene.internal */
   public void grow(int newLength) {
+    assert offset == 0;
     if (ints.length < newLength) {
       ints = ArrayUtil.grow(ints, newLength);
     }

@@ -858,7 +858,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
       for (Entry<String, String> entry : entrySet) {
         int docId = docId(slowR, new Term("id", entry.getKey()));
-        expected.copyChars(entry.getValue());
+        expected = new BytesRef(entry.getValue());
         assertEquals(expected, asSortedSource.getBytes(docId, actual));
       }
 

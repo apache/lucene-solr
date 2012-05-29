@@ -58,10 +58,10 @@ abstract class DirectSource extends Source {
   public BytesRef getBytes(int docID, BytesRef ref) {
     try {
       final int sizeToRead = position(docID);
+      ref.offset = 0;
       ref.grow(sizeToRead);
       data.readBytes(ref.bytes, 0, sizeToRead);
       ref.length = sizeToRead;
-      ref.offset = 0;
       return ref;
     } catch (IOException ex) {
       throw new IllegalStateException("failed to get value for docID: " + docID, ex);

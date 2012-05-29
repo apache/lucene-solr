@@ -67,4 +67,89 @@ public class TestCharsRef extends LuceneTestCase {
     }
     
   }
+  
+  // LUCENE-3590, AIOOBE if you append to a charsref with offset != 0
+  public void testAppendChars() {
+    char chars[] = new char[] { 'a', 'b', 'c', 'd' };
+    CharsRef c = new CharsRef(chars, 1, 3); // bcd
+    c.append(new char[] { 'e' }, 0, 1);
+    assertEquals("bcde", c.toString());
+  }
+  
+  // LUCENE-3590, AIOOBE if you copy to a charsref with offset != 0
+  public void testCopyChars() {
+    char chars[] = new char[] { 'a', 'b', 'c', 'd' };
+    CharsRef c = new CharsRef(chars, 1, 3); // bcd
+    char otherchars[] = new char[] { 'b', 'c', 'd', 'e' };
+    c.copyChars(otherchars, 0, 4);
+    assertEquals("bcde", c.toString());
+  }
+  
+  // LUCENE-3590, AIOOBE if you copy to a charsref with offset != 0
+  public void testCopyCharsRef() {
+    char chars[] = new char[] { 'a', 'b', 'c', 'd' };
+    CharsRef c = new CharsRef(chars, 1, 3); // bcd
+    char otherchars[] = new char[] { 'b', 'c', 'd', 'e' };
+    c.copyChars(new CharsRef(otherchars, 0, 4));
+    assertEquals("bcde", c.toString());
+  }
+  
+  // LUCENE-3590: fix charsequence to fully obey interface
+  public void testCharSequenceCharAt() {
+    CharsRef c = new CharsRef("abc");
+    
+    assertEquals('b', c.charAt(1));
+    
+    try {
+      c.charAt(-1);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
+      // expected exception
+    }
+    
+    try {
+      c.charAt(3);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
+      // expected exception
+    }
+  }
+  
+  // LUCENE-3590: fix off-by-one in subsequence, and fully obey interface
+  public void testCharSequenceSubSequence() {
+    CharSequence c = new CharsRef("abc");
+    
+    // slice
+    assertEquals("a", c.subSequence(0, 1).toString());
+    // empty subsequence
+    assertEquals("", c.subSequence(0, 0).toString());
+    
+    try {
+      c.subSequence(-1, 1);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
+      // expected exception
+    }
+    
+    try {
+      c.subSequence(0, -1);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
+      // expected exception
+    }
+    
+    try {
+      c.subSequence(0, 4);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
+      // expected exception
+    }
+    
+    try {
+      c.subSequence(2, 1);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
+      // expected exception
+    }
+  }
 }

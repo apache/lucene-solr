@@ -239,10 +239,10 @@ final class VarSortedBytesImpl {
         final long nextOffset = ordToOffsetIndex.get(1+ord);
         datIn.seek(basePointer + offset);
         final int length = (int) (nextOffset - offset);
+        bytesRef.offset = 0;
         bytesRef.grow(length);
         datIn.readBytes(bytesRef.bytes, 0, length);
         bytesRef.length = length;
-        bytesRef.offset = 0;
         return bytesRef;
       } catch (IOException ex) {
         throw new IllegalStateException("failed", ex);

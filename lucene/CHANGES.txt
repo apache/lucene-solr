@@ -985,6 +985,11 @@ Bug fixes
   addTaxonomy and now takes only one Directory and one OrdinalMap.
   (Shai Erera, Gilad Barkai)
 
+* LUCENE-3590: Fix AIOOBE in BytesRef/CharsRef copyBytes/copyChars when 
+  offset is nonzero, fix off-by-one in CharsRef.subSequence, and fix
+  CharsRef's CharSequence methods to throw exceptions in boundary cases
+  to properly meet the specification.  (Robert Muir)
+
 Documentation
 
 * LUCENE-3958: Javadocs corrections for IndexWriter.
