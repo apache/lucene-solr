@@ -78,6 +78,19 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
     this.gaps = gaps;
   }
 
+  public BlockPositionIterator(Scorer scorer, int[] gaps, PositionIntervalIterator[] iterators) {
+    super(scorer);
+    assert iterators.length > 1;
+    this.iterators = iterators;
+    intervals = new PositionInterval[iterators.length];
+    lastIter = iterators.length - 1;
+    this.gaps = gaps;
+  }
+
+  public BlockPositionIterator(Scorer scorer, PositionIntervalIterator[] iterators) {
+    this(scorer, defaultGaps(iterators.length), iterators);
+  }
+
   @Override
   public PositionInterval next() throws IOException {
     if ((intervals[0] = iterators[0].next()) == null) {

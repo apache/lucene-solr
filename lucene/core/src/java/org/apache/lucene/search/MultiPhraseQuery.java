@@ -17,26 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.*;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
+import org.apache.lucene.util.*;
+import org.apache.lucene.util.PriorityQueue;
+
 import java.io.IOException;
 import java.util.*;
-
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.TermContext;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * MultiPhraseQuery is a generalized version of PhraseQuery, with an added
@@ -196,7 +184,7 @@ public class MultiPhraseQuery extends Query {
 
         final DocsAndPositionsEnum postingsEnum;
         int docFreq;
-
+        TermQuery.TermDocsEnumFactory factory;
         if (terms.length > 1) {
           postingsEnum = new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum);
 
@@ -218,6 +206,7 @@ public class MultiPhraseQuery extends Query {
             // None of the terms are in this reader
             return null;
           }
+          factory = null; // nocommit - what to do here
         } else {
           final Term term = terms[0];
           TermState termState = termContexts.get(term).get(context.ord);
@@ -235,9 +224,10 @@ public class MultiPhraseQuery extends Query {
           }
 
           docFreq = termsEnum.docFreq();
+          factory = new TermQuery.TermDocsEnumFactory(BytesRef.deepCopyOf(term.bytes()), termState, termsEnum, postingsEnum, postingsEnum, acceptDocs);
         }
-
-        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue(), terms);
+        
+        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, factory, termsEnum.docFreq() , positions.get(pos).intValue(), terms);
       }
 
       // sort by increasing docFreq order

@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.search.positions.BlockPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
@@ -36,6 +37,7 @@ final class ExactPhraseScorer extends Scorer {
   boolean noDocs;
   
   private final static class ChunkState {
+    final TermQuery.TermDocsEnumFactory factory;
     final DocsAndPositionsEnum posEnum;
     final int offset;
     final boolean useAdvance;
@@ -44,8 +46,9 @@ final class ExactPhraseScorer extends Scorer {
     int pos;
     int lastPos;
     
-    public ChunkState(DocsAndPositionsEnum posEnum, int offset,
-        boolean useAdvance) {
+    public ChunkState(TermQuery.TermDocsEnumFactory factory, DocsAndPositionsEnum posEnum, int offset,
+        boolean useAdvance) throws IOException {
+      this.factory = factory;
       this.posEnum = posEnum;
       this.offset = offset;
       this.useAdvance = useAdvance;
@@ -77,7 +80,7 @@ final class ExactPhraseScorer extends Scorer {
       // ANDing. This buys ~15% gain for phrases where
       // freq of rarest 2 terms is close:
       final boolean useAdvance = postings[i].docFreq > 5 * postings[0].docFreq;
-      chunkStates[i] = new ChunkState(postings[i].postings,
+      chunkStates[i] = new ChunkState(postings[i].factory, postings[i].postings,
           -postings[i].position, useAdvance);
       if (i > 0
           && postings[i].postings.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
@@ -323,7 +326,10 @@ final class ExactPhraseScorer extends Scorer {
   
   @Override
   public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
-    // nocommit implement this
-    throw new UnsupportedOperationException();
+    TermScorer.TermPositions[] posIters = new TermScorer.TermPositions[chunkStates.length];
+    for (int i = 0; i < chunkStates.length; i++) {
+      posIters[i] = new TermScorer.TermPositions(this, chunkStates[i].factory.docsAndPositionsEnum(needsOffsets), needsPayloads);
+    }
+    return new BlockPositionIterator(this, posIters);
   }
 }

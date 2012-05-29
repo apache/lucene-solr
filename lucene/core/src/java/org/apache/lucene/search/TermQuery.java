@@ -252,22 +252,37 @@ public class TermQuery extends Query {
     private final Bits liveDocs;
     private final DocsEnum docs;
     private final DocsEnum docsAndFreqs;
+    private final TermState state;
+    private BytesRef term;
     
     TermDocsEnumFactory(TermsEnum termsEnum, DocsEnum docs, DocsEnum docsAndFreqs, Bits liveDocs) {
+      this(null, null, termsEnum, docs, docsAndFreqs, liveDocs);
+
+    }
+    
+    TermDocsEnumFactory(BytesRef term, TermState state, TermsEnum termsEnum,
+        DocsEnum docs, DocsEnum docsAndFreqs, Bits liveDocs) {
       this.termsEnum = termsEnum;
       this.liveDocs = liveDocs;
       this.docs = docs;
       this.docsAndFreqs = docsAndFreqs;
+      this.state = state;
+      this.term = term;
     }
     
     public DocsEnum docsEnum() throws IOException {
       return docs;
     }
     
-    public DocsAndPositionsEnum docsAndPositionsEnum(boolean offsets) throws IOException {
+    public DocsAndPositionsEnum docsAndPositionsEnum(boolean offsets)
+        throws IOException {
+      if (state != null) {
+        assert term != null;
+        termsEnum.seekExact(term, state);
+      }
       return termsEnum.docsAndPositions(liveDocs, null, offsets);
     }
-
+    
     public DocsEnum docsAndFreqsEnum() throws IOException{
       return docsAndFreqs;
     }

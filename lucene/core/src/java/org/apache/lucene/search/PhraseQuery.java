@@ -17,27 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.*;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
+import org.apache.lucene.util.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
-
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TermContext;
-import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
@@ -135,13 +123,15 @@ public class PhraseQuery extends Query {
   }
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
+    final TermQuery.TermDocsEnumFactory factory;
     final DocsAndPositionsEnum postings;
     final int docFreq;
     final int position;
     final Term[] terms;
     final int nTerms; // for faster comparisons
 
-    public PostingsAndFreq(DocsAndPositionsEnum postings, int docFreq, int position, Term... terms) {
+    public PostingsAndFreq(DocsAndPositionsEnum postings, TermQuery.TermDocsEnumFactory factory, int docFreq, int position, Term... terms) throws IOException {
+      this.factory = factory;
       this.postings = postings;
       this.docFreq = docFreq;
       this.position = position;
@@ -264,7 +254,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null, false);
+        final DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null, false);
 
         // PhraseQuery on a field that did not index
         // positions.
@@ -273,7 +263,8 @@ public class PhraseQuery extends Query {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }
-        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, te.docFreq(), positions.get(i).intValue(), t);
+        TermQuery.TermDocsEnumFactory factory = new TermQuery.TermDocsEnumFactory(BytesRef.deepCopyOf(t.bytes()), state, te, null, null, acceptDocs);
+        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, factory, te.docFreq(), positions.get(i).intValue(), t);
       }
 
       // sort by increasing docFreq order
