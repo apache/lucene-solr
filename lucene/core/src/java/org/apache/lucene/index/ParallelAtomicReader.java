@@ -48,7 +48,7 @@ import org.apache.lucene.util.Bits;
  * undefined behavior</em>.
  */
 public final class ParallelAtomicReader extends AtomicReader {
-  private final FieldInfos fieldInfos = new FieldInfos();
+  private final FieldInfos fieldInfos;
   private final ParallelFields fields = new ParallelFields();
   private final AtomicReader[] parallelReaders, storedFieldsReaders;
   private final Set<AtomicReader> completeReaderSet =
@@ -99,20 +99,23 @@ public final class ParallelAtomicReader extends AtomicReader {
       }
     }
     
+    // TODO: make this read-only in a cleaner way?
+    FieldInfos.Builder builder = new FieldInfos.Builder();
     // build FieldInfos and fieldToReader map:
     for (final AtomicReader reader : this.parallelReaders) {
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fieldInfo : readerFieldInfos) {
         // NOTE: first reader having a given field "wins":
         if (!fieldToReader.containsKey(fieldInfo.name)) {
-          fieldInfos.add(fieldInfo);
+          builder.add(fieldInfo);
           fieldToReader.put(fieldInfo.name, reader);
-          if (fieldInfo.storeTermVector) {
+          if (fieldInfo.hasVectors()) {
             tvFieldToReader.put(fieldInfo.name, reader);
           }
         }
       }
     }
+    fieldInfos = builder.finish();
     
     // build Fields instance
     for (final AtomicReader reader : this.parallelReaders) {
@@ -202,6 +205,14 @@ public final class ParallelAtomicReader extends AtomicReader {
     }
   }
   
+  /**
+   * {@inheritDoc}
+   * <p>
+   * NOTE: the returned field numbers will likely not
+   * correspond to the actual field numbers in the underlying
+   * readers, and codec metadata ({@link FieldInfo#getAttribute(String)}
+   * will be unavailable.
+   */
   @Override
   public FieldInfos getFieldInfos() {
     return fieldInfos;

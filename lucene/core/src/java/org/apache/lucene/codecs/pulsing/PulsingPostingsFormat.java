@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.pulsing;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
@@ -28,7 +27,6 @@ import org.apache.lucene.codecs.PostingsBaseFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -111,11 +109,5 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
 
   public int getFreqCutoff() {
     return freqCutoff;
-  }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    wrappedPostingsBaseFormat.files(segmentInfo, segmentSuffix, files);
-    BlockTreeTermsReader.files(segmentInfo, segmentSuffix, files);
   }
 }

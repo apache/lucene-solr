@@ -56,7 +56,7 @@ public class Lucene40DocValuesProducer extends PerDocProducerBase {
                                       IndexFileNames.segmentFileName(state.segmentInfo.name,
                                                                      segmentSuffix, IndexFileNames.COMPOUND_FILE_EXTENSION), 
                                       state.context, false);
-      docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.context);
+      docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.getDocCount(), cfs, state.context);
     } else {
       cfs = null;
       docValues = new TreeMap<String,DocValues>();

@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -270,6 +271,26 @@ public abstract class DataOutput {
       for(final Map.Entry<String, String> entry: map.entrySet()) {
         writeString(entry.getKey());
         writeString(entry.getValue());
+      }
+    }
+  }
+
+  /**
+   * Writes a String set.
+   * <p>
+   * First the size is written as an {@link #writeInt(int) Int32},
+   * followed by each value written as a
+   * {@link #writeString(String) String}.
+   * 
+   * @param set Input set. May be null (equivalent to an empty set)
+   */
+  public void writeStringSet(Set<String> set) throws IOException {
+    if (set == null) {
+      writeInt(0);
+    } else {
+      writeInt(set.size());
+      for(String value : set) {
+        writeString(value);
       }
     }
   }

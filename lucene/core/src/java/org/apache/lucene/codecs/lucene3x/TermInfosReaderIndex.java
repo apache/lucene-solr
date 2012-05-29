@@ -74,7 +74,7 @@ class TermInfosReaderIndex {
     PagedBytesDataOutput dataOutput = dataPagedBytes.getDataOutput();
 
     final int bitEstimate = 1+MathUtil.log(tiiFileLength, 2);
-    GrowableWriter indexToTerms = new GrowableWriter(bitEstimate, indexSize, false);
+    GrowableWriter indexToTerms = new GrowableWriter(bitEstimate, indexSize, PackedInts.DEFAULT);
 
     String currentField = null;
     List<String> fieldStrs = new ArrayList<String>();

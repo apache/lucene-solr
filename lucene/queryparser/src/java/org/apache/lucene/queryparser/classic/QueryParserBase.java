@@ -1175,7 +1175,7 @@ public abstract class QueryParserBase {
     } else if ('A' <= c && c <= 'F') {
       return c - 'A' + 10;
     } else {
-      throw new ParseException("None-hex character in unicode escape sequence: " + c);
+      throw new ParseException("Non-hex character in Unicode escape sequence: " + c);
     }
   }
 

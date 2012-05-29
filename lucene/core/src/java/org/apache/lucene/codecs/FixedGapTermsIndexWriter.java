@@ -57,7 +57,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   @SuppressWarnings("unused") private final FieldInfos fieldInfos; // unread
 
   public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
-    final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, TERMS_INDEX_EXTENSION);
+    final String indexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
     termIndexInterval = state.termIndexInterval;
     out = state.directory.createOutput(indexFileName, state.context);
     boolean success = false;
@@ -183,7 +183,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       // write primary terms dict offsets
       packedIndexStart = out.getFilePointer();
 
-      PackedInts.Writer w = PackedInts.getWriter(out, numIndexTerms, PackedInts.bitsRequired(termsFilePointer));
+      PackedInts.Writer w = PackedInts.getWriter(out, numIndexTerms, PackedInts.bitsRequired(termsFilePointer), PackedInts.DEFAULT);
 
       // relative to our indexStart
       long upto = 0;
@@ -196,7 +196,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       packedOffsetsStart = out.getFilePointer();
 
       // write offsets into the byte[] terms
-      w = PackedInts.getWriter(out, 1+numIndexTerms, PackedInts.bitsRequired(totTermLength));
+      w = PackedInts.getWriter(out, 1+numIndexTerms, PackedInts.bitsRequired(totTermLength), PackedInts.DEFAULT);
       upto = 0;
       for(int i=0;i<numIndexTerms;i++) {
         w.add(upto);

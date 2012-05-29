@@ -230,10 +230,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testAddOldIndexes() throws IOException {
     for (String name : oldNames) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: old index " + name);
+      }
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       w.addIndexes(oldIndexDirs.get(name));
+      if (VERBOSE) {
+        System.out.println("\nTEST: done adding indices; now close");
+      }
       w.close();
       
       targetDir.close();
@@ -323,11 +329,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           assertEquals("field with non-ascii name", f.stringValue());
         }
 
-        Terms tfv = reader.getTermVectors(i).terms("utf8");
+        Fields tfvFields = reader.getTermVectors(i);
+        assertNotNull("i=" + i, tfvFields);
+        Terms tfv = tfvFields.terms("utf8");
         assertNotNull("docID=" + i + " index=" + oldName, tfv);
-      } else
+      } else {
         // Only ID 7 is deleted
         assertEquals(7, i);
+      }
     }
     
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term(new String("content"), "aaa")), null, 1000).scoreDocs;
@@ -507,14 +516,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // Now verify file names... TODO: fix this test better, we could populate from 
       // separateFiles() or something.
       String[] expected = new String[] {"_0.cfs", "_0.cfe",
-                               "_0_1.del",
-                               "segments_2",
-                               "segments.gen"};
+                                        "_0_1.del",
+                                        "_0.si",
+                                        "segments_2",
+                                        "segments.gen"};
       
       String[] expectedSimpleText = new String[] {"_0.cfs", "_0.cfe",
-          "_0_1.liv",
-          "segments_2",
-          "segments.gen"};
+                                                  "_0_1.liv",
+                                                  "_0.si",
+                                                  "segments_2",
+                                                  "segments.gen"};
 
       String[] actual = dir.listAll();
       Arrays.sort(expected);
@@ -671,8 +682,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("checkAllSegmentsUpgraded: " + infos);
     }
-    for (SegmentInfo si : infos) {
-      assertEquals(Constants.LUCENE_MAIN_VERSION, si.getVersion());
+    for (SegmentInfoPerCommit si : infos) {
+      assertEquals(Constants.LUCENE_MAIN_VERSION, si.info.getVersion());
     }
     return infos.size();
   }

@@ -18,13 +18,14 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -38,18 +39,42 @@ import org.apache.lucene.store.IOContext;
 class Lucene3xTermVectorsFormat extends TermVectorsFormat {
 
   @Override
-  public TermVectorsReader vectorsReader(Directory directory,SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
-    return new Lucene3xTermVectorsReader(directory, segmentInfo, fieldInfos, context);
+  public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(Lucene3xSegmentInfoFormat.getDocStoreSegment(segmentInfo), "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION);
+
+    // Unfortunately, for 3.x indices, each segment's
+    // FieldInfos can lie about hasVectors (claim it's true
+    // when really it's false).... so we have to carefully
+    // check if the files really exist before trying to open
+    // them (4.x has fixed this):
+    final boolean exists;
+    if (Lucene3xSegmentInfoFormat.getDocStoreOffset(segmentInfo) != -1 && Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(segmentInfo)) {
+      String cfxFileName = IndexFileNames.segmentFileName(Lucene3xSegmentInfoFormat.getDocStoreSegment(segmentInfo), "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION);
+      if (segmentInfo.dir.fileExists(cfxFileName)) {
+        Directory cfsDir = new CompoundFileDirectory(segmentInfo.dir, cfxFileName, context, false);
+        try {
+          exists = cfsDir.fileExists(fileName);
+        } finally {
+          cfsDir.close();
+        }
+      } else {
+        exists = false;
+      }
+    } else {
+      exists = directory.fileExists(fileName);
+    }
+
+    if (!exists) {
+      // 3x's FieldInfos sometimes lies and claims a segment
+      // has vectors when it doesn't:
+      return null;
+    } else {
+      return new Lucene3xTermVectorsReader(directory, segmentInfo, fieldInfos, context);
+    }
   }
 
   @Override
-  public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
+  public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xTermVectorsReader.files(info, files);
-  }
-  
 }

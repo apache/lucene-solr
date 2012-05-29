@@ -1071,14 +1071,12 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  private static boolean DEFAULT_FASTER_BUT_MORE_RAM = true;
-
   public DocTermsIndex getTermsIndex(AtomicReader reader, String field) throws IOException {
-    return getTermsIndex(reader, field, DEFAULT_FASTER_BUT_MORE_RAM);
+    return getTermsIndex(reader, field, PackedInts.FAST);
   }
 
-  public DocTermsIndex getTermsIndex(AtomicReader reader, String field, boolean fasterButMoreRAM) throws IOException {
-    return (DocTermsIndex) caches.get(DocTermsIndex.class).get(reader, new Entry(field, Boolean.valueOf(fasterButMoreRAM)), false);
+  public DocTermsIndex getTermsIndex(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
+    return (DocTermsIndex) caches.get(DocTermsIndex.class).get(reader, new Entry(field, acceptableOverheadRatio), false);
   }
 
   static class DocTermsIndexCache extends Cache {
@@ -1092,7 +1090,7 @@ class FieldCacheImpl implements FieldCache {
 
       Terms terms = reader.terms(entryKey.field);
 
-      final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
+      final float acceptableOverheadRatio = ((Float) entryKey.custom).floatValue();
 
       final PagedBytes bytes = new PagedBytes(15);
 
@@ -1142,8 +1140,8 @@ class FieldCacheImpl implements FieldCache {
         startNumUniqueTerms = 1;
       }
 
-      GrowableWriter termOrdToBytesOffset = new GrowableWriter(startBytesBPV, 1+startNumUniqueTerms, fasterButMoreRAM);
-      final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, maxDoc, fasterButMoreRAM);
+      GrowableWriter termOrdToBytesOffset = new GrowableWriter(startBytesBPV, 1+startNumUniqueTerms, acceptableOverheadRatio);
+      final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, maxDoc, acceptableOverheadRatio);
 
       // 0 is reserved for "unset"
       bytes.copyUsingLengthPrefix(new BytesRef());
@@ -1219,11 +1217,11 @@ class FieldCacheImpl implements FieldCache {
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
   public DocTerms getTerms(AtomicReader reader, String field) throws IOException {
-    return getTerms(reader, field, DEFAULT_FASTER_BUT_MORE_RAM);
+    return getTerms(reader, field, PackedInts.FAST);
   }
 
-  public DocTerms getTerms(AtomicReader reader, String field, boolean fasterButMoreRAM) throws IOException {
-    return (DocTerms) caches.get(DocTerms.class).get(reader, new Entry(field, Boolean.valueOf(fasterButMoreRAM)), false);
+  public DocTerms getTerms(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
+    return (DocTerms) caches.get(DocTerms.class).get(reader, new Entry(field, acceptableOverheadRatio), false);
   }
 
   static final class DocTermsCache extends Cache {
@@ -1237,7 +1235,7 @@ class FieldCacheImpl implements FieldCache {
 
       Terms terms = reader.terms(entryKey.field);
 
-      final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
+      final float acceptableOverheadRatio = ((Float) entryKey.custom).floatValue();
 
       final int termCountHardLimit = reader.maxDoc();
 
@@ -1268,7 +1266,7 @@ class FieldCacheImpl implements FieldCache {
         startBPV = 1;
       }
 
-      final GrowableWriter docToOffset = new GrowableWriter(startBPV, reader.maxDoc(), fasterButMoreRAM);
+      final GrowableWriter docToOffset = new GrowableWriter(startBPV, reader.maxDoc(), acceptableOverheadRatio);
       
       // pointer==0 means not set
       bytes.copyUsingLengthPrefix(new BytesRef());

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.simpletext;
+package org.apache.lucene.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,27 +17,23 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.SegmentInfosFormat;
-import org.apache.lucene.codecs.SegmentInfosReader;
-import org.apache.lucene.codecs.SegmentInfosWriter;
+import java.io.IOException;
+
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
- * plain text segments file format.
- * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * Specifies an API for classes that can write out {@link SegmentInfo} data.
  * @lucene.experimental
  */
-public class SimpleTextSegmentInfosFormat extends SegmentInfosFormat {
-  private final SegmentInfosReader reader = new SimpleTextSegmentInfosReader();
-  private final SegmentInfosWriter writer = new SimpleTextSegmentInfosWriter();
-  
-  @Override
-  public SegmentInfosReader getSegmentInfosReader() {
-    return reader;
-  }
 
-  @Override
-  public SegmentInfosWriter getSegmentInfosWriter() {
-    return writer;
-  }
+public abstract class SegmentInfoWriter {
+
+  /**
+   * Write {@link SegmentInfo} data. 
+   * @throws IOException
+   */
+  public abstract void write(Directory dir, SegmentInfo info, FieldInfos fis, IOContext ioContext) throws IOException;
 }

@@ -286,7 +286,4 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
   protected Type getType() {
     return type;
   }
-  
-  
-
 }

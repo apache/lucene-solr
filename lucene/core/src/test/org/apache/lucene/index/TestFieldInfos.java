@@ -46,8 +46,11 @@ public class TestFieldInfos extends LuceneTestCase {
   public FieldInfos createAndWriteFieldInfos(Directory dir, String filename) throws IOException{
   //Positive test of FieldInfos
     assertTrue(testDoc != null);
-    FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
-    _TestUtil.add(testDoc, fieldInfos);
+    FieldInfos.Builder builder = new FieldInfos.Builder();
+    for (IndexableField field : testDoc) {
+      builder.addOrUpdate(field.name(), field.fieldType());
+    }
+    FieldInfos fieldInfos = builder.finish();
     //Since the complement is stored as well in the fields map
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
     
@@ -76,22 +79,22 @@ public class TestFieldInfos extends LuceneTestCase {
     assertTrue(fieldInfos.size() == readIn.size());
     FieldInfo info = readIn.fieldInfo("textField1");
     assertTrue(info != null);
-    assertTrue(info.storeTermVector == false);
-    assertTrue(info.omitNorms == false);
+    assertTrue(info.hasVectors() == false);
+    assertTrue(info.omitsNorms() == false);
 
     info = readIn.fieldInfo("textField2");
     assertTrue(info != null);
-    assertTrue(info.omitNorms == false);
+    assertTrue(info.omitsNorms() == false);
 
     info = readIn.fieldInfo("textField3");
     assertTrue(info != null);
-    assertTrue(info.storeTermVector == false);
-    assertTrue(info.omitNorms == true);
+    assertTrue(info.hasVectors() == false);
+    assertTrue(info.omitsNorms() == true);
 
     info = readIn.fieldInfo("omitNorms");
     assertTrue(info != null);
-    assertTrue(info.storeTermVector == false);
-    assertTrue(info.omitNorms == true);
+    assertTrue(info.hasVectors() == false);
+    assertTrue(info.omitsNorms() == true);
 
     dir.close();
   }
@@ -102,64 +105,14 @@ public class TestFieldInfos extends LuceneTestCase {
     FieldInfos fieldInfos = createAndWriteFieldInfos(dir, name);
     FieldInfos readOnly = readFieldInfos(dir, name);
     assertReadOnly(readOnly, fieldInfos);
-    FieldInfos readOnlyClone = readOnly.clone();
-    assertNotSame(readOnly, readOnlyClone);
-    // clone is also read only - no global field map
-    assertReadOnly(readOnlyClone, fieldInfos);
     dir.close();
   }
   
-  private void assertReadOnly(FieldInfos readOnly, FieldInfos modifiable) {
-    assertTrue(readOnly.isReadOnly());
-    assertFalse(modifiable.isReadOnly());
-    try {
-      readOnly.add(modifiable.fieldInfo(0));
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    
-    try {
-      readOnly.addOrUpdate("bogus", random().nextBoolean());
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    try {
-      readOnly.addOrUpdate("bogus", random().nextBoolean(), random().nextBoolean());
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    try {
-      readOnly.addOrUpdate("bogus", random().nextBoolean(), random().nextBoolean(),
-          random().nextBoolean());
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    try {
-      readOnly.addOrUpdate("bogus", random().nextBoolean(), random().nextBoolean(),
-          random().nextBoolean(),
-          random().nextBoolean(), random().nextBoolean() ? IndexOptions.DOCS_ONLY : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, null);
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    try {
-      readOnly.addOrUpdate(Arrays.asList("a", "b", "c"), random().nextBoolean());
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    
+  private void assertReadOnly(FieldInfos readOnly, FieldInfos modifiable) {    
     assertEquals(modifiable.size(), readOnly.size());
     // assert we can iterate
     for (FieldInfo fi : readOnly) {
-      assertEquals(fi.name, modifiable.fieldName(fi.number));
+      assertEquals(fi.name, modifiable.fieldInfo(fi.number).name);
     }
-    
   }
-  
-  
 }

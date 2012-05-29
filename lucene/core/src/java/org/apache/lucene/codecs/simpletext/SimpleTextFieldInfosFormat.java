@@ -18,12 +18,10 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.index.SegmentInfo;
 
 /**
  * plaintext field infos format
@@ -43,10 +41,5 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
   @Override
   public FieldInfosWriter getFieldInfosWriter() throws IOException {
     return writer;
-  }
-
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextFieldInfosReader.files(info, files);
   }
 }

@@ -99,14 +99,18 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     this.skipInterval = skipInterval;
     this.skipMinimum = skipInterval; /* set to the same for now */
     // this.segment = state.segmentName;
-    String fileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION);
+    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName, state.context);
     boolean success = false;
     try {
+      // TODO: this is a best effort, if one of these fields has no postings
+      // then we make an empty prx file, same as if we are wrapped in 
+      // per-field postingsformat. maybe... we shouldn't
+      // bother w/ this opto?  just create empty prx file...?
       if (state.fieldInfos.hasProx()) {
         // At least one field does not omit TF, so create the
         // prox file
-        fileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION);
+        fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION);
         proxOut = state.directory.createOutput(fileName, state.context);
       } else {
         // Every field omits TF so we will write no prox file
@@ -119,11 +123,11 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
       }
     }
 
-    totalNumDocs = state.numDocs;
+    totalNumDocs = state.segmentInfo.getDocCount();
 
     skipListWriter = new Lucene40SkipListWriter(skipInterval,
                                                maxSkipLevels,
-                                               state.numDocs,
+                                               totalNumDocs,
                                                freqOut,
                                                proxOut);
   }
@@ -164,10 +168,10 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     }
     */
     this.fieldInfo = fieldInfo;
-    indexOptions = fieldInfo.indexOptions;
+    indexOptions = fieldInfo.getIndexOptions();
     
     storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;        
-    storePayloads = fieldInfo.storePayloads;
+    storePayloads = fieldInfo.hasPayloads();
     //System.out.println("  set init blockFreqStart=" + freqStart);
     //System.out.println("  set init blockProxStart=" + proxStart);
   }

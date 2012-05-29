@@ -47,8 +47,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private String[] testTerms = {"this", "is", "a", "test"};
   private int[][] positions = new int[testTerms.length][];
   private Directory dir;
-  private SegmentInfo seg;
-  private FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
+  private SegmentInfoPerCommit seg;
+  private FieldInfos fieldInfos = new FieldInfos(new FieldInfo[0]);
   private static int TERM_FREQ = 3;
 
   private class TestToken implements Comparable<TestToken> {
@@ -128,7 +128,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     seg = writer.newestSegment();
     writer.close();
 
-    fieldInfos = seg.getFieldInfos(); //new FieldInfos(dir, IndexFileNames.segmentFileName(seg.name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+    fieldInfos = _TestUtil.getFieldInfos(seg.info);
   }
   
   @Override
@@ -187,20 +187,14 @@ public class TestTermVectorsReader extends LuceneTestCase {
     //Check to see the files were created properly in setup
     DirectoryReader reader = IndexReader.open(dir);
     for (IndexReader r : reader.getSequentialSubReaders()) {
-      SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
-      assertTrue(s.getHasVectors());
-      Set<String> files = new HashSet<String>();
-      s.getCodec().termVectorsFormat().files(s, files);
-      assertFalse(files.isEmpty());
-      for (String file : files) {
-        assertTrue(dir.fileExists(file));
-      }
+      SegmentInfoPerCommit s = ((SegmentReader) r).getSegmentInfo();
+      assertTrue(((SegmentReader) r).getFieldInfos().hasVectors());
     }
     reader.close();
   }
 
   public void testReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
@@ -219,7 +213,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
   
   public void testDocsEnum() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
@@ -246,7 +240,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testPositionReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     BytesRef[] terms;
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
@@ -301,7 +295,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testOffsetReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
     TermsEnum termsEnum = vector.iterator(null);
@@ -343,7 +337,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   public void testBadParams() throws IOException {
     TermVectorsReader reader = null;
     try {
-      reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+      reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
       //Bad document number, good field number
       reader.get(50);
       fail();
@@ -352,7 +346,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     } finally {
       reader.close();
     }
-    reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     //good document number, bad field
     Terms vector = reader.get(0).terms("f50");
     assertNull(vector);

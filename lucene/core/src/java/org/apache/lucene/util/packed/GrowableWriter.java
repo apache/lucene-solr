@@ -28,20 +28,12 @@ public class GrowableWriter implements PackedInts.Mutable {
 
   private long currentMaxValue;
   private PackedInts.Mutable current;
-  private final boolean roundFixedSize;
+  private final float acceptableOverheadRatio;
 
-  public GrowableWriter(int startBitsPerValue, int valueCount, boolean roundFixedSize) {
-    this.roundFixedSize = roundFixedSize;
-    current = PackedInts.getMutable(valueCount, getSize(startBitsPerValue));
+  public GrowableWriter(int startBitsPerValue, int valueCount, float acceptableOverheadRatio) {
+    this.acceptableOverheadRatio = acceptableOverheadRatio;
+    current = PackedInts.getMutable(valueCount, startBitsPerValue, this.acceptableOverheadRatio);
     currentMaxValue = PackedInts.maxValue(current.getBitsPerValue());
-  }
-
-  private final int getSize(int bpv) {
-    if (roundFixedSize) {
-      return PackedInts.getNextFixedSize(bpv);
-    } else {
-      return bpv;
-    }
   }
 
   public long get(int index) {
@@ -78,7 +70,7 @@ public class GrowableWriter implements PackedInts.Mutable {
         currentMaxValue *= 2;
       }
       final int valueCount = size();
-      PackedInts.Mutable next = PackedInts.getMutable(valueCount, getSize(bpv));
+      PackedInts.Mutable next = PackedInts.getMutable(valueCount, bpv, acceptableOverheadRatio);
       for(int i=0;i<valueCount;i++) {
         next.set(i, current.get(i));
       }
@@ -93,11 +85,12 @@ public class GrowableWriter implements PackedInts.Mutable {
   }
 
   public GrowableWriter resize(int newSize) {
-    GrowableWriter next = new GrowableWriter(getBitsPerValue(), newSize, roundFixedSize);
+    GrowableWriter next = new GrowableWriter(getBitsPerValue(), newSize, acceptableOverheadRatio);
     final int limit = Math.min(size(), newSize);
     for(int i=0;i<limit;i++) {
       next.set(i, get(i));
     }
     return next;
   }
+
 }

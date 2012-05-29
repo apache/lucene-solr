@@ -33,7 +33,7 @@ public class PrintStreamInfoStream extends InfoStream {
   private static final AtomicInteger MESSAGE_ID = new AtomicInteger();
   protected final int messageID;
   
-  private final PrintStream stream;
+  protected final PrintStream stream;
   
   public PrintStreamInfoStream(PrintStream stream) {
     this(stream, MESSAGE_ID.getAndIncrement());

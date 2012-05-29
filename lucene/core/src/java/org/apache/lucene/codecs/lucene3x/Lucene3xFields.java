@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -96,10 +95,10 @@ class Lucene3xFields extends FieldsProducer {
       freqStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.FREQ_EXTENSION), context);
       boolean anyProx = false;
       for (FieldInfo fi : fieldInfos) {
-        if (fi.isIndexed) {
+        if (fi.isIndexed()) {
           fields.put(fi.name, fi);
           preTerms.put(fi.name, new PreTerms(fi));
-          if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+          if (fi.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
             anyProx = true;
           }
         }
@@ -131,23 +130,6 @@ class Lucene3xFields extends FieldsProducer {
   // index, using the test-only PreFlexRW.
   protected boolean sortTermsByUnicode() {
     return true;
-  }
-
-  static void files(SegmentInfo info, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.TERMS_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.FREQ_EXTENSION));
-    if (info.getHasProx()) {
-      // LUCENE-1739: for certain versions of 2.9-dev,
-      // hasProx would be incorrectly computed during
-      // indexing as true, and then stored into the segments
-      // file, when it should have been false.  So we do the
-      // extra check, here:
-      final String prx = IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.PROX_EXTENSION);
-      if (info.dir.fileExists(prx)) {
-        files.add(prx);
-      }
-    }
   }
 
   @Override
@@ -952,7 +934,7 @@ class Lucene3xFields extends FieldsProducer {
     @Override
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
       PreDocsEnum docsEnum;
-      if (needsFreqs && fieldInfo.indexOptions == IndexOptions.DOCS_ONLY) {
+      if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
         return null;
       } else if (reuse == null || !(reuse instanceof PreDocsEnum)) {
         docsEnum = new PreDocsEnum();
@@ -973,7 +955,7 @@ class Lucene3xFields extends FieldsProducer {
       }
 
       PreDocsAndPositionsEnum docsPosEnum;
-      if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         return null;
       } else if (reuse == null || !(reuse instanceof PreDocsAndPositionsEnum)) {
         docsPosEnum = new PreDocsAndPositionsEnum();

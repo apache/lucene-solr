@@ -49,7 +49,7 @@ import org.apache.lucene.util.BytesRef;
  *   <li>If offsets and/or positions are enabled, then 
  *       {@link #addPosition(int, int, int)} will be called for each term
  *       occurrence.
- *   <li>After all documents have been written, {@link #finish(int)} 
+ *   <li>After all documents have been written, {@link #finish(FieldInfos, int)} 
  *       is called for verification/sanity-checks.
  *   <li>Finally the writer is closed ({@link #close()})
  * </ol>
@@ -90,7 +90,7 @@ public abstract class TermVectorsWriter implements Closeable {
    *  calls to {@link #startDocument(int)}, but a Codec should
    *  check that this is the case to detect the JRE bug described 
    *  in LUCENE-1282. */
-  public abstract void finish(int numDocs) throws IOException;
+  public abstract void finish(FieldInfos fis, int numDocs) throws IOException;
   
   /** 
    * Called by IndexWriter when writing new segments.
@@ -137,7 +137,7 @@ public abstract class TermVectorsWriter implements Closeable {
    *  over deleted documents, and uses {@link #startDocument(int)},
    *  {@link #startField(FieldInfo, int, boolean, boolean)}, 
    *  {@link #startTerm(BytesRef, int)}, {@link #addPosition(int, int, int)},
-   *  and {@link #finish(int)},
+   *  and {@link #finish(FieldInfos, int)},
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
@@ -159,7 +159,7 @@ public abstract class TermVectorsWriter implements Closeable {
         mergeState.checkAbort.work(300);
       }
     }
-    finish(docCount);
+    finish(mergeState.fieldInfos, docCount);
     return docCount;
   }
   

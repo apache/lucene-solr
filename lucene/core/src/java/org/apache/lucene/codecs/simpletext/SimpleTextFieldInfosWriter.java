@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.DocValues;
@@ -52,6 +53,9 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
   static final BytesRef NORMS_TYPE      =  new BytesRef("  norms type ");
   static final BytesRef DOCVALUES       =  new BytesRef("  doc values ");
   static final BytesRef INDEXOPTIONS    =  new BytesRef("  index options ");
+  static final BytesRef NUM_ATTS        =  new BytesRef("  attributes ");
+  final static BytesRef ATT_KEY         =  new BytesRef("    key ");
+  final static BytesRef ATT_VALUE       =  new BytesRef("    value ");
   
   @Override
   public void write(Directory directory, String segmentName, FieldInfos infos, IOContext context) throws IOException {
@@ -64,7 +68,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
       SimpleTextUtil.writeNewline(out);
       
       for (FieldInfo fi : infos) {
-        assert fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.storePayloads;
+        assert fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
 
         SimpleTextUtil.write(out, NAME);
         SimpleTextUtil.write(out, fi.name, scratch);
@@ -75,19 +79,19 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, ISINDEXED);
-        SimpleTextUtil.write(out, Boolean.toString(fi.isIndexed), scratch);
+        SimpleTextUtil.write(out, Boolean.toString(fi.isIndexed()), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, STORETV);
-        SimpleTextUtil.write(out, Boolean.toString(fi.storeTermVector), scratch);
+        SimpleTextUtil.write(out, Boolean.toString(fi.hasVectors()), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, PAYLOADS);
-        SimpleTextUtil.write(out, Boolean.toString(fi.storePayloads), scratch);
+        SimpleTextUtil.write(out, Boolean.toString(fi.hasPayloads()), scratch);
         SimpleTextUtil.writeNewline(out);
                
         SimpleTextUtil.write(out, NORMS);
-        SimpleTextUtil.write(out, Boolean.toString(!fi.omitNorms), scratch);
+        SimpleTextUtil.write(out, Boolean.toString(!fi.omitsNorms()), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, NORMS_TYPE);
@@ -99,8 +103,26 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, INDEXOPTIONS);
-        SimpleTextUtil.write(out, fi.indexOptions.toString(), scratch);
+        SimpleTextUtil.write(out, fi.getIndexOptions().toString(), scratch);
         SimpleTextUtil.writeNewline(out);
+        
+        Map<String,String> atts = fi.attributes();
+        int numAtts = atts == null ? 0 : atts.size();
+        SimpleTextUtil.write(out, NUM_ATTS);
+        SimpleTextUtil.write(out, Integer.toString(numAtts), scratch);
+        SimpleTextUtil.writeNewline(out);
+      
+        if (numAtts > 0) {
+          for (Map.Entry<String,String> entry : atts.entrySet()) {
+            SimpleTextUtil.write(out, ATT_KEY);
+            SimpleTextUtil.write(out, entry.getKey(), scratch);
+            SimpleTextUtil.writeNewline(out);
+          
+            SimpleTextUtil.write(out, ATT_VALUE);
+            SimpleTextUtil.write(out, entry.getValue(), scratch);
+            SimpleTextUtil.writeNewline(out);
+          }
+        }
       }
     } finally {
       out.close();

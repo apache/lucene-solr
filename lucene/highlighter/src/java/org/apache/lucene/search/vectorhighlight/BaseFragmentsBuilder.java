@@ -127,7 +127,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
         @Override
         public void stringField(FieldInfo fieldInfo, String value) throws IOException {
           FieldType ft = new FieldType(TextField.TYPE_STORED);
-          ft.setStoreTermVectors(fieldInfo.storeTermVector);
+          ft.setStoreTermVectors(fieldInfo.hasVectors());
           fields.add(new Field(fieldInfo.name, value, ft));
         }
 

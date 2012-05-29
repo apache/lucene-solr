@@ -150,7 +150,7 @@ final class IndexFileDeleter {
 
     for (String fileName : files) {
 
-      if ((IndexFileNameFilter.INSTANCE.accept(null, fileName)) && !fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
+      if (!fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
 
         // Add this file to refCounts with initial count 0:
         getRefCount(fileName);
@@ -187,30 +187,6 @@ final class IndexFileDeleter {
               // exc in this case
               sis = null;
             }
-          }
-          if (sis != null) {
-            final SegmentInfos infos = sis;
-            for (SegmentInfo segmentInfo : infos) {
-              try {
-                /*
-                 * Force FI to load for each segment since we could see a
-                 * segments file and load successfully above if the files are
-                 * still referenced when they are deleted and the os doesn't let
-                 * you delete them. Yet its likely that fnm files are removed
-                 * while seg file is still around Since LUCENE-2984 we need FI
-                 * to find out if a seg has vectors and prox so we need those
-                 * files to be opened for a commit point.
-                 */
-                segmentInfo.getFieldInfos();
-              } catch (FileNotFoundException e) {
-                refresh(segmentInfo.name);
-                sis = null;
-                if (infoStream.isEnabled("IFD")) {
-                  infoStream.message("IFD", "init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
-                }
-              }
-            }
-           
           }
           if (sis != null) {
             final CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
@@ -356,7 +332,7 @@ final class IndexFileDeleter {
     for(int i=0;i<files.length;i++) {
       String fileName = files[i];
       if ((segmentName == null || fileName.startsWith(segmentPrefix1) || fileName.startsWith(segmentPrefix2)) &&
-          IndexFileNameFilter.INSTANCE.accept(null, fileName) &&
+          !fileName.endsWith("write.lock") &&
           !refCounts.containsKey(fileName) &&
           !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
         // Unreferenced file, so remove it
@@ -488,7 +464,7 @@ final class IndexFileDeleter {
     assert locked();
     // If this is a commit point, also incRef the
     // segments_N file:
-    for( final String fileName: segmentInfos.files(directory, isCommit) ) {
+    for(final String fileName: segmentInfos.files(directory, isCommit)) {
       incRef(fileName);
     }
   }

@@ -23,7 +23,6 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.util.Constants;
 
 import java.io.IOException;
 
@@ -38,9 +37,32 @@ import java.io.IOException;
 
 public class PackedInts {
 
+  /**
+   * At most 700% memory overhead, always select a direct implementation.
+   */
+  public static final float FASTEST = 7f;
+
+  /**
+   * At most 50% memory overhead, always select a reasonably fast implementation.
+   */
+  public static final float FAST = 0.5f;
+
+  /**
+   * At most 20% memory overhead.
+   */
+  public static final float DEFAULT = 0.2f;
+
+  /**
+   * No memory overhead at all, but the returned implementation may be slow.
+   */
+  public static final float COMPACT = 0f;
+
   private final static String CODEC_NAME = "PackedInts";
   private final static int VERSION_START = 0;
   private final static int VERSION_CURRENT = VERSION_START;
+
+  static final int PACKED = 0;
+  static final int PACKED_SINGLE_BLOCK = 1;
 
   /**
    * A read-only random access array of positive integers.
@@ -103,7 +125,35 @@ public class PackedInts {
      * @throws IOException if reading the value throws an IOException*/
     long advance(int ord) throws IOException;
   }
-  
+
+  static abstract class ReaderIteratorImpl implements ReaderIterator {
+
+    protected final IndexInput in;
+    protected final int bitsPerValue;
+    protected final int valueCount;
+
+    protected ReaderIteratorImpl(int valueCount, int bitsPerValue, IndexInput in) {
+      this.in = in;
+      this.bitsPerValue = bitsPerValue;
+      this.valueCount = valueCount;
+    }
+
+    @Override
+    public int getBitsPerValue() {
+      return bitsPerValue;
+    }
+
+    @Override
+    public int size() {
+      return valueCount;
+    }
+
+    @Override
+    public void close() throws IOException {
+      in.close();
+    }
+  }
+
   /**
    * A packed integer array that can be modified.
    * @lucene.internal
@@ -118,8 +168,7 @@ public class PackedInts {
 
     /**
      * Sets all values to 0.
-     */
-    
+     */    
     void clear();
   }
 
@@ -143,10 +192,6 @@ public class PackedInts {
     
     public int size() {
       return valueCount;
-    }
-
-    public long getMaxValue() { // Convenience method
-      return maxValue(bitsPerValue);
     }
 
     public Object getArray() {
@@ -176,8 +221,10 @@ public class PackedInts {
       CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
       out.writeVInt(bitsPerValue);
       out.writeVInt(valueCount);
+      out.writeVInt(getFormat());
     }
 
+    protected abstract int getFormat();
     public abstract void add(long v) throws IOException;
     public abstract void finish() throws IOException;
   }
@@ -185,6 +232,7 @@ public class PackedInts {
   /**
    * Retrieve PackedInt data from the DataInput and return a packed int
    * structure based on it.
+   *
    * @param in positioned at the beginning of a stored packed int structure.
    * @return a read only random access capable array of positive integers.
    * @throws IOException if the structure could not be retrieved.
@@ -195,22 +243,30 @@ public class PackedInts {
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
+    final int format = in.readVInt();
 
-    switch (bitsPerValue) {
-    case 8:
-      return new Direct8(in, valueCount);
-    case 16:
-      return new Direct16(in, valueCount);
-    case 32:
-      return new Direct32(in, valueCount);
-    case 64:
-      return new Direct64(in, valueCount);
-    default:
-      if (Constants.JRE_IS_64BIT || bitsPerValue >= 32) {
-        return new Packed64(in, valueCount, bitsPerValue);
-      } else {
-        return new Packed32(in, valueCount, bitsPerValue);
-      }
+    switch (format) {
+      case PACKED:
+        switch (bitsPerValue) {
+          case 8:
+            return new Direct8(in, valueCount);
+          case 16:
+            return new Direct16(in, valueCount);
+          case 24:
+            return new Packed8ThreeBlocks(in, valueCount);
+          case 32:
+            return new Direct32(in, valueCount);
+          case 48:
+            return new Packed16ThreeBlocks(in, valueCount);
+          case 64:
+            return new Direct64(in, valueCount);
+          default:
+            return new Packed64(in, valueCount, bitsPerValue);
+        }
+      case PACKED_SINGLE_BLOCK:
+        return Packed64SingleBlock.create(in, valueCount, bitsPerValue);
+      default:
+        throw new AssertionError("Unknwown Writer format: " + format);
     }
   }
 
@@ -226,7 +282,15 @@ public class PackedInts {
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
-    return new PackedReaderIterator(bitsPerValue, valueCount, in);
+    final int format = in.readVInt();
+    switch (format) {
+      case PACKED:
+        return new PackedReaderIterator(valueCount, bitsPerValue, in);
+      case PACKED_SINGLE_BLOCK:
+        return new Packed64SingleBlockReaderIterator(valueCount, bitsPerValue, in);
+      default:
+        throw new AssertionError("Unknwown Writer format: " + format);
+    }
   }
   
   /**
@@ -243,38 +307,70 @@ public class PackedInts {
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
-    return new DirectReader(bitsPerValue, valueCount, in);
+    final int format = in.readVInt();
+    switch (format) {
+      case PACKED:
+        return new DirectPackedReader(bitsPerValue, valueCount, in);
+      case PACKED_SINGLE_BLOCK:
+        return new DirectPacked64SingleBlockReader(bitsPerValue, valueCount, in);
+      default:
+        throw new AssertionError("Unknwown Writer format: " + format);
+    }
   }
   
   /**
    * Create a packed integer array with the given amount of values initialized
    * to 0. the valueCount and the bitsPerValue cannot be changed after creation.
    * All Mutables known by this factory are kept fully in RAM.
-   * @param valueCount   the number of elements.
-   * @param bitsPerValue the number of bits available for any given value.
-   * @return a mutable packed integer array.
+   * 
+   * Positive values of <code>acceptableOverheadRatio</code> will trade space
+   * for speed by selecting a faster but potentially less memory-efficient
+   * implementation. An <code>acceptableOverheadRatio</code> of
+   * {@link PackedInts#COMPACT} will make sure that the most memory-efficient
+   * implementation is selected whereas {@link PackedInts#FASTEST} will make sure
+   * that the fastest implementation is selected.
+   *
+   * @param valueCount   the number of elements
+   * @param bitsPerValue the number of bits available for any given value
+   * @param acceptableOverheadRatio an acceptable overhead
+   *        ratio per value
+   * @return a mutable packed integer array
    * @throws java.io.IOException if the Mutable could not be created. With the
    *         current implementations, this never happens, but the method
    *         signature allows for future persistence-backed Mutables.
    * @lucene.internal
    */
-  public static Mutable getMutable(
-         int valueCount, int bitsPerValue) {
-    switch (bitsPerValue) {
-    case 8:
+  public static Mutable getMutable(int valueCount,
+      int bitsPerValue, float acceptableOverheadRatio) {
+    acceptableOverheadRatio = Math.max(COMPACT, acceptableOverheadRatio);
+    acceptableOverheadRatio = Math.min(FASTEST, acceptableOverheadRatio);
+    float acceptableOverheadPerValue = acceptableOverheadRatio * bitsPerValue; // in bits
+
+    int maxBitsPerValue = bitsPerValue + (int) acceptableOverheadPerValue;
+
+    if (bitsPerValue <= 8 && maxBitsPerValue >= 8) {
       return new Direct8(valueCount);
-    case 16:
+    } else if (bitsPerValue <= 16 && maxBitsPerValue >= 16) {
       return new Direct16(valueCount);
-    case 32:
+    } else if (bitsPerValue <= 32 && maxBitsPerValue >= 32) {
       return new Direct32(valueCount);
-    case 64:
+    } else if (bitsPerValue <= 64 && maxBitsPerValue >= 64) {
       return new Direct64(valueCount);
-    default:
-      if (Constants.JRE_IS_64BIT || bitsPerValue >= 32) {
-        return new Packed64(valueCount, bitsPerValue);
-      } else {
-        return new Packed32(valueCount, bitsPerValue);
+    } else if (valueCount <= Packed8ThreeBlocks.MAX_SIZE && bitsPerValue <= 24 && maxBitsPerValue >= 24) {
+      return new Packed8ThreeBlocks(valueCount);
+    } else if (valueCount <= Packed16ThreeBlocks.MAX_SIZE && bitsPerValue <= 48 && maxBitsPerValue >= 48) {
+      return new Packed16ThreeBlocks(valueCount);
+    } else {
+      for (int bpv = bitsPerValue; bpv <= maxBitsPerValue; ++bpv) {
+        if (Packed64SingleBlock.isSupported(bpv)) {
+          float overhead = Packed64SingleBlock.overheadPerValue(bpv);
+          float acceptableOverhead = acceptableOverheadPerValue + bitsPerValue - bpv;
+          if (overhead <= acceptableOverhead) {
+            return Packed64SingleBlock.create(valueCount, bpv);
+          }
+        }
       }
+      return new Packed64(valueCount, bitsPerValue);
     }
   }
 
@@ -282,16 +378,55 @@ public class PackedInts {
    * Create a packed integer array writer for the given number of values at the
    * given bits/value. Writers append to the given IndexOutput and has very
    * low memory overhead.
+   *
+   * Positive values of <code>acceptableOverheadRatio</code> will trade space
+   * for speed by selecting a faster but potentially less memory-efficient
+   * implementation. An <code>acceptableOverheadRatio</code> of
+   * {@link PackedInts#COMPACT} will make sure that the most memory-efficient
+   * implementation is selected whereas {@link PackedInts#FASTEST} will make sure
+   * that the fastest implementation is selected.
+   *
    * @param out          the destination for the produced bits.
    * @param valueCount   the number of elements.
    * @param bitsPerValue the number of bits available for any given value.
+   * @param acceptableOverheadRatio an acceptable overhead ratio per value
    * @return a Writer ready for receiving values.
    * @throws IOException if bits could not be written to out.
    * @lucene.internal
    */
-  public static Writer getWriter(DataOutput out, int valueCount, int bitsPerValue)
+  public static Writer getWriter(DataOutput out,
+      int valueCount, int bitsPerValue, float acceptableOverheadRatio)
     throws IOException {
-    return new PackedWriter(out, valueCount, bitsPerValue);
+    acceptableOverheadRatio = Math.max(COMPACT, acceptableOverheadRatio);
+    acceptableOverheadRatio = Math.min(FASTEST, acceptableOverheadRatio);
+    float acceptableOverheadPerValue = acceptableOverheadRatio * bitsPerValue; // in bits
+
+    int maxBitsPerValue = bitsPerValue + (int) acceptableOverheadPerValue;
+
+    if (bitsPerValue <= 8 && maxBitsPerValue >= 8) {
+      return new PackedWriter(out, valueCount, 8);
+    } else if (bitsPerValue <= 16 && maxBitsPerValue >= 16) {
+      return new PackedWriter(out, valueCount, 16);
+    } else if (bitsPerValue <= 32 && maxBitsPerValue >= 32) {
+      return new PackedWriter(out, valueCount, 32);
+    } else if (bitsPerValue <= 64 && maxBitsPerValue >= 64) {
+      return new PackedWriter(out, valueCount, 64);
+    } else if (valueCount <= Packed8ThreeBlocks.MAX_SIZE && bitsPerValue <= 24 && maxBitsPerValue >= 24) {
+      return new PackedWriter(out, valueCount, 24);
+    } else if (valueCount <= Packed16ThreeBlocks.MAX_SIZE && bitsPerValue <= 48 && maxBitsPerValue >= 48) {
+      return new PackedWriter(out, valueCount, bitsPerValue);
+    } else {
+      for (int bpv = bitsPerValue; bpv <= maxBitsPerValue; ++bpv) {
+        if (Packed64SingleBlock.isSupported(bpv)) {
+          float overhead = Packed64SingleBlock.overheadPerValue(bpv);
+          float acceptableOverhead = acceptableOverheadPerValue + bitsPerValue - bpv;
+          if (overhead <= acceptableOverhead) {
+            return new Packed64SingleBlockWriter(out, valueCount, bpv);
+          }
+        }
+      }
+      return new PackedWriter(out, valueCount, bitsPerValue);
+    }
   }
 
   /** Returns how many bits are required to hold values up
@@ -301,14 +436,10 @@ public class PackedInts {
    * @lucene.internal
    */
   public static int bitsRequired(long maxValue) {
-    // Very high long values does not translate well to double, so we do an
-    // explicit check for the edge cases
-    if (maxValue > 0x3FFFFFFFFFFFFFFFL) {
-      return 63;
-    } if (maxValue > 0x1FFFFFFFFFFFFFFFL) {
-      return 62;
+    if (maxValue < 0) {
+      throw new IllegalArgumentException("maxValue must be non-negative (got: " + maxValue + ")");
     }
-    return Math.max(1, (int) Math.ceil(Math.log(1+maxValue)/Math.log(2.0)));
+    return Math.max(1, 64 - Long.numberOfLeadingZeros(maxValue));
   }
 
   /**
@@ -320,27 +451,5 @@ public class PackedInts {
    */
   public static long maxValue(int bitsPerValue) {
     return bitsPerValue == 64 ? Long.MAX_VALUE : ~(~0L << bitsPerValue);
-  }
-
-  /** Rounds bitsPerValue up to 8, 16, 32 or 64. */
-  public static int getNextFixedSize(int bitsPerValue) {
-    if (bitsPerValue <= 8) {
-      return 8;
-    } else if (bitsPerValue <= 16) {
-      return 16;
-    } else if (bitsPerValue <= 32) {
-      return 32;
-    } else {
-      return 64;
-    }
-  }
-
-  /** Possibly wastes some storage in exchange for faster lookups */
-  public static int getRoundedFixedSize(int bitsPerValue) {
-    if (bitsPerValue > 58 || (bitsPerValue < 32 && bitsPerValue > 29)) { // 10% space-waste is ok
-      return getNextFixedSize(bitsPerValue);
-    } else {
-      return bitsPerValue;
-    }
   }
 }

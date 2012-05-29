@@ -18,17 +18,19 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos; // javadocs
-import org.apache.lucene.index.SegmentInfo;
 
 /**
  * Encodes/decodes {@link FieldInfos}
  * @lucene.experimental
  */
 public abstract class FieldInfosFormat {
+  /** Returns a {@link FieldInfosReader} to read field infos
+   *  from the index */
   public abstract FieldInfosReader getFieldInfosReader() throws IOException;
+
+  /** Returns a {@link FieldInfosWriter} to write field infos
+   *  to the index */
   public abstract FieldInfosWriter getFieldInfosWriter() throws IOException;
-  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

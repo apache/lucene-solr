@@ -57,10 +57,10 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   }
   
   @Override
-  protected long size(SegmentInfo info) throws IOException {
+  protected long size(SegmentInfoPerCommit info) throws IOException {
     long byteSize = info.sizeInBytes();
-    float delRatio = (info.docCount <= 0 ? 0.0f : ((float)info.getDelCount() / (float)info.docCount));
-    return (info.docCount <= 0 ?  byteSize : (long)((1.0f - delRatio) * byteSize));
+    float delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((float)info.getDelCount() / (float)info.info.getDocCount()));
+    return (info.info.getDocCount() <= 0 ?  byteSize : (long)((1.0f - delRatio) * byteSize));
   }
   
   public void setPartialExpunge(boolean doPartialExpunge) {
@@ -106,7 +106,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   }
   
   @Override
-  public MergeSpecification findForcedMerges(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToMerge) throws IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos infos, int maxNumSegments, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) throws IOException {
     
     assert maxNumSegments > 0;
 
@@ -120,7 +120,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
       int last = infos.size();
       while(last > 0) {
 
-        final SegmentInfo info = infos.info(--last);
+        final SegmentInfoPerCommit info = infos.info(--last);
         if (segmentsToMerge.containsKey(info)) {
           last++;
           break;
@@ -196,7 +196,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
         spec.add(new OneMerge(infos.asList().subList(mergeStart, mergeEnd)));
       } else {
         if(partialExpunge) {
-          SegmentInfo info = infos.info(mergeStart);
+          SegmentInfoPerCommit info = infos.info(mergeStart);
           int delCount = info.getDelCount();
           if(delCount > maxDelCount) {
             expungeCandidate = mergeStart;
@@ -260,8 +260,8 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
     
     if(spec == null) spec = new MergeSpecification();
     for(int i = 0; i < numLargeSegs; i++) {
-      SegmentInfo info = infos.info(i);
-      if(info.hasDeletions()) {
+      SegmentInfoPerCommit info = infos.info(i);
+      if (info.hasDeletions()) {
         spec.add(new OneMerge(Collections.singletonList(infos.info(i))));
       }
     }
@@ -279,7 +279,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
     
     long totalLargeSegSize = 0;
     long totalSmallSegSize = 0;
-    SegmentInfo info;
+    SegmentInfoPerCommit info;
     
     // compute the total size of large segments
     for(int i = 0; i < numLargeSegs; i++) {
@@ -340,7 +340,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
     int maxDelCount = 0;
     
     for(int i = maxNumSegments - 1; i >= 0; i--) {
-      SegmentInfo info = infos.info(i);
+      SegmentInfoPerCommit info = infos.info(i);
       int delCount = info.getDelCount();
       if (delCount > maxDelCount) {
         expungeCandidate = i;

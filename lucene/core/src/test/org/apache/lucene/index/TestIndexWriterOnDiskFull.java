@@ -220,8 +220,9 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
     for(int iter=0;iter<3;iter++) {
       
-      if (VERBOSE)
+      if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
+      }
       
       // Start with 100 bytes more than we are currently using:
       long diskFree = diskUsage+_TestUtil.nextInt(random(), 50, 200);

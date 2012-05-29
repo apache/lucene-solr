@@ -209,7 +209,7 @@ class PreFlexRWNormsConsumer extends PerDocConsumer {
     }
     
     public void startField(FieldInfo info) throws IOException {
-      assert info.omitNorms == false;
+      assert info.omitsNorms() == false;
       normCount++;
     }
     

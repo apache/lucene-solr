@@ -19,7 +19,9 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.util.IOUtils;
 
@@ -201,6 +203,8 @@ public abstract class DataInput implements Cloneable {
     return clone;
   }
 
+  /** Reads a Map&lt;String,String&gt; previously written
+   *  with {@link DataOutput#writeStringStringMap}. */
   public Map<String,String> readStringStringMap() throws IOException {
     final Map<String,String> map = new HashMap<String,String>();
     final int count = readInt();
@@ -211,5 +215,17 @@ public abstract class DataInput implements Cloneable {
     }
 
     return map;
+  }
+
+  /** Reads a Set&lt;String&gt; previously written
+   *  with {@link DataOutput#writeStringSet}. */
+  public Set<String> readStringSet() throws IOException {
+    final Set<String> set = new HashSet<String>();
+    final int count = readInt();
+    for(int i=0;i<count;i++) {
+      set.add(readString());
+    }
+
+    return set;
   }
 }

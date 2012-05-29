@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.mockintblock;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.BlockTermsReader;
 import org.apache.lucene.codecs.BlockTermsWriter;
@@ -38,7 +37,6 @@ import org.apache.lucene.codecs.sep.IntIndexOutput;
 import org.apache.lucene.codecs.sep.IntStreamFactory;
 import org.apache.lucene.codecs.sep.SepPostingsReader;
 import org.apache.lucene.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.*;
@@ -156,6 +154,7 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postingsReader = new SepPostingsReader(state.dir,
+                                                              state.fieldInfos,
                                                               state.segmentInfo,
                                                               state.context,
                                                               new MockIntFactory(blockSize), state.segmentSuffix);
@@ -197,12 +196,5 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
         }
       }
     }
-  }
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    SepPostingsReader.files(segmentInfo, segmentSuffix, files);
-    BlockTermsReader.files(segmentInfo, segmentSuffix, files);
-    FixedGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
   }
 }

@@ -43,15 +43,15 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
 
   public PreFlexRWFieldsWriter(SegmentWriteState state) throws IOException {
     termsOut = new TermInfosWriter(state.directory,
-                                   state.segmentName,
+                                   state.segmentInfo.name,
                                    state.fieldInfos,
                                    state.termIndexInterval);
 
     boolean success = false;
     try {
-      final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.FREQ_EXTENSION);
+      final String freqFile = IndexFileNames.segmentFileName(state.segmentInfo.name, "", Lucene3xPostingsFormat.FREQ_EXTENSION);
       freqOut = state.directory.createOutput(freqFile, state.context);
-      totalNumDocs = state.numDocs;
+      totalNumDocs = state.segmentInfo.getDocCount();
       success = true;
     } finally {
       if (!success) {
@@ -62,7 +62,7 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
     success = false;
     try {
       if (state.fieldInfos.hasProx()) {
-        final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.PROX_EXTENSION);
+        final String proxFile = IndexFileNames.segmentFileName(state.segmentInfo.name, "", Lucene3xPostingsFormat.PROX_EXTENSION);
         proxOut = state.directory.createOutput(proxFile, state.context);
       } else {
         proxOut = null;
@@ -85,7 +85,7 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
   @Override
   public TermsConsumer addField(FieldInfo field) throws IOException {
     assert field.number != -1;
-    if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+    if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
       throw new UnsupportedOperationException("this codec cannot index offsets");
     }
     //System.out.println("w field=" + field.name + " storePayload=" + field.storePayloads + " number=" + field.number);
@@ -107,8 +107,8 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
 
     public PreFlexTermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
-      omitTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
-      storePayloads = fieldInfo.storePayloads;
+      omitTF = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY;
+      storePayloads = fieldInfo.hasPayloads();
     }
 
     private class PostingsWriter extends PostingsConsumer {

@@ -170,7 +170,7 @@ class DocumentsWriterFlushQueue {
     protected abstract boolean canPublish();
   }
   
-  static final class GlobalDeletesTicket extends FlushTicket{
+  static final class GlobalDeletesTicket extends FlushTicket {
 
     protected GlobalDeletesTicket(FrozenBufferedDeletes frozenDeletes) {
       super(frozenDeletes);

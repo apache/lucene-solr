@@ -21,13 +21,11 @@ import java.io.IOException;
 import java.io.FileOutputStream;   // for toDot
 import java.io.OutputStreamWriter; // for toDot
 import java.io.Writer;             // for toDot
-import java.util.Collection;
 import java.util.HashMap;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -215,10 +213,6 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     } else {
       return new IndexEnum(fieldData.fst);
     }
-  }
-
-  public static void files(SegmentInfo info, String segmentSuffix, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(info.name, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 
   @Override

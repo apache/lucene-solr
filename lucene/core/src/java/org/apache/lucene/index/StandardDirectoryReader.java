@@ -89,8 +89,8 @@ final class StandardDirectoryReader extends DirectoryReader {
       IOException prior = null;
       boolean success = false;
       try {
-        final SegmentInfo info = infos.info(i);
-        assert info.dir == dir;
+        final SegmentInfoPerCommit info = infos.info(i);
+        assert info.info.dir == dir;
         final ReadersAndLiveDocs rld = writer.readerPool.get(info, true);
         try {
           final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
@@ -140,7 +140,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     
     for (int i = infos.size() - 1; i>=0; i--) {
       // find SegmentReader for this segment
-      Integer oldReaderIndex = segmentReaders.get(infos.info(i).name);
+      Integer oldReaderIndex = segmentReaders.get(infos.info(i).info.name);
       if (oldReaderIndex == null) {
         // this is a new segment, no old SegmentReader can be reused
         newReaders[i] = null;
@@ -153,7 +153,7 @@ final class StandardDirectoryReader extends DirectoryReader {
       IOException prior = null;
       try {
         SegmentReader newReader;
-        if (newReaders[i] == null || infos.info(i).getUseCompoundFile() != newReaders[i].getSegmentInfo().getUseCompoundFile()) {
+        if (newReaders[i] == null || infos.info(i).info.getUseCompoundFile() != newReaders[i].getSegmentInfo().info.getUseCompoundFile()) {
 
           // this is a new reader; in case we hit an exception we can close it safely
           newReader = new SegmentReader(infos.info(i), termInfosIndexDivisor, IOContext.READ);
@@ -169,7 +169,7 @@ final class StandardDirectoryReader extends DirectoryReader {
           } else {
             readerShared[i] = false;
             // Steal the ref returned by SegmentReader ctor:
-            assert infos.info(i).dir == newReaders[i].getSegmentInfo().dir;
+            assert infos.info(i).info.dir == newReaders[i].getSegmentInfo().info.dir;
             assert infos.info(i).hasDeletions();
             newReaders[i] = new SegmentReader(infos.info(i), newReaders[i].core, IOContext.READ);
           }

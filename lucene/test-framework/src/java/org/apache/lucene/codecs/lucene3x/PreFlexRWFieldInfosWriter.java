@@ -62,15 +62,15 @@ class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
       output.writeVInt(FORMAT_PREFLEX_RW);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
-        assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
+        assert fi.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.hasPayloads();
         byte bits = 0x0;
-        if (fi.isIndexed) bits |= IS_INDEXED;
-        if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
-        if (fi.omitNorms) bits |= OMIT_NORMS;
-        if (fi.storePayloads) bits |= STORE_PAYLOADS;
-        if (fi.indexOptions == IndexOptions.DOCS_ONLY) {
+        if (fi.isIndexed()) bits |= IS_INDEXED;
+        if (fi.hasVectors()) bits |= STORE_TERMVECTOR;
+        if (fi.omitsNorms()) bits |= OMIT_NORMS;
+        if (fi.hasPayloads()) bits |= STORE_PAYLOADS;
+        if (fi.getIndexOptions() == IndexOptions.DOCS_ONLY) {
           bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-        } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS) {
+        } else if (fi.getIndexOptions() == IndexOptions.DOCS_AND_FREQS) {
           bits |= OMIT_POSITIONS;
         }
         output.writeString(fi.name);
@@ -81,11 +81,12 @@ class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
          */
         output.writeInt(fi.number);
         output.writeByte(bits);
-        if (fi.isIndexed && !fi.omitNorms) {
+        if (fi.isIndexed() && !fi.omitsNorms()) {
           // to allow null norm types we need to indicate if norms are written 
           // only in RW case
           output.writeByte((byte) (fi.getNormType() == null ? 0 : 1));
         }
+        assert fi.attributes() == null; // not used or supported
       }
     } finally {
       output.close();

@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
@@ -30,7 +29,6 @@ import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions; // javadocs
 import org.apache.lucene.index.FieldInfos; // javadocs
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput; // javadocs
@@ -307,7 +305,7 @@ public class Lucene40PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
+    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
 
     boolean success = false;
     try {
@@ -333,12 +331,6 @@ public class Lucene40PostingsFormat extends PostingsFormat {
 
   /** Extension of prox postings file */
   static final String PROX_EXTENSION = "prx";
-
-  @Override
-  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
-    BlockTreeTermsReader.files(segmentInfo, segmentSuffix, files);
-  }
 
   @Override
   public String toString() {

@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -48,6 +49,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.memory.MemoryIndexNormDocValues.SingleValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
@@ -199,7 +201,7 @@ public class MemoryIndex {
 
   private static final boolean DEBUG = false;
 
-  private final FieldInfos fieldInfos;
+  private HashMap<String,FieldInfo> fieldInfos = new HashMap<String,FieldInfo>();
   
   /**
    * Sorts term entries into ascending order; also works for
@@ -235,7 +237,6 @@ public class MemoryIndex {
    */
   protected MemoryIndex(boolean storeOffsets) {
     this.stride = storeOffsets ? 3 : 1;
-    fieldInfos = new FieldInfos();
   }
   
   /**
@@ -352,7 +353,10 @@ public class MemoryIndex {
       int numOverlapTokens = 0;
       int pos = -1;
 
-      fieldInfos.addOrUpdate(fieldName, true);
+      if (!fieldInfos.containsKey(fieldName)) {
+        fieldInfos.put(fieldName, 
+            new FieldInfo(fieldName, true, fieldInfos.size(), false, false, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, null, null));
+      }
       
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
@@ -551,10 +555,6 @@ public class MemoryIndex {
     return result.toString();
   }
   
-  
-  ///////////////////////////////////////////////////////////////////////////////
-  // Nested classes:
-  ///////////////////////////////////////////////////////////////////////////////
   /**
    * Index data structure for a field; Contains the tokenized term texts and
    * their positions.
@@ -714,7 +714,7 @@ public class MemoryIndex {
     
     @Override
     public FieldInfos getFieldInfos() {
-      return fieldInfos;
+      return new FieldInfos(fieldInfos.values().toArray(new FieldInfo[fieldInfos.size()]));
     }
 
     private class MemoryFields extends Fields {

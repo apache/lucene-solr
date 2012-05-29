@@ -64,6 +64,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.packed.PackedInts;
 
 public class TestIndexWriter extends LuceneTestCase {
 
@@ -985,26 +986,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-
-  // LUCENE-1468 -- make sure opening an IndexWriter with
-  // create=true does not remove non-index files
-
-  public void testOtherFiles() throws Throwable {
-    Directory dir = newDirectory();
-    try {
-      // Create my own random file:
-      IndexOutput out = dir.createOutput("myrandomfile", newIOContext(random()));
-      out.writeByte((byte) 42);
-      out.close();
-
-      new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
-
-      assertTrue(dir.fileExists("myrandomfile"));
-    } finally {
-      dir.close();
-    }
-  }
-
   public void testDeadlock() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
@@ -1546,11 +1527,8 @@ public class TestIndexWriter extends LuceneTestCase {
     assertNoUnreferencedFiles(dir, "no tv files");
     DirectoryReader r0 = IndexReader.open(dir);
     for (IndexReader r : r0.getSequentialSubReaders()) {
-      SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
-      assertFalse(s.getHasVectors());
-      Set<String> files = new HashSet<String>();
-      s.getCodec().termVectorsFormat().files(s, files);
-      assertTrue(files.isEmpty());
+      SegmentInfoPerCommit s = ((SegmentReader) r).getSegmentInfo();
+      assertFalse(((SegmentReader) r).getFieldInfos().hasVectors());
     }
     
     r0.close();
@@ -1677,7 +1655,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
 
-    FieldCache.DocTermsIndex dti = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(reader), "content", random().nextBoolean());
+    FieldCache.DocTermsIndex dti = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(reader), "content", random().nextFloat() * PackedInts.FAST);
     assertEquals(5, dti.numOrd());                // +1 for null ord
     assertEquals(4, dti.size());
     assertEquals(bigTermBytesRef, dti.lookup(3, new BytesRef()));

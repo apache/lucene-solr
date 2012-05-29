@@ -1,13 +1,5 @@
 package org.apache.lucene.codecs;
 
-import java.io.IOException;
-import java.util.Set;
-
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,11 +17,22 @@ import org.apache.lucene.store.IOContext;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+
 /**
  * Controls the format of stored fields
  */
 public abstract class StoredFieldsFormat {
+  /** Returns a {@link StoredFieldsReader} to load stored
+   *  fields. */
   public abstract StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException;
-  public abstract StoredFieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException;
-  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
+
+  /** Returns a {@link StoredFieldsWriter} to write stored
+   *  fields. */
+  public abstract StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException;
 }

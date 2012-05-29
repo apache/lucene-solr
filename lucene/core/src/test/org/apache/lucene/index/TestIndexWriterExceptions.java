@@ -800,6 +800,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         for (int i = 0; i < trace.length; i++) {
           if (doFail && MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "sync".equals(trace[i].getMethodName())) {
             didFail = true;
+            if (VERBOSE) {
+              System.out.println("TEST: now throw exc:");
+              new Throwable().printStackTrace(System.out);
+            }
             throw new IOException("now failing on purpose during sync");
           }
         }
@@ -1120,49 +1124,49 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // files and make sure we get an IOException trying to
   // open the index:
   public void testSimulatedCorruptIndex2() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
-      dir.setCheckIndexOnClose(false); // we are corrupting it!
-      IndexWriter writer = null;
+    MockDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false); // we are corrupting it!
+    IndexWriter writer = null;
 
-      writer  = new IndexWriter(
-          dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-              setMergePolicy(newLogMergePolicy(true))
-      );
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
+    writer  = new IndexWriter(
+                              dir,
+                              newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+                              setMergePolicy(newLogMergePolicy(true))
+                              );
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
 
-      // add 100 documents
-      for (int i = 0; i < 100; i++) {
-          addDoc(writer);
+    // add 100 documents
+    for (int i = 0; i < 100; i++) {
+      addDoc(writer);
+    }
+
+    // close
+    writer.close();
+
+    long gen = SegmentInfos.getLastCommitGeneration(dir);
+    assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
+
+    String[] files = dir.listAll();
+    boolean corrupted = false;
+    for(int i=0;i<files.length;i++) {
+      if (files[i].endsWith(".cfs")) {
+        dir.deleteFile(files[i]);
+        corrupted = true;
+        break;
       }
+    }
+    assertTrue("failed to find cfs file to remove", corrupted);
 
-      // close
-      writer.close();
-
-      long gen = SegmentInfos.getLastCommitGeneration(dir);
-      assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
-
-      String[] files = dir.listAll();
-      boolean corrupted = false;
-      for(int i=0;i<files.length;i++) {
-        if (files[i].endsWith(".cfs")) {
-          dir.deleteFile(files[i]);
-          corrupted = true;
-          break;
-        }
-      }
-      assertTrue("failed to find cfs file to remove", corrupted);
-
-      IndexReader reader = null;
-      try {
-        reader = IndexReader.open(dir);
-        fail("reader did not hit IOException on opening a corrupt index");
-      } catch (Exception e) {
-      }
-      if (reader != null) {
-        reader.close();
-      }
-      dir.close();
+    IndexReader reader = null;
+    try {
+      reader = IndexReader.open(dir);
+      fail("reader did not hit IOException on opening a corrupt index");
+    } catch (Exception e) {
+    }
+    if (reader != null) {
+      reader.close();
+    }
+    dir.close();
   }
 
   // Simulate a writer that crashed while writing segments
@@ -1284,14 +1288,13 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         w.close();
         IndexReader reader = IndexReader.open(dir);
         assertTrue(reader.numDocs() > 0);
-        reader.close();
         SegmentInfos sis = new SegmentInfos();
         sis.read(dir);
-        for (SegmentInfo segmentInfo : sis) {
-          assertFalse(segmentInfo.getHasVectors());
+        for(AtomicReaderContext context : reader.getTopReaderContext().leaves()) {
+          assertFalse(context.reader().getFieldInfos().hasVectors());
         }
+        reader.close();
         dir.close();
-        
       }
     }
   }

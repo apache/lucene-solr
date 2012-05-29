@@ -494,7 +494,7 @@ public interface FieldCache {
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public DocTerms getTerms (AtomicReader reader, String field, boolean fasterButMoreRAM)
+  public DocTerms getTerms (AtomicReader reader, String field, float acceptableOverheadRatio)
   throws IOException;
 
   /** Returned by {@link #getTermsIndex} */
@@ -571,7 +571,7 @@ public interface FieldCache {
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public DocTermsIndex getTermsIndex (AtomicReader reader, String field, boolean fasterButMoreRAM)
+  public DocTermsIndex getTermsIndex (AtomicReader reader, String field, float acceptableOverheadRatio)
   throws IOException;
 
   /**

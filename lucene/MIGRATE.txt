@@ -567,8 +567,8 @@ you can now do this:
   customizations won't run for certain MultiTermQuerys.
 
 * LUCENE-2691: The near-real-time API has moved from IndexWriter to
-  IndexReader.  Instead of IndexWriter.getReader(), call
-  IndexReader.open(IndexWriter) or IndexReader.reopen(IndexWriter).
+  DirectoryReader.  Instead of IndexWriter.getReader(), call
+  DirectoryReader.open(IndexWriter) or DirectoryReader.openIfChanged(IndexWriter).
 
 * LUCENE-2690: MultiTermQuery boolean rewrites per segment.
   Also MultiTermQuery.getTermsEnum() now takes an AttributeSource. FuzzyTermsEnum
@@ -615,7 +615,7 @@ you can now do this:
   globally, or per-field).  To define another Strategy, implement Analyzer.ReuseStrategy.
 
 * LUCENE-3464: IndexReader.reopen has been renamed to
-  IndexReader.openIfChanged (a static method), and now returns null
+  DirectoryReader.openIfChanged (a static method), and now returns null
   (instead of the old reader) if there are no changes to the index, to
   prevent the common pitfall of accidentally closing the old reader.
   

@@ -59,7 +59,7 @@ public final class NoMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-             int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToMerge)
+             int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
       throws CorruptIndexException, IOException { return null; }
 
   @Override
@@ -67,7 +67,7 @@ public final class NoMergePolicy extends MergePolicy {
       throws CorruptIndexException, IOException { return null; }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment) { return useCompoundFile; }
+  public boolean useCompoundFile(SegmentInfos segments, SegmentInfoPerCommit newSegment) { return useCompoundFile; }
 
   @Override
   public void setIndexWriter(IndexWriter writer) {}

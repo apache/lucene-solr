@@ -19,8 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
@@ -30,12 +28,9 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 
 /**
  * plain-text norms format.
@@ -49,18 +44,13 @@ public class SimpleTextNormsFormat extends NormsFormat {
   
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new SimpleTextNormsPerDocConsumer(state, NORMS_SEG_SUFFIX);
+    return new SimpleTextNormsPerDocConsumer(state);
   }
   
   @Override
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
     return new SimpleTextNormsPerDocProducer(state,
-        BytesRef.getUTF8SortedAsUnicodeComparator(), NORMS_SEG_SUFFIX);
-  }
-  
-  @Override
-  public void files(SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextNormsPerDocConsumer.files(info, files);
+        BytesRef.getUTF8SortedAsUnicodeComparator());
   }
   
   /**
@@ -74,8 +64,8 @@ public class SimpleTextNormsFormat extends NormsFormat {
       SimpleTextPerDocProducer {
     
     public SimpleTextNormsPerDocProducer(SegmentReadState state,
-        Comparator<BytesRef> comp, String segmentSuffix) throws IOException {
-      super(state, comp, segmentSuffix);
+        Comparator<BytesRef> comp) throws IOException {
+      super(state, comp, NORMS_SEG_SUFFIX);
     }
     
     @Override
@@ -105,9 +95,9 @@ public class SimpleTextNormsFormat extends NormsFormat {
   public static class SimpleTextNormsPerDocConsumer extends
       SimpleTextPerDocConsumer {
     
-    public SimpleTextNormsPerDocConsumer(PerDocWriteState state,
-        String segmentSuffix) throws IOException {
-      super(state, segmentSuffix);
+    public SimpleTextNormsPerDocConsumer(PerDocWriteState state)
+      throws IOException {
+      super(state, NORMS_SEG_SUFFIX);
     }
     
     @Override
@@ -128,27 +118,8 @@ public class SimpleTextNormsFormat extends NormsFormat {
     
     @Override
     public void abort() {
-      Set<String> files = new HashSet<String>();
-      filesInternal(state.fieldInfos, state.segmentName, files, segmentSuffix);
-      IOUtils.deleteFilesIgnoringExceptions(state.directory,
-          files.toArray(new String[0]));
-    }
-    
-    public static void files(SegmentInfo segmentInfo, Set<String> files)
-        throws IOException {
-      filesInternal(segmentInfo.getFieldInfos(), segmentInfo.name, files,
-          NORMS_SEG_SUFFIX);
-    }
-    
-    public static void filesInternal(FieldInfos fieldInfos, String segmentName,
-        Set<String> files, String segmentSuffix) {
-      for (FieldInfo fieldInfo : fieldInfos) {
-        if (fieldInfo.hasNorms()) {
-          String id = docValuesId(segmentName, fieldInfo.number);
-          files.add(IndexFileNames.segmentFileName(id, "",
-              segmentSuffix));
-        }
-      }
+      // We don't have to remove files here: IndexFileDeleter
+      // will do so
     }
   }
 }

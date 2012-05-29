@@ -22,7 +22,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
@@ -30,7 +29,6 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 
 import java.util.HashMap;
-import java.util.Collection;
 import java.util.Comparator;
 import java.io.IOException;
 
@@ -328,8 +326,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
             // we'd have to try @ fewer bits and then grow
             // if we overflowed it.
 
-            PackedInts.Mutable termsDictOffsetsM = PackedInts.getMutable(this.numIndexTerms, termsDictOffsetsIter.getBitsPerValue());
-            PackedInts.Mutable termOffsetsM = PackedInts.getMutable(this.numIndexTerms+1, termOffsetsIter.getBitsPerValue());
+            PackedInts.Mutable termsDictOffsetsM = PackedInts.getMutable(this.numIndexTerms, termsDictOffsetsIter.getBitsPerValue(), PackedInts.DEFAULT);
+            PackedInts.Mutable termOffsetsM = PackedInts.getMutable(this.numIndexTerms+1, termOffsetsIter.getBitsPerValue(), PackedInts.DEFAULT);
 
             termsDictOffsets = termsDictOffsetsM;
             termOffsets = termOffsetsM;
@@ -387,10 +385,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     } else {
       return new IndexEnum(fieldData.coreIndex);
     }
-  }
-
-  public static void files(SegmentInfo info, String segmentSuffix, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(info.name, segmentSuffix, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 
   @Override

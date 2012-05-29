@@ -206,9 +206,9 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     //System.out.println("segdels4:" + writer.docWriter.deletesToString());
   }
 
-  boolean segThere(SegmentInfo info, SegmentInfos infos) {
-    for (SegmentInfo si : infos) {
-      if (si.name.equals(info.name)) return true;
+  boolean segThere(SegmentInfoPerCommit info, SegmentInfos infos) {
+    for (SegmentInfoPerCommit si : infos) {
+      if (si.info.name.equals(info.info.name)) return true;
     }
     return false;
   }
@@ -270,7 +270,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     @Override
     public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-        int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToMerge)
+        int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
         throws CorruptIndexException, IOException {
       return null;
     }
@@ -282,7 +282,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment) {
+    public boolean useCompoundFile(SegmentInfos segments, SegmentInfoPerCommit newSegment) {
       return useCompoundFile;
     }
   }

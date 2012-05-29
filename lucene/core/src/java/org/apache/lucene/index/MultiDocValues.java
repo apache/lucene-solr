@@ -51,7 +51,7 @@ public class MultiDocValues extends DocValues {
       // for norms we drop all norms if one leaf reader has no norms and the field is present
       FieldInfos fieldInfos = reader.getFieldInfos();
       FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-      return fieldInfo != null && fieldInfo.omitNorms;
+      return fieldInfo != null && fieldInfo.omitsNorms();
     }
   };
 

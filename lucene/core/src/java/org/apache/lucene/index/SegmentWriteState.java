@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.InfoStream;
@@ -30,9 +29,8 @@ import org.apache.lucene.util.MutableBits;
 public class SegmentWriteState {
   public final InfoStream infoStream;
   public final Directory directory;
-  public final String segmentName;
+  public final SegmentInfo segmentInfo;
   public final FieldInfos fieldInfos;
-  public final int numDocs;
   public int delCountOnFlush;
 
   // Deletes to apply while we are flushing the segment.  A
@@ -45,7 +43,6 @@ public class SegmentWriteState {
   // Lazily created:
   public MutableBits liveDocs;
 
-  public final Codec codec;
   public final String segmentSuffix;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
@@ -57,16 +54,14 @@ public class SegmentWriteState {
   
   public final IOContext context;
 
-  public SegmentWriteState(InfoStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
-      int numDocs, int termIndexInterval, Codec codec, BufferedDeletes segDeletes, IOContext context) {
+  public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
+      int termIndexInterval, BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
-    this.segmentName = segmentName;
+    this.segmentInfo = segmentInfo;
     this.fieldInfos = fieldInfos;
-    this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
-    this.codec = codec;
     segmentSuffix = "";
     this.context = context;
   }
@@ -77,12 +72,10 @@ public class SegmentWriteState {
   public SegmentWriteState(SegmentWriteState state, String segmentSuffix) {
     infoStream = state.infoStream;
     directory = state.directory;
-    segmentName = state.segmentName;
+    segmentInfo = state.segmentInfo;
     fieldInfos = state.fieldInfos;
-    numDocs = state.numDocs;
     termIndexInterval = state.termIndexInterval;
     context = state.context;
-    codec = state.codec;
     this.segmentSuffix = segmentSuffix;
     segDeletes = state.segDeletes;
     delCountOnFlush = state.delCountOnFlush;

@@ -1,15 +1,5 @@
 package org.apache.lucene.codecs;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MergeState;
-import org.apache.lucene.util.Bits;
-
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -26,6 +16,16 @@ import org.apache.lucene.util.Bits;
  * the License.
  */
 
+import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MergeState;
+import org.apache.lucene.util.Bits;
+
 /**
  * Codec API for writing stored fields:
  * <p>
@@ -34,7 +34,7 @@ import org.apache.lucene.util.Bits;
  *       informing the Codec how many fields will be written.
  *   <li>{@link #writeField(FieldInfo, IndexableField)} is called for 
  *       each field in the document.
- *   <li>After all documents have been written, {@link #finish(int)} 
+ *   <li>After all documents have been written, {@link #finish(FieldInfos, int)} 
  *       is called for verification/sanity-checks.
  *   <li>Finally the writer is closed ({@link #close()})
  * </ol>
@@ -63,12 +63,12 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  calls to {@link #startDocument(int)}, but a Codec should
    *  check that this is the case to detect the JRE bug described 
    *  in LUCENE-1282. */
-  public abstract void finish(int numDocs) throws IOException;
+  public abstract void finish(FieldInfos fis, int numDocs) throws IOException;
   
   /** Merges in the stored fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
    *  over deleted documents, and uses {@link #startDocument(int)},
-   *  {@link #writeField(FieldInfo, IndexableField)}, and {@link #finish(int)},
+   *  {@link #writeField(FieldInfo, IndexableField)}, and {@link #finish(FieldInfos, int)},
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
@@ -94,7 +94,7 @@ public abstract class StoredFieldsWriter implements Closeable {
         mergeState.checkAbort.work(300);
       }
     }
-    finish(docCount);
+    finish(mergeState.fieldInfos, docCount);
     return docCount;
   }
   

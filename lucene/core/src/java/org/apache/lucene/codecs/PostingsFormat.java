@@ -20,7 +20,6 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.NamedSPILoader;
@@ -40,11 +39,12 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   private final String name;
   
   protected PostingsFormat(String name) {
+    NamedSPILoader.checkServiceName(name);
     this.name = name;
   }
 
   @Override
-  public String getName() {
+  public final String getName() {
     return name;
   }
   
@@ -55,15 +55,6 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
    *  returns, it must hold open any files it will need to
    *  use; else, those files may be deleted. */
   public abstract FieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
-
-  /**
-   * Gathers files associated with this segment
-   * 
-   * @param segmentInfo the {@link SegmentInfo} for this segment 
-   * @param segmentSuffix the format's suffix within this segment
-   * @param files the of files to add the codec files to.
-   */
-  public abstract void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException;
 
   @Override
   public String toString() {
@@ -79,5 +70,4 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   public static Set<String> availablePostingsFormats() {
     return loader.availableServices();
   }
-  
 }

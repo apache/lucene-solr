@@ -27,6 +27,7 @@ import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Use a field value and find the Document Frequency within another field.
@@ -52,7 +53,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException
   {
-    final DocTerms terms = cache.getTerms(readerContext.reader(), field, true );
+    final DocTerms terms = cache.getTerms(readerContext.reader(), field, PackedInts.FAST);
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader();
     
     return new IntDocValues(this) {

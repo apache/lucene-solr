@@ -514,7 +514,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     public SimpleTextTerms(String field, long termsStart) throws IOException {
       this.termsStart = termsStart;
-      indexOptions = fieldInfos.fieldInfo(field).indexOptions;
+      indexOptions = fieldInfos.fieldInfo(field).getIndexOptions();
       loadTerms();
     }
 

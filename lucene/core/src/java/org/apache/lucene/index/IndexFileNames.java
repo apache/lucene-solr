@@ -80,11 +80,12 @@ public final class IndexFileNames {
    * @param gen generation
    */
   public static String fileNameFromGeneration(String base, String ext, long gen) {
-    if (gen == SegmentInfo.NO) {
+    if (gen == -1) {
       return null;
-    } else if (gen == SegmentInfo.WITHOUT_GEN) {
+    } else if (gen == 0) {
       return segmentFileName(base, "", ext);
     } else {
+      assert gen > 0;
       // The '6' part in the length is: 1 for '.', 1 for '_' and 4 as estimate
       // to the gen length as string (hopefully an upper limit so SB won't
       // expand in the middle.

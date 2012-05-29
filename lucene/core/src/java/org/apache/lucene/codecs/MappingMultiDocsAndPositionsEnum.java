@@ -21,6 +21,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiDocsAndPositionsEnum;
+import org.apache.lucene.index.MultiDocsAndPositionsEnum.EnumWithSlice;
+
 import java.io.IOException;
 
 /**
@@ -50,6 +52,14 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
 
   public void setMergeState(MergeState mergeState) {
     this.mergeState = mergeState;
+  }
+  
+  public int getNumSubs() {
+    return numSubs;
+  }
+
+  public EnumWithSlice[] getSubs() {
+    return subs;
   }
 
   @Override
