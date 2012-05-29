@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
+import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.suggest.FileDictionary;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
@@ -185,11 +186,11 @@ public class Suggester extends SolrSpellChecker {
       scratch.offset = 0;
       scratch.length = t.length();
       List<LookupResult> suggestions = lookup.lookup(scratch,
-          options.onlyMorePopular, options.count);
+          (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR), options.count);
       if (suggestions == null) {
         continue;
       }
-      if (!options.onlyMorePopular) {
+      if (options.suggestMode != SuggestMode.SUGGEST_MORE_POPULAR) {
         Collections.sort(suggestions);
       }
       for (LookupResult lr : suggestions) {

@@ -118,6 +118,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     index(id, "22", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
     index(id, "23", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
     index(id, "24", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "25", "lowerfilt", "rod fix");
     commit();
 
     handle.clear();
@@ -138,5 +139,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     query("q", "lowerfilt:(+quock +reb)", "fl", "id,lowerfilt", "spellcheck", "true", "qt", requestHandlerName, "shards.qt", requestHandlerName, SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true", SpellingParams.SPELLCHECK_COUNT, "10", SpellingParams.SPELLCHECK_COLLATE, "true", SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "10", SpellingParams.SPELLCHECK_MAX_COLLATIONS, "10", SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "false");
     query("q", "lowerfilt:(+quock +reb)", "fl", "id,lowerfilt", "spellcheck", "true", "qt", requestHandlerName, "shards.qt", requestHandlerName, SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true", SpellingParams.SPELLCHECK_COUNT, "10", SpellingParams.SPELLCHECK_COLLATE, "true", SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "0", SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1", SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "false");
   
+    query("q", "lowerfilt:(\"quote red fox\")", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "5", SpellCheckComponent.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "10");
+    query("q", "lowerfilt:(\"rod fix\")", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "5", SpellCheckComponent.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "10");
   }
 }

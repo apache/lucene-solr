@@ -79,13 +79,8 @@ public class PatternTokenizerFactory extends TokenizerFactory
   @Override
   public void init(Map<String,String> args) 
   {
-    this.args = args;
-    String regex = args.get( PATTERN );
-    if( regex == null ) {
-      throw new InitializationException("missing required argument: " + PATTERN);
-    }
-    int flags = 0; // TODO? -- read flags from config CASE_INSENSITIVE, etc
-    pattern = Pattern.compile( regex, flags );
+    super.init(args);
+    pattern = getPattern( PATTERN );
     
     group = -1;  // use 'split'
     String g = args.get( GROUP );

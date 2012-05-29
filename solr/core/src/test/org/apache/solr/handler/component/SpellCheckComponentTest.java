@@ -124,10 +124,16 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testCorrectSpelling() throws Exception {
     // Make sure correct spellings are signaled in the response
-    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","lowerfilt:lazy lowerfilt:brown", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true")
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true",
+        "q","lowerfilt:lazy lowerfilt:brown", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true")
        ,"/spellcheck/suggestions=={'correctlySpelled':true}"
     );
-    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","lakkle", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true")
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "spellcheck.dictionary", "direct_lowerfilt",
+        "q","lowerfilt:lazy lowerfilt:brown", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true")
+       ,"/spellcheck/suggestions=={'correctlySpelled':true}"
+    );
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "spellcheck.dictionary", "direct_lowerfilt",
+        "q","lakkle", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true")
        ,"/spellcheck/suggestions/correctlySpelled==false"
     );
   }

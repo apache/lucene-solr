@@ -181,21 +181,36 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
         
     SpellingResult result = new SpellingResult();
     float accuracy = (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
-    SuggestMode mode = options.onlyMorePopular ? SuggestMode.SUGGEST_MORE_POPULAR : SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
+    
     for (Token token : options.tokens) {
-    	Term term = new Term(field, token.toString());
-      SuggestWord[] suggestions = checker.suggestSimilar(term, 
-          options.count, options.reader, mode, accuracy); 
-      
-      int docFreq = 0;
-      if(options.extendedResults || suggestions.length==0) {
-        docFreq = options.reader.docFreq(term);
-      }
-      
-      if(options.extendedResults) {        
-        result.addFrequency(token, docFreq);
-      }
-      if(suggestions.length==0 && docFreq==0) {
+      String tokenText = token.toString();
+      Term term = new Term(field, tokenText);
+      int freq = options.reader.docFreq(term);
+      int count = (options.alternativeTermCount != null && freq > 0) ? options.alternativeTermCount: options.count;
+      SuggestWord[] suggestions = checker.suggestSimilar(term, count,options.reader, options.suggestMode, accuracy);
+      result.addFrequency(token, freq);
+            
+      // If considering alternatives to "correctly-spelled" terms, then add the
+      // original as a viable suggestion.
+      if (options.alternativeTermCount != null && freq > 0) {
+        boolean foundOriginal = false;
+        SuggestWord[] suggestionsWithOrig = new SuggestWord[suggestions.length + 1];
+        for (int i = 0; i < suggestions.length; i++) {
+          if (suggestions[i].string.equals(tokenText)) {
+            foundOriginal = true;
+            break;
+          }
+          suggestionsWithOrig[i + 1] = suggestions[i];
+        }
+        if (!foundOriginal) {
+          SuggestWord orig = new SuggestWord();
+          orig.freq = freq;
+          orig.string = tokenText;
+          suggestionsWithOrig[0] = orig;
+          suggestions = suggestionsWithOrig;
+        }
+      }      
+      if(suggestions.length==0 && freq==0) {
         List<String> empty = Collections.emptyList();
         result.add(token, empty);
       } else {        

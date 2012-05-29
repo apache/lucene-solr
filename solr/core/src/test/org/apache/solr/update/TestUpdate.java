@@ -44,7 +44,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.solr.core.SolrCore.verbose;
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.SEEN_LEADER;
 
 public class TestUpdate extends SolrTestCaseJ4 {
   @BeforeClass

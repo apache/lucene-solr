@@ -21,9 +21,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-public class DistributedUpdateProcessorFactory extends
-    UpdateRequestProcessorFactory {
-
+public class DistributedUpdateProcessorFactory 
+  extends UpdateRequestProcessorFactory 
+  implements DistributingUpdateProcessorFactory {
   
   @Override
   public void init(NamedList args) {

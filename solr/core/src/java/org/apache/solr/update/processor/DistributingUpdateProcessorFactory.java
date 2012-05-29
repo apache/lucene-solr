@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,29 +17,23 @@
 
 package org.apache.solr.update.processor;
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-
+import org.apache.solr.common.SolrException;
 
 /**
- * A custom class to do custom stuff
+ * A marker interface for denoting that a factory is responsible for handling
+ * distributed communication of updates across a SolrCloud cluster.
+ * 
+ * @see UpdateRequestProcessorChain
  */
-public class CustomUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory 
-{
-  public NamedList args = null;
-  
-  @Override
-  public void init( NamedList args )
-  {
-    this.args = args;
-  }
+public interface DistributingUpdateProcessorFactory {
 
-  @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return new CustomUpdateRequestProcessor(next);
-  }
+  /**
+   * Internal param used to specify the current phase of a distributed update, 
+   * not intended for use by clients.  Any non-blank value can be used to 
+   * indicate to the <code>UpdateRequestProcessorChain</code> that factories 
+   * prior to the <code>DistributingUpdateProcessorFactory</code> can be skipped.
+   * Implementations of this interface may use the non-blank values any way 
+   * they wish.
+   */
+  public static final String DISTRIB_UPDATE_PARAM = "update.distrib";
 }
-

@@ -48,12 +48,17 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Request;
@@ -123,9 +128,10 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @Override
   public void doTest() throws Exception {
-    setLoggingLevel(null);
+    // setLoggingLevel(null);
 
     del("*:*");
+
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
             ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
     indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country."
@@ -289,11 +295,62 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     testSearchByCollectionName();
     testANewCollectionInOneInstanceWithManualShardAssignement();
     testNumberOfCommitsWithCommitAfterAdd();
+
+    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-explicit");
+    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
     
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
     }
+  }
+
+  /**
+   * Expects a RegexReplaceProcessorFactories in the chain which will
+   * "double up" the values in two (stored) string fields.
+   * <p>
+   * If the values are "double-doubled" or "not-doubled" then we know 
+   * the processor was not run the appropriate number of times
+   * </p>
+   */
+  private void testUpdateProcessorsRunOnlyOnce(final String chain) throws Exception {
+
+    final String fieldA = "regex_dup_A_s";
+    final String fieldB = "regex_dup_B_s";
+    final String val = "x";
+    final String expected = "x_x";
+    final ModifiableSolrParams updateParams = new ModifiableSolrParams();
+    updateParams.add(UpdateParams.UPDATE_CHAIN, chain);
+    
+    final int numLoops = atLeast(50);
+    
+    for (int i = 1; i < numLoops; i++) {
+      // add doc to random client
+      SolrServer updateClient = clients.get(random().nextInt(clients.size()));
+      SolrInputDocument doc = new SolrInputDocument();
+      addFields(doc, id, i, fieldA, val, fieldB, val);
+      UpdateResponse ures = add(updateClient, updateParams, doc);
+      assertEquals(chain + ": update failed", 0, ures.getStatus());
+      ures = updateClient.commit();
+      assertEquals(chain + ": commit failed", 0, ures.getStatus());
+    }
+
+    // query for each doc, and check both fields to ensure the value is correct
+    for (int i = 1; i < numLoops; i++) {
+      final String query = id + ":" + i;
+      QueryResponse qres = queryServer(new SolrQuery(query));
+      assertEquals(chain + ": query failed: " + query, 
+                   0, qres.getStatus());
+      assertEquals(chain + ": didn't find correct # docs with query: " + query,
+                   1, qres.getResults().getNumFound());
+      SolrDocument doc = qres.getResults().get(0);
+
+      for (String field : new String[] {fieldA, fieldB}) { 
+        assertEquals(chain + ": doc#" + i+ " has wrong value for " + field,
+                     expected, doc.getFirstValue(field));
+      }
+    }
+
   }
 
   // cloud level test mainly needed just to make sure that versions and errors are propagated correctly
@@ -333,7 +390,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       if (match != null) throw new RuntimeException(match);
     }
   }
-
 
   private void testNumberOfCommitsWithCommitAfterAdd()
       throws MalformedURLException, SolrServerException, IOException {

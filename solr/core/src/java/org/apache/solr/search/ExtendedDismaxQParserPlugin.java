@@ -139,14 +139,15 @@ class ExtendedDismaxQParser extends QParser {
     }
     
     // Boosted phrase of the full query string
-    Map<String,Float> phraseFields = 
-      SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.PF));
+    List<FieldParams> phraseFields = 
+      U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF),0);
     // Boosted Bi-Term Shingles from the query string
-    Map<String,Float> phraseFields2 = 
-      SolrPluginUtils.parseFieldBoosts(solrParams.getParams("pf2"));
+    List<FieldParams> phraseFields2 = 
+      U.parseFieldBoostsAndSlop(solrParams.getParams("pf2"),2);
     // Boosted Tri-Term Shingles from the query string
-    Map<String,Float> phraseFields3 = 
-      SolrPluginUtils.parseFieldBoosts(solrParams.getParams("pf3"));
+    List<FieldParams> phraseFields3 = 
+      U.parseFieldBoostsAndSlop(solrParams.getParams("pf3"),3);
+
 
     float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
 
@@ -313,10 +314,12 @@ class ExtendedDismaxQParser extends QParser {
       query.add(parsedUserQuery, BooleanClause.Occur.MUST);
 
       // sloppy phrase queries for proximity
-      if (phraseFields.size() > 0 || 
-          phraseFields2.size() > 0 ||
-          phraseFields3.size() > 0) {
-        
+      List<FieldParams> allPhraseFields = new ArrayList<FieldParams>();
+      allPhraseFields.addAll(phraseFields);
+      allPhraseFields.addAll(phraseFields2);
+      allPhraseFields.addAll(phraseFields3);
+
+      if (allPhraseFields.size() > 0) {
         // find non-field clauses
         List<Clause> normalClauses = new ArrayList<Clause>(clauses.size());
         for (Clause clause : clauses) {
@@ -330,14 +333,14 @@ class ExtendedDismaxQParser extends QParser {
           normalClauses.add(clause);
         }
 
-        // full phrase...
-        addShingledPhraseQueries(query, normalClauses, phraseFields, 0, 
-                                 tiebreaker, pslop);
-        // shingles...
-        addShingledPhraseQueries(query, normalClauses, phraseFields2, 2,  
-                                 tiebreaker, pslop);
-        addShingledPhraseQueries(query, normalClauses, phraseFields3, 3,
-                                 tiebreaker, pslop);
+        // full phrase and shingles
+        for (FieldParams phraseField: allPhraseFields) {
+          int slop = (phraseField.getSlop() == 0) ? pslop : phraseField.getSlop();
+          Map<String,Float> pf = new HashMap<String,Float>(1);
+          pf.put(phraseField.getField(),phraseField.getBoost());
+          addShingledPhraseQueries(query, normalClauses, pf,   
+				   phraseField.getWordGrams(),tiebreaker, slop);
+        }
         
       }
     }

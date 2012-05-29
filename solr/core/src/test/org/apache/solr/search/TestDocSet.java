@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -365,7 +366,7 @@ public class TestDocSet extends LuceneTestCase {
 
       @Override
       public FieldInfos getFieldInfos() {
-        return new FieldInfos();
+        return new FieldInfos(new FieldInfo[0]);
       }
 
       @Override

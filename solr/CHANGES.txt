@@ -128,6 +128,7 @@ New Features
   SOLR-3080: Remove shard info from zookeeper when SolrCore is explicitly unloaded.
   (yonik, Mark Miller, siren)
   SOLR-3437: Recovery issues a spurious commit to the cluster. (Trym R. Møller via Mark Miller)
+  SOLR-2822: Skip update processors already run on other nodes (hossman)
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
@@ -302,6 +303,18 @@ New Features
   choose the correct ContentStreamLoader based on Content-Type header.  This
   also deprecates the existing [Xml,JSON,CSV,Binary,Xslt]UpdateRequestHandler.
   (ryan)
+  
+* SOLR-2585: Context-Sensitive Spelling Suggestions & Collations.  This adds support
+  for the "spellcheck.alternativeTermCount" & "spellcheck.maxResultsForSuggest" 
+  parameters, letting users receive suggestions even when all the queried terms 
+  exist in the dictionary.  This differs from "spellcheck.onlyMorePopular" in
+  that the suggestions need not consist entirely of terms with a greater document
+  frequency than the queried terms. (James Dyer)
+
+* SOLR-2058: Edismax query parser to allow "phrase slop" to be specified per-field
+  on the pf/pf2/pf3 parameters using optional "FieldName~slop^boost" syntax.  The
+  prior "FieldName^boost" syntax is still accepted.  In such cases the value on the
+  "ps" parameter serves as the default slop.  (Ron Mayer via James Dyer)
 
 
 Optimizations
@@ -427,6 +440,16 @@ Bug Fixes
 
 * SOLR-3454: Exception when using result grouping with main=true and using
   wt=javabin. (Ludovic Boutros, Martijn van Groningen)
+
+* SOLR-3446: Better errors when PatternTokenizerFactory is configured with 
+  an invalid pattern, and include the 'name' whenever possible in plugin init 
+  error messages. (hossman)
+
+* LUCENE-4075: Cleaner path usage in TestXPathEntityProcessor
+  (Greg Bowyer via hossman)
+  
+* SOLR-2923: IllegalArgumentException when using useFilterForSortedQuery on an 
+  empty index. (Adrien Grand via Mark Miller)
 
 Other Changes
 ----------------------

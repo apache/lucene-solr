@@ -1,3 +1,4 @@
+package org.apache.solr.search;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,31 +16,31 @@
  * limitations under the License.
  */
 
-package org.apache.solr.update.processor;
-
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-
-
 /**
- * A custom class to do custom stuff
- */
-public class CustomUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory 
-{
-  public NamedList args = null;
+ * A class to hold "phrase slop" and "boost" parameters for pf, pf2, pf3 parameters
+ **/
+public class FieldParams {
+  private final int wordGrams;  // make bigrams if 2, trigrams if 3, or all if 0
+  private final int slop;  // null defaults to ps parameter
+  private final float boost;
+  private final String field;
+  public FieldParams(String field, int wordGrams, int slop, float boost) {
+    this.wordGrams = wordGrams;
+    this.slop      = slop;
+    this.boost     = boost;
+    this.field     = field;
+  }
+  public int getWordGrams() {
+    return wordGrams;
+  }
+  public int getSlop() {
+    return slop;
+  }
+  public float getBoost() {
+    return boost;
+  }
+  public String getField() {
+    return field;
+  }
   
-  @Override
-  public void init( NamedList args )
-  {
-    this.args = args;
-  }
-
-  @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return new CustomUpdateRequestProcessor(next);
-  }
 }
-

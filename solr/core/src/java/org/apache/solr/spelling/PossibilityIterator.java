@@ -97,6 +97,9 @@ public class PossibilityIterator implements Iterator<RankedSpellPossibility> {
 			if(rankedPossibilities.size() >= maximumRequiredSuggestions && rsp.getRank() >= rankedPossibilities.peek().getRank()) {
 				continue;
 			}
+      if (!isSuggestionForReal(rsp)) {
+        continue;
+      }
 			rankedPossibilities.offer(rsp);
 			if(rankedPossibilities.size() > maximumRequiredSuggestions) {
 				rankedPossibilities.poll();
@@ -109,6 +112,15 @@ public class PossibilityIterator implements Iterator<RankedSpellPossibility> {
 		}
 		rankedPossibilityIterator = Arrays.asList(rpArr).iterator();		
 	}
+	
+  private boolean isSuggestionForReal(RankedSpellPossibility rsp) {
+    for (SpellCheckCorrection corr : rsp.getCorrections()) {
+      if (!corr.getOriginalAsString().equals(corr.getCorrection())) {
+        return true;
+      }
+    }
+    return false;
+  }
 
 	private boolean internalHasNext() {
 		return !done;

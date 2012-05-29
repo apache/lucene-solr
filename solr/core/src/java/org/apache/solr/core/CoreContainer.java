@@ -582,23 +582,20 @@ public class CoreContainer
   }
 
   private void cancelCoreRecoveries() {
-    ArrayList<SolrCoreState> coreStates = null;
+    ArrayList<SolrCoreState> coreStates = new ArrayList<SolrCoreState>();
     synchronized (cores) {
-        for (SolrCore core : cores.values()) {
-          try {
-            coreStates = new ArrayList<SolrCoreState>(cores.size());
-            // make sure we wait for any recoveries to stop
-            coreStates.add(core.getUpdateHandler().getSolrCoreState());
-          } catch (Throwable t) {
-            SolrException.log(log, "Error canceling recovery for core", t);
-          }
-        }
+      for (SolrCore core : cores.values()) {
+        coreStates.add(core.getUpdateHandler().getSolrCoreState());
+      }
     }
-    
+
     // we must cancel without holding the cores sync
-    if (coreStates != null) {
-      for (SolrCoreState coreState : coreStates) {
+    // make sure we wait for any recoveries to stop
+    for (SolrCoreState coreState : coreStates) {
+      try {
         coreState.cancelRecovery();
+      } catch (Throwable t) {
+        SolrException.log(log, "Error canceling recovery for core", t);
       }
     }
   }

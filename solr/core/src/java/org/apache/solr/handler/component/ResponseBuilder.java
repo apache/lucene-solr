@@ -399,6 +399,13 @@ public class ResponseBuilder
       rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
     }
   }
+  
+  public long getNumberDocumentsFound() {
+    if (_responseDocs == null) {
+      return 0;
+    }
+    return _responseDocs.getNumFound();
+  }
 
   public ScoreDoc getScoreDoc()
   {

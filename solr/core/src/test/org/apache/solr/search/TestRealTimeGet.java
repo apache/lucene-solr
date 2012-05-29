@@ -48,11 +48,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static  org.apache.solr.core.SolrCore.verbose;
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.SEEN_LEADER;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 
 public class TestRealTimeGet extends SolrTestCaseJ4 {
-  private static String SEEN_LEADER_VAL="true"; // value that means we've seen the leader and have version info (i.e. we are a non-leader replica)
 
+  // means we've seen the leader and have version info (i.e. we are a non-leader replica)
+  private static String FROM_LEADER = DistribPhase.FROMLEADER.toString(); 
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -149,7 +151,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     // simulate an update from the leader
     version += 10;
-    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version))), params(SEEN_LEADER,SEEN_LEADER_VAL));
+    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
     // test version is there from rtg
     assertJQ(req("qt","/get","id","1")
@@ -157,7 +159,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     );
 
     // simulate reordering: test that a version less than that does not take affect
-    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version - 1))), params(SEEN_LEADER,SEEN_LEADER_VAL));
+    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version - 1))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
     // test that version hasn't changed
     assertJQ(req("qt","/get","id","1")
@@ -166,7 +168,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     // simulate reordering: test that a delete w/ version less than that does not take affect
     // TODO: also allow passing version on delete instead of on URL?
-    updateJ(jsonDelId("1"), params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_",Long.toString(version - 1)));
+    updateJ(jsonDelId("1"), params(DISTRIB_UPDATE_PARAM,FROM_LEADER, "_version_",Long.toString(version - 1)));
 
     // test that version hasn't changed
     assertJQ(req("qt","/get","id","1")
@@ -177,7 +179,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     assertU(commit());
 
     // simulate reordering: test that a version less than that does not take affect
-    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version - 1))), params(SEEN_LEADER,SEEN_LEADER_VAL));
+    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version - 1))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
     // test that version hasn't changed
     assertJQ(req("qt","/get","id","1")
@@ -185,7 +187,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     );
 
     // simulate reordering: test that a delete w/ version less than that does not take affect
-    updateJ(jsonDelId("1"), params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_",Long.toString(version - 1)));
+    updateJ(jsonDelId("1"), params(DISTRIB_UPDATE_PARAM,FROM_LEADER, "_version_",Long.toString(version - 1)));
 
     // test that version hasn't changed
     assertJQ(req("qt","/get","id","1")
@@ -194,10 +196,10 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     // now simulate a normal delete from the leader
     version += 5;
-    updateJ(jsonDelId("1"), params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_",Long.toString(version)));
+    updateJ(jsonDelId("1"), params(DISTRIB_UPDATE_PARAM,FROM_LEADER, "_version_",Long.toString(version)));
 
     // make sure a reordered add doesn't take affect.
-    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version - 1))), params(SEEN_LEADER,SEEN_LEADER_VAL));
+    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version - 1))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
     // test that it's still deleted
     assertJQ(req("qt","/get","id","1")
@@ -208,7 +210,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     assertU(commit());
 
     // make sure a reordered add doesn't take affect.
-    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version - 1))), params(SEEN_LEADER,SEEN_LEADER_VAL));
+    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version - 1))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
     // test that it's still deleted
     assertJQ(req("qt","/get","id","1")
@@ -1071,7 +1073,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               if (oper < commitPercent + deletePercent) {
                 verbose("deleting id",id,"val=",nextVal,"version",version);
 
-                Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params("_version_",Long.toString(-version), SEEN_LEADER,SEEN_LEADER_VAL));
+                Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params("_version_",Long.toString(-version), DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
                 // TODO: returning versions for these types of updates is redundant
                 // but if we do return, they had better be equal
@@ -1093,7 +1095,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               } else {
                 verbose("adding id", id, "val=", nextVal,"version",version);
 
-                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal), "_version_",Long.toString(version)), params(SEEN_LEADER,SEEN_LEADER_VAL));
+                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal), "_version_",Long.toString(version)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
                 if (returnedVersion != null) {
                   assertEquals(version, returnedVersion.longValue());
                 }
@@ -1341,7 +1343,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               if (oper < commitPercent + deletePercent) {
                 verbose("deleting id",id,"val=",nextVal,"version",version);
 
-                Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params("_version_",Long.toString(-version), SEEN_LEADER,SEEN_LEADER_VAL));
+                Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params("_version_",Long.toString(-version), DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
                 // TODO: returning versions for these types of updates is redundant
                 // but if we do return, they had better be equal
@@ -1363,7 +1365,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               } else {
                 verbose("adding id", id, "val=", nextVal,"version",version);
 
-                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal), "_version_",Long.toString(version)), params(SEEN_LEADER,SEEN_LEADER_VAL));
+                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal), "_version_",Long.toString(version)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
                 if (returnedVersion != null) {
                   assertEquals(version, returnedVersion.longValue());
                 }

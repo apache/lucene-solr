@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,8 +18,14 @@
 package org.apache.solr.update.processor;
 
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.update.processor.CustomUpdateRequestProcessor;
 import org.apache.solr.util.AbstractSolrTestCase;
+
+import java.util.Arrays;
+
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 /**
  * 
@@ -52,4 +58,37 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
     // Make sure the NamedListArgs got through ok
     assertEquals( "{name={n8=88,n9=99}}", link.args.toString() );
   }
+
+  public void testUpdateDistribChainSkipping() throws Exception {
+    SolrCore core = h.getCore();
+    for (final String name : Arrays.asList("distrib-chain-explicit",
+                                           "distrib-chain-implicit",
+                                           "distrib-chain-noop")) {
+
+      UpdateRequestProcessor proc;
+      UpdateRequestProcessorChain chain = core.getUpdateProcessingChain(name);
+      assertNotNull(name, chain);
+
+      // either explicitly, or because of injection
+      assertEquals(name + " chain length", 4,
+                   chain.getFactories().length);
+
+      // Custom comes first in all three of our chains
+      proc = chain.createProcessor(req(), new SolrQueryResponse());
+      assertTrue(name + " first processor isn't a CustomUpdateRequestProcessor: " 
+                 + proc.getClass().getName(),
+                 proc instanceof CustomUpdateRequestProcessor);
+
+      // varies depending on chain, but definitely shouldn't be Custom
+      proc = chain.createProcessor(req(DISTRIB_UPDATE_PARAM, "non_blank_value"),
+                                   new SolrQueryResponse());
+      assertFalse(name + " post distrib proc should not be a CustomUpdateRequestProcessor: " 
+                 + proc.getClass().getName(),
+                 proc instanceof CustomUpdateRequestProcessor);
+      
+
+    }
+
+  }
+
 }

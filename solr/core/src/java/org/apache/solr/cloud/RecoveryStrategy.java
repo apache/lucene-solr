@@ -92,6 +92,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   // make sure any threads stop retrying
   public void close() {
     close = true;
+    log.warn("Stopping recovery for core " + coreName + " zkNodeName=" + coreZkNodeName);
   }
 
   
@@ -99,9 +100,12 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
       final ZkController zkController, final String baseUrl,
       final String shardZkNodeName, final CoreDescriptor cd) {
     SolrException.log(log, "Recovery failed - I give up.");
-    zkController.publishAsRecoveryFailed(baseUrl, cd,
-        shardZkNodeName, core.getName());
-    close = true;
+    try {
+      zkController.publishAsRecoveryFailed(baseUrl, cd,
+          shardZkNodeName, core.getName());
+    } finally {
+      close();
+    }
   }
   
   private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops, String baseUrl)
@@ -393,11 +397,15 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           }
 
         } catch (Exception e) {
-          SolrException.log(log, "", e);
+          log.error("", e);
         }
 
         try {
-          Thread.sleep(Math.min(START_TIMEOUT * retries, 60000));
+          // if (!isClosed()) Thread.sleep(Math.min(START_TIMEOUT * retries, 60000));
+          for (int i = 0; i<Math.min(retries, 600); i++) {
+            if (isClosed()) break; // check if someone closed us
+            Thread.sleep(START_TIMEOUT);
+          }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           log.warn("Recovery was interrupted", e);

@@ -194,9 +194,9 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     }
 
     @Override
-    public PositionIntervalIterator positions() throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
       if (docIdSetIterator instanceof Scorer) {
-        return ((Scorer) docIdSetIterator).positions();
+        return ((Scorer) docIdSetIterator).positions(needsPayloads, needsOffsets);
       }
       throw new UnsupportedOperationException("Positions are only supported for Scorers");
     }

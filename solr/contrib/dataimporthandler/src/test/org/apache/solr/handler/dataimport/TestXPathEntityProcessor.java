@@ -215,7 +215,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
             false);
     Map entityAttrs = createMap("name", "e",
             XPathEntityProcessor.USE_SOLR_ADD_SCHEMA, "true", "xsl", ""
-            + new File(tmpdir, "x.xsl").getAbsolutePath(), "url", "cd.xml");
+            + new File(tmpdir, "x.xsl").toURI(), "url", "cd.xml");
     Context c = getContext(null,
             new VariableResolverImpl(), getDataSource(cdData), Context.FULL_DUMP, null, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
