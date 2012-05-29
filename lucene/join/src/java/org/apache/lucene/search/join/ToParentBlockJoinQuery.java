@@ -33,7 +33,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
@@ -82,23 +81,7 @@ import org.apache.lucene.util.FixedBitSet;
  *
  * @lucene.experimental
  */
-
 public class ToParentBlockJoinQuery extends Query {
-
-  /** How to aggregate multiple child hit scores into a
-   *  single parent score. */
-  public static enum ScoreMode {
-    /** Do no scoring. */
-    None,
-    /** Parent hit's score is the average of all child
-        scores. */
-    Avg,
-    /** Parent hit's score is the max of all child
-        scores. */
-    Max,
-    /** Parent hit's score is the sum of all child
-        scores. */
-    Total};
 
   private final Filter parentsFilter;
   private final Query childQuery;

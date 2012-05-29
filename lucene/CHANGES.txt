@@ -1,4 +1,3 @@
-
 Lucene Change Log
 
 For more information on past and future Lucene versions, please see:
@@ -874,6 +873,9 @@ New features
 * LUCENE-3514: Added IndexSearcher.searchAfter when Sort is used,
   returning results after a specified FieldDoc for deep
   paging.  (Mike McCandless)
+
+* LUCENE-4043: Added scoring support via score mode for query time joining.
+  (Martijn van Groningen, Mike McCandless)
 
 Optimizations
 
