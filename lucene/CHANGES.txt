@@ -1001,6 +1001,13 @@ Bug fixes
   CharsRef's CharSequence methods to throw exceptions in boundary cases
   to properly meet the specification.  (Robert Muir)
 
+* LUCENE-4084: Attempting to reuse a single IndexWriterConfig instance
+  across more than one IndexWriter resulted in a cryptic exception.
+  This is now fixed, but requires that certain members of
+  IndexWriterConfig (MergePolicy, FlushPolicy,
+  DocumentsWriterThreadPool) implement clone.  (Robert Muir, Simon
+  Willnauer, Mike McCandless)
+
 Documentation
 
 * LUCENE-3958: Javadocs corrections for IndexWriter.

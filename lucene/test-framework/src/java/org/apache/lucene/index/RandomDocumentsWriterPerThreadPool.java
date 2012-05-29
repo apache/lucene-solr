@@ -25,8 +25,7 @@ import java.util.Random;
  * @lucene.internal
  * @lucene.experimental
  */
-public class RandomDocumentsWriterPerThreadPool extends
-    DocumentsWriterPerThreadPool {
+class RandomDocumentsWriterPerThreadPool extends DocumentsWriterPerThreadPool {
   private final ThreadState[] states;
   private final Random random;
   private final int maxRetry;

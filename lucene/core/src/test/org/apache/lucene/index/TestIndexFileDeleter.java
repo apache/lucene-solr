@@ -61,7 +61,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     for(i=0;i<35;i++) {
       addDoc(writer, i);
     }
-    mergePolicy.setUseCompoundFile(false);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
     for(;i<45;i++) {
       addDoc(writer, i);
     }

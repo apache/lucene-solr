@@ -78,6 +78,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     IndexWriter writer = new IndexWriter(dir, iwc);
+    flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
     assertFalse(flushPolicy.flushOnDocCount());
     assertFalse(flushPolicy.flushOnDeleteTerms());
     assertTrue(flushPolicy.flushOnRAM());
@@ -135,6 +136,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       iwc.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       IndexWriter writer = new IndexWriter(dir, iwc);
+      flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
       assertTrue(flushPolicy.flushOnDocCount());
       assertFalse(flushPolicy.flushOnDeleteTerms());
       assertFalse(flushPolicy.flushOnRAM());
@@ -183,6 +185,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     iwc.setIndexerThreadPool(threadPool);
 
     IndexWriter writer = new IndexWriter(dir, iwc);
+    flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
     DocumentsWriter docsWriter = writer.getDocsWriter();
     assertNotNull(docsWriter);
     DocumentsWriterFlushControl flushControl = docsWriter.flushControl;

@@ -57,7 +57,7 @@ import org.apache.lucene.util.SetOnce;
  * @lucene.experimental
  */
 
-public abstract class MergePolicy implements java.io.Closeable {
+public abstract class MergePolicy implements java.io.Closeable, Cloneable {
 
   /** OneMerge provides the information necessary to perform
    *  an individual primitive merge operation, resulting in
@@ -254,7 +254,20 @@ public abstract class MergePolicy implements java.io.Closeable {
     }
   }
 
-  protected final SetOnce<IndexWriter> writer;
+  protected SetOnce<IndexWriter> writer;
+
+  @Override
+  public MergePolicy clone() {
+    MergePolicy clone;
+    try {
+      clone = (MergePolicy) super.clone();
+    } catch (CloneNotSupportedException e) {
+      // should not happen
+      throw new RuntimeException(e);
+    }
+    clone.writer = new SetOnce<IndexWriter>();
+    return clone;
+  }
 
   /**
    * Creates a new merge policy instance. Note that if you intend to use it
