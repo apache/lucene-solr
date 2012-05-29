@@ -880,6 +880,9 @@ New features
   returning results after a specified FieldDoc for deep
   paging.  (Mike McCandless)
 
+* LUCENE-4043: Added scoring support via score mode for query time joining.
+  (Martijn van Groningen, Mike McCandless)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

@@ -220,6 +220,13 @@ public class DocTermOrds {
     return numTermsInField;
   }
 
+  /**
+   * @return Whether this <code>DocTermOrds</code> instance is empty.
+   */
+  public boolean isEmpty() {
+    return index == null;
+  }
+
   /** Subclass can override this */
   protected void visitTerm(TermsEnum te, int termNum) throws IOException {
   }

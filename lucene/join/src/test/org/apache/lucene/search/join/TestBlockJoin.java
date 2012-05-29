@@ -96,7 +96,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     // Wrap the child document query to 'join' any matches
     // up to corresponding parent:
-    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
     // Combine the parent and nested child queries into a single query for a candidate
     BooleanQuery fullQuery = new BooleanQuery();
@@ -198,7 +198,7 @@ public class TestBlockJoin extends LuceneTestCase {
       
     // Wrap the child document query to 'join' any matches
     // up to corresponding parent:
-    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
       
     assertEquals("no filter - both passed", 2, s.search(childJoinQuery, 10).totalHits);
 
@@ -259,7 +259,7 @@ public class TestBlockJoin extends LuceneTestCase {
     w.close();
     IndexSearcher s = newSearcher(r);
     
-    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(new MatchAllDocsQuery(), new QueryWrapperFilter(new MatchAllDocsQuery()), ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(new MatchAllDocsQuery(), new QueryWrapperFilter(new MatchAllDocsQuery()), ScoreMode.Avg);
     s.search(q, 10);
     BooleanQuery bq = new BooleanQuery();
     bq.setBoost(2f); // we boost the BQ
@@ -493,15 +493,15 @@ public class TestBlockJoin extends LuceneTestCase {
       }
 
       final int x = random().nextInt(4);
-      final ToParentBlockJoinQuery.ScoreMode agg;
+      final ScoreMode agg;
       if (x == 0) {
-        agg = ToParentBlockJoinQuery.ScoreMode.None;
+        agg = ScoreMode.None;
       } else if (x == 1) {
-        agg = ToParentBlockJoinQuery.ScoreMode.Max;
+        agg = ScoreMode.Max;
       } else if (x == 2) {
-        agg = ToParentBlockJoinQuery.ScoreMode.Total;
+        agg = ScoreMode.Total;
       } else {
-        agg = ToParentBlockJoinQuery.ScoreMode.Avg;
+        agg = ScoreMode.Avg;
       }
 
       final ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, agg);
@@ -584,7 +584,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
       final boolean trackScores;
       final boolean trackMaxScore;
-      if (agg == ToParentBlockJoinQuery.ScoreMode.None) {
+      if (agg == ScoreMode.None) {
         trackScores = false;
         trackMaxScore = false;
       } else {
@@ -881,8 +881,8 @@ public class TestBlockJoin extends LuceneTestCase {
 
     // Wrap the child document query to 'join' any matches
     // up to corresponding parent:
-    ToParentBlockJoinQuery childJobJoinQuery = new ToParentBlockJoinQuery(childJobQuery, parentsFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
-    ToParentBlockJoinQuery childQualificationJoinQuery = new ToParentBlockJoinQuery(childQualificationQuery, parentsFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery childJobJoinQuery = new ToParentBlockJoinQuery(childJobQuery, parentsFilter, ScoreMode.Avg);
+    ToParentBlockJoinQuery childQualificationJoinQuery = new ToParentBlockJoinQuery(childQualificationQuery, parentsFilter, ScoreMode.Avg);
 
     // Combine the parent and nested child queries into a single query for a candidate
     BooleanQuery fullQuery = new BooleanQuery();
@@ -952,7 +952,7 @@ public class TestBlockJoin extends LuceneTestCase {
                             new QueryWrapperFilter(
                               new TermQuery(new Term("parent", "1"))));
 
-    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
     DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves()[0], true, true, null);
     assertEquals(1, disi.advance(1));
@@ -986,7 +986,7 @@ public class TestBlockJoin extends LuceneTestCase {
                             new QueryWrapperFilter(
                               new TermQuery(new Term("isparent", "yes"))));
 
-    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
     DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves()[0], true, true, null);
     assertEquals(2, disi.advance(0));
