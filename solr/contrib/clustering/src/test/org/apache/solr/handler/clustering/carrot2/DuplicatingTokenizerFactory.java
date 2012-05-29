@@ -27,23 +27,23 @@ import org.carrot2.text.linguistic.ITokenizerFactory;
 import org.carrot2.text.util.MutableCharArray;
 
 public class DuplicatingTokenizerFactory implements ITokenizerFactory {
-  @Override
+  //@Override
   public ITokenizer getTokenizer(LanguageCode language) {
     return new ITokenizer() {
       private final ExtendedWhitespaceTokenizer delegate = new ExtendedWhitespaceTokenizer();
       
-      @Override
+      //@Override
       public void setTermBuffer(MutableCharArray buffer) {
         delegate.setTermBuffer(buffer);
         buffer.reset(buffer.toString() + buffer.toString());
       }
       
-      @Override
+      //@Override
       public void reset(Reader input) throws IOException {
         delegate.reset(input);
       }
       
-      @Override
+      //@Override
       public short nextToken() throws IOException {
         return delegate.nextToken();
       }

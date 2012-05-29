@@ -22,10 +22,10 @@ import org.carrot2.text.linguistic.IStemmer;
 import org.carrot2.text.linguistic.IStemmerFactory;
 
 public class DuplicatingStemmerFactory implements IStemmerFactory {
-  @Override
+  //@Override
   public IStemmer getStemmer(LanguageCode language) {
     return new IStemmer() {
-      @Override
+      //@Override
       public CharSequence stem(CharSequence word) {
         return word.toString() + word.toString();
       }
