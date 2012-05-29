@@ -19,11 +19,12 @@ package org.apache.lucene.index;
 
 import java.util.List;
 
-import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
+import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.packed.PackedInts;
 
 /** Holds common state used during segment merging
  *
@@ -33,17 +34,171 @@ public class MergeState {
   public static class IndexReaderAndLiveDocs {
     public final AtomicReader reader;
     public final Bits liveDocs;
+    public final int numDeletedDocs;
 
-    public IndexReaderAndLiveDocs(AtomicReader reader, Bits liveDocs) {
+    public IndexReaderAndLiveDocs(AtomicReader reader, Bits liveDocs, int numDeletedDocs) {
       this.reader = reader;
       this.liveDocs = liveDocs;
+      this.numDeletedDocs = numDeletedDocs;
+    }
+  }
+
+  public static abstract class DocMap {
+    private final Bits liveDocs;
+
+    protected DocMap(Bits liveDocs) {
+      this.liveDocs = liveDocs;
+    }
+
+    public static DocMap build(IndexReaderAndLiveDocs reader) {
+      final int maxDoc = reader.reader.maxDoc();
+      final int numDeletes = reader.numDeletedDocs;
+      final int numDocs = maxDoc - numDeletes;
+      assert reader.liveDocs != null || numDeletes == 0;
+      if (numDeletes == 0) {
+        return new NoDelDocMap(maxDoc);
+      } else if (numDeletes < numDocs) {
+        return buildDelCountDocmap(maxDoc, numDeletes, reader.liveDocs, PackedInts.FAST);
+      } else {
+        return buildDirectDocMap(maxDoc, numDocs, reader.liveDocs, PackedInts.FAST);
+      }
+    }
+
+    static DocMap buildDelCountDocmap(int maxDoc, int numDeletes, Bits liveDocs, float acceptableOverheadRatio) {
+      PackedInts.Mutable numDeletesSoFar = PackedInts.getMutable(maxDoc,
+          PackedInts.bitsRequired(numDeletes), acceptableOverheadRatio);
+      int del = 0;
+      for (int i = 0; i < maxDoc; ++i) {
+        if (!liveDocs.get(i)) {
+          ++del;
+        }
+        numDeletesSoFar.set(i, del);
+      }
+      assert del == numDeletes : "del=" + del + ", numdeletes=" + numDeletes;
+      return new DelCountDocMap(liveDocs, numDeletesSoFar);
+    }
+
+    static DocMap buildDirectDocMap(int maxDoc, int numDocs, Bits liveDocs, float acceptableOverheadRatio) {
+      PackedInts.Mutable docIds = PackedInts.getMutable(maxDoc,
+          PackedInts.bitsRequired(Math.max(0, numDocs - 1)), acceptableOverheadRatio);
+      int del = 0;
+      for (int i = 0; i < maxDoc; ++i) {
+        if (liveDocs.get(i)) {
+          docIds.set(i, i - del);
+        } else {
+          ++del;
+        }
+      }
+      assert numDocs + del == maxDoc : "maxDoc=" + maxDoc + ", del=" + del + ", numDocs=" + numDocs;
+      return new DirectDocMap(liveDocs, docIds, del);
+    }
+
+    public int get(int docId) {
+      if (liveDocs == null || liveDocs.get(docId)) {
+        return remap(docId);
+      } else {
+        return -1;
+      }
+    }
+
+    public abstract int remap(int docId);
+
+    public abstract int maxDoc();
+
+    public final int numDocs() {
+      return maxDoc() - numDeletedDocs();
+    }
+
+    public abstract int numDeletedDocs();
+
+    public boolean hasDeletions() {
+      return numDeletedDocs() > 0;
+    }
+
+  }
+
+  private static class NoDelDocMap extends DocMap {
+
+    private final int maxDoc;
+
+    private NoDelDocMap(int maxDoc) {
+      super(null);
+      this.maxDoc = maxDoc;
+    }
+
+    @Override
+    public int remap(int docId) {
+      return docId;
+    }
+
+    @Override
+    public int maxDoc() {
+      return maxDoc;
+    }
+
+    @Override
+    public int numDeletedDocs() {
+      return 0;
+    }
+  }
+
+  private static class DirectDocMap extends DocMap {
+
+    private final PackedInts.Mutable docIds;
+    private final int numDeletedDocs;
+
+    private DirectDocMap(Bits liveDocs, PackedInts.Mutable docIds, int numDeletedDocs) {
+      super(liveDocs);
+      this.docIds = docIds;
+      this.numDeletedDocs = numDeletedDocs;
+    }
+
+    @Override
+    public int remap(int docId) {
+      return (int) docIds.get(docId);
+    }
+
+    @Override
+    public int maxDoc() {
+      return docIds.size();
+    }
+
+    @Override
+    public int numDeletedDocs() {
+      return numDeletedDocs;
+    }
+  }
+
+  private static class DelCountDocMap extends DocMap {
+
+    private final PackedInts.Mutable numDeletesSoFar;
+
+    private DelCountDocMap(Bits liveDocs, PackedInts.Mutable numDeletesSoFar) {
+      super(liveDocs);
+      this.numDeletesSoFar = numDeletesSoFar;
+    }
+
+    @Override
+    public int remap(int docId) {
+      return docId - (int) numDeletesSoFar.get(docId);
+    }
+
+    @Override
+    public int maxDoc() {
+      return numDeletesSoFar.size();
+    }
+
+    @Override
+    public int numDeletedDocs() {
+      final int maxDoc = maxDoc();
+      return (int) numDeletesSoFar.get(maxDoc - 1);
     }
   }
 
   public SegmentInfo segmentInfo;
   public FieldInfos fieldInfos;
   public List<IndexReaderAndLiveDocs> readers;        // Readers & liveDocs being merged
-  public int[][] docMaps;                             // Maps docIDs around deletions
+  public DocMap[] docMaps;                            // Maps docIDs around deletions
   public int[] docBase;                               // New docID base per reader
   public CheckAbort checkAbort;
   public InfoStream infoStream;
@@ -65,8 +220,8 @@ public class MergeState {
   
   public static class CheckAbort {
     private double workCount;
-    private MergePolicy.OneMerge merge;
-    private Directory dir;
+    private final MergePolicy.OneMerge merge;
+    private final Directory dir;
     public CheckAbort(MergePolicy.OneMerge merge, Directory dir) {
       this.merge = merge;
       this.dir = dir;

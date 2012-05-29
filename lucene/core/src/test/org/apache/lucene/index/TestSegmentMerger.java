@@ -25,9 +25,11 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.packed.PackedInts;
 
 
 public class TestSegmentMerger extends LuceneTestCase {
@@ -138,5 +140,42 @@ public class TestSegmentMerger extends LuceneTestCase {
 
     TestSegmentReader.checkNorms(mergedReader);
     mergedReader.close();
+  }
+
+  private static boolean equals(MergeState.DocMap map1, MergeState.DocMap map2) {
+    if (map1.maxDoc() != map2.maxDoc()) {
+      return false;
+    }
+    for (int i = 0; i < map1.maxDoc(); ++i) {
+      if (map1.get(i) != map2.get(i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public void testBuildDocMap() {
+    final int maxDoc = 128;
+    final FixedBitSet liveDocs = new FixedBitSet(maxDoc);
+
+    MergeState.DocMap docMap1 = MergeState.DocMap.buildDelCountDocmap(maxDoc, maxDoc, liveDocs, PackedInts.COMPACT);
+    MergeState.DocMap docMap2 = MergeState.DocMap.buildDirectDocMap(maxDoc, 0, liveDocs, PackedInts.COMPACT);
+    assertTrue(equals(docMap1, docMap2));
+    
+    liveDocs.set(1);
+    for (int i = 7; i < 79; ++i) {
+      liveDocs.set(i);
+    }
+    liveDocs.set(80);
+    liveDocs.set(88);
+    int numDocs = liveDocs.cardinality();
+    docMap1 = MergeState.DocMap.buildDelCountDocmap(maxDoc, maxDoc - numDocs, liveDocs, PackedInts.COMPACT);
+    docMap2 = MergeState.DocMap.buildDirectDocMap(maxDoc, numDocs, liveDocs, PackedInts.COMPACT);
+    assertTrue(equals(docMap1, docMap2));
+
+    liveDocs.set(0, maxDoc);
+    docMap1 = MergeState.DocMap.buildDelCountDocmap(maxDoc, 0, liveDocs, PackedInts.COMPACT);
+    docMap2 = MergeState.DocMap.buildDirectDocMap(maxDoc, maxDoc, liveDocs, PackedInts.COMPACT);
+    assertTrue(equals(docMap1, docMap2));
   }
 }

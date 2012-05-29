@@ -322,7 +322,7 @@ public class MultiDocValues extends DocValues {
           final MergeContext ctx = SortedBytesMergeUtils.init(type, values,
               comp, globalNumDocs);
           List<SortedSourceSlice> slices = SortedBytesMergeUtils.buildSlices(
-              docBases(), new int[values.length][], values, ctx);
+              docBases(), new MergeState.DocMap[values.length], values, ctx);
           RecordingBytesRefConsumer consumer = new RecordingBytesRefConsumer(
               type);
           final int maxOrd = SortedBytesMergeUtils.mergeRecords(ctx, consumer,

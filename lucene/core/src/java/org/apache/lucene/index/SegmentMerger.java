@@ -80,7 +80,7 @@ final class SegmentMerger {
       new ReaderUtil.Gather(reader) {
         @Override
         protected void add(int base, AtomicReader r) {
-          mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(r, r.getLiveDocs()));
+          mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(r, r.getLiveDocs(), r.numDeletedDocs()));
         }
       }.run();
     } catch (IOException ioe) {
@@ -89,8 +89,8 @@ final class SegmentMerger {
     }
   }
 
-  final void add(SegmentReader reader, Bits liveDocs) {
-    mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(reader, liveDocs));
+  final void add(SegmentReader reader, Bits liveDocs, int delCount) {
+    mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(reader, liveDocs, delCount));
   }
 
   /**
@@ -287,7 +287,7 @@ final class SegmentMerger {
     final int numReaders = mergeState.readers.size();
 
     // Remap docIDs
-    mergeState.docMaps = new int[numReaders][];
+    mergeState.docMaps = new MergeState.DocMap[numReaders];
     mergeState.docBase = new int[numReaders];
     mergeState.readerPayloadProcessor = new PayloadProcessorProvider.ReaderPayloadProcessor[numReaders];
     mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[numReaders];
@@ -300,30 +300,9 @@ final class SegmentMerger {
       final MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(i);
 
       mergeState.docBase[i] = docBase;
-      final int maxDoc = reader.reader.maxDoc();
-      final int docCount;
-      final Bits liveDocs = reader.liveDocs;
-      final int[] docMap;
-      if (liveDocs != null) {
-        int delCount = 0;
-        docMap = new int[maxDoc];
-        int newDocID = 0;
-        for(int j=0;j<maxDoc;j++) {
-          if (!liveDocs.get(j)) {
-            docMap[j] = -1;
-            delCount++;
-          } else {
-            docMap[j] = newDocID++;
-          }
-        }
-        docCount = maxDoc - delCount;
-      } else {
-        docCount = maxDoc;
-        docMap = null;
-      }
-
+      final MergeState.DocMap docMap = MergeState.DocMap.build(reader);
       mergeState.docMaps[i] = docMap;
-      docBase += docCount;
+      docBase += docMap.numDocs();
 
       if (mergeState.payloadProcessorProvider != null) {
         mergeState.readerPayloadProcessor[i] = mergeState.payloadProcessorProvider.getReaderProcessor(reader.reader);

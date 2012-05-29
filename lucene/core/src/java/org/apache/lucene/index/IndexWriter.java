@@ -3483,7 +3483,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         merge.readers.add(reader);
         assert delCount <= info.info.getDocCount(): "delCount=" + delCount + " info.docCount=" + info.info.getDocCount() + " rld.pendingDeleteCount=" + rld.getPendingDeleteCount() + " info.getDelCount()=" + info.getDelCount();
         if (delCount < info.info.getDocCount()) {
-          merger.add(reader, liveDocs);
+          merger.add(reader, liveDocs, delCount);
         }
         segUpto++;
       }
