@@ -1097,7 +1097,7 @@ public class TestFSTs extends LuceneTestCase {
       Codec.setDefault(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
     }
 
-    final LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random(), true);
     final int RUN_TIME_MSEC = atLeast(500);
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = _TestUtil.getTempDir("fstlines");

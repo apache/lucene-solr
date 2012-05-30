@@ -427,10 +427,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   /**
    * test collection-level term stats (new in 4.x indexes)
    */
-  public void testTotalTermFreq() throws Exception {
-    assumeFalse("PreFlex codec does not support collection-level term stats", 
-        "Lucene3x".equals(Codec.getDefault().getName()));
-    
+  public void testTotalTermFreq() throws Exception {  
     clearIndex();
     
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));

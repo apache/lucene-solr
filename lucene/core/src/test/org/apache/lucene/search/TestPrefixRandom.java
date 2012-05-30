@@ -59,10 +59,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     Field field = newField("field", "", StringField.TYPE_UNSTORED);
     doc.add(field);
 
-    // we generate aweful prefixes: good for testing.
-    // but for preflex codec, the test can be very slow, so use less iterations.
-    final String codec = Codec.getDefault().getName();
-    int num = codec.equals("Lucene3x") ? 200 * RANDOM_MULTIPLIER : atLeast(1000);
+    int num = atLeast(1000);
     for (int i = 0; i < num; i++) {
       field.setStringValue(_TestUtil.randomUnicodeString(random(), 10));
       writer.addDocument(doc);

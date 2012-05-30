@@ -43,7 +43,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-@SuppressCodecs("Lucene3x")
 public class TestTypePromotion extends LuceneTestCase {
 
   private static EnumSet<Type> INTEGERS = EnumSet.of(Type.VAR_INTS,

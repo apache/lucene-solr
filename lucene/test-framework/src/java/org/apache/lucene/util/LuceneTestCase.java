@@ -900,10 +900,6 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  public static boolean defaultCodecSupportsDocValues() {
-    return !Codec.getDefault().getName().equals("Lucene3x");
-  }
-
   private static Directory newFSDirectoryImpl(
       Class<? extends FSDirectory> clazz, File file)
       throws IOException {

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 
@@ -104,14 +103,6 @@ public final class SegmentInfo {
       sizeInBytes = sum;
     }
     return sizeInBytes;
-  }
-
-  /**
-   * @deprecated separate norms are not supported in >= 4.0
-   */
-  @Deprecated
-  boolean hasSeparateNorms() {
-    return getAttribute(Lucene3xSegmentInfoFormat.NORMGEN_KEY) != null;
   }
 
   /**

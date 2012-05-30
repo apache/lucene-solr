@@ -44,7 +44,7 @@ public class TestBalancedSegmentMergePolicy extends LuceneTestCase {
     mp.setMergePolicyParams(newMergePolicyParams(random()));
     iwc.setMergePolicy(mp);
     iw = new RandomIndexWriter(random(), dir, iwc);
-    LineFileDocs docs = new LineFileDocs(random(), !Codec.getDefault().getName().equals("Lucene3x"));
+    LineFileDocs docs = new LineFileDocs(random(), true);
     int numDocs = atLeast(200);
     for (int i = 0; i < numDocs; i++) {
       iw.addDocument(docs.nextDoc());

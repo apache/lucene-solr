@@ -48,8 +48,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     NRTCachingDirectory cachedDir = new NRTCachingDirectory(dir, 2.0, 25.0);
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     RandomIndexWriter w = new RandomIndexWriter(random(), cachedDir, conf);
-    final LineFileDocs docs = new LineFileDocs(random(),
-                                               defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random(), true);
     final int numDocs = _TestUtil.nextInt(random(), 100, 400);
 
     if (VERBOSE) {

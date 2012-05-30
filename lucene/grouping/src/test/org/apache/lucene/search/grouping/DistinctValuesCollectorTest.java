@@ -61,7 +61,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    boolean canUseDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseDV = true;
     DocValues.Type dvType = canUseDV ? dvTypes[random.nextInt(dvTypes.length)] : null;
 
     Document doc = new Document();
@@ -417,7 +417,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy())
       );
 
-    boolean canUseDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseDV = true;
     DocValues.Type dvType = canUseDV ? dvTypes[random.nextInt(dvTypes.length)] : null;
 
     int numDocs = 86 + random.nextInt(1087) * RANDOM_MULTIPLIER;

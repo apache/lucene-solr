@@ -50,7 +50,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseIDV = true;
 
     // 0
     Document doc = new Document();

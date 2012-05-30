@@ -22,13 +22,10 @@ import com.ibm.icu.text.Collator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CollationTestBase;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import java.util.Locale;
 
-@SuppressCodecs("Lucene3x")
 public class TestICUCollationKeyAnalyzer extends CollationTestBase {
 
   private Collator collator = Collator.getInstance(new Locale("fa"));

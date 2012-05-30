@@ -48,8 +48,6 @@ public class TestSearchAfter extends LuceneTestCase {
   private Directory dir;
   private IndexReader reader;
   private IndexSearcher searcher;
-   
-  boolean supportsDocValues = Codec.getDefault().getName().equals("Lucene3x") == false;
 
   private static SortField useDocValues(SortField field) {
     field.setUseIndexValues(true);
@@ -77,13 +75,11 @@ public class TestSearchAfter extends LuceneTestCase {
       document.add(newField("bytesval", _TestUtil.randomRealisticUnicodeString(random()), StringField.TYPE_UNSTORED));
       document.add(new DoubleField("double", random().nextDouble()));
 
-      if (supportsDocValues) {
-        document.add(new IntDocValuesField("intdocvalues", random().nextInt()));
-        document.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
-        document.add(new SortedBytesDocValuesField("sortedbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
-        document.add(new SortedBytesDocValuesField("sortedbytesdocvaluesval", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
-        document.add(new StraightBytesDocValuesField("straightbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
-      }
+      document.add(new IntDocValuesField("intdocvalues", random().nextInt()));
+      document.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
+      document.add(new SortedBytesDocValuesField("sortedbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
+      document.add(new SortedBytesDocValuesField("sortedbytesdocvaluesval", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
+      document.add(new StraightBytesDocValuesField("straightbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
 
       iw.addDocument(document);
     }
@@ -131,13 +127,11 @@ public class TestSearchAfter extends LuceneTestCase {
       assertQuery(query, filter, new Sort(new SortField[] {new SortField("double", SortField.Type.DOUBLE, reversed)}));
       assertQuery(query, filter, new Sort(new SortField[] {new SortField("bytes", SortField.Type.STRING, reversed)}));
       assertQuery(query, filter, new Sort(new SortField[] {new SortField("bytesval", SortField.Type.STRING_VAL, reversed)}));
-      if (supportsDocValues) {
-        assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("intdocvalues", SortField.Type.INT, reversed))}));
-        assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("floatdocvalues", SortField.Type.FLOAT, reversed))}));
-        assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("sortedbytesdocvalues", SortField.Type.STRING, reversed))}));
-        assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, reversed))}));
-        assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, reversed))}));
-      }
+      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("intdocvalues", SortField.Type.INT, reversed))}));
+      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("floatdocvalues", SortField.Type.FLOAT, reversed))}));
+      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("sortedbytesdocvalues", SortField.Type.STRING, reversed))}));
+      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, reversed))}));
+      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, reversed))}));
     }
   }
 

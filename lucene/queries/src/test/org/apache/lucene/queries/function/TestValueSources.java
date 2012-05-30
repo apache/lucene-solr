@@ -311,13 +311,8 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testSumTotalTermFreq() throws Exception {
-    if (Codec.getDefault().getName().equals("Lucene3x")) {
-      assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
-          new float[] { -1f, -1f });
-    } else {
-      assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
+    assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
           new float[] { 8f, 8f });
-    }
   }
   
   public void testTermFreq() throws Exception {
@@ -346,15 +341,9 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testTotalTermFreq() throws Exception {
-    if (Codec.getDefault().getName().equals("Lucene3x")) {
-      assertHits(new FunctionQuery(
-          new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-          new float[] { -1f, -1f });
-    } else {
-      assertHits(new FunctionQuery(
-          new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-          new float[] { 4f, 4f });
-    }
+    assertHits(new FunctionQuery(
+        new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
+        new float[] { 4f, 4f });
   }
   
   void assertHits(Query q, float scores[]) throws Exception {

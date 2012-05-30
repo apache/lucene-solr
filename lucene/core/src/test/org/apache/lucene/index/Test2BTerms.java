@@ -34,13 +34,9 @@ import java.util.List;
 import java.util.Random;
 import org.junit.Ignore;
 
-// NOTE: this test will fail w/ PreFlexRW codec!  (Because
-// this test uses full binary term space, but PreFlex cannot
-// handle this since it requires the terms are UTF8 bytes).
-//
-// Also, SimpleText codec will consume very large amounts of
+// NOTE: SimpleText codec will consume very large amounts of
 // disk (but, should run successfully).  Best to run w/
-// -Dtests.codec=Standard, and w/ plenty of RAM, eg:
+// -Dtests.codec=<current codec>, and w/ plenty of RAM, eg:
 //
 //   ant test -Dtest.slow=true -Dtests.heapsize=8g
 //
@@ -144,9 +140,6 @@ public class Test2BTerms extends LuceneTestCase {
   @Slow
   public void test2BTerms() throws IOException {
 
-    if ("Lucene3x".equals(Codec.getDefault().getName())) {
-      throw new RuntimeException("this test cannot run with PreFlex codec");
-    }
     System.out.println("Starting Test2B");
     final long TERM_COUNT = ((long) Integer.MAX_VALUE) + 100000000;
 

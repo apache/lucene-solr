@@ -629,7 +629,6 @@ public class TieredMergePolicy extends MergePolicy {
     assert w != null;
     boolean hasDeletions = w.numDeletedDocs(info) > 0;
     return !hasDeletions &&
-      !info.info.hasSeparateNorms() &&
       info.info.dir == w.getDirectory() &&
       (info.info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0);
   }

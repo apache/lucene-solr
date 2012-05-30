@@ -29,12 +29,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Test indexing and searching some byte[] terms
  */
-@SuppressCodecs("Lucene3x")
 public class TestBinaryTerms extends LuceneTestCase {
   public void testBinary() throws IOException {    
     Directory dir = newDirectory();

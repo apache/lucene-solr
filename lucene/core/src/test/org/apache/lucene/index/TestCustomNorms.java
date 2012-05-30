@@ -38,7 +38,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  * 
  */
 // TODO: what is the problem with SimpleText
-@SuppressCodecs({ "SimpleText", "Lucene3x" })
+@SuppressCodecs("SimpleText")
 public class TestCustomNorms extends LuceneTestCase {
   final String floatTestField = "normsTestFloat";
   final String exceptionTestField = "normsTestExcp";

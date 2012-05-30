@@ -415,7 +415,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     final long t0 = System.currentTimeMillis();
 
     Random random = new Random(random().nextLong());
-    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random, true);
     final File tempDir = _TestUtil.getTempDir(testName);
     dir = newFSDirectory(tempDir);
     ((MockDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
@@ -620,12 +620,10 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   private int runQuery(IndexSearcher s, Query q) throws Exception {
     s.search(q, 10);
     int hitCount = s.search(q, null, 10, new Sort(new SortField("title", SortField.Type.STRING))).totalHits;
-    if (defaultCodecSupportsDocValues()) {
-      final Sort dvSort = new Sort(new SortField("title", SortField.Type.STRING));
-      dvSort.getSort()[0].setUseIndexValues(true);
-      int hitCount2 = s.search(q, null, 10, dvSort).totalHits;
-      assertEquals(hitCount, hitCount2);
-    }
+    final Sort dvSort = new Sort(new SortField("title", SortField.Type.STRING));
+    dvSort.getSort()[0].setUseIndexValues(true);
+    int hitCount2 = s.search(q, null, 10, dvSort).totalHits;
+    assertEquals(hitCount, hitCount2);
     return hitCount;
   }
 

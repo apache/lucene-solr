@@ -54,7 +54,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseIDV = true;
     Type valueType = vts[random().nextInt(vts.length)];
 
     // 0
@@ -202,8 +202,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT,
               new MockAnalyzer(random())));
-      boolean preFlex = "Lucene3x".equals(w.w.getConfig().getCodec().getName());
-      boolean canUseIDV = !preFlex;
+      boolean canUseIDV = true;
       Type valueType = vts[random().nextInt(vts.length)];
 
       Document doc = new Document();
@@ -301,7 +300,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         if (SlowCompositeReaderWrapper.class.isAssignableFrom(s.getIndexReader().getClass())) {
           canUseIDV = false;
         } else {
-          canUseIDV = !preFlex;
+          canUseIDV = true;
         }
 
         for (int contentID = 0; contentID < 3; contentID++) {

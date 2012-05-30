@@ -13,7 +13,6 @@ import java.util.TimeZone;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.appending.AppendingCodec;
-import org.apache.lucene.codecs.lucene3x.PreFlexRWCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
@@ -91,6 +90,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       modifiableServicesField.setAccessible(true);
       @SuppressWarnings({"unchecked","rawtypes"}) final Map<String,Codec> serviceMap =
         (Map) modifiableServicesField.get(spiLoader);
+      /* note: re-enable this if we make a Lucene4x impersonator 
       if (!(Codec.forName("Lucene3x") instanceof PreFlexRWCodec)) {
         if (Constants.JAVA_VENDOR.startsWith("IBM")) {
           // definitely a buggy version
@@ -103,7 +103,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
               " and does not respect classpath order, please report this to the vendor.");
         }
         serviceMap.put("Lucene3x", new PreFlexRWCodec());
-      }
+      } */
     } catch (Exception e) {
       throw new RuntimeException("Cannot access internals of Codec and NamedSPILoader classes", e);
     }
@@ -156,11 +156,12 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     savedCodec = Codec.getDefault();
     final Codec codec;
     int randomVal = random.nextInt(10);
-    if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2 && !shouldAvoidCodec("Lucene3x"))) { // preflex-only setup
+    /* note: re-enable this if we make a 4.x impersonator
+     * if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2 && !shouldAvoidCodec("Lucene3x"))) { // preflex-only setup
       codec = Codec.forName("Lucene3x");
       assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
-    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
+    } else */if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
       codec = new SimpleTextCodec();
     } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
       codec = new AppendingCodec();

@@ -33,8 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -2223,7 +2221,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
 
           String newSegName = newSegmentName();
-          String dsName = Lucene3xSegmentInfoFormat.getDocStoreSegment(info.info);
+          String dsName = info.info.name;
 
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "addIndexes: process segment origName=" + info.info.name + " newName=" + newSegName + " dsName=" + dsName + " info=" + info);
@@ -2355,6 +2353,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
+  // TODO: this can be substantially simplified now that 3.x support/shared docstores is removed!
   private SegmentInfoPerCommit copySegmentAsIs(SegmentInfoPerCommit info, String segName,
                                                Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context,
                                                Set<String> copiedFiles)
@@ -2363,7 +2362,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // only relevant for segments that share doc store with others,
     // because the DS might have been copied already, in which case we
     // just want to update the DS name of this SegmentInfo.
-    final String dsName = Lucene3xSegmentInfoFormat.getDocStoreSegment(info.info);
+    final String dsName = info.info.name;
     assert dsName != null;
     final String newDsName;
     if (dsNames.containsKey(dsName)) {
@@ -2377,8 +2376,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // so we don't pass a null value to the si writer
     FieldInfos fis = getFieldInfos(info.info);
     
-    Set<String> docStoreFiles3xOnly = Lucene3xCodec.getDocStoreFiles(info.info);
-
     final Map<String,String> attributes;
     // copy the attributes map, we might modify it below.
     // also we need to ensure its read-write, since we will invoke the SIwriter (which might want to set something).
@@ -2386,12 +2383,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       attributes = new HashMap<String,String>();
     } else {
       attributes = new HashMap<String,String>(info.info.attributes());
-    }
-    if (docStoreFiles3xOnly != null) {
-      // only violate the codec this way if it's preflex &
-      // shares doc stores
-      // change docStoreSegment to newDsName
-      attributes.put(Lucene3xSegmentInfoFormat.DS_NAME_KEY, newDsName);
     }
 
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
@@ -2407,11 +2398,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // before writing SegmentInfo:
     for (String file: info.files()) {
       final String newFileName;
-      if (docStoreFiles3xOnly != null && docStoreFiles3xOnly.contains(file)) {
-        newFileName = newDsName + IndexFileNames.stripSegmentName(file);
-      } else {
-        newFileName = segName + IndexFileNames.stripSegmentName(file);
-      }
+      newFileName = segName + IndexFileNames.stripSegmentName(file);
       segFiles.add(newFileName);
     }
     newInfo.setFiles(segFiles);
@@ -2432,16 +2419,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // Copy the segment's files
     for (String file: info.files()) {
 
-      final String newFileName;
-      if (docStoreFiles3xOnly != null && docStoreFiles3xOnly.contains(file)) {
-        newFileName = newDsName + IndexFileNames.stripSegmentName(file);
-        if (dsFilesCopied.contains(newFileName)) {
-          continue;
-        }
-        dsFilesCopied.add(newFileName);
-      } else {
-        newFileName = segName + IndexFileNames.stripSegmentName(file);
-      }
+      final String newFileName = segName + IndexFileNames.stripSegmentName(file);
 
       if (siFiles.contains(newFileName)) {
         // We already rewrote this above
@@ -4016,7 +3994,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "create compound file " + fileName);
     }
-    assert Lucene3xSegmentInfoFormat.getDocStoreOffset(info) == -1;
     // Now merge all added files
     Collection<String> files = info.files();
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);

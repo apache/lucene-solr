@@ -33,9 +33,6 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoReader;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.DataOutput; // javadocs
@@ -274,32 +271,29 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
 
     ChecksumIndexInput input = new ChecksumIndexInput(directory.openInput(segmentFileName, IOContext.READ));
     try {
-      final int format = input.readInt();
-      if (format == CodecUtil.CODEC_MAGIC) {
-        // 4.0+
-        CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_40);
-        version = input.readLong();
-        counter = input.readInt();
-        int numSegments = input.readInt();
-        for(int seg=0;seg<numSegments;seg++) {
-          String segName = input.readString();
-          Codec codec = Codec.forName(input.readString());
-          //System.out.println("SIS.read seg=" + seg + " codec=" + codec);
-          SegmentInfo info = codec.segmentInfoFormat().getSegmentInfosReader().read(directory, segName, IOContext.READ);
-          info.setCodec(codec);
-          long delGen = input.readLong();
-          int delCount = input.readInt();
-          assert delCount <= info.getDocCount();
-          add(new SegmentInfoPerCommit(info, delCount, delGen));
-        }
-        userData = input.readStringStringMap();
-      } else {
-        Lucene3xSegmentInfoReader.readLegacyInfos(this, directory, input, format);
-        Codec codec = Codec.forName("Lucene3x");
-        for (SegmentInfoPerCommit info : this) {
-          info.info.setCodec(codec);
-        }
+      // NOTE: as long as we want to throw indexformattooold (vs corruptindexexception), we need
+      // to read the magic ourselves.
+      int magic = input.readInt();
+      if (magic != CodecUtil.CODEC_MAGIC) {
+        throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
+      // 4.0+
+      CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_40);
+      version = input.readLong();
+      counter = input.readInt();
+      int numSegments = input.readInt();
+      for(int seg=0;seg<numSegments;seg++) {
+        String segName = input.readString();
+        Codec codec = Codec.forName(input.readString());
+        //System.out.println("SIS.read seg=" + seg + " codec=" + codec);
+        SegmentInfo info = codec.segmentInfoFormat().getSegmentInfosReader().read(directory, segName, IOContext.READ);
+        info.setCodec(codec);
+        long delGen = input.readLong();
+        int delCount = input.readInt();
+        assert delCount <= info.getDocCount();
+        add(new SegmentInfoPerCommit(info, delCount, delGen));
+      }
+      userData = input.readStringStringMap();
 
       final long checksumNow = input.getChecksum();
       final long checksumThen = input.readLong();
@@ -351,8 +345,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     ChecksumIndexOutput segnOutput = null;
     boolean success = false;
 
-    final Set<String> upgradedSIFiles = new HashSet<String>();
-
     try {
       segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName, IOContext.DEFAULT));
       CodecUtil.writeHeader(segnOutput, "segments", VERSION_40);
@@ -368,16 +360,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         assert si.dir == directory;
 
         assert siPerCommit.getDelCount() <= si.getDocCount();
-
-        // If this segment is pre-4.x, perform a one-time
-        // "ugprade" to write the .si file for it:
-        String version = si.getVersion();
-        if (version == null || StringHelper.getVersionComparator().compare(version, "4.0") < 0) {
-          String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
-          if (!directory.fileExists(fileName)) {
-            upgradedSIFiles.add(write3xInfo(directory, si, IOContext.DEFAULT));
-          }
-        }
       }
       segnOutput.writeStringStringMap(userData);
       pendingSegnOutput = segnOutput;
@@ -388,14 +370,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         // but suppress any exception:
         IOUtils.closeWhileHandlingException(segnOutput);
 
-        for(String fileName : upgradedSIFiles) {
-          try {
-            directory.deleteFile(fileName);
-          } catch (Throwable t) {
-            // Suppress so we keep throwing the original exception
-          }
-        }
-
         try {
           // Try not to leave a truncated segments_N file in
           // the index:
@@ -405,49 +379,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         }
       }
     }
-  }
-
-  @Deprecated
-  public static String write3xInfo(Directory dir, SegmentInfo si, IOContext context) throws IOException {
-
-    // NOTE: this is NOT how 3.x is really written...
-    String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
-    si.addFile(fileName);
-
-    //System.out.println("UPGRADE write " + fileName);
-    boolean success = false;
-    IndexOutput output = dir.createOutput(fileName, context);
-    try {
-      // we are about to write this SI in 3.x format, dropping all codec information, etc.
-      // so it had better be a 3.x segment or you will get very confusing errors later.
-      assert si.getCodec() instanceof Lucene3xCodec : "broken test, trying to mix preflex with other codecs";
-      CodecUtil.writeHeader(output, Lucene3xSegmentInfoFormat.UPGRADED_SI_CODEC_NAME, 
-                                    Lucene3xSegmentInfoFormat.UPGRADED_SI_VERSION_CURRENT);
-      // Write the Lucene version that created this segment, since 3.1
-      output.writeString(si.getVersion());
-      output.writeInt(si.getDocCount());
-
-      output.writeStringStringMap(si.attributes());
-
-      output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
-      output.writeStringStringMap(si.getDiagnostics());
-      output.writeStringSet(si.files());
-
-      success = true;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(output);
-        try {
-          si.dir.deleteFile(fileName);
-        } catch (Throwable t) {
-          // Suppress so we keep throwing the original exception
-        }
-      } else {
-        output.close();
-      }
-    }
-
-    return fileName;
   }
 
   /**

@@ -971,9 +971,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void testNoTermsIndex() throws Exception {
     // Some Codecs don't honor the ReaderTermsIndexDivisor, so skip the test if
     // they're picked.
-    assumeFalse("PreFlex codec does not support ReaderTermsIndexDivisor!", 
-        "Lucene3x".equals(Codec.getDefault().getName()));
-
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random())).setReaderTermsIndexDivisor(-1);
     

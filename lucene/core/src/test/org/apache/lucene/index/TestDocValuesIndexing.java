@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.ByteDocValuesField;
 import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
@@ -56,7 +55,6 @@ import org.junit.Before;
  * Tests DocValues integration into IndexWriter & Codecs
  * 
  */
-@SuppressCodecs("Lucene3x")
 public class TestDocValuesIndexing extends LuceneTestCase {
   /*
    * - add test for multi segment case with deletes

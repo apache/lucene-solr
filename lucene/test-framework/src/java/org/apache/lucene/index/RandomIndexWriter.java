@@ -206,7 +206,7 @@ public class RandomIndexWriter implements Closeable {
     DocValues.Type[] values = DocValues.Type.values();
     DocValues.Type type = values[r.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
-    if ("Lucene3x".equals(codec.getName()) || doc.getField(name) != null) {
+    if (doc.getField(name) != null) {
       return;
     }
     final Field f;
@@ -403,10 +403,7 @@ public class RandomIndexWriter implements Closeable {
     if (r.nextInt(20) == 2) {
       doRandomForceMerge();
     }
-    // If we are writing with PreFlexRW, force a full
-    // IndexReader.open so terms are sorted in codepoint
-    // order during searching:
-    if (!applyDeletions || !codec.getName().equals("Lucene3x") && r.nextBoolean()) {
+    if (!applyDeletions || r.nextBoolean()) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }

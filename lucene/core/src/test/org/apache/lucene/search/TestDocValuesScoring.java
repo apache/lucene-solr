@@ -43,7 +43,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  * In the example, a docvalues field is used as a per-document boost (separate from the norm)
  * @lucene.experimental
  */
-@SuppressCodecs("Lucene3x")
 public class TestDocValuesScoring extends LuceneTestCase {
   private static final float SCORE_EPSILON = 0.001f; /* for comparing floats */
 

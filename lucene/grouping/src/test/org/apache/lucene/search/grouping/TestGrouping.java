@@ -73,7 +73,7 @@ public class TestGrouping extends LuceneTestCase {
                                dir,
                                newIndexWriterConfig(TEST_VERSION_CURRENT,
                                                     new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseIDV = true;
     // 0
     Document doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
@@ -701,8 +701,7 @@ public class TestGrouping extends LuceneTestCase {
                                                   dir,
                                                   newIndexWriterConfig(TEST_VERSION_CURRENT,
                                                                        new MockAnalyzer(random())));
-      final boolean preFlex = "Lucene3x".equals(w.w.getConfig().getCodec().getName());
-      boolean canUseIDV = !preFlex;
+      boolean canUseIDV = true;
 
       Document doc = new Document();
       Document docNoGroup = new Document();
@@ -778,7 +777,7 @@ public class TestGrouping extends LuceneTestCase {
         if (SlowCompositeReaderWrapper.class.isAssignableFrom(s.getIndexReader().getClass())) {
           canUseIDV = false;
         } else {
-          canUseIDV = !preFlex;
+          canUseIDV = true;
         }
         final ShardState shards = new ShardState(s);
 
@@ -953,7 +952,7 @@ public class TestGrouping extends LuceneTestCase {
 
           ValueHolder<Boolean> idvBasedImplsUsedSharded = new ValueHolder<Boolean>(false);
           final TopGroups<BytesRef> topGroupsShards = searchShards(s, shards.subSearchers, query, groupSort, docSort,
-              groupOffset, topNGroups, docOffset, docsPerGroup, getScores, getMaxScores, canUseIDV, preFlex, idvBasedImplsUsedSharded);
+              groupOffset, topNGroups, docOffset, docsPerGroup, getScores, getMaxScores, canUseIDV, false, idvBasedImplsUsedSharded);
           final AbstractSecondPassGroupingCollector<?> c2;
           if (topGroups != null) {
 

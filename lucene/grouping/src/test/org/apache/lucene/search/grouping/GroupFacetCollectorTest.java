@@ -48,7 +48,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseDV = true;
     boolean useDv = canUseDV && random().nextBoolean();
 
     // 0
@@ -360,7 +360,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
             new MockAnalyzer(random)
         )
     );
-    boolean canUseDV = !"Lucene3x".equals(writer.w.getConfig().getCodec().getName());
+    boolean canUseDV = true;
     boolean useDv = canUseDV && random.nextBoolean();
 
     Document doc = new Document();

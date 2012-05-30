@@ -51,7 +51,7 @@ public class GroupingSearchTest extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseIDV = true;
     List<Document> documents = new ArrayList<Document>();
     // 0
     Document doc = new Document();
