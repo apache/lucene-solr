@@ -28,7 +28,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
@@ -117,6 +116,11 @@ public abstract class LuceneTestCase extends Assert {
   // -----------------------------------------------------------------
   // Test groups and other annotations modifying tests' behavior.
   // -----------------------------------------------------------------
+   
+  public static final String SYSPROP_NIGHTLY = "tests.nightly";
+  public static final String SYSPROP_WEEKLY = "tests.weekly";
+  public static final String SYSPROP_AWAITSFIX = "tests.awaitsfix";
+  public static final String SYSPROP_SLOW = "tests.slow";
 
   /**
    * Annotation for tests that should only be run during nightly builds.
@@ -124,7 +128,7 @@ public abstract class LuceneTestCase extends Assert {
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = "tests.nightly")
+  @TestGroup(enabled = false, sysProperty = SYSPROP_NIGHTLY)
   public @interface Nightly {}
 
   /**
@@ -133,7 +137,7 @@ public abstract class LuceneTestCase extends Assert {
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = "tests.weekly")
+  @TestGroup(enabled = false, sysProperty = SYSPROP_WEEKLY)
   public @interface Weekly {}
 
   /**
@@ -142,7 +146,7 @@ public abstract class LuceneTestCase extends Assert {
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = "tests.awaitsfix")
+  @TestGroup(enabled = false, sysProperty = SYSPROP_AWAITSFIX)
   public @interface AwaitsFix {
     /** Point to JIRA entry. */
     public String bugUrl();
@@ -155,7 +159,7 @@ public abstract class LuceneTestCase extends Assert {
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = "tests.slow")
+  @TestGroup(enabled = false, sysProperty = SYSPROP_SLOW)
   public @interface Slow {}
 
   /**
@@ -215,9 +219,18 @@ public abstract class LuceneTestCase extends Assert {
   /** the line file used by LineFileDocs */
   public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", DEFAULT_LINE_DOCS_FILE);
 
-  /** Whether or not @nightly tests should run. */
-  public static final boolean TEST_NIGHTLY = systemPropertyAsBoolean("tests.nightly", false);
+  /** Whether or not {@link Nightly} tests should run. */
+  public static final boolean TEST_NIGHTLY = systemPropertyAsBoolean(SYSPROP_NIGHTLY, false);
 
+  /** Whether or not {@link Weekly} tests should run. */
+  public static final boolean TEST_WEEKLY = systemPropertyAsBoolean(SYSPROP_WEEKLY, false);
+  
+  /** Whether or not {@link AwaitsFix} tests should run. */
+  public static final boolean TEST_AWAITSFIX = systemPropertyAsBoolean(SYSPROP_AWAITSFIX, false);
+
+  /** Whether or not {@link Slow} tests should run. */
+  public static final boolean TEST_SLOW = systemPropertyAsBoolean(SYSPROP_SLOW, false);
+  
   /** Throttling, see {@link MockDirectoryWrapper#setThrottling(Throttling)}. */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
 
