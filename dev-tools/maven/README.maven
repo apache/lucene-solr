@@ -101,7 +101,7 @@ D. How to use Maven to build Lucene/Solr
       the default, you can supply an alternate version on the command line
       with the above command, e.g.:
 
-         ant -Dversion=4.0-my-special-version get-maven-poms
+         ant -Dversion=5.0-my-special-version get-maven-poms
 
    4. To remove the maven-build/ directory and its contents, use the following
       command from the top-level directory:
