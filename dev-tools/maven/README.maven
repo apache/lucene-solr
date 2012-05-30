@@ -103,6 +103,14 @@ D. How to use Maven to build Lucene/Solr
 
          ant -Dversion=5.0-my-special-version get-maven-poms
 
+      Note: if you change the version in the POMs, there is one test method
+      that will fail under maven-surefire-plugin:
+      o.a.l.index.TestCheckIndex#testLuceneConstantVersion().  It's safe to
+      @Ignore this test method, since it's just comparing the value of the
+      lucene.version system property (set in the maven-surefire-plugin
+      configuration in the lucene-core POM) against a hard-wired official
+      version (o.a.l.util.Constants.LUCENE_MAIN_VERSION).
+
    4. To remove the maven-build/ directory and its contents, use the following
       command from the top-level directory:
 
