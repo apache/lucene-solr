@@ -37,6 +37,7 @@ public class HunspellDictionary {
 
   static final HunspellWord NOFLAGS = new HunspellWord();
   
+  private static final String ALIAS_KEY = "AF";
   private static final String PREFIX_KEY = "PFX";
   private static final String SUFFIX_KEY = "SFX";
   private static final String FLAG_KEY = "FLAG";
@@ -58,6 +59,9 @@ public class HunspellDictionary {
   private boolean ignoreCase = IGNORE_CASE_DEFAULT;
 
   private final Version version;
+
+  private String[] aliases;
+  private int aliasCount = 0;
 
   /**
    * Creates a new HunspellDictionary containing the information read from the provided InputStreams to hunspell affix
@@ -161,7 +165,9 @@ public class HunspellDictionary {
     BufferedReader reader = new BufferedReader(new InputStreamReader(affixStream, decoder));
     String line = null;
     while ((line = reader.readLine()) != null) {
-      if (line.startsWith(PREFIX_KEY)) {
+      if (line.startsWith(ALIAS_KEY)) {
+        parseAlias(line);
+      } else if (line.startsWith(PREFIX_KEY)) {
         parseAffix(prefixes, line, reader, PREFIX_CONDITION_REGEX_PATTERN);
       } else if (line.startsWith(SUFFIX_KEY)) {
         parseAffix(suffixes, line, reader, SUFFIX_CONDITION_REGEX_PATTERN);
@@ -206,7 +212,13 @@ public class HunspellDictionary {
       
       int flagSep = affixArg.lastIndexOf('/');
       if (flagSep != -1) {
-        char appendFlags[] = flagParsingStrategy.parseFlags(affixArg.substring(flagSep + 1));
+        String flagPart = affixArg.substring(flagSep + 1);
+        
+        if (aliasCount > 0) {
+          flagPart = getAliasValue(Integer.parseInt(flagPart));
+        } 
+        
+        char appendFlags[] = flagParsingStrategy.parseFlags(flagPart);
         Arrays.sort(appendFlags);
         affix.setAppendFlags(appendFlags);
         affix.setAppend(affixArg.substring(0, flagSep));
@@ -330,8 +342,12 @@ public class HunspellDictionary {
         if (end == -1)
           end = line.length();
         
+        String flagPart = line.substring(flagSep + 1, end);
+        if (aliasCount > 0) {
+          flagPart = getAliasValue(Integer.parseInt(flagPart));
+        } 
         
-        wordForm = new HunspellWord(flagParsingStrategy.parseFlags(line.substring(flagSep + 1, end)));
+        wordForm = new HunspellWord(flagParsingStrategy.parseFlags(flagPart));
         Arrays.sort(wordForm.getFlags());
         entry = line.substring(0, flagSep);
         if(ignoreCase) {
@@ -350,6 +366,25 @@ public class HunspellDictionary {
 
   public Version getVersion() {
     return version;
+  }
+
+  private void parseAlias(String line) {
+    String ruleArgs[] = line.split("\\s+");
+    if (aliases == null) {
+      //first line should be the aliases count
+      final int count = Integer.parseInt(ruleArgs[1]);
+      aliases = new String[count];
+    } else {
+      aliases[aliasCount++] = ruleArgs[1];
+    }
+  }
+  
+  private String getAliasValue(int id) {
+    try {
+      return aliases[id - 1];
+    } catch (IndexOutOfBoundsException ex) {
+      throw new IllegalArgumentException("Bad flag alias number:" + id, ex);
+    }
   }
 
   /**

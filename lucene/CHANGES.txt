@@ -883,6 +883,9 @@ New features
 * LUCENE-4043: Added scoring support via score mode for query time joining.
   (Martijn van Groningen, Mike McCandless)
 
+* LUCENE-4079: Added support for aliasing (AF rules) in Hunspell dictionaries
+  (Ludovic Boutros via Chris Male)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
