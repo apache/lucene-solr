@@ -116,7 +116,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
   /** print some useful debugging information about the environment */
   static void printDebuggingInformation() {
     if (classEnvRule != null) {
-      System.err.println("NOTE: test params are: codec=" + Codec.getDefault() +
+      System.err.println("NOTE: test params are: codec=" + classEnvRule.codec +
           ", sim=" + classEnvRule.similarity +
           ", locale=" + classEnvRule.locale +
           ", timezone=" + (classEnvRule.timeZone == null ? "(null)" : classEnvRule.timeZone.getID()));

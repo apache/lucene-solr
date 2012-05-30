@@ -65,6 +65,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
   Locale locale;
   TimeZone timeZone;
   Similarity similarity;
+  Codec codec;
 
   /**
    * @see SuppressCodecs
@@ -154,7 +155,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     
     PREFLEX_IMPERSONATION_IS_ACTIVE = false;
     savedCodec = Codec.getDefault();
-    final Codec codec;
     int randomVal = random.nextInt(10);
     if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2 && !shouldAvoidCodec("Lucene3x"))) { // preflex-only setup
       codec = Codec.forName("Lucene3x");
