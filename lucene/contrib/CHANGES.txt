@@ -33,6 +33,11 @@ Bug Fixes
  * LUCENE-4074: FST Sorter BufferSize creates a negative buffer size due to an
    32 bit signed integer overflow if BufferSize >= 2048MB is passed.
    (Simon Willnauer)
+
+New Features
+
+ * LUCENE-4079: Added support for aliasing (AF rules) in Hunspell dictionaries
+  (Ludovic Boutros via Chris Male)
  
 Tests
  
