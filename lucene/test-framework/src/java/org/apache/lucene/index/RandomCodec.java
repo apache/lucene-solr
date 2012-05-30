@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,6 +53,9 @@ import org.apache.lucene.util._TestUtil;
 public class RandomCodec extends Lucene40Codec {
   /** Shuffled list of postings formats to use for new mappings */
   private List<PostingsFormat> formats = new ArrayList<PostingsFormat>();
+  
+  /** unique set of format names this codec knows about */
+  public Set<String> formatNames = new HashSet<String>();
 
   /** memorized field->postingsformat mappings */
   // note: we have to sync this map even though its just for debugging/toString, 
@@ -109,6 +113,7 @@ public class RandomCodec extends Lucene40Codec {
     for (PostingsFormat p : postings) {
       if (!avoidCodecs.contains(p.getName())) {
         formats.add(p);
+        formatNames.add(p.getName());
       }
     }
   }
