@@ -106,7 +106,7 @@ D. How to use Maven to build Lucene/Solr
    4. To remove the maven-build/ directory and its contents, use the following
       command from the top-level directory:
 
-         and clean-maven-build
+         ant clean-maven-build
 
 
    Some example Maven commands you can use after you perform the above
