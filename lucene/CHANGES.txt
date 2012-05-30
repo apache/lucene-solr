@@ -4147,6 +4147,10 @@ New features
     ValueSource, but takes care when composite (multi-segment) are
     passed to not double RAM usage in the FieldCache.  (Chris
     Hostetter, Mark Miller, Mike McCandless)
+    
+* LUCENE-3523: Added oal.search.spell.WordBreakSpellChecker, which 
+    generates suggestions by combining two or more terms and/or 
+    breaking terms into multiple words.  See Javadocs for usage. (James Dyer)
    
 Optimizations
 
