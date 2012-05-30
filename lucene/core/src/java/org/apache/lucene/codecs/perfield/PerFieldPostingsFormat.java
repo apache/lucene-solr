@@ -17,8 +17,9 @@ package org.apache.lucene.codecs.perfield;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.ServiceLoader; // javadocs
@@ -46,7 +47,7 @@ import org.apache.lucene.util.IOUtils;
  * <p>
  * Files written by each posting format have an additional suffix containing the 
  * format name. For example, in a per-field configuration instead of <tt>_1.prx</tt> 
- * filenames would look like <tt>_1_Lucene40.prx</tt>.
+ * filenames would look like <tt>_1_Lucene40_0.prx</tt>.
  * @see ServiceLoader
  * @lucene.experimental
  */
@@ -55,6 +56,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   public static final String PER_FIELD_NAME = "PerField40";
   
   public static final String PER_FIELD_FORMAT_KEY = PerFieldPostingsFormat.class.getSimpleName() + ".format";
+  public static final String PER_FIELD_SUFFIX_KEY = PerFieldPostingsFormat.class.getSimpleName() + ".suffix";
 
   public PerFieldPostingsFormat() {
     super(PER_FIELD_NAME);
@@ -65,11 +67,22 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       throws IOException {
     return new FieldsWriter(state);
   }
+  
+  static class FieldsConsumerAndSuffix implements Closeable {
+    FieldsConsumer consumer;
+    int suffix;
+    
+    @Override
+    public void close() throws IOException {
+      consumer.close();
+    }
+  }
     
   private class FieldsWriter extends FieldsConsumer {
 
-    private final Map<PostingsFormat,FieldsConsumer> formats = new IdentityHashMap<PostingsFormat,FieldsConsumer>();
-
+    private final Map<PostingsFormat,FieldsConsumerAndSuffix> formats = new HashMap<PostingsFormat,FieldsConsumerAndSuffix>();
+    private final Map<String,Integer> suffixes = new HashMap<String,Integer>();
+    
     private final SegmentWriteState segmentWriteState;
 
     public FieldsWriter(SegmentWriteState state) throws IOException {
@@ -82,26 +95,48 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       if (format == null) {
         throw new IllegalStateException("invalid null PostingsFormat for field=\"" + field.name + "\"");
       }
+      final String formatName = format.getName();
       
-      String previousValue = field.putAttribute(PER_FIELD_FORMAT_KEY, format.getName());
+      String previousValue = field.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
       assert previousValue == null;
-
-      FieldsConsumer consumer = formats.get(format);
+      
+      Integer suffix;
+      
+      FieldsConsumerAndSuffix consumer = formats.get(format);
       if (consumer == null) {
         // First time we are seeing this format; create a new instance
+        
+        // bump the suffix
+        suffix = suffixes.get(formatName);
+        if (suffix == null) {
+          suffix = 0;
+        } else {
+          suffix = suffix + 1;
+        }
+        suffixes.put(formatName, suffix);
+        
         final String segmentSuffix = getFullSegmentSuffix(field.name,
                                                           segmentWriteState.segmentSuffix,
-                                                          format.getName());
-        consumer = format.fieldsConsumer(new SegmentWriteState(segmentWriteState, segmentSuffix));
+                                                          getSuffix(formatName, Integer.toString(suffix)));
+        consumer = new FieldsConsumerAndSuffix();
+        consumer.consumer = format.fieldsConsumer(new SegmentWriteState(segmentWriteState, segmentSuffix));
+        consumer.suffix = suffix;
         formats.put(format, consumer);
+      } else {
+        // we've already seen this format, so just grab its suffix
+        assert suffixes.containsKey(formatName);
+        suffix = consumer.suffix;
       }
+      
+      previousValue = field.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(suffix));
+      assert previousValue == null;
 
       // TODO: we should only provide the "slice" of FIS
       // that this PF actually sees ... then stuff like
       // .hasProx could work correctly?
       // NOTE: .hasProx is already broken in the same way for the non-perfield case,
       // if there is a fieldinfo with prox that has no postings, you get a 0 byte file.
-      return consumer.addField(field);
+      return consumer.consumer.addField(field);
     }
 
     @Override
@@ -109,6 +144,10 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       // Close all subs
       IOUtils.close(formats.values());
     }
+  }
+  
+  static String getSuffix(String formatName, String suffix) {
+    return formatName + "_" + suffix;
   }
 
   static String getFullSegmentSuffix(String fieldName, String outerSegmentSuffix, String segmentSuffix) {
@@ -125,7 +164,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   private class FieldsReader extends FieldsProducer {
 
     private final Map<String,FieldsProducer> fields = new TreeMap<String,FieldsProducer>();
-    private final Map<PostingsFormat,FieldsProducer> formats = new IdentityHashMap<PostingsFormat,FieldsProducer>();
+    private final Map<String,FieldsProducer> formats = new HashMap<String,FieldsProducer>();
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 
@@ -139,11 +178,14 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
             final String formatName = fi.getAttribute(PER_FIELD_FORMAT_KEY);
             if (formatName != null) {
               // null formatName means the field is in fieldInfos, but has no postings!
+              final String suffix = fi.getAttribute(PER_FIELD_SUFFIX_KEY);
+              assert suffix != null;
               PostingsFormat format = PostingsFormat.forName(formatName);
-              if (!formats.containsKey(format)) {
-                formats.put(format, format.fieldsProducer(new SegmentReadState(readState, formatName)));
+              String segmentSuffix = getSuffix(formatName, suffix);
+              if (!formats.containsKey(segmentSuffix)) {
+                formats.put(segmentSuffix, format.fieldsProducer(new SegmentReadState(readState, segmentSuffix)));
               }
-              fields.put(fieldName, formats.get(format));
+              fields.put(fieldName, formats.get(segmentSuffix));
             }
           }
         }
