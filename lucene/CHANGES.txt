@@ -1176,7 +1176,7 @@ API Changes
   using external norms, too.  (Uwe Schindler, Robert Muir)
 
 * LUCENE-3735: PayloadProcessorProvider was changed to return a
-  ReaderPayloadProcessor instead of DirPayloadProcessor. The selction
+  ReaderPayloadProcessor instead of DirPayloadProcessor. The selection
   of the provider to return for the factory is now based on the IndexReader
   to be merged. To mimic the old behaviour, just use IndexReader.directory()
   for choosing the provider by Directory.  (Uwe Schindler)
