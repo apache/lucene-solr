@@ -34,11 +34,9 @@ Bug Fixes
    32 bit signed integer overflow if BufferSize >= 2048MB is passed.
    (Simon Willnauer)
 
-New Features
-
- * LUCENE-4079: Added support for aliasing (AF rules) in Hunspell dictionaries
+ * LUCENE-4079: Fixed loading of Hunspell dictionaries that use aliasing (AF rules)
   (Ludovic Boutros via Chris Male)
- 
+
 Tests
  
  * LUCENE-3919, LUCENE-3969, LUCENE-3990: more thorough testing of analysis 
