@@ -87,11 +87,10 @@ public class RandomCodec extends Lucene40Codec {
     int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
 
-    // TODO: make it possible to specify min/max iterms per block via CL:
-    minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
-    maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
     add(avoidCodecs,
         new Lucene40PostingsFormat(minItemsPerBlock, maxItemsPerBlock),
+        new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
+        // add pulsing again with (usually) different parameters
         new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
         new MockSepPostingsFormat(),
         new MockFixedIntBlockPostingsFormat(_TestUtil.nextInt(random, 1, 2000)),
@@ -100,7 +99,8 @@ public class RandomCodec extends Lucene40Codec {
         new NestedPulsingPostingsFormat(),
         new Lucene40WithOrds(),
         new SimpleTextPostingsFormat(),
-        new MemoryPostingsFormat(random.nextBoolean()));
+        new MemoryPostingsFormat(true),
+        new MemoryPostingsFormat(false));
 
     Collections.shuffle(formats, random);
   }

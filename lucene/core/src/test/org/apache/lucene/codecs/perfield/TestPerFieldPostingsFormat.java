@@ -19,10 +19,12 @@ package org.apache.lucene.codecs.perfield;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
+import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,6 +36,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -263,5 +266,61 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
       writer.close();
     }
     dir.close();
+  }
+  
+  public void testSameCodecDifferentInstance() throws Exception {
+    Codec codec = new Lucene40Codec() {
+      @Override
+      public PostingsFormat getPostingsFormatForField(String field) {
+        if ("id".equals(field)) {
+          return new Pulsing40PostingsFormat(1);
+        } else if ("date".equals(field)) {
+          return new Pulsing40PostingsFormat(1);
+        } else {
+          return super.getPostingsFormatForField(field);
+        }
+      }
+    };
+    doTestMixedPostings(codec);
+  }
+  
+  public void testSameCodecDifferentParams() throws Exception {
+    Codec codec = new Lucene40Codec() {
+      @Override
+      public PostingsFormat getPostingsFormatForField(String field) {
+        if ("id".equals(field)) {
+          return new Pulsing40PostingsFormat(1);
+        } else if ("date".equals(field)) {
+          return new Pulsing40PostingsFormat(2);
+        } else {
+          return super.getPostingsFormatForField(field);
+        }
+      }
+    };
+    doTestMixedPostings(codec);
+  }
+  
+  private void doTestMixedPostings(Codec codec) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(codec);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    // turn on vectors for the checkindex cross-check
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorOffsets(true);
+    ft.setStoreTermVectorPositions(true);
+    Field idField = new Field("id", "", ft);
+    Field dateField = new Field("date", "", ft);
+    doc.add(idField);
+    doc.add(dateField);
+    for (int i = 0; i < 100; i++) {
+      idField.setStringValue(Integer.toString(random().nextInt(50)));
+      dateField.setStringValue(Integer.toString(random().nextInt(100)));
+      iw.addDocument(doc);
+    }
+    iw.close();
+    dir.close(); // checkindex
   }
 }
