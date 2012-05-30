@@ -42,6 +42,11 @@ public class WordBreakSpellChecker {
   
   public static final Term SEPARATOR_TERM = new Term("", "");
   
+  /**
+   * <p>
+   * Determines the order to list word break suggestions
+   * </p>
+   */
   public enum BreakSuggestionSortMethod {
     /**
      * <p>
