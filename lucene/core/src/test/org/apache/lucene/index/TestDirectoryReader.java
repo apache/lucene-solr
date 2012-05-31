@@ -1087,5 +1087,60 @@ public void testFilesOpenClose() throws IOException {
     r.close();
     dir.close();
   }
+  
+  /**
+   * @deprecated just to ensure IndexReader static methods work
+   */
+  @Deprecated
+  public void testBackwards() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())));
+    Document doc = new Document();
+    doc.add(newField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", TextField.TYPE_UNSTORED));
+    doc.add(newField("number", "0 1 2 3 4 5 6 7 8 9", TextField.TYPE_UNSTORED));
+    writer.addDocument(doc);
+
+    // open(IndexWriter, boolean)
+    DirectoryReader r = IndexReader.open(writer, true);
+    assertEquals(1, r.docFreq(new Term("field", "f")));
+    r.close();
+    writer.addDocument(doc);
+    writer.close();
+
+    // open(Directory)
+    r = IndexReader.open(dir);
+    assertEquals(2, r.docFreq(new Term("field", "f")));
+    r.close();
+    
+    // open(IndexCommit)
+    List<IndexCommit> commits = DirectoryReader.listCommits(dir);
+    assertEquals(1, commits.size());
+    r = IndexReader.open(commits.get(0));
+    assertEquals(2, r.docFreq(new Term("field", "f")));
+    r.close();
+    
+    // open(Directory, int)
+    r = IndexReader.open(dir, -1);
+    try {
+      r.docFreq(new Term("field", "f"));
+      fail("did not hit expected exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }    
+    assertEquals(-1, ((SegmentReader) r.getSequentialSubReaders()[0]).getTermInfosIndexDivisor());
+    r.close();
+       
+    // open(IndexCommit, int)
+    r = IndexReader.open(commits.get(0), -1);
+    try {
+      r.docFreq(new Term("field", "f"));
+      fail("did not hit expected exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }    
+    assertEquals(-1, ((SegmentReader) r.getSequentialSubReaders()[0]).getTermInfosIndexDivisor());
+    r.close();
+    dir.close();
+  }
 
 }
