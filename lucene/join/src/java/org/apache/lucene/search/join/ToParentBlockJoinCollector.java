@@ -108,6 +108,9 @@ public class ToParentBlockJoinCollector extends Collector {
     // only collector
     this.sort = sort;
     this.trackMaxScore = trackMaxScore;
+    if (trackMaxScore) {
+      maxScore = Float.MIN_VALUE;
+    }
     this.trackScores = trackScores;
     this.numParentHits = numParentHits;
     queue = FieldValueHitQueue.create(sort.getSort(), numParentHits);
@@ -146,9 +149,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
     if (trackMaxScore) {
       score = scorer.score();
-      if (score > maxScore) {
-        maxScore = score;
-      }
+      maxScore = Math.max(maxScore, score);
     }
 
     // TODO: we could sweep all joinScorers here and
@@ -202,7 +203,11 @@ public class ToParentBlockJoinCollector extends Collector {
       for (int i = 0; i < comparators.length; i++) {
         comparators[i].copy(comparatorSlot, parentDoc);
       }
-      //System.out.println("  startup: new OG doc=" + (docBase+parentDoc));
+      //System.out.println("  startup: new OG doc=" +
+      //(docBase+parentDoc));
+      if (!trackMaxScore && trackScores) {
+        score = scorer.score();
+      }
       final OneGroup og = new OneGroup(comparatorSlot, docBase+parentDoc, score, joinScorers.length, trackScores);
       og.readerContext = currentReaderContext;
       copyGroups(og);
@@ -431,7 +436,8 @@ public class ToParentBlockJoinCollector extends Collector {
 
       final TopDocs topDocs = collector.topDocs(withinGroupOffset, maxDocsPerGroup);
 
-      groups[groupIDX-offset] = new GroupDocs<Integer>(topDocs.getMaxScore(),
+      groups[groupIDX-offset] = new GroupDocs<Integer>(og.score,
+                                                       topDocs.getMaxScore(),
                                                        og.counts[slot],
                                                        topDocs.scoreDocs,
                                                        og.doc,
@@ -440,7 +446,15 @@ public class ToParentBlockJoinCollector extends Collector {
 
     return new TopGroups<Integer>(new TopGroups<Integer>(sort.getSort(),
                                                          withinGroupSort == null ? null : withinGroupSort.getSort(),
-                                                         0, totalGroupedHitCount, groups),
+                                                         0, totalGroupedHitCount, groups, maxScore),
                                   totalHitCount);
+  }
+
+  /** Returns the highest score across all collected parent
+   *  hits, as long as <code>trackMaxScores=true</code> was passed {@link
+   *  #ToParentBlockJoinCollector on construction}.  Else,
+   *  this returns <code>Float.NaN</code> */
+  public float getMaxScore() {
+    return maxScore;
   }
 }

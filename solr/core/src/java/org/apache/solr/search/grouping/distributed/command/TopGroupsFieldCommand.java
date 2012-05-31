@@ -135,7 +135,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   @SuppressWarnings("unchecked")
   public TopGroups<BytesRef> result() {
     if (firstPhaseGroups.isEmpty()) {
-      return new TopGroups<BytesRef>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0]);
+      return new TopGroups<BytesRef>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
     }
 
     return secondPassCollector.getTopGroups(0);

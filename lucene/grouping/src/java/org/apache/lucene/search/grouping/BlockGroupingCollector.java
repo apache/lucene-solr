@@ -307,6 +307,8 @@ public class BlockGroupingCollector extends Collector {
 
     final FakeScorer fakeScorer = new FakeScorer();
 
+    float maxScore = Float.MIN_VALUE;
+
     @SuppressWarnings({"unchecked","rawtypes"})
     final GroupDocs<Object>[] groups = new GroupDocs[groupQueue.size() - groupOffset];
     for(int downTo=groupQueue.size()-groupOffset-1;downTo>=0;downTo--) {
@@ -351,11 +353,15 @@ public class BlockGroupingCollector extends Collector {
 
       final TopDocs topDocs = collector.topDocs(withinGroupOffset, maxDocsPerGroup);
 
-      groups[downTo] = new GroupDocs<Object>(topDocs.getMaxScore(),
-                                     og.count,
-                                     topDocs.scoreDocs,
-                                     null,
-                                     groupSortValues);
+      // TODO: we could aggregate scores across children
+      // by Sum/Avg instead of passing NaN:
+      groups[downTo] = new GroupDocs<Object>(Float.NaN,
+                                             topDocs.getMaxScore(),
+                                             og.count,
+                                             topDocs.scoreDocs,
+                                             null,
+                                             groupSortValues);
+      maxScore = Math.max(maxScore, topDocs.getMaxScore());
     }
 
     /*
@@ -368,7 +374,7 @@ public class BlockGroupingCollector extends Collector {
 
     return new TopGroups<Object>(new TopGroups<Object>(groupSort.getSort(),
                                        withinGroupSort == null ? null : withinGroupSort.getSort(),
-                                       totalHitCount, totalGroupedHitCount, groups),
+                                       totalHitCount, totalGroupedHitCount, groups, maxScore),
                          totalGroupCount);
   }
 

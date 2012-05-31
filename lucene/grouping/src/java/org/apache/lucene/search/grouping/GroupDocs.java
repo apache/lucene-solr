@@ -30,6 +30,10 @@ public class GroupDocs<GROUP_VALUE_TYPE> {
   /** Max score in this group */
   public final float maxScore;
 
+  /** Overall aggregated score of this group (currently only
+   *  set by join queries). */
+  public final float score;
+
   /** Hits; this may be {@link
    * org.apache.lucene.search.FieldDoc} instances if the
    * withinGroupSort sorted by fields. */
@@ -42,11 +46,13 @@ public class GroupDocs<GROUP_VALUE_TYPE> {
    *  AbstractFirstPassGroupingCollector}. */
   public final Object[] groupSortValues;
 
-  public GroupDocs(float maxScore,
+  public GroupDocs(float score,
+                   float maxScore,
                    int totalHits,
                    ScoreDoc[] scoreDocs,
                    GROUP_VALUE_TYPE groupValue,
                    Object[] groupSortValues) {
+    this.score = score;
     this.maxScore = maxScore;
     this.totalHits = totalHits;
     this.scoreDocs = scoreDocs;

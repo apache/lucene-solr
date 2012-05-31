@@ -46,13 +46,18 @@ public class TopGroups<GROUP_VALUE_TYPE> {
   /** How docs are sorted within each group */
   public final SortField[] withinGroupSort;
 
-  public TopGroups(SortField[] groupSort, SortField[] withinGroupSort, int totalHitCount, int totalGroupedHitCount, GroupDocs<GROUP_VALUE_TYPE>[] groups) {
+  /** Highest score across all hits, or
+   *  <code>Float.NaN</code> if scores were not computed. */
+  public final float maxScore;
+
+  public TopGroups(SortField[] groupSort, SortField[] withinGroupSort, int totalHitCount, int totalGroupedHitCount, GroupDocs<GROUP_VALUE_TYPE>[] groups, float maxScore) {
     this.groupSort = groupSort;
     this.withinGroupSort = withinGroupSort;
     this.totalHitCount = totalHitCount;
     this.totalGroupedHitCount = totalGroupedHitCount;
     this.groups = groups;
     this.totalGroupCount = null;
+    this.maxScore = maxScore;
   }
 
   public TopGroups(TopGroups<GROUP_VALUE_TYPE> oldTopGroups, Integer totalGroupCount) {
@@ -61,8 +66,19 @@ public class TopGroups<GROUP_VALUE_TYPE> {
     this.totalHitCount = oldTopGroups.totalHitCount;
     this.totalGroupedHitCount = oldTopGroups.totalGroupedHitCount;
     this.groups = oldTopGroups.groups;
+    this.maxScore = oldTopGroups.maxScore;
     this.totalGroupCount = totalGroupCount;
   }
+
+  /** How the GroupDocs score (if any) should be merged. */
+  public enum ScoreMergeMode {
+    /** Set score to Float.NaN */
+    None,     
+    /* Sum score across all shards for this group. */
+    Total,
+    /* Avg score across all shards for this group. */
+    Avg,
+  };
 
   /** Merges an array of TopGroups, for example obtained
    *  from the second-pass collector across multiple
@@ -81,7 +97,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
    * <b>NOTE</b>: the topDocs in each GroupDocs is actually
    * an instance of TopDocsAndShards
    */
-  public static <T> TopGroups<T> merge(TopGroups<T>[] shardGroups, Sort groupSort, Sort docSort, int docOffset, int docTopN)
+  public static <T> TopGroups<T> merge(TopGroups<T>[] shardGroups, Sort groupSort, Sort docSort, int docOffset, int docTopN, ScoreMergeMode scoreMergeMode)
     throws IOException {
 
     //System.out.println("TopGroups.merge");
@@ -115,12 +131,14 @@ public class TopGroups<GROUP_VALUE_TYPE> {
     final GroupDocs<T>[] mergedGroupDocs = new GroupDocs[numGroups];
 
     final TopDocs[] shardTopDocs = new TopDocs[shardGroups.length];
+    float totalMaxScore = Float.MIN_VALUE;
 
     for(int groupIDX=0;groupIDX<numGroups;groupIDX++) {
       final T groupValue = shardGroups[0].groups[groupIDX].groupValue;
       //System.out.println("  merge groupValue=" + groupValue + " sortValues=" + Arrays.toString(shardGroups[0].groups[groupIDX].groupSortValues));
       float maxScore = Float.MIN_VALUE;
       int totalHits = 0;
+      double scoreSum = 0.0;
       for(int shardIDX=0;shardIDX<shardGroups.length;shardIDX++) {
         //System.out.println("    shard=" + shardIDX);
         final TopGroups<T> shard = shardGroups[shardIDX];
@@ -144,6 +162,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
                                              shardGroupDocs.maxScore);
         maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
         totalHits += shardGroupDocs.totalHits;
+        scoreSum += shardGroupDocs.score;
       }
 
       final TopDocs mergedTopDocs = TopDocs.merge(docSort, docOffset + docTopN, shardTopDocs);
@@ -162,12 +181,34 @@ public class TopGroups<GROUP_VALUE_TYPE> {
                          0,
                          mergedTopDocs.scoreDocs.length - docOffset);
       }
+
+      final float groupScore;
+      switch(scoreMergeMode) {
+      case None:
+        groupScore = Float.NaN;
+        break;
+      case Avg:
+        if (totalHits > 0) {
+          groupScore = (float) (scoreSum / totalHits);
+        } else {
+          groupScore = Float.NaN;
+        }
+        break;
+      case Total:
+        groupScore = (float) scoreSum;
+        break;
+      default:
+        throw new IllegalArgumentException("can't handle ScoreMergeMode " + scoreMergeMode);
+      }
+        
       //System.out.println("SHARDS=" + Arrays.toString(mergedTopDocs.shardIndex));
-      mergedGroupDocs[groupIDX] = new GroupDocs<T>(maxScore,
+      mergedGroupDocs[groupIDX] = new GroupDocs<T>(groupScore,
+                                                   maxScore,
                                                    totalHits,
                                                    mergedScoreDocs,
                                                    groupValue,
                                                    shardGroups[0].groups[groupIDX].groupSortValues);
+      totalMaxScore = Math.max(totalMaxScore, maxScore);
     }
 
     if (totalGroupCount != null) {
@@ -175,14 +216,16 @@ public class TopGroups<GROUP_VALUE_TYPE> {
                               docSort == null ? null : docSort.getSort(),
                               totalHitCount,
                               totalGroupedHitCount,
-                              mergedGroupDocs);
+                              mergedGroupDocs,
+                              totalMaxScore);
       return new TopGroups<T>(result, totalGroupCount);
     } else {
       return new TopGroups<T>(groupSort.getSort(),
                               docSort == null ? null : docSort.getSort(),
                               totalHitCount,
                               totalGroupedHitCount,
-                              mergedGroupDocs);
+                              mergedGroupDocs,
+                              totalMaxScore);
     }
   }
 }

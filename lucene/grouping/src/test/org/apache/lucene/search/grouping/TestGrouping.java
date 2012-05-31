@@ -129,10 +129,11 @@ public class TestGrouping extends LuceneTestCase {
     final AbstractFirstPassGroupingCollector<?> c1 = createRandomFirstPassCollector(groupField, groupSort, 10, canUseIDV);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
 
-    final AbstractSecondPassGroupingCollector<?> c2 = createSecondPassCollector(c1, groupField, groupSort, null, 0, 5, true, false, true);
+    final AbstractSecondPassGroupingCollector<?> c2 = createSecondPassCollector(c1, groupField, groupSort, null, 0, 5, true, true, true);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c2);
 
     final TopGroups<?> groups = c2.getTopGroups(0);
+    assertFalse(Float.isNaN(groups.maxScore));
 
     assertEquals(7, groups.totalHitCount);
     assertEquals(7, groups.totalGroupedHitCount);
@@ -341,9 +342,9 @@ public class TestGrouping extends LuceneTestCase {
       List<GroupDocs<BytesRef>> groups = new ArrayList<GroupDocs<BytesRef>>(mvalTopGroups.groups.length);
       for (GroupDocs<MutableValue> mvalGd : mvalTopGroups.groups) {
         BytesRef groupValue = mvalGd.groupValue.exists() ? ((MutableValueStr) mvalGd.groupValue).value : null;
-        groups.add(new GroupDocs<BytesRef>(mvalGd.maxScore, mvalGd.totalHits, mvalGd.scoreDocs, groupValue, mvalGd.groupSortValues));
+        groups.add(new GroupDocs<BytesRef>(Float.NaN, mvalGd.maxScore, mvalGd.totalHits, mvalGd.scoreDocs, groupValue, mvalGd.groupSortValues));
       }
-      return new TopGroups<BytesRef>(mvalTopGroups.groupSort, mvalTopGroups.withinGroupSort, mvalTopGroups.totalHitCount, mvalTopGroups.totalGroupedHitCount, groups.toArray(new GroupDocs[groups.size()]));
+      return new TopGroups<BytesRef>(mvalTopGroups.groupSort, mvalTopGroups.withinGroupSort, mvalTopGroups.totalHitCount, mvalTopGroups.totalGroupedHitCount, groups.toArray(new GroupDocs[groups.size()]), Float.NaN);
     } else if (DVSecondPassGroupingCollector.class.isAssignableFrom(c.getClass())) {
       return ((DVSecondPassGroupingCollector<BytesRef>) c).getTopGroups(withinGroupOffset);
     }
@@ -541,20 +542,21 @@ public class TestGrouping extends LuceneTestCase {
         hits = new ScoreDoc[0];
       }
 
-      result[idx-groupOffset] = new GroupDocs<BytesRef>(0.0f,
-                                              docs.size(),
-                                              hits,
-                                              group,
-                                              fillFields ? sortedGroupFields.get(idx) : null);
+      result[idx-groupOffset] = new GroupDocs<BytesRef>(Float.NaN,
+                                                        0.0f,
+                                                        docs.size(),
+                                                        hits,
+                                                        group,
+                                                        fillFields ? sortedGroupFields.get(idx) : null);
     }
 
     if (doAllGroups) {
       return new TopGroups<BytesRef>(
-          new TopGroups<BytesRef>(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result),
-          knownGroups.size()
+                                     new TopGroups<BytesRef>(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result, Float.NaN),
+                                     knownGroups.size()
       );
     } else {
-      return new TopGroups<BytesRef>(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result);
+      return new TopGroups<BytesRef>(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result, Float.NaN);
     }
   }
 
@@ -1238,7 +1240,7 @@ public class TestGrouping extends LuceneTestCase {
         }
       }
 
-      TopGroups<BytesRef> mergedGroups = TopGroups.merge(shardTopGroups, groupSort, docSort, docOffset, topNDocs);
+      TopGroups<BytesRef> mergedGroups = TopGroups.merge(shardTopGroups, groupSort, docSort, docOffset, topNDocs, TopGroups.ScoreMergeMode.None);
       if (VERBOSE) {
         System.out.println(" " + mergedGroups.groups.length + " merged groups:");
         for(GroupDocs<BytesRef> group : mergedGroups.groups) {
