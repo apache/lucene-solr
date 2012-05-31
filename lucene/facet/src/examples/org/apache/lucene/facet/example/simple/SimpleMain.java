@@ -2,6 +2,7 @@ package org.apache.lucene.facet.example.simple;
 
 import java.util.List;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -57,7 +58,7 @@ public class SimpleMain {
 
     // open readers
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-    IndexReader indexReader = IndexReader.open(indexDir);
+    IndexReader indexReader = DirectoryReader.open(indexDir);
 
     ExampleUtils.log("search the sample documents...");
     List<FacetResult> facetRes = SimpleSearcher.searchWithFacets(indexReader, taxo);
@@ -82,7 +83,7 @@ public class SimpleMain {
 
     // open readers
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-    IndexReader indexReader = IndexReader.open(indexDir);
+    IndexReader indexReader = DirectoryReader.open(indexDir);
 
     ExampleUtils.log("search the sample documents...");
     List<FacetResult> facetRes = SimpleSearcher.searchWithDrillDown(indexReader, taxo);

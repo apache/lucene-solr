@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -46,7 +47,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
       }
     }
 
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(new Term("all", "test")),
         new FieldValueFilter("some", true), docs);
@@ -73,7 +74,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
         numDocsWithValue++;
       }
     }
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(new Term("all", "test")),
         new FieldValueFilter("some"), docs);

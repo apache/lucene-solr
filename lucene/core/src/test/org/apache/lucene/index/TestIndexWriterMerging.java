@@ -80,7 +80,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
   private boolean verifyIndex(Directory directory, int startAt) throws IOException
   {
     boolean fail = false;
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
 
     int max = reader.maxDoc();
     for (int i = 0; i < max; i++)
@@ -149,7 +149,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     }
     writer.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = DirectoryReader.open(dir);
     assertEquals(10, ir.maxDoc());
     assertEquals(10, ir.numDocs());
     ir.close();
@@ -161,7 +161,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     writer.deleteDocuments(new Term("id", "7"));
     writer.close();
     
-    ir = IndexReader.open(dir);
+    ir = DirectoryReader.open(dir);
     assertEquals(8, ir.numDocs());
     ir.close();
 
@@ -171,7 +171,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     writer.forceMergeDeletes();
     assertEquals(8, writer.numDocs());
     writer.close();
-    ir = IndexReader.open(dir);
+    ir = DirectoryReader.open(dir);
     assertEquals(8, ir.maxDoc());
     assertEquals(8, ir.numDocs());
     ir.close();
@@ -212,7 +212,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     }
     writer.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = DirectoryReader.open(dir);
     assertEquals(98, ir.maxDoc());
     assertEquals(98, ir.numDocs());
     ir.close();
@@ -225,7 +225,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     }
     writer.close();
     
-    ir = IndexReader.open(dir);
+    ir = DirectoryReader.open(dir);
     assertEquals(49, ir.numDocs());
     ir.close();
 
@@ -237,7 +237,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(49, writer.numDocs());
     writer.forceMergeDeletes();
     writer.close();
-    ir = IndexReader.open(dir);
+    ir = DirectoryReader.open(dir);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
     ir.close();
@@ -278,7 +278,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     }
     writer.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = DirectoryReader.open(dir);
     assertEquals(98, ir.maxDoc());
     assertEquals(98, ir.numDocs());
     ir.close();
@@ -290,7 +290,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       writer.deleteDocuments(new Term("id", "" + i));
     }
     writer.close();
-    ir = IndexReader.open(dir);
+    ir = DirectoryReader.open(dir);
     assertEquals(49, ir.numDocs());
     ir.close();
 
@@ -301,7 +301,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     );
     writer.forceMergeDeletes(false);
     writer.close();
-    ir = IndexReader.open(dir);
+    ir = DirectoryReader.open(dir);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
     ir.close();
@@ -438,7 +438,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
         t1.join();
 
         // Make sure reader can read
-        IndexReader reader = IndexReader.open(directory);
+        IndexReader reader = DirectoryReader.open(directory);
         reader.close();
 
         // Reopen

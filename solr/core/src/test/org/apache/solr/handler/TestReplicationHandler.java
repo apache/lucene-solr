@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -906,7 +907,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       assertEquals(1, files.length);
       snapDir[i] = files[0];
       Directory dir = new SimpleFSDirectory(snapDir[i].getAbsoluteFile());
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = DirectoryReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(reader);
       TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
       assertEquals(nDocs, hits.totalHits);

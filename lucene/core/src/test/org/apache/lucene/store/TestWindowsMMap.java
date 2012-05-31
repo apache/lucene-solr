@@ -25,6 +25,7 @@ import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -76,7 +77,7 @@ public class TestWindowsMMap extends LuceneTestCase {
         TEST_VERSION_CURRENT, analyzer)
         .setOpenMode(OpenMode.CREATE));
     writer.commit();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     
     int num = atLeast(1000);

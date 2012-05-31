@@ -29,7 +29,7 @@ import java.io.Reader;
 
 /**
  * <p>
- *   Filters {@link KeywordTokenizer} with {@link ICUCollationKeyFilter}.
+ *   Configures {@link KeywordTokenizer} with {@link ICUCollationAttributeFactory}.
  * <p>
  *   Converts the token into its {@link com.ibm.icu.text.CollationKey}, and
  *   then encodes the CollationKey either directly or with 

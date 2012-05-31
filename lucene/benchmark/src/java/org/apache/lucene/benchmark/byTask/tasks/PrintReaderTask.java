@@ -18,6 +18,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
@@ -47,9 +48,9 @@ public class PrintReaderTask extends PerfTask {
     Directory dir = getRunData().getDirectory();
     IndexReader r = null;
     if (userData == null) 
-      r = IndexReader.open(dir);
+      r = DirectoryReader.open(dir);
     else
-      r = IndexReader.open(OpenReaderTask.findIndexCommit(dir, userData));
+      r = DirectoryReader.open(OpenReaderTask.findIndexCommit(dir, userData));
     System.out.println("--> numDocs:"+r.numDocs()+" dels:"+r.numDeletedDocs());
     r.close();
     return 1;

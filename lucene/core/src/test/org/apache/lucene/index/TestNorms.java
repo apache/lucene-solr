@@ -95,7 +95,7 @@ public class TestNorms extends LuceneTestCase {
   public void testMaxByteNorms() throws IOException {
     Directory dir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir, true);
-    AtomicReader open = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
+    AtomicReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     DocValues normValues = open.normValues(byteTestField);
     assertNotNull(normValues);
     Source source = normValues.getSource();
@@ -126,7 +126,7 @@ public class TestNorms extends LuceneTestCase {
     boolean secondWriteNorm = random().nextBoolean();
     buildIndex(otherDir, secondWriteNorm);
 
-    AtomicReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(otherDir));
+    AtomicReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(otherDir));
     FieldInfos fieldInfos = reader.getFieldInfos();
     FieldInfo fieldInfo = fieldInfos.fieldInfo(byteTestField);
     assertFalse(fieldInfo.omitsNorms());

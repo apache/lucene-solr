@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.DisjunctionMaxQuery;
@@ -76,7 +77,7 @@ public class TestParser extends LuceneTestCase {
     }
     d.close();
     writer.close();
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
 
   }

@@ -28,6 +28,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -100,7 +101,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     } finally {
       indexWriter.close();
     }
-    final IndexReader indexReader = IndexReader.open(directory);
+    final IndexReader indexReader = DirectoryReader.open(directory);
     assertEquals(1, indexReader.numDocs());
     final IndexSearcher indexSearcher = newSearcher(indexReader);
     try {
@@ -145,7 +146,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     } finally {
       indexWriter.close();
     }
-    final IndexReader indexReader = IndexReader.open(directory);
+    final IndexReader indexReader = DirectoryReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
@@ -189,7 +190,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     } finally {
       indexWriter.close();
     }
-    final IndexReader indexReader = IndexReader.open(directory);
+    final IndexReader indexReader = DirectoryReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
@@ -234,7 +235,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     } finally {
       indexWriter.close();
     }
-    final IndexReader indexReader = IndexReader.open(directory);
+    final IndexReader indexReader = DirectoryReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);

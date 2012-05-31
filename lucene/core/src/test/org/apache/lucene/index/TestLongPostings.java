@@ -323,7 +323,7 @@ public class TestLongPostings extends LuceneTestCase {
       r = riw.getReader();
       riw.close();
     } else {
-      r = IndexReader.open(dir);
+      r = DirectoryReader.open(dir);
     }
 
     /*

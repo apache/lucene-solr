@@ -433,7 +433,7 @@ public class TestAddIndexes extends LuceneTestCase {
       writer.deleteDocuments(new Term("id", "" + i));
     }
     writer.close();
-    IndexReader reader = IndexReader.open(aux);
+    IndexReader reader = DirectoryReader.open(aux);
     assertEquals(10, reader.numDocs());
     reader.close();
 
@@ -485,7 +485,7 @@ public class TestAddIndexes extends LuceneTestCase {
       writer.deleteDocuments(new Term("id", "" + i));
     }
     writer.close();
-    IndexReader reader = IndexReader.open(aux);
+    IndexReader reader = DirectoryReader.open(aux);
     assertEquals(3, reader.numDocs());
     reader.close();
 
@@ -496,7 +496,7 @@ public class TestAddIndexes extends LuceneTestCase {
       writer.deleteDocuments(new Term("id", "" + i));
     }
     writer.close();
-    reader = IndexReader.open(aux2);
+    reader = DirectoryReader.open(aux2);
     assertEquals(22, reader.numDocs());
     reader.close();
 
@@ -541,7 +541,7 @@ public class TestAddIndexes extends LuceneTestCase {
   }
 
   private void verifyNumDocs(Directory dir, int numDocs) throws IOException {
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     assertEquals(numDocs, reader.maxDoc());
     assertEquals(numDocs, reader.numDocs());
     reader.close();
@@ -549,7 +549,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
   private void verifyTermDocs(Directory dir, Term term, int numDocs)
       throws IOException {
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     DocsEnum docsEnum = _TestUtil.docs(random(), reader, term.field, term.bytes, null, null, false);
     int count = 0;
     while (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
@@ -687,7 +687,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
       readers = new IndexReader[NUM_COPY];
       for(int i=0;i<NUM_COPY;i++)
-        readers[i] = IndexReader.open(dir);
+        readers[i] = DirectoryReader.open(dir);
     }
 
     void launchThreads(final int numIter) {
@@ -813,7 +813,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     assertTrue("found unexpected failures: " + c.failures, c.failures.isEmpty());
 
-    IndexReader reader = IndexReader.open(c.dir2);
+    IndexReader reader = DirectoryReader.open(c.dir2);
     assertEquals(expectedNumDocs, reader.numDocs());
     reader.close();
 
@@ -984,7 +984,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     // Now delete the document
     writer.deleteDocuments(new Term("id", "myid"));
-    IndexReader r = IndexReader.open(dirs[1]);
+    IndexReader r = DirectoryReader.open(dirs[1]);
     try {
       writer.addIndexes(r);
     } finally {
@@ -1103,7 +1103,7 @@ public class TestAddIndexes extends LuceneTestCase {
       w.close();
     }
     
-    IndexReader[] readers = new IndexReader[] { IndexReader.open(dirs[0]), IndexReader.open(dirs[1]) };
+    IndexReader[] readers = new IndexReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
     
     Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
@@ -1199,14 +1199,14 @@ public class TestAddIndexes extends LuceneTestCase {
         // expected
       }
       w.close();
-      IndexReader open = IndexReader.open(dir);
+      IndexReader open = DirectoryReader.open(dir);
       assertEquals(0, open.numDocs());
       open.close();
       dir.close();
     }
 
     try {
-      IndexReader.open(toAdd);
+      DirectoryReader.open(toAdd);
       fail("no such codec");
     } catch (IllegalArgumentException ex) {
       // expected

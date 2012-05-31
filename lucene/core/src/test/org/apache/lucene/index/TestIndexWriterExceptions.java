@@ -255,7 +255,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
 
     // Confirm that when doc hits exception partway through tokenization, it's deleted:
-    IndexReader r2 = IndexReader.open(dir);
+    IndexReader r2 = DirectoryReader.open(dir);
     final int count = r2.docFreq(new Term("content4", "aaa"));
     final int count2 = r2.docFreq(new Term("content4", "ddd"));
     assertEquals(count, count2);
@@ -301,7 +301,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
 
     // Confirm that when doc hits exception partway through tokenization, it's deleted:
-    IndexReader r2 = IndexReader.open(dir);
+    IndexReader r2 = DirectoryReader.open(dir);
     final int count = r2.docFreq(new Term("content4", "aaa"));
     final int count2 = r2.docFreq(new Term("content4", "ddd"));
     assertEquals(count, count2);
@@ -495,7 +495,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     writer.addDocument(doc);
 
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     final Term t = new Term("content", "aa");
     assertEquals(3, reader.docFreq(t));
 
@@ -577,7 +577,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
     assertTrue(hitError);
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     assertEquals(198, reader.docFreq(new Term("content", "aa")));
     reader.close();
     dir.close();
@@ -632,7 +632,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: open reader");
       }
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = DirectoryReader.open(dir);
       if (i == 0) { 
         int expected = 5;
         assertEquals(expected, reader.docFreq(new Term("contents", "here")));
@@ -661,7 +661,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       writer.forceMerge(1);
       writer.close();
 
-      reader = IndexReader.open(dir);
+      reader = DirectoryReader.open(dir);
       int expected = 19+(1-i)*2;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
@@ -747,7 +747,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         writer.close();
       }
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = DirectoryReader.open(dir);
       int expected = (3+(1-i)*2)*NUM_THREAD*NUM_ITER;
       assertEquals("i=" + i, expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
@@ -775,7 +775,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       writer.forceMerge(1);
       writer.close();
 
-      reader = IndexReader.open(dir);
+      reader = DirectoryReader.open(dir);
       expected += 17-NUM_THREAD*NUM_ITER;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
@@ -850,7 +850,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     failure.clearDoFail();
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     assertEquals(23, reader.numDocs());
     reader.close();
     dir.close();
@@ -1063,7 +1063,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     IndexReader reader = null;
     try {
-      reader = IndexReader.open(dir);
+      reader = DirectoryReader.open(dir);
     } catch (IOException e) {
       e.printStackTrace(System.out);
       fail("segmentInfos failed to retry fallback to correct segments_N file");
@@ -1110,7 +1110,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       IndexReader reader = null;
       try {
-        reader = IndexReader.open(dir);
+        reader = DirectoryReader.open(dir);
         fail("reader did not hit IOException on opening a corrupt index");
       } catch (Exception e) {
       }
@@ -1159,7 +1159,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     IndexReader reader = null;
     try {
-      reader = IndexReader.open(dir);
+      reader = DirectoryReader.open(dir);
       fail("reader did not hit IOException on opening a corrupt index");
     } catch (Exception e) {
     }
@@ -1210,7 +1210,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       IndexReader reader = null;
       try {
-        reader = IndexReader.open(dir);
+        reader = DirectoryReader.open(dir);
       } catch (Exception e) {
         fail("reader failed to open on a crashed index");
       }
@@ -1286,7 +1286,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         document.add(new Field("field", "a field", TextField.TYPE_STORED));
         w.addDocument(document);
         w.close();
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader reader = DirectoryReader.open(dir);
         assertTrue(reader.numDocs() > 0);
         SegmentInfos sis = new SegmentInfos();
         sis.read(dir);

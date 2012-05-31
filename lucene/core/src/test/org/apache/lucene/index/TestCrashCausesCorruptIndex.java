@@ -121,7 +121,7 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
    */
   private void searchForFleas(final int expectedTotalHits) throws IOException {
     Directory realDirectory = newFSDirectory(path);
-    IndexReader indexReader = IndexReader.open(realDirectory);
+    IndexReader indexReader = DirectoryReader.open(realDirectory);
     IndexSearcher indexSearcher = newSearcher(indexReader);
     TopDocs topDocs = indexSearcher.search(new TermQuery(new Term(TEXT_FIELD, "fleas")), 10);
     assertNotNull(topDocs);

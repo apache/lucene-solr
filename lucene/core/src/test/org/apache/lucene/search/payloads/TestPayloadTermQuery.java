@@ -33,6 +33,7 @@ import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Norm;
@@ -230,7 +231,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
             new MaxPayloadFunction(), false);
 
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher theSearcher = new IndexSearcher(reader);
     theSearcher.setSimilarity(new FullSimilarity());
     TopDocs hits = searcher.search(query, null, 100);

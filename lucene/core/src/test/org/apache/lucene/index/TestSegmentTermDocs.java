@@ -131,7 +131,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
     
-    IndexReader reader = IndexReader.open(dir, indexDivisor);
+    IndexReader reader = DirectoryReader.open(dir, indexDivisor);
 
     DocsEnum tdocs = _TestUtil.docs(random(), reader,
                                     ta.field(),

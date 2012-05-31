@@ -20,6 +20,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -53,7 +54,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
   }
 
   @Override

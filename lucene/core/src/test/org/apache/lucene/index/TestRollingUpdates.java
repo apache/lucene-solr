@@ -110,7 +110,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       w.close();
     }
 
-    IndexReader open = IndexReader.open(dir);
+    IndexReader open = DirectoryReader.open(dir);
     assertEquals(1, open.numDocs());
     open.close();
     docs.close();
@@ -138,7 +138,7 @@ public class TestRollingUpdates extends LuceneTestCase {
           writer.updateDocument(new Term("id", "test"), doc);
           if (random().nextInt(3) == 0) {
             if (open == null) {
-              open = IndexReader.open(writer, true);
+              open = DirectoryReader.open(writer, true);
             }
             DirectoryReader reader = DirectoryReader.openIfChanged(open);
             if (reader != null) {

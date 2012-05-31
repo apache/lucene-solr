@@ -340,8 +340,9 @@ public class TestCodecs extends LuceneTestCase {
 
   public void testSepPositionAfterMerge() throws IOException {
     final Directory dir = newDirectory();
-    final IndexWriterConfig config = newIndexWriterConfig(Version.LUCENE_31,
+    final IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
       new MockAnalyzer(random()));
+    config.setMergePolicy(newLogMergePolicy());
     config.setCodec(_TestUtil.alwaysPostingsFormat(new MockSepPostingsFormat()));
     final IndexWriter writer = new IndexWriter(dir, config);
 

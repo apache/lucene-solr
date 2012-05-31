@@ -2,6 +2,7 @@ package org.apache.lucene.facet.example.adaptive;
 
 import java.util.List;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -56,7 +57,7 @@ public class AdaptiveSearcher {
   public static List<FacetResult> searchWithFacets (Directory indexDir, Directory taxoDir) throws Exception {
     // prepare index reader and taxonomy.
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-    IndexReader indexReader = IndexReader.open(indexDir);
+    IndexReader indexReader = DirectoryReader.open(indexDir);
     
     // prepare searcher to search against
     IndexSearcher searcher = new IndexSearcher(indexReader);

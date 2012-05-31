@@ -3881,7 +3881,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     directory.makeLock(IndexWriter.WRITE_LOCK_NAME).release();
   }
 
-  /** If {@link IndexReader#open(IndexWriter,boolean)} has
+  /** If {@link DirectoryReader#open(IndexWriter,boolean)} has
    *  been called (ie, this writer is in near real-time
    *  mode), then after a merge completes, this class can be
    *  invoked to warm the reader on the newly merged

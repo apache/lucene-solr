@@ -2,6 +2,7 @@ package org.apache.lucene.facet.enhancements;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -61,7 +62,7 @@ public class EnhancementsPayloadIteratorTest extends LuceneTestCase {
 
   @Test
   public void testFullIterator() throws IOException {
-    IndexReader indexReader = IndexReader.open(indexDir);
+    IndexReader indexReader = DirectoryReader.open(indexDir);
     Term term = DrillDown.term(indexingParams, new CategoryPath("tags", "lucene"));
     EnhancementsPayloadIterator iterator = new EnhancementsPayloadIterator(
         indexingParams.getCategoryEnhancements(), indexReader, term);
@@ -77,7 +78,7 @@ public class EnhancementsPayloadIteratorTest extends LuceneTestCase {
 
   @Test
   public void testEmptyIterator() throws IOException {
-    IndexReader indexReader = IndexReader.open(indexDir);
+    IndexReader indexReader = DirectoryReader.open(indexDir);
     Term term = DrillDown.term(indexingParams, new CategoryPath("root","a", "f2"));
     EnhancementsPayloadIterator iterator = new EnhancementsPayloadIterator(
         indexingParams.getCategoryEnhancements(), indexReader, term);
@@ -89,7 +90,7 @@ public class EnhancementsPayloadIteratorTest extends LuceneTestCase {
 
   @Test
   public void testPartialIterator() throws IOException {
-    IndexReader indexReader = IndexReader.open(indexDir);
+    IndexReader indexReader = DirectoryReader.open(indexDir);
     Term term = DrillDown.term(indexingParams, new CategoryPath("genre","software"));
     EnhancementsPayloadIterator iterator = new EnhancementsPayloadIterator(
         indexingParams.getCategoryEnhancements(), indexReader, term);

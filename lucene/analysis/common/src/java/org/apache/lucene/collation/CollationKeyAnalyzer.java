@@ -28,7 +28,7 @@ import java.io.Reader;
 
 /**
  * <p>
- *   Filters {@link KeywordTokenizer} with {@link CollationKeyFilter}.
+ *   Configures {@link KeywordTokenizer} with {@link CollationAttributeFactory}.
  * </p>
  * <p>
  *   Converts the token into its {@link java.text.CollationKey}, and then

@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
@@ -484,7 +485,7 @@ public class TestSpans extends LuceneTestCase {
     writer.close();
 
     // Get searcher
-    final IndexReader reader = IndexReader.open(dir);
+    final IndexReader reader = DirectoryReader.open(dir);
     final IndexSearcher searcher = newSearcher(reader);
 
     // Control (make sure docs indexed)

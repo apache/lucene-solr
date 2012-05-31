@@ -126,8 +126,8 @@ public final class CatalanAnalyzer extends StopwordAnalyzerBase {
    * @return A
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link KeywordMarkerFilter} if a stem exclusion set is
+   *         {@link StandardFilter}, {@link ElisionFilter}, {@link LowerCaseFilter}, 
+   *         {@link StopFilter}, {@link KeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link SnowballFilter}.
    */
   @Override

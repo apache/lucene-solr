@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -124,7 +125,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
       w.addDocument(doc);
     }
     w.close();
-    reader = IndexReader.open(rd);
+    reader = DirectoryReader.open(rd);
     searcher = new IndexSearcher(reader);
   }
 

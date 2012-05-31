@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -74,7 +75,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     writer.close();
 
-    reader = IndexReader.open(directory);
+    reader = DirectoryReader.open(directory);
     searcher = new IndexSearcher(reader);
   }
   

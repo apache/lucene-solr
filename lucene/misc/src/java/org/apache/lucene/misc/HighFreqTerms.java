@@ -18,6 +18,7 @@ package org.apache.lucene.misc;
  */
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Fields;
@@ -78,7 +79,7 @@ public class HighFreqTerms {
       }
     }
     
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
     TermStats[] terms = getHighFreqTerms(reader, numTerms, field);
     if (!IncludeTermFreqs) {
       //default HighFreqTerms behavior

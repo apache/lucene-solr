@@ -29,6 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -88,7 +89,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     doc.add(new Field("body", "body", StringField.TYPE_STORED));
     writer.addDocument(doc);
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     Query query = new TermQuery(new Term("body","body"));
 
@@ -124,7 +125,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     doc.add(new Field("content", "\u0633\u0627\u0628", TextField.TYPE_STORED));
     writer.addDocument(doc);
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     Query query = new TermRangeQuery("content", firstBeg, firstEnd, true, true);
@@ -150,7 +151,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(farsiIndex);
+    IndexReader reader = DirectoryReader.open(farsiIndex);
     IndexSearcher search = newSearcher(reader);
         
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -226,7 +227,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     }
     writer.forceMerge(1);
     writer.close();
-    IndexReader reader = IndexReader.open(indexStore);
+    IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     Sort sort = new Sort();

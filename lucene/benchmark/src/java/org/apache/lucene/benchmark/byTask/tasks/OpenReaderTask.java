@@ -45,9 +45,9 @@ public class OpenReaderTask extends PerfTask {
     Directory dir = getRunData().getDirectory();
     DirectoryReader r = null;
     if (commitUserData != null) {
-      r = IndexReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData)); 
+      r = DirectoryReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData)); 
     } else {
-      r = IndexReader.open(dir); 
+      r = DirectoryReader.open(dir); 
     }
     getRunData().setIndexReader(r);
     // We transfer reference to the run data

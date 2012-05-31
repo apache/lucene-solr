@@ -17,6 +17,7 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -81,7 +82,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   // Test that FieldScoreQuery returns docs in expected order.
   private void doTestRank (ValueSource valueSource) throws Exception {
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
     log("test: "+ functionQuery);
     QueryUtils.check(random(), functionQuery,s);
@@ -130,7 +131,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   // Test that FieldScoreQuery returns docs with expected score.
   private void doTestExactScore (ValueSource valueSource) throws Exception {
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
     TopDocs td = s.search(functionQuery,null,1000);
     assertEquals("All docs should be matched!",N_DOCS,td.totalHits);

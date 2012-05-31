@@ -19,6 +19,7 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.IndexWriter;
@@ -130,7 +131,7 @@ public class PayloadHelper {
       doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
-    reader = IndexReader.open(writer, true);
+    reader = DirectoryReader.open(writer, true);
     writer.close();
 
     IndexSearcher searcher = LuceneTestCase.newSearcher(reader);

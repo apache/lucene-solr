@@ -19,20 +19,18 @@ package org.apache.solr.analysis;
 
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilter;
 import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.InitializationException;
 
 /**
  * Factory for {@link PatternReplaceCharFilter}. 
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_ptnreplace" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;charFilter class="solr.PatternReplaceCharFilterFactory" pattern="([^a-z])" replacement=""
- *                 maxBlockChars="10000" blockDelimiters="|"/&gt;
+ *     &lt;charFilter class="solr.PatternReplaceCharFilterFactory" 
+ *                    pattern="([^a-z])" replacement=""/&gt;
  *     &lt;tokenizer class="solr.KeywordTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
@@ -54,6 +52,7 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
     replacement = args.get( "replacement" );
     if( replacement == null )
       replacement = "";
+    // TODO: warn if you set maxBlockChars or blockDelimiters ?
     maxBlockChars = getInt( "maxBlockChars", PatternReplaceCharFilter.DEFAULT_MAX_BLOCK_CHARS );
     blockDelimiters = args.get( "blockDelimiters" );
   }

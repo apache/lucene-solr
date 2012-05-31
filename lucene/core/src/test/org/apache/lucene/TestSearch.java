@@ -92,7 +92,7 @@ public class TestSearch extends LuceneTestCase {
       }
       writer.close();
 
-      IndexReader reader = IndexReader.open(directory);
+      IndexReader reader = DirectoryReader.open(directory);
       IndexSearcher searcher = new IndexSearcher(reader);
 
       ScoreDoc[] hits = null;

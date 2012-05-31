@@ -89,7 +89,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
     w.deleteDocuments(new Term("id", "77"));
 
-    IndexReader r = IndexReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w, true);
     
     assertEquals(NUM_DOCS-1, r.numDocs());
     IndexSearcher s = newSearcher(r);
@@ -109,7 +109,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: now open reader");
     }
-    r = IndexReader.open(w, true);
+    r = DirectoryReader.open(w, true);
     assertEquals(NUM_DOCS-2, r.maxDoc());
     assertEquals(NUM_DOCS-2, r.numDocs());
     s = newSearcher(r);

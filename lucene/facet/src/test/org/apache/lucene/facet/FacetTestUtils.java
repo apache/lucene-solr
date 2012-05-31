@@ -68,7 +68,7 @@ public class FacetTestUtils {
     IndexTaxonomyReaderPair[] pairs = new IndexTaxonomyReaderPair[dirs.length];
     for (int i = 0; i < dirs.length; i++) {
       IndexTaxonomyReaderPair pair = new IndexTaxonomyReaderPair();
-      pair.indexReader = IndexReader.open(dirs[i][0]);
+      pair.indexReader = DirectoryReader.open(dirs[i][0]);
       pair.indexSearcher = new IndexSearcher(pair.indexReader);
       pair.taxReader = new DirectoryTaxonomyReader(dirs[i][1]);
       pairs[i] = pair;

@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
@@ -199,7 +200,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     final Query q = new CustomExternalQuery(q1);
     log(q);
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
     TopDocs hits = s.search(q, 1000);
     assertEquals(N_DOCS, hits.totalHits);
@@ -213,7 +214,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   
   @Test
   public void testRewrite() throws Exception {
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     final IndexSearcher s = new IndexSearcher(r);
 
     Query q = new TermQuery(new Term(TEXT_FIELD, "first"));
@@ -238,7 +239,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   private void doTestCustomScore(ValueSource valueSource, double dboost) throws Exception {
     float boost = (float) dboost;
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
 
     // regular (boolean) query.

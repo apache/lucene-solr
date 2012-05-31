@@ -186,7 +186,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
 
       if (0 == pass) {
         writer.close();
-        DirectoryReader reader = IndexReader.open(dir);
+        DirectoryReader reader = DirectoryReader.open(dir);
         assertEquals(1, reader.getSequentialSubReaders().length);
         reader.close();
       } else {
@@ -196,7 +196,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
         writer.addDocument(doc);
         writer.close();
 
-        DirectoryReader reader = IndexReader.open(dir);
+        DirectoryReader reader = DirectoryReader.open(dir);
         assertTrue(reader.getSequentialSubReaders().length > 1);
         reader.close();
 

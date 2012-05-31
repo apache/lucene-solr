@@ -78,7 +78,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())));
     addDoc(writer, "aaa bbb");
     writer.close();
-    SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir));
+    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
     TermsEnum terms = reader.fields().terms("content").iterator(null);
     assertNotNull(terms.next());
     assertEquals("aaa", terms.term().utf8ToString());
@@ -102,7 +102,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
   private void verifyDocFreq()
       throws IOException
   {
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = DirectoryReader.open(dir);
       TermsEnum termEnum = MultiFields.getTerms(reader, "content").iterator(null);
 
     // create enumeration of all terms

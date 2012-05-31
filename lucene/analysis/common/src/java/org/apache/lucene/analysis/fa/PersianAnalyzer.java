@@ -36,7 +36,7 @@ import org.apache.lucene.util.Version;
 /**
  * {@link Analyzer} for Persian.
  * <p>
- * This Analyzer uses {@link ArabicLetterTokenizer} which implies tokenizing around
+ * This Analyzer uses {@link PersianCharFilter} which implies tokenizing around
  * zero-width non-joiner in addition to whitespace. Some persian-specific variant forms (such as farsi
  * yeh and keheh) are standardized. "Stemming" is accomplished via stopwords.
  * </p>

@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
@@ -59,16 +60,16 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     writer.forceMerge(1); swriter1.forceMerge(1); swriter2.forceMerge(1);
     writer.close(); swriter1.close(); swriter2.close();
     
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
     
     multiReader = new MultiReader(new IndexReader[] {
-      IndexReader.open(sdir1), IndexReader.open(sdir2) 
+      DirectoryReader.open(sdir1), DirectoryReader.open(sdir2) 
     }, true);
     multiSearcher = newSearcher(multiReader);
     
     multiReaderDupls = new MultiReader(new IndexReader[] {
-      IndexReader.open(sdir1), IndexReader.open(dir) 
+      DirectoryReader.open(sdir1), DirectoryReader.open(dir) 
     }, true);
     multiSearcherDupls = newSearcher(multiReaderDupls);
   }

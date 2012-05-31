@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -347,7 +348,7 @@ public class TestLockFactory extends LuceneTestCase {
             Query query = new TermQuery(new Term("content", "aaa"));
             for(int i=0;i<this.numIteration;i++) {
                 try{
-                    reader = IndexReader.open(dir);
+                    reader = DirectoryReader.open(dir);
                     searcher = new IndexSearcher(reader);
                 } catch (Exception e) {
                     hitException = true;

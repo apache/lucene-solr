@@ -8,6 +8,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -94,7 +95,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
     populateIndex(iParams, indexDir, taxoDir);
 
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-    IndexReader reader = IndexReader.open(indexDir);
+    IndexReader reader = DirectoryReader.open(indexDir);
 
     CategoryListCache clCache = null;
     if (cacheCLI) {

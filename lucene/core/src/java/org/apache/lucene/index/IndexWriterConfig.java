@@ -166,7 +166,7 @@ public final class IndexWriterConfig implements Cloneable {
    * for merging; else {@link LogByteSizeMergePolicy}.
    * Note that {@link TieredMergePolicy} is free to select
    * non-contiguous merges, which means docIDs may not
-   * remain montonic over time.  If this is a problem you
+   * remain monotonic over time.  If this is a problem you
    * should switch to {@link LogByteSizeMergePolicy} or
    * {@link LogDocMergePolicy}.
    */

@@ -151,11 +151,11 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     ((MockDirectoryWrapper) target).setCrossCheckTermVectorsOnClose(false);
 
     writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    IndexReader reader = new TestReader(IndexReader.open(directory));
+    IndexReader reader = new TestReader(DirectoryReader.open(directory));
     writer.addIndexes(reader);
     writer.close();
     reader.close();
-    reader = IndexReader.open(target);
+    reader = DirectoryReader.open(target);
     
     TermsEnum terms = MultiFields.getTerms(reader, "default").iterator(null);
     while (terms.next() != null) {

@@ -16,6 +16,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -173,7 +174,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
     
     // prepare for searching
     taxoReader = new DirectoryTaxonomyReader(pair.taxoDir);
-    indexReader = IndexReader.open(pair.searchDir);
+    indexReader = DirectoryReader.open(pair.searchDir);
     searcher = newSearcher(indexReader);
   }
   
