@@ -49,8 +49,6 @@ import org.apache.lucene.analysis.charfilter.BaseCharFilter;
  * @since Solr 1.5
  */
 public class PatternReplaceCharFilter extends BaseCharFilter {
-  @Deprecated
-  public static final int DEFAULT_MAX_BLOCK_CHARS = 10000;
 
   private final Pattern pattern;
   private final String replacement;
@@ -60,12 +58,6 @@ public class PatternReplaceCharFilter extends BaseCharFilter {
     super(in);
     this.pattern = pattern;
     this.replacement = replacement;
-  }
-
-  @Deprecated
-  public PatternReplaceCharFilter(Pattern pattern, String replacement, 
-      int maxBlockChars, String blockDelimiter, CharStream in) {
-    this(pattern, replacement, in);
   }
 
   @Override

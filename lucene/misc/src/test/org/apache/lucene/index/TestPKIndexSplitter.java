@@ -75,8 +75,8 @@ public class TestPKIndexSplitter extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     splitter.split();
     
-    IndexReader ir1 = IndexReader.open(dir1);
-    IndexReader ir2 = IndexReader.open(dir2);
+    IndexReader ir1 = DirectoryReader.open(dir1);
+    IndexReader ir2 = DirectoryReader.open(dir2);
     assertEquals(leftCount, ir1.numDocs());
     assertEquals(rightCount, ir2.numDocs());
     

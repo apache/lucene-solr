@@ -137,8 +137,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = matchVersion.onOrAfter(Version.LUCENE_31) ? 
-        new StandardTokenizer(matchVersion, reader) : new ArabicLetterTokenizer(matchVersion, reader);
+    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     // the order here is important: the stopword list is not normalized!
     result = new StopFilter( matchVersion, result, stopwords);

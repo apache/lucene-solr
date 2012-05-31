@@ -42,7 +42,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.close();
 
-    IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     MockFilter filter = new MockFilter();
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
@@ -68,7 +68,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.close();
 
-    IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
@@ -91,7 +91,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.close();
 
-    IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
@@ -136,7 +136,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.addDocument(new Document());
     writer.close();
 
-    IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
 
     // not cacheable:
     assertDocIdSetCacheable(reader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);
@@ -172,7 +172,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // flipping a coin) may give us a newly opened reader,
     // but we use .reopen on this reader below and expect to
     // (must) get an NRT reader:
-    DirectoryReader reader = IndexReader.open(writer.w, true);
+    DirectoryReader reader = DirectoryReader.open(writer.w, true);
     // same reason we don't wrap?
     IndexSearcher searcher = newSearcher(reader, false);
 

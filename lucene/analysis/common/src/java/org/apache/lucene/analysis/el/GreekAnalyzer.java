@@ -37,15 +37,6 @@ import org.apache.lucene.util.Version;
  * that will not be indexed at all).
  * A default set of stopwords is used unless an alternative list is specified.
  * </p>
- *
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating GreekAnalyzer:
- * <ul>
- *   <li> As of 3.1, StandardFilter and GreekStemmer are used by default.
- *   <li> As of 2.9, StopFilter preserves position
- *        increments
- * </ul>
  * 
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
@@ -78,8 +69,7 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
   
   /**
    * Builds an analyzer with the default stop words.
-   * @param matchVersion Lucene compatibility version,
-   *   See <a href="#version">above</a>
+   * @param matchVersion Lucene compatibility version
    */
   public GreekAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_SET);
@@ -91,8 +81,7 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
    * <b>NOTE:</b> The stopwords set should be pre-processed with the logic of 
    * {@link GreekLowerCaseFilter} for best results.
    *  
-   * @param matchVersion Lucene compatibility version,
-   *   See <a href="#version">above</a>
+   * @param matchVersion Lucene compatibility version
    * @param stopwords a stopword set
    */
   public GreekAnalyzer(Version matchVersion, CharArraySet stopwords) {
@@ -114,11 +103,9 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new GreekLowerCaseFilter(matchVersion, source);
-    if (matchVersion.onOrAfter(Version.LUCENE_31))
-      result = new StandardFilter(matchVersion, result);
+    result = new StandardFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
-    if (matchVersion.onOrAfter(Version.LUCENE_31))
-      result = new GreekStemFilter(result);
+    result = new GreekStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
 }

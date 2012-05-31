@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
@@ -50,7 +51,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     addDoc("one", iw, 1f);
     addDoc("two", iw, 20f);
     addDoc("three four", iw, 300f);
-    IndexReader ir = IndexReader.open(iw, true);
+    IndexReader ir = DirectoryReader.open(iw, true);
 
     IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits;
@@ -77,7 +78,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
     iw.deleteDocuments(new Term("key", "one"));
     ir.close();
-    ir = IndexReader.open(iw, true);
+    ir = DirectoryReader.open(iw, true);
     is = newSearcher(ir);
     
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;

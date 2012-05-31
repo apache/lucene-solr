@@ -468,7 +468,7 @@ public class TestTermVectors extends LuceneTestCase {
   }
 
   private void verifyIndex(Directory dir) throws IOException {
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     int numDocs = r.numDocs();
     for (int i = 0; i < numDocs; i++) {
       assertNotNull("term vectors should not have been null for document " + i, r.getTermVectors(i).terms("c"));
@@ -519,7 +519,7 @@ public class TestTermVectors extends LuceneTestCase {
     
     IndexWriter writer = createWriter(target);
     for (Directory dir : input) {
-      IndexReader r = IndexReader.open(dir);
+      IndexReader r = DirectoryReader.open(dir);
       writer.addIndexes(r);
       r.close();
     }

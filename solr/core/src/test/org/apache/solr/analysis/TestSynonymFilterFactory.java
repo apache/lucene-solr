@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
@@ -48,42 +47,6 @@ public class TestSynonymFilterFactory extends BaseTokenStreamTestCase {
     assertTokenStreamContents(ts, 
         new String[] { "GB", "gib", "gigabyte", "gigabytes" },
         new int[] { 1, 0, 0, 0 });
-  }
-  
-  /** test that we can parse and use the solr syn file, with the old impl
-   * @deprecated Remove this test in Lucene 5.0 */
-  @Deprecated
-  public void testSynonymsOld() throws Exception {
-    SynonymFilterFactory factory = new SynonymFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("synonyms", "synonyms.txt");
-    factory.setLuceneMatchVersion(Version.LUCENE_33);
-    factory.init(args);
-    factory.inform(new SolrResourceLoader(null, null));
-    TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
-    assertTrue(ts instanceof SlowSynonymFilter);
-    assertTokenStreamContents(ts, 
-        new String[] { "GB", "gib", "gigabyte", "gigabytes" },
-        new int[] { 1, 0, 0, 0 });
-  }
-  
-  /** test multiword offsets with the old impl
-   * @deprecated Remove this test in Lucene 5.0 */
-  @Deprecated
-  public void testMultiwordOffsetsOld() throws Exception {
-    SynonymFilterFactory factory = new SynonymFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("synonyms", "synonyms.txt");
-    factory.setLuceneMatchVersion(Version.LUCENE_33);
-    factory.init(args);
-    factory.inform(new StringMockSolrResourceLoader("national hockey league, nhl"));
-    TokenStream ts = factory.create(new MockTokenizer(new StringReader("national hockey league"), MockTokenizer.WHITESPACE, false));
-    // WTF?
-    assertTokenStreamContents(ts, 
-        new String[] { "national", "nhl", "hockey", "league" },
-        new int[] { 0, 0, 0, 0 },
-        new int[] { 22, 22, 22, 22 },
-        new int[] { 1, 0, 1, 1 });
   }
   
   /** if the synonyms are completely empty, test that we still analyze correctly */

@@ -115,7 +115,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       
       writer.deleteDocuments(new Term("id", "1"));
       writer.close();
-      IndexReader ir = IndexReader.open(rd1);
+      IndexReader ir = DirectoryReader.open(rd1);
       assertEquals(2, ir.maxDoc());
       assertEquals(1, ir.numDocs());
       ir.close();

@@ -230,16 +230,6 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "壹゙", "壹゙"); // ideographic
     checkOneTerm(a, "아゙",  "아゙"); // hangul
   }
-  
-  /** @deprecated remove this and sophisticated backwards layer in 5.0 */
-  @Deprecated
-  public void testCombiningMarksBackwards() throws Exception {
-    Analyzer a = new StandardAnalyzer(Version.LUCENE_33);
-    checkOneTerm(a, "ざ", "さ"); // hiragana Bug
-    checkOneTerm(a, "ザ", "ザ"); // katakana Works
-    checkOneTerm(a, "壹゙", "壹"); // ideographic Bug
-    checkOneTerm(a, "아゙",  "아゙"); // hangul Works
-  }
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {

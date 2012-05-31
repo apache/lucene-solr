@@ -57,15 +57,6 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
     assertEquals( "ABEDCF", new String( buffer ) );
   }
   
-  /**
-   * Test the broken 3.0 behavior, for back compat
-   * @deprecated (3.1) Remove in Lucene 5.0
-   */
-  @Deprecated
-  public void testBackCompat() throws Exception {
-    assertEquals("\uDF05\uD866\uDF05\uD866", ReverseStringFilter.reverse(Version.LUCENE_30, "𩬅𩬅"));
-  }
-  
   public void testReverseSupplementary() throws Exception {
     // supplementary at end
     assertEquals("𩬅艱鍟䇹愯瀛", ReverseStringFilter.reverse(TEST_VERSION_CURRENT, "瀛愯䇹鍟艱𩬅"));

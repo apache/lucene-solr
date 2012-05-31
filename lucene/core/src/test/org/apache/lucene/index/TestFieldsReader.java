@@ -78,7 +78,7 @@ public class TestFieldsReader extends LuceneTestCase {
   public void test() throws IOException {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     Document doc = reader.document(0);
     assertTrue(doc != null);
     assertTrue(doc.getField(DocHelper.TEXT_FIELD_1_KEY) != null);
@@ -203,7 +203,7 @@ public class TestFieldsReader extends LuceneTestCase {
       writer.forceMerge(1);
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = DirectoryReader.open(dir);
 
       FaultyIndexInput.doFail = true;
 

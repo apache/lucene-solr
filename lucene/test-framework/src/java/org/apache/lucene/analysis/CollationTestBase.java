@@ -29,6 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -44,7 +45,6 @@ import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -59,24 +59,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
   protected String secondRangeBeginningOriginal = "\u0633";
   protected String secondRangeEndOriginal = "\u0638";
   
-  /**
-   * Convenience method to perform the same function as CollationKeyFilter.
-   *  
-   * @param keyBits the result from 
-   *  collator.getCollationKey(original).toByteArray()
-   * @return The encoded collation key for the original String
-   * @deprecated only for testing deprecated filters
-   */
-  @Deprecated
-  protected String encodeCollationKey(byte[] keyBits) {
-    // Ensure that the backing char[] array is large enough to hold the encoded
-    // Binary String
-    int encodedLength = IndexableBinaryStringTools.getEncodedLength(keyBits, 0, keyBits.length);
-    char[] encodedBegArray = new char[encodedLength];
-    IndexableBinaryStringTools.encode(keyBits, 0, keyBits.length, encodedBegArray, 0, encodedLength);
-    return new String(encodedBegArray);
-  }
-  
   public void testFarsiRangeFilterCollating(Analyzer analyzer, BytesRef firstBeg, 
                                             BytesRef firstEnd, BytesRef secondBeg,
                                             BytesRef secondEnd) throws Exception {
@@ -88,7 +70,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     doc.add(new Field("body", "body", StringField.TYPE_STORED));
     writer.addDocument(doc);
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     Query query = new TermQuery(new Term("body","body"));
 
@@ -124,7 +106,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     doc.add(new Field("content", "\u0633\u0627\u0628", TextField.TYPE_STORED));
     writer.addDocument(doc);
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     Query query = new TermRangeQuery("content", firstBeg, firstEnd, true, true);
@@ -150,7 +132,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(farsiIndex);
+    IndexReader reader = DirectoryReader.open(farsiIndex);
     IndexSearcher search = newSearcher(reader);
         
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -226,7 +208,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     }
     writer.forceMerge(1);
     writer.close();
-    IndexReader reader = IndexReader.open(indexStore);
+    IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     Sort sort = new Sort();

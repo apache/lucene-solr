@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -470,7 +471,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new TextField("field", new CannedTokenStream(INCR_0_DOC_TOKENS)));
     writer.addDocument(doc);
-    IndexReader r = IndexReader.open(writer,false);
+    IndexReader r = DirectoryReader.open(writer,false);
     writer.close();
     IndexSearcher s = new IndexSearcher(r);
     

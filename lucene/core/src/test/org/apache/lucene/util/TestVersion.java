@@ -23,9 +23,8 @@ public class TestVersion extends LuceneTestCase {
     for (Version v : Version.values()) {
       assertTrue("LUCENE_CURRENT must be always onOrAfter("+v+")", Version.LUCENE_CURRENT.onOrAfter(v));
     }
-    assertTrue(Version.LUCENE_40.onOrAfter(Version.LUCENE_31));
-    assertTrue(Version.LUCENE_40.onOrAfter(Version.LUCENE_40));
-    assertFalse(Version.LUCENE_30.onOrAfter(Version.LUCENE_31));
+    assertTrue(Version.LUCENE_50.onOrAfter(Version.LUCENE_40));
+    assertFalse(Version.LUCENE_40.onOrAfter(Version.LUCENE_50));
   }
 
   public void testParseLeniently() {

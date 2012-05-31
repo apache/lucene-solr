@@ -171,8 +171,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexReader reader = null;
       IndexWriter writer = null;
       try {
-        reader = IndexReader.open(dir);
-        fail("IndexReader.open should not pass for "+unsupportedNames[i]);
+        reader = DirectoryReader.open(dir);
+        fail("DirectoryReader.open should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
         // pass
       } finally {
@@ -251,7 +251,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testAddOldIndexesReader() throws IOException {
     for (String name : oldNames) {
-      IndexReader reader = IndexReader.open(oldIndexDirs.get(name));
+      IndexReader reader = DirectoryReader.open(oldIndexDirs.get(name));
       
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
@@ -302,7 +302,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     //QueryParser parser = new QueryParser("contents", new MockAnalyzer(random));
     //Query query = parser.parse("handle:1");
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     _TestUtil.checkIndex(dir);
@@ -385,7 +385,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.close();
 
     // make sure searching sees right # hits
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     Document d = searcher.getIndexReader().document(hits[0].doc);
@@ -398,7 +398,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
 
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
     searcher = new IndexSearcher(reader);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 44, hits.length);
@@ -410,7 +410,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void changeIndexNoAdds(Random random, Directory dir) throws IOException {
     // make sure searching sees right # hits
-    IndexReader reader = IndexReader.open(dir);
+    DirectoryReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
@@ -423,7 +423,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
 
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
     searcher = new IndexSearcher(reader);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
@@ -599,7 +599,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public void testNextIntoWrongField() throws Exception {
     for (String name : oldNames) {
       Directory dir = oldIndexDirs.get(name);
-      IndexReader r = IndexReader.open(dir);
+      IndexReader r = DirectoryReader.open(dir);
       TermsEnum terms = MultiFields.getFields(r).terms("content").iterator(null);
       BytesRef t = terms.next();
       assertNotNull(t);
@@ -641,7 +641,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       
       Directory dir = oldIndexDirs.get(name);
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = DirectoryReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(reader);
       
       for (int id=10; id<15; id++) {

@@ -39,6 +39,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -1645,7 +1646,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private void searchIndex() throws IOException, InvalidTokenOffsetsException {
     Query query = new TermQuery(new Term("t_text1", "random"));
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     // This scorer can return negative idf -> null fragment
     Scorer scorer = new QueryTermScorer( query, searcher.getIndexReader(), "t_text1" );
@@ -1672,7 +1673,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    * writer = new IndexWriter(ramDir,bigramAnalyzer , true); Document d = new
    * Document(); Field f = new Field(FIELD_NAME, "java abc def", true, true,
    * true); d.add(f); writer.addDocument(d); writer.close(); IndexReader reader =
-   * IndexReader.open(ramDir);
+   * DirectoryReader.open(ramDir);
    * 
    * IndexSearcher searcher=new IndexSearcher(reader); query =
    * QueryParser.parse("abc", FIELD_NAME, bigramAnalyzer);
@@ -1760,7 +1761,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     writer.forceMerge(1);
     writer.close();
-    reader = IndexReader.open(ramDir);
+    reader = DirectoryReader.open(ramDir);
     numHighlights = 0;
   }
 

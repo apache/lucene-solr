@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
@@ -331,7 +332,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     mfqp.setAnalyzer(analyzer);
     mfqp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
     Query q = mfqp.parse("the footest", null);
-    IndexReader ir = IndexReader.open(ramDir);
+    IndexReader ir = DirectoryReader.open(ramDir);
     IndexSearcher is = new IndexSearcher(ir);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);

@@ -2,6 +2,7 @@ package org.apache.lucene.facet.example.multiCL;
 
 import java.util.List;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -63,7 +64,7 @@ public class MultiCLSearcher {
       Directory taxoDir, FacetIndexingParams iParams) throws Exception {
     
     // prepare index reader and taxonomy.
-    IndexReader indexReader = IndexReader.open(indexDir);
+    IndexReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     // Get results

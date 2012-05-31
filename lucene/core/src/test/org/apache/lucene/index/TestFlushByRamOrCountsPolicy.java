@@ -218,7 +218,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     assertActiveBytesAfter(flushControl);
     writer.commit();
     assertEquals(0, flushControl.activeBytes());
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     assertEquals(numDocumentsToIndex, r.numDocs());
     assertEquals(numDocumentsToIndex, r.maxDoc());
     if (!flushPolicy.flushOnRAM()) {

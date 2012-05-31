@@ -88,18 +88,14 @@ public abstract class QueryParserBase {
   }
 
   /** Initializes a query parser.  Called by the QueryParser constructor
-   *  @param matchVersion  Lucene version to match. See <a href="QueryParser.html#version">here</a>.
+   *  @param matchVersion  Lucene version to match.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
    */
   public void init(Version matchVersion, String f, Analyzer a) {
     analyzer = a;
     field = f;
-    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
-      setAutoGeneratePhraseQueries(false);
-    } else {
-      setAutoGeneratePhraseQueries(true);
-    }
+    setAutoGeneratePhraseQueries(false);
   }
 
   // the generated parser will create these in QueryParser

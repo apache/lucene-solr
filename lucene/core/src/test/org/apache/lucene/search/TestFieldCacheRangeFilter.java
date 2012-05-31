@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
@@ -537,7 +538,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     writer.deleteDocuments(new Term("id","0"));
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher search = newSearcher(reader);
     assertTrue(reader.hasDeletions());
 

@@ -32,56 +32,7 @@ import java.util.Locale;
 // remove me when java 5 is no longer supported
 // this is a workaround for a JDK bug that wrongly emits a warning.
 @SuppressWarnings("dep-ann")
-public enum Version {
-  /**
-   * Match settings and bugs in Lucene's 3.0 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_30,
-
-  /**
-   * Match settings and bugs in Lucene's 3.1 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_31,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.2 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_32,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.3 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_33,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.4 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_34,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.5 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_35,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.6 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_36,
-  
+public enum Version { 
   /**
    * Match settings and bugs in Lucene's 4.0 release.
    * @deprecated (5.0) Use latest

@@ -18,6 +18,7 @@ package org.apache.lucene.queries.function;
  */
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
 import org.apache.lucene.queries.function.valuesource.ReverseOrdFieldSource;
@@ -61,7 +62,7 @@ public class TestOrdValues extends FunctionTestSetup {
 
   // Test that queries based on reverse/ordFieldScore scores correctly
   private void doTestRank(String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
     ValueSource vs;
     if (inOrder) {
@@ -112,7 +113,7 @@ public class TestOrdValues extends FunctionTestSetup {
 
   // Test that queries based on reverse/ordFieldScore returns docs with expected score.
   private void doTestExactScore(String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
     ValueSource vs;
     if (inOrder) {

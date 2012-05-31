@@ -161,7 +161,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     writer.close();
     assertTrue(r2.isCurrent());
     
-    DirectoryReader r3 = IndexReader.open(dir1);
+    DirectoryReader r3 = DirectoryReader.open(dir1);
     assertTrue(r3.isCurrent());
     assertTrue(r2.isCurrent());
     assertEquals(0, count(new Term("id", id10), r3));
@@ -207,7 +207,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertFalse(nrtReader.isCurrent());
     nrtReader.close();
     
-    DirectoryReader dirReader = IndexReader.open(dir);
+    DirectoryReader dirReader = DirectoryReader.open(dir);
     nrtReader = writer.getReader();
     
     assertTrue(dirReader.isCurrent());
@@ -386,7 +386,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     _TestUtil.checkIndex(mainDir);
 
-    IndexReader reader = IndexReader.open(mainDir);
+    IndexReader reader = DirectoryReader.open(mainDir);
     assertEquals(addDirThreads.count.intValue(), reader.numDocs());
     //assertEquals(100 + numDirs * (3 * numIter / 4) * addDirThreads.numThreads
     //    * addDirThreads.NUM_INIT_DOCS, reader.numDocs());
@@ -422,7 +422,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       
       readers = new IndexReader[numDirs];
       for (int i = 0; i < numDirs; i++)
-        readers[i] = IndexReader.open(addDir);
+        readers[i] = DirectoryReader.open(addDir);
     }
     
     void joinThreads() {
@@ -890,7 +890,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.forceMergeDeletes();
     w.close();
     r.close();
-    r = IndexReader.open(dir);
+    r = DirectoryReader.open(dir);
     assertEquals(1, r.numDocs());
     assertFalse(r.hasDeletions());
     r.close();
@@ -984,7 +984,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new TextField("f", "val"));
     w.addDocument(doc);
-    IndexReader r = IndexReader.open(w, true).getSequentialSubReaders()[0];
+    IndexReader r = DirectoryReader.open(w, true).getSequentialSubReaders()[0];
     try {
       _TestUtil.docs(random(), r, "f", new BytesRef("val"), null, null, false);
       fail("should have failed to seek since terms index was not loaded.");

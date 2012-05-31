@@ -67,7 +67,7 @@ public class TestSumDocFreq extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
     
-    ir = IndexReader.open(dir);
+    ir = DirectoryReader.open(dir);
     assertSumDocFreq(ir);
     ir.close();
     dir.close();

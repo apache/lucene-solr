@@ -2,6 +2,7 @@ package org.apache.lucene.facet.example.merge;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -87,7 +88,7 @@ public class TaxonomyMergeUtils {
         srcIndexDir, map.getMap(), new DefaultFacetIndexingParams());
     destIndexWriter.setPayloadProcessorProvider(payloadProcessor);
 
-    IndexReader reader = IndexReader.open(srcIndexDir);
+    IndexReader reader = DirectoryReader.open(srcIndexDir);
     try {
       destIndexWriter.addIndexes(reader);
       

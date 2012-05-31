@@ -100,7 +100,7 @@ public class TestTypePromotion extends LuceneTestCase {
         writer.addIndexes(dir_2);
       } else {
         // do a real merge here
-        IndexReader open = maybeWrapReader(IndexReader.open(dir_2));
+        IndexReader open = maybeWrapReader(DirectoryReader.open(dir_2));
         writer.addIndexes(open);
         open.close();
       }
@@ -344,7 +344,7 @@ public class TestTypePromotion extends LuceneTestCase {
         writer.addIndexes(dir_2);
       } else {
         // do a real merge here
-        IndexReader open = IndexReader.open(dir_2);
+        IndexReader open = DirectoryReader.open(dir_2);
         writer.addIndexes(open);
         open.close();
       }

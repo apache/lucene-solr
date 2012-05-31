@@ -105,7 +105,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         writer.forceMerge(1);
         writer.close();
 
-      SegmentReader reader = getOnlySegmentReader(IndexReader.open(directory));
+      SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(directory));
 
       this.searcher = newSearcher(reader);
     }
@@ -151,7 +151,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         }
         
         writer.close();
-        IndexReader reader = IndexReader.open(directory);
+        IndexReader reader = DirectoryReader.open(directory);
 
         DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
                                                                    MultiFields.getLiveDocs(reader),

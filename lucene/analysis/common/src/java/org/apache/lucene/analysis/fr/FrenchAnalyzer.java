@@ -35,7 +35,6 @@ import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 
 /**
  * {@link Analyzer} for French language. 
@@ -47,52 +46,10 @@ import java.util.Arrays;
  * exclusion list is empty by default.
  * </p>
  *
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating FrenchAnalyzer:
- * <ul>
- *   <li> As of 3.6, FrenchLightStemFilter is used for less aggressive stemming.
- *   <li> As of 3.1, Snowball stemming is done with SnowballFilter, 
- *        LowerCaseFilter is used prior to StopFilter, and ElisionFilter and 
- *        Snowball stopwords are used by default.
- *   <li> As of 2.9, StopFilter preserves position
- *        increments
- * </ul>
- *
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
 public final class FrenchAnalyzer extends StopwordAnalyzerBase {
-
-  /**
-   * Extended list of typical French stopwords.
-   * @deprecated (3.1) remove in Lucene 5.0 (index bw compat)
-   */
-  @Deprecated
-  private final static String[] FRENCH_STOP_WORDS = {
-    "a", "afin", "ai", "ainsi", "après", "attendu", "au", "aujourd", "auquel", "aussi",
-    "autre", "autres", "aux", "auxquelles", "auxquels", "avait", "avant", "avec", "avoir",
-    "c", "car", "ce", "ceci", "cela", "celle", "celles", "celui", "cependant", "certain",
-    "certaine", "certaines", "certains", "ces", "cet", "cette", "ceux", "chez", "ci",
-    "combien", "comme", "comment", "concernant", "contre", "d", "dans", "de", "debout",
-    "dedans", "dehors", "delà", "depuis", "derrière", "des", "désormais", "desquelles",
-    "desquels", "dessous", "dessus", "devant", "devers", "devra", "divers", "diverse",
-    "diverses", "doit", "donc", "dont", "du", "duquel", "durant", "dès", "elle", "elles",
-    "en", "entre", "environ", "est", "et", "etc", "etre", "eu", "eux", "excepté", "hormis",
-    "hors", "hélas", "hui", "il", "ils", "j", "je", "jusqu", "jusque", "l", "la", "laquelle",
-    "le", "lequel", "les", "lesquelles", "lesquels", "leur", "leurs", "lorsque", "lui", "là",
-    "ma", "mais", "malgré", "me", "merci", "mes", "mien", "mienne", "miennes", "miens", "moi",
-    "moins", "mon", "moyennant", "même", "mêmes", "n", "ne", "ni", "non", "nos", "notre",
-    "nous", "néanmoins", "nôtre", "nôtres", "on", "ont", "ou", "outre", "où", "par", "parmi",
-    "partant", "pas", "passé", "pendant", "plein", "plus", "plusieurs", "pour", "pourquoi",
-    "proche", "près", "puisque", "qu", "quand", "que", "quel", "quelle", "quelles", "quels",
-    "qui", "quoi", "quoique", "revoici", "revoilà", "s", "sa", "sans", "sauf", "se", "selon",
-    "seront", "ses", "si", "sien", "sienne", "siennes", "siens", "sinon", "soi", "soit",
-    "son", "sont", "sous", "suivant", "sur", "ta", "te", "tes", "tien", "tienne", "tiennes",
-    "tiens", "toi", "ton", "tous", "tout", "toute", "toutes", "tu", "un", "une", "va", "vers",
-    "voici", "voilà", "vos", "votre", "vous", "vu", "vôtre", "vôtres", "y", "à", "ça", "ès",
-    "été", "être", "ô"
-  };
 
   /** File containing default French stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "french_stop.txt";
@@ -111,11 +68,6 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   }
   
   private static class DefaultSetHolder {
-    /** @deprecated (3.1) remove this in Lucene 5.0, index bw compat */
-    @Deprecated
-    static final CharArraySet DEFAULT_STOP_SET_30 = CharArraySet
-        .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(FRENCH_STOP_WORDS),
-            false));
     static final CharArraySet DEFAULT_STOP_SET;
     static {
       try {
@@ -133,9 +85,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the default stop words ({@link #getDefaultStopSet}).
    */
   public FrenchAnalyzer(Version matchVersion) {
-    this(matchVersion,
-        matchVersion.onOrAfter(Version.LUCENE_31) ? DefaultSetHolder.DEFAULT_STOP_SET
-            : DefaultSetHolder.DEFAULT_STOP_SET_30);
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
@@ -182,30 +132,15 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
-      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      TokenStream result = new StandardFilter(matchVersion, source);
-      result = new ElisionFilter(matchVersion, result);
-      result = new LowerCaseFilter(matchVersion, result);
-      result = new StopFilter(matchVersion, result, stopwords);
-      if(!excltable.isEmpty())
-        result = new KeywordMarkerFilter(result, excltable);
-      if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-        result = new FrenchLightStemFilter(result);
-      } else {
-        result = new SnowballFilter(result, new org.tartarus.snowball.ext.FrenchStemmer());
-      }
-      return new TokenStreamComponents(source, result);
-    } else {
-      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      TokenStream result = new StandardFilter(matchVersion, source);
-      result = new StopFilter(matchVersion, result, stopwords);
-      if(!excltable.isEmpty())
-        result = new KeywordMarkerFilter(result, excltable);
-      result = new FrenchStemFilter(result);
-      // Convert to lowercase after stemming!
-      return new TokenStreamComponents(source, new LowerCaseFilter(matchVersion, result));
-    }
+    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+    TokenStream result = new StandardFilter(matchVersion, source);
+    result = new ElisionFilter(matchVersion, result);
+    result = new LowerCaseFilter(matchVersion, result);
+    result = new StopFilter(matchVersion, result, stopwords);
+    if(!excltable.isEmpty())
+      result = new KeywordMarkerFilter(result, excltable);
+    result = new FrenchLightStemFilter(result);
+    return new TokenStreamComponents(source, result);
   }
 }
 

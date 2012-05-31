@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
-import org.apache.lucene.util.Version;
 
 public class TestAnalyzers extends BaseTokenStreamTestCase {
 
@@ -182,28 +181,9 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
         "\ud801\udc44test" });
   }
 
-  /** @deprecated (3.1) */
-  @Deprecated
-  public void testLowerCaseTokenizerBWCompat() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_30,
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "tokenizer", "test" });
-  }
-
   public void testWhitespaceTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
     WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
-        "\ud801\udc1ctest" });
-  }
-
-  /** @deprecated (3.1) */
-  @Deprecated
-  public void testWhitespaceTokenizerBWCompat() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_30,
         reader);
     assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
         "\ud801\udc1ctest" });

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.standard.std31.StandardTokenizerImpl31;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -31,31 +30,20 @@ import org.apache.lucene.util.Version;
 
 /** A grammar-based tokenizer constructed with JFlex.
  * <p>
- * As of Lucene version 3.1, this class implements the Word Break rules from the
+ * This class implements the Word Break rules from the
  * Unicode Text Segmentation algorithm, as specified in 
  * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>.
  * <p/>
  * <p>Many applications have specific tokenizer needs.  If this tokenizer does
  * not suit your application, please consider copying this source code
  * directory to your project and maintaining your own grammar-based tokenizer.
- *
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating StandardTokenizer:
- * <ul>
- *   <li> As of 3.4, Hiragana and Han characters are no longer wrongly split
- *   from their combining characters. If you use a previous version number,
- *   you get the exact broken behavior for backwards compatibility.
- *   <li> As of 3.1, StandardTokenizer implements Unicode text segmentation.
- *   If you use a previous version number, you get the exact behavior of
- *   {@link ClassicTokenizer} for backwards compatibility.
- * </ul>
  */
 
 public final class StandardTokenizer extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
   private StandardTokenizerInterface scanner;
 
+  // TODO: how can we remove these old types?!
   public static final int ALPHANUM          = 0;
   /** @deprecated (3.1) */
   @Deprecated
@@ -146,13 +134,7 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   private final void init(Version matchVersion) {
-    if (matchVersion.onOrAfter(Version.LUCENE_34)) {
-      this.scanner = new StandardTokenizerImpl(input);
-    } else if (matchVersion.onOrAfter(Version.LUCENE_31)) {
-      this.scanner = new StandardTokenizerImpl31(input);
-    } else {
-      this.scanner = new ClassicTokenizerImpl(input);
-    }
+    this.scanner = new StandardTokenizerImpl(input);
   }
 
   // this tokenizer generates three attributes:
@@ -184,15 +166,7 @@ public final class StandardTokenizer extends Tokenizer {
         scanner.getText(termAtt);
         final int start = scanner.yychar();
         offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.length()));
-        // This 'if' should be removed in the next release. For now, it converts
-        // invalid acronyms to HOST. When removed, only the 'else' part should
-        // remain.
-        if (tokenType == StandardTokenizer.ACRONYM_DEP) {
-          typeAtt.setType(StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HOST]);
-          termAtt.setLength(termAtt.length() - 1); // remove extra '.'
-        } else {
-          typeAtt.setType(StandardTokenizer.TOKEN_TYPES[tokenType]);
-        }
+        typeAtt.setType(StandardTokenizer.TOKEN_TYPES[tokenType]);
         return true;
       } else
         // When we skip a too-long term, we still increment the

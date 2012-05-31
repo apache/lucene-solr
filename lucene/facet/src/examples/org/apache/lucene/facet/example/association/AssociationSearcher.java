@@ -2,6 +2,7 @@ package org.apache.lucene.facet.example.association;
 
 import java.util.List;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
@@ -42,7 +43,7 @@ public class AssociationSearcher {
   public static List<FacetResult> searchSumIntAssociation(Directory indexDir,
       Directory taxoDir) throws Exception {
     // prepare index reader 
-    IndexReader indexReader = IndexReader.open(indexDir);
+    IndexReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     AssociationIntSumFacetRequest facetRequest = new AssociationIntSumFacetRequest(
@@ -62,7 +63,7 @@ public class AssociationSearcher {
   public static List<FacetResult> searchSumFloatAssociation(Directory indexDir,
       Directory taxoDir) throws Exception {
     // prepare index reader 
-    IndexReader indexReader = IndexReader.open(indexDir);
+    IndexReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     AssociationFloatSumFacetRequest facetRequest = new AssociationFloatSumFacetRequest(

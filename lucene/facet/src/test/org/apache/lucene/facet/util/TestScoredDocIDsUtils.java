@@ -9,6 +9,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -235,6 +236,6 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
     writer.close();
 
     // Open a fresh read-only reader with the deletions in place
-    return IndexReader.open(dir);
+    return DirectoryReader.open(dir);
   }
 }

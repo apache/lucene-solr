@@ -37,6 +37,7 @@ import org.apache.lucene.benchmark.byTask.tasks.CreateIndexTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -149,7 +150,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
         tasks.close(); 
       }
       
-      reader = IndexReader.open(runData.getDirectory());
+      reader = DirectoryReader.open(runData.getDirectory());
       searcher = new IndexSearcher(reader);
       TopDocs td = searcher.search(new TermQuery(new Term("body", "body")), 10);
       assertEquals(numAdds, td.totalHits);

@@ -60,19 +60,6 @@ public abstract class AtomicReader extends IndexReader {
     return readerContext;
   }
 
-  /** 
-   * Returns true if there are norms stored for this field.
-   * @deprecated (4.0) use {@link #getFieldInfos()} and check {@link FieldInfo#hasNorms()} 
-   *                   for the field instead.
-   */
-  @Deprecated
-  public final boolean hasNorms(String field) throws IOException {
-    ensureOpen();
-    // note: using normValues(field) != null would potentially cause i/o
-    FieldInfo fi = getFieldInfos().fieldInfo(field);
-    return fi != null && fi.hasNorms();
-  }
-
   /**
    * Returns {@link Fields} for this reader.
    * This method may return null if the reader has no

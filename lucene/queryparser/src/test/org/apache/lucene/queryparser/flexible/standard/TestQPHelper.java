@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -1290,7 +1291,7 @@ public class TestQPHelper extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newField("field", "", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
-    IndexReader r = IndexReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     
     Query q = new StandardQueryParser(new CannedAnalyzer()).parse("\"a\"", "field");

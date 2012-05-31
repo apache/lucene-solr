@@ -68,7 +68,7 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testWithStemExclusionSet() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_31, 1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("строеве");
     Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "строевете строеве", new String[] { "строй", "строеве" });

@@ -34,6 +34,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -1110,7 +1111,7 @@ public class TestFSTs extends LuceneTestCase {
       writer.addDocument(doc);
       docCount++;
     }
-    IndexReader r = IndexReader.open(writer, true);
+    IndexReader r = DirectoryReader.open(writer, true);
     writer.close();
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(random().nextBoolean());
 

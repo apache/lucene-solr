@@ -25,6 +25,7 @@ import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -76,7 +77,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
     // open reader to test document count
-    IndexReader reader = IndexReader.open(ramDir);
+    IndexReader reader = DirectoryReader.open(ramDir);
     assertEquals(docsToAdd, reader.numDocs());
     
     // open search zo check if all doc's are there

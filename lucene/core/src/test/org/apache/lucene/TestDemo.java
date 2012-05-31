@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -54,7 +55,7 @@ public class TestDemo extends LuceneTestCase {
     iwriter.close();
     
     // Now search the index:
-    IndexReader ireader = IndexReader.open(directory); // read-only=true
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
     assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);

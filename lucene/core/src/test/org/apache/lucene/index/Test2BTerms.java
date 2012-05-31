@@ -196,7 +196,7 @@ public class Test2BTerms extends LuceneTestCase {
     }
 
     System.out.println("TEST: open reader");
-    final IndexReader r = IndexReader.open(dir);
+    final IndexReader r = DirectoryReader.open(dir);
     if (savedTerms == null) {
       savedTerms = findTerms(r);
     }

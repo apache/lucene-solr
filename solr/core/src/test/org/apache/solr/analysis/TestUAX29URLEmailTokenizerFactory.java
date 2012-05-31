@@ -190,25 +190,4 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamTestCase {
     assertTokenStreamContents(stream, 
         new String[] {"one", "two", "three", longWord, "four", "five", "six" });
   }
-  
-  /** @deprecated nuke this test in lucene 5.0 */
-  @Deprecated
-  public void testMatchVersion() throws Exception {
-    Reader reader = new StringReader("ざ");
-    UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
-    assertTokenStreamContents(stream, 
-        new String[] {"ざ"});
-    
-    reader = new StringReader("ざ");
-    factory = new UAX29URLEmailTokenizerFactory();
-    factory.setLuceneMatchVersion(Version.LUCENE_31);
-    factory.init(args);
-    stream = factory.create(reader);
-    assertTokenStreamContents(stream, 
-        new String[] {"さ"}); // old broken behavior
-  }
 }

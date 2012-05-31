@@ -453,39 +453,6 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "아゙",  "아゙"); // hangul
   }
 
-  /** @deprecated remove this and sophisticated backwards layer in 5.0 */
-  @Deprecated
-  public void testCombiningMarksBackwards() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents
-        (String fieldName, Reader reader) {
-
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_31, reader);
-        return new TokenStreamComponents(tokenizer);
-      }
-    };
-    checkOneTerm(a, "ざ", "さ"); // hiragana Bug
-    checkOneTerm(a, "ザ", "ザ"); // katakana Works
-    checkOneTerm(a, "壹゙", "壹"); // ideographic Bug
-    checkOneTerm(a, "아゙",  "아゙"); // hangul Works
-  }
-  
-  // LUCENE-3880
-  /** @deprecated remove this and sophisticated backwards layer in 5.0 */
-  @Deprecated
-  public void testMailtoBackwards()  throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_34, reader);
-        return new TokenStreamComponents(tokenizer);
-      }
-    };
-    assertAnalyzesTo(a, "mailto:test@example.org",
-        new String[] { "mailto:test", "example.org" });
-  }
-
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);

@@ -253,7 +253,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    *  one commit point.  But if you're using a custom {@link
    *  IndexDeletionPolicy} then there could be many commits.
    *  Once you have a given commit, you can open a reader on
-   *  it by calling {@link IndexReader#open(IndexCommit)}
+   *  it by calling {@link DirectoryReader#open(IndexCommit)}
    *  There must be at least one commit in
    *  the Directory, else this method throws {@link
    *  IndexNotFoundException}.  Note that if a commit is in
@@ -397,9 +397,9 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    *
    * <p>If instead this reader is a near real-time reader
    * (ie, obtained by a call to {@link
-   * IndexReader#open(IndexWriter,boolean)}, or by calling {@link #openIfChanged}
+   * DirectoryReader#open(IndexWriter,boolean)}, or by calling {@link #openIfChanged}
    * on a near real-time reader), then this method checks if
-   * either a new commmit has occurred, or any new
+   * either a new commit has occurred, or any new
    * uncommitted changes have taken place via the writer.
    * Note that even if the writer has only performed
    * merging, this method will still return false.</p>

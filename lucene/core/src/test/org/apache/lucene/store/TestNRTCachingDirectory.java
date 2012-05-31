@@ -63,7 +63,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
       w.addDocument(doc);
       if (random().nextInt(20) == 17) {
         if (r == null) {
-          r = IndexReader.open(w.w, false);
+          r = DirectoryReader.open(w.w, false);
         } else {
           final DirectoryReader r2 = DirectoryReader.openIfChanged(r);
           if (r2 != null) {
@@ -93,7 +93,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     }
     assertEquals(0, cachedFiles.length);
     
-    r = IndexReader.open(dir);
+    r = DirectoryReader.open(dir);
     for(BytesRef id : ids) {
       assertEquals(1, r.docFreq("docid", id));
     }
@@ -109,7 +109,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
 
     Directory fsDir = FSDirectory.open(new File("/path/to/index"));
     NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 2.0, 25.0);
-    IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_32, analyzer);
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     IndexWriter writer = new IndexWriter(cachedFSDir, conf);
   }
 
@@ -125,7 +125,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
   public void testNoDir() throws Throwable {
     Directory dir = new NRTCachingDirectory(newFSDirectory(_TestUtil.getTempDir("doesnotexist")), 2.0, 25.0);
     try {
-      IndexReader.open(dir);
+      DirectoryReader.open(dir);
       fail("did not hit expected exception");
     } catch (NoSuchDirectoryException nsde) {
       // expected

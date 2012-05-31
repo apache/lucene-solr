@@ -8,6 +8,7 @@ import java.util.BitSet;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -51,7 +52,7 @@ public class TestScorerPerf extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     iw.addDocument(new Document());
     iw.close();
-    r = IndexReader.open(d);
+    r = DirectoryReader.open(d);
     s = new IndexSearcher(r);
   }
 

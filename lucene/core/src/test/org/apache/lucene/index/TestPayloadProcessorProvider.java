@@ -156,7 +156,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
   private void verifyPayloadExists(Directory dir, String field, BytesRef text, int numExpected)
       throws IOException {
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     try {
       int numPayloads = 0;
       DocsAndPositionsEnum tpe = MultiFields.getTermPositionsEnum(reader, null, field, text, false);
@@ -198,7 +198,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
     IndexReader[] readers = new IndexReader[dirs.length];
     for (int i = 0; i < readers.length; i++) {
-      readers[i] = IndexReader.open(dirs[i]);
+      readers[i] = DirectoryReader.open(dirs[i]);
     }
     try {
       writer.addIndexes(readers);

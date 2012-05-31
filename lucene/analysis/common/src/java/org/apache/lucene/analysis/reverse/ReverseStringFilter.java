@@ -31,14 +31,6 @@ import java.io.IOException;
  * that character. For example, with a marker of &#x5C;u0001, "country" =>
  * "&#x5C;u0001yrtnuoc". This is useful when implementing efficient leading
  * wildcards search.
- * </p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating ReverseStringFilter, or when using any of
- * its static methods:
- * <ul>
- *   <li> As of 3.1, supplementary characters are handled correctly
- * </ul>
  */
 public final class ReverseStringFilter extends TokenFilter {
 
@@ -74,7 +66,7 @@ public final class ReverseStringFilter extends TokenFilter {
    * The reversed tokens will not be marked. 
    * </p>
    * 
-   * @param matchVersion See <a href="#version">above</a>
+   * @param matchVersion Lucene compatibility version
    * @param in {@link TokenStream} to filter
    */
   public ReverseStringFilter(Version matchVersion, TokenStream in) {
@@ -89,7 +81,7 @@ public final class ReverseStringFilter extends TokenFilter {
    * character.
    * </p>
    * 
-   * @param matchVersion See <a href="#version">above</a>
+   * @param matchVersion compatibility version
    * @param in {@link TokenStream} to filter
    * @param marker A character used to mark reversed tokens
    */
@@ -119,7 +111,7 @@ public final class ReverseStringFilter extends TokenFilter {
   /**
    * Reverses the given input string
    * 
-   * @param matchVersion See <a href="#version">above</a>
+   * @param matchVersion compatibility version
    * @param input the string to reverse
    * @return the given input string in reversed order
    */
@@ -131,7 +123,7 @@ public final class ReverseStringFilter extends TokenFilter {
   
   /**
    * Reverses the given input buffer in-place
-   * @param matchVersion See <a href="#version">above</a>
+   * @param matchVersion compatibility version
    * @param buffer the input char array to reverse
    */
   public static void reverse(Version matchVersion, final char[] buffer) {
@@ -141,7 +133,7 @@ public final class ReverseStringFilter extends TokenFilter {
   /**
    * Partially reverses the given input buffer in-place from offset 0
    * up to the given length.
-   * @param matchVersion See <a href="#version">above</a>
+   * @param matchVersion compatibility version
    * @param buffer the input char array to reverse
    * @param len the length in the buffer up to where the
    *        buffer should be reversed
@@ -152,23 +144,9 @@ public final class ReverseStringFilter extends TokenFilter {
   }
   
   /**
-   * @deprecated (3.1) Remove this when support for 3.0 indexes is no longer needed.
-   */
-  @Deprecated
-  private static void reverseUnicode3( char[] buffer, int start, int len ){
-    if( len <= 1 ) return;
-    int num = len>>1;
-    for( int i = start; i < ( start + num ); i++ ){
-      char c = buffer[i];
-      buffer[i] = buffer[start * 2 + len - i - 1];
-      buffer[start * 2 + len - i - 1] = c;
-    }
-  }
-  
-  /**
    * Partially reverses the given input buffer in-place from the given offset
    * up to the given length.
-   * @param matchVersion See <a href="#version">above</a>
+   * @param matchVersion compatibility version
    * @param buffer the input char array to reverse
    * @param start the offset from where to reverse the buffer
    * @param len the length in the buffer up to where the
@@ -176,10 +154,6 @@ public final class ReverseStringFilter extends TokenFilter {
    */
   public static void reverse(Version matchVersion, final char[] buffer,
       final int start, final int len) {
-    if (!matchVersion.onOrAfter(Version.LUCENE_31)) {
-      reverseUnicode3(buffer, start, len);
-      return;
-    }
     /* modified version of Apache Harmony AbstractStringBuilder reverse0() */
     if (len < 2)
       return;

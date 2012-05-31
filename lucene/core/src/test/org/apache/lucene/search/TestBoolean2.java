@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
@@ -63,7 +64,7 @@ public class TestBoolean2 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    littleReader = IndexReader.open(directory);
+    littleReader = DirectoryReader.open(directory);
     searcher = new IndexSearcher(littleReader);
 
     // Make big index

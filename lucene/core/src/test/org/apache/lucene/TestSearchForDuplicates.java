@@ -89,7 +89,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       writer.close();
 
       // try a search without OR
-      IndexReader reader = IndexReader.open(directory);
+      IndexReader reader = DirectoryReader.open(directory);
       IndexSearcher searcher = new IndexSearcher(reader);
 
       Query query = new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY));

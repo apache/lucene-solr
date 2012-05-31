@@ -40,17 +40,6 @@ import java.io.*;
  * all). A default set of stopwords is used unless an alternative list is
  * specified.
  * </p>
- * 
- * <a name="version"/>
- * <p>
- * You must specify the required {@link Version} compatibility when creating
- * CzechAnalyzer:
- * <ul>
- * <li>As of 3.1, words are stemmed with {@link CzechStemFilter}
- * <li>As of 2.9, StopFilter preserves position increments
- * <li>As of 2.4, Tokens incorrectly identified as acronyms are corrected (see
- * <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1068</a>)
- * </ul>
  */
 public final class CzechAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Czech stopwords. */
@@ -86,8 +75,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
    *
-   * @param matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
+   * @param matchVersion Lucene version to match
    */
 	public CzechAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_SET);
@@ -96,8 +84,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words.
    *
-   * @param matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
+   * @param matchVersion Lucene version to match
    * @param stopwords a stopword set
    */
   public CzechAnalyzer(Version matchVersion, CharArraySet stopwords) {
@@ -108,8 +95,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words and a set of work to be
    * excluded from the {@link CzechStemFilter}.
    * 
-   * @param matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
+   * @param matchVersion Lucene version to match
    * @param stopwords a stopword set
    * @param stemExclusionTable a stemming exclusion set
    */
@@ -127,7 +113,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , and {@link CzechStemFilter} (only if version is >= LUCENE_31). If
-   *         a version is >= LUCENE_31 and a stem exclusion set is provided via
+   *         a stem exclusion set is provided via
    *         {@link #CzechAnalyzer(Version, CharArraySet, CharArraySet)} a
    *         {@link KeywordMarkerFilter} is added before
    *         {@link CzechStemFilter}.
@@ -139,11 +125,9 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
     TokenStream result = new StandardFilter(matchVersion, source);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter( matchVersion, result, stopwords);
-    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
-      if(!this.stemExclusionTable.isEmpty())
-        result = new KeywordMarkerFilter(result, stemExclusionTable);
-      result = new CzechStemFilter(result);
-    }
+    if(!this.stemExclusionTable.isEmpty())
+      result = new KeywordMarkerFilter(result, stemExclusionTable);
+    result = new CzechStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
 }

@@ -33,7 +33,7 @@ public class TestCharacterUtils extends LuceneTestCase {
 
   @Test
   public void testCodePointAtCharArrayInt() {
-    CharacterUtils java4 = CharacterUtils.getInstance(Version.LUCENE_30);
+    CharacterUtils java4 = CharacterUtils.getJava4Instance();
     char[] cpAt3 = "Abc\ud801\udc1c".toCharArray();
     char[] highSurrogateAt3 = "Abc\ud801".toCharArray();
     assertEquals((int) 'A', java4.codePointAt(cpAt3, 0));
@@ -59,7 +59,7 @@ public class TestCharacterUtils extends LuceneTestCase {
 
   @Test
   public void testCodePointAtCharSequenceInt() {
-    CharacterUtils java4 = CharacterUtils.getInstance(Version.LUCENE_30);
+    CharacterUtils java4 = CharacterUtils.getJava4Instance();
     String cpAt3 = "Abc\ud801\udc1c";
     String highSurrogateAt3 = "Abc\ud801";
     assertEquals((int) 'A', java4.codePointAt(cpAt3, 0));
@@ -86,7 +86,7 @@ public class TestCharacterUtils extends LuceneTestCase {
 
   @Test
   public void testCodePointAtCharArrayIntInt() {
-    CharacterUtils java4 = CharacterUtils.getInstance(Version.LUCENE_30);
+    CharacterUtils java4 = CharacterUtils.getJava4Instance();
     char[] cpAt3 = "Abc\ud801\udc1c".toCharArray();
     char[] highSurrogateAt3 = "Abc\ud801".toCharArray();
     assertEquals((int) 'A', java4.codePointAt(cpAt3, 0, 2));
@@ -122,9 +122,10 @@ public class TestCharacterUtils extends LuceneTestCase {
 
   @Test
   public void testFillNoHighSurrogate() throws IOException {
-    Version[] versions = new Version[] { Version.LUCENE_30, TEST_VERSION_CURRENT };
-    for (Version version : versions) {
-      CharacterUtils instance = CharacterUtils.getInstance(version);
+    CharacterUtils versions[] = new CharacterUtils[] { 
+        CharacterUtils.getInstance(TEST_VERSION_CURRENT), 
+        CharacterUtils.getJava4Instance() };
+    for (CharacterUtils instance : versions) {
       Reader reader = new StringReader("helloworld");
       CharacterBuffer buffer = CharacterUtils.newCharacterBuffer(6);
       assertTrue(instance.fill(buffer,reader));
@@ -172,7 +173,7 @@ public class TestCharacterUtils extends LuceneTestCase {
   @Test
   public void testFillJava14() throws IOException {
     String input = "1234\ud801\udc1c789123\ud801\ud801\udc1c\ud801";
-    CharacterUtils instance = CharacterUtils.getInstance(Version.LUCENE_30);
+    CharacterUtils instance = CharacterUtils.getJava4Instance();
     Reader reader = new StringReader(input);
     CharacterBuffer buffer = CharacterUtils.newCharacterBuffer(5);
     assertTrue(instance.fill(buffer, reader));

@@ -20,6 +20,7 @@ package org.apache.lucene.queryparser.xml;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -150,7 +151,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
     }
     w.forceMerge(1);
     w.close();
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
     searcher = new IndexSearcher(reader);
 
     //initialize the parser

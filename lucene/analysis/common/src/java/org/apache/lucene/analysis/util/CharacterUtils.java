@@ -43,7 +43,12 @@ public abstract class CharacterUtils {
    *         {@link Version} instance.
    */
   public static CharacterUtils getInstance(final Version matchVersion) {
-    return matchVersion.onOrAfter(Version.LUCENE_31) ? JAVA_5 : JAVA_4;
+    return JAVA_5;
+  }
+  
+  /** explicitly returns a version matching java 4 semantics */
+  public static CharacterUtils getJava4Instance() {
+    return JAVA_4;
   }
 
   /**

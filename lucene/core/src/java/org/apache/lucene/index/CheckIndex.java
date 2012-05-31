@@ -643,12 +643,10 @@ public class CheckIndex {
       }
       for (FieldInfo info : fieldInfos) {
         if (info.hasNorms()) {
-          assert reader.hasNorms(info.name); // deprecated path
           DocValues dv = reader.normValues(info.name);
           checkDocValues(dv, info.name, info.getNormType(), reader.maxDoc());
           ++status.totFields;
         } else {
-          assert !reader.hasNorms(info.name); // deprecated path
           if (reader.normValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
           }

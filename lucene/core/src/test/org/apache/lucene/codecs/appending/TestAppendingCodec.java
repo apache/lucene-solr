@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.appending.AppendingCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -125,7 +126,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     writer.addDocument(doc);
     writer.forceMerge(1);
     writer.close();
-    IndexReader reader = IndexReader.open(dir, 1);
+    IndexReader reader = DirectoryReader.open(dir, 1);
     assertEquals(2, reader.numDocs());
     Document doc2 = reader.document(0);
     assertEquals(text, doc2.get("f"));

@@ -21,6 +21,7 @@ import java.io.File;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 
 /**
@@ -47,7 +48,7 @@ public class GetTermInfo {
   }
   
   public static void getTermInfo(Directory dir, String field, BytesRef termtext) throws Exception {
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     long totalTF = HighFreqTerms.getTotalTermFreq(reader, field, termtext);
     System.out.printf("%s:%s \t totalTF = %,d \t doc freq = %,d \n",
          field, termtext.utf8ToString(), totalTF, reader.docFreq(field, termtext)); 

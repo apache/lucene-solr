@@ -210,7 +210,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       }
 
       // Quick test to make sure index is not corrupt:
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = DirectoryReader.open(dir);
       DocsEnum tdocs = _TestUtil.docs(random(), reader,
                                       "field",
                                       new BytesRef("aaa"),
@@ -277,7 +277,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       }
 
       if (success) {
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader reader = DirectoryReader.open(dir);
         final Bits delDocs = MultiFields.getLiveDocs(reader);
         for(int j=0;j<reader.maxDoc();j++) {
           if (delDocs == null || !delDocs.get(j)) {
@@ -448,7 +448,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
      assertFalse("Failed due to: " + thread1.failure, thread1.failed);
      assertFalse("Failed due to: " + thread2.failure, thread2.failed);
      // now verify that we have two documents in the index
-     IndexReader reader = IndexReader.open(dir);
+     IndexReader reader = DirectoryReader.open(dir);
      assertEquals("IndexReader should have one document per thread running", 2,
          reader.numDocs());
      

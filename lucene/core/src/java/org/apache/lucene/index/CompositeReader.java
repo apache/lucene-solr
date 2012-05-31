@@ -33,7 +33,7 @@ import org.apache.lucene.store.*;
  the {@code CompositeReader} interface, it is not possible to directly get postings.
  <p> Concrete subclasses of IndexReader are usually constructed with a call to
  one of the static <code>open()</code> methods, e.g. {@link
- #open(Directory)}.
+ DirectoryReader#open(Directory)}.
 
  <p> For efficiency, in this API documents are often referred to via
  <i>document numbers</i>, non-negative integers which each name a unique

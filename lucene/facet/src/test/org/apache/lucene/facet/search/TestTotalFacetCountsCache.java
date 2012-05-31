@@ -156,7 +156,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     slowTaxoDir.setSleepMillis(sleepMillis);
     
     // Open the slow readers
-    IndexReader slowIndexReader = IndexReader.open(indexDir);
+    IndexReader slowIndexReader = DirectoryReader.open(indexDir);
     TaxonomyReader slowTaxoReader = new DirectoryTaxonomyReader(taxoDir);
 
     // Class to perform search and return results as threads
@@ -421,7 +421,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     indexDir.setSleepMillis(1);
     taxoDir.setSleepMillis(1);
 
-    IndexReader r = IndexReader.open(indexDir);
+    IndexReader r = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
 
     // Create and start threads. Thread1 should lock the cache and calculate

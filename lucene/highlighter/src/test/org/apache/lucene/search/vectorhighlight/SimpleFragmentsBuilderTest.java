@@ -21,6 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -147,7 +148,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     writer.addDocument( doc );
     writer.close();
     if (reader != null) reader.close();
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
   }
   
   public void test1StrMV() throws Exception {

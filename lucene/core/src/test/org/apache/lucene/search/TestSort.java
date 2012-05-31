@@ -268,7 +268,7 @@ public class TestSort extends LuceneTestCase {
     //writer.forceMerge(1);
     //System.out.println(writer.getSegmentCount());
     writer.close();
-    IndexReader reader = IndexReader.open(indexStore);
+    IndexReader reader = DirectoryReader.open(indexStore);
     return newSearcher(reader);
   }
   
@@ -1254,7 +1254,7 @@ public class TestSort extends LuceneTestCase {
     doc.add(newField("t", "1", StringField.TYPE_UNSTORED));
     w.addDocument(doc);
 
-    IndexReader r = IndexReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w, true);
     w.close();
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.Type.STRING)));
@@ -1282,7 +1282,7 @@ public class TestSort extends LuceneTestCase {
         new SortField("string", SortField.Type.STRING),
         SortField.FIELD_DOC );
     // this should not throw AIOOBE or RuntimeEx
-    IndexReader reader = IndexReader.open(indexStore);
+    IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), null, 500, sort);
     reader.close();

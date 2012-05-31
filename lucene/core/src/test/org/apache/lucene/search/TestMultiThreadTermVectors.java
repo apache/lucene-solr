@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -67,7 +68,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     IndexReader reader = null;
     
     try {
-      reader = IndexReader.open(directory);
+      reader = DirectoryReader.open(directory);
       for(int i = 1; i <= numThreads; i++)
         testTermPositionVectors(reader, i);
       
