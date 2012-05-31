@@ -132,6 +132,15 @@ public class SegmentInfoPerCommit {
   }
 
   @Override
+  public String toString() {
+    String s = info.toString(info.dir, delCount);
+    if (delGen != -1) {
+      s += ":delGen=" + delGen;
+    }
+    return s;
+  }
+
+  @Override
   public SegmentInfoPerCommit clone() {
     return new SegmentInfoPerCommit(info, delCount, delGen);
   }

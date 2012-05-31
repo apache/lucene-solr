@@ -2125,7 +2125,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         nextGen = bufferedDeletesStream.getNextGen();
       }
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "publish sets newSegment delGen=" + nextGen + " seg=" + newSegment);
+        infoStream.message("IW", "publish sets newSegment delGen=" + nextGen + " seg=" + segString(newSegment));
       }
       newSegment.setBufferedDeletesGen(nextGen);
       segmentInfos.add(newSegment);
@@ -3235,7 +3235,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
     for(SegmentInfoPerCommit info : merge.segments) {
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "registerMerge info=" + info);
+        infoStream.message("IW", "registerMerge info=" + segString(info));
       }
       mergingSegments.add(info);
     }
@@ -3475,11 +3475,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
           if (infoStream.isEnabled("IW")) {
             if (rld.getPendingDeleteCount() != 0) {
-              infoStream.message("IW", "seg=" + info + " delCount=" + info.getDelCount() + " pendingDelCount=" + rld.getPendingDeleteCount());
+              infoStream.message("IW", "seg=" + segString(info) + " delCount=" + info.getDelCount() + " pendingDelCount=" + rld.getPendingDeleteCount());
             } else if (info.getDelCount() != 0) {
-              infoStream.message("IW", "seg=" + info + " delCount=" + info.getDelCount());
+              infoStream.message("IW", "seg=" + segString(info) + " delCount=" + info.getDelCount());
             } else {
-              infoStream.message("IW", "seg=" + info + " no deletes");
+              infoStream.message("IW", "seg=" + segString(info) + " no deletes");
             }
           }
         }
