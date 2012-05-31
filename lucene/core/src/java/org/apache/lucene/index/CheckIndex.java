@@ -34,8 +34,6 @@ import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -671,7 +669,7 @@ public class CheckIndex {
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, IndexSearcher searcher, boolean doPrint) throws IOException {
+  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
@@ -1008,8 +1006,14 @@ public class CheckIndex {
             throw new RuntimeException("seek to last term " + lastTerm + " failed");
           }
           
-          if (searcher != null) {
-            searcher.search(new TermQuery(new Term(field, lastTerm)), 1);
+          int expectedDocFreq = termsEnum.docFreq();
+          DocsEnum d = termsEnum.docs(null, null, false);
+          int docFreq = 0;
+          while (d.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            docFreq++;
+          }
+          if (docFreq != expectedDocFreq) {
+            throw new RuntimeException("docFreq for last term " + lastTerm + "=" + expectedDocFreq + " != recomputed docFreq=" + docFreq);
           }
         }
         
@@ -1054,16 +1058,30 @@ public class CheckIndex {
               }
             }
             
-            // TermQuery
-            if (searcher != null) {
-              long totDocCount2 = 0;
-              for(int i=0;i<seekCount;i++) {
-                totDocCount2 += searcher.search(new TermQuery(new Term(field, seekTerms[i])), 1).totalHits;
+            long totDocCountNoDeletes = 0;
+            long totDocFreq = 0;
+            for(int i=0;i<seekCount;i++) {
+              if (!termsEnum.seekExact(seekTerms[i], true)) {
+                throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
-              if (totDocCount != totDocCount2) {
-                throw new RuntimeException("search to seek terms produced wrong number of hits: " + totDocCount + " vs " + totDocCount2);
+              totDocFreq += termsEnum.docFreq();
+              docs = termsEnum.docs(null, docs, false);
+              if (docs == null) {
+                throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
+              
+              while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+                totDocCountNoDeletes++;
+              }
+            }
+            
+            if (totDocCount > totDocCountNoDeletes) {
+              throw new RuntimeException("more postings with deletes=" + totDocCount + " than without=" + totDocCountNoDeletes);
+            }
+            
+            if (totDocCountNoDeletes != totDocFreq) {
+              throw new RuntimeException("docfreqs=" + totDocFreq + " != recomputed docfreqs=" + totDocCountNoDeletes);
             }
           }
         }
@@ -1121,7 +1139,6 @@ public class CheckIndex {
     Status.TermIndexStatus status;
     final int maxDoc = reader.maxDoc();
     final Bits liveDocs = reader.getLiveDocs();
-    final IndexSearcher is = new IndexSearcher(reader);
 
     try {
       if (infoStream != null) {
@@ -1129,13 +1146,12 @@ public class CheckIndex {
       }
 
       final Fields fields = reader.fields();
-      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, is, true);
+      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, true);
       if (liveDocs != null) {
         if (infoStream != null) {
           infoStream.print("    test (ignoring deletes): terms, freq, prox...");
         }
-        // TODO: can we make a IS that ignores all deletes?
-        checkFields(fields, null, maxDoc, fieldInfos, null, true);
+        checkFields(fields, null, maxDoc, fieldInfos, true);
       }
     } catch (Throwable e) {
       msg("ERROR: " + e);
@@ -1352,10 +1368,10 @@ public class CheckIndex {
 
         if (tfv != null) {
           // First run with no deletions:
-          checkFields(tfv, null, 1, fieldInfos, null, false);
+          checkFields(tfv, null, 1, fieldInfos, false);
 
           // Again, with the one doc deleted:
-          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, null, false);
+          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false);
 
           // Only agg stats if the doc is live:
           final boolean doStats = liveDocs == null || liveDocs.get(j);
