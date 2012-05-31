@@ -482,7 +482,7 @@ final class DocumentsWriterFlushControl implements MemoryController {
 
   void addFlushableState(ThreadState perThread) {
     if (documentsWriter.infoStream.isEnabled("DWFC")) {
-      documentsWriter.infoStream.message("DWFC", Thread.currentThread().getName() + ": addFlushableState " + perThread.dwpt);
+      documentsWriter.infoStream.message("DWFC", "addFlushableState " + perThread.dwpt);
     }
     final DocumentsWriterPerThread dwpt = perThread.dwpt;
     assert perThread.isHeldByCurrentThread();
