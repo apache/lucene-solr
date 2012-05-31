@@ -32,13 +32,10 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * 
  */
-// TODO: what is the problem with SimpleText
-@SuppressCodecs("SimpleText")
 public class TestCustomNorms extends LuceneTestCase {
   final String floatTestField = "normsTestFloat";
   final String exceptionTestField = "normsTestExcp";
@@ -46,8 +43,6 @@ public class TestCustomNorms extends LuceneTestCase {
   public void testFloatNorms() throws IOException {
 
     MockDirectoryWrapper dir = newDirectory();
-    // TODO: what is the checkindex problem?
-    dir.setCheckIndexOnClose(false); // can't set sim to checkindex yet
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));
     Similarity provider = new MySimProvider();
@@ -89,7 +84,6 @@ public class TestCustomNorms extends LuceneTestCase {
 
   public void testExceptionOnRandomType() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
-    dir.setCheckIndexOnClose(false); // can't set sim to checkindex yet
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));
     Similarity provider = new MySimProvider();
