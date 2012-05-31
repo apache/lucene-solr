@@ -124,19 +124,23 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
     final GroupDocs<GROUP_VALUE_TYPE>[] groupDocsResult = (GroupDocs<GROUP_VALUE_TYPE>[]) new GroupDocs[groups.size()];
 
     int groupIDX = 0;
+    float maxScore = Float.MIN_VALUE;
     for(SearchGroup<?> group : groups) {
       final SearchGroupDocs<GROUP_VALUE_TYPE> groupDocs = groupMap.get(group.groupValue);
       final TopDocs topDocs = groupDocs.collector.topDocs(withinGroupOffset, maxDocsPerGroup);
-      groupDocsResult[groupIDX++] = new GroupDocs<GROUP_VALUE_TYPE>(topDocs.getMaxScore(),
+      groupDocsResult[groupIDX++] = new GroupDocs<GROUP_VALUE_TYPE>(Float.NaN,
+                                                                    topDocs.getMaxScore(),
                                                                     topDocs.totalHits,
                                                                     topDocs.scoreDocs,
                                                                     groupDocs.groupValue,
                                                                     group.sortValues);
+      maxScore = Math.max(maxScore, topDocs.getMaxScore());
     }
 
     return new TopGroups<GROUP_VALUE_TYPE>(groupSort.getSort(),
                                            withinGroupSort == null ? null : withinGroupSort.getSort(),
-                                           totalHitCount, totalGroupedHitCount, groupDocsResult);
+                                           totalHitCount, totalGroupedHitCount, groupDocsResult,
+                                           maxScore);
   }
 
 

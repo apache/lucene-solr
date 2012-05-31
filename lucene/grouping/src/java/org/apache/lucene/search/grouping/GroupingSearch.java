@@ -246,7 +246,7 @@ public class GroupingSearch {
 
     Collection<SearchGroup> topSearchGroups = firstPassCollector.getTopGroups(groupOffset, fillSortFields);
     if (topSearchGroups == null) {
-      return new TopGroups(new SortField[0], new SortField[0], 0, 0, new GroupDocs[0]);
+      return new TopGroups(new SortField[0], new SortField[0], 0, 0, new GroupDocs[0], Float.NaN);
     }
 
     int topNInsideGroup = groupDocsOffset + groupDocsLimit;

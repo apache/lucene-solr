@@ -103,11 +103,12 @@ public class TestBlockJoin extends LuceneTestCase {
     fullQuery.add(new BooleanClause(parentQuery, Occur.MUST));
     fullQuery.add(new BooleanClause(childJoinQuery, Occur.MUST));
 
-    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 1, true, false);
+    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 1, true, true);
 
     s.search(fullQuery, c);
     
     TopGroups<Integer> results = c.getTopGroups(childJoinQuery, null, 0, 10, 0, true);
+    assertFalse(Float.isNaN(results.maxScore));
 
     //assertEquals(1, results.totalHitCount);
     assertEquals(1, results.totalGroupedHitCount);
@@ -115,6 +116,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     final GroupDocs<Integer> group = results.groups[0];
     assertEquals(1, group.totalHits);
+    assertFalse(Float.isNaN(group.score));
 
     Document childDoc = s.doc(group.scoreDocs[0].doc);
     //System.out.println("  doc=" + group.scoreDocs[0].doc);

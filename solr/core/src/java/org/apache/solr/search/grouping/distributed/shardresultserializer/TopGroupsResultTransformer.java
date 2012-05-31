@@ -142,13 +142,13 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         }
 
         BytesRef groupValueRef = groupValue != null ? new BytesRef(groupValue) : null;
-        groupDocs.add(new GroupDocs<BytesRef>(maxScore, totalGroupHits, scoreDocs, groupValueRef, null));
+        groupDocs.add(new GroupDocs<BytesRef>(Float.NaN, maxScore, totalGroupHits, scoreDocs, groupValueRef, null));
       }
 
       @SuppressWarnings("unchecked")
       GroupDocs<BytesRef>[] groupDocsArr = groupDocs.toArray(new GroupDocs[groupDocs.size()]);
       TopGroups<BytesRef> topGroups = new TopGroups<BytesRef>(
-        groupSort.getSort(), sortWithinGroup.getSort(), totalHitCount, totalGroupedHitCount, groupDocsArr
+           groupSort.getSort(), sortWithinGroup.getSort(), totalHitCount, totalGroupedHitCount, groupDocsArr, Float.NaN
       );
 
       result.put(key, topGroups);

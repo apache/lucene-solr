@@ -652,7 +652,7 @@ public class QueryComponent extends SearchComponent
     GroupingSpecification groupSpec = rb.getGroupingSpec();
     if (rb.mergedTopGroups.isEmpty()) {
       for (String field : groupSpec.getFields()) {
-        rb.mergedTopGroups.put(field, new TopGroups(null, null, 0, 0, new GroupDocs[]{}));
+        rb.mergedTopGroups.put(field, new TopGroups(null, null, 0, 0, new GroupDocs[]{}, Float.NaN));
       }
       rb.resultIds = new HashMap<Object, ShardDoc>();
     }

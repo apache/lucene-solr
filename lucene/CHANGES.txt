@@ -1015,6 +1015,9 @@ Bug fixes
 * LUCENE-4079: Fixed loading of Hunspell dictionaries that use aliasing (AF rules)
   (Ludovic Boutros via Chris Male)
 
+* LUCENE-4077: Expose the max score and per-group scores from
+  ToParentBlockJoinCollector (Christoph Kaser, Mike McCandless)
+
 Documentation
 
 * LUCENE-3958: Javadocs corrections for IndexWriter.
