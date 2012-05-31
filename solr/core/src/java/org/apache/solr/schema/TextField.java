@@ -168,7 +168,6 @@ public class TextField extends FieldType {
 
   static Query parseFieldQuery(QParser parser, Analyzer analyzer, String field, String queryText) {
     int phraseSlop = 0;
-    boolean enablePositionIncrements = true;
 
     // most of the following code is taken from the Lucene QueryParser
 
@@ -289,21 +288,13 @@ public class TextField extends FieldType {
             }
 
             if (positionIncrement > 0 && multiTerms.size() > 0) {
-              if (enablePositionIncrements) {
-                mpq.add((Term[])multiTerms.toArray(new Term[0]),position);
-              } else {
-                mpq.add((Term[])multiTerms.toArray(new Term[0]));
-              }
+              mpq.add((Term[])multiTerms.toArray(new Term[multiTerms.size()]),position);
               multiTerms.clear();
             }
             position += positionIncrement;
             multiTerms.add(new Term(field, term));
           }
-          if (enablePositionIncrements) {
-            mpq.add((Term[])multiTerms.toArray(new Term[0]),position);
-          } else {
-            mpq.add((Term[])multiTerms.toArray(new Term[0]));
-          }
+          mpq.add((Term[])multiTerms.toArray(new Term[multiTerms.size()]),position);
           return mpq;
         }
       }
@@ -329,12 +320,8 @@ public class TextField extends FieldType {
             // safe to ignore, because we know the number of tokens
           }
 
-          if (enablePositionIncrements) {
-            position += positionIncrement;
-            pq.add(new Term(field, term),position);
-          } else {
-            pq.add(new Term(field, term));
-          }
+          position += positionIncrement;
+          pq.add(new Term(field, term),position);
         }
         return pq;
       }
