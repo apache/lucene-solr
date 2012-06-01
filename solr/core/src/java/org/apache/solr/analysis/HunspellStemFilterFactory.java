@@ -40,7 +40,10 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * Both parameters dictionary and affix are mandatory.
  * <br/>
  * The parameter ignoreCase (true/false) controls whether matching is case sensitive or not. Default false.
- * <br/> 
+ * <br/>
+ * The parameter strictAffixParsing (true/false) controls whether the affix parsing is strict or not. Default true.
+ * If strict an error while reading an affix rule causes a ParseException, otherwise is ignored.
+ * <br/>
  * Dictionaries for many languages are available through the OpenOffice project.
  * 
  * See <a href="http://wiki.apache.org/solr/Hunspell">http://wiki.apache.org/solr/Hunspell</a>
@@ -50,6 +53,7 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
   private static final String PARAM_DICTIONARY = "dictionary";
   private static final String PARAM_AFFIX = "affix";
   private static final String PARAM_IGNORE_CASE = "ignoreCase";
+  private static final String PARAM_STRICT_AFFIX_PARSING = "strictAffixParsing";
   private static final String TRUE = "true";
   private static final String FALSE = "false";
   
@@ -72,12 +76,21 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
       else throw new InitializationException("Unknown value for " + PARAM_IGNORE_CASE + ": " + pic + ". Must be true or false");
     }
 
+
+    String strictAffixParsingParam = args.get(PARAM_STRICT_AFFIX_PARSING);
+    boolean strictAffixParsing = true;
+    if(strictAffixParsingParam != null) {
+      if(strictAffixParsingParam.equalsIgnoreCase(FALSE)) strictAffixParsing = false;
+      else if(strictAffixParsingParam.equalsIgnoreCase(TRUE)) strictAffixParsing = true;
+      else throw new InitializationException("Unknown value for " + PARAM_STRICT_AFFIX_PARSING + ": " + strictAffixParsingParam + ". Must be true or false");
+    }
+
     try {
       List<InputStream> dictionaries = new ArrayList<InputStream>();
       for (String file : dictionaryFiles) {
         dictionaries.add(loader.openResource(file));
       }
-      this.dictionary = new HunspellDictionary(loader.openResource(affixFile), dictionaries, luceneMatchVersion, ignoreCase);
+      this.dictionary = new HunspellDictionary(loader.openResource(affixFile), dictionaries, luceneMatchVersion, ignoreCase, strictAffixParsing);
     } catch (Exception e) {
       throw new InitializationException("Unable to load hunspell data! [dictionary=" + args.get("dictionary") + ",affix=" + affixFile + "]", e);
     }
