@@ -320,6 +320,15 @@ New Features
   prior "FieldName^boost" syntax is still accepted.  In such cases the value on the
   "ps" parameter serves as the default slop.  (Ron Mayer via James Dyer)
 
+* SOLR-2796: New UpdateProcessors have been added to create default values for 
+  configured fields.  These works similarly to the <field default="..."/> 
+  option in schema.xml, but are applied in the UpdateProcessorChain, so they 
+  may be used prior to other UpdateProcessors, or to generate a uniqueKey field 
+  value when using the DistributedUpdateProcessor (ie: SolrCloud)
+    TimestampUpdateProcessorFactory
+    UUIDUpdateProcessorFactory
+    DefaultValueUpdateProcessorFactory
+  (hossman)
 
 Optimizations
 ----------------------
