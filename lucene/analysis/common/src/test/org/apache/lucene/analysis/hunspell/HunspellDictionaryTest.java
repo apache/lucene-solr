@@ -19,11 +19,13 @@ package org.apache.lucene.analysis.hunspell;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
+import java.util.Arrays;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -52,6 +54,33 @@ public class HunspellDictionaryTest extends LuceneTestCase {
     assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).size());
     assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).size());
     assertEquals(1, dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3).size());
+
+    affixStream.close();
+    dictStream.close();
+  }
+
+  @Test
+  public void testHunspellDictionary_loadDicWrongAff() throws IOException, ParseException {
+    InputStream affixStream = getClass().getResourceAsStream("testWrongAffixRule.aff");
+    InputStream dictStream = getClass().getResourceAsStream("test.dic");
+
+    HunspellDictionary dictionary = new HunspellDictionary(affixStream, Arrays.asList(dictStream), TEST_VERSION_CURRENT, false, false);
+    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).size());
+    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).size());
+    assertEquals(1, dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3).size());
+    //strict parsing disabled: malformed rule is not loaded
+    assertNull(dictionary.lookupPrefix(new char[]{'a'}, 0, 1));
+
+    affixStream = getClass().getResourceAsStream("testWrongAffixRule.aff");
+    dictStream = getClass().getResourceAsStream("test.dic");
+    //strict parsing enabled: malformed rule causes ParseException
+    try {
+      dictionary = new HunspellDictionary(affixStream, Arrays.asList(dictStream), TEST_VERSION_CURRENT, false, true);
+      Assert.fail();
+    } catch(ParseException e) {
+      Assert.assertEquals("The affix file contains a rule with less than five elements", e.getMessage());
+      Assert.assertEquals(23, e.getErrorOffset());
+    }
 
     affixStream.close();
     dictStream.close();

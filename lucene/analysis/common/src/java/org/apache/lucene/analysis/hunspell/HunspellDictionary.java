@@ -50,6 +50,7 @@ public class HunspellDictionary {
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
 
   private static final boolean IGNORE_CASE_DEFAULT = false;
+  private static final boolean STRICT_AFFIX_PARSING_DEFAULT = true;
 
   private CharArrayMap<List<HunspellWord>> words;
   private CharArrayMap<List<HunspellAffix>> prefixes;
@@ -104,11 +105,27 @@ public class HunspellDictionary {
    * @throws ParseException Can be thrown if the content of the files does not meet expected formats
    */
   public HunspellDictionary(InputStream affix, List<InputStream> dictionaries, Version version, boolean ignoreCase) throws IOException, ParseException {
+    this(affix, dictionaries, version, ignoreCase, STRICT_AFFIX_PARSING_DEFAULT);
+  }
+
+  /**
+   * Creates a new HunspellDictionary containing the information read from the provided InputStreams to hunspell affix
+   * and dictionary files
+   *
+   * @param affix InputStream for reading the hunspell affix file
+   * @param dictionaries InputStreams for reading the hunspell dictionary file
+   * @param version Lucene Version
+   * @param ignoreCase If true, dictionary matching will be case insensitive
+   * @param strictAffixParsing Affix strict parsing enabled or not (an error while reading a rule causes exception or is ignored)
+   * @throws IOException Can be thrown while reading from the InputStreams
+   * @throws ParseException Can be thrown if the content of the files does not meet expected formats
+   */
+  public HunspellDictionary(InputStream affix, List<InputStream> dictionaries, Version version, boolean ignoreCase, boolean strictAffixParsing) throws IOException, ParseException {
     this.version = version;
     this.ignoreCase = ignoreCase;
     String encoding = getDictionaryEncoding(affix);
     CharsetDecoder decoder = getJavaEncoding(encoding);
-    readAffixFile(affix, decoder);
+    readAffixFile(affix, decoder, strictAffixParsing);
     words = new CharArrayMap<List<HunspellWord>>(version, 65535 /* guess */, this.ignoreCase);
     for (InputStream dictionary : dictionaries) {
       readDictionaryFile(dictionary, decoder);
@@ -158,19 +175,19 @@ public class HunspellDictionary {
    * @param decoder CharsetDecoder to decode the content of the file
    * @throws IOException Can be thrown while reading from the InputStream
    */
-  private void readAffixFile(InputStream affixStream, CharsetDecoder decoder) throws IOException {
+  private void readAffixFile(InputStream affixStream, CharsetDecoder decoder, boolean strict) throws IOException, ParseException {
     prefixes = new CharArrayMap<List<HunspellAffix>>(version, 8, ignoreCase);
     suffixes = new CharArrayMap<List<HunspellAffix>>(version, 8, ignoreCase);
-    
-    BufferedReader reader = new BufferedReader(new InputStreamReader(affixStream, decoder));
+
+    LineNumberReader reader = new LineNumberReader(new InputStreamReader(affixStream, decoder));
     String line = null;
     while ((line = reader.readLine()) != null) {
       if (line.startsWith(ALIAS_KEY)) {
         parseAlias(line);
       } else if (line.startsWith(PREFIX_KEY)) {
-        parseAffix(prefixes, line, reader, PREFIX_CONDITION_REGEX_PATTERN);
+        parseAffix(prefixes, line, reader, PREFIX_CONDITION_REGEX_PATTERN, strict);
       } else if (line.startsWith(SUFFIX_KEY)) {
-        parseAffix(suffixes, line, reader, SUFFIX_CONDITION_REGEX_PATTERN);
+        parseAffix(suffixes, line, reader, SUFFIX_CONDITION_REGEX_PATTERN, strict);
       } else if (line.startsWith(FLAG_KEY)) {
         // Assume that the FLAG line comes before any prefix or suffixes
         // Store the strategy so it can be used when parsing the dic file
@@ -192,8 +209,9 @@ public class HunspellDictionary {
    */
   private void parseAffix(CharArrayMap<List<HunspellAffix>> affixes,
                           String header,
-                          BufferedReader reader,
-                          String conditionPattern) throws IOException {
+                          LineNumberReader reader,
+                          String conditionPattern,
+                          boolean strict) throws IOException, ParseException {
     String args[] = header.split("\\s+");
 
     boolean crossProduct = args[2].equals("Y");
@@ -202,6 +220,13 @@ public class HunspellDictionary {
     for (int i = 0; i < numLines; i++) {
       String line = reader.readLine();
       String ruleArgs[] = line.split("\\s+");
+
+      if (ruleArgs.length < 5) {
+        if (strict) {
+          throw new ParseException("The affix file contains a rule with less than five elements", reader.getLineNumber());
+        }
+        continue;
+      }
 
       HunspellAffix affix = new HunspellAffix();
       

@@ -887,6 +887,11 @@ New features
     generates suggestions by combining two or more terms and/or 
     breaking terms into multiple words.  See Javadocs for usage. (James Dyer)
 
+* LUCENE-4019: Added improved parsing of Hunspell Dictionaries so those
+  rules missing the required number of parameters either ignored or 
+  cause a ParseException (depending on whether strict parsing is enabled).
+  (Luca Cavanna via Chris Male) 
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
