@@ -89,6 +89,14 @@ Upgrading from Solr 3.6-dev
   paths have been fixed to be resolved against the data dir.  See the example 
   solrconfig.xml and SOLR-1258 for more details.
 
+* Due to low level changes to support SolrCloud, the uniqueKey field can no 
+  longer be populated via <copyField/> or <field default=...> in the 
+  schema.xml.  Users wishing to have Solr automaticly generate a uniqueKey 
+  value when adding documents should instead use an instance of
+  solr.UUIDUpdateProcessorFactory in their update processor chain.  See 
+  SOLR-2796 for more details.
+
+
 Detailed Change List
 ----------------------
 
@@ -320,7 +328,7 @@ New Features
   prior "FieldName^boost" syntax is still accepted.  In such cases the value on the
   "ps" parameter serves as the default slop.  (Ron Mayer via James Dyer)
 
-* SOLR-2796: New UpdateProcessors have been added to create default values for 
+* SOLR-3495: New UpdateProcessors have been added to create default values for 
   configured fields.  These works similarly to the <field default="..."/> 
   option in schema.xml, but are applied in the UpdateProcessorChain, so they 
   may be used prior to other UpdateProcessors, or to generate a uniqueKey field 
@@ -609,6 +617,9 @@ Other Changes
 * SOLR-3083: JMX beans now report Numbers as numeric values rather then String
   (Tagged Siteops, Greg Bowyer via ryan)
 
+* SOLR-2796: Due to low level changes to support SolrCloud, the uniqueKey 
+  field can no longer be populated via <copyField/> or <field default=...>
+  in the schema.xml.
 
 Documentation
 ----------------------
