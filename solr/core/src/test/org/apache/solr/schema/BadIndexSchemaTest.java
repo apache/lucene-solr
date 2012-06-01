@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,7 +38,8 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
       // short circuit out if we found what we expected
       if (-1 != e.getMessage().indexOf(errString)) return;
       // Test the cause too in case the expected error is wrapped
-      if (-1 != e.getCause().getMessage().indexOf(errString)) return;
+      if (null != e.getCause() && 
+          -1 != e.getCause().getMessage().indexOf(errString)) return;
 
       // otherwise, rethrow it, possibly completley unrelated
       throw new SolrException
@@ -50,7 +51,6 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
     fail("Did not encounter any exception from: " + schema);
   }
 
-  @Test
   public void testSevereErrorsForInvalidFieldOptions() throws Exception {
     doTest("bad-schema-not-indexed-but-norms.xml", "bad_field");
     doTest("bad-schema-not-indexed-but-tf.xml", "bad_field");
@@ -58,29 +58,32 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
     doTest("bad-schema-omit-tf-but-not-pos.xml", "bad_field");
   }
 
-  @Test
   public void testSevereErrorsForDuplicateFields() throws Exception {
     doTest("bad-schema-dup-field.xml", "fAgain");
   }
 
-  @Test
   public void testSevereErrorsForDuplicateDynamicField() throws Exception {
     doTest("bad-schema-dup-dynamicField.xml", "_twice");
   }
 
-  @Test
   public void testSevereErrorsForDuplicateFieldType() throws Exception {
     doTest("bad-schema-dup-fieldType.xml", "ftAgain");
   }
 
-  @Test
   public void testSevereErrorsForUnexpectedAnalyzer() throws Exception {
     doTest("bad-schema-nontext-analyzer.xml", "StrField (bad_type)");
   }
 
-  @Test
   public void testBadExternalFileField() throws Exception {
     doTest("bad-schema-external-filefield.xml",
-        "Only float and pfloat");
+           "Only float and pfloat");
   }
+
+  public void testUniqueKeyRules() throws Exception {
+    doTest("bad-schema-uniquekey-is-copyfield-dest.xml", 
+           "can not be the dest of a copyField");
+    doTest("bad-schema-uniquekey-uses-default.xml", 
+           "can not be configured with a default value");
+  }
+
 }

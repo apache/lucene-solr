@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -465,6 +465,14 @@ public final class IndexSchema {
       log.warn("no uniqueKey specified in schema.");
     } else {
       uniqueKeyField=getIndexedField(node.getNodeValue().trim());
+      if (null != uniqueKeyField.getDefaultValue()) {
+        String msg = "uniqueKey field ("+uniqueKeyFieldName+
+          ") can not be configured with a default value ("+
+          uniqueKeyField.getDefaultValue()+")";
+        log.error(msg);
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
+      }
+
       if (!uniqueKeyField.stored()) {
         log.error("uniqueKey is not stored - distributed search will not work");
       }
@@ -507,6 +515,14 @@ public final class IndexSchema {
           }
         }
 
+        if (dest.equals(uniqueKeyFieldName)) {
+          String msg = "uniqueKey field ("+uniqueKeyFieldName+
+            ") can not be the dest of a copyField (src="+source+")";
+          log.error(msg);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+          
+        }
+
         registerCopyField(source, dest, maxCharsInt);
      }
       
@@ -517,6 +533,8 @@ public final class IndexSchema {
                       entry.getValue()+")");
         }
       }
+
+
       //Run the callbacks on SchemaAware now that everything else is done
       for (SchemaAware aware : schemaAware) {
         aware.inform(this);
