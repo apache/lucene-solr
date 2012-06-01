@@ -97,7 +97,7 @@ public class FieldPhraseList {
     }
   }
   
-  void addIfNoOverlap( WeightedPhraseInfo wpi ){
+  public void addIfNoOverlap( WeightedPhraseInfo wpi ){
     for( WeightedPhraseInfo existWpi : phraseList ){
       if( existWpi.isOffsetOverlap( wpi ) ) return;
     }
@@ -106,19 +106,40 @@ public class FieldPhraseList {
   
   public static class WeightedPhraseInfo {
 
-    String text;  // unnecessary member, just exists for debugging purpose
-    List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
+    private String text;  // unnecessary member, just exists for debugging purpose
+    private List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
                             // but if position-gap > 1 and slop > 0 then size() could be greater than 1
-    float boost;  // query boost
-    int seqnum;
+    private float boost;  // query boost
+    private int seqnum;
     
+    /**
+     * @return the text
+     */
+    public String getText() {
+      return text;
+    }
+
+    /**
+     * @return the termsOffsets
+     */
+    public List<Toffs> getTermsOffsets() {
+      return termsOffsets;
+    }
+
+    /**
+     * @return the boost
+     */
+    public float getBoost() {
+      return boost;
+    }
+
     public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost ){
       this( terms, boost, 0 );
     }
     
-    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost, int number ){
+    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost, int seqnum ){
       this.boost = boost;
-      this.seqnum = number;
+      this.seqnum = seqnum;
       termsOffsets = new ArrayList<Toffs>( terms.size() );
       TermInfo ti = terms.get( 0 );
       termsOffsets.add( new Toffs( ti.getStartOffset(), ti.getEndOffset() ) );
@@ -175,9 +196,16 @@ public class FieldPhraseList {
       return sb.toString();
     }
     
+    /**
+     * @return the seqnum
+     */
+    public int getSeqnum() {
+      return seqnum;
+    }
+
     public static class Toffs {
-      int startOffset;
-      int endOffset;
+      private int startOffset;
+      private int endOffset;
       public Toffs( int startOffset, int endOffset ){
         this.startOffset = startOffset;
         this.endOffset = endOffset;

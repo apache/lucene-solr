@@ -61,19 +61,19 @@ public class FieldFragList {
 
   public static class WeightedFragInfo {
 
-    List<SubInfo> subInfos;
-    float totalBoost;
-    int startOffset;
-    int endOffset;
+    private List<SubInfo> subInfos;
+    private float totalBoost;
+    private int startOffset;
+    private int endOffset;
 
     public WeightedFragInfo( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList ){
       this.startOffset = startOffset;
       this.endOffset = endOffset;
       subInfos = new ArrayList<SubInfo>();
       for( WeightedPhraseInfo phraseInfo : phraseInfoList ){
-        SubInfo subInfo = new SubInfo( phraseInfo.text, phraseInfo.termsOffsets, phraseInfo.seqnum );
+        SubInfo subInfo = new SubInfo( phraseInfo.getText(), phraseInfo.getTermsOffsets(), phraseInfo.getSeqnum() );
         subInfos.add( subInfo );
-        totalBoost += phraseInfo.boost;
+        totalBoost += phraseInfo.getBoost();
       }
     }
     
@@ -104,12 +104,12 @@ public class FieldFragList {
     }
     
     public static class SubInfo {
-      final String text;  // unnecessary member, just exists for debugging purpose
-      final List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
+      private final String text;  // unnecessary member, just exists for debugging purpose
+      private final List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
                               // but if position-gap > 1 and slop > 0 then size() could be greater than 1
-      int seqnum;
+      private int seqnum;
 
-      SubInfo( String text, List<Toffs> termsOffsets, int seqnum ){
+      public SubInfo( String text, List<Toffs> termsOffsets, int seqnum ){
         this.text = text;
         this.termsOffsets = termsOffsets;
         this.seqnum = seqnum;
