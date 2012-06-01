@@ -143,7 +143,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   /* process a field value executing UIMA the CAS containing it as document text */
   private JCas processText(String textFieldValue) throws ResourceInitializationException,
           AnalysisEngineProcessException {
-    log.info(new StringBuffer("Analazying text").toString());
+    log.info(new StringBuffer("Analyzing text").toString());
     /* get the UIMA analysis engine */
     AnalysisEngine ae = aeProvider.getAE();
 
