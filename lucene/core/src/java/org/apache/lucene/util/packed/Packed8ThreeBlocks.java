@@ -24,8 +24,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 
 /** 24 bitsPerValue backed by byte[] */
-final class Packed8ThreeBlocks extends PackedInts.ReaderImpl
-        implements PackedInts.Mutable {
+final class Packed8ThreeBlocks extends PackedInts.MutableImpl {
 
   public static final int MAX_SIZE = Integer.MAX_VALUE / 3;
 
@@ -66,6 +65,18 @@ final class Packed8ThreeBlocks extends PackedInts.ReaderImpl
     blocks[o+2] = (byte) value;
     blocks[o+1] = (byte) (value >> 8);
     blocks[o] = (byte) (value >> 16);
+  }
+
+  @Override
+  public void fill(int fromIndex, int toIndex, long val) {
+    byte block1 = (byte) (val >> 16);
+    byte block2 = (byte) (val >> 8);
+    byte block3 = (byte) val;
+    for (int i = fromIndex * 3, end = toIndex * 3; i < end; ) {
+      blocks[i++] = block1;
+      blocks[i++] = block2;
+      blocks[i++] = block3;
+    }
   }
 
   @Override

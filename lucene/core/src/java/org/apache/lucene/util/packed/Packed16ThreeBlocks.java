@@ -24,8 +24,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 
 /** 48 bitsPerValue backed by short[] */
-final class Packed16ThreeBlocks extends PackedInts.ReaderImpl
-        implements PackedInts.Mutable {
+final class Packed16ThreeBlocks extends PackedInts.MutableImpl {
 
   public static final int MAX_SIZE = Integer.MAX_VALUE / 3;
 
@@ -66,6 +65,18 @@ final class Packed16ThreeBlocks extends PackedInts.ReaderImpl
     blocks[o] = (short) (value >> 32);
     blocks[o+1] = (short) (value >> 16);
     blocks[o+2] = (short) value;
+  }
+
+  @Override
+  public void fill(int fromIndex, int toIndex, long val) {
+    short block1 = (short) (val >> 32);
+    short block2 = (short) (val >> 16);
+    short block3 = (short) val;
+    for (int i = fromIndex * 3, end = toIndex * 3; i < end; ) {
+      blocks[i++] = block1;
+      blocks[i++] = block2;
+      blocks[i++] = block3;
+    }
   }
 
   @Override

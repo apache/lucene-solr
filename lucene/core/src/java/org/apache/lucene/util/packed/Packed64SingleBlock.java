@@ -1,11 +1,5 @@
 package org.apache.lucene.util.packed;
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -23,13 +17,18 @@ import org.apache.lucene.util.RamUsageEstimator;
  * the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.util.RamUsageEstimator;
+
 /**
  * This class is similar to {@link Packed64} except that it trades space for
  * speed by ensuring that a single block needs to be read/written in order to
  * read/write a value.
  */
-abstract class Packed64SingleBlock extends PackedInts.ReaderImpl
-        implements PackedInts.Mutable {
+abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
 
   private static final int[] SUPPORTED_BITS_PER_VALUE = new int[] {1, 2, 3, 4,
       5, 6, 7, 9, 10, 12, 21};
@@ -140,11 +139,140 @@ abstract class Packed64SingleBlock extends PackedInts.ReaderImpl
   }
 
   @Override
+  public int get(int index, long[] arr, int off, int len) {
+    assert len > 0;
+    assert index >= 0 && index < valueCount;
+    len = Math.min(len, valueCount - index);
+    assert off + len <= arr.length;
+
+    final int originalIndex = index;
+
+    // go to the next block boundary
+    final int offsetInBlock = offsetInBlock(index);
+    if (offsetInBlock != 0) {
+      for (int i = offsetInBlock; i < valuesPerBlock && len > 0; ++i) {
+        arr[off++] = get(index++);
+        --len;
+      }
+      if (len == 0) {
+        return index - originalIndex;
+      }
+    }
+
+    // bulk get
+    assert offsetInBlock(index) == 0;
+    final int startBlock = blockOffset(index);
+    final int endBlock = blockOffset(index + len);
+    final int diff = (endBlock - startBlock) * valuesPerBlock;
+    index += diff; len -= diff;
+    for (int block = startBlock; block < endBlock; ++block) {
+      for (int i = 0; i < valuesPerBlock; ++i) {
+        arr[off++] = (blocks[block] >> shifts[i]) & readMask;
+      }
+    }
+
+    if (index > originalIndex) {
+      // stay at the block boundary
+      return index - originalIndex;
+    } else {
+      // no progress so far => already at a block boundary but no full block to
+      // get
+      assert index == originalIndex;
+      return super.get(index, arr, off, len);
+    }
+  }
+
+  @Override
   public void set(int index, long value) {
     final int o = blockOffset(index);
     final int b = offsetInBlock(index);
 
     blocks[o] = (blocks[o] & writeMasks[b]) | (value << shifts[b]);
+  }
+
+  @Override
+  public int set(int index, long[] arr, int off, int len) {
+    assert len > 0;
+    assert index >= 0 && index < valueCount;
+    len = Math.min(len, valueCount - index);
+    assert off + len <= arr.length;
+
+    final int originalIndex = index;
+
+    // go to the next block boundary
+    final int offsetInBlock = offsetInBlock(index);
+    if (offsetInBlock != 0) {
+      for (int i = offsetInBlock; i < valuesPerBlock && len > 0; ++i) {
+        set(index++, arr[off++]);
+        --len;
+      }
+      if (len == 0) {
+        return index - originalIndex;
+      }
+    }
+
+    // bulk set
+    assert offsetInBlock(index) == 0;
+    final int startBlock = blockOffset(index);
+    final int endBlock = blockOffset(index + len);
+    final int diff = (endBlock - startBlock) * valuesPerBlock;
+    index += diff; len -= diff;
+    for (int block = startBlock; block < endBlock; ++block) {
+      long next = 0L;
+      for (int i = 0; i < valuesPerBlock; ++i) {
+        next |= (arr[off++] << shifts[i]);
+      }
+      blocks[block] = next;
+    }
+
+    if (index > originalIndex) {
+      // stay at the block boundary
+      return index - originalIndex;
+    } else {
+      // no progress so far => already at a block boundary but no full block to
+      // set
+      assert index == originalIndex;
+      return super.set(index, arr, off, len);
+    }
+  }
+
+  @Override
+  public void fill(int fromIndex, int toIndex, long val) {
+    assert fromIndex >= 0;
+    assert fromIndex <= toIndex;
+    assert (val & readMask) == val;
+
+    if (toIndex - fromIndex <= valuesPerBlock << 1) {
+      // there needs to be at least one full block to set for the block
+      // approach to be worth trying
+      super.fill(fromIndex, toIndex, val);
+      return;
+    }
+
+    // set values naively until the next block start
+    int fromOffsetInBlock = offsetInBlock(fromIndex);
+    if (fromOffsetInBlock != 0) {
+      for (int i = fromOffsetInBlock; i < valuesPerBlock; ++i) {
+        set(fromIndex++, val);
+      }
+      assert offsetInBlock(fromIndex) == 0;
+    }
+
+    // bulk set of the inner blocks
+    final int fromBlock = blockOffset(fromIndex);
+    final int toBlock = blockOffset(toIndex);
+    assert fromBlock * valuesPerBlock == fromIndex;
+
+    long blockValue = 0L;
+    for (int i = 0; i < valuesPerBlock; ++i) {
+      blockValue = blockValue | (val << shifts[i]);
+    }
+    Arrays.fill(blocks, fromBlock, toBlock, blockValue);
+
+    // fill the gap
+    for (int i = valuesPerBlock * toBlock; i < toIndex; ++i) {
+      set(i, val);
+    }
   }
 
   @Override

@@ -57,6 +57,11 @@ public class PackedInts {
    */
   public static final float COMPACT = 0f;
 
+  /**
+   * Default amount of memory to use for bulk operations.
+   */
+  public static final int DEFAULT_BUFFER_SIZE = 1024; // 1K
+
   private final static String CODEC_NAME = "PackedInts";
   private final static int VERSION_START = 0;
   private final static int VERSION_CURRENT = VERSION_START;
@@ -74,6 +79,13 @@ public class PackedInts {
      * @return the value at the stated index.
      */
     long get(int index);
+
+    /**
+     * Bulk get: read at least one and at most <code>len</code> longs starting
+     * from <code>index</code> into <code>arr[off:off+len]</code> and return
+     * the actual number of values that have been read.
+     */
+    int get(int index, long[] arr, int off, int len);
 
     /**
      * @return the number of bits used to store any given value.
@@ -167,9 +179,24 @@ public class PackedInts {
     void set(int index, long value);
 
     /**
+     * Bulk set: set at least one and at most <code>len</code> longs starting
+     * at <code>off</code> in <code>arr</code> into this mutable, starting at
+     * <code>index</code>. Returns the actual number of values that have been
+     * set.
+     */
+    int set(int index, long[] arr, int off, int len);
+
+    /**
+     * Fill the mutable from <code>fromIndex</code> (inclusive) to
+     * <code>toIndex</code> (exclusive) with <code>val</code>.
+     */
+    void fill(int fromIndex, int toIndex, long val);
+
+    /**
      * Sets all values to 0.
-     */    
+     */
     void clear();
+
   }
 
   /**
@@ -189,7 +216,7 @@ public class PackedInts {
     public int getBitsPerValue() {
       return bitsPerValue;
     }
-    
+
     public int size() {
       return valueCount;
     }
@@ -201,6 +228,45 @@ public class PackedInts {
     public boolean hasArray() {
       return false;
     }
+
+    public int get(int index, long[] arr, int off, int len) {
+      assert index >= 0 && index < valueCount;
+      assert off + len <= arr.length;
+
+      final int gets = Math.min(valueCount - index, len);
+      for (int i = index, o = off, end = index + gets; i < end; ++i, ++o) {
+        arr[o] = get(i);
+      }
+      return gets;
+    }
+  }
+
+  public static abstract class MutableImpl extends ReaderImpl implements Mutable {
+
+    protected MutableImpl(int valueCount, int bitsPerValue) {
+      super(valueCount, bitsPerValue);
+    }
+
+    public int set(int index, long[] arr, int off, int len) {
+      assert len > 0;
+      assert index >= 0 && index < valueCount;
+      len = Math.min(len, valueCount - index);
+      assert off + len <= arr.length;
+
+      for (int i = index, o = off, end = index + len; i < end; ++i, ++o) {
+        set(i, arr[o]);
+      }
+      return len;
+    }
+
+    public void fill(int fromIndex, int toIndex, long val) {
+      assert val <= maxValue(bitsPerValue);
+      assert fromIndex <= toIndex;
+      for (int i = fromIndex; i < toIndex; ++i) {
+        set(i, val);
+      }
+    }
+
   }
 
   /** A write-once Writer.
@@ -452,4 +518,43 @@ public class PackedInts {
   public static long maxValue(int bitsPerValue) {
     return bitsPerValue == 64 ? Long.MAX_VALUE : ~(~0L << bitsPerValue);
   }
+
+  /**
+   * Copy <code>src[srcPos:srcPos+len]</code> into
+   * <code>dest[destPos:destPos+len]</code> using at most <code>mem</code>
+   * bytes.
+   */
+  public static void copy(Reader src, int srcPos, Mutable dest, int destPos, int len, int mem) {
+    assert srcPos + len <= src.size();
+    assert destPos + len <= dest.size();
+    final int capacity = mem >>> 3;
+    if (capacity == 0) {
+      for (int i = 0; i < len; ++i) {
+        dest.set(destPos++, src.get(srcPos++));
+      }
+    } else {
+      // use bulk operations
+      long[] buf = new long[Math.min(capacity, len)];
+      int remaining = 0;
+      while (len > 0) {
+        final int read = src.get(srcPos, buf, remaining, Math.min(len, buf.length - remaining));
+        assert read > 0;
+        srcPos += read;
+        len -= read;
+        remaining += read;
+        final int written = dest.set(destPos, buf, 0, remaining);
+        assert written > 0;
+        destPos += written;
+        if (written < remaining) {
+          System.arraycopy(buf, written, buf, 0, remaining - written);
+        }
+        remaining -= written;
+      }
+      while (remaining > 0) {
+        final int written = dest.set(destPos, buf, 0, remaining);
+        remaining -= written;
+      }
+    }
+  }
+
 }

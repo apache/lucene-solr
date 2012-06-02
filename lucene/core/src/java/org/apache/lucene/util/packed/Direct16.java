@@ -28,9 +28,8 @@ import java.util.Arrays;
  * @lucene.internal
  */
 
-class Direct16 extends PackedInts.ReaderImpl
-        implements PackedInts.Mutable {
-  private short[] values;
+class Direct16 extends PackedInts.MutableImpl {
+  private final short[] values;
   private static final int BITS_PER_VALUE = 16;
 
   public Direct16(int valueCount) {
@@ -75,6 +74,12 @@ class Direct16 extends PackedInts.ReaderImpl
 
   public void set(final int index, final long value) {
     values[index] = (short)(value & 0xFFFF);
+  }
+
+  @Override
+  public void fill(int fromIndex, int toIndex, long val) {
+    assert (val & 0xffffL) == val;
+    Arrays.fill(values, fromIndex, toIndex, (short) val);
   }
 
   public long ramBytesUsed() {
