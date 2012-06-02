@@ -32,7 +32,7 @@ import java.util.Arrays;
  * sacrificing code clarity to achieve better performance.
  */
 
-class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
+class Packed64 extends PackedInts.MutableImpl {
   static final int BLOCK_SIZE = 64; // 32 = int, 64 = long
   static final int BLOCK_BITS = 6; // The #bits representing BLOCK_SIZE
   static final int MOD_MASK = BLOCK_SIZE - 1; // x % BLOCK_SIZE
@@ -100,8 +100,18 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
       }
   }
 
+  private static int pgcd(int a, int b) {
+    if (a < b) {
+      return pgcd(b, a);
+    } else if (b == 0) {
+      return a;
+    } else {
+      return pgcd(b, a % b);
+    }
+  }
+
   /* The bits */
-  private long[] blocks;
+  private final long[] blocks;
 
   // Cached calculations
   private int maxPos;      // blocks.length * BLOCK_SIZE / elementBits - 1
@@ -208,6 +218,56 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
 
   public long ramBytesUsed() {
     return RamUsageEstimator.sizeOf(blocks);
+  }
+
+  @Override
+  public void fill(int fromIndex, int toIndex, long val) {
+    assert PackedInts.bitsRequired(val) <= getBitsPerValue();
+    assert fromIndex <= toIndex;
+
+    // minimum number of values that use an exact number of full blocks
+    final int nAlignedValues = 64 / pgcd(64, bitsPerValue);
+    final int span = toIndex - fromIndex;
+    if (span <= 3 * nAlignedValues) {
+      // there needs be at least 2 * nAlignedValues aligned values for the
+      // block approach to be worth trying
+      super.fill(fromIndex, toIndex, val);
+      return;
+    }
+
+    // fill the first values naively until the next block start
+    final int fromIndexModNAlignedValues = fromIndex % nAlignedValues;
+    if (fromIndexModNAlignedValues != 0) {
+      for (int i = fromIndexModNAlignedValues; i < nAlignedValues; ++i) {
+        set(fromIndex++, val);
+      }
+    }
+    assert fromIndex % nAlignedValues == 0;
+
+    // compute the long[] blocks for nAlignedValues consecutive values and
+    // use them to set as many values as possible without applying any mask
+    // or shift
+    final int nAlignedBlocks = (nAlignedValues * bitsPerValue) >> 6;
+    final long[] nAlignedValuesBlocks;
+    {
+      Packed64 values = new Packed64(nAlignedValues, bitsPerValue);
+      for (int i = 0; i < nAlignedValues; ++i) {
+        values.set(i, val);
+      }
+      nAlignedValuesBlocks = values.blocks;
+      assert nAlignedBlocks <= nAlignedValuesBlocks.length;
+    }
+    final int startBlock = (int) (((long) fromIndex * bitsPerValue) >>> 6);
+    final int endBlock = (int) (((long) toIndex * bitsPerValue) >>> 6);
+    for (int  block = startBlock; block < endBlock; ++block) {
+      final long blockValue = nAlignedValuesBlocks[block % nAlignedBlocks];
+      blocks[block] = blockValue;
+    }
+
+    // fill the gap
+    for (int i = (int) (((long) endBlock << 6) / bitsPerValue); i < toIndex; ++i) {
+      set(i, val);
+    }
   }
 
   public void clear() {

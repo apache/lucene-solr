@@ -952,7 +952,10 @@ Optimizations
 
 * LUCENE-2357: Reduce transient RAM usage when merging segments in
   IndexWriter. (Adrien Grand via Mike McCandless)
-  
+
+* LUCENE-4098: Add bulk get/set methods to PackedInts (Adrien Grand
+  via Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader

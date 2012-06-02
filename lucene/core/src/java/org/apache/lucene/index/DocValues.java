@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Comparator;
 
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -391,6 +392,13 @@ public abstract class DocValues implements Closeable {
       @Override
       public Object getArray() {
         return null;
+      }
+
+      @Override
+      public int get(int index, long[] arr, int off, int len) {
+        len = Math.min(len, size() - index);
+        Arrays.fill(arr, off, off+len, 0);
+        return len;
       }
     };
 
