@@ -1,11 +1,5 @@
 package org.apache.lucene.util.packed;
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -22,6 +16,12 @@ import org.apache.lucene.util.RamUsageEstimator;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * This class is similar to {@link Packed64} except that it trades space for
@@ -142,7 +142,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
   public int get(int index, long[] arr, int off, int len) {
     assert len > 0;
     assert index >= 0 && index < valueCount;
-    final int origLen = len;
     len = Math.min(len, valueCount - index);
     assert off + len <= arr.length;
 
