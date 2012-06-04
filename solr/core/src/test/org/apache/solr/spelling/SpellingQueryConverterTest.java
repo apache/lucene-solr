@@ -23,7 +23,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 
 /**
@@ -125,5 +127,76 @@ public class SpellingQueryConverterTest extends LuceneTestCase {
     tokens = converter.convert("text_field:我购买了道具和服装。 bar");
     assertTrue("tokens is null and it shouldn't be", tokens != null);
     assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
+  }
+  
+  @Test
+  public void testRequiredOrProhibitedFlags() {
+    SpellingQueryConverter converter = new SpellingQueryConverter();
+    converter.init(new NamedList());
+    converter.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+
+    {
+      List<Token> tokens = new ArrayList<Token>(converter.convert("aaa bbb ccc"));
+      assertTrue("Should have 3 tokens",          tokens != null && tokens.size()==3);
+      assertTrue("token 1 should be optional",    !hasRequiredFlag(tokens.get(0)) && !hasProhibitedFlag(tokens.get(0)));
+      assertTrue("token 2 should be optional",    !hasRequiredFlag(tokens.get(1)) && !hasProhibitedFlag(tokens.get(1)));
+      assertTrue("token 3 should be optional",    !hasRequiredFlag(tokens.get(2)) && !hasProhibitedFlag(tokens.get(2)));
+    }
+    {
+      List<Token> tokens = new ArrayList<Token>(converter.convert("+aaa bbb -ccc"));
+      assertTrue("Should have 3 tokens",          tokens != null && tokens.size()==3);
+      assertTrue("token 1 should be required",     hasRequiredFlag(tokens.get(0)) && !hasProhibitedFlag(tokens.get(0)));
+      assertTrue("token 2 should be optional",    !hasRequiredFlag(tokens.get(1)) && !hasProhibitedFlag(tokens.get(1)));
+      assertTrue("token 3 should be prohibited",  !hasRequiredFlag(tokens.get(2)) &&  hasProhibitedFlag(tokens.get(2)));
+    }
+    {
+      List<Token> tokens = new ArrayList<Token>(converter.convert("aaa AND bbb ccc"));
+      assertTrue("Should have 3 tokens",           tokens != null && tokens.size()==3);
+      assertTrue("token 1 doesn't precede n.b.o.",  !hasNBOFlag(tokens.get(0)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 2 doesn't precede n.b.o.",  !hasNBOFlag(tokens.get(1)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 3 doesn't precede n.b.o.",  !hasNBOFlag(tokens.get(2)) && hasInBooleanFlag(tokens.get(0)));
+    }
+    {
+      List<Token> tokens = new ArrayList<Token>(converter.convert("aaa OR bbb OR ccc"));
+      assertTrue("Should have 3 tokens",           tokens != null && tokens.size()==3);
+      assertTrue("token 1 doesn't precede n.b.o.",  !hasNBOFlag(tokens.get(0)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 2 doesn't precede n.b.o.",  !hasNBOFlag(tokens.get(1)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 3 doesn't precede n.b.o.",  !hasNBOFlag(tokens.get(2)) && hasInBooleanFlag(tokens.get(0)));
+    }
+    {
+      List<Token> tokens = new ArrayList<Token>(converter.convert("aaa AND bbb NOT ccc"));
+      assertTrue("Should have 3 tokens",            tokens != null && tokens.size()==3);
+      assertTrue("token 1 doesn't precede n.b.o.",  !hasNBOFlag(tokens.get(0)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 2 precedes n.b.o.",          hasNBOFlag(tokens.get(1)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 3 doesn't precede n.b.o.",  !hasNBOFlag(tokens.get(2)) && hasInBooleanFlag(tokens.get(0)));
+    }
+    {
+      List<Token> tokens = new ArrayList<Token>(converter.convert("aaa NOT bbb AND ccc"));
+      assertTrue("Should have 3 tokens",           tokens != null && tokens.size()==3);
+      assertTrue("token 1 precedes n.b.o.",          hasNBOFlag(tokens.get(0)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 2 precedes n.b.o.",          hasNBOFlag(tokens.get(1)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 3 doesn't precedes n.b.o.", !hasNBOFlag(tokens.get(2)) && hasInBooleanFlag(tokens.get(0)));
+    }
+    {
+      List<Token> tokens = new ArrayList<Token>(converter.convert("aaa AND NOT bbb AND ccc"));
+      assertTrue("Should have 3 tokens",           tokens != null && tokens.size()==3);
+      assertTrue("token 1 precedes n.b.o.",          hasNBOFlag(tokens.get(0)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 2 precedes n.b.o.",          hasNBOFlag(tokens.get(1)) && hasInBooleanFlag(tokens.get(0)));
+      assertTrue("token 3 doesn't precedes n.b.o.", !hasNBOFlag(tokens.get(2)) && hasInBooleanFlag(tokens.get(0)));
+    }
+    
+  }
+  
+  private boolean hasRequiredFlag(Token t) {
+    return (t.getFlags() & QueryConverter.REQUIRED_TERM_FLAG) == QueryConverter.REQUIRED_TERM_FLAG;
+  }
+  private boolean hasProhibitedFlag(Token t) {
+    return (t.getFlags() & QueryConverter.PROHIBITED_TERM_FLAG) == QueryConverter.PROHIBITED_TERM_FLAG;
+  }
+  private boolean hasNBOFlag(Token t) {
+    return (t.getFlags() & QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG) == QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
+  }
+  private boolean hasInBooleanFlag(Token t) {
+    return (t.getFlags() & QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG) == QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG;
   }
 }

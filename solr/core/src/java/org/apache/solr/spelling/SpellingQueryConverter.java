@@ -38,8 +38,18 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * Converts the query string to a Collection of Lucene tokens using a regular expression.
- * Boolean operators AND and OR are skipped.
- *
+ * Boolean operators AND, OR, NOT are skipped. 
+ * 
+ * Each term is checked to determine if it is optional, required or prohibited.  Required
+ * terms output a {@link Token} with the {@link QueryConverter#REQUIRED_TERM_FLAG} set.
+ * Prohibited terms output a {@link Token} with the {@link QueryConverter#PROHIBITED_TERM_FLAG} 
+ * set. If the query uses the plus (+) and minus (-) to denote required and prohibited, this
+ * determination will be accurate.  In the case boolean AND/OR/NOTs are used, this
+ * converter makes an uninformed guess as to whether the term would likely behave as if it
+ * is Required or Prohibited and sets the flags accordingly.  These flags are used downstream
+ * to generate collations for {@link WordBreakSolrSpellChecker}, in cases where an original 
+ * term is split up into multiple Tokens.
+ * 
  * @since solr 1.3
  **/
 public class SpellingQueryConverter extends QueryConverter  {
@@ -86,8 +96,7 @@ public class SpellingQueryConverter extends QueryConverter  {
   final static String PATTERN = "(?:(?!(" + NMTOKEN + ":|\\d+)))[\\p{L}_\\-0-9]+";
   // previous version: Pattern.compile("(?:(?!(\\w+:|\\d+)))\\w+");
   protected Pattern QUERY_REGEX = Pattern.compile(PATTERN);
-
-
+  
   /**
    * Converts the original query string to a collection of Lucene Tokens.
    * @param original the original query string
@@ -99,37 +108,87 @@ public class SpellingQueryConverter extends QueryConverter  {
       return Collections.emptyList();
     }
     Collection<Token> result = new ArrayList<Token>();
-    //TODO: Extract the words using a simple regex, but not query stuff, and then analyze them to produce the token stream
     Matcher matcher = QUERY_REGEX.matcher(original);
-    while (matcher.find()) {
-      String word = matcher.group(0);
-      if (word.equals("AND") == false && word.equals("OR") == false) {
-        try {
-          analyze(result, new StringReader(word), matcher.start());
-        } catch (IOException e) {
-          // TODO: shouldn't we log something?
-        }
+    String nextWord = null;
+    int nextStartIndex = 0;
+    String lastBooleanOp = null;
+    while (nextWord!=null || matcher.find()) {
+      String word = null;
+      int startIndex = 0;
+      if(nextWord != null) {
+        word = nextWord;
+        startIndex = nextStartIndex;
+        nextWord = null;
+      } else {
+        word = matcher.group(0);
+        startIndex = matcher.start();
+      }
+      if(matcher.find()) {
+        nextWord = matcher.group(0);
+        nextStartIndex = matcher.start();
+      }      
+      if("AND".equals(word) || "OR".equals(word) || "NOT".equals(word)) {
+        lastBooleanOp = word;        
+        continue;
+      }
+      // treat "AND NOT" as "NOT"...
+      if ("AND".equals(nextWord)
+          && original.length() > nextStartIndex + 7
+          && original.substring(nextStartIndex, nextStartIndex + 7).equals(
+              "AND NOT")) {
+        nextWord = "NOT";
+      }
+      
+      int flagValue = 0;
+      if (word.charAt(0) == '-'
+          || (startIndex > 0 && original.charAt(startIndex - 1) == '-')) {
+        flagValue = PROHIBITED_TERM_FLAG;
+      } else if (word.charAt(0) == '+'
+          || (startIndex > 0 && original.charAt(startIndex - 1) == '+')) {
+        flagValue = REQUIRED_TERM_FLAG;
+      //we don't know the default operator so just assume the first operator isn't new.
+      } else if (nextWord != null
+          && lastBooleanOp != null 
+          && !nextWord.equals(lastBooleanOp)
+          && ("AND".equals(nextWord) || "OR".equals(nextWord) || "NOT".equals(nextWord))) {
+        flagValue = TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
+      //...unless the 1st boolean operator is a NOT, because only AND/OR can be default.
+      } else if (nextWord != null
+          && lastBooleanOp == null
+          && !nextWord.equals(lastBooleanOp)
+          && ("NOT".equals(nextWord))) {
+        flagValue = TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
+      }
+      try {
+        analyze(result, new StringReader(word), startIndex, flagValue);
+      } catch (IOException e) {
+        // TODO: shouldn't we log something?
+      }   
+    }
+    if(lastBooleanOp != null) {
+      for(Token t : result) {
+        int f = t.getFlags();
+        t.setFlags(f |= QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG);
       }
     }
     return result;
   }
   
-  protected void analyze(Collection<Token> result, Reader text, int offset) throws IOException {
+  protected void analyze(Collection<Token> result, Reader text, int offset, int flagsAttValue) throws IOException {
     TokenStream stream = analyzer.tokenStream("", text);
     // TODO: support custom attributes
     CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
     TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
     PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
     PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
     OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
     stream.reset();
-    while (stream.incrementToken()) {
+    while (stream.incrementToken()) {      
       Token token = new Token();
       token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
       token.setStartOffset(offset + offsetAtt.startOffset());
       token.setEndOffset(offset + offsetAtt.endOffset());
-      token.setFlags(flagsAtt.getFlags());
+      token.setFlags(flagsAttValue); //overwriting any flags already set...
       token.setType(typeAtt.type());
       token.setPayload(payloadAtt.getPayload());
       token.setPositionIncrement(posIncAtt.getPositionIncrement());

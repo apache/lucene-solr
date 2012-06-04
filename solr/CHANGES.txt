@@ -337,6 +337,12 @@ New Features
     UUIDUpdateProcessorFactory
     DefaultValueUpdateProcessorFactory
   (hossman)
+  
+* SOLR-2993: Add WordBreakSolrSpellChecker to offer suggestions by combining adjacent 
+  query terms and/or breaking terms into multiple words.  This spellchecker can be 
+  configured with a traditional checker (ie: DirectSolrSpellChecker).  The results 
+  are combined and collations can contain a mix of corrections from both spellcheckers.  
+  (James Dyer)
 
 Optimizations
 ----------------------
