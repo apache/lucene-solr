@@ -92,7 +92,7 @@ class JSONWriter extends TextResponseWriter {
     if(wrapperFunction!=null) {
         writer.write(')');
     }
-    if (doIndent) writer.write('\n');  // ending with a newline looks much better from the command line
+    writer.write('\n');  // ending with a newline looks much better from the command line
   }
 
   protected void writeKey(String fname, boolean needsEscaping) throws IOException {
