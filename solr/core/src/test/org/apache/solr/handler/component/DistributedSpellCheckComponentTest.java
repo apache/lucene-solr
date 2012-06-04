@@ -37,6 +37,7 @@ import org.apache.solr.common.util.NamedList;
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
   
   private String requestHandlerName;
+  private String reqHandlerWithWordbreak;
   
 	public DistributedSpellCheckComponentTest()
 	{
@@ -52,7 +53,13 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     // this test requires FSDir
     saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");    
-    requestHandlerName = random().nextBoolean() ? "spellCheckCompRH" : "spellCheckCompRH_Direct"; 
+    if(random().nextBoolean()) {
+      requestHandlerName = "spellCheckCompRH";
+      reqHandlerWithWordbreak = "spellCheckWithWordbreak";      
+    } else {
+      requestHandlerName = "spellCheckCompRH_Direct";
+      reqHandlerWithWordbreak = "spellCheckWithWordbreak_Direct";
+    }  
     super.setUp();
   }
   
@@ -141,5 +148,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   
     query("q", "lowerfilt:(\"quote red fox\")", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "5", SpellCheckComponent.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "10");
     query("q", "lowerfilt:(\"rod fix\")", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "5", SpellCheckComponent.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "10");
+  
+    query("q", "lowerfilt:(+quock +redfox +jum +ped)", "fl", "id,lowerfilt", "spellcheck", "true", "qt", reqHandlerWithWordbreak, "shards.qt", reqHandlerWithWordbreak, SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "0", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true");
   }
 }

@@ -50,7 +50,32 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
   private NamedList args;
 
   protected Analyzer analyzer;
-
+  
+  /**
+   * <p>This term is marked prohibited in the query with the minus sign.</p>
+   * 
+   */
+  public static final int PROHIBITED_TERM_FLAG = 16384;
+  /**
+   * <p>This term is marked required in the query with the plus sign.</p>
+   */
+  public static final int REQUIRED_TERM_FLAG = 32768;
+  /**
+   * <p>
+   * This term is directly followed by a boolean operator (AND/OR/NOT)
+   * and this operator differs from the prior boolean operator
+   * in the query (this signifies this term is likely part of a different
+   * query clause than the next term in the query)
+   * </p>
+   */
+  public static final int TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG = 65536;
+  /**
+   * <p>
+   * This term exists in a query that contains boolean operators
+   * (AND/OR/NOT)
+   * </p>
+   */
+  public static final int TERM_IN_BOOLEAN_QUERY_FLAG = 131072;
   public void init(NamedList args) {
     this.args = args;
   }

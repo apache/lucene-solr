@@ -37,7 +37,7 @@ public class SpellCheckCollator {
   private static final Logger LOG = LoggerFactory.getLogger(SpellCheckCollator.class);
 
   public List<SpellCheckCollation> collate(SpellingResult result, String originalQuery, ResponseBuilder ultimateResponse,
-                                           int maxCollations, int maxTries, int maxEvaluations) {
+                                           int maxCollations, int maxTries, int maxEvaluations, boolean suggestionsMayOverlap) {
     List<SpellCheckCollation> collations = new ArrayList<SpellCheckCollation>();
 
     QueryComponent queryComponent = null;
@@ -51,8 +51,10 @@ public class SpellCheckCollator {
     }
 
     boolean verifyCandidateWithQuery = true;
+    int maxNumberToIterate = maxTries;
     if (maxTries < 1) {
       maxTries = 1;
+      maxNumberToIterate = maxCollations;
       verifyCandidateWithQuery = false;
     }
     if (queryComponent == null && verifyCandidateWithQuery) {
@@ -63,11 +65,11 @@ public class SpellCheckCollator {
 
     int tryNo = 0;
     int collNo = 0;
-    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions(), maxTries, maxEvaluations);
+    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions(), maxNumberToIterate, maxEvaluations, suggestionsMayOverlap);
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
 
-      RankedSpellPossibility possibility = possibilityIter.next();
-      String collationQueryStr = getCollation(originalQuery, possibility.getCorrections());
+      PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
+      String collationQueryStr = getCollation(originalQuery, possibility.corrections);
       int hits = 0;
 
       if (verifyCandidateWithQuery) {
@@ -102,10 +104,10 @@ public class SpellCheckCollator {
         SpellCheckCollation collation = new SpellCheckCollation();
         collation.setCollationQuery(collationQueryStr);
         collation.setHits(hits);
-        collation.setInternalRank(possibility.getRank());
+        collation.setInternalRank(suggestionsMayOverlap ? ((possibility.rank * 1000) + possibility.index) : possibility.rank);
 
         NamedList<String> misspellingsAndCorrections = new NamedList<String>();
-        for (SpellCheckCorrection corr : possibility.getCorrections()) {
+        for (SpellCheckCorrection corr : possibility.corrections) {
           misspellingsAndCorrections.add(corr.getOriginal().toString(), corr.getCorrection());
         }
         collation.setMisspellingsAndCorrections(misspellingsAndCorrections);
@@ -122,16 +124,53 @@ public class SpellCheckCollator {
                               List<SpellCheckCorrection> corrections) {
     StringBuilder collation = new StringBuilder(origQuery);
     int offset = 0;
-    for (SpellCheckCorrection correction : corrections) {
+    String corr = "";
+    for(int i=0 ; i<corrections.size() ; i++) {
+      SpellCheckCorrection correction = corrections.get(i);   
       Token tok = correction.getOriginal();
       // we are replacing the query in order, but injected terms might cause
       // illegal offsets due to previous replacements.
       if (tok.getPositionIncrement() == 0)
         continue;
-      collation.replace(tok.startOffset() + offset, tok.endOffset() + offset,
-          correction.getCorrection());
-      offset += correction.getCorrection().length()
-          - (tok.endOffset() - tok.startOffset());
+      corr = correction.getCorrection();
+      boolean addParenthesis = false;
+      Character requiredOrProhibited = null;
+      int indexOfSpace = corr.indexOf(' ');
+      StringBuilder corrSb = new StringBuilder(corr);
+      int bump = 1;
+      
+      //If the correction contains whitespace (because it involved breaking a word in 2+ words),
+      //then be sure all of the new words have the same optional/required/prohibited status in the query.
+      while(indexOfSpace>-1 && indexOfSpace<corr.length()-1) {
+        addParenthesis = true;
+        char previousChar = tok.startOffset()>0 ? collation.charAt(tok.startOffset()-1) : ' ';
+        if(previousChar=='-' || previousChar=='+') {
+          corrSb.insert(indexOfSpace + bump, previousChar);
+          if(requiredOrProhibited==null) {
+            requiredOrProhibited = previousChar;
+          }
+          bump++;
+        } else if ((tok.getFlags() & QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG) == QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG) {
+          corrSb.insert(indexOfSpace + bump, "AND ");
+          bump += 4;
+        }
+        indexOfSpace = correction.getCorrection().indexOf(' ', indexOfSpace + bump);
+      }
+      
+      int oneForReqOrProhib = 0;
+      if(addParenthesis) { 
+        if(requiredOrProhibited!=null) {
+          corrSb.insert(0, requiredOrProhibited);
+          oneForReqOrProhib++;
+        }
+        corrSb.insert(0, '(');
+        corrSb.append(')');
+      }
+      corr = corrSb.toString();  
+      int startIndex = tok.startOffset() + offset - oneForReqOrProhib;
+      int endIndex = tok.endOffset() + offset;
+      collation.replace(startIndex, endIndex, corr);
+      offset += corr.length() - oneForReqOrProhib - (tok.endOffset() - tok.startOffset());      
     }
     return collation.toString();
   }

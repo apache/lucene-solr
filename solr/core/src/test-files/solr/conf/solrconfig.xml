@@ -280,6 +280,14 @@
       <int name="minQueryLength">3</int>
     </lst>
     <lst name="spellchecker">
+      <str name="name">wordbreak</str>
+      <str name="classname">solr.WordBreakSolrSpellChecker</str>      
+      <str name="field">lowerfilt</str>
+      <str name="combineWords">true</str>
+      <str name="breakWords">true</str>
+      <int name="maxChanges">10</int>
+    </lst>
+    <lst name="spellchecker">
 			<str name="name">multipleFields</str>
 			<str name="field">lowerfilt1and2</str>
 			<str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
@@ -360,6 +368,26 @@
       <str name="spellcheck.onlyMorePopular">false</str>
       <str name="spellcheck.extendedResults">false</str>
       <str name="spellcheck.count">1</str>
+    </lst>
+    <arr name="last-components">
+      <str>spellcheck</str>
+    </arr>
+  </requestHandler>
+  <requestHandler name="spellCheckWithWordbreak" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <str name="spellcheck.dictionary">default</str>
+      <str name="spellcheck.dictionary">wordbreak</str>
+      <str name="spellcheck.count">20</str>
+    </lst>
+    <arr name="last-components">
+      <str>spellcheck</str>
+    </arr>
+  </requestHandler>
+  <requestHandler name="spellCheckWithWordbreak_Direct" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <str name="spellcheck.dictionary">direct</str>
+      <str name="spellcheck.dictionary">wordbreak</str>
+      <str name="spellcheck.count">20</str>
     </lst>
     <arr name="last-components">
       <str>spellcheck</str>

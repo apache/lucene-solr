@@ -124,6 +124,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     String q = params.get(SPELLCHECK_Q);
     SolrSpellChecker spellChecker = getSpellChecker(params);
     Collection<Token> tokens = null;
+    
     if (q != null) {
       //we have a spell check param, tokenize it with the query analyzer applicable for this spellchecker
       tokens = getTokens(q, spellChecker.getQueryAnalyzer());
@@ -143,7 +144,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         float accuracy = params.getFloat(SPELLCHECK_ACCURACY, Float.MIN_VALUE);
         Integer alternativeTermCount = params.getInt(SpellingParams.SPELLCHECK_ALTERNATIVE_TERM_COUNT); 
         Integer maxResultsForSuggest = params.getInt(SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST);
-        SolrParams customParams = getCustomParams(getDictionaryName(params), params);
+        ModifiableSolrParams customParams = new ModifiableSolrParams();
+        for (String checkerName : getDictionaryNames(params)) {
+          customParams.add(getCustomParams(checkerName, params));
+        }
         
         Integer hitsInteger = (Integer) rb.rsp.getToLog().get("hits");
         long hits = 0;
@@ -173,7 +177,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         NamedList suggestions = toNamedList(shardRequest, spellingResult, q,
             extendedResults, collate, isCorrectlySpelled);
         if (collate) {
-          addCollationsToResponse(params, spellingResult, rb, q, suggestions);
+          addCollationsToResponse(params, spellingResult, rb, q, suggestions, spellChecker.isSuggestionsMayOverlap());
         }
         NamedList response = new SimpleOrderedMap();
         response.add("suggestions", suggestions);
@@ -181,14 +185,14 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
       } else {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
-            "Specified dictionary does not exist: " + getDictionaryName(params));
+            "Specified dictionaries do not exist: " + getDictionaryNameAsSingleString(getDictionaryNames(params)));
       }
     }
   }
   
   @SuppressWarnings("unchecked")
 	protected void addCollationsToResponse(SolrParams params, SpellingResult spellingResult, ResponseBuilder rb, String q,
-			NamedList response) {
+	    NamedList response, boolean suggestionsMayOverlap) {
 		int maxCollations = params.getInt(SPELLCHECK_MAX_COLLATIONS, 1);
 		int maxCollationTries = params.getInt(SPELLCHECK_MAX_COLLATION_TRIES, 0);
 		int maxCollationEvaluations = params.getInt(SPELLCHECK_MAX_COLLATION_EVALUATIONS, 10000);
@@ -196,8 +200,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 		boolean shard = params.getBool(ShardParams.IS_SHARD, false);
 
 		SpellCheckCollator collator = new SpellCheckCollator();
-		List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb, maxCollations, maxCollationTries, maxCollationEvaluations);
-		//by sorting here we guarantee a non-distributed request returns all 
+		List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb, maxCollations, maxCollationTries, maxCollationEvaluations, suggestionsMayOverlap);
+    //by sorting here we guarantee a non-distributed request returns all 
 		//results in the same order as a distributed request would, 
 		//even in cases when the internal rank is the same.
 		Collections.sort(collations);
@@ -459,13 +463,38 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   protected SolrSpellChecker getSpellChecker(SolrParams params) {
-    return spellCheckers.get(getDictionaryName(params));
+    String[] dictName = getDictionaryNames(params);
+    if (dictName.length == 1) {
+      return spellCheckers.get(dictName[0]);
+    } else {
+      String singleStr = getDictionaryNameAsSingleString(dictName);
+      SolrSpellChecker ssc = spellCheckers.get(singleStr);
+      if (ssc == null) {
+        ConjunctionSolrSpellChecker cssc = new ConjunctionSolrSpellChecker();
+        for (String dn : dictName) {
+          cssc.addChecker(spellCheckers.get(dn));
+        }
+        ssc = cssc;
+      }
+      return ssc;
+    }
+  }
+  
+  private String getDictionaryNameAsSingleString(String[] dictName) {
+    StringBuilder sb = new StringBuilder();
+    for (String dn : dictName) {
+      if (sb.length() > 0) {
+        sb.append(" ");
+      }
+      sb.append(dn);
+    }
+    return sb.toString();
   }
 
-  private String getDictionaryName(SolrParams params) {
-    String dictName = params.get(SPELLCHECK_DICT);
+  private String[] getDictionaryNames(SolrParams params) {
+    String[] dictName = params.getParams(SPELLCHECK_DICT);
     if (dictName == null) {
-      dictName = SolrSpellChecker.DEFAULT_DICTIONARY_NAME;
+      return new String[] {SolrSpellChecker.DEFAULT_DICTIONARY_NAME};
     }
     return dictName;
   }
