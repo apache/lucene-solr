@@ -93,13 +93,13 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   public enum BreakSuggestionTieBreaker {
     /**
      * See
-     * {@link WordBreakSpellChecker.BreakSuggestionSortMethod#NUM_CHANGES_THEN_MAX_FREQUENCY}
+     * {@link BreakSuggestionSortMethod#NUM_CHANGES_THEN_MAX_FREQUENCY}
      * #
      */
     MAX_FREQ,
     /**
      * See
-     * {@link WordBreakSpellChecker.BreakSuggestionSortMethod#NUM_CHANGES_THEN_SUMMED_FREQUENCY}
+     * {@link BreakSuggestionSortMethod#NUM_CHANGES_THEN_SUMMED_FREQUENCY}
      */
     SUM_FREQ
   };
