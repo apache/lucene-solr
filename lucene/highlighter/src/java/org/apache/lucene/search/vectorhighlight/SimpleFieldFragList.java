@@ -24,7 +24,7 @@ import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.S
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
 
 /**
- * A simple implementation of {@link FielFragList}.
+ * A simple implementation of {@link FieldFragList}.
  */
 public class SimpleFieldFragList extends FieldFragList {
 
