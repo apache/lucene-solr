@@ -44,7 +44,13 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
-  }    
+  }
+
+  private void jsonEq(String expected, String received) {
+    expected = expected.trim();
+    received = received.trim();
+    assertEquals(expected, received);
+  }
   
   @Test
   public void testTypes() throws IOException {
@@ -57,17 +63,17 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     rsp.add("data2", Double.NEGATIVE_INFINITY);
     rsp.add("data3", Float.POSITIVE_INFINITY);
     w.write(buf, req, rsp);
-    assertEquals(buf.toString(), "{'data1':float('NaN'),'data2':-float('Inf'),'data3':float('Inf')}");
+    jsonEq(buf.toString(), "{'data1':float('NaN'),'data2':-float('Inf'),'data3':float('Inf')}");
 
     w = new RubyResponseWriter();
     buf = new StringWriter();
     w.write(buf, req, rsp);
-    assertEquals(buf.toString(), "{'data1'=>(0.0/0.0),'data2'=>-(1.0/0.0),'data3'=>(1.0/0.0)}");
+    jsonEq(buf.toString(), "{'data1'=>(0.0/0.0),'data2'=>-(1.0/0.0),'data3'=>(1.0/0.0)}");
 
     w = new JSONResponseWriter();
     buf = new StringWriter();
     w.write(buf, req, rsp);
-    assertEquals(buf.toString(), "{\"data1\":\"NaN\",\"data2\":\"-Infinity\",\"data3\":\"Infinity\"}");
+    jsonEq(buf.toString(), "{\"data1\":\"NaN\",\"data2\":\"-Infinity\",\"data3\":\"Infinity\"}");
     req.close();
   }
 
@@ -88,7 +94,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     rsp.add("bytes", "abc".getBytes("UTF-8"));
 
     w.write(buf, req, rsp);
-    assertEquals("{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]],\"byte\":-3,\"short\":-4,\"bytes\":\"YWJj\"}", buf.toString());
+    jsonEq("{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]],\"byte\":-3,\"short\":-4,\"bytes\":\"YWJj\"}", buf.toString());
     req.close();
   }
 
