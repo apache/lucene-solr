@@ -56,9 +56,10 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     server.add(doc);
     server.commit(true, true);
 
-    SolrQuery query = new SolrQuery("name:samsang");
+    SolrQuery query = new SolrQuery("*:*");
     query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
+    query.set(SpellingParams.SPELLCHECK_Q, "samsang");
     query.set(SpellingParams.SPELLCHECK_BUILD, true);
     QueryRequest request = new QueryRequest(query);
     SpellCheckResponse response = request.process(server).getSpellCheckResponse();
