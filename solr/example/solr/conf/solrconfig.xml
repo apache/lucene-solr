@@ -1245,7 +1245,7 @@
            collations (re-written queries) can include a combination of
            corrections from both spellcheckers -->
       <str name="spellcheck.dictionary">default</str>
-      <str name="spellcheck.dictionary">wordbreak</str>
+      <!--str name="spellcheck.dictionary">wordbreak</str-->
       <str name="spellcheck">on</str>
       <str name="spellcheck.extendedResults">true</str>       
       <str name="spellcheck.count">10</str>
