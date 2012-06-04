@@ -56,10 +56,9 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     server.add(doc);
     server.commit(true, true);
 
-    SolrQuery query = new SolrQuery("*:*");
+    SolrQuery query = new SolrQuery("name:samsang");
     query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
-    query.set(SpellingParams.SPELLCHECK_Q, "samsang");
     query.set(SpellingParams.SPELLCHECK_BUILD, true);
     QueryRequest request = new QueryRequest(query);
     SpellCheckResponse response = request.process(server).getSpellCheckResponse();
@@ -75,10 +74,10 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     server.add(doc);
     server.commit(true, true);
 
-    SolrQuery query = new SolrQuery("*:*");
+    SolrQuery query = new SolrQuery("name:samsang");
     query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
-    query.set(SpellingParams.SPELLCHECK_Q, "samsang");
+    //query.set(SpellingParams.SPELLCHECK_Q, "samsang");
     query.set(SpellingParams.SPELLCHECK_BUILD, true);
     query.set(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, true);
     QueryRequest request = new QueryRequest(query);
@@ -139,7 +138,7 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     QueryRequest request = new QueryRequest(query);
     SpellCheckResponse response = request.process(server).getSpellCheckResponse();
     response = request.process(server).getSpellCheckResponse();
-    assertTrue("name:(+faith +homer +loaves)".equals(response.getCollatedResult()));
+    assertTrue("name:(+faith +hope +loaves)".equals(response.getCollatedResult()));
     
     //Test Expanded Collation Results
     query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, true);
