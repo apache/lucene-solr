@@ -42,13 +42,22 @@ public class FieldPhraseList {
   }
   
   /**
+   * return the list of WeightedPhraseInfo.
+   * 
+   * @return phraseList.
+   */ 
+  public List<WeightedPhraseInfo> getPhraseList() {
+    return phraseList; 
+  }
+  
+  /**
    * a constructor.
    * 
    * @param fieldTermStack FieldTermStack object
    * @param fieldQuery FieldQuery object
    * @param phraseLimit maximum size of phraseList
    */
-  public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit){
+  public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit ){
     final String field = fieldTermStack.getFieldName();
 
     LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
