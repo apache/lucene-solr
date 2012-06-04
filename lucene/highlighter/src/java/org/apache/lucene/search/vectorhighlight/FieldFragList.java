@@ -27,7 +27,7 @@ import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseIn
  * FieldFragList has a list of "frag info" that is used by FragmentsBuilder class
  * to create fragments (snippets).
  */
-public class FieldFragList {
+public abstract class FieldFragList {
 
   private List<WeightedFragInfo> fragInfos = new ArrayList<WeightedFragInfo>();
 
@@ -46,9 +46,7 @@ public class FieldFragList {
    * @param endOffset end offset of the fragment
    * @param phraseInfoList list of WeightedPhraseInfo objects
    */
-  public void add( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList ){
-    fragInfos.add( new WeightedFragInfo( startOffset, endOffset, phraseInfoList ) );
-  }
+  public abstract void add( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList );
   
   /**
    * return the list of WeightedFragInfos.
@@ -66,15 +64,11 @@ public class FieldFragList {
     private int startOffset;
     private int endOffset;
 
-    public WeightedFragInfo( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList ){
+    public WeightedFragInfo( int startOffset, int endOffset, List<SubInfo> subInfos, float totalBoost ){
       this.startOffset = startOffset;
       this.endOffset = endOffset;
-      subInfos = new ArrayList<SubInfo>();
-      for( WeightedPhraseInfo phraseInfo : phraseInfoList ){
-        SubInfo subInfo = new SubInfo( phraseInfo.getText(), phraseInfo.getTermsOffsets(), phraseInfo.getSeqnum() );
-        subInfos.add( subInfo );
-        totalBoost += phraseInfo.getBoost();
-      }
+      this.totalBoost = totalBoost;
+      this.subInfos = subInfos;
     }
     
     public List<SubInfo> getSubInfos(){

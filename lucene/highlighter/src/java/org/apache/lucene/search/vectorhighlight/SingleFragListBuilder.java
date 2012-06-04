@@ -38,7 +38,7 @@ public class SingleFragListBuilder implements FragListBuilder {
   public FieldFragList createFieldFragList(FieldPhraseList fieldPhraseList,
       int fragCharSize) {
 
-    FieldFragList ffl = new FieldFragList( fragCharSize );
+    FieldFragList ffl = new SimpleFieldFragList( fragCharSize );
 
     List<WeightedPhraseInfo> wpil = new ArrayList<WeightedPhraseInfo>();
     Iterator<WeightedPhraseInfo> ite = fieldPhraseList.phraseList.iterator();
