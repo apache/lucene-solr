@@ -191,36 +191,41 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    void handleSingleDelete(int ev) throws IOException {
-      DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
-      cmd.commitWithin = commitWithin;
-
-      String id = null;
+    // returns the string value for a primitive value, or null for the null value
+    String getString(int ev) throws IOException {
       switch (ev) {
         case JSONParser.STRING:
-          id = parser.getString();
-          break;
+          return parser.getString();
         case JSONParser.BIGNUMBER:
         case JSONParser.NUMBER:
         case JSONParser.LONG:
-          id = parser.getNumberChars().toString();
-          break;
-        case JSONParser.OBJECT_START:
-          handleDeleteMap(ev);
-          return;
+          return parser.getNumberChars().toString();
+        case JSONParser.BOOLEAN:
+          return Boolean.toString(parser.getBoolean());
+        case JSONParser.NULL:
+          return null;
         default:
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Got: "+JSONParser.getEventString( ev  )
+              "Expected primitive JSON value but got: "+JSONParser.getEventString( ev  )
                   +" at ["+parser.getPosition()+"]" );
       }
+    }
 
-      cmd.setId(id);
-      processor.processDelete(cmd);
+
+    void handleSingleDelete(int ev) throws IOException {
+      if (ev == JSONParser.OBJECT_START) {
+        handleDeleteMap(ev);
+      } else {
+        DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+        cmd.commitWithin = commitWithin;
+        String id = getString(ev);
+        cmd.setId(id);
+        processor.processDelete(cmd);
+      }
     }
 
     void handleDeleteArray(int ev) throws IOException {
       assert ev == JSONParser.ARRAY_START;
-
       for (;;) {
         ev = parser.nextEvent();
         if (ev == JSONParser.ARRAY_END) return;
@@ -240,13 +245,13 @@ public class JsonLoader extends ContentStreamLoader {
           String key = parser.getString();
           if( parser.wasKey() ) {
             if( "id".equals( key ) ) {
-              cmd.setId(parser.getString());
-            }
-            else if( "query".equals(key) ) {
+              cmd.setId(getString(parser.nextEvent()));
+            } else if( "query".equals(key) ) {
               cmd.setQuery(parser.getString());
-            }
-            else if( "commitWithin".equals(key) ) {
-              cmd.commitWithin = Integer.parseInt(parser.getString());
+            } else if( "commitWithin".equals(key) ) {
+              cmd.commitWithin = (int)parser.getLong();
+            } else if( "_version_".equals(key) ) {
+              cmd.setVersion(parser.getLong());
             } else {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
             }

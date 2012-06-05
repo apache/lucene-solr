@@ -71,9 +71,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "'optimize': { 'waitSearcher':false, 'openSearcher':false },\n" +
       "\n" +
       "'delete': { 'id':'ID' },\n" +
-      "'delete': { 'id':'ID', 'commitWithin':'500' },\n" +
+      "'delete': { 'id':'ID', 'commitWithin':500 },\n" +
       "'delete': { 'query':'QUERY' },\n" +
-      "'delete': { 'query':'QUERY', 'commitWithin':'500' },\n" +
+      "'delete': { 'query':'QUERY', 'commitWithin':500 },\n" +
       "'rollback': {}\n" +
       "\n" +
       "}\n" +
@@ -243,6 +243,8 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     String str = "{'delete':10"
         +"\n ,'delete':'20'"
         +"\n ,'delete':['30','40']"
+        +"\n ,'delete':{'id':50, '_version_':12345}"
+        +"\n ,'delete':[{'id':60, '_version_':67890}, {'id':70, '_version_':77777}, {'query':'id:80', '_version_':88888}]"
         + "\n}\n";
     str = str.replace('\'', '"');
     SolrQueryRequest req = req();
@@ -252,7 +254,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
 
     // DELETE COMMANDS
-    assertEquals( 4, p.deleteCommands.size() );
+    assertEquals( 8, p.deleteCommands.size() );
     DeleteUpdateCommand delete = p.deleteCommands.get( 0 );
     assertEquals( delete.id, "10" );
     assertEquals( delete.query, null );
@@ -272,6 +274,26 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals( delete.id, "40" );
     assertEquals( delete.query, null );
     assertEquals( delete.commitWithin, -1);
+
+    delete = p.deleteCommands.get( 4 );
+    assertEquals( delete.id, "50" );
+    assertEquals( delete.query, null );
+    assertEquals( delete.getVersion(), 12345L);
+
+    delete = p.deleteCommands.get( 5 );
+    assertEquals( delete.id, "60" );
+    assertEquals( delete.query, null );
+    assertEquals( delete.getVersion(), 67890L);
+
+    delete = p.deleteCommands.get( 6 );
+    assertEquals( delete.id, "70" );
+    assertEquals( delete.query, null );
+    assertEquals( delete.getVersion(), 77777L);
+
+    delete = p.deleteCommands.get( 7 );
+    assertEquals( delete.id, null );
+    assertEquals( delete.query, "id:80" );
+    assertEquals( delete.getVersion(), 88888L);
 
     req.close();
   }
