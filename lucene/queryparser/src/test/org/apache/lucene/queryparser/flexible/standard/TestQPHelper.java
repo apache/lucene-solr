@@ -1302,4 +1302,24 @@ public class TestQPHelper extends LuceneTestCase {
     dir.close();
   }
 
+  public void testRegexQueryParsing() throws Exception {
+    final String[] fields = {"b", "t"};
+
+    final StandardQueryParser parser = new StandardQueryParser();
+    parser.setMultiFields(fields);
+    parser.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
+    parser.setAnalyzer(new MockAnalyzer(random()));
+
+    BooleanQuery exp = new BooleanQuery();
+    exp.add(new BooleanClause(new RegexpQuery(new Term("b", "ab.+")), BooleanClause.Occur.MUST));
+    exp.add(new BooleanClause(new RegexpQuery(new Term("t", "ab.+")), BooleanClause.Occur.MUST));
+
+    assertEquals(exp, parser.parse("/ab.+/", null));
+
+    RegexpQuery regexpQueryexp = new RegexpQuery(new Term("test", "[abc]?[0-9]"));
+
+    assertEquals(regexpQueryexp, parser.parse("test:/[abc]?[0-9]/", null));
+
+  }
+
 }
