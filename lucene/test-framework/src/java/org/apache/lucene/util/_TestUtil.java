@@ -77,6 +77,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.junit.Assert;
 
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+
 /**
  * General utility methods for Lucene unit tests. 
  */
@@ -293,37 +296,49 @@ public class _TestUtil {
   public static String randomRegexpishString(Random r) {
     return randomRegexpishString(r, 20);
   }
-  
+
+  /**
+   * Maximum recursion bound for '+' and '*' replacements in
+   * {@link #randomRegexpishString(Random, int)}.
+   */
+  private final static int maxRecursionBound = 5;
+
+  /**
+   * Operators for {@link #randomRegexpishString(Random, int)}.
+   */
+  private final static List<String> ops = Arrays.asList(
+      ".", "?", 
+      "{0," + maxRecursionBound + "}",  // bounded replacement for '*'
+      "{1," + maxRecursionBound + "}",  // bounded replacement for '+'
+      "(",
+      ")",
+      "-",
+      "[",
+      "]",
+      "|"
+  );
+
   /**
    * Returns a String thats "regexpish" (contains lots of operators typically found in regular expressions)
    * If you call this enough times, you might get a valid regex!
+   * 
+   * <P>Note: to avoid practically endless backtracking patterns we replace asterisk and plus
+   * operators with bounded repetitions. See LUCENE-4111 for more info.
+   * 
+   * @param maxLength A hint about maximum length of the regexpish string. It may be exceeded by a few characters.
    */
   public static String randomRegexpishString(Random r, int maxLength) {
-    final int end = nextInt(r, 0, maxLength);
-    if (end == 0) {
-      // allow 0 length
-      return "";
-    }
-    final char[] buffer = new char[end];
-    for (int i = 0; i < end; i++) {
-      int t = r.nextInt(11);
-      if (t == 0) {
-        buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
+    final StringBuilder regexp = new StringBuilder(maxLength);
+    for (int i = nextInt(r, 0, maxLength); i > 0; i--) {
+      if (r.nextBoolean()) {
+        regexp.append((char) RandomInts.randomIntBetween(r, 'a', 'z'));
+      } else {
+        regexp.append(RandomPicks.randomFrom(r, ops));
       }
-      else if (1 == t) buffer[i] = '.';
-      else if (2 == t) buffer[i] = '?';
-      else if (3 == t) buffer[i] = '*';
-      else if (4 == t) buffer[i] = '+';
-      else if (5 == t) buffer[i] = '(';
-      else if (6 == t) buffer[i] = ')';
-      else if (7 == t) buffer[i] = '-';
-      else if (8 == t) buffer[i] = '[';
-      else if (9 == t) buffer[i] = ']';
-      else if (10 == t) buffer[i] = '|';
     }
-    return new String(buffer, 0, end);
+    return regexp.toString();
   }
-  
+
   private static final String[] HTML_CHAR_ENTITIES = {
       "AElig", "Aacute", "Acirc", "Agrave", "Alpha", "AMP", "Aring", "Atilde",
       "Auml", "Beta", "COPY", "Ccedil", "Chi", "Dagger", "Delta", "ETH",
@@ -933,8 +948,9 @@ public class _TestUtil {
         Pattern p = Pattern.compile(_TestUtil.randomRegexpishString(random));
         // Make sure the result of applying the pattern to a string with extended
         // unicode characters is a valid utf16 string. See LUCENE-4078 for discussion.
-        if (UnicodeUtil.validUTF16String(p.matcher(nonBmpString).replaceAll("_")))
+        if (UnicodeUtil.validUTF16String(p.matcher(nonBmpString).replaceAll("_"))) {
           return p;
+        }
       } catch (PatternSyntaxException ignored) {
         // Loop trying until we hit something that compiles.
       }

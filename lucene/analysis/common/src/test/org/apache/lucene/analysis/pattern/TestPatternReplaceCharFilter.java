@@ -300,12 +300,11 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    int numPatterns = atLeast(100);
-    long start = System.currentTimeMillis();
-    long maxTime = 1000 * 2;
+    int numPatterns = 10 + random().nextInt(20);
     Random random = new Random(random().nextLong());
-    for (int i = 0; i < numPatterns && start + maxTime > System.currentTimeMillis(); i++) {
+    for (int i = 0; i < numPatterns; i++) {
       final Pattern p = _TestUtil.randomPattern(random());
+
       final String replacement = _TestUtil.randomSimpleString(random);
       Analyzer a = new Analyzer() {
         @Override
@@ -319,9 +318,13 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
           return new PatternReplaceCharFilter(p, replacement, CharReader.get(reader));
         }
       };
-      checkRandomData(random, a, 1000 * RANDOM_MULTIPLIER, 
-          /* max input length. don't make it longer -- exponential processing
-           * time for certain patterns. */ 40, true); // only ascii
+
+      /* max input length. don't make it longer -- exponential processing
+       * time for certain patterns. */ 
+      final int maxInputLength = 30;
+      /* ASCII only input?: */
+      final boolean asciiOnly = true;
+      checkRandomData(random, a, 250 * RANDOM_MULTIPLIER, maxInputLength, asciiOnly);
     }
   }
  }
