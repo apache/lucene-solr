@@ -344,7 +344,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                     String source = diagnostics.get("source");
                     assertNotNull(source);
                     if (source.equals("merge")) {
-                      assertTrue("sub reader " + sub + " wasn't warmed", warmed.containsKey(((SegmentReader) sub).core));
+                      assertTrue("sub reader " + sub + " wasn't warmed: " + warmed, !assertMergedSegmentsWarmed || warmed.containsKey(((SegmentReader) sub).core));
                     }
                   }
                   if (s.getIndexReader().numDocs() > 0) {
@@ -417,6 +417,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
   protected void doClose() throws Exception {
   }
+
+  protected boolean assertMergedSegmentsWarmed = true;
 
   private final Map<SegmentCoreReaders,Boolean> warmed = new WeakHashMap<SegmentCoreReaders,Boolean>();
 
