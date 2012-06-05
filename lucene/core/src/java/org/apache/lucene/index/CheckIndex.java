@@ -1683,6 +1683,7 @@ public class CheckIndex {
                          "              You can't use this with the -fix option\n" +
                          "  -dir-impl X: use a specific " + FSDirectory.class.getSimpleName() + " implementation. " +
                          		"If no package is specified the " + FSDirectory.class.getPackage().getName() + " package will be used.\n" +
+                         "\n" +
                          "**WARNING**: -fix should only be used on an emergency basis as it will cause\n" +
                          "documents (perhaps many) to be permanently removed from the index.  Always make\n" +
                          "a backup copy of your index before running this!  Do not run this tool on an index\n" +
