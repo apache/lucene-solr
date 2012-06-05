@@ -42,6 +42,7 @@ import org.apache.lucene.queryparser.flexible.core.nodes.TokenizedPhraseQueryNod
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryparser.flexible.standard.nodes.MultiPhraseQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.StandardBooleanQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
 
@@ -106,6 +107,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
     if (node instanceof TextableQueryNode
         && !(node instanceof WildcardQueryNode)
         && !(node instanceof FuzzyQueryNode)
+        && !(node instanceof RegexpQueryNode)
         && !(node.getParent() instanceof RangeQueryNode)) {
 
       FieldQueryNode fieldNode = ((FieldQueryNode) node);
