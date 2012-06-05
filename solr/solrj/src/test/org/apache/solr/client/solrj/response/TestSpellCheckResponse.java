@@ -27,6 +27,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -47,6 +48,7 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
   
   static String field = "name";
 
+  @Ignore
   @Test
   public void testSpellCheckResponse() throws Exception {
     getSolrServer();
