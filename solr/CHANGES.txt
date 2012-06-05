@@ -348,7 +348,7 @@ New Features
   version specification for optimistic locking.  Examples:
     {"delete":"myid"}
     {"delete":["id1","id2","id3"]}
-    {"delete":{"id":"myid", "_version_":123456789})
+    {"delete":{"id":"myid", "_version_":123456789}}
   (yonik)
 
 
