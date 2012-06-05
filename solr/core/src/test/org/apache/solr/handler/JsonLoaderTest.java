@@ -237,4 +237,44 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     );
   }
 
+  // The delete syntax was both extended for simplification in 4.0
+  @Test
+  public void testDeleteSyntax() throws Exception {
+    String str = "{'delete':10"
+        +"\n ,'delete':'20'"
+        +"\n ,'delete':['30','40']"
+        + "\n}\n";
+    str = str.replace('\'', '"');
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    // DELETE COMMANDS
+    assertEquals( 4, p.deleteCommands.size() );
+    DeleteUpdateCommand delete = p.deleteCommands.get( 0 );
+    assertEquals( delete.id, "10" );
+    assertEquals( delete.query, null );
+    assertEquals( delete.commitWithin, -1);
+
+    delete = p.deleteCommands.get( 1 );
+    assertEquals( delete.id, "20" );
+    assertEquals( delete.query, null );
+    assertEquals( delete.commitWithin, -1);
+
+    delete = p.deleteCommands.get( 2 );
+    assertEquals( delete.id, "30" );
+    assertEquals( delete.query, null );
+    assertEquals( delete.commitWithin, -1);
+
+    delete = p.deleteCommands.get( 3 );
+    assertEquals( delete.id, "40" );
+    assertEquals( delete.query, null );
+    assertEquals( delete.commitWithin, -1);
+
+    req.close();
+  }
+
+
 }
