@@ -420,7 +420,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
   protected boolean assertMergedSegmentsWarmed = true;
 
-  private final Map<SegmentCoreReaders,Boolean> warmed = new WeakHashMap<SegmentCoreReaders,Boolean>();
+  private final Map<SegmentCoreReaders,Boolean> warmed = Collections.synchronizedMap(new WeakHashMap<SegmentCoreReaders,Boolean>());
 
   public void runTest(String testName) throws Exception {
 
