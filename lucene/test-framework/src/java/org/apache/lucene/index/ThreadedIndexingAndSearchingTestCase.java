@@ -334,6 +334,19 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
               try {
                 final IndexSearcher s = getCurrentSearcher();
                 try {
+                  // Verify 1) IW is correctly setting
+                  // diagnostics, and 2) segment warming for
+                  // merged segments is actually happening:
+                  for(AtomicReader sub : ((DirectoryReader) s.getIndexReader()).getSequentialSubReaders()) {
+                    SegmentReader segReader = (SegmentReader) sub;
+                    Map<String,String> diagnostics = segReader.getSegmentInfo().info.getDiagnostics();
+                    assertNotNull(diagnostics);
+                    String source = diagnostics.get("source");
+                    assertNotNull(source);
+                    if (source.equals("merge")) {
+                      assertTrue("sub reader " + sub + " wasn't warmed", warmed.containsKey(((SegmentReader) sub).core));
+                    }
+                  }
                   if (s.getIndexReader().numDocs() > 0) {
                     smokeTestSearcher(s);
                     Fields fields = MultiFields.getFields(s.getIndexReader());
@@ -405,6 +418,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   protected void doClose() throws Exception {
   }
 
+  private final Map<SegmentCoreReaders,Boolean> warmed = new WeakHashMap<SegmentCoreReaders,Boolean>();
+
   public void runTest(String testName) throws Exception {
 
     failed.set(false);
@@ -442,6 +457,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
         if (VERBOSE) {
           System.out.println("TEST: now warm merged reader=" + reader);
         }
+        warmed.put(((SegmentReader) reader).core, Boolean.TRUE);
         final int maxDoc = reader.maxDoc();
         final Bits liveDocs = reader.getLiveDocs();
         int sum = 0;
