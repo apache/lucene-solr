@@ -139,41 +139,50 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='paintable']/int[@name='numFound']=8",
         "//lst[@name='paintable']/int[@name='startOffset']=11",
         "//lst[@name='paintable']/int[@name='endOffset']=20",
-        "//lst[@name='paintable']/arr[@name='suggestion']/str[1]='printable'",  //SolrSpellChecker result interleaved
-        "//lst[@name='paintable']/arr[@name='suggestion']/str[2]='paint able'", //1 op ; max doc freq=5 
-        "//lst[@name='paintable']/arr[@name='suggestion']/str[3]='pintable'",   //SolrSpellChecker result interleaved
-        "//lst[@name='paintable']/arr[@name='suggestion']/str[4]='pain table'", //1 op ; max doc freq=4 
-        "//lst[@name='paintable']/arr[@name='suggestion']/str[5]='pointable'",  //SolrSpellChecker result interleaved
-        "//lst[@name='paintable']/arr[@name='suggestion']/str[6]='pa in table'",//2 ops
-        "//lst[@name='paintable']/arr[@name='suggestion']/str[7]='plantable'",  //SolrSpellChecker result interleaved
-        "//lst[@name='paintable']/arr[@name='suggestion']/str[8]='puntable'",   //SolrSpellChecker result interleaved
+        "//lst[@name='paintable']/int[@name='origFreq']=0",
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[1]/str[@name='word']='printable'",  //SolrSpellChecker result interleaved
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[1]/int[@name='freq']=3",        
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[2]/str[@name='word']='paint able'", //1 op
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[2]/int[@name='freq']=5", 
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[3]/str[@name='word']='pintable'",   //SolrSpellChecker result interleaved
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[3]/int[@name='freq']=1",   
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[4]/str[@name='word']='pain table'", //1 op
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[4]/int[@name='freq']=2", 
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[5]/str[@name='word']='pointable'",  //SolrSpellChecker result interleaved
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[5]/int[@name='freq']=1",  
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[6]/str[@name='word']='pa in table'", //2 ops
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[6]/int[@name='freq']=7",
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[7]/str[@name='word']='plantable'",  //SolrSpellChecker result interleaved
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[7]/int[@name='freq']=1",  
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[8]/str[@name='word']='puntable'",   //SolrSpellChecker result interleaved
+        "//lst[@name='paintable']/arr[@name='suggestion']/lst[8]/int[@name='freq']=1",  
         "//lst[@name='pine']/int[@name='numFound']=2",
         "//lst[@name='pine']/int[@name='startOffset']=21",
         "//lst[@name='pine']/int[@name='endOffset']=25",
-        "//lst[@name='pine']/arr[@name='suggestion']/str[1]='line'",
-        "//lst[@name='pine']/arr[@name='suggestion']/str[2]='pi ne'",
+        "//lst[@name='pine']/arr[@name='suggestion']/lst[1]/str[@name='word']='line'",
+        "//lst[@name='pine']/arr[@name='suggestion']/lst[2]/str[@name='word']='pi ne'",
         "//lst[@name='apple']/int[@name='numFound']=1",
-        "//lst[@name='apple']/arr[@name='suggestion']/str[1]='ample'",
+        "//lst[@name='apple']/arr[@name='suggestion']/lst[1]/str[@name='word']='ample'",
         "//lst[@name='good']/int[@name='numFound']=1",
-        "//lst[@name='good']/arr[@name='suggestion']/str[1]='food'",
+        "//lst[@name='good']/arr[@name='suggestion']/lst[1]/str[@name='word']='food'",
         "//lst[@name='ness']/int[@name='numFound']=1",
-        "//lst[@name='ness']/arr[@name='suggestion']/str[1]='mess'",
+        "//lst[@name='ness']/arr[@name='suggestion']/lst[1]/str[@name='word']='mess'",
         "//lst[@name='pine apple']/int[@name='numFound']=1",
         "//lst[@name='pine apple']/int[@name='startOffset']=21",
         "//lst[@name='pine apple']/int[@name='endOffset']=31",
-        "//lst[@name='pine apple']/arr[@name='suggestion']/str[1]='pineapple'",
+        "//lst[@name='pine apple']/arr[@name='suggestion']/lst[1]/str[@name='word']='pineapple'",
         "//lst[@name='paintable pine']/int[@name='numFound']=1",
         "//lst[@name='paintable pine']/int[@name='startOffset']=11",
         "//lst[@name='paintable pine']/int[@name='endOffset']=25",
-        "//lst[@name='paintable pine']/arr[@name='suggestion']/str[1]='paintablepine'",
+        "//lst[@name='paintable pine']/arr[@name='suggestion']/lst[1]/str[@name='word']='paintablepine'",
         "//lst[@name='good ness']/int[@name='numFound']=1",
         "//lst[@name='good ness']/int[@name='startOffset']=32",
         "//lst[@name='good ness']/int[@name='endOffset']=41",
-        "//lst[@name='good ness']/arr[@name='suggestion']/str[1]='goodness'",
+        "//lst[@name='good ness']/arr[@name='suggestion']/lst[1]/str[@name='word']='goodness'",
         "//lst[@name='pine apple good ness']/int[@name='numFound']=1",
         "//lst[@name='pine apple good ness']/int[@name='startOffset']=21",
         "//lst[@name='pine apple good ness']/int[@name='endOffset']=41",
-        "//lst[@name='pine apple good ness']/arr[@name='suggestion']/str[1]='pineapplegoodness'"
+        "//lst[@name='pine apple good ness']/arr[@name='suggestion']/lst[1]/str[@name='word']='pineapplegoodness'"
     );
   }
   @Test

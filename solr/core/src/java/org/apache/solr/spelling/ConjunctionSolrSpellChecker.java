@@ -19,6 +19,7 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -135,8 +136,12 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   //TODO: This just interleaves the results.  In the future, we might want to let users give each checker its
   //      own weight and use that in combination to score & frequency to sort the results ?
   private SpellingResult mergeCheckers(SpellingResult[] results, int numSug) {
+    Map<Token, Integer> combinedTokenFrequency = new HashMap<Token, Integer>();
     Map<Token, List<LinkedHashMap<String, Integer>>> allSuggestions = new LinkedHashMap<Token, List<LinkedHashMap<String, Integer>>>();
     for(SpellingResult result : results) {
+    	if(result.getTokenFrequency()!=null) {
+        combinedTokenFrequency.putAll(result.getTokenFrequency());
+      }
       for(Map.Entry<Token, LinkedHashMap<String, Integer>> entry : result.getSuggestions().entrySet()) {
         List<LinkedHashMap<String, Integer>> allForThisToken = allSuggestions.get(entry.getKey());
         if(allForThisToken==null) {
@@ -161,6 +166,10 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
             anyData = true;
             Map.Entry<String,Integer> corr = iter.next();
             combinedResult.add(original, corr.getKey(), corr.getValue());
+            Integer tokenFrequency = combinedTokenFrequency.get(original);
+            if(tokenFrequency!=null) {
+              combinedResult.addFrequency(original, tokenFrequency);
+            }
             if(++numberAdded==numSug) {
               break;
             }

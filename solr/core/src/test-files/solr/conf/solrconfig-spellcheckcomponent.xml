@@ -75,6 +75,7 @@ Config for testing spellcheck component
       <str name="field">lowerfilt</str>
       <str name="combineWords">true</str>
       <str name="breakWords">true</str>
+      <str name="breakSugestionTieBreaker">MAX_FREQ</str>
       <int name="maxChanges">10</int>
     </lst>
     <lst name="spellchecker">
