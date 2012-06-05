@@ -94,6 +94,10 @@ public class FieldTermStack {
     final TermsEnum termsEnum = vector.iterator(null);
     DocsAndPositionsEnum dpEnum = null;
     BytesRef text;
+    
+    int numDocs = reader.numDocs() - reader.numDeletedDocs();
+    float weight = 0;
+    
     while ((text = termsEnum.next()) != null) {
       UnicodeUtil.UTF8toUTF16(text, spare);
       final String term = spare.toString();
@@ -112,7 +116,9 @@ public class FieldTermStack {
       
       for(int i = 0;i < freq;i++) {
         int pos = dpEnum.nextPosition();
-        termList.add(new TermInfo(term, dpEnum.startOffset(), dpEnum.endOffset(), pos));
+        // For weight look here: http://lucene.apache.org/core/3_6_0/api/core/org/apache/lucene/search/DefaultSimilarity.html
+        weight = ( float ) ( Math.log( numDocs / ( double ) ( reader.docFreq( fieldName, text ) + 1 ) ) + 1.0 );
+        termList.add( new TermInfo( term, dpEnum.startOffset(), dpEnum.endOffset(), pos, weight ) );
       }
     }
     
@@ -152,22 +158,27 @@ public class FieldTermStack {
   
   public static class TermInfo implements Comparable<TermInfo>{
 
-    final String text;
-    final int startOffset;
-    final int endOffset;
-    final int position;
+    private final String text;
+    private final int startOffset;
+    private final int endOffset;
+    private final int position;    
 
-    TermInfo( String text, int startOffset, int endOffset, int position ){
+    // IDF-weight of this term
+    private final float weight;
+
+    public TermInfo( String text, int startOffset, int endOffset, int position, float weight ){
       this.text = text;
       this.startOffset = startOffset;
       this.endOffset = endOffset;
       this.position = position;
+      this.weight = weight;
     }
     
     public String getText(){ return text; }
     public int getStartOffset(){ return startOffset; }
     public int getEndOffset(){ return endOffset; }
     public int getPosition(){ return position; }
+    public float getWeight(){ return weight; }
     
     @Override
     public String toString(){
@@ -176,7 +187,8 @@ public class FieldTermStack {
       return sb.toString();
     }
 
-    public int compareTo( TermInfo o ) {
+    @Override
+    public int compareTo( TermInfo o ){
       return ( this.position - o.position );
     }
   }

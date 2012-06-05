@@ -810,13 +810,13 @@ public class FieldQueryTest extends AbstractTestCase {
     
     // "a"
     List<TermInfo> phraseCandidate = new ArrayList<TermInfo>();
-    phraseCandidate.add( new TermInfo( "a", 0, 1, 0 ) );
+    phraseCandidate.add( new TermInfo( "a", 0, 1, 0, 1 ) );
     assertNull( fq.searchPhrase( F, phraseCandidate ) );
     // "a b"
-    phraseCandidate.add( new TermInfo( "b", 2, 3, 1 ) );
+    phraseCandidate.add( new TermInfo( "b", 2, 3, 1, 1 ) );
     assertNull( fq.searchPhrase( F, phraseCandidate ) );
     // "a b c"
-    phraseCandidate.add( new TermInfo( "c", 4, 5, 2 ) );
+    phraseCandidate.add( new TermInfo( "c", 4, 5, 2, 1 ) );
     assertNotNull( fq.searchPhrase( F, phraseCandidate ) );
     assertNull( fq.searchPhrase( "x", phraseCandidate ) );
 
@@ -832,13 +832,13 @@ public class FieldQueryTest extends AbstractTestCase {
     
     // "a"
     phraseCandidate.clear();
-    phraseCandidate.add( new TermInfo( "a", 0, 1, 0 ) );
+    phraseCandidate.add( new TermInfo( "a", 0, 1, 0, 1 ) );
     assertNotNull( fq.searchPhrase( F, phraseCandidate ) );
     // "a b"
-    phraseCandidate.add( new TermInfo( "b", 2, 3, 1 ) );
+    phraseCandidate.add( new TermInfo( "b", 2, 3, 1, 1 ) );
     assertNull( fq.searchPhrase( F, phraseCandidate ) );
     // "a b c"
-    phraseCandidate.add( new TermInfo( "c", 4, 5, 2 ) );
+    phraseCandidate.add( new TermInfo( "c", 4, 5, 2, 1 ) );
     assertNotNull( fq.searchPhrase( F, phraseCandidate ) );
     assertNull( fq.searchPhrase( "x", phraseCandidate ) );
   }
@@ -852,9 +852,9 @@ public class FieldQueryTest extends AbstractTestCase {
     
     // "a b c" w/ position-gap = 2
     List<TermInfo> phraseCandidate = new ArrayList<TermInfo>();
-    phraseCandidate.add( new TermInfo( "a", 0, 1, 0 ) );
-    phraseCandidate.add( new TermInfo( "b", 2, 3, 2 ) );
-    phraseCandidate.add( new TermInfo( "c", 4, 5, 4 ) );
+    phraseCandidate.add( new TermInfo( "a", 0, 1, 0, 1 ) );
+    phraseCandidate.add( new TermInfo( "b", 2, 3, 2, 1 ) );
+    phraseCandidate.add( new TermInfo( "c", 4, 5, 4, 1 ) );
     assertNull( fq.searchPhrase( F, phraseCandidate ) );
 
     // "a b c"~1
@@ -868,9 +868,9 @@ public class FieldQueryTest extends AbstractTestCase {
     
     // "a b c" w/ position-gap = 3
     phraseCandidate.clear();
-    phraseCandidate.add( new TermInfo( "a", 0, 1, 0 ) );
-    phraseCandidate.add( new TermInfo( "b", 2, 3, 3 ) );
-    phraseCandidate.add( new TermInfo( "c", 4, 5, 6 ) );
+    phraseCandidate.add( new TermInfo( "a", 0, 1, 0, 1 ) );
+    phraseCandidate.add( new TermInfo( "b", 2, 3, 3, 1 ) );
+    phraseCandidate.add( new TermInfo( "c", 4, 5, 6, 1 ) );
     assertNull( fq.searchPhrase( F, phraseCandidate ) );
   }
   
@@ -901,7 +901,7 @@ public class FieldQueryTest extends AbstractTestCase {
     assertNotNull (qpm);
     assertNull (fq.getFieldTermMap(F, "dog"));
     List<TermInfo> phraseCandidate = new ArrayList<TermInfo>();
-    phraseCandidate.add( new TermInfo( "defg", 0, 12, 0 ) );
+    phraseCandidate.add( new TermInfo( "defg", 0, 12, 0, 1 ) );
     assertNotNull (fq.searchPhrase(F, phraseCandidate));
   }
   

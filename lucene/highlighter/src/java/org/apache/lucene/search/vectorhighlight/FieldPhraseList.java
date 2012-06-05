@@ -105,12 +105,17 @@ public class FieldPhraseList {
       }
     }
   }
-  
+
   public void addIfNoOverlap( WeightedPhraseInfo wpi ){
-    for( WeightedPhraseInfo existWpi : phraseList ){
-      if( existWpi.isOffsetOverlap( wpi ) ) return;
+    for( WeightedPhraseInfo existWpi : getPhraseList() ){
+      if( existWpi.isOffsetOverlap( wpi ) ) {
+        // WeightedPhraseInfo.addIfNoOverlap() dumps the second part of, for example, hyphenated words (social-economics). 
+        // The result is that all informations in TermInfo are lost and not available for further operations. 
+        existWpi.getTermsInfos().addAll( wpi.getTermsInfos() );
+        return;
+      }
     }
-    phraseList.add( wpi );
+    getPhraseList().add( wpi );
   }
   
   public static class WeightedPhraseInfo {
@@ -120,6 +125,8 @@ public class FieldPhraseList {
                             // but if position-gap > 1 and slop > 0 then size() could be greater than 1
     private float boost;  // query boost
     private int seqnum;
+    
+    private ArrayList<TermInfo> termsInfos;
     
     /**
      * @return the text
@@ -142,6 +149,13 @@ public class FieldPhraseList {
       return boost;
     }
 
+    /**
+     * @return the termInfos
+     */    
+    public List<TermInfo> getTermsInfos() {
+      return termsInfos;
+    }
+
     public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost ){
       this( terms, boost, 0 );
     }
@@ -149,6 +163,10 @@ public class FieldPhraseList {
     public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost, int seqnum ){
       this.boost = boost;
       this.seqnum = seqnum;
+      
+      // now we keep TermInfos for further operations
+      termsInfos = new ArrayList<TermInfo>( terms );
+      
       termsOffsets = new ArrayList<Toffs>( terms.size() );
       TermInfo ti = terms.get( 0 );
       termsOffsets.add( new Toffs( ti.getStartOffset(), ti.getEndOffset() ) );
