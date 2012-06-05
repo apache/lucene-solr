@@ -19,8 +19,8 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="core-test-framework"/>
     <dependencies>
-      <dependency org="org.apache.ant" name="ant" rev="1.7.1" transitive="false"/>
-      <dependency org="org.apache.ant" name="ant-junit" rev="1.7.1" transitive="false"/>
+      <dependency org="org.apache.ant" name="ant" rev="1.8.2" transitive="false"/>
+      <dependency org="org.apache.ant" name="ant-junit" rev="1.8.2" transitive="false"/>
       <dependency org="junit" name="junit" rev="4.10" transitive="false"/>
 
       <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="1.5.0" transitive="false" />
