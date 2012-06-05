@@ -26,6 +26,13 @@
 
 
 <updateRequestProcessorChain name="standard">
+  <processor class="solr.CustomUpdateRequestProcessorFactory" enable="false">
+   <!-- this processor is not enabled, so it won't be used at all -->
+   <lst name="name">
+     <str name="n1">x1</str>
+     <str name="n2">x2</str>
+   </lst>
+  </processor>
   <processor class="solr.LogUpdateProcessorFactory" >
    <int name="maxNumToLog">100</int>
   </processor>
