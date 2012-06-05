@@ -156,7 +156,9 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     if (!TEST_LINE_DOCS_FILE.equals(DEFAULT_LINE_DOCS_FILE)) addVmOpt(b, "tests.linedocsfile", TEST_LINE_DOCS_FILE);
     if (classEnvRule != null) {
       addVmOpt(b, "tests.locale", classEnvRule.locale);
-      addVmOpt(b, "tests.timezone", classEnvRule.timeZone.getID());
+      if (classEnvRule.timeZone != null) {
+        addVmOpt(b, "tests.timezone", classEnvRule.timeZone.getID());
+      }
     }
     // Randomize this: LUCENE-4094
     addVmOpt(b, "args", "-Dfile.encoding=" + System.getProperty("file.encoding"));
