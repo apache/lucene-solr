@@ -344,6 +344,12 @@ New Features
   are combined and collations can contain a mix of corrections from both spellcheckers.  
   (James Dyer)
 
+* SOLR-3508: Improve JSON update format for deletes, allowing syntax of the form
+  {"delete":"myid"}  AND
+  {"delete":["id1","id2"]}
+  (yonik)
+
+
 Optimizations
 ----------------------
 
