@@ -27,7 +27,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -48,10 +47,11 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
   
   static String field = "name";
 
-  @Ignore
   @Test
   public void testSpellCheckResponse() throws Exception {
     getSolrServer();
+    server.deleteByQuery("*:*");
+    server.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Samsung");
@@ -62,7 +62,6 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
     query.set(SpellingParams.SPELLCHECK_Q, "samsang");
-    query.set(SpellingParams.SPELLCHECK_BUILD, true);
     QueryRequest request = new QueryRequest(query);
     SpellCheckResponse response = request.process(server).getSpellCheckResponse();
     Assert.assertEquals("samsung", response.getFirstSuggestion("samsang"));
@@ -71,17 +70,18 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
   @Test
   public void testSpellCheckResponse_Extended() throws Exception {
     getSolrServer();
+    server.deleteByQuery("*:*");
+    server.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Samsung");
     server.add(doc);
     server.commit(true, true);
 
-    SolrQuery query = new SolrQuery("name:samsang");
+    SolrQuery query = new SolrQuery("*:*");
     query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
-    //query.set(SpellingParams.SPELLCHECK_Q, "samsang");
-    query.set(SpellingParams.SPELLCHECK_BUILD, true);
+    query.set(SpellingParams.SPELLCHECK_Q, "samsang");
     query.set(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, true);
     QueryRequest request = new QueryRequest(query);
     SpellCheckResponse response = request.process(server).getSpellCheckResponse();
@@ -109,6 +109,8 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
   @Test
   public void testSpellCheckCollationResponse() throws Exception {
   	getSolrServer();
+    server.deleteByQuery("*:*");
+    server.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "0");
     doc.setField("name", "faith hope and love");
@@ -135,7 +137,6 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     SolrQuery query = new SolrQuery("name:(+fauth +home +loane)");
     query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
-    query.set(SpellingParams.SPELLCHECK_BUILD, true);
     query.set(SpellingParams.SPELLCHECK_COUNT, 10);
     query.set(SpellingParams.SPELLCHECK_COLLATE, true);
     QueryRequest request = new QueryRequest(query);

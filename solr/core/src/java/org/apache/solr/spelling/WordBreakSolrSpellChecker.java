@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
@@ -90,16 +91,22 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
    */
   public static final String PARAM_MIN_SUGGESTION_FREQUENCY = "minSuggestionFreq";
   
+  /**
+   * <p>
+   *  Specify a value on the "breakSugestionTieBreaker" parameter.
+   *    The default is MAX_FREQ.
+   * </p>  
+   */
   public enum BreakSuggestionTieBreaker {
     /**
      * See
-     * {@link BreakSuggestionSortMethod#NUM_CHANGES_THEN_MAX_FREQUENCY}
+     * {@link WordBreakSpellChecker.BreakSuggestionSortMethod#NUM_CHANGES_THEN_MAX_FREQUENCY}
      * #
      */
     MAX_FREQ,
     /**
      * See
-     * {@link BreakSuggestionSortMethod#NUM_CHANGES_THEN_SUMMED_FREQUENCY}
+     * {@link WordBreakSpellChecker.BreakSuggestionSortMethod#NUM_CHANGES_THEN_SUMMED_FREQUENCY}
      */
     SUM_FREQ
   };
@@ -108,6 +115,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   private boolean combineWords = false;
   private boolean breakWords = false;
   private BreakSuggestionSortMethod sortMethod = BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY;
+  private static final Pattern spacePattern = Pattern.compile("\\s+");
 
   @Override
   public String init(@SuppressWarnings("unchecked") NamedList config,
@@ -127,6 +135,8 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
         throw new IllegalArgumentException("Invalid value for parameter "
             + PARAM_BREAK_SUGGESTION_TIE_BREAKER + " : " + bstb);
       }
+    } else {
+      sortMethod = BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY;
     }
     int mc = intParam(config, PARAM_MAX_CHANGES);
     if (mc > 0) {
@@ -272,21 +282,27 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     while (lastBreak != null || lastCombine != null) {
       if (lastBreak == null) {
         result.add(lastCombine.token, lastCombine.suggestion, lastCombine.freq);
+        result.addFrequency(lastCombine.token, getCombineFrequency(ir, lastCombine.token));
         lastCombine = null;
       } else if (lastCombine == null) {
         result.add(lastBreak.token, lastBreak.suggestion, lastBreak.freq);
+        result.addFrequency(lastBreak.token, ir.docFreq(new Term(field, lastBreak.token.toString())));
         lastBreak = null;
       } else if (lastBreak.freq < lastCombine.freq) {
         result.add(lastCombine.token, lastCombine.suggestion, lastCombine.freq);
+        result.addFrequency(lastCombine.token, getCombineFrequency(ir, lastCombine.token));
         lastCombine = null;
       } else if (lastCombine.freq < lastBreak.freq) {
         result.add(lastBreak.token, lastBreak.suggestion, lastBreak.freq);
+        result.addFrequency(lastBreak.token, ir.docFreq(new Term(field, lastBreak.token.toString())));
         lastBreak = null;
       } else if (breakCount >= combineCount) {
         result.add(lastCombine.token, lastCombine.suggestion, lastCombine.freq);
+        result.addFrequency(lastCombine.token, getCombineFrequency(ir, lastCombine.token));
         lastCombine = null;
       } else {
         result.add(lastBreak.token, lastBreak.suggestion, lastBreak.freq);
+        result.addFrequency(lastBreak.token, ir.docFreq(new Term(field, lastBreak.token.toString())));
         lastBreak = null;
       }
       if (result.getSuggestions().size() > numSuggestions) {
@@ -299,6 +315,21 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       if (lastCombine == null && combineIter.hasNext()) {
         lastCombine = combineIter.next();
         combineCount++;
+      }
+    }
+    return result;
+  }
+  
+  private int getCombineFrequency(IndexReader ir, Token token) throws IOException {
+    String[] words = spacePattern.split(token.toString());
+    int result = 0;
+    if(sortMethod==BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY) {      
+      for(String word : words) {
+        result = Math.max(result, ir.docFreq(new Term(field, word)));
+      }
+    } else {
+      for(String word : words) {
+        result += ir.docFreq(new Term(field, word));
       }
     }
     return result;
