@@ -91,8 +91,8 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       writer.commit();
       mgr = new SearcherManager(dir, factory);
       isNRT = false;
+      assertMergedSegmentsWarmed = false;
     }
-    
 
     lifetimeMGR = new SearcherLifetimeManager();
   }
