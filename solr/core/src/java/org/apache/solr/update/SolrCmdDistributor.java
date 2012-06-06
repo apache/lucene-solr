@@ -355,6 +355,7 @@ public class SolrCmdDistributor {
               sreq.retries++;
               sreq.rspCode = 0;
               sreq.exception = null;
+              SolrException.log(SolrCore.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ", sreq.exception);
               Thread.sleep(500);
               submit(sreq);
               checkResponses(block);
