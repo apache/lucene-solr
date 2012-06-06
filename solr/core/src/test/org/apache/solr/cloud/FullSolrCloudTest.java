@@ -697,7 +697,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     // try to index to a living shard at shard2
     
-    // we are careful to make sure the downed node is not longer in the state,
+    // we are careful to make sure the downed node is no longer in the state,
     // because on some systems (especially freebsd w/ blackhole enabled), trying
     // to talk to a downed node causes grief
     tries = 0;
