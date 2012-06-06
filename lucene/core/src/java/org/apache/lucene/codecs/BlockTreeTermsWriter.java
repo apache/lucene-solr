@@ -639,7 +639,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
     // for debugging
     @SuppressWarnings("unused")
-	private String toString(BytesRef b) {
+    private String toString(BytesRef b) {
       try {
         return b.utf8ToString() + " " + b;
       } catch (Throwable t) {
@@ -896,6 +896,10 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         //   System.out.println("SAVED to " + dotFileName);
         //   w.close();
         // }
+      } else {
+        assert sumTotalTermFreq == 0;
+        assert sumDocFreq == 0;
+        assert docCount == 0;
       }
     }
 
