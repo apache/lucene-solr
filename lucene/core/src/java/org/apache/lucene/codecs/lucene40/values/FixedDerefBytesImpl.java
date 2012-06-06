@@ -109,8 +109,7 @@ class FixedDerefBytesImpl {
 
     @Override
     public BytesRef getBytes(int docID, BytesRef bytesRef) {
-      final int id = (int) addresses.get(docID);
-      return data.fillSlice(bytesRef, (id * size), size);
+      return data.fillSlice(bytesRef, addresses.get(docID) * size, size);
     }
 
   }
