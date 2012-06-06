@@ -355,12 +355,25 @@ public class SolrCmdDistributor {
             // error during request
             
             // if there is a retry url, we want to retry...
-            // TODO: but we really should only retry on connection errors...
-            if (sreq.retries < MAX_RETRIES_ON_FORWARD && sreq.node.checkRetry()) {
+            boolean isRetry = sreq.node.checkRetry();
+            boolean doRetry = false;
+            int rspCode = sreq.rspCode;
+            
+            // this can happen in certain situations such as shutdown
+            if (isRetry && (rspCode == 404 || rspCode == 403 || rspCode == 503 || rspCode == 500)) {
+              doRetry = true;
+            }
+            
+            // if its an ioexception, lets try again
+            if (isRetry && sreq.exception instanceof IOException) {
+              doRetry = true;
+            }
+            
+            if (isRetry && sreq.retries < MAX_RETRIES_ON_FORWARD && doRetry) {
               sreq.retries++;
               sreq.rspCode = 0;
               sreq.exception = null;
-              SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ");
+              SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ", null);
               Thread.sleep(500);
               submit(sreq);
               checkResponses(block);
