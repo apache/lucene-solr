@@ -93,6 +93,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    */
   public static final String INDEX_CREATE_TIME = "index.create.time";
 
+  private Directory dir;
   private IndexWriter indexWriter;
   private int nextID;
   private char delimiter = Consts.DEFAULT_DELIMITER;
@@ -115,8 +116,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private DirectoryReader reader;
   private int cacheMisses;
 
-  /** Records the taxonomy index creation time. */
-  private final String createTime;
+  /** Records the taxonomy index creation time, updated on replaceTaxonomy as well. */
+  private String createTime;
   
   /** Reads the commit data from a Directory. */
   private static Map<String, String> readCommitData(Directory dir) throws IOException {
@@ -204,8 +205,9 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       }
     }
     
+    dir = directory;
     IndexWriterConfig config = createIndexWriterConfig(openMode);
-    indexWriter = openIndexWriter(directory, config);
+    indexWriter = openIndexWriter(dir, config);
     
     // verify (to some extent) that merge policy in effect would preserve category docids 
     assert !(indexWriter.getConfig().getMergePolicy() instanceof TieredMergePolicy) : 
@@ -1021,4 +1023,32 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     doClose();
   }
   
+  /**
+   * Replaces the current taxonomy with the given one. This method should
+   * generally be called in conjunction with
+   * {@link IndexWriter#addIndexes(Directory...)} to replace both the taxonomy
+   * as well as the search index content.
+   */
+  public void replaceTaxonomy(Directory taxoDir) throws IOException {
+    // replace the taxonomy by doing IW optimized operations
+    indexWriter.deleteAll();
+    indexWriter.addIndexes(taxoDir);
+    refreshInternalReader();
+    nextID = indexWriter.maxDoc();
+    
+    // need to clear the cache, so that addCategory won't accidentally return
+    // old categories that are in the cache.
+    cache.clear();
+    cacheIsComplete = false;
+    alreadyCalledFillCache = false;
+    
+    // update createTime as a taxonomy replace is just like it has be recreated
+    createTime = Long.toString(System.nanoTime());
+  }
+
+  /** Returns the {@link Directory} of this taxonomy writer. */
+  public Directory getDirectory() {
+    return dir;
+  }
+
 }

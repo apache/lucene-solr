@@ -17,6 +17,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -59,6 +60,8 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) { return true; }
     @Override
     public boolean hasRoom(int numberOfEntries) { return false; }
+    @Override
+    public void clear() {}
     
   }
   
@@ -255,5 +258,43 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     
     dir.close();
   }
+
+  private String getCreateTime(Directory taxoDir) throws IOException {
+    SegmentInfos infos = new SegmentInfos();
+    infos.read(taxoDir);
+    return infos.getUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
+  }
   
+  @Test
+  public void testReplaceTaxonomy() throws Exception {
+    Directory input = newDirectory();
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(input);
+    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.close();
+    
+    Directory dir = newDirectory();
+    taxoWriter = new DirectoryTaxonomyWriter(dir);
+    int ordinal = taxoWriter.addCategory(new CategoryPath("b"));
+    taxoWriter.addCategory(new CategoryPath("c"));
+    taxoWriter.commit();
+    
+    String origCreateTime = getCreateTime(dir);
+    
+    // replace the taxonomy with the input one
+    taxoWriter.replaceTaxonomy(input);
+    
+    // add the same category again -- it should not receive the same ordinal !
+    int newOrdinal = taxoWriter.addCategory(new CategoryPath("b"));
+    assertNotSame("new ordinal cannot be the original ordinal", ordinal, newOrdinal);
+    assertEquals("ordinal should have been 2 since only one category was added by replaceTaxonomy", 2, newOrdinal);
+    
+    taxoWriter.close();
+    
+    String newCreateTime = getCreateTime(dir);
+    assertNotSame("create time should have been changed after replaceTaxonomy", origCreateTime, newCreateTime);
+    
+    dir.close();
+    input.close();
+  }
+
 }
