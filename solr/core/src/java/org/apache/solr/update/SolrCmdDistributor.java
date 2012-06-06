@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -360,20 +361,27 @@ public class SolrCmdDistributor {
             int rspCode = sreq.rspCode;
             
             // this can happen in certain situations such as shutdown
-            if (isRetry && (rspCode == 404 || rspCode == 403 || rspCode == 503 || rspCode == 500)) {
-              doRetry = true;
-            }
-            
-            // if its an ioexception, lets try again
-            if (isRetry && sreq.exception instanceof IOException) {
-              doRetry = true;
+            if (isRetry) {
+              if (rspCode == 404 || rspCode == 403 || rspCode == 503
+                  || rspCode == 500) {
+                doRetry = true;
+              }
+              
+              // if its an ioexception, lets try again
+              if (sreq.exception instanceof IOException) {
+                doRetry = true;
+              } else if (sreq.exception instanceof SolrServerException) {
+                if (((SolrServerException) sreq.exception).getRootCause() instanceof IOException) {
+                  doRetry = true;
+                }
+              }
             }
             
             if (isRetry && sreq.retries < MAX_RETRIES_ON_FORWARD && doRetry) {
               sreq.retries++;
               sreq.rspCode = 0;
               sreq.exception = null;
-              SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ", null);
+              SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ");
               Thread.sleep(500);
               submit(sreq);
               checkResponses(block);
