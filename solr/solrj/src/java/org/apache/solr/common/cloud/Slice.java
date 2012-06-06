@@ -23,7 +23,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-// immutable
+/**
+ * A Slice contains immutable information about all shards that share the same
+ * shard id (shard leader and replicas).
+ */
 public class Slice implements JSONWriter.Writable {
   private final Map<String,ZkNodeProps> shards;
   private final String name;
@@ -33,10 +36,20 @@ public class Slice implements JSONWriter.Writable {
     this.name = name;
   }
   
+  /**
+   * Get properties for all shards in this slice.
+   * 
+   * @return map containing coreNodeName as the key, see
+   *         {@link ZkStateReader#getCoreNodeName(String, String)}, ZKNodeProps
+   *         as the value.
+   */
   public Map<String,ZkNodeProps> getShards() {
     return Collections.unmodifiableMap(shards);
   }
 
+  /**
+   * Get a copy of the shards data this object holds.
+   */
   public Map<String,ZkNodeProps> getShardsCopy() {
     Map<String,ZkNodeProps> shards = new HashMap<String,ZkNodeProps>();
     for (Map.Entry<String,ZkNodeProps> entry : this.shards.entrySet()) {
@@ -46,6 +59,9 @@ public class Slice implements JSONWriter.Writable {
     return shards;
   }
   
+  /**
+   * Return slice name (shard id).
+   */
   public String getName() {
     return name;
   }

@@ -25,25 +25,33 @@ import java.util.Map.Entry;
 
 import org.apache.noggit.JSONWriter;
 
-// Immutable
+/**
+ * ZkNodeProps contains immutable properties for a shard/solr core.
+ */
 public class ZkNodeProps implements JSONWriter.Writable {
 
   private final Map<String,String> propMap;
 
+  /**
+   * Construct ZKNodeProps from map.
+   */
   public ZkNodeProps(Map<String,String> propMap) {
     this.propMap = new HashMap<String,String>();
     this.propMap.putAll(propMap);
   }
   
+  /**
+   * Construct ZKNodeProps from information of an existingZKNodeProps.
+   */
   public ZkNodeProps(ZkNodeProps zkNodeProps) {
     this.propMap = new HashMap<String,String>();
     this.propMap.putAll(zkNodeProps.propMap);
   }
   
-  public ZkNodeProps() {
-    propMap = new HashMap<String,String>();
-  }
-  
+  /**
+   * Constructor that populates the from array of Strings in form key1, value1,
+   * key2, value2, ..., keyN, valueN
+   */
   public ZkNodeProps(String... keyVals) {
     if (keyVals.length % 2 != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
@@ -53,15 +61,24 @@ public class ZkNodeProps implements JSONWriter.Writable {
       propMap.put(keyVals[i], keyVals[i+1]);
     }
   }
-  
+ 
+  /**
+   * Get property keys.
+   */
   public Set<String> keySet() {
     return Collections.unmodifiableSet(propMap.keySet());
   }
 
+  /**
+   * Get all properties as map.
+   */
   public Map<String,String> getProperties() {
     return Collections.unmodifiableMap(propMap);
   }
 
+  /**
+   * Create ZkNodeProps from json string that is typically stored in zookeeper.
+   */
   public static ZkNodeProps load(byte[] bytes) {
     Map<String, String> props = (Map<String, String>) ZkStateReader.fromJSON(bytes);
     return new ZkNodeProps(props);
@@ -72,6 +89,9 @@ public class ZkNodeProps implements JSONWriter.Writable {
     jsonWriter.write(propMap);
   }
   
+  /**
+   * Get property value.
+   */
   public String get(String key) {
     return propMap.get(key);
   }
@@ -85,7 +105,10 @@ public class ZkNodeProps implements JSONWriter.Writable {
     }
     return sb.toString();
   }
-  
+
+  /**
+   * Check if property key exists.
+   */
   public boolean containsKey(String key) {
     return propMap.containsKey(key);
   }

@@ -33,6 +33,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.HashPartitioner.Range;
 import org.apache.zookeeper.KeeperException;
 
+/**
+ * Immutable state of the cloud. Normally you can get the state by using
+ * {@link ZkStateReader#getCloudState()}.
+ */
 public class CloudState implements JSONWriter.Writable {
 	private final Map<String, Map<String,Slice>> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
 	private final Set<String> liveNodes;
@@ -40,15 +44,7 @@ public class CloudState implements JSONWriter.Writable {
   private final HashPartitioner hp = new HashPartitioner();
   
   private final Map<String,RangeInfo> rangeInfos = new HashMap<String,RangeInfo>();
-  public Map<String,Map<String,ZkNodeProps>> leaders = new HashMap<String,Map<String,ZkNodeProps>>();
-
-
-	public CloudState() {
-		this.liveNodes = new HashSet<String>();
-		this.collectionStates = new HashMap<String,Map<String,Slice>>(0);
-		addRangeInfos(collectionStates.keySet());
-		getShardLeaders();
-	}
+  private final Map<String,Map<String,ZkNodeProps>> leaders = new HashMap<String,Map<String,ZkNodeProps>>();
 
 	public CloudState(Set<String> liveNodes,
 			Map<String, Map<String,Slice>> collectionStates) {
@@ -84,7 +80,10 @@ public class CloudState implements JSONWriter.Writable {
       }
     }
   }
-	
+
+	/**
+	 * Get properties of a shard leader for specific collection.
+	 */
 	public ZkNodeProps getLeader(String collection, String shard) {
 	  Map<String,ZkNodeProps> collectionLeaders = leaders.get(collection);
 	  if (collectionLeaders == null) return null;
@@ -97,6 +96,9 @@ public class CloudState implements JSONWriter.Writable {
     }
   }
 
+  /**
+   * Get the index Slice for collection.
+   */
   public Slice getSlice(String collection, String slice) {
 		if (collectionStates.containsKey(collection)
 				&& collectionStates.get(collection).containsKey(slice))
@@ -104,12 +106,18 @@ public class CloudState implements JSONWriter.Writable {
 		return null;
 	}
 
+  /**
+   * Get all slices for collection.
+   */
 	public Map<String, Slice> getSlices(String collection) {
 		if(!collectionStates.containsKey(collection))
 			return null;
 		return Collections.unmodifiableMap(collectionStates.get(collection));
 	}
 
+	/**
+	 * Get collection names.
+	 */
 	public Set<String> getCollections() {
 		return Collections.unmodifiableSet(collectionStates.keySet());
 	}
@@ -118,10 +126,17 @@ public class CloudState implements JSONWriter.Writable {
 		return Collections.unmodifiableMap(collectionStates);
 	}
 
+	/**
+	 * Get names of the currently live nodes.
+	 */
 	public Set<String> getLiveNodes() {
 		return Collections.unmodifiableSet(liveNodes);
 	}
 
+	/**
+	 * Get shardId for core.
+	 * @param coreNodeName in the form of nodeName_coreName
+	 */
 	public String getShardId(String coreNodeName) {
 	  for (Entry<String, Map<String, Slice>> states: collectionStates.entrySet()){
 	    for(Entry<String, Slice> slices: states.getValue().entrySet()) {
@@ -135,6 +150,9 @@ public class CloudState implements JSONWriter.Writable {
 	  return null;
 	}
 
+	/**
+	 * Check if node is alive. 
+	 */
 	public boolean liveNodesContain(String name) {
 		return liveNodes.contains(name);
 	}
@@ -170,7 +188,11 @@ public class CloudState implements JSONWriter.Writable {
     rangeInfos.put(collection, rangeInfo);
     return rangeInfo;
   }
-	
+
+  /**
+   * Get shard id for hash. This is used when determining which Slice the
+   * document is to be submitted to.
+   */
   public String getShard(int hash, String collection) {
     RangeInfo rangInfo = getRanges(collection);
     
@@ -193,12 +215,18 @@ public class CloudState implements JSONWriter.Writable {
 		return sb.toString();
 	}
 
+	/**
+	 * Create CloudState by reading the current state from zookeeper. 
+	 */
 	public static CloudState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException {
     byte[] state = zkClient.getData(ZkStateReader.CLUSTER_STATE,
         null, null, true);
     return load(state, liveNodes);
 	}
 	
+	/**
+	 * Create CloudState from json string that is typically stored in zookeeper.
+	 */
 	public static CloudState load(byte[] bytes, Set<String> liveNodes) throws KeeperException, InterruptedException {
     if (bytes == null || bytes.length == 0) {
       return new CloudState(liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
@@ -229,7 +257,7 @@ public class CloudState implements JSONWriter.Writable {
     jsonWriter.write(collectionStates);
   }
   
-  class RangeInfo {
+  private class RangeInfo {
     private List<Range> ranges;
     private ArrayList<String> shardList;
   }
