@@ -31,13 +31,14 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
+import org.apache.lucene.util.automaton.RegExp;
 
 @SuppressCodecs({ "SimpleText", "Memory" })
 public class TestTermsEnum extends LuceneTestCase {
@@ -184,8 +185,9 @@ public class TestTermsEnum extends LuceneTestCase {
 
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    
+
     final int numTerms = atLeast(300);
+    //final int numTerms = 50;
 
     final Set<String> terms = new HashSet<String>();
     final Collection<String> pendingTerms = new ArrayList<String>();
@@ -259,6 +261,14 @@ public class TestTermsEnum extends LuceneTestCase {
         }
         a = DaciukMihovAutomatonBuilder.build(sortedAcceptTerms);
       }
+      
+      if (random().nextBoolean()) {
+        if (VERBOSE) {
+          System.out.println("TEST: reduce the automaton");
+        }
+        a.reduce();
+      }
+
       final CompiledAutomaton c = new CompiledAutomaton(a, true, false);
 
       final BytesRef[] acceptTermsArray = new BytesRef[acceptTerms.size()];
@@ -321,7 +331,7 @@ public class TestTermsEnum extends LuceneTestCase {
           final BytesRef expected = termsArray[loc];
           final BytesRef actual = te.next();
           if (VERBOSE) {
-            System.out.println("TEST:   next() expected=" + expected.utf8ToString() + " actual=" + actual.utf8ToString());
+            System.out.println("TEST:   next() expected=" + expected.utf8ToString() + " actual=" + (actual == null ? "null" : actual.utf8ToString()));
           }
           assertEquals(expected, actual);
           assertEquals(1, te.docFreq());
@@ -517,7 +527,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private String getRandomString() {
-    //return _TestUtil.randomSimpleString(random);
+    //return _TestUtil.randomSimpleString(random());
     return _TestUtil.randomRealisticUnicodeString(random());
   }
 
@@ -712,5 +722,56 @@ public class TestTermsEnum extends LuceneTestCase {
         }
       }
     }
+  }
+
+  public void testIntersectBasic() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(new LogDocMergePolicy());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newField("field", "aaa", TextField.TYPE_UNSTORED));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(newField("field", "bbb", StringField.TYPE_UNSTORED));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(newField("field", "ccc", TextField.TYPE_UNSTORED));
+    w.addDocument(doc);
+
+    w.forceMerge(1);
+    DirectoryReader r = w.getReader();
+    w.close();
+    AtomicReader sub = r.getSequentialSubReaders()[0];
+    Terms terms = sub.fields().terms("field");
+    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();    
+    CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
+    TermsEnum te = terms.intersect(ca, null);
+    assertEquals("aaa", te.next().utf8ToString());
+    assertEquals(0, te.docs(null, null, false).nextDoc());
+    assertEquals("bbb", te.next().utf8ToString());
+    assertEquals(1, te.docs(null, null, false).nextDoc());
+    assertEquals("ccc", te.next().utf8ToString());
+    assertEquals(2, te.docs(null, null, false).nextDoc());
+    assertNull(te.next());
+
+    te = terms.intersect(ca, new BytesRef("abc"));
+    assertEquals("bbb", te.next().utf8ToString());
+    assertEquals(1, te.docs(null, null, false).nextDoc());
+    assertEquals("ccc", te.next().utf8ToString());
+    assertEquals(2, te.docs(null, null, false).nextDoc());
+    assertNull(te.next());
+
+    te = terms.intersect(ca, new BytesRef("aaa"));
+    assertEquals("bbb", te.next().utf8ToString());
+    assertEquals(1, te.docs(null, null, false).nextDoc());
+    assertEquals("ccc", te.next().utf8ToString());
+    assertEquals(2, te.docs(null, null, false).nextDoc());
+    assertNull(te.next());
+
+    r.close();
+    dir.close();
   }
 }

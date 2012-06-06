@@ -54,10 +54,13 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
@@ -495,7 +498,6 @@ public class TestFSTs extends LuceneTestCase {
       FST<T> fst = builder.finish();
 
       if (random.nextBoolean() && fst != null && !willRewrite) {
-        TestFSTs t = new TestFSTs();
         IOContext context = LuceneTestCase.newIOContext(random);
         IndexOutput out = dir.createOutput("fst.bin", context);
         fst.save(out);
@@ -1136,7 +1138,17 @@ public class TestFSTs extends LuceneTestCase {
       }
       BytesRef term;
       int ord = 0;
+
+      Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();    
+      final TermsEnum termsEnum2 = terms.intersect(new CompiledAutomaton(automaton, false, false), null);
+
       while((term = termsEnum.next()) != null) {
+        BytesRef term2 = termsEnum2.next();
+        assertNotNull(term2);
+        assertEquals(term, term2);
+        assertEquals(termsEnum.docFreq(), termsEnum2.docFreq());
+        assertEquals(termsEnum.totalTermFreq(), termsEnum2.totalTermFreq());
+
         if (ord == 0) {
           try {
             termsEnum.ord();
