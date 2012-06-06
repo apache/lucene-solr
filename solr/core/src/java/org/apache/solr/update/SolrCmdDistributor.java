@@ -44,13 +44,16 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 
 
 public class SolrCmdDistributor {
   private static final int MAX_RETRIES_ON_FORWARD = 6;
-
+  public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
+  
   // TODO: shut this thing down
   // TODO: this cannot be per instance...
   static ThreadPoolExecutor commExecutor = new ThreadPoolExecutor(0,
@@ -357,7 +360,7 @@ public class SolrCmdDistributor {
               sreq.retries++;
               sreq.rspCode = 0;
               sreq.exception = null;
-              SolrException.log(SolrCore.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ", sreq.exception);
+              SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ");
               Thread.sleep(500);
               submit(sreq);
               checkResponses(block);
@@ -368,7 +371,7 @@ public class SolrCmdDistributor {
               error.node = sreq.node;
               response.errors.add(error);
               response.sreq = sreq;
-              SolrException.log(SolrCore.log, "shard update error "
+              SolrException.log(SolrCmdDistributor.log, "shard update error "
                   + sreq.node, sreq.exception);
             }
           }
