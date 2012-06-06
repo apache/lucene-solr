@@ -342,7 +342,7 @@ class FixedStraightBytesImpl {
 
     @Override
     public BytesRef getBytes(int docID, BytesRef bytesRef) {
-      return data.fillSlice(bytesRef, docID * size, size);
+      return data.fillSlice(bytesRef, size * ((long) docID), size);
     }
   }
   
@@ -356,7 +356,7 @@ class FixedStraightBytesImpl {
 
     @Override
     protected int position(int docID) throws IOException {
-      data.seek(baseOffset + size * docID);
+      data.seek(baseOffset + size * ((long) docID));
       return size;
     }
 
