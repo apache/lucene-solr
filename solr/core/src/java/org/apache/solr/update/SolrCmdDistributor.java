@@ -49,6 +49,8 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 
 
 public class SolrCmdDistributor {
+  private static final int MAX_RETRIES_ON_FORWARD = 6;
+
   // TODO: shut this thing down
   // TODO: this cannot be per instance...
   static ThreadPoolExecutor commExecutor = new ThreadPoolExecutor(0,
@@ -351,7 +353,7 @@ public class SolrCmdDistributor {
             
             // if there is a retry url, we want to retry...
             // TODO: but we really should only retry on connection errors...
-            if (sreq.retries < 5 && sreq.node.checkRetry()) {
+            if (sreq.retries < MAX_RETRIES_ON_FORWARD && sreq.node.checkRetry()) {
               sreq.retries++;
               sreq.rspCode = 0;
               sreq.exception = null;
