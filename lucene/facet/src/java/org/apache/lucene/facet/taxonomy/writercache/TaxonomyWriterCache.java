@@ -112,4 +112,10 @@ public interface TaxonomyWriterCache {
    */
   public boolean hasRoom(int numberOfEntries);
 
+  /**
+   * Clears the content of the cache. Unlike {@link #close()}, the caller can
+   * assume that the cache is still operable after this method returns.
+   */
+  public void clear();
+  
 }

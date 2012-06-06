@@ -34,12 +34,23 @@ import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {  
 
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
+  private final int initialCapcity, numHashArrays;
+  private final float loadFactor;
+  
   private CompactLabelToOrdinal cache;
 
   public Cl2oTaxonomyWriterCache(int initialCapcity, float loadFactor, int numHashArrays) {
     this.cache = new CompactLabelToOrdinal(initialCapcity, loadFactor, numHashArrays);
+    this.initialCapcity = initialCapcity;
+    this.numHashArrays = numHashArrays;
+    this.loadFactor = loadFactor;
   }
 
+  @Override
+  public void clear() {
+    cache = new CompactLabelToOrdinal(initialCapcity, loadFactor, numHashArrays);
+  }
+  
   @Override
   public synchronized void close() {
     cache = null;

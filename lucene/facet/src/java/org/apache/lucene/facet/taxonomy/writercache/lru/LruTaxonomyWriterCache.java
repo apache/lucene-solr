@@ -66,6 +66,11 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
+  public void clear() {
+    cache.clear();
+  }
+  
+  @Override
   public synchronized void close() {
     cache.clear();
     cache = null;

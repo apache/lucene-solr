@@ -6,7 +6,10 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
 
-(No changes)
+New features
+
+* LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
+  the taxonomy in place with the given one. (Shai Erera)
 
 ======================= Lucene 4.0.0 =======================
 
