@@ -160,15 +160,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       codec = Codec.forName("Lucene3x");
       assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
-    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
-      codec = new SimpleTextCodec();
-    } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
-      codec = new AppendingCodec();
-    } else if (!"random".equals(TEST_CODEC)) {
-      codec = Codec.forName(TEST_CODEC);
-    } else if ("random".equals(TEST_POSTINGSFORMAT)) {
-      codec = new RandomCodec(random, avoidCodecs);
-    } else {
+    } else if (!"random".equals(TEST_POSTINGSFORMAT)) {
       codec = new Lucene40Codec() {
         private final PostingsFormat format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
         
@@ -182,6 +174,16 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
           return super.toString() + ": " + format.toString();
         }
       };
+    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
+      codec = new SimpleTextCodec();
+    } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
+      codec = new AppendingCodec();
+    } else if (!"random".equals(TEST_CODEC)) {
+      codec = Codec.forName(TEST_CODEC);
+    } else if ("random".equals(TEST_POSTINGSFORMAT)) {
+      codec = new RandomCodec(random, avoidCodecs);
+    } else {
+      assert false;
     }
     Codec.setDefault(codec);
 
