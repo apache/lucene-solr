@@ -212,9 +212,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-    if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-      return null;
-    } else if (canReuse(reuse, liveDocs)) {
+    if (canReuse(reuse, liveDocs)) {
       // if (DEBUG) System.out.println("SPR.docs ts=" + termState);
       return ((SegmentDocsEnumBase) reuse).reset(fieldInfo, (StandardTermState)termState);
     }
@@ -249,9 +247,6 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     throws IOException {
 
     boolean hasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-    if (needsOffsets && !hasOffsets) {
-      return null; // not available
-    }
 
     // TODO: refactor
     if (fieldInfo.hasPayloads() || hasOffsets) {

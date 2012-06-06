@@ -179,9 +179,6 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsEnum docs(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-    if (needsFreqs && field.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-      return null;
-    }
     PulsingTermState termState = (PulsingTermState) _termState;
     if (termState.postingsSize != -1) {
       PulsingDocsEnum postings;
@@ -217,11 +214,6 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse,
                                                boolean needsOffsets) throws IOException {
-    if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-      return null;
-    } else if (needsOffsets && field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
-      return null;
-    }
 
     final PulsingTermState termState = (PulsingTermState) _termState;
 
