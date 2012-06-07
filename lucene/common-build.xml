@@ -283,6 +283,7 @@
   <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
     <!-- todo, make this a property or something. 
          only special cases need bundles -->
+    <delete><fileset dir="." includes="**/*.jar"/></delete>         
     <ivy:retrieve type="jar,bundle" log="download-only" 
                   conf="${ivy.default.configuration}"/>
   </target>
