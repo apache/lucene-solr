@@ -16,7 +16,7 @@
 */
 
 var current_core = null;
-var cookie_name = 'schema-browser_autoload';
+var cookie_schema_browser_autoload = 'schema-browser_autoload';
 
 var luke_array_to_struct = function( array )
 {
@@ -1124,7 +1124,7 @@ sammy.get
             'click',
             function( event )
             {
-              $.cookie( cookie_name, $.cookie( cookie_name ) ? null : true );
+              $.cookie( cookie_schema_browser_autoload, $.cookie( cookie_schema_browser_autoload ) ? null : true );
               $( this ).trigger( 'state' );
 
               return false;
@@ -1136,7 +1136,7 @@ sammy.get
             'state',
             function( event )
             {
-              $.cookie( cookie_name )
+              $.cookie( cookie_schema_browser_autoload )
                 ? $( this ).addClass( 'on' )
                 : $( this ).removeClass( 'on' );
             }
@@ -1147,7 +1147,7 @@ sammy.get
             'init',
             function( event )
             {
-              if( !$.cookie( cookie_name ) )
+              if( !$.cookie( cookie_schema_browser_autoload ) )
               {
                 return false;
               }
