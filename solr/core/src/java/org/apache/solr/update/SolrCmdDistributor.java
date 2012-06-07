@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -44,11 +45,16 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 
 
 public class SolrCmdDistributor {
+  private static final int MAX_RETRIES_ON_FORWARD = 6;
+  public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
+  
   // TODO: shut this thing down
   // TODO: this cannot be per instance...
   static ThreadPoolExecutor commExecutor = new ThreadPoolExecutor(0,
@@ -350,11 +356,32 @@ public class SolrCmdDistributor {
             // error during request
             
             // if there is a retry url, we want to retry...
-            // TODO: but we really should only retry on connection errors...
-            if (sreq.retries < 5 && sreq.node.checkRetry()) {
+            boolean isRetry = sreq.node.checkRetry();
+            boolean doRetry = false;
+            int rspCode = sreq.rspCode;
+            
+            // this can happen in certain situations such as shutdown
+            if (isRetry) {
+              if (rspCode == 404 || rspCode == 403 || rspCode == 503
+                  || rspCode == 500) {
+                doRetry = true;
+              }
+              
+              // if its an ioexception, lets try again
+              if (sreq.exception instanceof IOException) {
+                doRetry = true;
+              } else if (sreq.exception instanceof SolrServerException) {
+                if (((SolrServerException) sreq.exception).getRootCause() instanceof IOException) {
+                  doRetry = true;
+                }
+              }
+            }
+            
+            if (isRetry && sreq.retries < MAX_RETRIES_ON_FORWARD && doRetry) {
               sreq.retries++;
               sreq.rspCode = 0;
               sreq.exception = null;
+              SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ");
               Thread.sleep(500);
               submit(sreq);
               checkResponses(block);
@@ -365,7 +392,7 @@ public class SolrCmdDistributor {
               error.node = sreq.node;
               response.errors.add(error);
               response.sreq = sreq;
-              SolrException.log(SolrCore.log, "shard update error "
+              SolrException.log(SolrCmdDistributor.log, "shard update error "
                   + sreq.node, sreq.exception);
             }
           }
