@@ -28,6 +28,6 @@ import org.apache.lucene.index.SegmentInfo;
  * @lucene.experimental
  */
 public abstract class SegmentInfoFormat {
-  public abstract SegmentInfoReader getSegmentInfosReader();
-  public abstract SegmentInfoWriter getSegmentInfosWriter();
+  public abstract SegmentInfoReader getSegmentInfoReader();
+  public abstract SegmentInfoWriter getSegmentInfoWriter();
 }

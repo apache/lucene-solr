@@ -50,12 +50,12 @@ public class Lucene3xSegmentInfoFormat extends SegmentInfoFormat {
   public static final int UPGRADED_SI_VERSION_CURRENT = UPGRADED_SI_VERSION_START;
   
   @Override
-  public SegmentInfoReader getSegmentInfosReader() {
+  public SegmentInfoReader getSegmentInfoReader() {
     return reader;
   }
 
   @Override
-  public SegmentInfoWriter getSegmentInfosWriter() {
+  public SegmentInfoWriter getSegmentInfoWriter() {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
   

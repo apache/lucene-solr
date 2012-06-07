@@ -26,7 +26,7 @@ class PreFlexRWSegmentInfoFormat extends Lucene3xSegmentInfoFormat {
   private final SegmentInfoWriter writer = new PreFlexRWSegmentInfoWriter();
 
   @Override
-  public SegmentInfoWriter getSegmentInfosWriter() {
+  public SegmentInfoWriter getSegmentInfoWriter() {
     return writer;
   }
 }

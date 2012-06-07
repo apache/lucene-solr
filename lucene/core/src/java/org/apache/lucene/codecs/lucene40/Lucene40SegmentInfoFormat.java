@@ -72,12 +72,12 @@ public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
   private final SegmentInfoWriter writer = new Lucene40SegmentInfoWriter();
   
   @Override
-  public SegmentInfoReader getSegmentInfosReader() {
+  public SegmentInfoReader getSegmentInfoReader() {
     return reader;
   }
 
   @Override
-  public SegmentInfoWriter getSegmentInfosWriter() {
+  public SegmentInfoWriter getSegmentInfoWriter() {
     return writer;
   }
 

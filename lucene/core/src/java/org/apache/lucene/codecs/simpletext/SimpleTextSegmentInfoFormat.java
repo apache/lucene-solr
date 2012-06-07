@@ -34,12 +34,12 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
   public static final String SI_EXTENSION = "si";
   
   @Override
-  public SegmentInfoReader getSegmentInfosReader() {
+  public SegmentInfoReader getSegmentInfoReader() {
     return reader;
   }
 
   @Override
-  public SegmentInfoWriter getSegmentInfosWriter() {
+  public SegmentInfoWriter getSegmentInfoWriter() {
     return writer;
   }
 }
