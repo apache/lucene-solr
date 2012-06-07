@@ -97,16 +97,18 @@ To launch Jetty with the Solr WAR, and the example configs, just run the <span c
 </p>
 <pre class="code">
 user:~/solr/example$ <strong>java -jar start.jar</strong>
-2012-03-27 17:11:29.529:INFO::Logging to STDERR via org.mortbay.log.StdErrLog
-2012-03-27 17:11:29.696:INFO::jetty-6.1-SNAPSHOT
+2012-06-06 15:25:59.815:INFO:oejs.Server:jetty-8.1.2.v20120308
+2012-06-06 15:25:59.834:INFO:oejdp.ScanningAppProvider:Deployment monitor .../solr/example/webapps at interval 0
+2012-06-06 15:25:59.839:INFO:oejd.DeploymentManager:Deployable added: .../solr/example/webapps/solr.war
 ...
-2012-03-27 17:11:32.343:INFO::Started SocketConnector@0.0.0.0:8983
+Jun 6, 2012 3:26:03 PM org.apache.solr.core.SolrCore registerSearcher
+INFO: [collection1] Registered new searcher Searcher@7527e2ee main{StandardDirectoryReader(segments_1:1)}
 </pre>
 <p>
 This will start up the Jetty application server on port 8983, and use your terminal to display the logging information from Solr.
 </p>
 <p>
-You can see that the Solr is running by loading <a href="http://localhost:8983/solr/admin/">http://localhost:8983/solr/admin/</a> in your web browser.  This is the main starting point for Administering Solr.
+You can see that the Solr is running by loading <a href="http://localhost:8983/solr/">http://localhost:8983/solr/</a> in your web browser.  This is the main starting point for Administering Solr.
 </p>
 </div>
 
@@ -118,19 +120,21 @@ You can see that the Solr is running by loading <a href="http://localhost:8983/s
 <div class="section">
 <p>
 Your Solr server is up and running, but it doesn't contain any data.  You can
-modify a Solr index by POSTing XML Documents containing instructions to add (or
-update) documents, delete documents, commit pending adds and deletes, and
-optimize your index.  
+modify a Solr index by POSTing commands to Solr to add (or
+update) documents, delete documents, and commit pending adds and deletes.  
+These commands can be in a 
+<a href="http://wiki.apache.org/solr/UpdateRequestHandler">variety of formats</a>.
 </p>
 <p>
-The <span class="codefrag">exampledocs</span> directory contains samples of the types of
-instructions Solr expects, as well as a java utility for posting them from the
-command line (a <span class="codefrag">post.sh</span> shell script is also available, but for
-this tutorial we'll use the cross-platform Java client).  </p>
-<p> To try this,
-open a new terminal window, enter the exampledocs directory, and run
-"<span class="codefrag">java -jar post.jar</span>" on some of the XML files in that directory,
-indicating the URL of the Solr server:
+The <span class="codefrag">exampledocs</span> directory contains sample files
+showing of the types of commands Solr accepts, as well as a java utility 
+for posting them from the command line (a <span class="codefrag">post.sh</span>
+shell script is also available, but for this tutorial we'll use the 
+cross-platform Java client).  
+</p>
+<p> To try this, open a new terminal window, enter the exampledocs directory, 
+and run "<span class="codefrag">java -jar post.jar</span>" on some of the XML 
+files in that directory.
 </p>
 <pre class="code">
 user:~/solr/example/exampledocs$ <strong>java -jar post.jar solr.xml monitor.xml</strong>
@@ -142,16 +146,15 @@ SimplePostTool: COMMITting Solr index changes..
 </pre>
 <p>
 You have now indexed two documents in Solr, and committed these changes.  
-You can now search for "solr" using the "Make a Query" interface on the Admin screen, and you should get one result.  
-Clicking the "Search" button should take you to the following URL...
+You can now search for "solr" by loading the <a href="http://localhost:8983/solr/#/collection1/query">"Query" tab</a> in the Admin interface, and entering "solr" in the "q" text box.  Clicking the "Execute Query" button should display the following URL containing one result...
 </p>
 <p>
-
-<a href="http://localhost:8983/solr/select/?q=solr&amp;start=0&amp;rows=10&amp;indent=on">http://localhost:8983/solr/select/?q=solr&amp;start=0&amp;rows=10&amp;indent=on</a>
+<a href="http://localhost:8983/solr/collection1/select?q=solr&amp;wt=xml">http://localhost:8983/solr/collection1/select?q=solr&amp;wt=xml</a>
 
 </p>
 <p>
-You can index all of the sample data, using the following command (assuming your command line shell supports the *.xml notation):
+You can index all of the sample data, using the following command 
+(assuming your command line shell supports the *.xml notation):
 </p>
 <pre class="code">
 user:~/solr/example/exampledocs$ <strong>java -jar post.jar *.xml</strong>
@@ -161,12 +164,7 @@ SimplePostTool: POSTing file gb18030-example.xml
 SimplePostTool: POSTing file hd.xml
 SimplePostTool: POSTing file ipod_other.xml
 SimplePostTool: POSTing file ipod_video.xml
-SimplePostTool: POSTing file mem.xml
-SimplePostTool: POSTing file money.xml
-SimplePostTool: POSTing file monitor2.xml
-SimplePostTool: POSTing file monitor.xml
-SimplePostTool: POSTing file mp500.xml
-SimplePostTool: POSTing file sd500.xml
+...
 SimplePostTool: POSTing file solr.xml
 SimplePostTool: POSTing file utf8-example.xml
 SimplePostTool: POSTing file vidcard.xml
@@ -178,15 +176,15 @@ SimplePostTool: COMMITting Solr index changes..
 <ul>
   
 <li>
-<a href="http://localhost:8983/solr/select/?q=video">video</a>
+<a href="http://localhost:8983/solr/#/collection1/query?q=video">video</a>
 </li>
   
 <li>
-<a href="http://localhost:8983/solr/select/?q=name:video">name:video</a>
+<a href="http://localhost:8983/solr/#/collection1/query?q=name:video">name:video</a>
 </li>
   
 <li>
-<a href="http://localhost:8983/solr/select/?q=%2Bvideo+%2Bprice%3A[*+TO+400]">+video +price:[* TO 400]</a>
+<a href="http://localhost:8983/solr/#/collection1/query?q=%2Bvideo%20%2Bprice%3A[*%20TO%20400]">+video +price:[* TO 400]</a>
 </li>
 
 
@@ -234,14 +232,14 @@ SimplePostTool: COMMITting Solr index changes..
 You may have noticed that even though the file <span class="codefrag">solr.xml</span> has now
 been POSTed to the server twice, you still only get 1 result when searching for
 "solr".  This is because the example <span class="codefrag">schema.xml</span> specifies a "<span class="codefrag">uniqueKey</span>" field
-called "<span class="codefrag">id</span>".  Whenever you POST instructions to Solr to add a
+called "<span class="codefrag">id</span>".  Whenever you POST commands to Solr to add a
 document with the same value for the <span class="codefrag">uniqueKey</span> as an existing document, it
 automatically replaces it for you.  You can see that that has happened by
 looking at the values for <span class="codefrag">numDocs</span> and <span class="codefrag">maxDoc</span> in the
 "CORE"/searcher section of the statistics page...  </p>
 <p>
 
-<a href="http://localhost:8983/solr/admin/stats.jsp">http://localhost:8983/solr/admin/stats.jsp</a>
+<a href="http://localhost:8983/solr/#/collection1/plugins/core?entry=searcher">http://localhost:8983/solr/#/collection1/plugins/core?entry=searcher</a>
 
 </p>
 <p>
@@ -261,28 +259,61 @@ in subsequent searches.
 </p>
 <a name="N1012D"></a><a name="Deleting+Data"></a>
 <h3 class="boxed">Deleting Data</h3>
-<p>You can delete data by POSTing a delete command to the update URL and specifying the value
-      of the document's unique key field, or a query that matches multiple documents (be careful with that one!).  Since these commands
-      are smaller, we will specify them right on the command line rather than reference an XML file.
-    </p>
-<p>Execute the following command to delete a document</p>
-<pre class="code">java -Ddata=args -Dcommit=no -jar post.jar "&lt;delete&gt;&lt;id&gt;SP2514N&lt;/id&gt;&lt;/delete&gt;"</pre>
-<p>Now if you go to the <a href="http://localhost:8983/solr/admin/stats.jsp">statistics</a> page and scroll down
-       to the UPDATE_HANDLERS section and verify that "<span class="codefrag">deletesById : 1</span>"</p>
-<p>If you search for <a href="http://localhost:8983/solr/select?q=id:SP2514N">id:SP2514N</a> it will still be found,
-       because index changes are not visible until changes are committed and a new searcher is opened.  To cause
-       this to happen, send a commit command to Solr (post.jar does this for you by default):</p>
+
+<p>
+You can delete data by POSTing a delete command to the update URL and 
+specifying the value of the document's unique key field, or a query that 
+matches multiple documents (be careful with that one!).  Since these commands
+are smaller, we will specify them right on the command line rather than 
+reference an XML file.
+</p>
+
+<p>Execute the following command to delete a specific document</p>
+<pre class="code">java -Ddata=args -Dcommit=false -jar post.jar "&lt;delete&gt;&lt;id&gt;SP2514N&lt;/id&gt;&lt;/delete&gt;"</pre>
+
+<p>
+Because we have specified "commit=false", a search for <a href="http://localhost:8983/solr/#/collection1/query?q=id:SP2514N">id:SP2514N</a> we still find the document we have deleted.  Since the example configuration uses Solr's "autoCommit" feature Solr will still automatically persist this change to the index, but it will not affect search results until an "openSearcher" commit is explicitly executed.
+</p>
+
+<p>
+Using the <a href="http://localhost:8983/solr/#/collection1/plugins/updatehandler?entry=updateHandler">statistics page</a> 
+for the <span class="codefrag">updateHandler</span> you can observe this delete
+propogate to disk by watching the <span class="codefrag">deletesById</span> 
+value drop to 0 as the <span class="codefrag">cumulative_deletesById</span> 
+and <span class="codefrag">autocommit</span> values increase.
+</p>
+
+<p>
+Here is an example of using delete-by-query to delete anything with
+<a href="http://localhost:8983/solr/collection1/select?q=name:DDR&amp;fl=name">DDR</a> in the name:
+</p>
+<pre class="code">java -Dcommit=false -Ddata=args -jar post.jar "&lt;delete&gt;&lt;query&gt;name:DDR&lt;/query&gt;&lt;/delete&gt;"</pre>
+
+<p>
+You can force a new searcher to be opened to reflect these changes by sending a commit command to Solr (which post.jar does for you by default):
+</p>
 <pre class="code">java -jar post.jar</pre>
-<p>Now re-execute the previous search and verify that no matching documents are found.  Also revisit the
-    statistics page and observe the changes in both the UPDATE_HANDLERS section and the CORE section.</p>
-<p>Here is an example of using delete-by-query to delete anything with
-      <a href="http://localhost:8983/solr/select?q=name:DDR&amp;fl=name">DDR</a> in the name:</p>
-<pre class="code">java -Ddata=args -jar post.jar "&lt;delete&gt;&lt;query&gt;name:DDR&lt;/query&gt;&lt;/delete&gt;"</pre>
-<p>Commit can be an expensive operation so it's best to make many changes to an index in a batch and
-      then send the <span class="codefrag">commit</span> command at the end.  There is also an <span class="codefrag">optimize</span> command that does the same thing as <span class="codefrag">commit</span>,
-      in addition to merging all index segments into a single segment, making it faster to search and causing any
-      deleted documents to be removed.  All of the update commands are documented <a href="http://wiki.apache.org/solr/UpdateXmlMessages">here</a>.
-    </p>
+
+<p>
+Now re-execute <a href="http://localhost:8983/solr/#/collection1/query?q=id:SP2514N">the previous search</a> 
+and verify that no matching documents are found.  You can also revisit the
+statistics page and observe the changes to both the number of commits in the <a href="http://localhost:8983/solr/#/collection1/plugins/updatehandler?entry=updateHandler">updateHandler</a> and the numDocs in the <a href="http://localhost:8983/solr/#/collection1/plugins/core?entry=searcher">searcher</a>.
+</p>
+
+<p>
+Commits that open a new searcher can be expensive operations so it's best to 
+make many changes to an index in a batch and then send the 
+<span class="codefrag">commit</span> command at the end.  
+There is also an <span class="codefrag">optimize</span> command that does the 
+same things as <span class="codefrag">commit</span>, but also forces all index 
+segments to be merged into a single segment -- this can be very resource 
+intsenive, but may be worthwhile for improving search speed if your index 
+changes very infrequently.
+</p>
+<p>
+All of the update commands can be specified using either <a href="http://wiki.apache.org/solr/UpdateXmlMessages">XML</a> or <a href="http://wiki.apache.org/solr/UpdateJSON">JSON</a>.
+</p>
+
 <p>To continue with the tutorial, re-add any documents you may have deleted by going to the <span class="codefrag">exampledocs</span> directory and executing</p>
 <pre class="code">java -jar post.jar *.xml</pre>
 </div>
@@ -293,32 +324,34 @@ in subsequent searches.
 <div class="section">
 <p>
     Searches are done via HTTP GET on the <span class="codefrag">select</span> URL with the query string in the <span class="codefrag">q</span> parameter.
-    You can pass a number of optional <a href="http://wiki.apache.org/solr/StandardRequestHandler">request parameters</a>
+    You can pass a number of optional <a href="http://wiki.apache.org/solr/SearchHandler">request parameters</a>
     to the request handler to control what information is returned.  For example, you can use the "<span class="codefrag">fl</span>" parameter
     to control what stored fields are returned, and if the relevancy score is returned:
   </p>
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=name,id">q=video&amp;fl=name,id</a>       (return only name and id fields)   </li>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;fl=name,id">q=video&amp;fl=name,id</a>       (return only name and id fields)   </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=name,id,score">q=video&amp;fl=name,id,score</a>  (return relevancy score as well) </li>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;fl=name,id,score">q=video&amp;fl=name,id,score</a>  (return relevancy score as well) </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=*,score">q=video&amp;fl=*,score</a>        (return all stored fields, as well as relevancy score)  </li>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;fl=*,score">q=video&amp;fl=*,score</a>        (return all stored fields, as well as relevancy score)  </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=price desc&amp;fl=name,id,price">q=video&amp;sort=price desc&amp;fl=name,id,price</a>  (add sort specification: sort by price descending) </li>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;sort=price desc&amp;fl=name,id,price">q=video&amp;sort=price desc&amp;fl=name,id,price</a>  (add sort specification: sort by price descending) </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;wt=json">q=video&amp;wt=json</a> (return response in JSON format)  </li>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;wt=json">q=video&amp;wt=json</a> (return response in JSON format)  </li>
     
 </ul>
 <p>
-    Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
-    that allows setting the various request parameters and is useful when testing or debugging queries.
-  </p>
+The <a href="http://localhost:8983/solr/#/collection1/query">query form</a> 
+provided in the web admin interface allows setting various request parameters 
+and is useful when testing or debugging queries.
+</p>
+
 <a name="N101BA"></a><a name="Sorting"></a>
 <h3 class="boxed">Sorting</h3>
 <p>
@@ -328,15 +361,15 @@ in subsequent searches.
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=price+desc">q=video&amp;sort=price desc</a>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;sort=price+desc">q=video&amp;sort=price desc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=price+asc">q=video&amp;sort=price asc</a>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;sort=price+asc">q=video&amp;sort=price asc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=inStock+asc,price+desc">q=video&amp;sort=inStock asc, price desc</a>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;sort=inStock+asc,price+desc">q=video&amp;sort=inStock asc, price desc</a>
 </li>
     
 </ul>
@@ -346,11 +379,11 @@ in subsequent searches.
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=score+desc">q=video&amp;sort=score desc</a>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;sort=score+desc">q=video&amp;sort=score desc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=inStock+asc,score+desc">q=video&amp;sort=inStock asc, score desc</a>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;sort=inStock+asc,score+desc">q=video&amp;sort=inStock asc, score desc</a>
 </li>
     
 </ul>
@@ -360,7 +393,7 @@ in subsequent searches.
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&amp;q=*:*&amp;sort=div(popularity,add(price,1))+desc">q=video&amp;sort=div(popularity,add(price,1)) desc</a>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=*:*&amp;sort=div(popularity,add(price,1))+desc">q=video&amp;sort=div(popularity,add(price,1)) desc</a>
 </li>
     
 </ul>
@@ -387,7 +420,7 @@ in subsequent searches.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=video+card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features">...&amp;q=video card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features</a>
+<a href="http://localhost:8983/solr/collection1/select/?wt=json&amp;indent=on&amp;q=video+card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features">...&amp;q=video card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features</a>
   
 </p>
 <p>
@@ -412,7 +445,7 @@ in subsequent searches.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat</a>
+<a href="http://localhost:8983/solr/collection1/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat</a>
   
 </p>
 <p>
@@ -425,7 +458,7 @@ in subsequent searches.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock</a>
+<a href="http://localhost:8983/solr/collection1/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock</a>
   
 </p>
 <p>
@@ -435,15 +468,15 @@ in subsequent searches.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=ipod&amp;fl=name&amp;facet=true&amp;facet.query=price:[0+TO+100]&amp;facet.query=price:[100+TO+*]">...&amp;q=ipod&amp;facet=true&amp;facet.query=price:[0 TO 100]&amp;facet.query=price:[100 TO *]</a>
+<a href="http://localhost:8983/solr/collection1/select/?wt=json&amp;indent=on&amp;q=ipod&amp;fl=name&amp;facet=true&amp;facet.query=price:[0+TO+100]&amp;facet.query=price:[100+TO+*]">...&amp;q=ipod&amp;facet=true&amp;facet.query=price:[0 TO 100]&amp;facet.query=price:[100 TO *]</a>
   
 </p>
 <p>
-    One can even facet by date ranges.  This example requests counts for the manufacture date (<span class="codefrag">manufacturedate_dt</span> field) for each year between 2004 and 2010.
+    Solr can even facet by numeric ranges (including dates).  This example requests counts for the manufacture date (<span class="codefrag">manufacturedate_dt</span> field) for each year between 2004 and 2010.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name,manufacturedate_dt&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=%2b1YEAR">...&amp;q=*:*&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=+1YEAR</a>
+<a href="http://localhost:8983/solr/collection1/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name,manufacturedate_dt&amp;facet=true&amp;facet.range=manufacturedate_dt&amp;facet.range.start=2004-01-01T00:00:00Z&amp;facet.range.end=2010-01-01T00:00:00Z&amp;facet.range.gap=%2b1YEAR">...&amp;q=*:*&amp;facet=true&amp;facet.rage=manufacturedate_dt&amp;facet.rage.start=2004-01-01T00:00:00Z&amp;facet.rage.end=2010-01-01T00:00:00Z&amp;facet.range.gap=+1YEAR</a>
   
 </p>
 <p>
@@ -461,13 +494,13 @@ in subsequent searches.
 <h2 class="boxed">Search UI</h2>
 <div class="section">
 <p>
-    Solr includes an example search interface built with velocity templating
-    that demonstrates many features, including searching, faceting, highlighting,
-    autocomplete, and geospatial searching. 
-  </p>
+Solr includes an example search interface built with <a href="https://wiki.apache.org/solr/VelocityResponseWriter">velocity templating</a>
+that demonstrates many features, including searching, faceting, highlighting,
+autocomplete, and geospatial searching. 
+</p>
 <p>
-    Try it out at
-    <a href="http://localhost:8983/solr/browse">http://localhost:8983/solr/browse</a>
+Try it out at
+<a href="http://localhost:8983/solr/collection1/browse">http://localhost:8983/solr/collection1/browse</a>
   
 </p>
 </div> <!-- Search UI -->
@@ -485,19 +518,24 @@ in subsequent searches.
   </p>
 <p>
     The <a href="http://wiki.apache.org/solr/SchemaXml">schema</a> defines
-    the fields in the index and what type of analysis is applied to them.  The current schema your server is using
-    may be accessed via the <span class="codefrag">[SCHEMA]</span> link on the <a href="http://localhost:8983/solr/admin/">admin</a> page.
-  </p>
+    the fields in the index and what type of analysis is applied to them.  The current schema your collection is using
+    may be viewed directly via the <a href="http://localhost:8983/solr/#/collection1/schema">Schema tab</a> in the Admin UI, or explored dynamicly using the <a href="http://localhost:8983/solr/#/collection1/schema-browser">Schema Browser tab</a>.
+</p>
 <p>
-    The best analysis components (tokenization and filtering) for your textual content depends heavily on language.
-    As you can see in the above <span class="codefrag">[SCHEMA]</span> link, the fields in the example schema are using a <span class="codefrag">fieldType</span>
-    named <span class="codefrag">text_general</span>, which has defaults appropriate for all languages.
-  </p>
+The best analysis components (tokenization and filtering) for your textual 
+content depends heavily on language.
+As you can see in the <a href="http://localhost:8983/solr/#/collection1/schema-browser?type=text_general">Schema Browser</a>, 
+many of the fields in the example schema are using a 
+<span class="codefrag">fieldType</span> named 
+<span class="codefrag">text_general</span>, which has defaults appropriate for 
+most languages.
+</p>
+
 <p>
   If you know your textual content is English, as is the case for the example 
   documents in this tutorial, and you'd like to apply English-specific stemming
   and stop word removal, as well as split compound words, you can use the 
-  <span class="codefrag">text_en_splitting</span> fieldType instead.
+  <a href="http://localhost:8983/solr/#/collection1/schema-browser?type=text_en_splitting"><span class="codefrag">text_en_splitting</span> fieldType</a> instead.
   Go ahead and edit the <span class="codefrag">schema.xml</span> in the 
   <span class="codefrag">solr/example/solr/conf</span> directory,
   to use the <span class="codefrag">text_en_splitting</span> fieldType for 
@@ -519,25 +557,25 @@ in subsequent searches.
 <ul>
     
 <li>A search for
-  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=power-shot&amp;fl=name">power-shot</a>
+  <a href="http://localhost:8983/solr/collection1/select?q=power-shot&amp;fl=name">power-shot</a>
   can match <span class="codefrag">PowerShot</span>, and
-  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=adata&amp;fl=name">adata</a>
+  <a href="http://localhost:8983/solr/collection1/select?q=adata&amp;fl=name">adata</a>
   can match <span class="codefrag">A-DATA</span> by using the 
   <span class="codefrag">WordDelimiterFilter</span> and <span class="codefrag">LowerCaseFilter</span>.
 </li>
 
     
 <li>A search for
-  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=features:recharging&amp;fl=name,features">features:recharging</a>
+  <a href="http://localhost:8983/solr/collection1/select?q=features:recharging&amp;fl=name,features">features:recharging</a>
   can match <span class="codefrag">Rechargeable</span> using the stemming 
   features of <span class="codefrag">PorterStemFilter</span>.
 </li>
 
     
 <li>A search for
-  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=%221 gigabyte%22&amp;fl=name">"1 gigabyte"</a>
+  <a href="http://localhost:8983/solr/collection1/select?q=%221 gigabyte%22&amp;fl=name">"1 gigabyte"</a>
   can match <span class="codefrag">1GB</span>, and the commonly misspelled
-  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=pixima&amp;fl=name">pixima</a> can matches <span class="codefrag">Pixma</span> using the 
+  <a href="http://localhost:8983/solr/collection1/select?q=pixima&amp;fl=name">pixima</a> can matches <span class="codefrag">Pixma</span> using the 
   <span class="codefrag">SynonymFilter</span>.
 </li>
 
@@ -547,53 +585,52 @@ in subsequent searches.
     available for use is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
   </p>
 <a name="N1030B"></a><a name="Analysis+Debugging"></a>
+
+
 <h3 class="boxed">Analysis Debugging</h3>
 <p>
-  There is a handy <a href="http://localhost:8983/solr/admin/analysis.jsp">analysis</a>
-  debugging page where you can see how a text value is broken down into words,
-  and shows the resulting tokens after they pass through each filter in the chain.
+There is a handy <a href="http://localhost:8983/solr/#/collection1/analysis">Analysis tab</a>
+where you can see how a text value is broken down into words by both Index time nad Query time analysis chains for a field or field type.  This page shows the resulting tokens after they pass through each filter in the chains.
 </p>
 <p>
-  <a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_en_splitting&amp;val=Canon+Power-Shot+SD500">This</a>
-  url shows how "<span class="codefrag">Canon Power-Shot SD500</span>" would 
-  shows the tokens that would be instead be created using the 
-  <span class="codefrag">text_en_splitting</span> type.  Each row of
+  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&analysis.query=&analysis.fieldtype=text_en_splitting">This url</a>
+  shows the tokens created from 
+  "<span class="codefrag">Canon Power-Shot SD500</span>" 
+  using the 
+  <span class="codefrag">text_en_splitting</span> type.  Each section of
   the table shows the resulting tokens after having passed through the next 
-  <span class="codefrag">TokenFilter</span> in the analyzer.
+  <span class="codefrag">TokenFilter</span> in the (Index) analyzer.
   Notice how both <span class="codefrag">powershot</span> and 
   <span class="codefrag">power</span>, <span class="codefrag">shot</span> 
-  are indexed.  Tokens generated at the same position
-  are shown in the same column, in this case 
-  <span class="codefrag">shot</span> and 
-  <span class="codefrag">powershot</span>.  (Compare the previous output with
-  <a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_general&amp;val=Canon+Power-Shot+SD500">The tokens produced using the text_general field type</a>.)
+  are indexed, using tokens that have the same "position".
+  (Compare the previous output with
+  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&analysis.query=&analysis.fieldtype=text_general">The tokens produced using the text_general field type</a>.)
+</p>
+
+<p>
+Mousing over the section label to the left of the section will display the full name of the analyzer component at that stage of the chain.  Toggling the "Verbose Output" checkbox will show/hide the detailed token attributes.
 </p>
 <p>
-  Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_en_splitting&amp;verbose=on&amp;val=Canon+Power-Shot+SD500">verbose output</a>
-  will show more details, such as the name of each analyzer component in the 
-  chain, token positions, and the start and end positions of the token in 
-  the original text.
-</p>
-<p>
-  Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_en_splitting&amp;highlight=on&amp;val=Canon+Power-Shot+SD500&amp;qval=Powershot sd-500">highlight matches</a>
-  when both index and query values are provided will take the resulting 
-  terms from the query value and highlight
-  all matches in the index value analysis.
+When both <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&analysis.query=power+shot+sd-500&analysis.fieldtype=text_en_splitting">Index and Query</a>
+values are provided, two tables will be displayed side by side showing the 
+results of each chain.  Terms in the Index chain results that are equivilent 
+to the final terms produced by the Query chain will be highlighted.
 </p>
 <p>
   Other interesting examples:
 </p>
 <ul>
-  <li><a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_en&amp;highlight=on&amp;val=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.+&amp;qval=liberties+and+equality">English stemming and stop-words</a> 
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.%0A&analysis.query=liberties+and+equality&analysis.fieldtype=text_en">English stemming and stop-words</a> 
     using the <span class="codefrag">text_en</span> field type
   </li>
-  <li><a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_cjk&amp;highlight=on&amp;val=%EF%BD%B6%EF%BE%80%EF%BD%B6%EF%BE%85&amp;qval=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A">Half-width katakana normalization with bi-graming</a> 
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_cjk&analysis.fieldvalue=%EF%BD%B6%EF%BE%80%EF%BD%B6%EF%BE%85&analysis.query=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A">Half-width katakana normalization with bi-graming</a> 
     using the <span class="codefrag">text_cjk</span> field type
   </li>
-  <li><a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_ja&amp;verbose=on&amp;val=%E7%A7%81%E3%81%AF%E5%88%B6%E9%99%90%E3%82%B9%E3%83%94%E3%83%BC%E3%83%89%E3%82%92%E8%B6%85%E3%81%88%E3%82%8B%E3%80%82">Japanese morphological decomposition with part-of-speech filtering</a>
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ja&analysis.fieldvalue=%E7%A7%81%E3%81%AF%E5%88%B6%E9%99%90%E3%82%B9%E3%83%94%E3%83%BC%E3%83%89%E3%82%92%E8%B6%85%E3%81%88%E3%82%8B%E3%80%82">Japanese morphological decomposition with part-of-speech filtering</a>
     using the <span class="codefrag">text_ja</span> field type 
   </li>
-  <li><a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_ar&amp;verbose=on&amp;val=%D9%84%D8%A7+%D8%A3%D8%AA%D9%83%D9%84%D9%85+%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9">Arabic stop-words, normalization and stemming</a>
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ar&analysis.fieldvalue=%D9%84%D8%A7+%D8%A3%D8%AA%D9%83%D9%84%D9%85+%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9
+">Arabic stop-words, normalization, and stemming</a>
     using the <span class="codefrag">text_ar</span> field type 
   </li>
 </ul>
