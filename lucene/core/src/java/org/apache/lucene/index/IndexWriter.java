@@ -2042,7 +2042,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      codec.segmentInfoFormat().getSegmentInfosWriter().write(directory, newSegment.info, flushedSegment.fieldInfos, context);
+      codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, newSegment.info, flushedSegment.fieldInfos, context);
 
       // TODO: ideally we would freeze newSegment here!!
       // because any changes after writing the .si will be
@@ -2334,7 +2334,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      codec.segmentInfoFormat().getSegmentInfosWriter().write(trackingDir, info, mergeState.fieldInfos, context);
+      codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, mergeState.fieldInfos, context);
       info.addFiles(trackingDir.getCreatedFiles());
 
       // Register the new segment
@@ -2408,7 +2408,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // store segment name):
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
     try {
-      newInfo.getCodec().segmentInfoFormat().getSegmentInfosWriter().write(trackingDir, newInfo, fis, context);
+      newInfo.getCodec().segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, newInfo, fis, context);
     } catch (UnsupportedOperationException uoe) {
       // OK: 3x codec cannot write a new SI file;
       // SegmentInfos will write this on commit
@@ -3567,7 +3567,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // above:
       boolean success2 = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfosWriter().write(directory, merge.info.info, mergeState.fieldInfos, context);
+        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, merge.info.info, mergeState.fieldInfos, context);
         success2 = true;
       } finally {
         if (!success2) {
