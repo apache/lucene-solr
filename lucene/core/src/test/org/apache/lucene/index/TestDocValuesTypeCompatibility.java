@@ -36,10 +36,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Tests compatibility of {@link DocValues.Type} during indexing
  */
+@SuppressCodecs("Lucene3x")
 public class TestDocValuesTypeCompatibility extends LuceneTestCase {
   
   public void testAddCompatibleIntTypes() throws CorruptIndexException,
