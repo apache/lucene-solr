@@ -19,7 +19,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
@@ -171,7 +170,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
             byte[] data = Base64.base64ToByteArray(str);
             PayloadAttribute p = parent.addAttribute(PayloadAttribute.class);
             if (data != null && data.length > 0) {
-              p.setPayload(new Payload(data));
+              p.setPayload(new BytesRef(data));
             }
           }
         } else if (key.equals(FLAGS_KEY)) {
@@ -248,9 +247,9 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
               tok.put(OFFSET_START_KEY, ((OffsetAttribute)att).startOffset());
               tok.put(OFFSET_END_KEY, ((OffsetAttribute)att).endOffset());
             } else if (cl.isAssignableFrom(PayloadAttribute.class)) {
-              Payload p = ((PayloadAttribute)att).getPayload();
-              if (p != null && p.length() > 0) {
-                tok.put(PAYLOAD_KEY, Base64.byteArrayToBase64(p.getData(), p.getOffset(), p.length()));
+              BytesRef p = ((PayloadAttribute)att).getPayload();
+              if (p != null && p.length > 0) {
+                tok.put(PAYLOAD_KEY, Base64.byteArrayToBase64(p.bytes, p.offset, p.length));
               }
             } else if (cl.isAssignableFrom(PositionIncrementAttribute.class)) {
               tok.put(POSINCR_KEY, ((PositionIncrementAttribute)att).getPositionIncrement());

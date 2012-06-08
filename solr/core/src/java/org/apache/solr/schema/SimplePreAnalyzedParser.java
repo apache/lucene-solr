@@ -33,10 +33,10 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.PreAnalyzedField.ParseResult;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 
@@ -437,7 +437,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
         PayloadAttribute p = a.addAttribute(PayloadAttribute.class);
         byte[] data = hexToBytes(e.getValue());
         if (data != null && data.length > 0) {
-          p.setPayload(new Payload(data));
+          p.setPayload(new BytesRef(data));
         }
       } else {
         // unknown attribute
@@ -498,9 +498,9 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
             } else if (cl.isAssignableFrom(OffsetAttribute.class)) {
               tok.append("s=" + ((OffsetAttribute)att).startOffset() + ",e=" + ((OffsetAttribute)att).endOffset());
             } else if (cl.isAssignableFrom(PayloadAttribute.class)) {
-              Payload p = ((PayloadAttribute)att).getPayload();
-              if (p != null && p.length() > 0) {
-                tok.append("p=" + bytesToHex(p.getData(), p.getOffset(), p.length()));
+              BytesRef p = ((PayloadAttribute)att).getPayload();
+              if (p != null && p.length > 0) {
+                tok.append("p=" + bytesToHex(p.bytes, p.offset, p.length));
               } else if (tok.length() > 0) {
                 tok.setLength(tok.length() - 1); // remove the last comma
               }
