@@ -286,17 +286,12 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
 def testChanges(project, version, changesURLString):
   print '  check changes HTML...'
   changesURL = None
-  contribChangesURL = None
   for text, subURL in getDirEntries(changesURLString):
     if text == 'Changes.html':
       changesURL = subURL
-    elif text == 'Contrib-Changes.html':
-      contribChangesURL = subURL
 
   if changesURL is None:
     raise RuntimeError('did not see Changes.html link from %s' % changesURLString)
-  if contribChangesURL is None:
-    raise RuntimeError('did not see Contrib-Changes.html link from %s' % changesURLString)
 
   s = load(changesURL)
   checkChangesContent(s, version, changesURL, project, True)
