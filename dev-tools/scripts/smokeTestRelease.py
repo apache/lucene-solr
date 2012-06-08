@@ -490,21 +490,24 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       testDemo(isSrc, version)
       # test javadocs
       print '    generate javadocs w/ Java 6...'
-      run('%s; ant javadocs-lint' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
+      run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
+      checkJavadocpath('%s/build/docs' % unpackPath)
     else:
       print '    run tests w/ Java 6...'
       run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
 
       # test javadocs
       print '    generate javadocs w/ Java 6...'
-      run('%s; ant javadocs-lint' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
+      run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
+      checkJavadocpath('%s/build/docs' % unpackPath)
 
       print '    run tests w/ Java 7...'
       run('%s; ant test' % javaExe('1.7'), '%s/test.log' % unpackPath)
  
       # test javadocs
       print '    generate javadocs w/ Java 7...'
-      run('%s; ant javadocs-lint' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
+      run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
+      checkJavadocpath('%s/build/docs' % unpackPath)
 
       os.chdir('solr')
       print '    test solr example w/ Java 6...'
@@ -634,12 +637,7 @@ def testDemo(isSrc, version):
   print '    test demo...'
   sep = ';' if cygwin else ':'
   if isSrc:
-    # allow lucene dev version to be either 3.3 or 3.3.0:
-    if version.endswith('.0'):
-      cp = 'build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/demo/classes/java'.format(version, sep)
-      cp += '{1}build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/demo/classes/java'.format(version[:-2], sep)
-    else:
-      cp = 'build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/demo/classes/java'.format(version, sep)
+    cp = 'build/core/classes/java{0}build/demo/classes/java{0}build/analysis/common/classes/java{0}build/queryparser/classes/java'.format(sep)
     docsDir = 'core/src'
   else:
     cp = 'core/lucene-core-{0}.jar{1}demo/lucene-demo-{0}.jar{1}analysis/common/lucene-analyzers-common-{0}.jar{1}queryparser/lucene-queryparser-{0}.jar'.format(version, sep)
