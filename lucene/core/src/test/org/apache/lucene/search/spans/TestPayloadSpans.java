@@ -32,7 +32,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -43,6 +42,7 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPayloadSpans extends LuceneTestCase {
@@ -505,9 +505,9 @@ public class TestPayloadSpans extends LuceneTestCase {
 
         if (!nopayload.contains(token)) {
           if (entities.contains(token)) {
-            payloadAtt.setPayload(new Payload((token + ":Entity:"+ pos ).getBytes()));
+            payloadAtt.setPayload(new BytesRef((token + ":Entity:"+ pos ).getBytes()));
           } else {
-            payloadAtt.setPayload(new Payload((token + ":Noise:" + pos ).getBytes()));
+            payloadAtt.setPayload(new BytesRef((token + ":Noise:" + pos ).getBytes()));
           }
         }
         pos += posIncrAtt.getPositionIncrement();

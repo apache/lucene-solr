@@ -24,12 +24,12 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.DocsAndPositionsEnum; // for javadoc
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
+import org.apache.lucene.util.BytesRef;
 
 /** 
   A Token is an occurrence of a term from the text of a field.  It consists of
@@ -46,7 +46,7 @@ import org.apache.lucene.util.AttributeReflector;
   belongs to.  For example an end of sentence marker token might be implemented
   with type "eos".  The default token type is "word".  
   <p>
-  A Token can optionally have metadata (a.k.a. Payload) in the form of a variable
+  A Token can optionally have metadata (a.k.a. payload) in the form of a variable
   length byte array. Use {@link DocsAndPositionsEnum#getPayload()} to retrieve the 
   payloads from the index.
   
@@ -118,7 +118,6 @@ import org.apache.lucene.util.AttributeReflector;
   {@link CharSequence} interface introduced by the interface {@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}.
   This method now only prints the term text, no additional information anymore.
   </p>
-  @see org.apache.lucene.index.Payload
 */
 public class Token extends CharTermAttributeImpl 
                    implements TypeAttribute, PositionIncrementAttribute,
@@ -127,7 +126,7 @@ public class Token extends CharTermAttributeImpl
   private int startOffset,endOffset;
   private String type = DEFAULT_TYPE;
   private int flags;
-  private Payload payload;
+  private BytesRef payload;
   private int positionIncrement = 1;
   private int positionLength = 1;
 
@@ -357,14 +356,14 @@ public class Token extends CharTermAttributeImpl
   /**
    * Returns this Token's payload.
    */ 
-  public Payload getPayload() {
+  public BytesRef getPayload() {
     return this.payload;
   }
 
   /** 
    * Sets this Token's payload.
    */
-  public void setPayload(Payload payload) {
+  public void setPayload(BytesRef payload) {
     this.payload = payload;
   }
   

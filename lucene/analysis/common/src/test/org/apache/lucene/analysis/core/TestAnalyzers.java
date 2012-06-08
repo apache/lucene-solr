@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 
 public class TestAnalyzers extends BaseTokenStreamTestCase {
@@ -86,7 +86,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
       if (!hasNext) break;
       // System.out.println("id="+System.identityHashCode(nextToken) + " " + t);
       // System.out.println("payload=" + (int)nextToken.getPayload().toByteArray()[0]);
-      assertEquals(b, payloadAtt.getPayload().toByteArray()[0]);
+      assertEquals(b, payloadAtt.getPayload().bytes[0]);
     }
   }
 
@@ -233,7 +233,7 @@ final class PayloadSetter extends TokenFilter {
   }
 
   byte[] data = new byte[1];
-  Payload p = new Payload(data,0,1);
+  BytesRef p = new BytesRef(data,0,1);
 
   @Override
   public boolean incrementToken() throws IOException {

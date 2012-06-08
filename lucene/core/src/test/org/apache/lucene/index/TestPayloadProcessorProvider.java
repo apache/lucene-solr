@@ -104,7 +104,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
       called = true;
       byte[] p = new byte[] { 1 };
-      payload.setPayload(new Payload(p));
+      payload.setPayload(new BytesRef(p));
       term.append(t);
       return true;
     }

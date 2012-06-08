@@ -165,7 +165,7 @@ public class TestDocumentWriter extends LuceneTestCase {
             }
             if (first) {
               // set payload on first position only
-              payloadAtt.setPayload(new Payload(new byte[]{100}));
+              payloadAtt.setPayload(new BytesRef(new byte[]{100}));
               first = false;
             }
 

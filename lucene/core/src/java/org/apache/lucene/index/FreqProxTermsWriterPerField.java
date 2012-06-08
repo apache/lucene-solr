@@ -128,7 +128,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   void writeProx(final int termID, int proxCode) {
     //System.out.println("writeProx termID=" + termID + " proxCode=" + proxCode);
     assert hasProx;
-    final Payload payload;
+    final BytesRef payload;
     if (payloadAttribute == null) {
       payload = null;
     } else {
@@ -138,7 +138,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     if (payload != null && payload.length > 0) {
       termsHashPerField.writeVInt(1, (proxCode<<1)|1);
       termsHashPerField.writeVInt(1, payload.length);
-      termsHashPerField.writeBytes(1, payload.data, payload.offset, payload.length);
+      termsHashPerField.writeBytes(1, payload.bytes, payload.offset, payload.length);
       hasPayloads = true;
     } else {
       termsHashPerField.writeVInt(1, proxCode<<1);

@@ -14,10 +14,10 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnsafeByteArrayOutputStream;
 import org.apache.lucene.util.encoding.DGapIntEncoder;
@@ -79,7 +79,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
         encoder.encode(val);
       }
       encoder.close();
-      payload.setPayload(new Payload(buf, 0, ubaos.length()));
+      payload.setPayload(new BytesRef(buf, 0, ubaos.length()));
 
       exhausted = true;
       return true;

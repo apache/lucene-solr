@@ -25,7 +25,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Norm;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
@@ -80,9 +79,9 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       boolean result = false;
       if (input.incrementToken()) {
         if (numSeen % 2 == 0) {
-          payAtt.setPayload(new Payload(payload2));
+          payAtt.setPayload(new BytesRef(payload2));
         } else {
-          payAtt.setPayload(new Payload(payload4));
+          payAtt.setPayload(new BytesRef(payload4));
         }
         numSeen++;
         result = true;

@@ -20,7 +20,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -36,9 +36,9 @@ public class TokenOffsetPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     OffsetAttribute offsetAtt = nptf.getAttribute(OffsetAttribute.class);
     nptf.reset();
     while (nptf.incrementToken()) {
-      Payload pay = payloadAtt.getPayload();
+      BytesRef pay = payloadAtt.getPayload();
       assertTrue("pay is null and it shouldn't be", pay != null);
-      byte [] data = pay.getData();
+      byte [] data = pay.bytes;
       int start = PayloadHelper.decodeInt(data, 0);
       assertTrue(start + " does not equal: " + offsetAtt.startOffset(), start == offsetAtt.startOffset());
       int end = PayloadHelper.decodeInt(data, 4);

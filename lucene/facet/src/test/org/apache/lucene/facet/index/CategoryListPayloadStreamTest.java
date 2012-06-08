@@ -34,7 +34,7 @@ public class CategoryListPayloadStreamTest extends LuceneTestCase {
 
   /**
    * Verifies that a CategoryListPayloadStream can properly encode values into
-   * a byte stream for later constructing a Payload.
+   * a byte stream for later constructing a payload.
    */
   @Test
   public void testStream() throws Exception {

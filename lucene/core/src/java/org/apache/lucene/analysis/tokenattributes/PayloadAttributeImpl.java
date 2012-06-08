@@ -17,14 +17,14 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.BytesRef;
 
 /**
- * The payload of a Token. See also {@link Payload}.
+ * The payload of a Token represented as {@link BytesRef}.
  */
 public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttribute, Cloneable {
-  private Payload payload;  
+  private BytesRef payload;  
   
   /**
    * Initialize this attribute with no payload.
@@ -34,21 +34,21 @@ public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttrib
   /**
    * Initialize this attribute with the given payload. 
    */
-  public PayloadAttributeImpl(Payload payload) {
+  public PayloadAttributeImpl(BytesRef payload) {
     this.payload = payload;
   }
   
   /**
    * Returns this Token's payload.
    */ 
-  public Payload getPayload() {
+  public BytesRef getPayload() {
     return this.payload;
   }
 
   /** 
    * Sets this Token's payload.
    */
-  public void setPayload(Payload payload) {
+  public void setPayload(BytesRef payload) {
     this.payload = payload;
   }
   

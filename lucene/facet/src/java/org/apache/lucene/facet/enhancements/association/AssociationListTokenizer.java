@@ -79,7 +79,9 @@ public class AssociationListTokenizer extends CategoryListTokenizer {
     }
     if (payloadStream != null) {
       termAttribute.setEmpty().append(categoryListTermText);
-      payload.setData(payloadStream.convertStreamToByteArray());
+      payload.bytes = payloadStream.convertStreamToByteArray();
+      payload.offset = 0;
+      payload.length = payload.bytes.length;
       payloadAttribute.setPayload(payload);
       payloadStream = null;
       return true;
