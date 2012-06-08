@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -48,6 +48,17 @@ import org.apache.lucene.util.packed.PackedInts;
  * IndexReader.
  * <p>
  * {@link DocValues} are fully integrated into the {@link DocValuesFormat} API.
+ * <p>
+ * NOTE: DocValues is a strongly typed per-field API. Type changes within an
+ * indexing session can result in exceptions if the type has changed in a way that
+ * the previously give type for a field can't promote the value without losing
+ * information. For instance a field initially indexed with {@link Type#FIXED_INTS_32}
+ * can promote a value with {@link Type#FIXED_INTS_8} but can't promote
+ * {@link Type#FIXED_INTS_64}. During segment merging type-promotion exceptions are suppressed. 
+ * Fields will be promoted to their common denominator or automatically transformed
+ * into a 3rd type like {@link Type#BYTES_VAR_STRAIGHT} to prevent data loss and merge exceptions.
+ * This behavior is considered <i>best-effort</i> might change in future releases.
+ * </p>
  * 
  * @see Type for limitations and default implementation documentation
  * @see ByteDocValuesField for adding byte values to the index

@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
  * work for additional information regarding copyright ownership. The ASF
@@ -51,7 +51,7 @@ public class TestTypePromotion extends LuceneTestCase {
       Type.FIXED_INTS_64, Type.FIXED_INTS_8);
 
   private static EnumSet<Type> FLOATS = EnumSet.of(Type.FLOAT_32,
-      Type.FLOAT_64);
+      Type.FLOAT_64, Type.FIXED_INTS_8);
 
   private static EnumSet<Type> UNSORTED_BYTES = EnumSet.of(
       Type.BYTES_FIXED_DEREF, Type.BYTES_FIXED_STRAIGHT,
@@ -78,12 +78,13 @@ public class TestTypePromotion extends LuceneTestCase {
     int num_2 = atLeast(200);
     int num_3 = atLeast(200);
     long[] values = new long[num_1 + num_2 + num_3];
+    Type[] sourceType = new Type[num_1 + num_2 + num_3];
     index(writer,
-        randomValueType(types, random()), values, 0, num_1);
+        randomValueType(types, random()), values, sourceType, 0, num_1);
     writer.commit();
     
     index(writer,
-        randomValueType(types, random()), values, num_1, num_2);
+        randomValueType(types, random()), values, sourceType, num_1, num_2);
     writer.commit();
     
     if (random().nextInt(4) == 0) {
@@ -94,7 +95,7 @@ public class TestTypePromotion extends LuceneTestCase {
       IndexWriter writer_2 = new IndexWriter(dir_2,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       index(writer_2,
-          randomValueType(types, random()), values, num_1 + num_2, num_3);
+          randomValueType(types, random()), values, sourceType, num_1 + num_2, num_3);
       writer_2.commit();
       writer_2.close();
       if (rarely()) {
@@ -108,17 +109,17 @@ public class TestTypePromotion extends LuceneTestCase {
       dir_2.close();
     } else {
       index(writer,
-          randomValueType(types, random()), values, num_1 + num_2, num_3);
+          randomValueType(types, random()), values, sourceType, num_1 + num_2, num_3);
     }
 
     writer.forceMerge(1);
     writer.close();
-    assertValues(type, dir, values);
+    assertValues(type, dir, values, sourceType);
     dir.close();
   }
 
   
-  private void assertValues(TestType type, Directory dir, long[] values)
+  private void assertValues(TestType type, Directory dir, long[] values, Type[] sourceType)
       throws CorruptIndexException, IOException {
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.getSequentialSubReaders().length);
@@ -159,7 +160,13 @@ public class TestTypePromotion extends LuceneTestCase {
         assertEquals(msg  + " byteSize: " + bytes.length, values[id], value);
         break;
       case Float:
-        assertEquals(msg, values[id], Double.doubleToRawLongBits(directSource.getFloat(i)));
+          if (sourceType[id] == Type.FLOAT_32
+              || sourceType[id] == Type.FLOAT_64) {
+            assertEquals(msg, values[id],
+                Double.doubleToRawLongBits(directSource.getFloat(i)));
+          } else {
+            assertEquals(msg, values[id], directSource.getFloat(i), 0.0d);
+          }
         break;
       case Int:
         assertEquals(msg, values[id], directSource.getInt(i));
@@ -174,7 +181,7 @@ public class TestTypePromotion extends LuceneTestCase {
   }
 
   public void index(IndexWriter writer,
-      Type valueType, long[] values, int offset, int num)
+      Type valueType, long[] values, Type[] sourceTypes, int offset, int num)
       throws CorruptIndexException, IOException {
     final Field valField;
 
@@ -229,6 +236,7 @@ public class TestTypePromotion extends LuceneTestCase {
     for (int i = offset; i < offset + num; i++) {
       Document doc = new Document();
       doc.add(new Field("id", i + "", TextField.TYPE_STORED));
+      sourceTypes[i] = valueType;
       switch (valueType) {
       case VAR_INTS:
         // TODO: can we do nextLong()?
@@ -328,8 +336,9 @@ public class TestTypePromotion extends LuceneTestCase {
     int num_1 = atLeast(200);
     int num_2 = atLeast(200);
     long[] values = new long[num_1 + num_2];
+    Type[] sourceType = new Type[num_1 + num_2];
     index(writer,
-        randomValueType(INTEGERS, random()), values, 0, num_1);
+        randomValueType(INTEGERS, random()), values, sourceType, 0, num_1);
     writer.commit();
     
     if (random().nextInt(4) == 0) {
@@ -338,7 +347,7 @@ public class TestTypePromotion extends LuceneTestCase {
       IndexWriter writer_2 = new IndexWriter(dir_2,
                        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       index(writer_2,
-          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, num_1, num_2);
+          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, sourceType, num_1, num_2);
       writer_2.commit();
       writer_2.close();
       if (random().nextBoolean()) {
@@ -352,7 +361,7 @@ public class TestTypePromotion extends LuceneTestCase {
       dir_2.close();
     } else {
       index(writer,
-          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, num_1, num_2);
+          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, sourceType, num_1, num_2);
       writer.commit();
     }
     writer.close();
@@ -370,7 +379,7 @@ public class TestTypePromotion extends LuceneTestCase {
     AtomicReaderContext[] children = topReaderContext.leaves();
     DocValues docValues = children[0].reader().docValues("promote");
     assertNotNull(docValues);
-    assertValues(TestType.Byte, dir, values);
+    assertValues(TestType.Byte, dir, values, sourceType);
     assertEquals(Type.BYTES_VAR_STRAIGHT, docValues.getType());
     reader.close();
     dir.close();

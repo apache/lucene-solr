@@ -49,7 +49,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.junit.Before;
 
 /**
  * 

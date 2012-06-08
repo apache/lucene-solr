@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,6 +29,7 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
+import org.apache.lucene.index.TypePromoter.TypeCompatibility;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
@@ -80,7 +81,7 @@ final class DocFieldProcessor extends DocConsumer {
     fieldsWriter.flush(state);
     consumer.flush(childFields, state);
 
-    for (DocValuesConsumerAndDocID consumer : docValues.values()) {
+    for (DocValuesConsumerHolder consumer : docValues.values()) {
       consumer.docValuesConsumer.finish(state.segmentInfo.getDocCount());
     }
     
@@ -271,7 +272,26 @@ final class DocFieldProcessor extends DocConsumer {
       }
       final DocValues.Type dvType = field.fieldType().docValueType();
       if (dvType != null) {
-        docValuesConsumer(dvType, docState, fp.fieldInfo).add(docState.docID, field);
+        DocValuesConsumerHolder docValuesConsumer = docValuesConsumer(dvType,
+            docState, fp.fieldInfo);
+        DocValuesConsumer consumer = docValuesConsumer.docValuesConsumer;
+        if (docValuesConsumer.compatibility == null) {
+          consumer.add(docState.docID, field);
+          docValuesConsumer.compatibility = new TypeCompatibility(dvType,
+              consumer.getValueSize());
+        } else if (docValuesConsumer.compatibility.isCompatible(dvType,
+            TypePromoter.getValueSize(dvType, field.binaryValue()))) {
+          consumer.add(docState.docID, field);
+        } else {
+          docValuesConsumer.compatibility.isCompatible(dvType,
+              TypePromoter.getValueSize(dvType, field.binaryValue()));
+          TypeCompatibility compatibility = docValuesConsumer.compatibility;
+          throw new IllegalArgumentException("Incompatible DocValues type: "
+              + dvType.name() + " size: "
+              + TypePromoter.getValueSize(dvType, field.binaryValue())
+              + " expected: " + " type: " + compatibility.getBaseType()
+              + " size: " + compatibility.getBaseSize());
+        }
       }
     }
 
@@ -308,30 +328,31 @@ final class DocFieldProcessor extends DocConsumer {
     }
   }
 
-  private static class DocValuesConsumerAndDocID {
+  private static class DocValuesConsumerHolder {
     // Only used to enforce that same DV field name is never
     // added more than once per doc:
-    public int docID;
+    int docID;
     final DocValuesConsumer docValuesConsumer;
+    TypeCompatibility compatibility;
 
-    public DocValuesConsumerAndDocID(DocValuesConsumer docValuesConsumer) {
+    public DocValuesConsumerHolder(DocValuesConsumer docValuesConsumer) {
       this.docValuesConsumer = docValuesConsumer;
     }
   }
 
-  final private Map<String, DocValuesConsumerAndDocID> docValues = new HashMap<String, DocValuesConsumerAndDocID>();
+  final private Map<String, DocValuesConsumerHolder> docValues = new HashMap<String, DocValuesConsumerHolder>();
   private PerDocConsumer perDocConsumer;
 
-  DocValuesConsumer docValuesConsumer(DocValues.Type valueType, DocState docState, FieldInfo fieldInfo) 
+  DocValuesConsumerHolder docValuesConsumer(DocValues.Type valueType, DocState docState, FieldInfo fieldInfo) 
       throws IOException {
-    DocValuesConsumerAndDocID docValuesConsumerAndDocID = docValues.get(fieldInfo.name);
+    DocValuesConsumerHolder docValuesConsumerAndDocID = docValues.get(fieldInfo.name);
     if (docValuesConsumerAndDocID != null) {
       if (docState.docID == docValuesConsumerAndDocID.docID) {
         throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed, per field)");
       }
       assert docValuesConsumerAndDocID.docID < docState.docID;
       docValuesConsumerAndDocID.docID = docState.docID;
-      return docValuesConsumerAndDocID.docValuesConsumer;
+      return docValuesConsumerAndDocID;
     }
 
     if (perDocConsumer == null) {
@@ -345,9 +366,10 @@ final class DocFieldProcessor extends DocConsumer {
     assert fieldInfo.getDocValuesType() == null || fieldInfo.getDocValuesType() == valueType;
     fieldInfo.setDocValuesType(valueType);
 
-    docValuesConsumerAndDocID = new DocValuesConsumerAndDocID(docValuesConsumer);
+    docValuesConsumerAndDocID = new DocValuesConsumerHolder(docValuesConsumer);
     docValuesConsumerAndDocID.docID = docState.docID;
     docValues.put(fieldInfo.name, docValuesConsumerAndDocID);
-    return docValuesConsumer;
+    return docValuesConsumerAndDocID;
   }
+  
 }
