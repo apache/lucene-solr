@@ -28,7 +28,9 @@ import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -116,6 +118,57 @@ public class TestCustomNorms extends LuceneTestCase {
     docs.close();
 
   }
+  
+  public void testIllegalCustomEncoder() throws Exception {
+    Directory dir = newDirectory();
+    IllegalCustomEncodingSimilarity similarity = new IllegalCustomEncodingSimilarity();
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    config.setSimilarity(similarity);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
+    Document doc = new Document();
+    Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
+    Field bar = newField("bar", "", TextField.TYPE_UNSTORED);
+    doc.add(foo);
+    doc.add(bar);
+    
+    int numAdded = 0;
+    for (int i = 0; i < 100; i++) {
+      try {
+        bar.setStringValue("singleton");
+        similarity.useByte = random().nextBoolean();
+        writer.addDocument(doc);
+        numAdded++;
+      } catch (IllegalArgumentException e) {}
+    }
+    
+    
+    IndexReader reader = writer.getReader();
+    writer.close();
+    assertEquals(numAdded, reader.numDocs());
+    IndexReaderContext topReaderContext = reader.getTopReaderContext();
+    AtomicReaderContext[] leaves = topReaderContext.leaves();
+    for (int j = 0; j < leaves.length; j++) {
+      AtomicReader atomicReader = leaves[j].reader();
+    Source source = random().nextBoolean() ? atomicReader.normValues("foo").getSource() : atomicReader.normValues("foo").getDirectSource();
+    Bits liveDocs = atomicReader.getLiveDocs();
+    Type t = source.getType();
+    for (int i = 0; i < atomicReader.maxDoc(); i++) {
+        assertEquals(0, source.getFloat(i), 0.000f);
+    }
+    
+
+    source = random().nextBoolean() ? atomicReader.normValues("bar").getSource() : atomicReader.normValues("bar").getDirectSource();
+    for (int i = 0; i < atomicReader.maxDoc(); i++) {
+      if (liveDocs == null || liveDocs.get(i)) {
+        assertEquals("type: " + t, 1, source.getFloat(i), 0.000f);
+      } else {
+        assertEquals("type: " + t, 0, source.getFloat(i), 0.000f);
+      }
+    }
+    }
+    reader.close();
+    dir.close();
+  }
 
   public class MySimProvider extends PerFieldSimilarityWrapper {
     Similarity delegate = new DefaultSimilarity();
@@ -186,6 +239,29 @@ public class TestCustomNorms extends LuceneTestCase {
         norm.setByte((byte) boost);
       }
 
+    }
+  }
+  
+  class IllegalCustomEncodingSimilarity extends DefaultSimilarity {
+    
+    public boolean useByte = false;
+    @Override
+    public byte encodeNormValue(float f) {
+      return (byte) f;
+    }
+    
+    @Override
+    public float decodeNormValue(byte b) {
+      return (float) b;
+    }
+
+    @Override
+    public void computeNorm(FieldInvertState state, Norm norm) {
+      if (useByte) {
+        norm.setByte(encodeNormValue((float) state.getLength()));
+      } else {
+        norm.setFloat((float)state.getLength());
+      }
     }
   }
 
