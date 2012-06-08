@@ -449,7 +449,7 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     # TODO: clean this up to not be a list of modules that we must maintain
     extras = ('analysis', 'benchmark', 'core', 'demo', 'docs', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'sandbox', 'spatial', 'suggest', 'test-framework')
     if isSrc:
-      extras += ('build.xml', 'index.html', 'common-build.xml', 'backwards', 'tools', 'site')
+      extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'backwards', 'tools', 'site')
   else:
     extras = ()
 
