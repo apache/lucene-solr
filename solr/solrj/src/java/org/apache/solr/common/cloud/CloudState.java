@@ -89,6 +89,19 @@ public class CloudState implements JSONWriter.Writable {
 	  if (collectionLeaders == null) return null;
 	  return collectionLeaders.get(shard);
 	}
+	
+	/**
+	 * Get shard properties or null if shard is not found.
+	 */
+	public ZkNodeProps getShardProps(final String collection, final String coreNodeName) {
+	  Map<String, Slice> slices = getSlices(collection);
+	  for(Slice slice: slices.values()) {
+	    if(slice.getShards().get(coreNodeName)!=null) {
+	      return slice.getShards().get(coreNodeName);
+	    }
+	  }
+	  return null;
+	}
 
   private void addRangeInfos(Set<String> collections) {
     for (String collection : collections) {
