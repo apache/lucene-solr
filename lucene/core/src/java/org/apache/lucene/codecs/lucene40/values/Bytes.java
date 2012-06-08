@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40.values;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -471,6 +471,10 @@ public final class Bytes {
         throw new IllegalArgumentException("expected bytes size=" + size
             + " but got " + bytes.length);
       }
+    }
+    
+    public int getValueSize() {
+      return size;
     }
     
     // Important that we get docCount, in case there were

@@ -1,6 +1,6 @@
 package org.apache.lucene.document;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,6 +33,8 @@ import org.apache.lucene.util.BytesRef;
  * <p>
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
+ * 
+ * @see DocValues for further information
  * */
 
 public class SortedBytesDocValuesField extends Field {

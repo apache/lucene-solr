@@ -76,7 +76,20 @@ public abstract class DocValuesConsumer {
    * @throws IOException
    */
   public abstract void finish(int docCount) throws IOException;
-
+  
+  
+  /**
+   * Returns the value size this consumer accepts or <tt>-1</tt> iff this
+   * consumer is value size agnostic ie. accepts variable length values.
+   * <p>
+   * NOTE: the return value is undefined until the consumer has successfully
+   * consumed at least one value.
+   * 
+   * @return the value size this consumer accepts or <tt>-1</tt> iff this
+   *         consumer is value size agnostic ie. accepts variable length values.
+   */
+  public abstract int getValueSize();
+  
   /**
    * Merges the given {@link org.apache.lucene.index.MergeState} into
    * this {@link DocValuesConsumer}.

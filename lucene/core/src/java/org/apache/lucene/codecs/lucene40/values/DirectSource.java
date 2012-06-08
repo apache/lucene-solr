@@ -43,6 +43,11 @@ abstract class DirectSource extends Source {
       toNumeric = new ShortToLong();
       break;
     case FLOAT_32:
+      toNumeric = new BytesToFloat();
+      break;
+    case FLOAT_64:
+      toNumeric = new BytesToDouble();
+      break;
     case FIXED_INTS_32:
       toNumeric = new IntToLong();
       break;
@@ -103,7 +108,6 @@ abstract class DirectSource extends Source {
     long toLong(IndexInput input) throws IOException {
       return input.readByte();
     }
-
   }
 
   private static final class ShortToLong extends ToNumeric {
@@ -118,11 +122,30 @@ abstract class DirectSource extends Source {
     long toLong(IndexInput input) throws IOException {
       return input.readInt();
     }
+  }
+  
+  private static final class BytesToFloat extends ToNumeric {
+    @Override
+    long toLong(IndexInput input) throws IOException {
+      throw new UnsupportedOperationException("ints are not supported");
+    }
 
     double toDouble(IndexInput input) throws IOException {
       return Float.intBitsToFloat(input.readInt());
     }
   }
+  
+  private static final class BytesToDouble extends ToNumeric {
+    @Override
+    long toLong(IndexInput input) throws IOException {
+      throw new UnsupportedOperationException("ints are not supported");
+    }
+
+    double toDouble(IndexInput input) throws IOException {
+      return Double.longBitsToDouble(input.readLong());
+    }
+  }
+
 
   private static final class LongToLong extends ToNumeric {
     @Override
@@ -131,7 +154,7 @@ abstract class DirectSource extends Source {
     }
 
     double toDouble(IndexInput input) throws IOException {
-      return Double.longBitsToDouble(input.readLong());
+      throw new UnsupportedOperationException("doubles are not supported");
     }
   }
 

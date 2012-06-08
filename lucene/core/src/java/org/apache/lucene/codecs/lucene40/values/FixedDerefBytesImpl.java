@@ -67,6 +67,7 @@ class FixedDerefBytesImpl {
       idxOut.writeInt(numValues);
       writeIndex(idxOut, docCount, numValues, docToEntry);
     }
+
   }
 
   public static class FixedDerefReader extends BytesReaderBase {
