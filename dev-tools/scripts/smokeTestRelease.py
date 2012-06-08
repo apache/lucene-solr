@@ -31,6 +31,7 @@ import xml.etree.ElementTree as ET
 import filecmp
 import platform
 import checkJavaDocs
+import checkJavadocLinks
 
 # This tool expects to find /lucene and /solr off the base URL.  You
 # must have a working gpg, tar, unzip in your path.  This has been
@@ -47,9 +48,7 @@ def unshortenURL(url):
   return url  
 
 def javaExe(version):
-  if version == '1.5':
-    path = JAVA5_HOME
-  elif version == '1.6':
+  if version == '1.6':
     path = JAVA6_HOME
   elif version == '1.7':
     path = JAVA7_HOME
@@ -65,11 +64,6 @@ def verifyJavaVersion(version):
 # http://s.apache.org/lusolr32rc2
 env = os.environ
 try:
-  JAVA5_HOME = env['JAVA5_HOME']
-except KeyError:
-  JAVA5_HOME = '/usr/local/jdk1.5.0_22'
-
-try:
   JAVA6_HOME = env['JAVA6_HOME']
 except KeyError:
   JAVA6_HOME = '/usr/local/jdk1.6.0_27'
@@ -79,7 +73,6 @@ try:
 except KeyError:
   JAVA7_HOME = '/usr/local/jdk1.7.0_01'
 
-verifyJavaVersion('1.5')
 verifyJavaVersion('1.6')
 verifyJavaVersion('1.7')
 
@@ -321,7 +314,7 @@ def checkChangesContent(s, version, name, project, isHTML):
       sub = version
       
     if s.find(sub) == -1:
-      # contrib/benchmark never seems to include release info:
+      # benchmark never seems to include release info:
       if name.find('/benchmark/') == -1:
         raise RuntimeError('did not see "%s" in %s' % (sub, name))
 
@@ -491,31 +484,27 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     run('%s; ant -lib "%s/apache-rat-0.8.jar/apache-rat-0.8" rat-sources' % (javaExe('1.7'), tmpDir), '%s/rat-sources.log' % unpackPath)
     
     if project == 'lucene':
-      print '    run tests w/ Java 5...'
-      run('%s; ant test' % javaExe('1.5'), '%s/test.log' % unpackPath)
-      run('%s; ant jar' % javaExe('1.5'), '%s/compile.log' % unpackPath)
+      print '    run tests w/ Java 6...'
+      run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
+      run('%s; ant jar' % javaExe('1.6'), '%s/compile.log' % unpackPath)
       testDemo(isSrc, version)
       # test javadocs
-      print '    generate javadocs w/ Java 5...'
-      run('%s; ant javadocs' % javaExe('1.5'), '%s/javadocs.log' % unpackPath)
-      if checkJavaDocs.checkPackageSummaries('build/docs/api'):
-        print '\n***WARNING***: javadocs want to fail!\n'
-        # disabled: RM cannot fix all this, see LUCENE-3887
-        #raise RuntimeError('javadoc summaries failed')
+      print '    generate javadocs w/ Java 6...'
+      run('%s; ant javadocs-lint' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
     else:
       print '    run tests w/ Java 6...'
       run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
 
       # test javadocs
       print '    generate javadocs w/ Java 6...'
-      run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
+      run('%s; ant javadocs-lint' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
 
       print '    run tests w/ Java 7...'
       run('%s; ant test' % javaExe('1.7'), '%s/test.log' % unpackPath)
  
       # test javadocs
       print '    generate javadocs w/ Java 7...'
-      run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
+      run('%s; ant javadocs-lint' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
 
       os.chdir('solr')
       print '    test solr example w/ Java 6...'
@@ -544,7 +533,7 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
 
   if project == 'lucene' and not isSrc:
     print '    check Lucene\'s javadoc JAR'
-    unpackJavadocsJar('%s/lucene-core-%s-javadoc.jar' % (unpackPath, version), unpackPath)
+    checkJavadocpath('%s/docs' % unpackPath)
 
 def testNotice(unpackPath):
   solrNotice = open('%s/NOTICE.txt' % unpackPath).read()
@@ -626,18 +615,20 @@ def testSolrExample(unpackPath, javaPath, isSrc):
 
   os.chdir('..')
     
-def unpackJavadocsJar(jarPath, unpackPath):
-  destDir = '%s/javadocs' % unpackPath
-  if os.path.exists(destDir):
-    shutil.rmtree(destDir)
-  os.makedirs(destDir)
-  os.chdir(destDir)
-  run('unzip %s' % jarPath, '%s/unzip.log' % destDir)
-  if checkJavaDocs.checkPackageSummaries('.'):
+def checkJavadocpath(path):
+  # check for level='package'
+  # we fail here if its screwed up
+  if checkJavaDocs.checkPackageSummaries(path, 'package'):
+    raise RuntimeError('missing javadocs package summaries!')
+    
+  # now check for level='class'
+  if checkJavaDocs.checkPackageSummaries(path):
     # disabled: RM cannot fix all this, see LUCENE-3887
     # raise RuntimeError('javadoc problems')
     print '\n***WARNING***: javadocs want to fail!\n'
-  os.chdir(unpackPath)
+
+  if checkJavadocLinks.checkAll(path):
+    raise RuntimeError('broken javadocs links found!')
 
 def testDemo(isSrc, version):
   print '    test demo...'
@@ -645,16 +636,16 @@ def testDemo(isSrc, version):
   if isSrc:
     # allow lucene dev version to be either 3.3 or 3.3.0:
     if version.endswith('.0'):
-      cp = 'build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/contrib/demo/classes/java'.format(version, sep)
-      cp += '{1}build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/contrib/demo/classes/java'.format(version[:-2], sep)
+      cp = 'build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/demo/classes/java'.format(version, sep)
+      cp += '{1}build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/demo/classes/java'.format(version[:-2], sep)
     else:
-      cp = 'build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/contrib/demo/classes/java'.format(version, sep)
+      cp = 'build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/demo/classes/java'.format(version, sep)
     docsDir = 'core/src'
   else:
-    cp = 'lucene-core-{0}.jar{1}contrib/demo/lucene-demo-{0}.jar'.format(version, sep)
+    cp = 'core/lucene-core-{0}.jar{1}demo/lucene-demo-{0}.jar{1}analysis/common/lucene-analyzers-common-{0}.jar{1}queryparser/lucene-queryparser-{0}.jar'.format(version, sep)
     docsDir = 'docs'
-  run('%s; java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (javaExe('1.5'), cp, docsDir), 'index.log')
-  run('%s; java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % (javaExe('1.5'), cp), 'search.log')
+  run('%s; java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (javaExe('1.6'), cp, docsDir), 'index.log')
+  run('%s; java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % (javaExe('1.6'), cp), 'search.log')
   reMatchingDocs = re.compile('(\d+) total matching documents')
   m = reMatchingDocs.search(open('search.log', 'rb').read())
   if m is None:
