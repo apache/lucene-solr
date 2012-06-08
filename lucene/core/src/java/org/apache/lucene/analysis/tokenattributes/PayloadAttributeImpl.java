@@ -21,7 +21,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * The payload of a Token. See also {@link Payload}.
+ * The payload of a Token.
  */
 public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttribute, Cloneable {
   private BytesRef payload;  

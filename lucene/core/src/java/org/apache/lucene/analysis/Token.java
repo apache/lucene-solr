@@ -118,7 +118,6 @@ import org.apache.lucene.util.BytesRef;
   {@link CharSequence} interface introduced by the interface {@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}.
   This method now only prints the term text, no additional information anymore.
   </p>
-  @see org.apache.lucene.index.Payload
 */
 public class Token extends CharTermAttributeImpl 
                    implements TypeAttribute, PositionIncrementAttribute,

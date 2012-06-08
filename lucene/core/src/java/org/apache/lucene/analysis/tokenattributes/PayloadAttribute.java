@@ -21,7 +21,7 @@ import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * The payload of a Token. See also {@link Payload}.
+ * The payload of a Token. 
  */
 public interface PayloadAttribute extends Attribute {
   /**
