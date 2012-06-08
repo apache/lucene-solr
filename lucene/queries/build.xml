@@ -20,5 +20,5 @@
     Filters and Queries that add to core Lucene
   </description>
 
-  <import file="../../lucene/module-build.xml"/>
+  <import file="../module-build.xml"/>
 </project>
