@@ -46,7 +46,7 @@ import org.apache.lucene.util.BytesRef;
   belongs to.  For example an end of sentence marker token might be implemented
   with type "eos".  The default token type is "word".  
   <p>
-  A Token can optionally have metadata (a.k.a. Payload) in the form of a variable
+  A Token can optionally have metadata (a.k.a. payload) in the form of a variable
   length byte array. Use {@link DocsAndPositionsEnum#getPayload()} to retrieve the 
   payloads from the index.
   

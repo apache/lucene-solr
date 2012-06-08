@@ -24,7 +24,7 @@ import org.apache.lucene.util.encoding.IntEncoder;
 
 /**
  * Accumulates category IDs for a single document, for writing in byte array
- * form, for example, to a Lucene Payload.
+ * form, for example, to a Lucene payload.
  * 
  * @lucene.experimental
  */
@@ -33,7 +33,7 @@ public class CategoryListPayloadStream {
   private ByteArrayOutputStream baos = new ByteArrayOutputStream(50);
   private IntEncoder encoder;
 
-  /** Creates a Payload stream using the specified encoder. */
+  /** Creates a payload stream using the specified encoder. */
   public CategoryListPayloadStream(IntEncoder encoder) {
     this.encoder = encoder;
     this.encoder.reInit(baos);

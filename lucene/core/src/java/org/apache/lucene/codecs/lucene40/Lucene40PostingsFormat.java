@@ -254,8 +254,8 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * <p>4, 5, 4</p>
  * <p>PayloadData is metadata associated with the current term position. If
  * PayloadLength is stored at the current position, then it indicates the length
- * of this Payload. If PayloadLength is not stored, then this Payload has the same
- * length as the Payload at the previous position.</p>
+ * of this payload. If PayloadLength is not stored, then this payload has the same
+ * length as the payload at the previous position.</p>
  * <p>OffsetDelta/2 is the difference between this position's startOffset from the
  * previous occurrence (or zero, if this is the first occurrence in this document).
  * If OffsetDelta is odd, then the length (endOffset-startOffset) differs from the
