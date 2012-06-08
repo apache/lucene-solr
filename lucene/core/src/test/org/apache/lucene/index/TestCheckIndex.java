@@ -101,7 +101,7 @@ public class TestCheckIndex extends LuceneTestCase {
     assertTrue("Invalid version: "+version,
                version.equals(Constants.LUCENE_MAIN_VERSION+"-SNAPSHOT") ||
                version.equals(Constants.LUCENE_MAIN_VERSION));
-    assertTrue(version + " should start with: "+Constants.LUCENE_VERSION,
+    assertTrue(Constants.LUCENE_VERSION + " should start with: "+version,
                Constants.LUCENE_VERSION.startsWith(version));
   }
 }
