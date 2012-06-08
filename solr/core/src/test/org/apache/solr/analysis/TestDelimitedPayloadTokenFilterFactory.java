@@ -47,7 +47,7 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestC
     while (tf.incrementToken()){
       PayloadAttribute payAttr = tf.getAttribute(PayloadAttribute.class);
       assertTrue("payAttr is null and it shouldn't be", payAttr != null);
-      byte[] payData = payAttr.getPayload().getData();
+      byte[] payData = payAttr.getPayload().bytes;
       assertTrue("payData is null and it shouldn't be", payData != null);
       assertTrue("payData is null and it shouldn't be", payData != null);
       float payFloat = PayloadHelper.decodeFloat(payData);
@@ -70,7 +70,7 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestC
     while (tf.incrementToken()){
       PayloadAttribute payAttr = tf.getAttribute(PayloadAttribute.class);
       assertTrue("payAttr is null and it shouldn't be", payAttr != null);
-      byte[] payData = payAttr.getPayload().getData();
+      byte[] payData = payAttr.getPayload().bytes;
       assertTrue("payData is null and it shouldn't be", payData != null);
       float payFloat = PayloadHelper.decodeFloat(payData);
       assertTrue(payFloat + " does not equal: " + 0.1f, payFloat == 0.1f);

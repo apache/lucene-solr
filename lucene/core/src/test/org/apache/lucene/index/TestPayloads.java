@@ -44,46 +44,13 @@ public class TestPayloads extends LuceneTestCase {
     // Simple tests to test the Payload class
     public void testPayload() throws Exception {
         byte[] testData = "This is a test!".getBytes();
-        Payload payload = new Payload(testData);
-        assertEquals("Wrong payload length.", testData.length, payload.length());
+        BytesRef payload = new BytesRef(testData);
+        assertEquals("Wrong payload length.", testData.length, payload.length);
         
-        // test copyTo()
-        byte[] target = new byte[testData.length - 1];
-        try {
-            payload.copyTo(target, 0);
-            fail("Expected exception not thrown");
-        } catch (Exception expected) {
-            // expected exception
-        }
-        
-        target = new byte[testData.length + 3];
-        payload.copyTo(target, 3);
-        
-        for (int i = 0; i < testData.length; i++) {
-            assertEquals(testData[i], target[i + 3]);
-        }
-        
-
-        // test toByteArray()
-        target = payload.toByteArray();
-        assertByteArrayEquals(testData, target);
-
-        // test byteAt()
-        for (int i = 0; i < testData.length; i++) {
-            assertEquals(payload.byteAt(i), testData[i]);
-        }
-        
-        try {
-            payload.byteAt(testData.length + 1);
-            fail("Expected exception not thrown");
-        } catch (Exception expected) {
-            // expected exception
-        }
-        
-        Payload clone = payload.clone();
-        assertEquals(payload.length(), clone.length());
-        for (int i = 0; i < payload.length(); i++) {
-          assertEquals(payload.byteAt(i), clone.byteAt(i));
+        BytesRef clone = payload.clone();
+        assertEquals(payload.length, clone.length);
+        for (int i = 0; i < payload.length; i++) {
+          assertEquals(payload.bytes[i + payload.offset], clone.bytes[i + clone.offset]);
         }
         
     }
@@ -478,9 +445,8 @@ public class TestPayloads extends LuceneTestCase {
 
             // Some values of the same field are to have payloads and others not
             if (offset + length <= data.length && !termAttribute.toString().endsWith("NO PAYLOAD")) {
-              Payload p = new Payload();
+              BytesRef p = new BytesRef(data, offset, length);
               payloadAtt.setPayload(p);
-              p.setData(data, offset, length);
               offset += length;
             } else {
               payloadAtt.setPayload(null);
@@ -576,7 +542,7 @@ public class TestPayloads extends LuceneTestCase {
             first = false;
             clearAttributes();
             termAtt.append(term);
-            payloadAtt.setPayload(new Payload(payload));
+            payloadAtt.setPayload(new BytesRef(payload));
             return true;
         }
         

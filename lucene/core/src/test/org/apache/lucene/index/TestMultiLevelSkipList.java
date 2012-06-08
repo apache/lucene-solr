@@ -138,7 +138,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     public boolean incrementToken() throws IOException {
       boolean hasNext = input.incrementToken();
       if (hasNext) {
-        payloadAtt.setPayload(new Payload(new byte[] { (byte) payloadCount.incrementAndGet() }));
+        payloadAtt.setPayload(new BytesRef(new byte[] { (byte) payloadCount.incrementAndGet() }));
       } 
       return hasNext;
     }

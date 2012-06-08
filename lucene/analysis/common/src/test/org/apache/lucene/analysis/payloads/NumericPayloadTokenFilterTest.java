@@ -43,9 +43,9 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
         seenDogs = true;
         assertTrue(typeAtt.type() + " is not equal to " + "D", typeAtt.type().equals("D") == true);
         assertTrue("payloadAtt.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
-        byte [] bytes = payloadAtt.getPayload().getData();//safe here to just use the bytes, otherwise we should use offset, length
-        assertTrue(bytes.length + " does not equal: " + payloadAtt.getPayload().length(), bytes.length == payloadAtt.getPayload().length());
-        assertTrue(payloadAtt.getPayload().getOffset() + " does not equal: " + 0, payloadAtt.getPayload().getOffset() == 0);
+        byte [] bytes = payloadAtt.getPayload().bytes;//safe here to just use the bytes, otherwise we should use offset, length
+        assertTrue(bytes.length + " does not equal: " + payloadAtt.getPayload().length, bytes.length == payloadAtt.getPayload().length);
+        assertTrue(payloadAtt.getPayload().offset + " does not equal: " + 0, payloadAtt.getPayload().offset == 0);
         float pay = PayloadHelper.decodeFloat(bytes);
         assertTrue(pay + " does not equal: " + 3, pay == 3);
       } else {

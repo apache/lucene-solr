@@ -90,7 +90,9 @@ public class CountingListTokenizer extends CategoryListTokenizer {
       countingListName.getChars(0, length, termAttribute.buffer(), 0);
       this.termAttribute.setLength(length);
       CategoryListPayloadStream payloadStream = entry.getValue();
-      payload.setData(payloadStream.convertStreamToByteArray());
+      payload.bytes = payloadStream.convertStreamToByteArray();
+      payload.offset = 0;
+      payload.length = payload.bytes.length;
       this.payloadAttribute.setPayload(payload);
       return true;
     }

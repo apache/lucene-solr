@@ -37,7 +37,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Norm;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -94,12 +93,12 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       boolean hasNext = input.incrementToken();
       if (hasNext) {
         if (fieldName.equals("field")) {
-          payloadAtt.setPayload(new Payload(payloadField));
+          payloadAtt.setPayload(new BytesRef(payloadField));
         } else if (fieldName.equals("multiField")) {
           if (numSeen % 2 == 0) {
-            payloadAtt.setPayload(new Payload(payloadMultiField1));
+            payloadAtt.setPayload(new BytesRef(payloadMultiField1));
           } else {
-            payloadAtt.setPayload(new Payload(payloadMultiField2));
+            payloadAtt.setPayload(new BytesRef(payloadMultiField2));
           }
           numSeen++;
         }

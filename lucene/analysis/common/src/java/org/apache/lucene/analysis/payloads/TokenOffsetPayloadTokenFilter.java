@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 
 
 /**
@@ -46,7 +46,7 @@ public class TokenOffsetPayloadTokenFilter extends TokenFilter {
       byte[] data = new byte[8];
       PayloadHelper.encodeInt(offsetAtt.startOffset(), data, 0);
       PayloadHelper.encodeInt(offsetAtt.endOffset(), data, 4);
-      Payload payload = new Payload(data);
+      BytesRef payload = new BytesRef(data);
       payAtt.setPayload(payload);
       return true;
     } else {

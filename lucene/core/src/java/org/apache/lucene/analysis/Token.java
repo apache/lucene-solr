@@ -24,12 +24,12 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.DocsAndPositionsEnum; // for javadoc
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
+import org.apache.lucene.util.BytesRef;
 
 /** 
   A Token is an occurrence of a term from the text of a field.  It consists of
@@ -127,7 +127,7 @@ public class Token extends CharTermAttributeImpl
   private int startOffset,endOffset;
   private String type = DEFAULT_TYPE;
   private int flags;
-  private Payload payload;
+  private BytesRef payload;
   private int positionIncrement = 1;
   private int positionLength = 1;
 
@@ -357,14 +357,14 @@ public class Token extends CharTermAttributeImpl
   /**
    * Returns this Token's payload.
    */ 
-  public Payload getPayload() {
+  public BytesRef getPayload() {
     return this.payload;
   }
 
   /** 
    * Sets this Token's payload.
    */
-  public void setPayload(Payload payload) {
+  public void setPayload(BytesRef payload) {
     this.payload = payload;
   }
   

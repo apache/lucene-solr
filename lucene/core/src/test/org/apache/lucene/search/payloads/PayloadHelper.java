@@ -21,11 +21,11 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexReader;
@@ -85,13 +85,13 @@ public class PayloadHelper {
       
       if (input.incrementToken()) {
         if (fieldName.equals(FIELD)) {
-          payloadAtt.setPayload(new Payload(payloadField));
+          payloadAtt.setPayload(new BytesRef(payloadField));
         } else if (fieldName.equals(MULTI_FIELD)) {
           if (numSeen  % 2 == 0) {
-            payloadAtt.setPayload(new Payload(payloadMultiField1));
+            payloadAtt.setPayload(new BytesRef(payloadMultiField1));
           }
           else {
-            payloadAtt.setPayload(new Payload(payloadMultiField2));
+            payloadAtt.setPayload(new BytesRef(payloadMultiField2));
           }
           numSeen++;
         }

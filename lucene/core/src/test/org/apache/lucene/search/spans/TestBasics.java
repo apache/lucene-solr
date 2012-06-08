@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -42,6 +41,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -81,7 +81,7 @@ public class TestBasics extends LuceneTestCase {
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        payloadAttr.setPayload(new Payload(("pos: " + pos).getBytes()));
+        payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes()));
         pos++;
         return true;
       } else {
@@ -411,8 +411,8 @@ public class TestBasics extends LuceneTestCase {
   @Test
   public void testSpanPayloadCheck() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "five"));
-    Payload pay = new Payload(("pos: " + 5).getBytes());
-    SpanQuery query = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay.getData()));
+    BytesRef pay = new BytesRef(("pos: " + 5).getBytes());
+    SpanQuery query = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay.bytes));
     checkHits(query, new int[]
       {1125, 1135, 1145, 1155, 1165, 1175, 1185, 1195, 1225, 1235, 1245, 1255, 1265, 1275, 1285, 1295, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855, 1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995});
     assertTrue(searcher.explain(query, 1125).getValue() > 0.0f);
@@ -421,16 +421,16 @@ public class TestBasics extends LuceneTestCase {
     SpanNearQuery snq;
     SpanQuery[] clauses;
     List<byte[]> list;
-    Payload pay2;
+    BytesRef pay2;
     clauses = new SpanQuery[2];
     clauses[0] = term1;
     clauses[1] = term2;
     snq = new SpanNearQuery(clauses, 0, true);
-    pay = new Payload(("pos: " + 0).getBytes());
-    pay2 = new Payload(("pos: " + 1).getBytes());
+    pay = new BytesRef(("pos: " + 0).getBytes());
+    pay2 = new BytesRef(("pos: " + 1).getBytes());
     list = new ArrayList<byte[]>();
-    list.add(pay.getData());
-    list.add(pay2.getData());
+    list.add(pay.bytes);
+    list.add(pay2.bytes);
     query = new SpanNearPayloadCheckQuery(snq, list);
     checkHits(query, new int[]
       {500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599});
@@ -439,13 +439,13 @@ public class TestBasics extends LuceneTestCase {
     clauses[1] = term2;
     clauses[2] = new SpanTermQuery(new Term("field", "five"));
     snq = new SpanNearQuery(clauses, 0, true);
-    pay = new Payload(("pos: " + 0).getBytes());
-    pay2 = new Payload(("pos: " + 1).getBytes());
-    Payload pay3 = new Payload(("pos: " + 2).getBytes());
+    pay = new BytesRef(("pos: " + 0).getBytes());
+    pay2 = new BytesRef(("pos: " + 1).getBytes());
+    BytesRef pay3 = new BytesRef(("pos: " + 2).getBytes());
     list = new ArrayList<byte[]>();
-    list.add(pay.getData());
-    list.add(pay2.getData());
-    list.add(pay3.getData());
+    list.add(pay.bytes);
+    list.add(pay2.bytes);
+    list.add(pay3.bytes);
     query = new SpanNearPayloadCheckQuery(snq, list);
     checkHits(query, new int[]
       {505});
@@ -470,14 +470,14 @@ public class TestBasics extends LuceneTestCase {
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
 
     Collection<byte[]> payloads = new ArrayList<byte[]>();
-    Payload pay = new Payload(("pos: " + 0).getBytes());
-    Payload pay2 = new Payload(("pos: " + 1).getBytes());
-    Payload pay3 = new Payload(("pos: " + 3).getBytes());
-    Payload pay4 = new Payload(("pos: " + 4).getBytes());
-    payloads.add(pay.getData());
-    payloads.add(pay2.getData());
-    payloads.add(pay3.getData());
-    payloads.add(pay4.getData());
+    BytesRef pay = new BytesRef(("pos: " + 0).getBytes());
+    BytesRef pay2 = new BytesRef(("pos: " + 1).getBytes());
+    BytesRef pay3 = new BytesRef(("pos: " + 3).getBytes());
+    BytesRef pay4 = new BytesRef(("pos: " + 4).getBytes());
+    payloads.add(pay.bytes);
+    payloads.add(pay2.bytes);
+    payloads.add(pay3.bytes);
+    payloads.add(pay4.bytes);
     query = new SpanNearPayloadCheckQuery(oneThousHunThree, payloads);
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
 

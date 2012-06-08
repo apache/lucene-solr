@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -34,6 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 
 public class TestSnowball extends BaseTokenStreamTestCase {
@@ -68,7 +68,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     assertEquals("wrd", typeAtt.type());
     assertEquals(3, posIncAtt.getPositionIncrement());
     assertEquals(77, flagsAtt.getFlags());
-    assertEquals(new Payload(new byte[]{0,1,2,3}), payloadAtt.getPayload());
+    assertEquals(new BytesRef(new byte[]{0,1,2,3}), payloadAtt.getPayload());
   }
   
   private final class TestTokenStream extends TokenStream {
@@ -90,7 +90,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
       offsetAtt.setOffset(2, 7);
       typeAtt.setType("wrd");
       posIncAtt.setPositionIncrement(3);
-      payloadAtt.setPayload(new Payload(new byte[]{0,1,2,3}));
+      payloadAtt.setPayload(new BytesRef(new byte[]{0,1,2,3}));
       flagsAtt.setFlags(77);
       return true;
     }

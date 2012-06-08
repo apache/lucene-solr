@@ -1528,7 +1528,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Token t1 = new Token("foo", 0, 3);
     t1.setPositionIncrement(Integer.MAX_VALUE-500);
     if (random().nextBoolean()) {
-      t1.setPayload(new Payload(new byte[] { 0x1 } ));
+      t1.setPayload(new BytesRef(new byte[] { 0x1 } ));
     }
     TokenStream overflowingTokenStream = new CannedTokenStream(
         new Token[] { t1 }

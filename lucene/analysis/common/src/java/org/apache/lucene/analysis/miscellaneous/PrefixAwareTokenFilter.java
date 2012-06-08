@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -93,7 +93,7 @@ public class PrefixAwareTokenFilter extends TokenStream {
       } else {
         previousPrefixToken.reinit(nextToken);
         // Make it a deep copy
-        Payload p = previousPrefixToken.getPayload();
+        BytesRef p = previousPrefixToken.getPayload();
         if (p != null) {
           previousPrefixToken.setPayload(p.clone());
         }

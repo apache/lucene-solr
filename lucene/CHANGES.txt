@@ -527,6 +527,8 @@ API Changes
 * LUCENE-4063: FrenchLightStemmer no longer deletes repeated digits.
   (Tanguy Moal via Steve Rowe)
 
+* LUCENE-4122: Replace Payload with BytesRef. (Andrzej Bialecki)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions

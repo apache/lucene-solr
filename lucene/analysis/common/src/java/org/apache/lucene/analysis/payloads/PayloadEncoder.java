@@ -1,4 +1,7 @@
 package org.apache.lucene.analysis.payloads;
+
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,8 +19,6 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Payload;
-
 
 /**
  * Mainly for use with the DelimitedPayloadTokenFilter, converts char buffers to Payload.
@@ -27,14 +28,14 @@ import org.apache.lucene.index.Payload;
  **/
 public interface PayloadEncoder {
 
-  Payload encode(char[] buffer);
+  BytesRef encode(char[] buffer);
 
   /**
    * Convert a char array to a {@link org.apache.lucene.index.Payload}
    * @param buffer
    * @param offset
    * @param length
-   * @return encoded {@link Payload}
+   * @return encoded {@link BytesRef}
    */
-  Payload encode(char [] buffer, int offset, int length);
+  BytesRef encode(char [] buffer, int offset, int length);
 }

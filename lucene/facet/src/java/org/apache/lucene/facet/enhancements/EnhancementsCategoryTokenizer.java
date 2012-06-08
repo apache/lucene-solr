@@ -114,7 +114,9 @@ public class EnhancementsCategoryTokenizer extends CategoryTokenizer {
           nBytes += enhancementBytes[i].length;
         }
       }
-      payload.setData(payloadBytes, 0, nBytes);
+      payload.bytes = payloadBytes;
+      payload.offset = 0;
+      payload.length = nBytes;
       payloadAttribute.setPayload(payload);
     }
   }
