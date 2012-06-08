@@ -430,7 +430,7 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
   l = os.listdir(unpackPath)
   textFiles = ['LICENSE', 'NOTICE', 'README']
   if project == 'lucene':
-    textFiles.extend(('JRE_VERSION_MIGRATION', 'CHANGES'))
+    textFiles.extend(('JRE_VERSION_MIGRATION', 'CHANGES', 'MIGRATE'))
     if isSrc:
       textFiles.append('BUILD')
   for fileName in textFiles:
@@ -440,11 +440,9 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     l.remove(fileName)
 
   if not isSrc:
+    # TODO: we should add verifyModule/verifySubmodule (e.g. analysis) here and recurse through
     if project == 'lucene':
-      expectedJARs = ('lucene-core-%s' % version,
-                      'lucene-core-%s-javadoc' % version,
-                      'lucene-test-framework-%s' % version,
-                      'lucene-test-framework-%s-javadoc' % version)
+      expectedJARs = ()
     else:
       expectedJARs = ()
 
@@ -455,9 +453,10 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       l.remove(fileName)
 
   if project == 'lucene':
-    extras = ('test-framework', 'docs', 'contrib')
+    # TODO: clean this up to not be a list of modules that we must maintain
+    extras = ('analysis', 'benchmark', 'core', 'demo', 'docs', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'sandbox', 'spatial', 'suggest', 'test-framework')
     if isSrc:
-      extras += ('build.xml', 'index.html', 'common-build.xml', 'core', 'backwards', 'tools', 'site')
+      extras += ('build.xml', 'index.html', 'common-build.xml', 'backwards', 'tools', 'site')
   else:
     extras = ()
 
