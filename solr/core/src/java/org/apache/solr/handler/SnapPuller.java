@@ -653,6 +653,18 @@ public class SnapPuller {
               + " to: " + indexFileInIndex + " Trying to do a copy");
         FileUtils.copyFile(indexFileInTmpDir,indexFileInIndex);
         success = true;
+      } catch (FileNotFoundException e) {
+        if (!indexDir.exists()) {
+          File parent = indexDir.getParentFile();
+          String[] children = null;
+          if (parent != null) {
+            children = parent.list();
+          }
+          LOG.error("The index directory does not exist: " + indexDir.getAbsolutePath()
+              + " dirs found: " + (children == null ? "none could be found" : Arrays.asList(children)));
+        }
+        LOG.error("Unable to copy index file from: " + indexFileInTmpDir
+            + " to: " + indexFileInIndex , e);
       } catch (IOException e) {
         LOG.error("Unable to copy index file from: " + indexFileInTmpDir
               + " to: " + indexFileInIndex , e);
