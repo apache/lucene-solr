@@ -37,6 +37,8 @@ import org.apache.lucene.search.RandomSimilarityProvider;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.junit.internal.AssumptionViolatedException;
+
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 
 import static org.apache.lucene.util.LuceneTestCase.*;
@@ -78,7 +80,11 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     if (System.getProperty("solr.directoryFactory") == null) {
       System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
     }
-    
+
+    // Restore more Solr properties. 
+    restoreProperties.put("solr.solr.home", System.getProperty("solr.solr.home"));
+    restoreProperties.put("solr.data.dir", System.getProperty("solr.data.dir"));
+
     // enable the Lucene 3.x PreflexRW codec explicitly, to work around bugs in IBM J9 / Harmony ServiceLoader:
     try {
       final java.lang.reflect.Field spiLoaderField = Codec.class.getDeclaredField("loader");
@@ -106,7 +112,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       throw new RuntimeException("Cannot access internals of Codec and NamedSPILoader classes", e);
     }
     
-    // if verbose: print some debugging stuff about which codecs are loaded
+    // if verbose: print some debugging stuff about which codecs are loaded.
     if (VERBOSE) {
       Set<String> codecs = Codec.availableCodecs();
       for (String codec : codecs) {
@@ -129,7 +135,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
             final String name;
             if (Thread.currentThread().getName().startsWith("TEST-")) {
               // The name of the main thread is way too
-              // long when looking at IW verbose output...:
+              // long when looking at IW verbose output...
               name = "main";
             } else {
               name = Thread.currentThread().getName();
@@ -146,8 +152,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     if (targetClass.isAnnotationPresent(SuppressCodecs.class)) {
       SuppressCodecs a = targetClass.getAnnotation(SuppressCodecs.class);
       avoidCodecs.addAll(Arrays.asList(a.value()));
-      System.err.println("NOTE: Suppressing codecs " + Arrays.toString(a.value()) 
-          + " for " + targetClass.getSimpleName() + ".");
     }
     
     PREFLEX_IMPERSONATION_IS_ACTIVE = false;
@@ -206,7 +210,40 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     TimeZone randomTimeZone = randomTimeZone(random());
     timeZone = testTimeZone.equals("random") ? randomTimeZone : TimeZone.getTimeZone(testTimeZone);
     TimeZone.setDefault(timeZone);
-    similarity = random().nextBoolean() ? new DefaultSimilarity() : new RandomSimilarityProvider(random());    
+    similarity = random().nextBoolean() ? new DefaultSimilarity() : new RandomSimilarityProvider(random());
+
+    // Check codec restrictions once at class level.
+    try {
+      checkCodecRestrictions(codec);
+    } catch (AssumptionViolatedException e) {
+      System.err.println("NOTE: " + e.getMessage() + " Suppressed codecs: " + 
+          Arrays.toString(avoidCodecs.toArray()));
+      throw e;
+    }
+  }
+
+  /**
+   * Check codec restrictions.
+   * 
+   * @throws AssumptionViolatedException if the class does not work with a given codec.
+   */
+  private void checkCodecRestrictions(Codec codec) {
+    assumeFalse("Class not allowed to use codec: " + codec.getName() + ".",
+        shouldAvoidCodec(codec.getName()));
+
+    if (codec instanceof RandomCodec && !avoidCodecs.isEmpty()) {
+      for (String name : ((RandomCodec)codec).formatNames) {
+        assumeFalse("Class not allowed to use postings format: " + name + ".",
+            shouldAvoidCodec(name));
+      }
+    }
+
+    PostingsFormat pf = codec.postingsFormat();
+    assumeFalse("Class not allowed to use postings format: " + pf.getName() + ".",
+        shouldAvoidCodec(pf.getName()));
+
+    assumeFalse("Class not allowed to use postings format: " + LuceneTestCase.TEST_POSTINGSFORMAT + ".", 
+        shouldAvoidCodec(LuceneTestCase.TEST_POSTINGSFORMAT));
   }
 
   /**
@@ -225,17 +262,14 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
 
     Codec.setDefault(savedCodec);
     InfoStream.setDefault(savedInfoStream);
-    Locale.setDefault(savedLocale);
-    TimeZone.setDefault(savedTimeZone);
-
-    System.clearProperty("solr.solr.home");
-    System.clearProperty("solr.data.dir");
+    if (savedLocale != null) Locale.setDefault(savedLocale);
+    if (savedTimeZone != null) TimeZone.setDefault(savedTimeZone);
   }
 
   /**
    * Should a given codec be avoided for the currently executing suite?
    */
-  public boolean shouldAvoidCodec(String codec) {
+  private boolean shouldAvoidCodec(String codec) {
     return !avoidCodecs.isEmpty() && avoidCodecs.contains(codec);
   }
 }
