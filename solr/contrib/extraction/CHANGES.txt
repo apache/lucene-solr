@@ -24,7 +24,7 @@ Current Version: Tika 1.1 (released 2012-03-23)
 
 $Id$
 
-================== Release 4.0.0 ==============
+================== Release 4.0.0-ALPHA ==============
 
 * SOLR-3254: Upgrade Solr to Tika 1.1 (janhoy)
 

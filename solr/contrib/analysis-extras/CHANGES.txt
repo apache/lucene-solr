@@ -11,7 +11,7 @@ analyzers for Chinese and Polish.
 
 
 $Id$
-==================  4.0.0 ==============
+==================  4.0.0-ALPHA ==============
 
 * SOLR-2396: Add ICUCollationField, which is much more efficient than
   the Solr 3.x ICUCollationKeyFilterFactory, and also supports

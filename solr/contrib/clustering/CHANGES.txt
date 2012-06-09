@@ -7,7 +7,7 @@ See http://wiki.apache.org/solr/ClusteringComponent
 CHANGES
 
 $Id$
-================== Release 4.0.0 ==============
+================== Release 4.0.0-ALPHA ==============
 
 * SOLR-3470: Bug fix: custom Carrot2 tokenizer and stemmer factories are 
   respected now (Stanislaw Osinski, Dawid Weiss)

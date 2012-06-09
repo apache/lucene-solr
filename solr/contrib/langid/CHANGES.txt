@@ -7,7 +7,7 @@ See http://wiki.apache.org/solr/LanguageDetection for details
 
 $Id$
 
-================== Release 4.0.0 ==================
+================== Release 4.0.0-ALPHA ==================
 
 (No changes)
 
