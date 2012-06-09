@@ -436,13 +436,14 @@ public class TestFSTs extends LuceneTestCase {
       in.offset = 0;
       final T NO_OUTPUT = fst.outputs.getNoOutput();
       T output = NO_OUTPUT;
+      final FST.BytesReader fstReader = fst.getBytesReader(0);
 
       while(true) {
         // read all arcs:
-        fst.readFirstTargetArc(arc, arc);
+        fst.readFirstTargetArc(arc, arc, fstReader);
         arcs.add(new FST.Arc<T>().copyFrom(arc));
         while(!arc.isLast()) {
-          fst.readNextArc(arc);
+          fst.readNextArc(arc, fstReader);
           arcs.add(new FST.Arc<T>().copyFrom(arc));
         }
       
@@ -1847,10 +1848,11 @@ public class TestFSTs extends LuceneTestCase {
         throws IOException {
         if (FST.targetHasArcs(arc)) {
           int childCount = 0;
-          for (arc = fst.readFirstTargetArc(arc, arc);; 
-               arc = fst.readNextArc(arc), childCount++)
+          FST.BytesReader fstReader = fst.getBytesReader(0);
+          for (arc = fst.readFirstTargetArc(arc, arc, fstReader);; 
+               arc = fst.readNextArc(arc, fstReader), childCount++)
           {
-            boolean expanded = fst.isExpandedTarget(arc);
+            boolean expanded = fst.isExpandedTarget(arc, fstReader);
             int children = verifyStateAndBelow(fst, new FST.Arc<Object>().copyFrom(arc), depth + 1);
 
             assertEquals(
@@ -1982,12 +1984,13 @@ public class TestFSTs extends LuceneTestCase {
     assertEquals(nothing, startArc.output);
     assertEquals(nothing, startArc.nextFinalOutput);
 
-    FST.Arc<Long> arc = fst.readFirstTargetArc(startArc, new FST.Arc<Long>());
+    FST.Arc<Long> arc = fst.readFirstTargetArc(startArc, new FST.Arc<Long>(),
+                                               fst.getBytesReader(0));
     assertEquals('a', arc.label);
     assertEquals(17, arc.nextFinalOutput.longValue());
     assertTrue(arc.isFinal());
 
-    arc = fst.readNextArc(arc);
+    arc = fst.readNextArc(arc, fst.getBytesReader(0));
     assertEquals('b', arc.label);
     assertFalse(arc.isFinal());
     assertEquals(42, arc.output.longValue());
