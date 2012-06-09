@@ -1106,11 +1106,4 @@ public abstract class LuceneTestCase extends Assert {
       throw new IOException("Cannot find resource: " + name);
     }
   }
-
-  /**
-   * @see SuppressCodecs 
-   */
-  static boolean shouldAvoidCodec(String codec) {
-    return classEnvRule.shouldAvoidCodec(codec);
-  }
 }

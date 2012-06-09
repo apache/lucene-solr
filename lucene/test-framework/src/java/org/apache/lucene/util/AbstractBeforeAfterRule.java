@@ -38,10 +38,10 @@ abstract class AbstractBeforeAfterRule implements TestRule {
   public Statement apply(final Statement s, final Description d) {
     return new Statement() {
       public void evaluate() throws Throwable {
-        before();
-        
         final ArrayList<Throwable> errors = new ArrayList<Throwable>();
+
         try {
+          before();
           s.evaluate();
         } catch (Throwable t) {
           errors.add(t);
