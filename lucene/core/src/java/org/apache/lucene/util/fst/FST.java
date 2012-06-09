@@ -246,7 +246,7 @@ public final class FST<T> {
     }
   };
 
-  private final static boolean flag(int flags, int bit) {
+  private static boolean flag(int flags, int bit) {
     return (flags & bit) != 0;
   }
 
@@ -755,7 +755,7 @@ public final class FST<T> {
    * 
    * @return Returns the second argument
    * (<code>arc</code>). */
-  public Arc<T> readLastTargetArc(Arc<T> follow, Arc<T> arc) throws IOException {
+  public Arc<T> readLastTargetArc(Arc<T> follow, Arc<T> arc, FST.BytesReader in) throws IOException {
     //System.out.println("readLast");
     if (!targetHasArcs(follow)) {
       //System.out.println("  end node");
@@ -766,7 +766,7 @@ public final class FST<T> {
       arc.flags = BIT_LAST_ARC;
       return arc;
     } else {
-      final BytesReader in = getBytesReader(getNodeAddress(follow.target));
+      in.pos = getNodeAddress(follow.target);
       arc.node = follow.target;
       final byte b = in.readByte();
       if (b == ARCS_AS_FIXED_ARRAY) {
@@ -822,7 +822,7 @@ public final class FST<T> {
    * 
    * @return Returns the second argument (<code>arc</code>).
    */
-  public Arc<T> readFirstTargetArc(Arc<T> follow, Arc<T> arc) throws IOException {
+  public Arc<T> readFirstTargetArc(Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
     //int pos = address;
     //System.out.println("    readFirstTarget follow.target=" + follow.target + " isFinal=" + follow.isFinal());
     if (follow.isFinal()) {
@@ -841,7 +841,7 @@ public final class FST<T> {
       //System.out.println("    insert isFinal; nextArc=" + follow.target + " isLast=" + arc.isLast() + " output=" + outputs.outputToString(arc.output));
       return arc;
     } else {
-      return readFirstRealTargetArc(follow.target, arc, getBytesReader(0));
+      return readFirstRealTargetArc(follow.target, arc, in);
     }
   }
 
@@ -881,37 +881,36 @@ public final class FST<T> {
    * @return Returns <code>true</code> if <code>arc</code> points to a state in an
    * expanded array format.
    */
-  boolean isExpandedTarget(Arc<T> follow) throws IOException {
+  boolean isExpandedTarget(Arc<T> follow, FST.BytesReader in) throws IOException {
     if (!targetHasArcs(follow)) {
       return false;
     } else {
-      final BytesReader in = getBytesReader(getNodeAddress(follow.target));
+      in.pos = getNodeAddress(follow.target);
       return in.readByte() == ARCS_AS_FIXED_ARRAY;
     }
   }
 
   /** In-place read; returns the arc. */
-  public Arc<T> readNextArc(Arc<T> arc) throws IOException {
+  public Arc<T> readNextArc(Arc<T> arc, BytesReader in) throws IOException {
     if (arc.label == END_LABEL) {
       // This was a fake inserted "final" arc
       if (arc.nextArc <= 0) {
         throw new IllegalArgumentException("cannot readNextArc when arc.isLast()=true");
       }
-      return readFirstRealTargetArc(arc.nextArc, arc, getBytesReader(0));
+      return readFirstRealTargetArc(arc.nextArc, arc, in);
     } else {
-      return readNextRealArc(arc, getBytesReader(0));
+      return readNextRealArc(arc, in);
     }
   }
 
   /** Peeks at next arc's label; does not alter arc.  Do
    *  not call this if arc.isLast()! */
-  public int readNextArcLabel(Arc<T> arc) throws IOException {
+  public int readNextArcLabel(Arc<T> arc, BytesReader in) throws IOException {
     assert !arc.isLast();
 
-    final BytesReader in;
     if (arc.label == END_LABEL) {
       //System.out.println("    nextArc fake " + arc.nextArc);
-      in = getBytesReader(getNodeAddress(arc.nextArc));
+      in.pos = getNodeAddress(arc.nextArc);
       final byte b = bytes[in.pos];
       if (b == ARCS_AS_FIXED_ARRAY) {
         //System.out.println("    nextArc fake array");
@@ -927,12 +926,12 @@ public final class FST<T> {
       if (arc.bytesPerArc != 0) {
         //System.out.println("    nextArc real array");
         // arcs are at fixed entries
-        in = getBytesReader(arc.posArcsStart);
+        in.pos = arc.posArcsStart;
         in.skip((1+arc.arcIdx)*arc.bytesPerArc);
       } else {
         // arcs are packed
         //System.out.println("    nextArc real packed");
-        in = getBytesReader(arc.nextArc);
+        in.pos = arc.nextArc;
       }
     }
     // skip flags
@@ -1223,7 +1222,7 @@ public final class FST<T> {
     }
   }
 
-  public final BytesReader getBytesReader(int pos) {
+  public BytesReader getBytesReader(int pos) {
     // TODO: maybe re-use via ThreadLocal?
     if (packed) {
       return new ForwardBytesReader(bytes, pos);
