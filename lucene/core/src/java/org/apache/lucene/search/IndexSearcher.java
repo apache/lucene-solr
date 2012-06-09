@@ -263,12 +263,6 @@ public class IndexSearcher {
    *
    * <p>{@link Collector#collect(int)} is called for every matching
    * document.
-   * <br>Collector-based access to remote indexes is discouraged.
-   *
-   * <p>Applications should only use this if they need <i>all</i> of the
-   * matching documents.  The high-level search API ({@link
-   * IndexSearcher#search(Query, Filter, int)}) is usually more efficient, as it skips
-   * non-high-scoring hits.
    *
    * @param query to match documents
    * @param filter if non-null, used to permit documents to be collected.
@@ -284,13 +278,6 @@ public class IndexSearcher {
   *
   * <p>{@link Collector#collect(int)} is called for every matching document.
   *
-  * <p>Applications should only use this if they need <i>all</i> of the
-  * matching documents.  The high-level search API ({@link
-  * IndexSearcher#search(Query, int)}) is usually more efficient, as it skips
-  * non-high-scoring hits.
-  * <p>Note: The <code>score</code> passed to this method is a raw score.
-  * In other words, the score will not necessarily be a float whose value is
-  * between 0 and 1.
   * @throws BooleanQuery.TooManyClauses
   */
   public void search(Query query, Collector results)
@@ -559,12 +546,6 @@ public class IndexSearcher {
    * 
    * <p>
    * {@link Collector#collect(int)} is called for every document. <br>
-   * Collector-based access to remote indexes is discouraged.
-   * 
-   * <p>
-   * Applications should only use this if they need <i>all</i> of the matching
-   * documents. The high-level search API ({@link IndexSearcher#search(Query,int)}) is
-   * usually more efficient, as it skips non-high-scoring hits.
    * 
    * <p>
    * NOTE: this method executes the searches on all given leaves exclusively.
