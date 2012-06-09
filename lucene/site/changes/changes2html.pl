@@ -64,7 +64,8 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
   if (/\s*===+\s*(.*?)\s*===+\s*/) {   # New-style release headings
     $release = $1;
     $release =~ s/^(?:release|lucene)\s*//i;  # Trim "Release " or "Lucene " prefix
-    ($release, $relinfo) = ($release =~ /^(\d+(?:\.(?:\d+|[xyz]))*|Trunk)\s*(.*)/i);
+    ($release, $relinfo) = ($release =~ /^(\d+(?:\.(?:\d+(\-ALPHA|\-BETA)?|[xyz]))*|Trunk)\s*(.*)/i);
+    $relinfo =~ s/(\-ALPHA|\-BETA)//;  # Trim -ALPHA or -BETA to only be in release (TODO: please fix the above regex instead!)
     $relinfo =~ s/\s*:\s*$//;          # Trim trailing colon
     $relinfo =~ s/^\s*,\s*//;          # Trim leading comma
     ($reldate, $relinfo) = get_release_date($release, $relinfo);
