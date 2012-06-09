@@ -11,7 +11,7 @@ New features
 * LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
   the taxonomy in place with the given one. (Shai Erera)
 
-======================= Lucene 4.0.0 =======================
+======================= Lucene 4.0.0-ALPHA =======================
 
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:

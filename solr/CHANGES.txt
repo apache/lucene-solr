@@ -24,7 +24,7 @@ $Id$
 
 (No changes)
 
-==================  4.0.0 ==================
+==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
    https://wiki.apache.org/solr/Solr4.0
