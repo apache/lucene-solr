@@ -27,8 +27,8 @@ import org.apache.lucene.util.BytesRef;
 
 
 /**
- * Adds the {@link org.apache.lucene.analysis.Token#setStartOffset(int)}
- * and {@link org.apache.lucene.analysis.Token#setEndOffset(int)}
+ * Adds the {@link OffsetAttribute#startOffset()}
+ * and {@link OffsetAttribute#endOffset()}
  * First 4 bytes are the start
  *
  **/

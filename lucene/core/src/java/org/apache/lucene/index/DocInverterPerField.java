@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -80,6 +81,11 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         if (fieldType.omitNorms() && field.boost() != 1.0f) {
           throw new UnsupportedOperationException("You cannot set an index-time boost: norms are omitted for field '" + field.name() + "'");
         }
+        
+        // only bother checking offsets if something will consume them.
+        // TODO: after we fix analyzers, also check if termVectorOffsets will be indexed.
+        final boolean checkOffsets = fieldType.indexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+        int lastStartOffset = 0;
 
         if (i > 0) {
           fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);
@@ -134,6 +140,20 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
 
             if (posIncr == 0)
               fieldState.numOverlap++;
+            
+            if (checkOffsets) {
+              int startOffset = fieldState.offset + offsetAttribute.startOffset();
+              int endOffset = fieldState.offset + offsetAttribute.endOffset();
+              if (startOffset < 0 || endOffset < startOffset) {
+                throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
+                    + "startOffset=" + startOffset + ",endOffset=" + endOffset);
+              }
+              if (startOffset < lastStartOffset) {
+                throw new IllegalArgumentException("offsets must not go backwards startOffset=" 
+                     + startOffset + " is < lastStartOffset=" + lastStartOffset);
+              }
+              lastStartOffset = startOffset;
+            }
 
             boolean success = false;
             try {

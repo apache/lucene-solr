@@ -139,6 +139,7 @@ public class Token extends CharTermAttributeImpl
    *  @param start start offset in the source text
    *  @param end end offset in the source text */
   public Token(int start, int end) {
+    checkOffsets(start, end);
     startOffset = start;
     endOffset = end;
   }
@@ -149,6 +150,7 @@ public class Token extends CharTermAttributeImpl
    *  @param end end offset in the source text
    *  @param typ the lexical type of this Token */
   public Token(int start, int end, String typ) {
+    checkOffsets(start, end);
     startOffset = start;
     endOffset = end;
     type = typ;
@@ -162,6 +164,7 @@ public class Token extends CharTermAttributeImpl
    *  @param flags The bits to set for this token
    */
   public Token(int start, int end, int flags) {
+    checkOffsets(start, end);
     startOffset = start;
     endOffset = end;
     this.flags = flags;
@@ -177,6 +180,7 @@ public class Token extends CharTermAttributeImpl
    *  @param end end offset
    */
   public Token(String text, int start, int end) {
+    checkOffsets(start, end);
     append(text);
     startOffset = start;
     endOffset = end;
@@ -192,6 +196,7 @@ public class Token extends CharTermAttributeImpl
    *  @param typ token type
    */
   public Token(String text, int start, int end, String typ) {
+    checkOffsets(start, end);
     append(text);
     startOffset = start;
     endOffset = end;
@@ -209,6 +214,7 @@ public class Token extends CharTermAttributeImpl
    * @param flags token type bits
    */
   public Token(String text, int start, int end, int flags) {
+    checkOffsets(start, end);
     append(text);
     startOffset = start;
     endOffset = end;
@@ -226,6 +232,7 @@ public class Token extends CharTermAttributeImpl
    * @param end
    */
   public Token(char[] startTermBuffer, int termBufferOffset, int termBufferLength, int start, int end) {
+    checkOffsets(start, end);
     copyBuffer(startTermBuffer, termBufferOffset, termBufferLength);
     startOffset = start;
     endOffset = end;
@@ -295,12 +302,6 @@ public class Token extends CharTermAttributeImpl
     return startOffset;
   }
 
-  /** Set the starting offset.
-      @see #startOffset() */
-  public void setStartOffset(int offset) {
-    this.startOffset = offset;
-  }
-
   /** Returns this Token's ending offset, one greater than the position of the
     last character corresponding to this token in the source text. The length
     of the token in the source text is (endOffset - startOffset). */
@@ -308,15 +309,10 @@ public class Token extends CharTermAttributeImpl
     return endOffset;
   }
 
-  /** Set the ending offset.
-      @see #endOffset() */
-  public void setEndOffset(int offset) {
-    this.endOffset = offset;
-  }
-  
   /** Set the starting and ending offset.
   @see #startOffset() and #endOffset()*/
   public void setOffset(int startOffset, int endOffset) {
+    checkOffsets(startOffset, endOffset);
     this.startOffset = startOffset;
     this.endOffset = endOffset;
   }
@@ -449,11 +445,11 @@ public class Token extends CharTermAttributeImpl
 
   /** Shorthand for calling {@link #clear},
    *  {@link #copyBuffer(char[], int, int)},
-   *  {@link #setStartOffset},
-   *  {@link #setEndOffset},
+   *  {@link #setOffset},
    *  {@link #setType}
    *  @return this Token instance */
   public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
+    checkOffsets(newStartOffset, newEndOffset);
     clearNoTermBuffer();
     copyBuffer(newTermBuffer, newTermOffset, newTermLength);
     payload = null;
@@ -466,11 +462,11 @@ public class Token extends CharTermAttributeImpl
 
   /** Shorthand for calling {@link #clear},
    *  {@link #copyBuffer(char[], int, int)},
-   *  {@link #setStartOffset},
-   *  {@link #setEndOffset}
+   *  {@link #setOffset},
    *  {@link #setType} on Token.DEFAULT_TYPE
    *  @return this Token instance */
   public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
+    checkOffsets(newStartOffset, newEndOffset);
     clearNoTermBuffer();
     copyBuffer(newTermBuffer, newTermOffset, newTermLength);
     startOffset = newStartOffset;
@@ -481,11 +477,11 @@ public class Token extends CharTermAttributeImpl
 
   /** Shorthand for calling {@link #clear},
    *  {@link #append(CharSequence)},
-   *  {@link #setStartOffset},
-   *  {@link #setEndOffset}
+   *  {@link #setOffset},
    *  {@link #setType}
    *  @return this Token instance */
   public Token reinit(String newTerm, int newStartOffset, int newEndOffset, String newType) {
+    checkOffsets(newStartOffset, newEndOffset);
     clear();
     append(newTerm);
     startOffset = newStartOffset;
@@ -496,11 +492,11 @@ public class Token extends CharTermAttributeImpl
 
   /** Shorthand for calling {@link #clear},
    *  {@link #append(CharSequence, int, int)},
-   *  {@link #setStartOffset},
-   *  {@link #setEndOffset}
+   *  {@link #setOffset},
    *  {@link #setType}
    *  @return this Token instance */
   public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
+    checkOffsets(newStartOffset, newEndOffset);
     clear();
     append(newTerm, newTermOffset, newTermOffset + newTermLength);
     startOffset = newStartOffset;
@@ -511,11 +507,11 @@ public class Token extends CharTermAttributeImpl
 
   /** Shorthand for calling {@link #clear},
    *  {@link #append(CharSequence)},
-   *  {@link #setStartOffset},
-   *  {@link #setEndOffset}
+   *  {@link #setOffset},
    *  {@link #setType} on Token.DEFAULT_TYPE
    *  @return this Token instance */
   public Token reinit(String newTerm, int newStartOffset, int newEndOffset) {
+    checkOffsets(newStartOffset, newEndOffset);
     clear();
     append(newTerm);
     startOffset = newStartOffset;
@@ -526,11 +522,11 @@ public class Token extends CharTermAttributeImpl
 
   /** Shorthand for calling {@link #clear},
    *  {@link #append(CharSequence, int, int)},
-   *  {@link #setStartOffset},
-   *  {@link #setEndOffset}
+   *  {@link #setOffset},
    *  {@link #setType} on Token.DEFAULT_TYPE
    *  @return this Token instance */
   public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
+    checkOffsets(newStartOffset, newEndOffset);
     clear();
     append(newTerm, newTermOffset, newTermOffset + newTermLength);
     startOffset = newStartOffset;
@@ -613,6 +609,13 @@ public class Token extends CharTermAttributeImpl
     reflector.reflect(PayloadAttribute.class, "payload", payload);
     reflector.reflect(FlagsAttribute.class, "flags", flags);
     reflector.reflect(TypeAttribute.class, "type", type);
+  }
+  
+  private void checkOffsets(int startOffset, int endOffset) {
+    if (startOffset < 0 || endOffset < startOffset) {
+      throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
+          + "startOffset=" + startOffset + ",endOffset=" + endOffset);
+    }
   }
 
   /** Convenience factory that returns <code>Token</code> as implementation for the basic

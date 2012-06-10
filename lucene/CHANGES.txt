@@ -396,6 +396,8 @@ Changes in Runtime Behavior
 * LUCENE-4127: IndexWriter will now throw IllegalArgumentException if
   the first token of an indexed field has 0 positionIncrement
   (previously it silently corrected it to 1, possibly masking bugs).
+  OffsetAttributeImpl will throw IllegalArgumentException if startOffset
+  is less than endOffset, or if offsets are negative.
   (Robert Muir, Mike McCandless)
 
 API Changes

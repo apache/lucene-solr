@@ -186,8 +186,8 @@ public class SpellingQueryConverter extends QueryConverter  {
     while (stream.incrementToken()) {      
       Token token = new Token();
       token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-      token.setStartOffset(offset + offsetAtt.startOffset());
-      token.setEndOffset(offset + offsetAtt.endOffset());
+      token.setOffset(offset + offsetAtt.startOffset(), 
+                      offset + offsetAtt.endOffset());
       token.setFlags(flagsAttValue); //overwriting any flags already set...
       token.setType(typeAtt.type());
       token.setPayload(payloadAtt.getPayload());
