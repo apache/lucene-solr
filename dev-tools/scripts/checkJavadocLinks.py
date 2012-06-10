@@ -171,7 +171,9 @@ def checkAll(dirName):
         elif link.find('lucene.apache.org/solr/features.html') != -1:
           # OK
           pass
-        elif link.find('svn.apache.org') != -1 or link.find('lucene.apache.org') != -1:
+        elif (link.find('svn.apache.org') != -1
+              or link.find('lucene.apache.org') != -1)\
+             and os.path.basename(fullPath) != 'Changes.html':
           if not printed:
             printed = True
             print
