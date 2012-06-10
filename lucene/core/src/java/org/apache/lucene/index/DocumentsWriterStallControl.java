@@ -39,7 +39,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
 final class DocumentsWriterStallControl {
   @SuppressWarnings("serial")
   private static final class Sync extends AbstractQueuedSynchronizer {
-    volatile boolean hasBlockedThreads = false; // only with assert
 
     Sync() {
       setState(0);
@@ -67,15 +66,10 @@ final class DocumentsWriterStallControl {
 
     @Override
     public int tryAcquireShared(int acquires) {
-      assert maybeSetHasBlocked(getState());
       return getState() == 0 ? 1 : -1;
     }
 
-    // only used for testing
-    private boolean maybeSetHasBlocked(int state) {
-      hasBlockedThreads |= getState() != 0;
-      return true;
-    }
+   
 
     @Override
     public boolean tryReleaseShared(int newState) {
@@ -130,12 +124,20 @@ final class DocumentsWriterStallControl {
   }
   
   boolean hasBlocked() { // for tests
-    return sync.hasBlockedThreads;
+    return sync.hasQueuedThreads();
   }
   
   static interface MemoryController {
     long netBytes();
     long flushBytes();
     long stallLimitBytes();
+  }
+
+  public boolean isHealthy() {
+    return sync.isHealthy();
+  }
+  
+  public boolean isThreadQueued(Thread t) {
+    return sync.isQueued(t);
   }
 }
