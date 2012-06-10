@@ -156,7 +156,7 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     $item .= "\n";
 
     while ($line_num < $#lines
-           and ($line = $lines[++$line_num]) !~ /^(?:\S|\s*\Q$type\E)/) {
+           and ($line = $lines[++$line_num]) !~ /^(?:\S|\s*\Q$type\E\s+)/) {
       $line =~ s/^\s{$leading_ws_width}//; # Trim leading whitespace
       $line =~ s/\s+$//;                   # Trim trailing whitespace
       $item .= "$line\n";
