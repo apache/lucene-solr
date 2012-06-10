@@ -23,8 +23,7 @@ import java.text.NumberFormat;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -104,15 +103,15 @@ public class TestPKIndexSplitter extends LuceneTestCase {
     StringBuilder sb = new StringBuilder();
     Document doc = new Document();
     String id = format.format(n);
-    doc.add(newField("id", id, StringField.TYPE_STORED));
-    doc.add(newField("indexname", indexName, StringField.TYPE_STORED));
+    doc.add(newStringField("id", id, Field.Store.YES));
+    doc.add(newStringField("indexname", indexName, Field.Store.YES));
     sb.append("a");
     sb.append(n);
-    doc.add(newField("field1", sb.toString(), TextField.TYPE_STORED));
+    doc.add(newTextField("field1", sb.toString(), Field.Store.YES));
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {
-      doc.add(newField("field" + (i + 1), sb.toString(), TextField.TYPE_STORED));
+      doc.add(newTextField("field" + (i + 1), sb.toString(), Field.Store.YES));
     }
     return doc;
   }

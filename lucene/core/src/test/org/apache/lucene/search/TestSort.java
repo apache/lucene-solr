@@ -30,7 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -153,17 +152,17 @@ public class TestSort extends LuceneTestCase {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
         Document doc = new Document();
         doc.add (new Field ("tracer", data[i][0], ft1));
-        doc.add (new TextField ("contents", data[i][1]));
+        doc.add (new TextField ("contents", data[i][1], Field.Store.NO));
         if (data[i][2] != null) {
-          doc.add(new StringField ("int", data[i][2]));
+          doc.add(new StringField ("int", data[i][2], Field.Store.NO));
           doc.add(new PackedLongDocValuesField("int", Integer.parseInt(data[i][2])));
         }
         if (data[i][3] != null) {
-          doc.add(new StringField ("float", data[i][3]));
+          doc.add(new StringField ("float", data[i][3], Field.Store.NO));
           doc.add(new FloatDocValuesField("float", Float.parseFloat(data[i][3])));
         }
         if (data[i][4] != null) {
-          doc.add(new StringField ("string", data[i][4]));
+          doc.add(new StringField ("string", data[i][4], Field.Store.NO));
           switch(stringDVType) {
             case BYTES_FIXED_SORTED:
               doc.add(new SortedBytesDocValuesField("string", new BytesRef(data[i][4]), true));
@@ -187,16 +186,16 @@ public class TestSort extends LuceneTestCase {
               throw new IllegalStateException("unknown type " + stringDVType);
           }
         }
-        if (data[i][5] != null) doc.add (new StringField ("custom",   data[i][5]));
-        if (data[i][6] != null) doc.add (new StringField ("i18n",     data[i][6]));
-        if (data[i][7] != null) doc.add (new StringField ("long",     data[i][7]));
+        if (data[i][5] != null) doc.add (new StringField ("custom",   data[i][5], Field.Store.NO));
+        if (data[i][6] != null) doc.add (new StringField ("i18n",     data[i][6], Field.Store.NO));
+        if (data[i][7] != null) doc.add (new StringField ("long",     data[i][7], Field.Store.NO));
         if (data[i][8] != null) {
-          doc.add(new StringField ("double", data[i][8]));
+          doc.add(new StringField ("double", data[i][8], Field.Store.NO));
           doc.add(new DoubleDocValuesField("double", Double.parseDouble(data[i][8])));
         }
-        if (data[i][9] != null) doc.add (new StringField ("short",     data[i][9]));
-        if (data[i][10] != null) doc.add (new StringField ("byte",     data[i][10]));
-        if (data[i][11] != null) doc.add (new StringField ("parser",     data[i][11]));
+        if (data[i][9] != null) doc.add (new StringField ("short",     data[i][9], Field.Store.NO));
+        if (data[i][10] != null) doc.add (new StringField ("byte",     data[i][10], Field.Store.NO));
+        if (data[i][11] != null) doc.add (new StringField ("parser",     data[i][11], Field.Store.NO));
 
         for(IndexableField f : doc.getFields()) {
           if (!f.fieldType().omitNorms()) {
@@ -235,10 +234,10 @@ public class TestSort extends LuceneTestCase {
       String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);
       doc.add (new Field ("tracer", num, onlyStored));
       //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
-      doc.add(new StringField("string", num));
+      doc.add(new StringField("string", num, Field.Store.NO));
       doc.add(new SortedBytesDocValuesField("string", new BytesRef(num)));
       String num2 = getRandomCharString(getRandomNumber(1, 4), 48, 50);
-      doc.add(new StringField ("string2", num2));
+      doc.add(new StringField ("string2", num2, Field.Store.NO));
       doc.add(new SortedBytesDocValuesField("string2", new BytesRef(num2)));
       doc.add (new Field ("tracer2", num2, onlyStored));
       for(IndexableField f2 : doc.getFields()) {
@@ -250,10 +249,10 @@ public class TestSort extends LuceneTestCase {
       String numFixed = getRandomCharString(fixedLen, 48, 52);
       doc.add (new Field ("fixed_tracer", numFixed, onlyStored));
       //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
-      doc.add(new StringField("string_fixed", numFixed));
+      doc.add(new StringField("string_fixed", numFixed, Field.Store.NO));
       doc.add(new SortedBytesDocValuesField("string_fixed", new BytesRef(numFixed), true));
       String num2Fixed = getRandomCharString(fixedLen2, 48, 52);
-      doc.add(new StringField ("string2_fixed", num2Fixed));
+      doc.add(new StringField ("string2_fixed", num2Fixed, Field.Store.NO));
       doc.add(new SortedBytesDocValuesField("string2_fixed", new BytesRef(num2Fixed), true));
       doc.add (new Field ("tracer2_fixed", num2Fixed, onlyStored));
 
@@ -1246,12 +1245,12 @@ public class TestSort extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
                         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
-    doc.add(newField("f", "", StringField.TYPE_UNSTORED));
-    doc.add(newField("t", "1", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("f", "", Field.Store.NO));
+    doc.add(newStringField("t", "1", Field.Store.NO));
     w.addDocument(doc);
     w.commit();
     doc = new Document();
-    doc.add(newField("t", "1", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("t", "1", Field.Store.NO));
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w, true);
@@ -1272,8 +1271,8 @@ public class TestSort extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     for (int i=0; i<5; i++) {
         Document doc = new Document();
-        doc.add (new StringField ("string", "a"+i));
-        doc.add (new StringField ("string", "b"+i));
+        doc.add (new StringField ("string", "a"+i, Field.Store.NO));
+        doc.add (new StringField ("string", "b"+i, Field.Store.NO));
         writer.addDocument (doc);
     }
     writer.forceMerge(1); // enforce one segment to have a higher unique term count in all cases
@@ -1294,8 +1293,8 @@ public class TestSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     for (int i=0; i<5; i++) {
       Document doc = new Document();
-      doc.add (new StringField ("string", "a"+i));
-      doc.add (new StringField ("string", "b"+i));
+      doc.add (new StringField ("string", "a"+i, Field.Store.NO));
+      doc.add (new StringField ("string", "b"+i, Field.Store.NO));
       writer.addDocument (doc);
     }
     IndexReader reader = writer.getReader();
@@ -1378,7 +1377,7 @@ public class TestSort extends LuceneTestCase {
       
       final Document doc = new Document();
       doc.add(new SortedBytesDocValuesField("stringdv", br));
-      doc.add(newField("string", s, StringField.TYPE_UNSTORED));
+      doc.add(newStringField("string", s, Field.Store.NO));
       doc.add(new PackedLongDocValuesField("id", numDocs));
       docValues.add(br);
       writer.addDocument(doc);
@@ -1467,13 +1466,13 @@ public class TestSort extends LuceneTestCase {
     for(int seg=0;seg<2;seg++) {
       for(int docIDX=0;docIDX<10;docIDX++) {
         Document doc = new Document();
-        doc.add(newField("id", ""+docIDX, StringField.TYPE_STORED));
+        doc.add(newStringField("id", ""+docIDX, Field.Store.YES));
         StringBuilder sb = new StringBuilder();
         for(int i=0;i<id;i++) {
           sb.append(' ');
           sb.append("text");
         }
-        doc.add(newField("body", sb.toString(), TextField.TYPE_UNSTORED));
+        doc.add(newTextField("body", sb.toString(), Field.Store.NO));
         w.addDocument(doc);
         id++;
       }

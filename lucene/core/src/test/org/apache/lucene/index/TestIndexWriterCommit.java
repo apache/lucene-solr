@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -340,7 +339,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
             try {
               final Document doc = new Document();
               DirectoryReader r = DirectoryReader.open(dir);
-              Field f = newField("f", "", StringField.TYPE_UNSTORED);
+              Field f = newStringField("f", "", Field.Store.NO);
               doc.add(f);
               int count = 0;
               do {

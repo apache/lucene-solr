@@ -25,11 +25,11 @@ import java.io.StringWriter;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -182,7 +182,7 @@ public class TestDoc extends LuceneTestCase {
    {
       File file = new File(workDir, fileName);
       Document doc = new Document();
-      doc.add(new TextField("contents", new FileReader(file)));
+      doc.add(new TextField("contents", new FileReader(file), Field.Store.NO));
       writer.addDocument(doc);
       writer.commit();
       return writer.newestSegment();

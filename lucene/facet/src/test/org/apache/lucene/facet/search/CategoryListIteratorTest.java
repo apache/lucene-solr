@@ -12,6 +12,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -152,7 +153,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
         dts.setIdx(i);
         doc.add(new TextField("f", dts)); // only doc 0 has payloads!
       } else {
-        doc.add(new TextField("f", "1"));
+        doc.add(new TextField("f", "1", Field.Store.NO));
       }
       writer.addDocument(doc);
       writer.commit();

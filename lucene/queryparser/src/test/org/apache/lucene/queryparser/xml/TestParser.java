@@ -22,8 +22,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -69,9 +69,9 @@ public class TestParser extends LuceneTestCase {
       String date = line.substring(0, endOfDate).trim();
       String content = line.substring(endOfDate).trim();
       Document doc = new Document();
-      doc.add(newField("date", date, TextField.TYPE_STORED));
-      doc.add(newField("contents", content, TextField.TYPE_STORED));
-      doc.add(new IntField("date2", Integer.valueOf(date)));
+      doc.add(newTextField("date", date, Field.Store.YES));
+      doc.add(newTextField("contents", content, Field.Store.YES));
+      doc.add(new IntField("date2", Integer.valueOf(date), Field.Store.NO));
       writer.addDocument(doc);
       line = d.readLine();
     }

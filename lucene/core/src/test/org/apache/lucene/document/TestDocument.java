@@ -22,16 +22,12 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -134,7 +130,7 @@ public class TestDocument extends LuceneTestCase {
     FieldType ft = new FieldType();
     ft.setStored(true);
     new Field("name", "value", ft); // okay
-    new StringField("name", "value"); // okay
+    new StringField("name", "value", Field.Store.NO); // okay
     try {
       new Field("name", "value", new FieldType());
       fail();
@@ -206,16 +202,16 @@ public class TestDocument extends LuceneTestCase {
     Document doc = new Document();
     FieldType stored = new FieldType();
     stored.setStored(true);
-    doc.add(new Field("keyword", "test1", StringField.TYPE_STORED));
-    doc.add(new Field("keyword", "test2", StringField.TYPE_STORED));
-    doc.add(new Field("text", "test1", TextField.TYPE_STORED));
-    doc.add(new Field("text", "test2", TextField.TYPE_STORED));
+    doc.add(new StringField("keyword", "test1", Field.Store.YES));
+    doc.add(new StringField("keyword", "test2", Field.Store.YES));
+    doc.add(new TextField("text", "test1", Field.Store.YES));
+    doc.add(new TextField("text", "test2", Field.Store.YES));
     doc.add(new Field("unindexed", "test1", stored));
     doc.add(new Field("unindexed", "test2", stored));
     doc
-        .add(new TextField("unstored", "test1"));
+        .add(new TextField("unstored", "test1", Field.Store.NO));
     doc
-        .add(new TextField("unstored", "test2"));
+        .add(new TextField("unstored", "test2", Field.Store.NO));
     return doc;
   }
   
@@ -250,10 +246,10 @@ public class TestDocument extends LuceneTestCase {
   
   public void testFieldSetValue() throws Exception {
     
-    Field field = new Field("id", "id1", StringField.TYPE_STORED);
+    Field field = new StringField("id", "id1", Field.Store.YES);
     Document doc = new Document();
     doc.add(field);
-    doc.add(new Field("keyword", "test", StringField.TYPE_STORED));
+    doc.add(new StringField("keyword", "test", Field.Store.YES));
     
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -302,14 +298,14 @@ public class TestDocument extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iw = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new Field("field1", "sometext", StringField.TYPE_STORED));
-    doc.add(new TextField("field2", "sometext"));
-    doc.add(new StringField("foo", "bar"));
+    doc.add(new StringField("field1", "sometext", Field.Store.YES));
+    doc.add(new TextField("field2", "sometext", Field.Store.NO));
+    doc.add(new StringField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc); // add an 'ok' document
     try {
       doc = new Document();
       // try to boost with norms omitted
-      StringField field = new StringField("foo", "baz");
+      StringField field = new StringField("foo", "baz", Field.Store.NO);
       field.setBoost(5.0f);
       doc.add(field);
       iw.addDocument(doc);

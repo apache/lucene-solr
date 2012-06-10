@@ -93,8 +93,8 @@ public class AssociationIndexer {
       // create a plain Lucene document and add some regular Lucene fields
       // to it
       Document doc = new Document();
-      doc.add(new Field(SimpleUtils.TITLE, SimpleUtils.docTitles[docNum], TextField.TYPE_STORED));
-      doc.add(new TextField(SimpleUtils.TEXT, SimpleUtils.docTexts[docNum]));
+      doc.add(new TextField(SimpleUtils.TITLE, SimpleUtils.docTitles[docNum], Field.Store.YES));
+      doc.add(new TextField(SimpleUtils.TEXT, SimpleUtils.docTexts[docNum], Field.Store.NO));
 
       // invoke the category document builder for adding categories to the
       // document and,

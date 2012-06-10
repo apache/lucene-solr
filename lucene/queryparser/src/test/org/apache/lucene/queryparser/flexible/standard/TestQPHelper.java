@@ -19,7 +19,6 @@ package org.apache.lucene.queryparser.flexible.standard;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -35,7 +34,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -1289,7 +1288,7 @@ public class TestQPHelper extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new CannedAnalyzer()));
     Document doc = new Document();
-    doc.add(newField("field", "", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);

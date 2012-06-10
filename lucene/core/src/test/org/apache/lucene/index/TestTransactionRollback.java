@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 
@@ -131,7 +131,7 @@ public class TestTransactionRollback extends LuceneTestCase {
 
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
       Document doc=new Document();
-      doc.add(newField(FIELD_RECORD_ID,""+currentRecordId,TextField.TYPE_STORED));
+      doc.add(newTextField(FIELD_RECORD_ID, ""+currentRecordId, Field.Store.YES));
       w.addDocument(doc);
 			
       if (currentRecordId%10 == 0) {

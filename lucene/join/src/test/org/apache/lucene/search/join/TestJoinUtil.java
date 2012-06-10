@@ -67,45 +67,45 @@ public class TestJoinUtil extends LuceneTestCase {
 
     // 0
     Document doc = new Document();
-    doc.add(new Field("description", "random text", TextField.TYPE_UNSTORED));
-    doc.add(new Field("name", "name1", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "1", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("description", "random text", Field.Store.NO));
+    doc.add(new TextField("name", "name1", Field.Store.NO));
+    doc.add(new TextField(idField, "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    doc.add(new Field("price", "10.0", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "2", TextField.TYPE_UNSTORED));
-    doc.add(new Field(toField, "1", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("price", "10.0", Field.Store.NO));
+    doc.add(new TextField(idField, "2", Field.Store.NO));
+    doc.add(new TextField(toField, "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    doc.add(new Field("price", "20.0", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "3", TextField.TYPE_UNSTORED));
-    doc.add(new Field(toField, "1", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("price", "20.0", Field.Store.NO));
+    doc.add(new TextField(idField, "3", Field.Store.NO));
+    doc.add(new TextField(toField, "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 3
     doc = new Document();
-    doc.add(new Field("description", "more random text", TextField.TYPE_UNSTORED));
-    doc.add(new Field("name", "name2", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "4", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("description", "more random text", Field.Store.NO));
+    doc.add(new TextField("name", "name2", Field.Store.NO));
+    doc.add(new TextField(idField, "4", Field.Store.NO));
     w.addDocument(doc);
     w.commit();
 
     // 4
     doc = new Document();
-    doc.add(new Field("price", "10.0", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "5", TextField.TYPE_UNSTORED));
-    doc.add(new Field(toField, "4", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("price", "10.0", Field.Store.NO));
+    doc.add(new TextField(idField, "5", Field.Store.NO));
+    doc.add(new TextField(toField, "4", Field.Store.NO));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    doc.add(new Field("price", "20.0", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "6", TextField.TYPE_UNSTORED));
-    doc.add(new Field(toField, "4", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("price", "20.0", Field.Store.NO));
+    doc.add(new TextField(idField, "6", Field.Store.NO));
+    doc.add(new TextField(toField, "4", Field.Store.NO));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
@@ -149,45 +149,45 @@ public class TestJoinUtil extends LuceneTestCase {
 
     // 0
     Document doc = new Document();
-    doc.add(new Field("description", "A random movie", TextField.TYPE_UNSTORED));
-    doc.add(new Field("name", "Movie 1", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "1", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("description", "A random movie", Field.Store.NO));
+    doc.add(new TextField("name", "Movie 1", Field.Store.NO));
+    doc.add(new TextField(idField, "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    doc.add(new Field("subtitle", "The first subtitle of this movie", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "2", TextField.TYPE_UNSTORED));
-    doc.add(new Field(toField, "1", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("subtitle", "The first subtitle of this movie", Field.Store.NO));
+    doc.add(new TextField(idField, "2", Field.Store.NO));
+    doc.add(new TextField(toField, "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    doc.add(new Field("subtitle", "random subtitle; random event movie", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "3", TextField.TYPE_UNSTORED));
-    doc.add(new Field(toField, "1", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("subtitle", "random subtitle; random event movie", Field.Store.NO));
+    doc.add(new TextField(idField, "3", Field.Store.NO));
+    doc.add(new TextField(toField, "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 3
     doc = new Document();
-    doc.add(new Field("description", "A second random movie", TextField.TYPE_UNSTORED));
-    doc.add(new Field("name", "Movie 2", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "4", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("description", "A second random movie", Field.Store.NO));
+    doc.add(new TextField("name", "Movie 2", Field.Store.NO));
+    doc.add(new TextField(idField, "4", Field.Store.NO));
     w.addDocument(doc);
     w.commit();
 
     // 4
     doc = new Document();
-    doc.add(new Field("subtitle", "a very random event happened during christmas night", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "5", TextField.TYPE_UNSTORED));
-    doc.add(new Field(toField, "4", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("subtitle", "a very random event happened during christmas night", Field.Store.NO));
+    doc.add(new TextField(idField, "5", Field.Store.NO));
+    doc.add(new TextField(toField, "4", Field.Store.NO));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    doc.add(new Field("subtitle", "movie end movie test 123 test 123 random", TextField.TYPE_UNSTORED));
-    doc.add(new Field(idField, "6", TextField.TYPE_UNSTORED));
-    doc.add(new Field(toField, "4", TextField.TYPE_UNSTORED));
+    doc.add(new TextField("subtitle", "movie end movie test 123 test 123 random", Field.Store.NO));
+    doc.add(new TextField(idField, "6", Field.Store.NO));
+    doc.add(new TextField(toField, "4", Field.Store.NO));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
@@ -381,8 +381,8 @@ public class TestJoinUtil extends LuceneTestCase {
       int randomI = random().nextInt(context.randomUniqueValues.length);
       String value = context.randomUniqueValues[randomI];
       Document document = new Document();
-      document.add(newField(random(), "id", id, TextField.TYPE_UNSTORED));
-      document.add(newField(random(), "value", value, TextField.TYPE_UNSTORED));
+      document.add(newTextField(random(), "id", id, Field.Store.NO));
+      document.add(newTextField(random(), "value", value, Field.Store.NO));
 
       boolean from = context.randomFrom[randomI];
       int numberOfLinkValues = multipleValuesPerDocument ? 2 + random().nextInt(10) : 1;
@@ -400,7 +400,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
           context.fromDocuments.get(linkValue).add(docs[i]);
           context.randomValueFromDocs.get(value).add(docs[i]);
-          document.add(newField(random(), "from", linkValue, TextField.TYPE_UNSTORED));
+          document.add(newTextField(random(), "from", linkValue, Field.Store.NO));
         } else {
           if (!context.toDocuments.containsKey(linkValue)) {
             context.toDocuments.put(linkValue, new ArrayList<RandomDoc>());
@@ -411,7 +411,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
           context.toDocuments.get(linkValue).add(docs[i]);
           context.randomValueToDocs.get(value).add(docs[i]);
-          document.add(newField(random(), "to", linkValue, TextField.TYPE_UNSTORED));
+          document.add(newTextField(random(), "to", linkValue, Field.Store.NO));
         }
       }
 

@@ -22,7 +22,7 @@ import java.util.HashSet;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -120,8 +120,8 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     for (int i = 0; i < docsContent.length; i++) {
       Document doc = new Document();
-      doc.add(newField("name", docsContent[i].name, TextField.TYPE_STORED));
-      doc.add(newField("id", docsContent[i].id, TextField.TYPE_STORED));
+      doc.add(newTextField("name", docsContent[i].name, Field.Store.YES));
+      doc.add(newTextField("id", docsContent[i].id, Field.Store.YES));
       w.addDocument(doc);
     }
     w.close();

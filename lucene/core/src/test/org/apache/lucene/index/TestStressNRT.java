@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -232,7 +232,7 @@ public class TestStressNRT extends LuceneTestCase {
                     // add tombstone first
                     if (tombstones) {
                       Document d = new Document();
-                      d.add(newField("id", "-"+Integer.toString(id), StringField.TYPE_STORED));
+                      d.add(newStringField("id", "-"+Integer.toString(id), Field.Store.YES));
                       d.add(newField(field, Long.toString(nextVal), storedOnlyType));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                     }
@@ -248,7 +248,7 @@ public class TestStressNRT extends LuceneTestCase {
                     // add tombstone first
                     if (tombstones) {
                       Document d = new Document();
-                      d.add(newField("id", "-"+Integer.toString(id), StringField.TYPE_STORED));
+                      d.add(newStringField("id", "-"+Integer.toString(id), Field.Store.YES));
                       d.add(newField(field, Long.toString(nextVal), storedOnlyType));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                     }
@@ -261,7 +261,7 @@ public class TestStressNRT extends LuceneTestCase {
                   } else {
                     // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
                     Document d = new Document();
-                    d.add(newField("id", Integer.toString(id), StringField.TYPE_STORED));
+                    d.add(newStringField("id", Integer.toString(id), Field.Store.YES));
                     d.add(newField(field, Long.toString(nextVal), storedOnlyType));
                     if (VERBOSE) {
                       System.out.println("TEST: " + Thread.currentThread().getName() + ": u id:" + id + " val=" + nextVal);

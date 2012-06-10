@@ -76,8 +76,8 @@ public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends Spati
     while (sampleData.hasNext()) {
       SampleData data = sampleData.next();
       Document document = new Document();
-      document.add(new Field("id", data.id, StringField.TYPE_STORED));
-      document.add(new Field("name", data.name, StringField.TYPE_STORED));
+      document.add(new StringField("id", data.id, Field.Store.YES));
+      document.add(new StringField("name", data.name, Field.Store.YES));
       Shape shape = ctx.readShape(data.shape);
       for (IndexableField f : strategy.createFields(fieldInfo, shape, true, storeShape)) {
         if( f != null ) { // null if incompatibleGeometry && ignore

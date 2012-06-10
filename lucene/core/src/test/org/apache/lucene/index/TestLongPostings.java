@@ -121,7 +121,7 @@ public class TestLongPostings extends LuceneTestCase {
 	  for(int idx=0;idx<NUM_DOCS;idx++) {
 	    final Document doc = new Document();
 	    String s = isS1.get(idx) ? s1 : s2;
-	    final Field f = newField("field", s, TextField.TYPE_UNSTORED);
+	    final Field f = newTextField("field", s, Field.Store.NO);
 	    final int count = _TestUtil.nextInt(random(), 1, 4);
 	    for(int ct=0;ct<count;ct++) {
 	      doc.add(f);
@@ -307,7 +307,7 @@ public class TestLongPostings extends LuceneTestCase {
       iwc.setMaxBufferedDocs(-1);
       final RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
 
-      FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
       ft.setIndexOptions(options);
       for(int idx=0;idx<NUM_DOCS;idx++) {
         final Document doc = new Document();

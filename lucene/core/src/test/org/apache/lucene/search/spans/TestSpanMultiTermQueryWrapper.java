@@ -19,7 +19,6 @@ package org.apache.lucene.search.spans;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -43,7 +42,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
-    Field field = newField("field", "", TextField.TYPE_UNSTORED);
+    Field field = newTextField("field", "", Field.Store.NO);
     doc.add(field);
     
     field.setStringValue("quick brown fox");

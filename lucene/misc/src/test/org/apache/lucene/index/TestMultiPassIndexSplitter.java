@@ -18,8 +18,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -37,8 +36,8 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
       doc = new Document();
-      doc.add(newField("id", i + "", StringField.TYPE_STORED));
-      doc.add(newField("f", i + " " + i, TextField.TYPE_STORED));
+      doc.add(newStringField("id", i + "", Field.Store.YES));
+      doc.add(newTextField("f", i + " " + i, Field.Store.YES));
       w.addDocument(doc);
       if (i%3==0) w.commit();
     }

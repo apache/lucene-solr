@@ -38,17 +38,17 @@ public class TestBlockJoin extends LuceneTestCase {
   // One resume...
   private Document makeResume(String name, String country) {
     Document resume = new Document();
-    resume.add(newField("docType", "resume", StringField.TYPE_UNSTORED));
-    resume.add(newField("name", name, StringField.TYPE_STORED));
-    resume.add(newField("country", country, StringField.TYPE_UNSTORED));
+    resume.add(newStringField("docType", "resume", Field.Store.NO));
+    resume.add(newStringField("name", name, Field.Store.YES));
+    resume.add(newStringField("country", country, Field.Store.NO));
     return resume;
   }
 
   // ... has multiple jobs
   private Document makeJob(String skill, int year) {
     Document job = new Document();
-    job.add(newField("skill", skill, StringField.TYPE_STORED));
-    job.add(new IntField("year", year));
+    job.add(newStringField("skill", skill, Field.Store.YES));
+    job.add(new IntField("year", year, Field.Store.NO));
     job.add(new StoredField("year", year));
     return job;
   }
@@ -56,8 +56,8 @@ public class TestBlockJoin extends LuceneTestCase {
   // ... has multiple qualifications
   private Document makeQualification(String qualification, int year) {
     Document job = new Document();
-    job.add(newField("qualification", qualification, StringField.TYPE_STORED));
-    job.add(new IntField("year", year));
+    job.add(newStringField("qualification", qualification, Field.Store.YES));
+    job.add(new IntField("year", year, Field.Store.NO));
     return job;
   }
 
@@ -341,23 +341,21 @@ public class TestBlockJoin extends LuceneTestCase {
     for(int parentDocID=0;parentDocID<numParentDocs;parentDocID++) {
       Document parentDoc = new Document();
       Document parentJoinDoc = new Document();
-      Field id = newField("parentID", ""+parentDocID, StringField.TYPE_STORED);
+      Field id = newStringField("parentID", ""+parentDocID, Field.Store.YES);
       parentDoc.add(id);
       parentJoinDoc.add(id);
-      parentJoinDoc.add(newField("isParent", "x", StringField.TYPE_UNSTORED));
+      parentJoinDoc.add(newStringField("isParent", "x", Field.Store.NO));
       for(int field=0;field<parentFields.length;field++) {
         if (random().nextDouble() < 0.9) {
-          Field f = newField("parent" + field,
-                             parentFields[field][random().nextInt(parentFields[field].length)],
-                             StringField.TYPE_UNSTORED);
+          Field f = newStringField("parent" + field, parentFields[field][random().nextInt(parentFields[field].length)], Field.Store.NO);
           parentDoc.add(f);
           parentJoinDoc.add(f);
         }
       }
 
       if (doDeletes) {
-        parentDoc.add(newField("blockID", ""+parentDocID, StringField.TYPE_UNSTORED));
-        parentJoinDoc.add(newField("blockID", ""+parentDocID, StringField.TYPE_UNSTORED));
+        parentDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
+        parentJoinDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
       }
 
       final List<Document> joinDocs = new ArrayList<Document>();
@@ -381,15 +379,13 @@ public class TestBlockJoin extends LuceneTestCase {
         Document joinChildDoc = new Document();
         joinDocs.add(joinChildDoc);
 
-        Field childID = newField("childID", ""+childDocID, StringField.TYPE_STORED);
+        Field childID = newStringField("childID", ""+childDocID, Field.Store.YES);
         childDoc.add(childID);
         joinChildDoc.add(childID);
 
         for(int childFieldID=0;childFieldID<childFields.length;childFieldID++) {
           if (random().nextDouble() < 0.9) {
-            Field f = newField("child" + childFieldID,
-                               childFields[childFieldID][random().nextInt(childFields[childFieldID].length)],
-                               StringField.TYPE_UNSTORED);
+            Field f = newStringField("child" + childFieldID, childFields[childFieldID][random().nextInt(childFields[childFieldID].length)], Field.Store.NO);
             childDoc.add(f);
             joinChildDoc.add(f);
           }
@@ -408,7 +404,7 @@ public class TestBlockJoin extends LuceneTestCase {
         }
 
         if (doDeletes) {
-          joinChildDoc.add(newField("blockID", ""+parentDocID, StringField.TYPE_UNSTORED));
+          joinChildDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
         }
 
         w.addDocument(childDoc);
@@ -942,9 +938,9 @@ public class TestBlockJoin extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document childDoc = new Document();
-    childDoc.add(newField("child", "1", StringField.TYPE_UNSTORED));
+    childDoc.add(newStringField("child", "1", Field.Store.NO));
     Document parentDoc = new Document();
-    parentDoc.add(newField("parent", "1", StringField.TYPE_UNSTORED));
+    parentDoc.add(newStringField("parent", "1", Field.Store.NO));
     w.addDocuments(Arrays.asList(childDoc, parentDoc));
     IndexReader r = w.getReader();
     w.close();
@@ -966,16 +962,16 @@ public class TestBlockJoin extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(new LogDocMergePolicy()));
     Document parentDoc = new Document();
-    parentDoc.add(newField("parent", "1", StringField.TYPE_UNSTORED));
-    parentDoc.add(newField("isparent", "yes", StringField.TYPE_UNSTORED));
+    parentDoc.add(newStringField("parent", "1", Field.Store.NO));
+    parentDoc.add(newStringField("isparent", "yes", Field.Store.NO));
     w.addDocuments(Arrays.asList(parentDoc));
 
     // Add another doc so scorer is not null
     parentDoc = new Document();
-    parentDoc.add(newField("parent", "2", StringField.TYPE_UNSTORED));
-    parentDoc.add(newField("isparent", "yes", StringField.TYPE_UNSTORED));
+    parentDoc.add(newStringField("parent", "2", Field.Store.NO));
+    parentDoc.add(newStringField("isparent", "yes", Field.Store.NO));
     Document childDoc = new Document();
-    childDoc.add(newField("child", "2", StringField.TYPE_UNSTORED));
+    childDoc.add(newStringField("child", "2", Field.Store.NO));
     w.addDocuments(Arrays.asList(childDoc, parentDoc));
 
     // Need single seg:

@@ -328,7 +328,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
     cps.add(cp);
     Document d = new Document();
     new CategoryDocumentBuilder(tw, iParams).setCategoryPaths(cps).build(d);
-    d.add(new Field("content", "alpha", TextField.TYPE_STORED));
+    d.add(new TextField("content", "alpha", Field.Store.YES));
     iw.addDocument(d);
   }
 

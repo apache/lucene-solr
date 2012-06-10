@@ -26,7 +26,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -280,7 +280,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     Directory dir = newDirectory();
     Document doc = new Document();
-    doc.add(newField("foo", "bar", TextField.TYPE_STORED));
+    doc.add(newTextField("foo", "bar", Store.YES));
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
     riw.addDocument(doc);
     riw.close();

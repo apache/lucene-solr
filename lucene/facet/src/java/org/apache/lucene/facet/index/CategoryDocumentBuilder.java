@@ -184,7 +184,7 @@ public class CategoryDocumentBuilder {
       // Finally creating a suitable field with stream and adding it to a
       // master field-list, used during the build process (see
       // super.build())
-      FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
       ft.setOmitNorms(true);
       fieldList.add(new Field(e.getKey(), stream, ft));
     }

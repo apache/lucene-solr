@@ -114,11 +114,11 @@ public class DocMaker implements Closeable {
         fields.put(BODY_FIELD, new Field(BODY_FIELD, "", bodyFt));
         fields.put(TITLE_FIELD, new Field(TITLE_FIELD, "", ft));
         fields.put(DATE_FIELD, new Field(DATE_FIELD, "", ft));
-        fields.put(ID_FIELD, new Field(ID_FIELD, "", StringField.TYPE_STORED));
+        fields.put(ID_FIELD, new StringField(ID_FIELD, "", Field.Store.YES));
         fields.put(NAME_FIELD, new Field(NAME_FIELD, "", ft));
 
-        numericFields.put(DATE_MSEC_FIELD, new LongField(DATE_MSEC_FIELD, 0L));
-        numericFields.put(TIME_SEC_FIELD, new IntField(TIME_SEC_FIELD, 0));
+        numericFields.put(DATE_MSEC_FIELD, new LongField(DATE_MSEC_FIELD, 0L, Field.Store.NO));
+        numericFields.put(TIME_SEC_FIELD, new IntField(TIME_SEC_FIELD, 0, Field.Store.NO));
         
         doc = new Document();
       } else {
@@ -157,16 +157,16 @@ public class DocMaker implements Closeable {
       if (f == null) {
         switch(type) {
         case INT:
-          f = new IntField(name, 0);
+          f = new IntField(name, 0, Field.Store.NO);
           break;
         case LONG:
-          f = new LongField(name, 0L);
+          f = new LongField(name, 0L, Field.Store.NO);
           break;
         case FLOAT:
-          f = new FloatField(name, 0.0F);
+          f = new FloatField(name, 0.0F, Field.Store.NO);
           break;
         case DOUBLE:
-          f = new DoubleField(name, 0.0);
+          f = new DoubleField(name, 0.0, Field.Store.NO);
           break;
         default:
           assert false;
@@ -432,7 +432,7 @@ public class DocMaker implements Closeable {
     boolean termVecPositions = config.get("doc.term.vector.positions", false);
     boolean termVecOffsets = config.get("doc.term.vector.offsets", false);
     
-    valType = new FieldType(TextField.TYPE_UNSTORED);
+    valType = new FieldType(TextField.TYPE_NOT_STORED);
     valType.setStored(stored);
     valType.setTokenized(tokenized);
     valType.setOmitNorms(!norms);
@@ -441,7 +441,7 @@ public class DocMaker implements Closeable {
     valType.setStoreTermVectorOffsets(termVecOffsets);
     valType.freeze();
 
-    bodyValType = new FieldType(TextField.TYPE_UNSTORED);
+    bodyValType = new FieldType(TextField.TYPE_NOT_STORED);
     bodyValType.setStored(bodyStored);
     bodyValType.setTokenized(bodyTokenized);
     bodyValType.setOmitNorms(!bodyNorms);

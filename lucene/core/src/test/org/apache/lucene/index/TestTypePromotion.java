@@ -233,7 +233,7 @@ public class TestTypePromotion extends LuceneTestCase {
 
     for (int i = offset; i < offset + num; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", i + "", TextField.TYPE_STORED));
+      doc.add(new TextField("id", i + "", Field.Store.YES));
       sourceTypes[i] = valueType;
       switch (valueType) {
       case VAR_INTS:

@@ -33,7 +33,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -1622,7 +1621,7 @@ public class TestFSTs extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(random(), dir,
                                                   newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
       Document doc = new Document();
-      Field idField = newField("id", "", StringField.TYPE_UNSTORED);
+      Field idField = newStringField("id", "", Field.Store.NO);
       doc.add(idField);
       
       final int NUM_IDS = atLeast(200);
@@ -1757,7 +1756,7 @@ public class TestFSTs extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir,
                                                 newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
     Document doc = new Document();
-    Field f = newField("field", "", StringField.TYPE_UNSTORED);
+    Field f = newStringField("field", "", Field.Store.NO);
     doc.add(f);
       
     final int NUM_TERMS = (int) (1000*RANDOM_MULTIPLIER * (1+random().nextDouble()));

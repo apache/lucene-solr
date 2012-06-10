@@ -17,15 +17,13 @@ package org.apache.lucene.queryparser.flexible.standard;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -322,7 +320,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     Directory ramDir = newDirectory();
     IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    doc.add(newField("body", "blah the footest blah", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("body", "blah the footest blah", Field.Store.NO));
     iw.addDocument(doc);
     iw.close();
 

@@ -23,8 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -60,8 +59,8 @@ public class TestNeverDelete extends LuceneTestCase {
               int docCount = 0;
               while (System.currentTimeMillis() < stopTime) {
                 final Document doc = new Document();
-                doc.add(newField("dc", ""+docCount, StringField.TYPE_STORED));
-                doc.add(newField("field", "here is some text", TextField.TYPE_STORED));
+                doc.add(newStringField("dc", ""+docCount, Field.Store.YES));
+                doc.add(newTextField("field", "here is some text", Field.Store.YES));
                 w.addDocument(doc);
 
                 if (docCount % 13 == 0) {

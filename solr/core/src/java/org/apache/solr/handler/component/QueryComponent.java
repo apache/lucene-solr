@@ -435,7 +435,7 @@ public class QueryComponent extends SearchComponent
       Sort sort = searcher.weightSort(rb.getSortSpec().getSort());
       SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       NamedList<Object[]> sortVals = new NamedList<Object[]>(); // order is important for the sort fields
-      Field field = new StringField("dummy", ""); // a dummy Field
+      Field field = new StringField("dummy", "", Field.Store.NO); // a dummy Field
       IndexReaderContext topReaderContext = searcher.getTopReaderContext();
       AtomicReaderContext[] leaves = topReaderContext.leaves();
       AtomicReaderContext currentLeaf = null;

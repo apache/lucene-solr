@@ -21,7 +21,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Norm;
@@ -35,7 +35,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -114,9 +113,9 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(newField("field", English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(newTextField("field", English.intToEnglish(i), Field.Store.YES));
       String txt = English.intToEnglish(i) +' '+English.intToEnglish(i+1);
-      doc.add(newField("field2",  txt, TextField.TYPE_STORED));
+      doc.add(newTextField("field2", txt, Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

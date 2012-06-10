@@ -51,7 +51,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -557,8 +556,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   private void addDoc(IndexWriter writer, int id) throws IOException
   {
     Document doc = new Document();
-    doc.add(new TextField("content", "aaa"));
-    doc.add(new Field("id", Integer.toString(id), StringField.TYPE_STORED));
+    doc.add(new TextField("content", "aaa", Field.Store.NO));
+    doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
     FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     customType2.setStoreTermVectors(true);
     customType2.setStoreTermVectorPositions(true);
@@ -568,8 +567,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", customType2));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", customType2));
     // add numeric fields, to test if flex preserves encoding
-    doc.add(new IntField("trieInt", id));
-    doc.add(new LongField("trieLong", (long) id));
+    doc.add(new IntField("trieInt", id, Field.Store.NO));
+    doc.add(new LongField("trieLong", (long) id, Field.Store.NO));
     writer.addDocument(doc);
   }
 

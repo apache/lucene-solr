@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 
 import java.util.Arrays;
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntDocValuesField;
@@ -29,8 +29,6 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StraightBytesDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -62,18 +60,18 @@ public class TestSearchAfter extends LuceneTestCase {
     int numDocs = atLeast(200);
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
-      document.add(newField("english", English.intToEnglish(i), TextField.TYPE_UNSTORED));
-      document.add(newField("oddeven", (i % 2 == 0) ? "even" : "odd", TextField.TYPE_UNSTORED));
-      document.add(newField("byte", "" + ((byte) random().nextInt()), StringField.TYPE_UNSTORED));
-      document.add(newField("short", "" + ((short) random().nextInt()), StringField.TYPE_UNSTORED));
-      document.add(new IntField("int", random().nextInt()));
-      document.add(new LongField("long", random().nextLong()));
+      document.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
+      document.add(newTextField("oddeven", (i % 2 == 0) ? "even" : "odd", Field.Store.NO));
+      document.add(newStringField("byte", "" + ((byte) random().nextInt()), Field.Store.NO));
+      document.add(newStringField("short", "" + ((short) random().nextInt()), Field.Store.NO));
+      document.add(new IntField("int", random().nextInt(), Field.Store.NO));
+      document.add(new LongField("long", random().nextLong(), Field.Store.NO));
 
-      document.add(new FloatField("float", random().nextFloat()));
-      document.add(new DoubleField("double", random().nextDouble()));
-      document.add(newField("bytes", _TestUtil.randomRealisticUnicodeString(random()), StringField.TYPE_UNSTORED));
-      document.add(newField("bytesval", _TestUtil.randomRealisticUnicodeString(random()), StringField.TYPE_UNSTORED));
-      document.add(new DoubleField("double", random().nextDouble()));
+      document.add(new FloatField("float", random().nextFloat(), Field.Store.NO));
+      document.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
+      document.add(newStringField("bytes", _TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
+      document.add(newStringField("bytesval", _TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
+      document.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
 
       document.add(new IntDocValuesField("intdocvalues", random().nextInt()));
       document.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));

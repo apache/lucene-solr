@@ -126,9 +126,9 @@ public class PayloadHelper {
     // writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, English.intToEnglish(i), TextField.TYPE_STORED));
-      doc.add(new Field(MULTI_FIELD, English.intToEnglish(i) + "  " + English.intToEnglish(i), TextField.TYPE_STORED));
-      doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(new TextField(FIELD, English.intToEnglish(i), Field.Store.YES));
+      doc.add(new TextField(MULTI_FIELD, English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES));
+      doc.add(new TextField(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = DirectoryReader.open(writer, true);

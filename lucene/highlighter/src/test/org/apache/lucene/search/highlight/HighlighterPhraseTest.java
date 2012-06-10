@@ -60,7 +60,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
@@ -103,7 +103,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       final Document document = new Document();
 
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
@@ -174,7 +174,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       final Document document = new Document();
 
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
@@ -256,7 +256,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);

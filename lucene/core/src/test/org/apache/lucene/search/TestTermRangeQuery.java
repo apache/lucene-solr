@@ -24,8 +24,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -263,8 +262,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
   private void insertDoc(IndexWriter writer, String content) throws IOException {
     Document doc = new Document();
 
-    doc.add(newField("id", "id" + docCount, StringField.TYPE_STORED));
-    doc.add(newField("content", content, TextField.TYPE_UNSTORED));
+    doc.add(newStringField("id", "id" + docCount, Field.Store.YES));
+    doc.add(newTextField("content", content, Field.Store.NO));
 
     writer.addDocument(doc);
     docCount++;

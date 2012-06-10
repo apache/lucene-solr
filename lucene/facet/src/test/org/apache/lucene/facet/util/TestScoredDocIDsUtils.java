@@ -189,8 +189,8 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
     protected final static String delTxt = "delete";
     protected final static String alphaTxt = "alpha";
     
-    private final static Field deletionMark = new StringField(field, delTxt);
-    private final static Field alphaContent = new StringField(field, alphaTxt);
+    private final static Field deletionMark = new StringField(field, delTxt, Field.Store.NO);
+    private final static Field alphaContent = new StringField(field, alphaTxt, Field.Store.NO);
     
     protected final int numDocs;
     

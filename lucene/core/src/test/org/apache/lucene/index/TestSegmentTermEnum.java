@@ -19,13 +19,13 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 
@@ -135,7 +135,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
   private void addDoc(IndexWriter writer, String value) throws IOException
   {
     Document doc = new Document();
-    doc.add(newField("content", value, TextField.TYPE_UNSTORED));
+    doc.add(newTextField("content", value, Field.Store.NO));
     writer.addDocument(doc);
   }
 }

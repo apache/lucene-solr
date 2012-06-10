@@ -45,9 +45,9 @@ public class TestMultiFields extends LuceneTestCase {
 
       int numDocs = _TestUtil.nextInt(random(), 1, 100 * RANDOM_MULTIPLIER);
       Document doc = new Document();
-      Field f = newField("field", "", StringField.TYPE_UNSTORED);
+      Field f = newStringField("field", "", Field.Store.NO);
       doc.add(f);
-      Field id = newField("id", "", StringField.TYPE_UNSTORED);
+      Field id = newStringField("id", "", Field.Store.NO);
       doc.add(id);
 
       boolean onlyUniqueTerms = random().nextBoolean();
@@ -156,7 +156,7 @@ public class TestMultiFields extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document d = new Document();
-    d.add(newField("f", "j", StringField.TYPE_UNSTORED));
+    d.add(newStringField("f", "j", Field.Store.NO));
     w.addDocument(d);
     w.commit();
     w.addDocument(d);

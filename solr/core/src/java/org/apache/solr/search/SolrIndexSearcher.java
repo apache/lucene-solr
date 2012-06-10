@@ -34,14 +34,12 @@ import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -461,7 +459,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void intField(FieldInfo fieldInfo, int value) {
-      FieldType ft = new FieldType(IntField.TYPE);
+      FieldType ft = new FieldType(IntField.TYPE_NOT_STORED);
       ft.setStored(true);
       ft.setIndexed(fieldInfo.isIndexed());
       doc.add(new IntField(fieldInfo.name, value, ft));
@@ -469,7 +467,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void longField(FieldInfo fieldInfo, long value) {
-      FieldType ft = new FieldType(LongField.TYPE);
+      FieldType ft = new FieldType(LongField.TYPE_NOT_STORED);
       ft.setStored(true);
       ft.setIndexed(fieldInfo.isIndexed());
       doc.add(new LongField(fieldInfo.name, value, ft));
@@ -477,7 +475,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void floatField(FieldInfo fieldInfo, float value) {
-      FieldType ft = new FieldType(FloatField.TYPE);
+      FieldType ft = new FieldType(FloatField.TYPE_NOT_STORED);
       ft.setStored(true);
       ft.setIndexed(fieldInfo.isIndexed());
       doc.add(new FloatField(fieldInfo.name, value, ft));
@@ -485,7 +483,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void doubleField(FieldInfo fieldInfo, double value) {
-      FieldType ft = new FieldType(DoubleField.TYPE);
+      FieldType ft = new FieldType(DoubleField.TYPE_NOT_STORED);
       ft.setStored(true);
       ft.setIndexed(fieldInfo.isIndexed());
       doc.add(new DoubleField(fieldInfo.name, value, ft));

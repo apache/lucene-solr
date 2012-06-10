@@ -69,12 +69,12 @@ public class TestExternalCodecs extends LuceneTestCase {
     );
     Document doc = new Document();
     // uses default codec:
-    doc.add(newField("field1", "this field uses the standard codec as the test", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field1", "this field uses the standard codec as the test", Field.Store.NO));
     // uses pulsing codec:
-    Field field2 = newField("field2", "this field uses the pulsing codec as the test", TextField.TYPE_UNSTORED);
+    Field field2 = newTextField("field2", "this field uses the pulsing codec as the test", Field.Store.NO);
     doc.add(field2);
     
-    Field idField = newField("id", "", StringField.TYPE_UNSTORED);
+    Field idField = newStringField("id", "", Field.Store.NO);
 
     doc.add(idField);
     for(int i=0;i<NUM_DOCS;i++) {

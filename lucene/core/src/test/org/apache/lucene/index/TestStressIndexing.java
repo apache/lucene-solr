@@ -78,8 +78,8 @@ public class TestStressIndexing extends LuceneTestCase {
       for(int j=0; j<10; j++) {
         Document d = new Document();
         int n = random().nextInt();
-        d.add(newField("id", Integer.toString(nextID++), StringField.TYPE_STORED));
-        d.add(newField("contents", English.intToEnglish(n), TextField.TYPE_UNSTORED));
+        d.add(newStringField("id", Integer.toString(nextID++), Field.Store.YES));
+        d.add(newTextField("contents", English.intToEnglish(n), Field.Store.NO));
         writer.addDocument(d);
       }
 

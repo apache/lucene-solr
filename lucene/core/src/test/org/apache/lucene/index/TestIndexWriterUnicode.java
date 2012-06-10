@@ -26,8 +26,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -237,10 +235,10 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
-    doc.add(newField("field", "a a\uffffb", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "a a\uffffb", Field.Store.NO));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newField("field", "a", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "a", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     assertEquals(1, r.docFreq(new Term("field", "a\uffffb")));
@@ -257,7 +255,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
     final int count = utf8Data.length/2;
     for(int i=0;i<count;i++)
-      doc.add(newField("f" + i, utf8Data[2*i], TextField.TYPE_STORED));
+      doc.add(newTextField("f" + i, utf8Data[2*i], Field.Store.YES));
     w.addDocument(doc);
     w.close();
 
@@ -279,7 +277,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(rnd, dir);
     Document d = new Document();
     // Single segment
-    Field f = newField("f", "", StringField.TYPE_UNSTORED);
+    Field f = newStringField("f", "", Field.Store.NO);
     d.add(f);
     char[] chars = new char[2];
     final Set<String> allTerms = new HashSet<String>();

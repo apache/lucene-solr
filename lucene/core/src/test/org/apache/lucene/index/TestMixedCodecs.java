@@ -23,7 +23,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -59,7 +59,7 @@ public class TestMixedCodecs extends LuceneTestCase {
         docsLeftInThisSegment = _TestUtil.nextInt(random(), 10, 100);
       }
       final Document doc = new Document();
-      doc.add(newField("id", String.valueOf(docUpto), StringField.TYPE_STORED));
+      doc.add(newStringField("id", String.valueOf(docUpto), Field.Store.YES));
       w.addDocument(doc);
       docUpto++;
       docsLeftInThisSegment--;

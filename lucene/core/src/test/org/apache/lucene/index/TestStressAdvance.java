@@ -37,9 +37,9 @@ public class TestStressAdvance extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(random(), dir);
       final Set<Integer> aDocs = new HashSet<Integer>();
       final Document doc = new Document();
-      final Field f = newField("field", "", StringField.TYPE_UNSTORED);
+      final Field f = newStringField("field", "", Field.Store.NO);
       doc.add(f);
-      final Field idField = newField("id", "", StringField.TYPE_STORED);
+      final Field idField = newStringField("id", "", Field.Store.YES);
       doc.add(idField);
       int num = atLeast(4097);
       if (VERBOSE) {

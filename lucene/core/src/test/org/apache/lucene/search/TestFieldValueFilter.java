@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -96,10 +96,10 @@ public class TestFieldValueFilter extends LuceneTestCase {
       Document doc = new Document();
       if (random().nextBoolean()) {
         docStates[i] = 1;
-        doc.add(newField("some", "value", TextField.TYPE_STORED));
+        doc.add(newTextField("some", "value", Field.Store.YES));
       }
-      doc.add(newField("all", "test", TextField.TYPE_UNSTORED));
-      doc.add(newField("id", "" + i, TextField.TYPE_STORED));
+      doc.add(newTextField("all", "test", Field.Store.NO));
+      doc.add(newTextField("id", "" + i, Field.Store.YES));
       writer.addDocument(doc);
     }
     writer.commit();

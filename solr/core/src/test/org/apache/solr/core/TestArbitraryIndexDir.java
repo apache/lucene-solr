@@ -124,8 +124,8 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         new IndexWriterConfig(Version.LUCENE_40, new StandardAnalyzer(Version.LUCENE_40))
     );
     Document doc = new Document();
-    doc.add(new Field("id", "2", TextField.TYPE_STORED));
-    doc.add(new Field("name", "name2", TextField.TYPE_STORED));
+    doc.add(new TextField("id", "2", Field.Store.YES));
+    doc.add(new TextField("name", "name2", Field.Store.YES));
     iw.addDocument(doc);
     iw.commit();
     iw.close();

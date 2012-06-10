@@ -60,7 +60,7 @@ public class Test2BPostings extends LuceneTestCase {
     }
 
     Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setOmitNorms(true);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
     Field field = new Field("field", new MyTokenStream(), ft);

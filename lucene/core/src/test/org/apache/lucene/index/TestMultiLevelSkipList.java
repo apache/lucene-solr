@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -73,7 +73,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
       Document d1 = new Document();
-      d1.add(newField(term.field(), term.text(), TextField.TYPE_UNSTORED));
+      d1.add(newTextField(term.field(), term.text(), Field.Store.NO));
       writer.addDocument(d1);
     }
     writer.commit();

@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -488,7 +489,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
     Document doc = new Document();
 
-    doc.add(newField("f", "doctor who", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("f", "doctor who", Field.Store.NO));
     w.addDocument(doc);
     w.commit();
 
@@ -557,15 +558,15 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   private void addDoc(IndexWriter writer) throws IOException
   {
       Document doc = new Document();
-      doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "aaa", Field.Store.NO));
       writer.addDocument(doc);
   }
   
   private void addDocWithIndex(IndexWriter writer, int index) throws IOException
   {
       Document doc = new Document();
-      doc.add(newField("content", "aaa " + index, TextField.TYPE_UNSTORED));
-      doc.add(newField("id", "" + index, TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "aaa " + index, Field.Store.NO));
+      doc.add(newTextField("id", "" + index, Field.Store.NO));
       writer.addDocument(doc);
   }
 }

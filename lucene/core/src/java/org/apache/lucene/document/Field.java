@@ -496,4 +496,18 @@ public class Field implements IndexableField {
 
     throw new IllegalArgumentException("Field must have either TokenStream, String, Reader or Number value");
   }
+
+  /** Specifies whether and how a field should be stored. */
+  public static enum Store {
+
+    /** Store the original field value in the index. This is useful for short texts
+     * like a document's title which should be displayed with the results. The
+     * value is stored in its original form, i.e. no analyzer is used before it is
+     * stored.
+     */
+    YES,
+
+    /** Do not store the field value in the index. */
+    NO
+  }
 }

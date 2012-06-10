@@ -30,7 +30,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
 
@@ -50,8 +49,8 @@ public class TestOmitTf extends LuceneTestCase {
     @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 1.0f; }
   }
 
-  private static final FieldType omitType = new FieldType(TextField.TYPE_UNSTORED);
-  private static final FieldType normalType = new FieldType(TextField.TYPE_UNSTORED);
+  private static final FieldType omitType = new FieldType(TextField.TYPE_NOT_STORED);
+  private static final FieldType normalType = new FieldType(TextField.TYPE_NOT_STORED);
   
   static {
     omitType.setIndexOptions(IndexOptions.DOCS_ONLY);
@@ -229,7 +228,7 @@ public class TestOmitTf extends LuceneTestCase {
     // now add some documents with positions, and check
     // there is no prox after full merge
     d = new Document();
-    f1 = newField("f1", "This field has positions", TextField.TYPE_UNSTORED);
+    f1 = newTextField("f1", "This field has positions", Field.Store.NO);
     d.add(f1);
     
     for(int i=0;i<30;i++)
@@ -430,7 +429,7 @@ public class TestOmitTf extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
     ft.freeze();
     Field f = newField("foo", "bar", ft);

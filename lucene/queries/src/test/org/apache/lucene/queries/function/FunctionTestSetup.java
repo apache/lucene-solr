@@ -135,7 +135,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     f = newField(ID_FIELD, id2String(scoreAndID), customType); // for debug purposes
     d.add(f);
 
-    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType2 = new FieldType(TextField.TYPE_NOT_STORED);
     customType2.setOmitNorms(true);
     f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), customType2); // for regular search
     d.add(f);

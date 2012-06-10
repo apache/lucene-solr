@@ -93,7 +93,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     TokenStream tokenStream = analyzer.tokenStream("field", new StringReader("abcd   "));
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(tokenStream);
     TokenStream sink = tee.newSinkTokenStream();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorOffsets(true);
     ft.setStoreTermVectorPositions(true);

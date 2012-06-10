@@ -30,7 +30,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -68,8 +67,8 @@ public class TestNorms extends LuceneTestCase {
     config.setSimilarity(new CustomNormEncodingSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
-    Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
-    Field bar = newField("bar", "", TextField.TYPE_UNSTORED);
+    Field foo = newTextField("foo", "", Field.Store.NO);
+    Field bar = newTextField("bar", "", Field.Store.NO);
     doc.add(foo);
     doc.add(bar);
     
@@ -189,8 +188,7 @@ public class TestNorms extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
       int boost = writeNorms ? 1 + random().nextInt(255) : 0;
-      Field f = new Field(byteTestField, "" + boost,
-          TextField.TYPE_STORED);
+      Field f = new TextField(byteTestField, "" + boost, Field.Store.YES);
       f.setBoost(boost);
       doc.add(f);
       writer.addDocument(doc);

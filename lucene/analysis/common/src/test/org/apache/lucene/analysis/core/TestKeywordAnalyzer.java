@@ -53,8 +53,8 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
     Document doc = new Document();
-    doc.add(new Field("partnum", "Q36", StringField.TYPE_STORED));
-    doc.add(new Field("description", "Illidium Space Modulator", TextField.TYPE_STORED));
+    doc.add(new StringField("partnum", "Q36", Field.Store.YES));
+    doc.add(new TextField("description", "Illidium Space Modulator", Field.Store.YES));
     writer.addDocument(doc);
 
     writer.close();
@@ -89,10 +89,10 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     RAMDirectory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("partnum", "Q36", TextField.TYPE_STORED));
+    doc.add(new TextField("partnum", "Q36", Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new Field("partnum", "Q37", TextField.TYPE_STORED));
+    doc.add(new TextField("partnum", "Q37", Field.Store.YES));
     writer.addDocument(doc);
     writer.close();
 
