@@ -21,7 +21,7 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -62,9 +62,9 @@ public class ChainedFilterTest extends LuceneTestCase {
 
     for (int i = 0; i < MAX; i++) {
       Document doc = new Document();
-      doc.add(newField("key", "" + (i + 1), StringField.TYPE_STORED));
-      doc.add(newField("owner", (i < MAX / 2) ? "bob" : "sue", StringField.TYPE_STORED));
-      doc.add(newField("date", cal.getTime().toString(), StringField.TYPE_STORED));
+      doc.add(newStringField("key", "" + (i + 1), Field.Store.YES));
+      doc.add(newStringField("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES));
+      doc.add(newStringField("date", cal.getTime().toString(), Field.Store.YES));
       writer.addDocument(doc);
 
       cal.add(Calendar.DATE, 1);

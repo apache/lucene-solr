@@ -496,17 +496,8 @@ public class Field implements IndexableField {
 
     throw new IllegalArgumentException("Field must have either TokenStream, String, Reader or Number value");
   }
-
   
-  //
-  // Deprecated transition API below:
-  //
-
-  /** Specifies whether and how a field should be stored.
-   *
-   *  @deprecated This is here only to ease transition from
-   *  the pre-4.0 APIs. */
-  @Deprecated
+  /** Specifies whether a field's value should be stored. */
   public static enum Store {
 
     /** Store the original field value in the index. This is useful for short texts
@@ -514,19 +505,15 @@ public class Field implements IndexableField {
      * value is stored in its original form, i.e. no analyzer is used before it is
      * stored.
      */
-    YES {
-      @Override
-      public boolean isStored() { return true; }
-    },
+    YES,
 
-    /** Do not store the field value in the index. */
-    NO {
-      @Override
-      public boolean isStored() { return false; }
-    };
-
-    public abstract boolean isStored();
+    /** Do not store the field's value in the index. */
+    NO
   }
+
+  //
+  // Deprecated transition API below:
+  //
 
   /** Specifies whether and how a field should be indexed.
    *

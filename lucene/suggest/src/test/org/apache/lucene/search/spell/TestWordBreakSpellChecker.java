@@ -22,7 +22,7 @@ import junit.framework.Assert;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -44,23 +44,23 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
     for (int i = 900; i < 1112; i++) {
       Document doc = new Document();
       String num = English.intToEnglish(i).replaceAll("[-]", " ").replaceAll("[,]", "");
-      doc.add(newField("numbers", num, TextField.TYPE_UNSTORED));
+      doc.add(newTextField("numbers", num, Field.Store.NO));
       writer.addDocument(doc);
     }
     
     {
       Document doc = new Document();
-      doc.add(newField("numbers", "thou hast sand betwixt thy toes", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("numbers", "thou hast sand betwixt thy toes", Field.Store.NO));
       writer.addDocument(doc);
     }
     {
       Document doc = new Document();
-      doc.add(newField("numbers", "hundredeight eightyeight yeight", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("numbers", "hundredeight eightyeight yeight", Field.Store.NO));
       writer.addDocument(doc);
     }
     {
       Document doc = new Document();
-      doc.add(newField("numbers", "tres y cinco", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("numbers", "tres y cinco", Field.Store.NO));
       writer.addDocument(doc);
     }
     

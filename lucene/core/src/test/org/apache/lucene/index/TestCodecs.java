@@ -45,7 +45,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.junit.BeforeClass;
 
@@ -352,7 +351,7 @@ public class TestCodecs extends LuceneTestCase {
       pq.add(new Term("content", "ccc"));
 
       final Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setOmitNorms(true);
       doc.add(newField("content", "aaa bbb ccc ddd", customType));
 

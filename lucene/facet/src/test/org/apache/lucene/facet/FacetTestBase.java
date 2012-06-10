@@ -263,7 +263,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
     CategoryDocumentBuilder builder = new CategoryDocumentBuilder(tw, iParams);
     builder.setCategoryPaths(categories);
     builder.build(d);
-    d.add(new Field("content", content, TextField.TYPE_STORED));
+    d.add(new TextField("content", content, Field.Store.YES));
     iw.addDocument(d);
   }
   

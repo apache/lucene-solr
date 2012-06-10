@@ -23,38 +23,34 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  *  String value is indexed as a single token.  For example
  *  this might be used for a 'country' field or an 'id'
  *  field, or any field that you intend to use for sorting
- *  or access through the field cache.
- *
- *  <p/>This field's value is not stored by default; use the
- *  {@link StringField#TYPE_STORED} type (pass it to <code>new
- *  Field</code>) to store the value. */
+ *  or access through the field cache. */
 
 public final class StringField extends Field {
 
   /** Indexed, not tokenized, omits norms, indexes
    *  DOCS_ONLY, not stored. */
-  public static final FieldType TYPE_UNSTORED = new FieldType();
+  public static final FieldType TYPE_NOT_STORED = new FieldType();
 
   /** Indexed, not tokenized, omits norms, indexes
    *  DOCS_ONLY, stored */
   public static final FieldType TYPE_STORED = new FieldType();
 
   static {
-    TYPE_UNSTORED.setIndexed(true);
-    TYPE_UNSTORED.setOmitNorms(true);
-    TYPE_UNSTORED.setIndexOptions(IndexOptions.DOCS_ONLY);
-    TYPE_UNSTORED.freeze();
+    TYPE_NOT_STORED.setIndexed(true);
+    TYPE_NOT_STORED.setOmitNorms(true);
+    TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
+    TYPE_NOT_STORED.freeze();
 
     TYPE_STORED.setIndexed(true);
-    TYPE_STORED.setStored(true);
     TYPE_STORED.setOmitNorms(true);
     TYPE_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
+    TYPE_STORED.setStored(true);
     TYPE_STORED.freeze();
   }
 
-  /** Creates a new un-stored StringField */
-  public StringField(String name, String value) {
-    super(name, value, TYPE_UNSTORED);
+  /** Creates a new StringField. */
+  public StringField(String name, String value, Store stored) {
+    super(name, value, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
   }
 
   @Override

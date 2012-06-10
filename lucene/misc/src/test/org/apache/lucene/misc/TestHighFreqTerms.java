@@ -22,7 +22,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -206,9 +206,9 @@ public class TestHighFreqTerms extends LuceneTestCase {
       Document doc = new Document();
       String content = getContent(i);
     
-      doc.add(newField(rnd, "FIELD_1", content, TextField.TYPE_STORED));
+      doc.add(newTextField(rnd, "FIELD_1", content, Field.Store.YES));
       //add a different field
-      doc.add(newField(rnd, "different_field", "diff", TextField.TYPE_STORED));
+      doc.add(newTextField(rnd, "different_field", "diff", Field.Store.YES));
       writer.addDocument(doc);
     }
     
@@ -216,7 +216,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     //highest freq terms for a specific field.
     for (int i = 1; i <= 10; i++) {
       Document doc = new Document();
-      doc.add(newField(rnd, "different_field", "diff", TextField.TYPE_STORED));
+      doc.add(newTextField(rnd, "different_field", "diff", Field.Store.YES));
       writer.addDocument(doc);
     }
     // add some docs where tf < df so we can see if sorting works
@@ -227,7 +227,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     for (int i = 0; i < highTF; i++) {
       content += "highTF ";
     }
-    doc.add(newField(rnd, "FIELD_1", content, TextField.TYPE_STORED));
+    doc.add(newTextField(rnd, "FIELD_1", content, Field.Store.YES));
     writer.addDocument(doc);
     // highTF medium df =5
     int medium_df = 5;
@@ -238,7 +238,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
       for (int j = 0; j < tf; j++) {
         newcontent += "highTFmedDF ";
       }
-      newdoc.add(newField(rnd, "FIELD_1", newcontent, TextField.TYPE_STORED));
+      newdoc.add(newTextField(rnd, "FIELD_1", newcontent, Field.Store.YES));
       writer.addDocument(newdoc);
     }
     // add a doc with high tf in field different_field
@@ -248,7 +248,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     for (int i = 0; i < targetTF; i++) {
       content += "TF150 ";
     }
-    doc.add(newField(rnd, "different_field", content, TextField.TYPE_STORED));
+    doc.add(newTextField(rnd, "different_field", content, Field.Store.YES));
     writer.addDocument(doc);
     writer.close();
     

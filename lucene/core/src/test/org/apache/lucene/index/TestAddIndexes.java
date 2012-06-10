@@ -45,7 +45,6 @@ import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -179,8 +178,8 @@ public class TestAddIndexes extends LuceneTestCase {
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("id", "" + (i % 10), StringField.TYPE_UNSTORED));
-      doc.add(newField("content", "bbb " + i, TextField.TYPE_UNSTORED));
+      doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
+      doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     // Deletes one of the 10 added docs, leaving 9:
@@ -214,8 +213,8 @@ public class TestAddIndexes extends LuceneTestCase {
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("id", "" + (i % 10), StringField.TYPE_UNSTORED));
-      doc.add(newField("content", "bbb " + i, TextField.TYPE_UNSTORED));
+      doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
+      doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     
@@ -252,8 +251,8 @@ public class TestAddIndexes extends LuceneTestCase {
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("id", "" + (i % 10), StringField.TYPE_UNSTORED));
-      doc.add(newField("content", "bbb " + i, TextField.TYPE_UNSTORED));
+      doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
+      doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
 
@@ -527,7 +526,7 @@ public class TestAddIndexes extends LuceneTestCase {
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "aaa", Field.Store.NO));
       writer.addDocument(doc);
     }
   }
@@ -535,7 +534,7 @@ public class TestAddIndexes extends LuceneTestCase {
   private void addDocs2(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newField("content", "bbb", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "bbb", Field.Store.NO));
       writer.addDocument(doc);
     }
   }
@@ -654,7 +653,7 @@ public class TestAddIndexes extends LuceneTestCase {
   private void addDoc(IndexWriter writer) throws IOException
   {
       Document doc = new Document();
-      doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "aaa", Field.Store.NO));
       writer.addDocument(doc);
   }
   
@@ -974,7 +973,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
       IndexWriter writer = new IndexWriter(dirs[i], conf);
       Document doc = new Document();
-      doc.add(new StringField("id", "myid"));
+      doc.add(new StringField("id", "myid", Field.Store.NO));
       writer.addDocument(doc);
       writer.close();
     }
@@ -1004,8 +1003,8 @@ public class TestAddIndexes extends LuceneTestCase {
   private void addDocsWithID(IndexWriter writer, int numDocs, int docStart) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
-      doc.add(newField("id", "" + (docStart + i), TextField.TYPE_STORED));
+      doc.add(newTextField("content", "aaa", Field.Store.NO));
+      doc.add(newTextField("id", "" + (docStart + i), Field.Store.YES));
       writer.addDocument(doc);
     }
   }
@@ -1219,8 +1218,8 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory d1 = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d1);
     Document doc = new Document();
-    doc.add(newField("f1", "doc1 field1", StringField.TYPE_STORED));
-    doc.add(newField("id", "1", StringField.TYPE_STORED));
+    doc.add(newStringField("f1", "doc1 field1", Field.Store.YES));
+    doc.add(newStringField("id", "1", Field.Store.YES));
     w.addDocument(doc);
     IndexReader r1 = w.getReader();
     w.close();
@@ -1228,8 +1227,8 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory d2 = newDirectory();
     w = new RandomIndexWriter(random(), d2);
     doc = new Document();
-    doc.add(newField("f2", "doc2 field2", StringField.TYPE_STORED));
-    doc.add(newField("id", "2", StringField.TYPE_STORED));
+    doc.add(newStringField("f2", "doc2 field2", Field.Store.YES));
+    doc.add(newStringField("id", "2", Field.Store.YES));
     w.addDocument(doc);
     IndexReader r2 = w.getReader();
     w.close();

@@ -215,10 +215,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     
     reader = null;
 
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setOmitNorms(true);
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream, ft);
-    fullPathField = new Field(Consts.FULL, "", StringField.TYPE_STORED);
+    fullPathField = new StringField(Consts.FULL, "", Field.Store.YES);
 
     this.nextID = indexWriter.maxDoc();
 

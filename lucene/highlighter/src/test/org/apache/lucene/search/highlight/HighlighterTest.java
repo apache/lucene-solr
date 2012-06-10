@@ -1622,7 +1622,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private Document doc( String f, String v ){
     Document doc = new Document();
-    doc.add( new Field( f, v, TextField.TYPE_STORED));
+    doc.add( new TextField( f, v, Field.Store.YES));
     return doc;
   }
   
@@ -1740,22 +1740,22 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       addDoc(writer, text);
     }
     Document doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 1));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 1, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 1));
     writer.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 3));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 3, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 3));
     writer.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 5));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 5, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 5));
     writer.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 7));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 7, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 7));
     writer.addDocument(doc, analyzer);
 
@@ -1775,7 +1775,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   private void addDoc(IndexWriter writer, String text) throws IOException {
     Document d = new Document();
 
-    Field f = new Field(FIELD_NAME, text, TextField.TYPE_STORED);
+    Field f = new TextField(FIELD_NAME, text, Field.Store.YES);
     d.add(f);
     writer.addDocument(d);
 

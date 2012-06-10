@@ -67,55 +67,55 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     Document doc = new Document();
     addField(doc, groupField, "1", dvType);
     addField(doc, countField, "1", dvType);
-    doc.add(new Field("content", "random text", TextField.TYPE_UNSTORED));
-    doc.add(new Field("id", "1", StringField.TYPE_UNSTORED));
+    doc.add(new TextField("content", "random text", Field.Store.NO));
+    doc.add(new StringField("id", "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
     addField(doc, groupField, "1", dvType);
     addField(doc, countField, "1", dvType);
-    doc.add(new Field("content", "some more random text blob", TextField.TYPE_UNSTORED));
-    doc.add(new Field("id", "2", StringField.TYPE_UNSTORED));
+    doc.add(new TextField("content", "some more random text blob", Field.Store.NO));
+    doc.add(new StringField("id", "2", Field.Store.NO));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
     addField(doc, groupField, "1", dvType);
     addField(doc, countField, "2", dvType);
-    doc.add(new Field("content", "some more random textual data", TextField.TYPE_UNSTORED));
-    doc.add(new Field("id", "3", StringField.TYPE_UNSTORED));
+    doc.add(new TextField("content", "some more random textual data", Field.Store.NO));
+    doc.add(new StringField("id", "3", Field.Store.NO));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
     doc = new Document();
     addField(doc, groupField, "2", dvType);
-    doc.add(new Field("content", "some random text", TextField.TYPE_UNSTORED));
-    doc.add(new Field("id", "4", StringField.TYPE_UNSTORED));
+    doc.add(new TextField("content", "some random text", Field.Store.NO));
+    doc.add(new StringField("id", "4", Field.Store.NO));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
     addField(doc, groupField, "3", dvType);
     addField(doc, countField, "1", dvType);
-    doc.add(new Field("content", "some more random text", TextField.TYPE_UNSTORED));
-    doc.add(new Field("id", "5", StringField.TYPE_UNSTORED));
+    doc.add(new TextField("content", "some more random text", Field.Store.NO));
+    doc.add(new StringField("id", "5", Field.Store.NO));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
     addField(doc, groupField, "3", dvType);
     addField(doc, countField, "1", dvType);
-    doc.add(new Field("content", "random blob", TextField.TYPE_UNSTORED));
-    doc.add(new Field("id", "6", StringField.TYPE_UNSTORED));
+    doc.add(new TextField("content", "random blob", Field.Store.NO));
+    doc.add(new StringField("id", "6", Field.Store.NO));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(new Field("content", "random word stuck in alot of other text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.YES));
     addField(doc, countField, "1", dvType);
-    doc.add(new Field("id", "6", StringField.TYPE_UNSTORED));
+    doc.add(new StringField("id", "6", Field.Store.NO));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
@@ -316,7 +316,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   }
 
   private void addField(Document doc, String field, String value, DocValues.Type type) {
-    doc.add(new Field(field, value, StringField.TYPE_UNSTORED));
+    doc.add(new StringField(field, value, Field.Store.NO));
     if (type == null) {
       return;
     }
@@ -450,14 +450,14 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       countsVals.add(countValue);
 
       Document doc = new Document();
-      doc.add(new Field("id", String.format("%09d", i), StringField.TYPE_UNSTORED));
+      doc.add(new StringField("id", String.format("%09d", i), Field.Store.NO));
       if (groupValue != null) {
         addField(doc, groupField, groupValue, dvType);
       }
       if (countValue != null) {
         addField(doc, countField, countValue, dvType);
       }
-      doc.add(new Field("content", content, TextField.TYPE_UNSTORED));
+      doc.add(new TextField("content", content, Field.Store.NO));
       w.addDocument(doc);
     }
 

@@ -24,8 +24,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
@@ -159,12 +157,12 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
     Document doc = new Document();
-    doc.add(new IntField("id", id));
+    doc.add(new IntField("id", id, Field.Store.NO));
     if (VERBOSE) {
       System.out.println("TEST: addDoc id:" + id + " terms=" + terms);
     }
     for (String s2 : terms) {
-      doc.add(newField("f", s2, StringField.TYPE_UNSTORED));
+      doc.add(newStringField("f", s2, Field.Store.NO));
       termToID.put(new BytesRef(s2), id);
     }
     w.addDocument(doc);
@@ -368,7 +366,7 @@ public class TestTermsEnum extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
     for(String term : terms) {
       Document doc = new Document();
-      Field f = newField(FIELD, term, StringField.TYPE_UNSTORED);
+      Field f = newStringField(FIELD, term, Field.Store.NO);
       doc.add(f);
       w.addDocument(doc);
     }
@@ -507,9 +505,9 @@ public class TestTermsEnum extends LuceneTestCase {
     d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
-    doc.add(newField("field", "one two three", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "one two three", Field.Store.NO));
     doc = new Document();
-    doc.add(newField("field2", "one two three", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field2", "one two three", Field.Store.NO));
     w.addDocument(doc);
     w.commit();
     w.deleteDocuments(new Term("field", "one"));
@@ -730,15 +728,15 @@ public class TestTermsEnum extends LuceneTestCase {
     iwc.setMergePolicy(new LogDocMergePolicy());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    doc.add(newField("field", "aaa", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "aaa", Field.Store.NO));
     w.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("field", "bbb", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("field", "bbb", Field.Store.NO));
     w.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("field", "ccc", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "ccc", Field.Store.NO));
     w.addDocument(doc);
 
     w.forceMerge(1);

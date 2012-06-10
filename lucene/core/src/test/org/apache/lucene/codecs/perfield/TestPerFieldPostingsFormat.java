@@ -29,7 +29,6 @@ import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
@@ -71,7 +70,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "aaa", Field.Store.NO));
       writer.addDocument(doc);
     }
   }
@@ -79,7 +78,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
   private void addDocs2(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newField("content", "bbb", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "bbb", Field.Store.NO));
       writer.addDocument(doc);
     }
   }
@@ -87,8 +86,8 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
   private void addDocs3(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newField("content", "ccc", TextField.TYPE_UNSTORED));
-      doc.add(newField("id", "" + i, StringField.TYPE_STORED));
+      doc.add(newTextField("content", "ccc", Field.Store.NO));
+      doc.add(newStringField("id", "" + i, Field.Store.YES));
       writer.addDocument(doc);
     }
   }
@@ -250,7 +249,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
       for (int j = 0; j < docsPerRound; j++) {
         final Document doc = new Document();
         for (int k = 0; k < num; k++) {
-          FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+          FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
           customType.setTokenized(random().nextBoolean());
           customType.setOmitNorms(random().nextBoolean());
           Field field = newField("" + k, _TestUtil
@@ -307,7 +306,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     iwc.setCodec(codec);
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     // turn on vectors for the checkindex cross-check
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorOffsets(true);

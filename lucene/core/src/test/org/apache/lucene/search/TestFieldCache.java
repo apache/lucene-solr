@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -67,24 +67,24 @@ public class TestFieldCache extends LuceneTestCase {
     }
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
-      doc.add(newField("theLong", String.valueOf(theLong--), StringField.TYPE_UNSTORED));
-      doc.add(newField("theDouble", String.valueOf(theDouble--), StringField.TYPE_UNSTORED));
-      doc.add(newField("theByte", String.valueOf(theByte--), StringField.TYPE_UNSTORED));
-      doc.add(newField("theShort", String.valueOf(theShort--), StringField.TYPE_UNSTORED));
-      doc.add(newField("theInt", String.valueOf(theInt--), StringField.TYPE_UNSTORED));
-      doc.add(newField("theFloat", String.valueOf(theFloat--), StringField.TYPE_UNSTORED));
+      doc.add(newStringField("theLong", String.valueOf(theLong--), Field.Store.NO));
+      doc.add(newStringField("theDouble", String.valueOf(theDouble--), Field.Store.NO));
+      doc.add(newStringField("theByte", String.valueOf(theByte--), Field.Store.NO));
+      doc.add(newStringField("theShort", String.valueOf(theShort--), Field.Store.NO));
+      doc.add(newStringField("theInt", String.valueOf(theInt--), Field.Store.NO));
+      doc.add(newStringField("theFloat", String.valueOf(theFloat--), Field.Store.NO));
       if (i%2 == 0) {
-        doc.add(newField("sparse", String.valueOf(i), StringField.TYPE_UNSTORED));
+        doc.add(newStringField("sparse", String.valueOf(i), Field.Store.NO));
       }
 
       if (i%2 == 0) {
-        doc.add(new IntField("numInt", i));
+        doc.add(new IntField("numInt", i, Field.Store.NO));
       }
 
       // sometimes skip the field:
       if (random().nextInt(40) != 17) {
         unicodeStrings[i] = generateString(i);
-        doc.add(newField("theRandomUnicodeString", unicodeStrings[i], StringField.TYPE_STORED));
+        doc.add(newStringField("theRandomUnicodeString", unicodeStrings[i], Field.Store.YES));
       }
 
       // sometimes skip the field:
@@ -92,7 +92,7 @@ public class TestFieldCache extends LuceneTestCase {
         for (int j = 0; j < NUM_ORDS; j++) {
           String newValue = generateString(i);
           multiValued[i][j] = new BytesRef(newValue);
-          doc.add(newField("theRandomUnicodeMultiValuedField", newValue, StringField.TYPE_STORED));
+          doc.add(newStringField("theRandomUnicodeMultiValuedField", newValue, Field.Store.YES));
         }
         Arrays.sort(multiValued[i]);
       }

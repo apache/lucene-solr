@@ -77,48 +77,48 @@ public class TestGrouping extends LuceneTestCase {
     // 0
     Document doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
-    doc.add(new Field("content", "random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random text", Field.Store.YES));
     doc.add(new Field("id", "1", customType));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
-    doc.add(new Field("content", "some more random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some more random text", Field.Store.YES));
     doc.add(new Field("id", "2", customType));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
-    doc.add(new Field("content", "some more random textual data", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some more random textual data", Field.Store.YES));
     doc.add(new Field("id", "3", customType));
     w.addDocument(doc);
 
     // 3
     doc = new Document();
     addGroupField(doc, groupField, "author2", canUseIDV);
-    doc.add(new Field("content", "some random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some random text", Field.Store.YES));
     doc.add(new Field("id", "4", customType));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
     addGroupField(doc, groupField, "author3", canUseIDV);
-    doc.add(new Field("content", "some more random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some more random text", Field.Store.YES));
     doc.add(new Field("id", "5", customType));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
     addGroupField(doc, groupField, "author3", canUseIDV);
-    doc.add(new Field("content", "random", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random", Field.Store.YES));
     doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(new Field("content", "random word stuck in alot of other text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.YES));
     doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
 
@@ -174,7 +174,7 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
-    doc.add(new Field(groupField, value, TextField.TYPE_STORED));
+    doc.add(new TextField(groupField, value, Field.Store.YES));
     if (canUseIDV) {
       doc.add(new SortedBytesDocValuesField(groupField, new BytesRef(value)));
     }
@@ -582,7 +582,7 @@ public class TestGrouping extends LuceneTestCase {
 
     final List<List<Document>> updateDocs = new ArrayList<List<Document>>();
 
-    FieldType groupEndType = new FieldType(StringField.TYPE_UNSTORED);
+    FieldType groupEndType = new FieldType(StringField.TYPE_NOT_STORED);
     groupEndType.setIndexOptions(IndexOptions.DOCS_ONLY);
     groupEndType.setOmitNorms(true);
 
@@ -594,12 +594,12 @@ public class TestGrouping extends LuceneTestCase {
         Document doc = new Document();
         docs.add(doc);
         if (groupValue.group != null) {
-          doc.add(newField("group", groupValue.group.utf8ToString(), StringField.TYPE_UNSTORED));
+          doc.add(newStringField("group", groupValue.group.utf8ToString(), Field.Store.NO));
         }
-        doc.add(newField("sort1", groupValue.sort1.utf8ToString(), StringField.TYPE_UNSTORED));
-        doc.add(newField("sort2", groupValue.sort2.utf8ToString(), StringField.TYPE_UNSTORED));
-        doc.add(new IntField("id", groupValue.id));
-        doc.add(newField("content", groupValue.content, TextField.TYPE_UNSTORED));
+        doc.add(newStringField("sort1", groupValue.sort1.utf8ToString(), Field.Store.NO));
+        doc.add(newStringField("sort2", groupValue.sort2.utf8ToString(), Field.Store.NO));
+        doc.add(new IntField("id", groupValue.id, Field.Store.NO));
+        doc.add(newTextField("content", groupValue.content, Field.Store.NO));
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
       }
       // So we can pull filter marking last doc in block:
@@ -713,18 +713,18 @@ public class TestGrouping extends LuceneTestCase {
         doc.add(idvGroupField);
       }
 
-      Field group = newField("group", "", StringField.TYPE_UNSTORED);
+      Field group = newStringField("group", "", Field.Store.NO);
       doc.add(group);
-      Field sort1 = newField("sort1", "", StringField.TYPE_UNSTORED);
+      Field sort1 = newStringField("sort1", "", Field.Store.NO);
       doc.add(sort1);
       docNoGroup.add(sort1);
-      Field sort2 = newField("sort2", "", StringField.TYPE_UNSTORED);
+      Field sort2 = newStringField("sort2", "", Field.Store.NO);
       doc.add(sort2);
       docNoGroup.add(sort2);
-      Field content = newField("content", "", TextField.TYPE_UNSTORED);
+      Field content = newTextField("content", "", Field.Store.NO);
       doc.add(content);
       docNoGroup.add(content);
-      IntField id = new IntField("id", 0);
+      IntField id = new IntField("id", 0, Field.Store.NO);
       doc.add(id);
       docNoGroup.add(id);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];

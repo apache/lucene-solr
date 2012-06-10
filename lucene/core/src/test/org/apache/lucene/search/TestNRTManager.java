@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -304,7 +304,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     final NRTManager.TrackingIndexWriter writer = new NRTManager.TrackingIndexWriter(_writer);
     final NRTManager manager = new NRTManager(writer, null, false);
     Document doc = new Document();
-    doc.add(newField("test","test", TextField.TYPE_STORED));
+    doc.add(newTextField("test", "test", Field.Store.YES));
     long gen = writer.addDocument(doc);
     manager.maybeRefresh();
     assertFalse(gen < manager.getCurrentSearchingGen());

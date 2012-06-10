@@ -55,21 +55,21 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     // 0
     Document doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
-    doc.add(new Field("content", "random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random text", Field.Store.YES));
     doc.add(new Field("id", "1", customType));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
-    doc.add(new Field("content", "some more random text blob", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some more random text blob", Field.Store.YES));
     doc.add(new Field("id", "2", customType));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
-    doc.add(new Field("content", "some more random textual data", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some more random textual data", Field.Store.YES));
     doc.add(new Field("id", "3", customType));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
@@ -77,27 +77,27 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     // 3
     doc = new Document();
     addGroupField(doc, groupField, "author2", canUseIDV);
-    doc.add(new Field("content", "some random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some random text", Field.Store.YES));
     doc.add(new Field("id", "4", customType));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
     addGroupField(doc, groupField, "author3", canUseIDV);
-    doc.add(new Field("content", "some more random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some more random text", Field.Store.YES));
     doc.add(new Field("id", "5", customType));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
     addGroupField(doc, groupField, "author3", canUseIDV);
-    doc.add(new Field("content", "random blob", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random blob", Field.Store.YES));
     doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(new Field("content", "random word stuck in alot of other text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.YES));
     doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
 
@@ -121,7 +121,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
   }
 
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
-    doc.add(new Field(groupField, value, TextField.TYPE_STORED));
+    doc.add(new TextField(groupField, value, Field.Store.YES));
     if (canUseIDV) {
       doc.add(new SortedBytesDocValuesField(groupField, new BytesRef(value)));
     }

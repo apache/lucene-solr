@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -103,9 +104,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       d1.add(newField("id", "d1", nonAnalyzedType));// Field.Keyword("id",
                                                                                // "d1"));
       d1
-          .add(newField("hed", "elephant", TextField.TYPE_STORED));// Field.Text("hed", "elephant"));
+          .add(newTextField("hed", "elephant", Field.Store.YES));// Field.Text("hed", "elephant"));
       d1
-          .add(newField("dek", "elephant", TextField.TYPE_STORED));// Field.Text("dek", "elephant"));
+          .add(newTextField("dek", "elephant", Field.Store.YES));// Field.Text("dek", "elephant"));
       writer.addDocument(d1);
     }
     
@@ -115,11 +116,11 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       d2.add(newField("id", "d2", nonAnalyzedType));// Field.Keyword("id",
                                                                                // "d2"));
       d2
-          .add(newField("hed", "elephant", TextField.TYPE_STORED));// Field.Text("hed", "elephant"));
-      d2.add(newField("dek", "albino", TextField.TYPE_STORED));// Field.Text("dek",
+          .add(newTextField("hed", "elephant", Field.Store.YES));// Field.Text("hed", "elephant"));
+      d2.add(newTextField("dek", "albino", Field.Store.YES));// Field.Text("dek",
                                                                                 // "albino"));
       d2
-          .add(newField("dek", "elephant", TextField.TYPE_STORED));// Field.Text("dek", "elephant"));
+          .add(newTextField("dek", "elephant", Field.Store.YES));// Field.Text("dek", "elephant"));
       writer.addDocument(d2);
     }
     
@@ -128,10 +129,10 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       Document d3 = new Document();
       d3.add(newField("id", "d3", nonAnalyzedType));// Field.Keyword("id",
                                                                                // "d3"));
-      d3.add(newField("hed", "albino", TextField.TYPE_STORED));// Field.Text("hed",
+      d3.add(newTextField("hed", "albino", Field.Store.YES));// Field.Text("hed",
                                                                                 // "albino"));
       d3
-          .add(newField("hed", "elephant", TextField.TYPE_STORED));// Field.Text("hed", "elephant"));
+          .add(newTextField("hed", "elephant", Field.Store.YES));// Field.Text("hed", "elephant"));
       writer.addDocument(d3);
     }
     
@@ -140,11 +141,11 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       Document d4 = new Document();
       d4.add(newField("id", "d4", nonAnalyzedType));// Field.Keyword("id",
                                                                                // "d4"));
-      d4.add(newField("hed", "albino", TextField.TYPE_STORED));// Field.Text("hed",
+      d4.add(newTextField("hed", "albino", Field.Store.YES));// Field.Text("hed",
                                                                                 // "albino"));
       d4
           .add(newField("hed", "elephant", nonAnalyzedType));// Field.Text("hed", "elephant"));
-      d4.add(newField("dek", "albino", TextField.TYPE_STORED));// Field.Text("dek",
+      d4.add(newTextField("dek", "albino", Field.Store.YES));// Field.Text("dek",
                                                                                 // "albino"));
       writer.addDocument(d4);
     }

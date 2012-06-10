@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -178,7 +178,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // add a doc, refresh the reader, and check that it's there
     Document doc = new Document();
-    doc.add(newField("id", "1", StringField.TYPE_STORED));
+    doc.add(newStringField("id", "1", Field.Store.YES));
     writer.addDocument(doc);
 
     reader = refreshReader(reader);

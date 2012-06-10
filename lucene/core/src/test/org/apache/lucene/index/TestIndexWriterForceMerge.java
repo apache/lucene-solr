@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -34,7 +34,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
 
     final Document doc = new Document();
-    doc.add(newField("content", "aaa", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("content", "aaa", Field.Store.NO));
     final int incrMin = TEST_NIGHTLY ? 15 : 40;
     for(int numDocs=10;numDocs<500;numDocs += _TestUtil.nextInt(random(), incrMin, 5*incrMin)) {
       LogDocMergePolicy ldmp = new LogDocMergePolicy();
@@ -75,7 +75,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
 
     final Document doc = new Document();
-    doc.add(newField("content", "aaa", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("content", "aaa", Field.Store.NO));
 
     LogDocMergePolicy ldmp = new LogDocMergePolicy();
     ldmp.setMinMergeDocs(1);
@@ -179,7 +179,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
               setMergePolicy(newLogMergePolicy(51))
       );
       Document doc = new Document();
-      doc.add(newField("field", "aaa", StringField.TYPE_UNSTORED));
+      doc.add(newStringField("field", "aaa", Field.Store.NO));
       for(int i=0;i<100;i++)
         writer.addDocument(doc);
       writer.forceMerge(1, false);

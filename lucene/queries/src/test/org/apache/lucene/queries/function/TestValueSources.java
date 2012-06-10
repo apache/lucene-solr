@@ -98,23 +98,23 @@ public class TestValueSources extends LuceneTestCase {
     iwConfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
     Document document = new Document();
-    Field idField = new StringField("id", "");
+    Field idField = new StringField("id", "", Field.Store.NO);
     document.add(idField);
-    Field byteField = new StringField("byte", "");
+    Field byteField = new StringField("byte", "", Field.Store.NO);
     document.add(byteField);
-    Field doubleField = new StringField("double", "");
+    Field doubleField = new StringField("double", "", Field.Store.NO);
     document.add(doubleField);
-    Field floatField = new StringField("float", "");
+    Field floatField = new StringField("float", "", Field.Store.NO);
     document.add(floatField);
-    Field intField = new StringField("int", "");
+    Field intField = new StringField("int", "", Field.Store.NO);
     document.add(intField);
-    Field longField = new StringField("long", "");
+    Field longField = new StringField("long", "", Field.Store.NO);
     document.add(longField);
-    Field shortField = new StringField("short", "");
+    Field shortField = new StringField("short", "", Field.Store.NO);
     document.add(shortField);
-    Field stringField = new StringField("string", "");
+    Field stringField = new StringField("string", "", Field.Store.NO);
     document.add(stringField);
-    Field textField = new TextField("text", "");
+    Field textField = new TextField("text", "", Field.Store.NO);
     document.add(textField);
     
     for (String [] doc : documents) {

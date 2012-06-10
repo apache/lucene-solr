@@ -1,6 +1,5 @@
 package org.apache.lucene.queries.function;
 
-import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -56,7 +55,7 @@ public class TestBoostedQuery extends LuceneTestCase {
     iwConfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
     Document document = new Document();
-    Field idField = new StringField("id", "");
+    Field idField = new StringField("id", "", Field.Store.NO);
     document.add(idField);
     iw.addDocument(document);
     ir = iw.getReader();

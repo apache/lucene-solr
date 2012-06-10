@@ -17,9 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
-
 import java.io.*;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
@@ -29,8 +26,11 @@ import java.util.concurrent.*;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.search.*;
@@ -43,11 +43,13 @@ import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
-
 import com.carrotsearch.randomizedtesting.*;
 import com.carrotsearch.randomizedtesting.annotations.*;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
+
+import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -840,6 +842,22 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       return directory;
     }
+  }
+  
+  public static Field newStringField(String name, String value, Store stored) {
+    return newField(random(), name, value, stored == Store.YES ? StringField.TYPE_STORED : StringField.TYPE_NOT_STORED);
+  }
+
+  public static Field newTextField(String name, String value, Store stored) {
+    return newField(random(), name, value, stored == Store.YES ? TextField.TYPE_STORED : TextField.TYPE_NOT_STORED);
+  }
+  
+  public static Field newStringField(Random random, String name, String value, Store stored) {
+    return newField(random, name, value, stored == Store.YES ? StringField.TYPE_STORED : StringField.TYPE_NOT_STORED);
+  }
+  
+  public static Field newTextField(Random random, String name, String value, Store stored) {
+    return newField(random, name, value, stored == Store.YES ? TextField.TYPE_STORED : TextField.TYPE_NOT_STORED);
   }
   
   public static Field newField(String name, String value, FieldType type) {

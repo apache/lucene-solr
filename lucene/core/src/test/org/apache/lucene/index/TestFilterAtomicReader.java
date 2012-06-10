@@ -23,7 +23,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -132,15 +132,15 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     Document d1 = new Document();
-    d1.add(newField("default","one two", TextField.TYPE_STORED));
+    d1.add(newTextField("default", "one two", Field.Store.YES));
     writer.addDocument(d1);
 
     Document d2 = new Document();
-    d2.add(newField("default","one three", TextField.TYPE_STORED));
+    d2.add(newTextField("default", "one three", Field.Store.YES));
     writer.addDocument(d2);
 
     Document d3 = new Document();
-    d3.add(newField("default","two four", TextField.TYPE_STORED));
+    d3.add(newTextField("default", "two four", Field.Store.YES));
     writer.addDocument(d3);
 
     writer.close();

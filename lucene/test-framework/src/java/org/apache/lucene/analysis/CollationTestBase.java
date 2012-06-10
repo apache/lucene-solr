@@ -85,8 +85,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    doc.add(new Field("content", "\u0633\u0627\u0628", TextField.TYPE_STORED));
-    doc.add(new Field("body", "body", StringField.TYPE_STORED));
+    doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
+    doc.add(new StringField("body", "body", Field.Store.YES));
     writer.addDocument(doc);
     writer.close();
     IndexReader reader = DirectoryReader.open(dir);
@@ -122,7 +122,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // orders the U+0698 character before the U+0633 character, so the single
     // index Term below should NOT be returned by a TermRangeQuery with a Farsi
     // Collator (or an Arabic one for the case when Farsi is not supported).
-    doc.add(new Field("content", "\u0633\u0627\u0628", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     writer.addDocument(doc);
     writer.close();
     IndexReader reader = DirectoryReader.open(dir);
@@ -146,8 +146,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    doc.add(new Field("content", "\u0633\u0627\u0628", TextField.TYPE_STORED));
-    doc.add(new Field("body", "body", StringField.TYPE_STORED));
+    doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
+    doc.add(new StringField("body", "body", Field.Store.YES));
     writer.addDocument(doc);
     writer.close();
 
@@ -214,7 +214,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     for (int i = 0 ; i < sortData.length ; ++i) {
       Document doc = new Document();
       doc.add(new Field("tracer", sortData[i][0], customType));
-      doc.add(new TextField("contents", sortData[i][1]));
+      doc.add(new TextField("contents", sortData[i][1], Field.Store.NO));
       if (sortData[i][2] != null) 
         doc.add(new TextField("US", usAnalyzer.tokenStream("US", new StringReader(sortData[i][2]))));
       if (sortData[i][3] != null) 

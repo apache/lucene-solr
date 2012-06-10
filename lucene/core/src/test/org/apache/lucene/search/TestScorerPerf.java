@@ -1,5 +1,6 @@
 package org.apache.lucene.search;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -16,7 +17,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -70,7 +70,7 @@ public class TestScorerPerf extends LuceneTestCase {
       Document d = new Document();
       for (int j=0; j<nTerms; j++) {
         if (random().nextInt(freq[j]) == 0) {
-          d.add(newField("f", terms[j].text(), StringField.TYPE_UNSTORED));
+          d.add(newStringField("f", terms[j].text(), Field.Store.NO));
           //System.out.println(d);
         }
       }

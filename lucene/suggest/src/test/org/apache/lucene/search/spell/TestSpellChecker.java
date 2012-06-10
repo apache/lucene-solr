@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -59,14 +59,14 @@ public class TestSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(newField("field1", English.intToEnglish(i), TextField.TYPE_STORED));
-      doc.add(newField("field2", English.intToEnglish(i + 1), TextField.TYPE_STORED)); // + word thousand
-      doc.add(newField("field3", "fvei" + (i % 2 == 0 ? " five" : ""), TextField.TYPE_STORED)); // + word thousand
+      doc.add(newTextField("field1", English.intToEnglish(i), Field.Store.YES));
+      doc.add(newTextField("field2", English.intToEnglish(i + 1), Field.Store.YES)); // + word thousand
+      doc.add(newTextField("field3", "fvei" + (i % 2 == 0 ? " five" : ""), Field.Store.YES)); // + word thousand
       writer.addDocument(doc);
     }
     {
       Document doc = new Document();
-      doc.add(newField("field1", "eight", TextField.TYPE_STORED)); // "eight" in
+      doc.add(newTextField("field1", "eight", Field.Store.YES)); // "eight" in
                                                                    // the index
                                                                    // twice
       writer.addDocument(doc);
@@ -74,13 +74,12 @@ public class TestSpellChecker extends LuceneTestCase {
     {
       Document doc = new Document();
       doc
-          .add(newField("field1", "twenty-one twenty-one",
-              TextField.TYPE_STORED)); // "twenty-one" in the index thrice
+          .add(newTextField("field1", "twenty-one twenty-one", Field.Store.YES)); // "twenty-one" in the index thrice
       writer.addDocument(doc);
     }
     {
       Document doc = new Document();
-      doc.add(newField("field1", "twenty", TextField.TYPE_STORED)); // "twenty"
+      doc.add(newTextField("field1", "twenty", Field.Store.YES)); // "twenty"
                                                                     // in the
                                                                     // index
                                                                     // twice

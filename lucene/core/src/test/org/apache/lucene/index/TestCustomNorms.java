@@ -57,7 +57,7 @@ public class TestCustomNorms extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
       float nextFloat = random().nextFloat();
-      Field f = new Field(floatTestField, "" + nextFloat, TextField.TYPE_STORED);
+      Field f = new TextField(floatTestField, "" + nextFloat, Field.Store.YES);
       f.setBoost(nextFloat);
 
       doc.add(f);
@@ -99,8 +99,7 @@ public class TestCustomNorms extends LuceneTestCase {
       for (int i = 0; i < num; i++) {
         Document doc = docs.nextDoc();
         float nextFloat = random().nextFloat();
-        Field f = new Field(exceptionTestField, "" + nextFloat,
-            TextField.TYPE_STORED);
+        Field f = new TextField(exceptionTestField, "" + nextFloat, Field.Store.YES);
         f.setBoost(nextFloat);
 
         doc.add(f);
@@ -128,8 +127,8 @@ public class TestCustomNorms extends LuceneTestCase {
     config.setSimilarity(similarity);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
-    Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
-    Field bar = newField("bar", "", TextField.TYPE_UNSTORED);
+    Field foo = newTextField("foo", "", Field.Store.NO);
+    Field bar = newTextField("bar", "", Field.Store.NO);
     doc.add(foo);
     doc.add(bar);
     

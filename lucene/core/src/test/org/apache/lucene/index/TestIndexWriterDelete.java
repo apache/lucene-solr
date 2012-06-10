@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -58,10 +58,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     custom1.setStored(true);
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
-      doc.add(newField("id", keywords[i], StringField.TYPE_STORED));
+      doc.add(newStringField("id", keywords[i], Field.Store.YES));
       doc.add(newField("country", unindexed[i], custom1));
-      doc.add(newField("contents", unstored[i], TextField.TYPE_UNSTORED));
-      doc.add(newField("city", text[i], TextField.TYPE_STORED));
+      doc.add(newTextField("contents", unstored[i], Field.Store.NO));
+      doc.add(newTextField("city", text[i], Field.Store.YES));
       modifier.addDocument(doc);
     }
     modifier.forceMerge(1);
@@ -383,9 +383,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private void updateDoc(IndexWriter modifier, int id, int value)
       throws IOException {
     Document doc = new Document();
-    doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
-    doc.add(newField("id", String.valueOf(id), StringField.TYPE_STORED));
-    doc.add(newField("value", String.valueOf(value), StringField.TYPE_UNSTORED));
+    doc.add(newTextField("content", "aaa", Field.Store.NO));
+    doc.add(newStringField("id", String.valueOf(id), Field.Store.YES));
+    doc.add(newStringField("value", String.valueOf(value), Field.Store.NO));
     modifier.updateDocument(new Term("id", String.valueOf(id)), doc);
   }
 
@@ -393,9 +393,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private void addDoc(IndexWriter modifier, int id, int value)
       throws IOException {
     Document doc = new Document();
-    doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
-    doc.add(newField("id", String.valueOf(id), StringField.TYPE_STORED));
-    doc.add(newField("value", String.valueOf(value), StringField.TYPE_UNSTORED));
+    doc.add(newTextField("content", "aaa", Field.Store.NO));
+    doc.add(newStringField("id", String.valueOf(id), Field.Store.YES));
+    doc.add(newStringField("value", String.valueOf(value), Field.Store.NO));
     modifier.addDocument(doc);
   }
 
@@ -432,8 +432,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     for (int i = 0; i < 157; i++) {
       Document d = new Document();
-      d.add(newField("id", Integer.toString(i), StringField.TYPE_STORED));
-      d.add(newField("content", "aaa " + i, TextField.TYPE_UNSTORED));
+      d.add(newStringField("id", Integer.toString(i), Field.Store.YES));
+      d.add(newTextField("content", "aaa " + i, Field.Store.NO));
       writer.addDocument(d);
     }
     writer.close();
@@ -510,8 +510,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             for (int i = 0; i < 13; i++) {
               if (updates) {
                 Document d = new Document();
-                d.add(newField("id", Integer.toString(i), StringField.TYPE_STORED));
-                d.add(newField("content", "bbb " + i, TextField.TYPE_UNSTORED));
+                d.add(newStringField("id", Integer.toString(i), Field.Store.YES));
+                d.add(newTextField("content", "bbb " + i, Field.Store.NO));
                 modifier.updateDocument(new Term("id", Integer.toString(docId)), d);
               } else { // deletes
                 modifier.deleteDocuments(new Term("id", Integer.toString(docId)));
@@ -702,10 +702,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     custom1.setStored(true);
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
-      doc.add(newField("id", keywords[i], StringField.TYPE_STORED));
+      doc.add(newStringField("id", keywords[i], Field.Store.YES));
       doc.add(newField("country", unindexed[i], custom1));
-      doc.add(newField("contents", unstored[i], TextField.TYPE_UNSTORED));
-      doc.add(newField("city", text[i], TextField.TYPE_STORED));
+      doc.add(newTextField("contents", unstored[i], Field.Store.NO));
+      doc.add(newTextField("city", text[i], Field.Store.YES));
       modifier.addDocument(doc);
     }
     // flush (and commit if ac)
@@ -823,10 +823,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     custom1.setStored(true);
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
-      doc.add(newField("id", keywords[i], StringField.TYPE_STORED));
+      doc.add(newStringField("id", keywords[i], Field.Store.YES));
       doc.add(newField("country", unindexed[i], custom1));
-      doc.add(newField("contents", unstored[i], TextField.TYPE_UNSTORED));
-      doc.add(newField("city", text[i], TextField.TYPE_STORED));
+      doc.add(newTextField("contents", unstored[i], Field.Store.NO));
+      doc.add(newTextField("city", text[i], Field.Store.YES));
       try {
         modifier.addDocument(doc);
       } catch (IOException io) {
@@ -869,7 +869,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     Collections.shuffle(ids, random());
     for(int id : ids) {
       Document doc = new Document();
-      doc.add(newField("id", ""+id, StringField.TYPE_UNSTORED));
+      doc.add(newStringField("id", ""+id, Field.Store.NO));
       w.addDocument(doc);
     }
     Collections.shuffle(ids, random());
@@ -905,7 +905,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     };
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setRAMBufferSizeMB(1.0).setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
-    doc.add(newField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO));
     int num = atLeast(3);
     for (int iter = 0; iter < num; iter++) {
       int count = 0;
@@ -949,7 +949,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int count = 0;
     while(true) {
       Document doc = new Document();
-      doc.add(new StringField("id", count+""));
+      doc.add(new StringField("id", count+"", Field.Store.NO));
       final Term delTerm;
       if (count == 1010) {
         // This is the only delete that applies
@@ -995,7 +995,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int count = 0;
     while(true) {
       Document doc = new Document();
-      doc.add(new StringField("id", count+""));
+      doc.add(new StringField("id", count+"", Field.Store.NO));
       final Term delTerm;
       if (count == 1010) {
         // This is the only delete that applies
@@ -1050,8 +1050,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         w.deleteDocuments(new Term("id", "0"));
       }
       Document doc = new Document();
-      doc.add(newField("id", ""+id, StringField.TYPE_UNSTORED));
-      doc.add(newField("body", sb.toString(), TextField.TYPE_UNSTORED));
+      doc.add(newStringField("id", ""+id, Field.Store.NO));
+      doc.add(newTextField("body", sb.toString(), Field.Store.NO));
       w.updateDocument(new Term("id", ""+id), doc);
       docsInSegment.incrementAndGet();
       // TODO: fix this test

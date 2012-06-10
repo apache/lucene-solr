@@ -69,9 +69,9 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     // add the first doc
     Document doc = new Document();
     String dummyTitle = "this is a dummy title ";
-    doc.add(new Field("title", dummyTitle, TextField.TYPE_STORED));
+    doc.add(new TextField("title", dummyTitle, Field.Store.YES));
     String dummyContent = "there is some content written here";
-    doc.add(new Field("contents", dummyContent, TextField.TYPE_STORED));
+    doc.add(new TextField("contents", dummyContent, Field.Store.YES));
     writer.addDocument(doc, analyzer);
     writer.commit();
 
@@ -90,9 +90,9 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     // add a second doc
     doc = new Document();
     String dogmasTitle = "dogmas";
-    doc.add(new Field("title", dogmasTitle, TextField.TYPE_STORED));
+    doc.add(new TextField("title", dogmasTitle, Field.Store.YES));
     String dogmasContents = "white men can't jump";
-    doc.add(new Field("contents", dogmasContents, TextField.TYPE_STORED));
+    doc.add(new TextField("contents", dogmasContents, Field.Store.YES));
     writer.addDocument(doc, analyzer);
     writer.commit();
 

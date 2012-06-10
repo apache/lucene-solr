@@ -32,7 +32,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -487,13 +486,13 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     customType2.setOmitNorms(true);
     FieldType customType3 = new FieldType();
     customType3.setStored(true);
-    doc.add(new Field("field1", sb.toString(), TextField.TYPE_STORED));
+    doc.add(new TextField("field1", sb.toString(), Field.Store.YES));
     doc.add(new Field("fielda", sb.toString(), customType2));
     doc.add(new Field("fieldb", sb.toString(), customType3));
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {
-      doc.add(new Field("field" + (i+1), sb.toString(), TextField.TYPE_STORED));
+      doc.add(new TextField("field" + (i+1), sb.toString(), Field.Store.YES));
     }
     return doc;
   }
@@ -591,7 +590,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     );
     for(int i=0;i<4;i++) {
       Document doc = new Document();
-      doc.add(newField("id", ""+i, StringField.TYPE_UNSTORED));
+      doc.add(newStringField("id", ""+i, Field.Store.NO));
       writer.addDocument(doc);
       Map<String,String> data = new HashMap<String,String>();
       data.put("index", i+"");

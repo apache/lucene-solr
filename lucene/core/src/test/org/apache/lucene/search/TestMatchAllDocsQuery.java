@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -99,7 +98,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   
   private void addDoc(String text, IndexWriter iw, float boost) throws IOException {
     Document doc = new Document();
-    Field f = newField("key", text, TextField.TYPE_STORED);
+    Field f = newTextField("key", text, Field.Store.YES);
     f.setBoost(boost);
     doc.add(f);
     iw.addDocument(doc);

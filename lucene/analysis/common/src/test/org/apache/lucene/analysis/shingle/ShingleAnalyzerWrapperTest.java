@@ -62,15 +62,15 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     Document doc;
     doc = new Document();
-    doc.add(new Field("content", "please divide this sentence into shingles", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "please divide this sentence into shingles", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("content", "just another test sentence", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "just another test sentence", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("content", "a sentence which contains no test", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "a sentence which contains no test", Field.Store.YES));
     writer.addDocument(doc);
 
     writer.close();

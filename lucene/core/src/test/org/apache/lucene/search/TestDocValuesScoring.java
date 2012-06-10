@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInvertState;
@@ -34,8 +33,8 @@ import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests the use of indexdocvalues in scoring.
@@ -51,11 +50,11 @@ public class TestDocValuesScoring extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    Field field = newField("foo", "", TextField.TYPE_UNSTORED);
+    Field field = newTextField("foo", "", Field.Store.NO);
     doc.add(field);
     Field dvField = new FloatDocValuesField("foo_boost", 0.0f);
     doc.add(dvField);
-    Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
+    Field field2 = newTextField("bar", "", Field.Store.NO);
     doc.add(field2);
     
     field.setStringValue("quick brown fox");

@@ -69,7 +69,7 @@ public class TestTermVectors extends LuceneTestCase {
       }
       doc.add(new Field("field", English.intToEnglish(i), ft));
       //test no term vectors too
-      doc.add(new Field("noTV", English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(new TextField("noTV", English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -341,7 +341,7 @@ public class TestTermVectors extends LuceneTestCase {
     }
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
-      doc.add(newField("field", English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(newTextField("field", English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
     if (VERBOSE) {
@@ -401,7 +401,7 @@ public class TestTermVectors extends LuceneTestCase {
     ft5.setStoreTermVectorOffsets(true);
     ft5.setStoreTermVectorPositions(true);
     
-    doc.add(newField("field", "one", TextField.TYPE_STORED));
+    doc.add(newTextField("field", "one", Field.Store.YES));
     doc.add(newField("field", "one", ft2));
     doc.add(newField("field", "one", ft3));
     doc.add(newField("field", "one", ft4));

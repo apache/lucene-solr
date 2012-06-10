@@ -25,13 +25,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -73,7 +73,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("field", "a b c d", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "a b c d", Field.Store.NO));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -137,7 +137,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir1 = newDirectory();
     RandomIndexWriter iw1 = new RandomIndexWriter(random(), dir1);
     Document doc1 = new Document();
-    doc1.add(newField("field", "foo bar", TextField.TYPE_UNSTORED));
+    doc1.add(newTextField("field", "foo bar", Field.Store.NO));
     iw1.addDocument(doc1);
     IndexReader reader1 = iw1.getReader();
     iw1.close();
@@ -145,7 +145,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir2 = newDirectory();
     RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2);
     Document doc2 = new Document();
-    doc2.add(newField("field", "foo baz", TextField.TYPE_UNSTORED));
+    doc2.add(newTextField("field", "foo baz", Field.Store.NO));
     iw2.addDocument(doc2);
     IndexReader reader2 = iw2.getReader();
     iw2.close();
@@ -197,7 +197,7 @@ public class TestBooleanQuery extends LuceneTestCase {
         contents += " f";
       }
       Document doc = new Document();
-      doc.add(new TextField("field", contents));
+      doc.add(new TextField("field", contents, Field.Store.NO));
       w.addDocument(doc);
     }
     w.forceMerge(1);

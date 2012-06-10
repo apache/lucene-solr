@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.MultiFields;
@@ -91,7 +92,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), store, analyzer);
     Document d = new Document();
-    d.add(newField("field", "bogus", TextField.TYPE_STORED));
+    d.add(newTextField("field", "bogus", Field.Store.YES));
     writer.addDocument(d);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -207,7 +208,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockPayloadAnalyzer());
     Document doc = new Document();
     doc.add(new TextField("content", new StringReader(
-        "a a b c d e a f g h i j a b k k")));
+        "a a b c d e a f g h i j a b k k"), Field.Store.NO));
     writer.addDocument(doc);
 
     final IndexReader readerFromWriter = writer.getReader();

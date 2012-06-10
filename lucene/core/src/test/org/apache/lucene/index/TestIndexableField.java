@@ -25,7 +25,7 @@ import java.util.Iterator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -194,7 +194,7 @@ public class TestIndexableField extends LuceneTestCase {
               assert fieldUpto < fieldCount;
               if (fieldUpto == 0) {
                 fieldUpto = 1;
-                return newField("id", ""+finalDocCount, StringField.TYPE_STORED);
+                return newStringField("id", ""+finalDocCount, Field.Store.YES);
               } else {
                 return new MyField(finalBaseCount + (fieldUpto++-1));
               }

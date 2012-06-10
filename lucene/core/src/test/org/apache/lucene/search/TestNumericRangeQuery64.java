@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -62,7 +63,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
         .setMaxBufferedDocs(_TestUtil.nextInt(random(), 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
 
-    final FieldType storedLong = new FieldType(LongField.TYPE);
+    final FieldType storedLong = new FieldType(LongField.TYPE_NOT_STORED);
     storedLong.setStored(true);
     storedLong.freeze();
 
@@ -81,7 +82,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     final FieldType storedLongNone = new FieldType(storedLong);
     storedLongNone.setNumericPrecisionStep(Integer.MAX_VALUE);
 
-    final FieldType unstoredLong = LongField.TYPE;
+    final FieldType unstoredLong = LongField.TYPE_NOT_STORED;
 
     final FieldType unstoredLong8 = new FieldType(unstoredLong);
     unstoredLong8.setNumericPrecisionStep(8);
@@ -328,23 +329,23 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
       newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
-    doc.add(new DoubleField("double", Double.NEGATIVE_INFINITY));
-    doc.add(new LongField("long", Long.MIN_VALUE));
+    doc.add(new DoubleField("double", Double.NEGATIVE_INFINITY, Field.Store.NO));
+    doc.add(new LongField("long", Long.MIN_VALUE, Field.Store.NO));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new DoubleField("double", Double.POSITIVE_INFINITY));
-    doc.add(new LongField("long", Long.MAX_VALUE));
+    doc.add(new DoubleField("double", Double.POSITIVE_INFINITY, Field.Store.NO));
+    doc.add(new LongField("long", Long.MAX_VALUE, Field.Store.NO));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new DoubleField("double", 0.0));
-    doc.add(new LongField("long", 0L));
+    doc.add(new DoubleField("double", 0.0, Field.Store.NO));
+    doc.add(new LongField("long", 0L, Field.Store.NO));
     writer.addDocument(doc);
     
     for (double d : TestNumericUtils.DOUBLE_NANs) {
       doc = new Document();
-      doc.add(new DoubleField("double", d));
+      doc.add(new DoubleField("double", d, Field.Store.NO));
       writer.addDocument(doc);
     }
     

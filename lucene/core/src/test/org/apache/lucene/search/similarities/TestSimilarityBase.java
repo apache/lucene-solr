@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
@@ -112,7 +113,7 @@ public class TestSimilarityBase extends LuceneTestCase {
       FieldType ft = new FieldType(TextField.TYPE_STORED);
       ft.setIndexed(false);
       d.add(newField(FIELD_ID, Integer.toString(i), ft));
-      d.add(newField(FIELD_BODY, docs[i], TextField.TYPE_STORED));
+      d.add(newTextField(FIELD_BODY, docs[i], Field.Store.YES));
       writer.addDocument(d);
     }
     

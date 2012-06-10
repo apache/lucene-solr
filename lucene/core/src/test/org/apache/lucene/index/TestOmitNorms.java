@@ -39,11 +39,11 @@ public class TestOmitNorms extends LuceneTestCase {
     Document d = new Document();
         
     // this field will have norms
-    Field f1 = newField("f1", "This field has norms", TextField.TYPE_UNSTORED);
+    Field f1 = newTextField("f1", "This field has norms", Field.Store.NO);
     d.add(f1);
        
     // this field will NOT have norms
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     Field f2 = newField("f2", "This field has NO norms in all docs", customType);
     d.add(f2);
@@ -57,7 +57,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // Reverse
     d.add(newField("f1", "This field has norms", customType));
         
-    d.add(newField("f2", "This field has NO norms in all docs", TextField.TYPE_UNSTORED));
+    d.add(newTextField("f2", "This field has NO norms in all docs", Field.Store.NO));
         
     writer.addDocument(d);
 
@@ -89,11 +89,11 @@ public class TestOmitNorms extends LuceneTestCase {
     Document d = new Document();
         
     // this field will have norms
-    Field f1 = newField("f1", "This field has norms", TextField.TYPE_UNSTORED);
+    Field f1 = newTextField("f1", "This field has norms", Field.Store.NO);
     d.add(f1);
        
     // this field will NOT have norms
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     Field f2 = newField("f2", "This field has NO norms in all docs", customType);
     d.add(f2);
@@ -109,7 +109,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // Reverese
     d.add(newField("f1", "This field has norms", customType));
         
-    d.add(newField("f2", "This field has NO norms in all docs", TextField.TYPE_UNSTORED));
+    d.add(newTextField("f2", "This field has NO norms in all docs", Field.Store.NO));
         
     for (int i = 0; i < 30; i++) {
       writer.addDocument(d);
@@ -144,12 +144,12 @@ public class TestOmitNorms extends LuceneTestCase {
     Document d = new Document();
         
     // this field will have norms
-    Field f1 = newField("f1", "This field has norms", TextField.TYPE_UNSTORED);
+    Field f1 = newTextField("f1", "This field has norms", Field.Store.NO);
     d.add(f1);
        
     // this field will NOT have norms
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     Field f2 = newField("f2", "This field has NO norms in all docs", customType);
     d.add(f2);
@@ -196,7 +196,7 @@ public class TestOmitNorms extends LuceneTestCase {
     lmp.setUseCompoundFile(false);
     Document d = new Document();
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     Field f1 = newField("f1", "This field has no norms", customType);
     d.add(f1);

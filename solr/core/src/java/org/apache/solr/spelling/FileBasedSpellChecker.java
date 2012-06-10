@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +106,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
         for (String s : lines) {
           Document d = new Document();
-          d.add(new TextField(WORD_FIELD_NAME, s));
+          d.add(new TextField(WORD_FIELD_NAME, s, Field.Store.NO));
           writer.addDocument(d);
         }
         writer.forceMerge(1);

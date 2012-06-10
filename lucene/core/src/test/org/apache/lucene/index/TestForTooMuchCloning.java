@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermRangeQuery;
@@ -49,7 +50,7 @@ public class TestForTooMuchCloning extends LuceneTestCase {
         sb.append(' ');
       }
       final Document doc = new Document();
-      doc.add(new TextField("field", sb.toString()));
+      doc.add(new TextField("field", sb.toString(), Field.Store.NO));
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();

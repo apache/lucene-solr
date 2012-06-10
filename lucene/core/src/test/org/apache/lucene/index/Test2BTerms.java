@@ -17,22 +17,21 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.*;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.store.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.*;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import org.junit.Ignore;
+
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.search.*;
+import org.apache.lucene.store.*;
+import org.apache.lucene.util.*;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 // NOTE: this test will fail w/ PreFlexRW codec!  (Because
 // this test uses full binary term space, but PreFlex cannot
@@ -178,7 +177,7 @@ public class Test2BTerms extends LuceneTestCase {
       Document doc = new Document();
       final MyTokenStream ts = new MyTokenStream(random(), TERMS_PER_DOC);
 
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setIndexOptions(IndexOptions.DOCS_ONLY);
       customType.setOmitNorms(true);
       Field field = new Field("field", ts, customType);

@@ -36,7 +36,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       if (withID) {
-        doc.add(new Field("id", "" + i, StringField.TYPE_UNSTORED));
+        doc.add(new StringField("id", "" + i, Field.Store.NO));
       }
       writer.addDocument(doc);
     }

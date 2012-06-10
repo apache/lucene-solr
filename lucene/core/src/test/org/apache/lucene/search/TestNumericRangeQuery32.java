@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
@@ -62,7 +63,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         .setMaxBufferedDocs(_TestUtil.nextInt(random(), 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
     
-    final FieldType storedInt = new FieldType(IntField.TYPE);
+    final FieldType storedInt = new FieldType(IntField.TYPE_NOT_STORED);
     storedInt.setStored(true);
     storedInt.freeze();
 
@@ -78,7 +79,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     final FieldType storedIntNone = new FieldType(storedInt);
     storedIntNone.setNumericPrecisionStep(Integer.MAX_VALUE);
 
-    final FieldType unstoredInt = IntField.TYPE;
+    final FieldType unstoredInt = IntField.TYPE_NOT_STORED;
 
     final FieldType unstoredInt8 = new FieldType(unstoredInt);
     unstoredInt8.setNumericPrecisionStep(8);
@@ -303,23 +304,23 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
       newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
-    doc.add(new FloatField("float", Float.NEGATIVE_INFINITY));
-    doc.add(new IntField("int", Integer.MIN_VALUE));
+    doc.add(new FloatField("float", Float.NEGATIVE_INFINITY, Field.Store.NO));
+    doc.add(new IntField("int", Integer.MIN_VALUE, Field.Store.NO));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new FloatField("float", Float.POSITIVE_INFINITY));
-    doc.add(new IntField("int", Integer.MAX_VALUE));
+    doc.add(new FloatField("float", Float.POSITIVE_INFINITY, Field.Store.NO));
+    doc.add(new IntField("int", Integer.MAX_VALUE, Field.Store.NO));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new FloatField("float", 0.0f));
-    doc.add(new IntField("int", 0));
+    doc.add(new FloatField("float", 0.0f, Field.Store.NO));
+    doc.add(new IntField("int", 0, Field.Store.NO));
     writer.addDocument(doc);
     
     for (float f : TestNumericUtils.FLOAT_NANs) {
       doc = new Document();
-      doc.add(new FloatField("float", f));
+      doc.add(new FloatField("float", f, Field.Store.NO));
       writer.addDocument(doc);
     }
     

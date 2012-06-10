@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -38,9 +36,9 @@ public class TestSumDocFreq extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     
     Document doc = new Document();
-    Field id = newField("id", "", StringField.TYPE_UNSTORED);
-    Field field1 = newField("foo", "", TextField.TYPE_UNSTORED);
-    Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
+    Field id = newStringField("id", "", Field.Store.NO);
+    Field field1 = newTextField("foo", "", Field.Store.NO);
+    Field field2 = newTextField("bar", "", Field.Store.NO);
     doc.add(id);
     doc.add(field1);
     doc.add(field2);

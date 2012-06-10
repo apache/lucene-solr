@@ -87,23 +87,23 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
     }
     
     if( index ) {
-      return new Field(fname,new CellTokenStream(cells.iterator()),TYPE_UNSTORED);
+      return new Field(fname,new CellTokenStream(cells.iterator()),TYPE_NOT_STORED);
     }
     
     throw new UnsupportedOperationException("Fields need to be indexed or store ["+fname+"]");
   }
 
   /* Indexed, tokenized, not stored. */
-  public static final FieldType TYPE_UNSTORED = new FieldType();
+  public static final FieldType TYPE_NOT_STORED = new FieldType();
 
   /* Indexed, tokenized, stored. */
   public static final FieldType TYPE_STORED = new FieldType();
 
   static {
-    TYPE_UNSTORED.setIndexed(true);
-    TYPE_UNSTORED.setTokenized(true);
-    TYPE_UNSTORED.setOmitNorms(true);
-    TYPE_UNSTORED.freeze();
+    TYPE_NOT_STORED.setIndexed(true);
+    TYPE_NOT_STORED.setTokenized(true);
+    TYPE_NOT_STORED.setOmitNorms(true);
+    TYPE_NOT_STORED.freeze();
 
     TYPE_STORED.setStored(true);
     TYPE_STORED.setIndexed(true);

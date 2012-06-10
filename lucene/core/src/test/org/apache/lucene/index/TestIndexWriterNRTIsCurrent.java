@@ -92,7 +92,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
       Random random = LuceneTestCase.random();
       try {
         Document doc = new Document();
-        doc.add(new Field("id", "1", TextField.TYPE_UNSTORED));
+        doc.add(new TextField("id", "1", Field.Store.NO));
         writer.addDocument(doc);
         holder.reader = currentReader = writer.getReader(true);
         Term term = new Term("id");

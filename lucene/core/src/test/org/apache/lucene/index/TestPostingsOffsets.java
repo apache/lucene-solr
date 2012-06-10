@@ -61,7 +61,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
 
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     if (random().nextBoolean()) {
       ft.setStoreTermVectors(true);
@@ -142,7 +142,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new Field("numbers", English.intToEnglish(i), ft));
       doc.add(new Field("oddeven", (i % 2) == 0 ? "even" : "odd", ft));
-      doc.add(new StringField("id", "" + i));
+      doc.add(new StringField("id", "" + i, Field.Store.NO));
       w.addDocument(doc);
     }
     
@@ -224,7 +224,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     final int numDocs = atLeast(20);
     //final int numDocs = atLeast(5);
 
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
 
     // TODO: randomize what IndexOptions we use; also test
     // changing this up in one IW buffered segment...:
@@ -237,7 +237,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     for(int docCount=0;docCount<numDocs;docCount++) {
       Document doc = new Document();
-      doc.add(new IntField("id", docCount));
+      doc.add(new IntField("id", docCount, Field.Store.NO));
       List<Token> tokens = new ArrayList<Token>();
       final int numTokens = atLeast(100);
       //final int numTokens = atLeast(20);

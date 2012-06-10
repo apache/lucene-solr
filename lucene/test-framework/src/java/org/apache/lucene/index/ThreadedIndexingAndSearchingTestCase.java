@@ -29,8 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -158,7 +156,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                 final String addedField;
                 if (random().nextBoolean()) {
                   addedField = "extra" + random().nextInt(40);
-                  doc.add(newField(addedField, "a random field", TextField.TYPE_STORED));
+                  doc.add(newTextField(addedField, "a random field", Field.Store.YES));
                 } else {
                   addedField = null;
                 }
@@ -181,7 +179,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                       packID = packCount.getAndIncrement() + "";
                     }
 
-                    final Field packIDField = newField("packID", packID, StringField.TYPE_STORED);
+                    final Field packIDField = newStringField("packID", packID, Field.Store.YES);
                     final List<String> docIDs = new ArrayList<String>();
                     final SubDocs subDocs = new SubDocs(packID, docIDs);
                     final List<Document> docsList = new ArrayList<Document>();

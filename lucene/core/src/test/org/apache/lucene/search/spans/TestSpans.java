@@ -21,8 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -57,7 +56,7 @@ public class TestSpans extends LuceneTestCase {
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(newField(field, docFields[i], TextField.TYPE_STORED));
+      doc.add(newTextField(field, docFields[i], Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -446,8 +445,8 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   private void addDoc(IndexWriter writer, String id, String text) throws IOException {
     final Document doc = new Document();
-    doc.add( newField("id", id, StringField.TYPE_STORED) );
-    doc.add( newField("text", text, TextField.TYPE_STORED) );
+    doc.add( newStringField("id", id, Field.Store.YES) );
+    doc.add( newTextField("text", text, Field.Store.YES) );
     writer.addDocument(doc);
   }
 
