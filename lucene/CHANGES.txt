@@ -393,6 +393,11 @@ Changes in Runtime Behavior
   any of the calls to the Analyzer throw an IOException.  QueryParseBase.analyzeRangePart()
   will throw a RuntimException if an IOException is thrown by the Analyzer.
 
+* LUCENE-4127: IndexWriter will now throw IllegalArgumentException if
+  the first token of an indexed field has 0 positionIncrement
+  (previously it silently corrected it to 1, possibly masking bugs).
+  (Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer

@@ -883,38 +883,15 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
     doc.add(new TextField("field", tokens));
-    w.addDocument(doc);
-    w.commit();
-
-    IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "a"));
-    pq.add(new Term("field", "b"));
-    pq.add(new Term("field", "c"));
-    ScoreDoc[] hits = s.search(pq, null, 1000).scoreDocs;
-    assertEquals(1, hits.length);
-
-    Query q = new SpanTermQuery(new Term("field", "a"));
-    hits = s.search(q, null, 1000).scoreDocs;
-    assertEquals(1, hits.length);
-
-    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(s.getIndexReader(),
-                                                                MultiFields.getLiveDocs(s.getIndexReader()),
-                                                                "field",
-                                                                new BytesRef("a"),
-                                                                false);
-
-    assertTrue(tps.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertEquals(1, tps.freq());
-    assertEquals(0, tps.nextPosition());
+    try {
+      w.addDocument(doc);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iea) {
+      // expected
+    }
     w.close();
-
-    r.close();
     dir.close();
   }
-
-
 
   // LUCENE-1219
   public void testBinaryFieldOffsetLength() throws IOException {

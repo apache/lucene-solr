@@ -61,7 +61,7 @@ public class TestPositionIncrement extends LuceneTestCase {
         return new TokenStreamComponents(new Tokenizer(reader) {
           // TODO: use CannedTokenStream
           private final String[] TOKENS = {"1", "2", "3", "4", "5"};
-          private final int[] INCREMENTS = {0, 2, 1, 0, 1};
+          private final int[] INCREMENTS = {1, 2, 1, 0, 1};
           private int i = 0;
 
           PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
@@ -222,8 +222,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertTrue(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     // "a" occurs 4 times
     assertEquals(4, tp.freq());
-    int expected = 0;
-    assertEquals(expected, tp.nextPosition());
+    assertEquals(0, tp.nextPosition());
     assertEquals(1, tp.nextPosition());
     assertEquals(3, tp.nextPosition());
     assertEquals(6, tp.nextPosition());

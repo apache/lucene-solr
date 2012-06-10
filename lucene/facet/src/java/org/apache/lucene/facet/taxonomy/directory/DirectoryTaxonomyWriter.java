@@ -546,7 +546,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // we write here (e.g., to write parent+2), and need to do a workaround
     // in the reader (which knows that anyway only category 0 has a parent
     // -1).    
-    parentStream.set(parent + 1);
+    parentStream.set(Math.max(parent+1, 1));
     Document d = new Document();
     d.add(parentStreamField);
 

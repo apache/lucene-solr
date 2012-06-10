@@ -18,9 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Holds state for inverting all occurrences of a single
@@ -87,6 +89,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         // reset the TokenStream to the first token
         stream.reset();
 
+        boolean success2 = false;
+
         try {
           boolean hasMoreTokens = stream.incrementToken();
 
@@ -109,8 +113,16 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
             if (!hasMoreTokens) break;
 
             final int posIncr = posIncrAttribute.getPositionIncrement();
+            if (posIncr < 0) {
+              throw new IllegalArgumentException("position increment must be >=0 (got " + posIncr + ")");
+            }
+            if (fieldState.position == 0 && posIncr == 0) {
+              throw new IllegalArgumentException("first position increment must be > 0 (got 0)");
+            }
             int position = fieldState.position + posIncr;
             if (position > 0) {
+              // NOTE: confusing: this "mirrors" the
+              // position++ we do below
               position--;
             } else if (position < 0) {
               throw new IllegalArgumentException("position overflow for field '" + field.name() + "'");
@@ -147,8 +159,13 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           stream.end();
 
           fieldState.offset += offsetAttribute.endOffset();
+          success2 = true;
         } finally {
-          stream.close();
+          if (!success2) {
+            IOUtils.closeWhileHandlingException(stream);
+          } else {
+            stream.close();
+          }
         }
 
         fieldState.offset += docState.analyzer == null ? 0 : docState.analyzer.getOffsetGap(field);
