@@ -49,14 +49,14 @@ public class PrefixAndSuffixAwareTokenFilter extends TokenStream {
   }
 
   public Token updateInputToken(Token inputToken, Token lastPrefixToken) {
-    inputToken.setStartOffset(lastPrefixToken.endOffset() + inputToken.startOffset());
-    inputToken.setEndOffset(lastPrefixToken.endOffset() + inputToken.endOffset());
+    inputToken.setOffset(lastPrefixToken.endOffset() + inputToken.startOffset(), 
+                         lastPrefixToken.endOffset() + inputToken.endOffset());
     return inputToken;
   }
 
   public Token updateSuffixToken(Token suffixToken, Token lastInputToken) {
-    suffixToken.setStartOffset(lastInputToken.endOffset() + suffixToken.startOffset());
-    suffixToken.setEndOffset(lastInputToken.endOffset() + suffixToken.endOffset());
+    suffixToken.setOffset(lastInputToken.endOffset() + suffixToken.startOffset(),
+                          lastInputToken.endOffset() + suffixToken.endOffset());
     return suffixToken;
   }
 

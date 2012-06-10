@@ -175,10 +175,6 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (offsetAtt != null) {
         final int startOffset = offsetAtt.startOffset();
         final int endOffset = offsetAtt.endOffset();
-        assertTrue("startOffset must be >= 0", startOffset >= 0);
-        assertTrue("endOffset must be >= 0", endOffset >= 0);
-        assertTrue("endOffset must be >= startOffset, got startOffset=" + startOffset + ",endOffset=" + endOffset, 
-            endOffset >= startOffset);
         if (finalOffset != null) {
           assertTrue("startOffset must be <= finalOffset", startOffset <= finalOffset.intValue());
           assertTrue("endOffset must be <= finalOffset: got endOffset=" + endOffset + " vs finalOffset=" + finalOffset.intValue(),

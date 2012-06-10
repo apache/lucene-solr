@@ -153,8 +153,8 @@ public class PrefixAwareTokenFilter extends TokenStream {
    * @return consumer token
    */
   public Token updateSuffixToken(Token suffixToken, Token lastPrefixToken) {
-    suffixToken.setStartOffset(lastPrefixToken.endOffset() + suffixToken.startOffset());
-    suffixToken.setEndOffset(lastPrefixToken.endOffset() + suffixToken.endOffset());
+    suffixToken.setOffset(lastPrefixToken.endOffset() + suffixToken.startOffset(),
+                          lastPrefixToken.endOffset() + suffixToken.endOffset());
     return suffixToken;
   }
 

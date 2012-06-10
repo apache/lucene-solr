@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
@@ -381,6 +383,68 @@ public class TestPostingsOffsets extends LuceneTestCase {
     ir.close();
     riw.close();
     dir.close();
+  }
+  
+  // NOTE: the next two tests aren't that good as we need an EvilToken...
+  public void testNegativeOffsets() throws Exception {
+    try {
+      checkTokens(new Token[] { 
+          makeToken("foo", 1, -1, -1)
+      });
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //expected
+    }
+  }
+  
+  public void testIllegalOffsets() throws Exception {
+    try {
+      checkTokens(new Token[] { 
+          makeToken("foo", 1, 1, 0)
+      });
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //expected
+    }
+  }
+   
+  public void testBackwardsOffsets() throws Exception {
+    try {
+      checkTokens(new Token[] { 
+         makeToken("foo", 1, 0, 3),
+         makeToken("foo", 1, 4, 7),
+         makeToken("foo", 0, 3, 6)
+      });
+      fail();
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+  }
+  // TODO: more tests with other possibilities
+  
+  private void checkTokens(Token[] tokens) throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
+    boolean success = false;
+    try {
+      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+      // store some term vectors for the checkindex cross-check
+      ft.setStoreTermVectors(true);
+      ft.setStoreTermVectorPositions(true);
+      ft.setStoreTermVectorOffsets(true);
+     
+      Document doc = new Document();
+      doc.add(new Field("body", new CannedTokenStream(tokens), ft));
+      riw.addDocument(doc);
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(riw, dir);
+      } else {
+        IOUtils.closeWhileHandlingException(riw, dir);
+      }
+    }
   }
 
   private Token makeToken(String text, int posIncr, int startOffset, int endOffset) {
