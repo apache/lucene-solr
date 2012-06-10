@@ -69,7 +69,7 @@ final class MockPayloadFilter extends TokenFilter {
     if (input.incrementToken()) {
       payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes()));
       int posIncr;
-      if (i % 2 == 1) {
+      if (pos == 0 || i % 2 == 1) {
         posIncr = 1;
       } else {
         posIncr = 0;
