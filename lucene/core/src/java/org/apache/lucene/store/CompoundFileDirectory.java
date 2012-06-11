@@ -204,7 +204,7 @@ public final class CompoundFileDirectory extends Directory {
     } else {
       res = entries.keySet().toArray(new String[entries.size()]);
       // Add the segment name
-      String seg = fileName.substring(0, fileName.indexOf('.'));
+      String seg = IndexFileNames.parseSegmentName(fileName);
       for (int i = 0; i < res.length; i++) {
         res[i] = seg + res[i];
       }

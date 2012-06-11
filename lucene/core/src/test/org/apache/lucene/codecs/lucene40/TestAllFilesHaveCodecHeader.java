@@ -69,11 +69,9 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
         continue; // segments.gen has no header, thats ok
       }
       if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
-        /* TODO: enable this after resolving LUCENE-4130
-         * CompoundFileDirectory cfsDir = new CompoundFileDirectory(dir, file, newIOContext(random()), false);
-         * checkHeaders(cfsDir); // recurse into cfs
-         * cfsDir.close();
-         */
+        CompoundFileDirectory cfsDir = new CompoundFileDirectory(dir, file, newIOContext(random()), false);
+        checkHeaders(cfsDir); // recurse into cfs
+        cfsDir.close();
         continue; // .cfs has its own header... would be nice to fix
       }
       if (file.endsWith(IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)) {
