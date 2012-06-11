@@ -345,11 +345,7 @@ final class SegmentMerger {
   private void mergePerDoc(SegmentWriteState segmentWriteState) throws IOException {
       final PerDocConsumer docsConsumer = codec.docValuesFormat()
           .docsConsumer(new PerDocWriteState(segmentWriteState));
-      // TODO: remove this check when 3.x indexes are no longer supported
-      // (3.x indexes don't have docvalues)
-      if (docsConsumer == null) {
-        return;
-      }
+      assert docsConsumer != null;
       boolean success = false;
       try {
         docsConsumer.merge(mergeState);
@@ -366,11 +362,7 @@ final class SegmentMerger {
   private void mergeNorms(SegmentWriteState segmentWriteState) throws IOException {
     final PerDocConsumer docsConsumer = codec.normsFormat()
         .docsConsumer(new PerDocWriteState(segmentWriteState));
-    // TODO: remove this check when 3.x indexes are no longer supported
-    // (3.x indexes don't have docvalues)
-    if (docsConsumer == null) {
-      return;
-    }
+    assert docsConsumer != null;
     boolean success = false;
     try {
       docsConsumer.merge(mergeState);
