@@ -1,9 +1,13 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +31,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -81,6 +86,51 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   protected NamedList initParams;
   public static final String TERM_VECTORS = "termVectors";
 
+  /**
+   * Helper method for determining the list of fields that we should 
+   * try to find term vectors on.  
+   * <p>
+   * Does simple (non-glob-supporting) parsing on the 
+   * {@link TermVectorParams#FIELDS} param if specified, otherwise it returns 
+   * the concrete field values specified in {@link CommonParams.FL} -- 
+   * ignoring functions, transformers, or literals.  
+   * </p>
+   * <p>
+   * If "fl=*" is used, or neither param is specified, then <code>null</code> 
+   * will be returned.  If the empty set is returned, it means the "fl" 
+   * specified consisted entirely of things that are not real fields 
+   * (ie: functions, transformers, partial-globs, score, etc...) and not 
+   * supported by this component. 
+   * </p>
+   */
+  private Set<String> getFields(ResponseBuilder rb) {
+    SolrParams params = rb.req.getParams();
+    String[] fldLst = params.getParams(TermVectorParams.FIELDS);
+    if (null == fldLst || 0 == fldLst.length || 
+        (1 == fldLst.length && 0 == fldLst[0].length())) {
+
+      // no tv.fl, parse the main fl
+      ReturnFields rf = new ReturnFields
+        (params.getParams(CommonParams.FL), rb.req);
+
+      if (rf.wantsAllFields()) {
+        return null;
+      }
+
+      Set<String> fieldNames = rf.getLuceneFieldNames();
+      return (null != fieldNames) ?
+        fieldNames :
+        // return empty set indicating no fields should be used
+        Collections.<String>emptySet();
+    }
+
+    // otherwise us the raw fldList as is, no special parsing or globs
+    Set<String> fieldNames = new LinkedHashSet<String>();
+    for (String fl : fldLst) {
+      fieldNames.addAll(Arrays.asList(SolrPluginUtils.split(fl)));
+    }
+    return fieldNames;
+  }
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
@@ -108,11 +158,6 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       allFields.tfIdf = true;
     }
 
-    String fldLst = params.get(TermVectorParams.FIELDS);
-    if (fldLst == null) {
-      fldLst = params.get(CommonParams.FL);
-    }
-
     //use this to validate our fields
     IndexSchema schema = rb.req.getSchema();
     //Build up our per field mapping
@@ -122,10 +167,14 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     List<String>  noPos = new ArrayList<String>();
     List<String>  noOff = new ArrayList<String>();
 
-    //we have specific fields to retrieve
-    if (fldLst != null) {
-      String [] fields = SolrPluginUtils.split(fldLst);
+    Set<String> fields = getFields(rb);
+    if ( null != fields ) {
+      //we have specific fields to retrieve, or no fields
       for (String field : fields) {
+
+        // workarround SOLR-3523
+        if (null == field || "score".equals(field)) continue; 
+
         SchemaField sf = schema.getFieldOrNull(field);
         if (sf != null) {
           if (sf.storeTermVector()) {
@@ -240,7 +289,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           termVectors.add("uniqueKeyFieldName", uniqFieldName);
         }
       }
-      if (!fieldOptions.isEmpty()) {
+      if ( null != fields ) {
         for (Map.Entry<String, FieldOptions> entry : fieldOptions.entrySet()) {
           final String field = entry.getKey();
           final Terms vector = reader.getTermVector(docId, field);
