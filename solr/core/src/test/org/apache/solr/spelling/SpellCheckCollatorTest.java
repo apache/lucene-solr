@@ -54,6 +54,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
  		assertNull(h.validateUpdate(adoc("id", "10", "teststop", "Once in Paris Dick built a fire on the hearth")));
  		assertNull(h.validateUpdate(adoc("id", "11", "teststop", "Dick waited for Jane as he watched the sparks flow upward")));
  		assertNull(h.validateUpdate(adoc("id", "12", "teststop", "This June parisian rendez-vous is ruined because of a customs snafu")));
+ 		assertNull(h.validateUpdate(adoc("id", "13", "teststop", "partisan political machine")));
 		assertNull(h.validateUpdate(commit()));
 	}
 
@@ -108,6 +109,44 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     }
 
   }
+	
+	public void testCollateWithOverride() throws Exception
+	{
+	  assertQ(
+      req(
+    	  SpellCheckComponent.COMPONENT_NAME, "true",
+        SpellCheckComponent.SPELLCHECK_DICT, "direct",
+        SpellingParams.SPELLCHECK_COUNT, "10",   
+        SpellingParams.SPELLCHECK_COLLATE, "true",
+        SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "10",
+        SpellingParams.SPELLCHECK_MAX_COLLATIONS, "10",
+        "qt", "spellCheckCompRH",
+        "defType", "edismax",
+        "qf", "teststop",
+        "mm", "1",
+        CommonParams.Q, "partisian politcal mashine"
+      ),
+      "//lst[@name='spellcheck']/lst[@name='suggestions']/str[@name='collation']='parisian political machine'"
+    );
+	  assertQ(
+	      req(
+	        SpellCheckComponent.COMPONENT_NAME, "true",
+	        SpellCheckComponent.SPELLCHECK_DICT, "direct",
+	        SpellingParams.SPELLCHECK_COUNT, "10",   
+	        SpellingParams.SPELLCHECK_COLLATE, "true",
+	        SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "10",
+	        SpellingParams.SPELLCHECK_MAX_COLLATIONS, "10",
+	        "qt", "spellCheckCompRH",
+	        "defType", "edismax",
+	        "qf", "teststop",
+	        "mm", "1",
+	        SpellingParams.SPELLCHECK_COLLATE_PARAM_OVERRIDE + "mm", "100%",
+	        CommonParams.Q, "partisian politcal mashine"
+	      ),
+	     "//lst[@name='spellcheck']/lst[@name='suggestions']/str[@name='collation']='partisan political machine'"
+	   );
+    
+	}
 
 	@Test
 	public void testCollateWithFilter() throws Exception
