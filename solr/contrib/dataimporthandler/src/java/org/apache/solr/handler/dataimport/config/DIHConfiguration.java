@@ -9,7 +9,7 @@ import java.util.Properties;
 import org.apache.solr.handler.dataimport.DataImporter;
 import org.w3c.dom.Element;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
