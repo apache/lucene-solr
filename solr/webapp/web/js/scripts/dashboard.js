@@ -524,7 +524,7 @@ sammy.get
                             
               $( '.message', this )
                 .show()
-                .html( 'Ping request handler is not configured.' );
+                .html( 'Ping request handler is not configured with a healthcheck file.' );
             },
             complete : function( xhr, text_status )
             {
