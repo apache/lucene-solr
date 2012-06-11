@@ -337,9 +337,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   // before finishCommit is called
   ChecksumIndexOutput pendingSegnOutput;
 
+  private static final String SEGMENT_INFO_UPGRADE_CODEC = "SegmentInfo3xUpgrade";
+  private static final int SEGMENT_INFO_UPGRADE_VERSION = 0;
+
   private void write(Directory directory) throws IOException {
 
-    String segmentFileName = getNextSegmentFileName();
+    String segmentsFileName = getNextSegmentFileName();
     
     // Always advance the generation on write:
     if (generation == -1) {
@@ -354,7 +357,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     final Set<String> upgradedSIFiles = new HashSet<String>();
 
     try {
-      segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName, IOContext.DEFAULT));
+      segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentsFileName, IOContext.DEFAULT));
       CodecUtil.writeHeader(segnOutput, "segments", VERSION_40);
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
@@ -373,9 +376,29 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         // "ugprade" to write the .si file for it:
         String version = si.getVersion();
         if (version == null || StringHelper.getVersionComparator().compare(version, "4.0") < 0) {
-          String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
-          if (!directory.fileExists(fileName)) {
-            upgradedSIFiles.add(write3xInfo(directory, si, IOContext.DEFAULT));
+
+          if (!segmentWasUpgraded(directory, si)) {
+
+            final String segmentFileName = write3xInfo(directory, si, IOContext.DEFAULT);
+            upgradedSIFiles.add(segmentFileName);
+            directory.sync(Collections.singletonList(segmentFileName));
+
+            String markerFileName = IndexFileNames.segmentFileName(si.name, "upgraded", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
+
+            // Write separate marker file indicating upgrade
+            // is completed.  This way, if there is a JVM
+            // kill/crash, OS crash, power loss, etc. while
+            // writing the upgraded file, the marker file
+            // will be missing:
+            si.addFile(markerFileName);
+            IndexOutput out = directory.createOutput(markerFileName, IOContext.DEFAULT);
+            try {
+              CodecUtil.writeHeader(out, SEGMENT_INFO_UPGRADE_CODEC, SEGMENT_INFO_UPGRADE_VERSION);
+            } finally {
+              out.close();
+            }
+            upgradedSIFiles.add(markerFileName);
+            directory.sync(Collections.singletonList(markerFileName));
           }
         }
       }
@@ -399,13 +422,34 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         try {
           // Try not to leave a truncated segments_N file in
           // the index:
-          directory.deleteFile(segmentFileName);
+          directory.deleteFile(segmentsFileName);
         } catch (Throwable t) {
           // Suppress so we keep throwing the original exception
         }
       }
     }
   }
+
+  private static boolean segmentWasUpgraded(Directory directory, SegmentInfo si) {
+    // Check marker file:
+    String markerFileName = IndexFileNames.segmentFileName(si.name, "upgraded", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
+    IndexInput in = null;
+    try {
+      in = directory.openInput(markerFileName, IOContext.READONCE);
+      if (CodecUtil.checkHeader(in, SEGMENT_INFO_UPGRADE_CODEC, SEGMENT_INFO_UPGRADE_VERSION, SEGMENT_INFO_UPGRADE_VERSION) == 0) {
+        return true;
+      }
+    } catch (IOException ioe) {
+      // Ignore: if something is wrong w/ the marker file,
+      // we will just upgrade again
+    } finally {
+      if (in != null) {
+        IOUtils.closeWhileHandlingException(in);
+      }
+    }
+    return false;
+  }
+
 
   @Deprecated
   public static String write3xInfo(Directory dir, SegmentInfo si, IOContext context) throws IOException {
