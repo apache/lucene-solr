@@ -12,7 +12,7 @@ import org.apache.lucene.facet.example.simple.SimpleSearcher;
 import org.apache.lucene.facet.search.AdaptiveFacetsAccumulator;
 import org.apache.lucene.facet.search.results.FacetResult;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.

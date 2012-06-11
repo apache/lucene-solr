@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.CharBlockArray;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
