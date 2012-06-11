@@ -80,7 +80,7 @@ public class Overseer {
                 CloudState cloudState = reader.getCloudState();
                 log.info("Replaying operations from work queue.");
                 
-                while (head != null) {
+                while (head != null && amILeader()) {
                   final ZkNodeProps message = ZkNodeProps.load(head);
                   final String operation = message
                       .get(QUEUE_OPERATION);
@@ -381,6 +381,7 @@ public class Overseer {
   
   public Overseer(final ZkStateReader reader, final String id) throws KeeperException, InterruptedException {
     log.info("Overseer (id=" + id + ") starting");
+    createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
     Thread updaterThread = new Thread(tg, new CloudStateUpdater(reader, id));
