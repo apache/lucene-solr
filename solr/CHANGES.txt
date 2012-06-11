@@ -491,6 +491,9 @@ Bug Fixes
 * SOLR-2923: IllegalArgumentException when using useFilterForSortedQuery on an 
   empty index. (Adrien Grand via Mark Miller)
 
+* SOLR-3537: Fixed TermVectorComponent so that it will not fail if the fl 
+  param contains globs or psuedo-fields (hossman)
+
 Other Changes
 ----------------------
 
