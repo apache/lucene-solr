@@ -37,26 +37,7 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Combines multiple files into a single compound file.
  * 
- * The file format data file:<br>
- * <ul>
- * <li>VInt Version</li>
- * <li>{File Data} fileCount entries with the raw data of the corresponding file
- * </li>
- * <ul>
- * File format entry table:<br>
- * <ul>
- * <li>int Version</li>
- * <li>VInt fileCount - number of entries with the following structure:</li>
- * <ul>
- * <li>String fileName</li>
- * <li>long dataOffset</li>
- * <li>long dataLength</li>
- * </ul>
- * </li> </ul> The fileCount integer indicates how many files are contained in
- * this compound file. The entry table that follows has that many entries. Each
- * directory entry contains a long pointer to the start of this file's data
- * section, the files length, and a String with that file's name.
- * 
+ * @see CompoundFileDirectory
  * @lucene.internal
  */
 final class CompoundFileWriter implements Closeable{

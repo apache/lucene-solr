@@ -61,6 +61,13 @@ import java.io.IOException;
  *   <li>FileName --&gt; {@link DataOutput#writeString String}</li>
  *   <li>FileData --&gt; raw file data</li>
  * </ul>
+ * <p>Notes:</p>
+ * <ul>
+ *   <li>FileCount indicates how many files are contained in this compound file. 
+ *       The entry table that follows has that many entries. 
+ *   <li>Each directory entry contains a long pointer to the start of this file's data
+ *       section, the files length, and a String with that file's name.
+ * </ul>
  * 
  * @lucene.experimental
  */
