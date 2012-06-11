@@ -18,12 +18,15 @@ package org.apache.solr.spelling;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -74,8 +77,23 @@ public class SpellCheckCollator {
 
       if (verifyCandidateWithQuery) {
         tryNo++;
-
-        ModifiableSolrParams params = new ModifiableSolrParams(ultimateResponse.req.getParams());
+        SolrParams origParams = ultimateResponse.req.getParams();
+        ModifiableSolrParams params = new ModifiableSolrParams(origParams);  
+        Iterator<String> origParamIterator = origParams.getParameterNamesIterator();
+        int pl = SpellingParams.SPELLCHECK_COLLATE_PARAM_OVERRIDE.length();
+        while (origParamIterator.hasNext()) {
+          String origParamName = origParamIterator.next();
+          if (origParamName
+              .startsWith(SpellingParams.SPELLCHECK_COLLATE_PARAM_OVERRIDE)
+              && origParamName.length() > pl) {
+            String[] val = origParams.getParams(origParamName);
+            if (val.length == 1 && val[0].length() == 0) {
+              params.set(origParamName.substring(pl), (String[]) null);
+            } else {
+              params.set(origParamName.substring(pl), val);
+            }
+          }
+        }
         params.set(CommonParams.Q, collationQueryStr);
         params.remove(CommonParams.START);
         params.set(CommonParams.FL, "id");
