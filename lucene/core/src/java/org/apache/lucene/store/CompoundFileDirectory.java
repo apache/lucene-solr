@@ -19,8 +19,8 @@ package org.apache.lucene.store;
 
 import org.apache.lucene.codecs.Codec; // javadocs
 import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.util.IOUtils;
 
@@ -141,16 +141,15 @@ public final class CompoundFileDirectory extends Directory {
             fileEntry.offset = input.readLong();
             fileEntry.length = input.readLong();
           }
+          success = true;
           return mapping;
         } finally {
           IOUtils.close(input);
         }
       } else {
-        // TODO remove once 3.x is not supported anymore
-        mapping = readLegacyEntries(stream, firstInt);
+        throw new IndexFormatTooOldException(stream, firstInt, 
+            CompoundFileWriter.FORMAT_CURRENT, CompoundFileWriter.FORMAT_CURRENT);
       }
-      success = true;
-      return mapping;
     } finally {
       if (success) {
         IOUtils.close(stream);
@@ -158,61 +157,6 @@ public final class CompoundFileDirectory extends Directory {
         IOUtils.closeWhileHandlingException(stream);
       }
     }
-  }
-
-  private static Map<String, FileEntry> readLegacyEntries(IndexInput stream,
-      int firstInt) throws CorruptIndexException, IOException {
-    final Map<String,FileEntry> entries = new HashMap<String,FileEntry>();
-    final int count;
-    final boolean stripSegmentName;
-    if (firstInt < CompoundFileWriter.FORMAT_PRE_VERSION) {
-      if (firstInt < CompoundFileWriter.FORMAT_CURRENT) {
-        throw new CorruptIndexException("Incompatible format version: "
-            + firstInt + " expected " + CompoundFileWriter.FORMAT_CURRENT + " (resource: " + stream + ")");
-      }
-      // It's a post-3.1 index, read the count.
-      count = stream.readVInt();
-      stripSegmentName = false;
-    } else {
-      count = firstInt;
-      stripSegmentName = true;
-    }
-    
-    // read the directory and init files
-    long streamLength = stream.length();
-    FileEntry entry = null;
-    for (int i=0; i<count; i++) {
-      long offset = stream.readLong();
-      if (offset < 0 || offset > streamLength) {
-        throw new CorruptIndexException("Invalid CFS entry offset: " + offset + " (resource: " + stream + ")");
-      }
-      String id = stream.readString();
-      
-      if (stripSegmentName) {
-        // Fix the id to not include the segment names. This is relevant for
-        // pre-3.1 indexes.
-        id = IndexFileNames.stripSegmentName(id);
-      }
-      
-      if (entry != null) {
-        // set length of the previous entry
-        entry.length = offset - entry.offset;
-      }
-      
-      entry = new FileEntry();
-      entry.offset = offset;
-
-      assert !entries.containsKey(id);
-
-      entries.put(id, entry);
-    }
-    
-    // set the length of the final entry
-    if (entry != null) {
-      entry.length = streamLength - entry.offset;
-    }
-    
-    return entries;
   }
   
   public Directory getDirectory() {
