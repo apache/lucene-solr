@@ -32,7 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
+ * A request for the org.apache.solr.handler.FieldAnalysisRequestHandler.
  *
  *
  * @since solr.14
