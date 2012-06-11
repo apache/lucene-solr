@@ -159,7 +159,8 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * with the frequency of the term in that document (except when frequencies are
  * omitted: {@link IndexOptions#DOCS_ONLY}).</p>
  * <ul>
- *   <li>FreqFile (.frq) --&gt; &lt;TermFreqs, SkipData&gt; <sup>TermCount</sup></li>
+ *   <li>FreqFile (.frq) --&gt; Header, &lt;TermFreqs, SkipData&gt; <sup>TermCount</sup></li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermFreqs --&gt; &lt;TermFreq&gt; <sup>DocFreq</sup></li>
  *   <li>TermFreq --&gt; DocDelta[, Freq?]</li>
  *   <li>SkipData --&gt; &lt;&lt;SkipLevelLength, SkipLevel&gt;
@@ -232,7 +233,8 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * anything into this file, and if all fields in the index omit positional data
  * then the .prx file will not exist.</p>
  * <ul>
- *   <li>ProxFile (.prx) --&gt; &lt;TermPositions&gt; <sup>TermCount</sup></li>
+ *   <li>ProxFile (.prx) --&gt; Header, &lt;TermPositions&gt; <sup>TermCount</sup></li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermPositions --&gt; &lt;Positions&gt; <sup>DocFreq</sup></li>
  *   <li>Positions --&gt; &lt;PositionDelta,PayloadLength?,OffsetDelta?,OffsetLength?,PayloadData?&gt; <sup>Freq</sup></li>
  *   <li>PositionDelta,OffsetDelta,OffsetLength,PayloadLength --&gt; {@link DataOutput#writeVInt VInt}</li>

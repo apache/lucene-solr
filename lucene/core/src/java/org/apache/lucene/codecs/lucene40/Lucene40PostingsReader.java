@@ -37,6 +37,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 
 /** 
  * Concrete class that reads the 4.0 frq/prox
@@ -58,29 +59,35 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   // private String segment;
 
   public Lucene40PostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
-    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION),
+    boolean success = false;
+    IndexInput freqIn = null;
+    IndexInput proxIn = null;
+    try {
+      freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION),
                            ioContext);
-    // TODO: hasProx should (somehow!) become codec private,
-    // but it's tricky because 1) FIS.hasProx is global (it
-    // could be all fields that have prox are written by a
-    // different codec), 2) the field may have had prox in
-    // the past but all docs w/ that field were deleted.
-    // Really we'd need to init prxOut lazily on write, and
-    // then somewhere record that we actually wrote it so we
-    // know whether to open on read:
-    if (fieldInfos.hasProx()) {
-      boolean success = false;
-      try {
+      CodecUtil.checkHeader(freqIn, Lucene40PostingsWriter.FRQ_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_START);
+      // TODO: hasProx should (somehow!) become codec private,
+      // but it's tricky because 1) FIS.hasProx is global (it
+      // could be all fields that have prox are written by a
+      // different codec), 2) the field may have had prox in
+      // the past but all docs w/ that field were deleted.
+      // Really we'd need to init prxOut lazily on write, and
+      // then somewhere record that we actually wrote it so we
+      // know whether to open on read:
+      if (fieldInfos.hasProx()) {
         proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION),
-                               ioContext);
-        success = true;
-      } finally {
-        if (!success) {
-          freqIn.close();
-        }
+                             ioContext);
+        CodecUtil.checkHeader(proxIn, Lucene40PostingsWriter.PRX_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_START);
+      } else {
+        proxIn = null;
       }
-    } else {
-      proxIn = null;
+      this.freqIn = freqIn;
+      this.proxIn = proxIn;
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(freqIn, proxIn);
+      }
     }
   }
 
@@ -88,7 +95,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   public void init(IndexInput termsIn) throws IOException {
 
     // Make sure we are talking to the matching past writer
-    CodecUtil.checkHeader(termsIn, Lucene40PostingsWriter.CODEC,
+    CodecUtil.checkHeader(termsIn, Lucene40PostingsWriter.TERMS_CODEC,
       Lucene40PostingsWriter.VERSION_START, Lucene40PostingsWriter.VERSION_START);
 
     skipInterval = termsIn.readInt();
