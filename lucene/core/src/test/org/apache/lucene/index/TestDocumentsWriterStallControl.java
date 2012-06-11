@@ -114,6 +114,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     
   }
   
+  @Nightly
   public void testAccquireReleaseRace() throws InterruptedException {
     final DocumentsWriterStallControl ctrl = new DocumentsWriterStallControl();
     SimpleMemCtrl memCtrl = new SimpleMemCtrl();
