@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -75,15 +76,14 @@ final class CompoundFileWriter implements Closeable{
 
   // Segment name is not written in the file names.
   static final int FORMAT_NO_SEGMENT_PREFIX = -1;
-  static final int FORMAT_APPEND_FILES = -2;
+  
+  // versioning for the .cfs file
+  static final String DATA_CODEC = "CompoundFileWriterData";
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
 
-  static final int ENTRY_FORMAT_CURRENT = -1;
-
-  // NOTE: if you introduce a new format, make it 1 lower
-  // than the current one, and always change this if you
-  // switch to a new format!
-  /** @lucene.internal */
-  static final int FORMAT_CURRENT = FORMAT_APPEND_FILES;
+  // versioning for the .cfe file
+  static final String ENTRY_CODEC = "CompoundFileWriterEntries";
 
   private final Directory directory;
   private final Map<String, FileEntry> entries = new HashMap<String, FileEntry>();
@@ -121,7 +121,7 @@ final class CompoundFileWriter implements Closeable{
       boolean success = false;
       try {
         dataOut = directory.createOutput(dataFileName, IOContext.DEFAULT);
-        dataOut.writeVInt(FORMAT_CURRENT);
+        CodecUtil.writeHeader(dataOut, DATA_CODEC, VERSION_CURRENT);
         success = true;
       } finally {
         if (!success) {
@@ -228,7 +228,7 @@ final class CompoundFileWriter implements Closeable{
 
   protected void writeEntryTable(Collection<FileEntry> entries,
       IndexOutput entryOut) throws IOException {
-    entryOut.writeInt(ENTRY_FORMAT_CURRENT);
+    CodecUtil.writeHeader(entryOut, ENTRY_CODEC, VERSION_CURRENT);
     entryOut.writeVInt(entries.size());
     for (FileEntry fe : entries) {
       entryOut.writeString(IndexFileNames.stripSegmentName(fe.file));

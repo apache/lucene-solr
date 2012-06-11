@@ -22,6 +22,7 @@ import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.DataOutput; // javadocs
+import org.apache.lucene.util.CodecUtil; // javadocs
 import org.apache.lucene.util.IOUtils;
 
 import java.util.Collection;
@@ -51,10 +52,10 @@ import java.io.IOException;
  * </ul>
  * <p>Description:</p>
  * <ul>
- *   <li>Compound (.cfs) --&gt; FileData <sup>FileCount</sup></li>
- *   <li>Compound Entry Table (.cfe) --&gt; Version, FileCount, &lt;FileName,
+ *   <li>Compound (.cfs) --&gt; Header, FileData <sup>FileCount</sup></li>
+ *   <li>Compound Entry Table (.cfe) --&gt; Header, FileCount, &lt;FileName,
  *       DataOffset, DataLength&gt; <sup>FileCount</sup></li>
- *   <li>Version --&gt; {@link DataOutput#writeInt Int32}</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>FileCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>DataOffset,DataLength --&gt; {@link DataOutput#writeLong UInt64}</li>
  *   <li>FileName --&gt; {@link DataOutput#writeString String}</li>
@@ -111,6 +112,11 @@ public final class CompoundFileDirectory extends Directory {
     }
   }
 
+  private static final byte CODEC_MAGIC_BYTE1 = (byte) (CodecUtil.CODEC_MAGIC >>> 24);
+  private static final byte CODEC_MAGIC_BYTE2 = (byte) (CodecUtil.CODEC_MAGIC >>> 16);
+  private static final byte CODEC_MAGIC_BYTE3 = (byte) (CodecUtil.CODEC_MAGIC >>> 8);
+  private static final byte CODEC_MAGIC_BYTE4 = (byte) CodecUtil.CODEC_MAGIC;
+
   /** Helper method that reads CFS entries from an input stream */
   private static final Map<String, FileEntry> readEntries(
       IndexInputSlicer handle, Directory dir, String name) throws IOException {
@@ -121,15 +127,27 @@ public final class CompoundFileDirectory extends Directory {
     boolean success = false;
     try {
       final int firstInt = stream.readVInt();
-      if (firstInt == CompoundFileWriter.FORMAT_CURRENT) {
+      // impossible for 3.0 to have 63 files in a .cfs, CFS writer was not visible
+      // and separate norms/etc are outside of cfs.
+      if (firstInt == CODEC_MAGIC_BYTE1) {
+        byte secondByte = stream.readByte();
+        byte thirdByte = stream.readByte();
+        byte fourthByte = stream.readByte();
+        if (secondByte != CODEC_MAGIC_BYTE2 || 
+            thirdByte != CODEC_MAGIC_BYTE3 || 
+            fourthByte != CODEC_MAGIC_BYTE4) {
+          throw new CorruptIndexException("Illegal/impossible header for CFS file: " 
+                                         + secondByte + "," + thirdByte + "," + fourthByte);
+        }
+        CodecUtil.checkHeaderNoMagic(stream, CompoundFileWriter.DATA_CODEC, 
+            CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
         IndexInput input = null;
         try {
           final String entriesFileName = IndexFileNames.segmentFileName(
                                                 IndexFileNames.stripExtension(name), "",
                                                 IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
           input = dir.openInput(entriesFileName, IOContext.READONCE);
-          final int readInt = input.readInt(); // unused right now
-          assert readInt == CompoundFileWriter.ENTRY_FORMAT_CURRENT;
+          CodecUtil.checkHeader(input, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
           final int numEntries = input.readVInt();
           mapping = new HashMap<String, CompoundFileDirectory.FileEntry>(
               numEntries);
@@ -166,9 +184,9 @@ public final class CompoundFileDirectory extends Directory {
     final int count;
     final boolean stripSegmentName;
     if (firstInt < CompoundFileWriter.FORMAT_PRE_VERSION) {
-      if (firstInt < CompoundFileWriter.FORMAT_CURRENT) {
+      if (firstInt < CompoundFileWriter.FORMAT_NO_SEGMENT_PREFIX) {
         throw new CorruptIndexException("Incompatible format version: "
-            + firstInt + " expected " + CompoundFileWriter.FORMAT_CURRENT + " (resource: " + stream + ")");
+            + firstInt + " expected >= " + CompoundFileWriter.FORMAT_NO_SEGMENT_PREFIX + " (resource: " + stream + ")");
       }
       // It's a post-3.1 index, read the count.
       count = stream.readVInt();
