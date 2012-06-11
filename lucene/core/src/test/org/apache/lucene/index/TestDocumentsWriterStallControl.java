@@ -127,7 +127,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     int numStallers = atLeast(1);
     int numReleasers = atLeast(1);
     int numWaiters = atLeast(1);
-    final Synchonizer sync = new Synchonizer(numStallers + numReleasers, numStallers + numReleasers+numWaiters);
+    final Synchronizer sync = new Synchronizer(numStallers + numReleasers, numStallers + numReleasers+numWaiters);
     Thread[] threads = new Thread[numReleasers + numStallers + numWaiters];
     List<Throwable> exceptions =  Collections.synchronizedList(new ArrayList<Throwable>());
     for (int i = 0; i < numReleasers; i++) {
@@ -229,14 +229,14 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
   }
 
   public static class Waiter extends Thread {
-    private Synchonizer sync;
+    private Synchronizer sync;
     private DocumentsWriterStallControl ctrl;
     private AtomicBoolean checkPoint;
     private AtomicBoolean stop;
     private List<Throwable> exceptions;
     
     public Waiter(AtomicBoolean stop, AtomicBoolean checkPoint,
-        DocumentsWriterStallControl ctrl, Synchonizer sync,
+        DocumentsWriterStallControl ctrl, Synchronizer sync,
         List<Throwable> exceptions) {
       super("waiter");
       this.stop = stop;
@@ -268,7 +268,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
   
   public static class Updater extends Thread {
     
-    private Synchonizer sync;
+    private Synchronizer sync;
     private DocumentsWriterStallControl ctrl;
     private AtomicBoolean checkPoint;
     private AtomicBoolean stop;
@@ -276,7 +276,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     private List<Throwable> exceptions;
     
     public Updater(AtomicBoolean stop, AtomicBoolean checkPoint,
-        DocumentsWriterStallControl ctrl, Synchonizer sync,
+        DocumentsWriterStallControl ctrl, Synchronizer sync,
         boolean release, List<Throwable> exceptions) {
       super("updater");
       this.stop = stop;
@@ -400,12 +400,12 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     
   }
   
-  private static final class Synchonizer {
+  private static final class Synchronizer {
     volatile CountDownLatch waiter;
     volatile CountDownLatch updateJoin;
     volatile CountDownLatch leftCheckpoint;
     
-    public Synchonizer(int numUpdater, int numThreads) {
+    public Synchronizer(int numUpdater, int numThreads) {
       reset(numUpdater, numThreads);
     }
     
