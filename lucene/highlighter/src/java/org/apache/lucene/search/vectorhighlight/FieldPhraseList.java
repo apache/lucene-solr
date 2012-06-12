@@ -150,7 +150,7 @@ public class FieldPhraseList {
     }
 
     /**
-     * @return the termInfos
+     * @return the termInfos 
      */    
     public List<TermInfo> getTermsInfos() {
       return termsInfos;
@@ -164,7 +164,7 @@ public class FieldPhraseList {
       this.boost = boost;
       this.seqnum = seqnum;
       
-      // now we keep TermInfos for further operations
+      // We keep TermInfos for further operations
       termsInfos = new ArrayList<TermInfo>( terms );
       
       termsOffsets = new ArrayList<Toffs>( terms.size() );

@@ -1,6 +1,6 @@
 package org.apache.lucene.search.vectorhighlight;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,36 +18,58 @@ package org.apache.lucene.search.vectorhighlight;
  */
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.SubInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
+import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 
 /**
- * A simple implementation of {@link FieldFragList}.
+ * A weighted implementation of {@link FieldFragList}.
  */
-public class SimpleFieldFragList extends FieldFragList {
+public class WeightedFieldFragList extends FieldFragList {
 
   /**
    * a constructor.
    * 
    * @param fragCharSize the length (number of chars) of a fragment
    */
-  public SimpleFieldFragList( int fragCharSize ) {
+  public WeightedFieldFragList( int fragCharSize ) {
     super( fragCharSize );
   }
 
   /* (non-Javadoc)
    * @see org.apache.lucene.search.vectorhighlight.FieldFragList#add( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList )
-   */
+   */ 
   @Override
   public void add( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList ) {
+    
     float totalBoost = 0;
+    
     List<SubInfo> subInfos = new ArrayList<SubInfo>();
+    
+    HashSet<String> distinctTerms = new HashSet<String>();
+    
+    int length = 0;
+
     for( WeightedPhraseInfo phraseInfo : phraseInfoList ){
+      
       subInfos.add( new SubInfo( phraseInfo.getText(), phraseInfo.getTermsOffsets(), phraseInfo.getSeqnum() ) );
-      totalBoost += phraseInfo.getBoost();
+      
+      for ( TermInfo ti :  phraseInfo.getTermsInfos()) {
+        if ( distinctTerms.add( ti.getText() ) )
+          totalBoost += ti.getWeight() * phraseInfo.getBoost();
+        length++;
+      }
     }
+    
+    // We want that terms per fragment (length) is included into the weight. Otherwise a one-word-query
+    // would cause an equal weight for all fragments regardless of how much words they contain.  
+    // To avoid that fragments containing a high number of words possibly "outrank" more relevant fragments
+    // we "bend" the length with a standard-normalization a little bit.  
+    totalBoost *= length * ( 1 / Math.sqrt( length ) );
+    
     getFragInfos().add( new WeightedFragInfo( startOffset, endOffset, subInfos, totalBoost ) );
   }
   
