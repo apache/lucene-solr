@@ -398,6 +398,7 @@ public class LBHttpSolrServer extends SolrServer {
     HttpClientUtil.setSoTimeout(httpClient, timeout);
   }
   
+  @Override
   public void shutdown() {
     if (aliveCheckExecutor != null) {
       aliveCheckExecutor.shutdownNow();

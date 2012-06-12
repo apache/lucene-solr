@@ -197,7 +197,8 @@ public class CloudSolrServer extends SolrServer {
     return rsp.getResponse();
   }
 
-  public void close() {
+  @Override
+  public void shutdown() {
     if (zkStateReader != null) {
       synchronized(this) {
         if (zkStateReader!= null)

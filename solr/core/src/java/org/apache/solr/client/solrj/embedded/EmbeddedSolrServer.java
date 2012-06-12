@@ -252,6 +252,7 @@ public class EmbeddedSolrServer extends SolrServer
   /**
    * Shutdown all cores within the EmbeddedSolrServer instance
    */
+  @Override
   public void shutdown() {
     coreContainer.shutdown();
   }

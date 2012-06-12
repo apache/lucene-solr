@@ -579,6 +579,7 @@ public class HttpSolrServer extends SolrServer {
   /**
    * Close the {@link ClientConnectionManager} from the internal client.
    */
+  @Override
   public void shutdown() {
     if (httpClient != null && internalClient) {
       httpClient.getConnectionManager().shutdown();

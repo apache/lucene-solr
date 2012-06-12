@@ -365,4 +365,11 @@ public abstract class SolrServer implements Serializable
     }
     return binder;
   }
+  
+  /**
+   * Release allocated resources.
+   * 
+   * @since solr 4.0
+   */
+  public abstract void shutdown();
 }

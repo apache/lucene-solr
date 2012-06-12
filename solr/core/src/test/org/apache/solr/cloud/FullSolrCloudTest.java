@@ -1320,7 +1320,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     ((HttpSolrServer) controlClient).shutdown();
     if (cloudClient != null) {
-      cloudClient.close();
+      cloudClient.shutdown();
     }
     if (zkStateReader != null) {
       zkStateReader.close();
