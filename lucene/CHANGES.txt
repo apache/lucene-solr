@@ -963,7 +963,7 @@ Optimizations
   implementations (Adrien Grand via Mike McCandless)
 
 * LUCENE-2357: Reduce transient RAM usage when merging segments in
-  IndexWriter. (Adrien Grand via Mike McCandless)
+  IndexWriter. (Adrien Grand)
 
 * LUCENE-4098: Add bulk get/set methods to PackedInts (Adrien Grand
   via Mike McCandless)

@@ -58,9 +58,9 @@ public class MergeState {
       if (numDeletes == 0) {
         return new NoDelDocMap(maxDoc);
       } else if (numDeletes < numDocs) {
-        return buildDelCountDocmap(maxDoc, numDeletes, reader.liveDocs, PackedInts.FAST);
+        return buildDelCountDocmap(maxDoc, numDeletes, reader.liveDocs, PackedInts.COMPACT);
       } else {
-        return buildDirectDocMap(maxDoc, numDocs, reader.liveDocs, PackedInts.FAST);
+        return buildDirectDocMap(maxDoc, numDocs, reader.liveDocs, PackedInts.COMPACT);
       }
     }
 
