@@ -29,13 +29,24 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.ByteDocValuesField;
+import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FloatDocValuesField;
+import org.apache.lucene.document.IntDocValuesField;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongDocValuesField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.PackedLongDocValuesField;
+import org.apache.lucene.document.ShortDocValuesField;
+import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -53,6 +64,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -63,6 +75,9 @@ import org.junit.BeforeClass;
 // don't use 3.x codec, its unrealistic since it means
 // we won't even be running the actual code, only the impostor
 @SuppressCodecs("Lucene3x")
+// NOTE: when changing this to test the 4.0 format, enable the line below instead.
+// Sep codec cannot yet handle the offsets in our 4.x index!
+//@SuppressCodecs({"Lucene3x", "MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // Uncomment these cases & run them on an older Lucene
@@ -303,6 +318,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
 
     _TestUtil.checkIndex(dir);
+    
+    // true if this is a 4.0+ index
+    final boolean is40Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("content5") != null;
 
     final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
@@ -310,8 +328,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       if (liveDocs.get(i)) {
         Document d = reader.document(i);
         List<IndexableField> fields = d.getFields();
-        if (d.getField("content3") == null) {
-          final int numFields = 5;
+        boolean isProxDoc = d.getField("content3") == null;
+        if (isProxDoc) {
+          final int numFields = is40Index ? 7 : 5;
           assertEquals(numFields, fields.size());
           IndexableField f =  d.getField("id");
           assertEquals(""+i, f.stringValue());
@@ -339,6 +358,48 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
     }
     
+    if (is40Index) {
+      // check docvalues fields
+      Source dvByte = MultiDocValues.getDocValues(reader, "dvByte").getSource();
+      Source dvBytesDerefFixed = MultiDocValues.getDocValues(reader, "dvBytesDerefFixed").getSource();
+      Source dvBytesDerefVar = MultiDocValues.getDocValues(reader, "dvBytesDerefVar").getSource();
+      Source dvBytesSortedFixed = MultiDocValues.getDocValues(reader, "dvBytesSortedFixed").getSource();
+      Source dvBytesSortedVar = MultiDocValues.getDocValues(reader, "dvBytesSortedVar").getSource();
+      Source dvBytesStraightFixed = MultiDocValues.getDocValues(reader, "dvBytesStraightFixed").getSource();
+      Source dvBytesStraightVar = MultiDocValues.getDocValues(reader, "dvBytesStraightVar").getSource();
+      Source dvDouble = MultiDocValues.getDocValues(reader, "dvDouble").getSource();
+      Source dvFloat = MultiDocValues.getDocValues(reader, "dvFloat").getSource();
+      Source dvInt = MultiDocValues.getDocValues(reader, "dvInt").getSource();
+      Source dvLong = MultiDocValues.getDocValues(reader, "dvLong").getSource();
+      Source dvPacked = MultiDocValues.getDocValues(reader, "dvPacked").getSource();
+      Source dvShort = MultiDocValues.getDocValues(reader, "dvShort").getSource();
+      
+      for (int i=0;i<35;i++) {
+        int id = Integer.parseInt(reader.document(i).get("id"));
+        assertEquals((byte)id, dvByte.getInt(i));
+        
+        byte bytes[] = new byte[] {
+            (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
+        };
+        BytesRef expectedRef = new BytesRef(bytes);
+        BytesRef scratch = new BytesRef();
+        
+        assertEquals(expectedRef, dvBytesDerefFixed.getBytes(i, scratch));
+        assertEquals(expectedRef, dvBytesDerefVar.getBytes(i, scratch));
+        assertEquals(expectedRef, dvBytesSortedFixed.getBytes(i, scratch));
+        assertEquals(expectedRef, dvBytesSortedVar.getBytes(i, scratch));
+        assertEquals(expectedRef, dvBytesStraightFixed.getBytes(i, scratch));
+        assertEquals(expectedRef, dvBytesStraightVar.getBytes(i, scratch));
+        
+        assertEquals((double)id, dvDouble.getFloat(i), 0D);
+        assertEquals((float)id, dvFloat.getFloat(i), 0F);
+        assertEquals(id, dvInt.getInt(i));
+        assertEquals(id, dvLong.getInt(i));
+        assertEquals(id, dvPacked.getInt(i));
+        assertEquals(id, dvShort.getInt(i));
+      }
+    }
+    
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term(new String("content"), "aaa")), null, 1000).scoreDocs;
 
     // First document should be #21 since it's norm was
@@ -347,6 +408,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("didn't get the right document first", "21", d.get("id"));
 
     doTestHits(hits, 34, searcher.getIndexReader());
+    
+    if (is40Index) {
+      hits = searcher.search(new TermQuery(new Term(new String("content5"), "aaa")), null, 1000).scoreDocs;
+
+      doTestHits(hits, 34, searcher.getIndexReader());
+    
+      hits = searcher.search(new TermQuery(new Term(new String("content6"), "aaa")), null, 1000).scoreDocs;
+
+      doTestHits(hits, 34, searcher.getIndexReader());
+    }
 
     hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")), null, 1000).scoreDocs;
     assertEquals(34, hits.length);
@@ -431,7 +502,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public File createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
-    File indexDir = new File(LuceneTestCase.TEMP_DIR, dirName);
+    File indexDir = new File("/tmp/4x", dirName);
     _TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
@@ -568,6 +639,41 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // add numeric fields, to test if flex preserves encoding
     doc.add(new IntField("trieInt", id, Field.Store.NO));
     doc.add(new LongField("trieLong", (long) id, Field.Store.NO));
+    // add docvalues fields
+    doc.add(new ByteDocValuesField("dvByte", (byte) id));
+    byte bytes[] = new byte[] {
+      (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
+    };
+    BytesRef ref = new BytesRef(bytes);
+    doc.add(new DerefBytesDocValuesField("dvBytesDerefFixed", ref, true));
+    doc.add(new DerefBytesDocValuesField("dvBytesDerefVar", ref, false));
+    doc.add(new SortedBytesDocValuesField("dvBytesSortedFixed", ref, true));
+    doc.add(new SortedBytesDocValuesField("dvBytesSortedVar", ref, false));
+    doc.add(new StraightBytesDocValuesField("dvBytesStraightFixed", ref, true));
+    doc.add(new StraightBytesDocValuesField("dvBytesStraightVar", ref, false));
+    doc.add(new DoubleDocValuesField("dvDouble", (double)id));
+    doc.add(new FloatDocValuesField("dvFloat", (float)id));
+    doc.add(new IntDocValuesField("dvInt", id));
+    doc.add(new LongDocValuesField("dvLong", id));
+    doc.add(new PackedLongDocValuesField("dvPacked", id));
+    doc.add(new ShortDocValuesField("dvShort", (short)id));
+    // a field with both offsets and term vectors for a cross-check
+    FieldType customType3 = new FieldType(TextField.TYPE_STORED);
+    customType3.setStoreTermVectors(true);
+    customType3.setStoreTermVectorPositions(true);
+    customType3.setStoreTermVectorOffsets(true);
+    customType3.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    doc.add(new Field("content5", "here is more content with aaa aaa aaa", customType3));
+    // a field that omits only positions
+    FieldType customType4 = new FieldType(TextField.TYPE_STORED);
+    customType4.setStoreTermVectors(true);
+    customType4.setStoreTermVectorPositions(false);
+    customType4.setStoreTermVectorOffsets(true);
+    customType4.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    doc.add(new Field("content6", "here is more content with aaa aaa aaa", customType4));
+    // TODO: 
+    //   index different norms types via similarity (we use a random one currently?!)
+    //   remove any analyzer randomness, explicitly add payloads for certain fields.
     writer.addDocument(doc);
   }
 
