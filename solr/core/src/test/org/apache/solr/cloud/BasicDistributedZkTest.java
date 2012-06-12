@@ -752,7 +752,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   public void tearDown() throws Exception {
     super.tearDown();
     if (solrj != null) {
-      solrj.close();
+      solrj.shutdown();
     }
     System.clearProperty("zkHost");
   }

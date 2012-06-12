@@ -354,6 +354,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
     log.error("error", ex);
   }
 
+  @Override
   public void shutdown() {
     server.shutdown();
     scheduler.shutdown();
