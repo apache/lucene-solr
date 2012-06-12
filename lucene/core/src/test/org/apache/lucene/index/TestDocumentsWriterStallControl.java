@@ -114,7 +114,6 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     
   }
   
-  @Nightly
   public void testAccquireReleaseRace() throws InterruptedException {
     final DocumentsWriterStallControl ctrl = new DocumentsWriterStallControl();
     SimpleMemCtrl memCtrl = new SimpleMemCtrl();
@@ -145,7 +144,8 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     }
     
     start(threads);
-    int iters = atLeast(20000);
+    int iters = atLeast(10000);
+    final float checkPointProbability = TEST_NIGHTLY ? 0.5f : 0.1f;
     for (int i = 0; i < iters; i++) {
       if (checkPoint.get()) {
        
@@ -169,7 +169,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
       }
       assertFalse(checkPoint.get());
       assertEquals(0, sync.waiter.getCount());
-      if (random().nextInt(2) == 0) {
+      if (checkPointProbability >= random().nextFloat()) {
         sync.reset(numStallers + numReleasers, numStallers + numReleasers
             + numWaiters);
         checkPoint.set(true);
