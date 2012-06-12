@@ -683,6 +683,7 @@ public class CheckIndex {
     DocsEnum docs = null;
     DocsEnum docsAndFreqs = null;
     DocsAndPositionsEnum postings = null;
+    DocsAndPositionsEnum offsets = null;
     
     String lastField = null;
     final FieldsEnum fieldsEnum = fields.iterator();
@@ -758,6 +759,7 @@ public class CheckIndex {
         docs = termsEnum.docs(liveDocs, docs, false);
         docsAndFreqs = termsEnum.docs(liveDocs, docsAndFreqs, true);
         postings = termsEnum.docsAndPositions(liveDocs, postings, false);
+        offsets = termsEnum.docsAndPositions(liveDocs, offsets, true);
         
         if (hasOrd) {
           long ord = -1;
@@ -781,19 +783,29 @@ public class CheckIndex {
         final DocsEnum docsAndFreqs2;
         final boolean hasPositions;
         final boolean hasFreqs;
-        if (postings != null) {
+        final boolean hasOffsets;
+        if (offsets != null) {
+          docs2 = postings = offsets;
+          docsAndFreqs2 = postings = offsets;
+          hasOffsets = true;
+          hasPositions = true;
+          hasFreqs = true;
+        } else if (postings != null) {
           docs2 = postings;
           docsAndFreqs2 = postings;
+          hasOffsets = false;
           hasPositions = true;
           hasFreqs = true;
         } else if (docsAndFreqs != null) {
           docs2 = docsAndFreqs;
           docsAndFreqs2 = docsAndFreqs;
+          hasOffsets = false;
           hasPositions = false;
           hasFreqs = true;
         } else {
           docs2 = docs;
           docsAndFreqs2 = null;
+          hasOffsets = false;
           hasPositions = false;
           hasFreqs = false;
         }
@@ -828,6 +840,7 @@ public class CheckIndex {
           lastDoc = doc;
           
           int lastPos = -1;
+          int lastOffset = 0;
           if (hasPositions) {
             for(int j=0;j<freq;j++) {
               final int pos = postings.nextPosition();
@@ -847,6 +860,23 @@ public class CheckIndex {
               lastPos = pos;
               if (postings.hasPayload()) {
                 postings.getPayload();
+              }
+              if (hasOffsets) {
+                int startOffset = postings.startOffset();
+                int endOffset = postings.endOffset();
+                if (startOffset < 0) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
+                }
+                if (startOffset < lastOffset) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset);
+                }
+                if (endOffset < 0) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
+                }
+                if (endOffset < startOffset) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
+                }
+                lastOffset = startOffset;
               }
             }
           }
@@ -894,7 +924,7 @@ public class CheckIndex {
         if (hasPositions) {
           for(int idx=0;idx<7;idx++) {
             final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-            postings = termsEnum.docsAndPositions(liveDocs, postings, false);
+            postings = termsEnum.docsAndPositions(liveDocs, postings, hasOffsets);
             final int docID = postings.advance(skipDocID);
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
@@ -907,6 +937,7 @@ public class CheckIndex {
                 throw new RuntimeException("termFreq " + freq + " is out of bounds");
               }
               int lastPosition = -1;
+              int lastOffset = 0;
               for(int posUpto=0;posUpto<freq;posUpto++) {
                 final int pos = postings.nextPosition();
                 // NOTE: pos=-1 is allowed because of ancient bug
@@ -923,6 +954,23 @@ public class CheckIndex {
                   throw new RuntimeException("position " + pos + " is < lastPosition " + lastPosition);
                 }
                 lastPosition = pos;
+                if (hasOffsets) {
+                  int startOffset = postings.startOffset();
+                  int endOffset = postings.endOffset();
+                  if (startOffset < 0) {
+                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
+                  }
+                  if (startOffset < lastOffset) {
+                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset);
+                  }
+                  if (endOffset < 0) {
+                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
+                  }
+                  if (endOffset < startOffset) {
+                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
+                  }
+                  lastOffset = startOffset;
+                }
               } 
               
               final int nextDocID = postings.nextDoc();
