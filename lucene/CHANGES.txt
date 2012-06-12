@@ -904,6 +904,9 @@ New features
   cause a ParseException (depending on whether strict parsing is enabled).
   (Luca Cavanna via Chris Male) 
 
+* LUCENE-3440: Add ordered fragments feature with IDF-weighted terms for FVH.
+  (Sebastian Lutze via Koji Sekiguchi)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
