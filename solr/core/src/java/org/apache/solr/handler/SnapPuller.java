@@ -341,6 +341,7 @@ public class SnapPuller {
       File tmpIndexDir = createTempindexDir(core);
       if (isIndexStale())
         isFullCopyNeeded = true;
+      LOG.info("Starting download to " + tmpIndexDir + " fullCopy=" + isFullCopyNeeded);
       successfulInstall = false;
       boolean deleteTmpIdxDir = true;
       File indexDir = null ;
@@ -387,8 +388,13 @@ public class SnapPuller {
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       } finally {
-        if (deleteTmpIdxDir) delTree(tmpIndexDir);
-        else delTree(indexDir);
+        if (deleteTmpIdxDir) {
+          LOG.info("removing temporary index download directory " + tmpIndexDir);
+          delTree(tmpIndexDir);
+        } else {
+          LOG.info("removing old index directory " + indexDir);
+          delTree(indexDir);
+        }
       }
     } finally {
       if (!successfulInstall) {
@@ -606,8 +612,9 @@ public class SnapPuller {
    * @param latestGeneration         the version number
    */
   private void downloadIndexFiles(boolean downloadCompleteIndex, File tmpIdxDir, long latestGeneration) throws Exception {
+    String indexDir = solrCore.getIndexDir();
     for (Map<String, Object> file : filesToDownload) {
-      File localIndexFile = new File(solrCore.getIndexDir(), (String) file.get(NAME));
+      File localIndexFile = new File(indexDir, (String) file.get(NAME));
       if (!localIndexFile.exists() || downloadCompleteIndex) {
         fileFetcher = new FileFetcher(tmpIdxDir, file, (String) file.get(NAME), false, latestGeneration);
         currentFile = file;
@@ -730,7 +737,7 @@ public class SnapPuller {
    * If the index is stale by any chance, load index from a different dir in the data dir.
    */
   private boolean modifyIndexProps(String tmpIdxDirName) {
-    LOG.info("New index installed. Updating index properties...");
+    LOG.info("New index installed. Updating index properties... index="+tmpIdxDirName);
     File idxprops = new File(solrCore.getDataDir() + "index.properties");
     Properties p = new Properties();
     if (idxprops.exists()) {

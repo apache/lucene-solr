@@ -198,8 +198,14 @@ public final class SolrCore implements SolrInfoMBean {
           result = dataDir + s;
       }
     }
+    if (!result.equals(lastNewIndexDir)) {
+      log.warn("New index directory detected: old="+lastNewIndexDir + " new=" + result);
+    }
+    lastNewIndexDir = result;
     return result;
   }
+  private String lastNewIndexDir; // for debugging purposes only... access not synchronized, but that's ok
+
   
   public DirectoryFactory getDirectoryFactory() {
     return directoryFactory;
