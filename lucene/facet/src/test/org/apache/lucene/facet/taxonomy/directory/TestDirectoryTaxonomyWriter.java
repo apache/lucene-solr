@@ -59,7 +59,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     @Override
     public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) { return true; }
     @Override
-    public boolean hasRoom(int numberOfEntries) { return false; }
+    public boolean isFull() { return true; }
     @Override
     public void clear() {}
     
@@ -217,14 +217,24 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
   }
 
   public void testConcurrency() throws Exception {
-    int ncats = atLeast(100000); // add many categories
+    final int ncats = atLeast(100000); // add many categories
     final int range = ncats * 3; // affects the categories selection
     final AtomicInteger numCats = new AtomicInteger(ncats);
-    Directory dir = newDirectory();
+    final Directory dir = newDirectory();
     final ConcurrentHashMap<Integer,Integer> values = new ConcurrentHashMap<Integer,Integer>();
-    TaxonomyWriterCache cache = random().nextBoolean() 
-        ? new Cl2oTaxonomyWriterCache(1024, 0.15f, 3) 
-        : new LruTaxonomyWriterCache(ncats / 10);
+    final double d = random().nextDouble();
+    final TaxonomyWriterCache cache;
+    if (d < 0.7) {
+      // this is the fastest, yet most memory consuming
+      cache = new Cl2oTaxonomyWriterCache(1024, 0.15f, 3);
+    } else if (TEST_NIGHTLY && d > 0.98) {
+      // this is the slowest, but tests the writer concurrency when no caching is done.
+      // only pick it during NIGHTLY tests, and even then, with very low chances.
+      cache = new NoOpCache();
+    } else {
+      // this is slower than CL2O, but less memory consuming, and exercises finding categories on disk too.
+      cache = new LruTaxonomyWriterCache(ncats / 10);
+    }
     final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, cache);
     Thread[] addThreads = new Thread[atLeast(4)];
     for (int z = 0; z < addThreads.length; z++) {
@@ -250,7 +260,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     tw.close();
     
     DirectoryTaxonomyReader dtr = new DirectoryTaxonomyReader(dir);
-    assertEquals(values.size() + 2, dtr.getSize()); // +2 for root category + "a"
+    assertEquals("mismatch number of categories", values.size() + 2, dtr.getSize()); // +2 for root category + "a"
     for (Integer value : values.keySet()) {
       assertTrue("category not found a/" + value, dtr.getOrdinal(new CategoryPath("a", value.toString())) > 0);
     }

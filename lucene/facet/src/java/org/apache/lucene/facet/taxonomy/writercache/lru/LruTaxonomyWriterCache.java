@@ -61,12 +61,12 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
-  public synchronized boolean hasRoom(int n) {
-    return n <= (cache.getMaxSize() - cache.getSize());
+  public synchronized boolean isFull() {
+    return cache.getSize() == cache.getMaxSize();
   }
 
   @Override
-  public void clear() {
+  public synchronized void clear() {
     cache.clear();
   }
   

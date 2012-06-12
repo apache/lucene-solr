@@ -105,7 +105,7 @@ class NameIntCacheLRU {
   }
 
   private boolean isCacheFull() {
-    return (cache.size()>maxCacheSize);
+    return cache.size() > maxCacheSize;
   }
 
   void clear() {
