@@ -385,6 +385,22 @@ public class TestPostingsOffsets extends LuceneTestCase {
     dir.close();
   }
   
+  public void testAddFieldTwice() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    FieldType customType3 = new FieldType(TextField.TYPE_STORED);
+    customType3.setStoreTermVectors(true);
+    customType3.setStoreTermVectorPositions(true);
+    customType3.setStoreTermVectorOffsets(true);    
+    customType3.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    doc.add(new Field("content3", "here is more content with aaa aaa aaa", customType3));
+    doc.add(new Field("content3", "here is more content with aaa aaa aaa", customType3));
+    iw.addDocument(doc);
+    iw.close();
+    dir.close(); // checkindex
+  }
+  
   // NOTE: the next two tests aren't that good as we need an EvilToken...
   public void testNegativeOffsets() throws Exception {
     try {
