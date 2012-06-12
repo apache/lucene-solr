@@ -37,7 +37,7 @@ public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {
   private final int initialCapcity, numHashArrays;
   private final float loadFactor;
   
-  private CompactLabelToOrdinal cache;
+  private volatile CompactLabelToOrdinal cache;
 
   public Cl2oTaxonomyWriterCache(int initialCapcity, float loadFactor, int numHashArrays) {
     this.cache = new CompactLabelToOrdinal(initialCapcity, loadFactor, numHashArrays);
@@ -48,7 +48,12 @@ public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {
 
   @Override
   public void clear() {
-    cache = new CompactLabelToOrdinal(initialCapcity, loadFactor, numHashArrays);
+    lock.writeLock().lock();
+    try {
+      cache = new CompactLabelToOrdinal(initialCapcity, loadFactor, numHashArrays);
+    } finally {
+      lock.writeLock().unlock();
+    }
   }
   
   @Override
@@ -57,9 +62,9 @@ public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
-  public boolean hasRoom(int n) {
-    // This cache is unlimited, so we always have room for remembering more:
-    return true;
+  public boolean isFull() {
+    // This cache is never full
+    return false;
   }
 
   @Override

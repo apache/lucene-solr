@@ -162,7 +162,7 @@ public abstract class ReferenceManager<G> implements Closeable {
   public final boolean maybeRefresh() throws IOException {
     ensureOpen();
 
-    // Ensure only 1 thread does reopen at once; other threads just return immediately:
+    // Ensure only 1 thread does refresh at once; other threads just return immediately:
     final boolean doTryRefresh = refreshLock.tryLock();
     if (doTryRefresh) {
       try {
@@ -189,7 +189,7 @@ public abstract class ReferenceManager<G> implements Closeable {
   public final void maybeRefreshBlocking() throws IOException, InterruptedException {
     ensureOpen();
 
-    // Ensure only 1 thread does reopen at once
+    // Ensure only 1 thread does refresh at once
     refreshLock.lock();
     try {
       doMaybeRefresh();
