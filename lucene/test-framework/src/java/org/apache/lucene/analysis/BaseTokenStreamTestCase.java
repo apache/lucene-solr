@@ -26,12 +26,22 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
 
 import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.IOUtils;
@@ -384,13 +394,14 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     final boolean useCharFilter;
     final boolean simple;
     final boolean offsetsAreCorrect;
+    final RandomIndexWriter iw;
 
     // NOTE: not volatile because we don't want the tests to
     // add memory barriers (ie alter how threads
     // interact)... so this is just "best effort":
     public boolean failed;
     
-    AnalysisThread(long seed, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect) {
+    AnalysisThread(long seed, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) {
       this.seed = seed;
       this.a = a;
       this.iterations = iterations;
@@ -398,6 +409,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       this.useCharFilter = useCharFilter;
       this.simple = simple;
       this.offsetsAreCorrect = offsetsAreCorrect;
+      this.iw = iw;
     }
     
     @Override
@@ -406,7 +418,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       try {
         // see the part in checkRandomData where it replays the same text again
         // to verify reproducability/reuse: hopefully this would catch thread hazards.
-        checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect);
+        checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
         success = true;
       } catch (IOException e) {
         Rethrow.rethrow(e);
@@ -423,34 +435,88 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple, boolean offsetsAreCorrect) throws IOException {
     long seed = random.nextLong();
     boolean useCharFilter = random.nextBoolean();
-    checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect);
-    // now test with multiple threads: note we do the EXACT same thing we did before in each thread,
-    // so this should only really fail from another thread if its an actual thread problem
-    int numThreads = _TestUtil.nextInt(random, 2, 4);
-    AnalysisThread threads[] = new AnalysisThread[numThreads];
-    for (int i = 0; i < threads.length; i++) {
-      threads[i] = new AnalysisThread(seed, a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect);
+    Directory dir = null;
+    RandomIndexWriter iw = null;
+    if (rarely(random)) {
+      dir = newFSDirectory(_TestUtil.getTempDir("bttc"));
+      iw = new RandomIndexWriter(new Random(seed), dir, a);
     }
-    for (int i = 0; i < threads.length; i++) {
-      threads[i].start();
-    }
-    for (int i = 0; i < threads.length; i++) {
-      try {
-        threads[i].join();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
+    boolean success = false;
+    try {
+      checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
+      // now test with multiple threads: note we do the EXACT same thing we did before in each thread,
+      // so this should only really fail from another thread if its an actual thread problem
+      int numThreads = _TestUtil.nextInt(random, 2, 4);
+      AnalysisThread threads[] = new AnalysisThread[numThreads];
+      for (int i = 0; i < threads.length; i++) {
+        threads[i] = new AnalysisThread(seed, a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
       }
-    }
-    for (int i = 0; i < threads.length; i++) {
-      if (threads[i].failed) {
-        throw new RuntimeException("some thread(s) failed");
+      for (int i = 0; i < threads.length; i++) {
+        threads[i].start();
+      }
+      for (int i = 0; i < threads.length; i++) {
+        try {
+          threads[i].join();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      }
+      for (int i = 0; i < threads.length; i++) {
+        if (threads[i].failed) {
+          throw new RuntimeException("some thread(s) failed");
+        }
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(iw, dir);
+      } else {
+        IOUtils.closeWhileHandlingException(iw, dir); // checkindex
       }
     }
   }
 
-  private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect) throws IOException {
+  static final Set<String> doesntSupportOffsets = new HashSet<String>() {{ 
+    add("Lucene3x"); 
+    add("MockFixedIntBlock");
+    add("MockVariableIntBlock");
+    add("MockSep");
+    add("MockRandom");
+  }};
+  
+  private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) throws IOException {
 
     final LineFileDocs docs = new LineFileDocs(random);
+    Document doc = null;
+    Field field = null, currentField = null;
+    StringReader bogus = new StringReader("");
+    if (iw != null) {
+      doc = new Document();
+      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+      if (random.nextBoolean()) {
+        ft.setStoreTermVectors(true);
+        ft.setStoreTermVectorOffsets(random.nextBoolean());
+        ft.setStoreTermVectorPositions(random.nextBoolean());
+      }
+      if (random.nextBoolean()) {
+        ft.setOmitNorms(true);
+      }
+      String pf = _TestUtil.getPostingsFormat("dummy");
+      boolean supportsOffsets = !doesntSupportOffsets.contains(pf);
+      switch(random.nextInt(4)) {
+        case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
+        case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
+        case 2: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break;
+        default:
+                if (supportsOffsets && offsetsAreCorrect) {
+                  ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+                } else {
+                  ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+                }
+      }
+      currentField = field = new Field("dummy", bogus, ft);
+      doc.add(currentField);
+    }
     
     try {
       for (int i = 0; i < iterations; i++) {
@@ -481,7 +547,23 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         }
         
         try {
-          checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect);
+          checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect, currentField);
+          if (iw != null) {
+            if (random.nextInt(7) == 0) {
+              // pile up a multivalued field
+              FieldType ft = field.fieldType();
+              currentField = new Field("dummy", bogus, ft);
+              doc.add(currentField);
+            } else {
+              iw.addDocument(doc);
+              if (doc.getFields().size() > 1) {
+                // back to 1 field
+                currentField = field;
+                doc.removeFields("dummy");
+                doc.add(currentField);
+              }
+            }
+          }
         } catch (Throwable t) {
           // TODO: really we should pass a random seed to
           // checkAnalysisConsistency then print it here too:
@@ -528,6 +610,10 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   public static void checkAnalysisConsistency(Random random, Analyzer a, boolean useCharFilter, String text, boolean offsetsAreCorrect) throws IOException {
+    checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect, null);
+  }
+  
+  private static void checkAnalysisConsistency(Random random, Analyzer a, boolean useCharFilter, String text, boolean offsetsAreCorrect, Field field) throws IOException {
 
     if (VERBOSE) {
       System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
@@ -649,6 +735,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
     reader = new StringReader(text);
 
+    long seed = random.nextLong();
+    random = new Random(seed);
     if (random.nextInt(30) == 7) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: using spoon-feed reader");
@@ -717,6 +805,20 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       // terms only
       assertTokenStreamContents(ts, 
                                 tokens.toArray(new String[tokens.size()]));
+    }
+    
+    if (field != null) {
+      reader = new StringReader(text);
+      random = new Random(seed);
+      if (random.nextInt(30) == 7) {
+        if (VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: indexing using spoon-feed reader");
+        }
+
+        reader = new MockReaderWrapper(random, reader);
+      }
+
+      field.setReaderValue(useCharFilter ? new MockCharFilter(reader, remainder) : reader);
     }
   }
   

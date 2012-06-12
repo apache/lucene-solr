@@ -148,15 +148,16 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     postings.lastPositions[termID] = fieldState.position;
   }
 
-  void writeOffsets(final int termID, int prevOffset) {
+  void writeOffsets(final int termID, int offsetAccum) {
     assert hasOffsets;
-    final int startOffset = offsetAttribute.startOffset();
-    final int endOffset = offsetAttribute.endOffset();
+    final int startOffset = offsetAccum + offsetAttribute.startOffset();
+    final int endOffset = offsetAccum + offsetAttribute.endOffset();
     //System.out.println("writeOffsets termID=" + termID + " prevOffset=" + prevOffset + " startOff=" + startOffset + " endOff=" + endOffset);
-    termsHashPerField.writeVInt(1, startOffset - prevOffset);
+    FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
+    assert startOffset - postings.lastOffsets[termID] >= 0;
+    termsHashPerField.writeVInt(1, startOffset - postings.lastOffsets[termID]);
     termsHashPerField.writeVInt(1, endOffset - startOffset);
 
-    FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
     postings.lastOffsets[termID] = startOffset;
   }
 
@@ -224,6 +225,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       if (hasProx) {
         writeProx(termID, fieldState.position);
         if (hasOffsets) {
+          postings.lastOffsets[termID] = 0;
           writeOffsets(termID, fieldState.offset);
         }
       } else {
@@ -236,7 +238,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         writeProx(termID, fieldState.position-postings.lastPositions[termID]);
       }
       if (hasOffsets) {
-        writeOffsets(termID, postings.lastOffsets[termID]);
+        writeOffsets(termID, fieldState.offset);
       }
     }
   }
@@ -523,14 +525,15 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
               if (readOffsets) {
                 final int startOffset = offset + prox.readVInt();
                 final int endOffset = startOffset + prox.readVInt();
-                offset = startOffset;
                 if (writePositions) {
                   if (writeOffsets) {
+                    assert startOffset >=0 && endOffset >= startOffset : "startOffset=" + startOffset + ",endOffset=" + endOffset + ",offset=" + offset;
                     postingsConsumer.addPosition(position, thisPayload, startOffset, endOffset);
                   } else {
                     postingsConsumer.addPosition(position, thisPayload, -1, -1);
                   }
                 }
+                offset = startOffset;
               } else if (writePositions) {
                 postingsConsumer.addPosition(position, thisPayload, -1, -1);
               }

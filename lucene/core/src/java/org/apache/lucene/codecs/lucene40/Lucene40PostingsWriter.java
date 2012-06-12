@@ -252,6 +252,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
       // and the numbers aren't that much smaller anyways.
       int offsetDelta = startOffset - lastOffset;
       int offsetLength = endOffset - startOffset;
+      assert offsetDelta >= 0 && offsetLength >= 0 : "startOffset=" + startOffset + ",lastOffset=" + lastOffset + ",endOffset=" + endOffset;
       if (offsetLength != lastOffsetLength) {
         proxOut.writeVInt(offsetDelta << 1 | 1);
         proxOut.writeVInt(offsetLength);
