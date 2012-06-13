@@ -89,6 +89,14 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
     assertFalse("saw non-zero open-but-deleted count", anyOpenDelFiles);
   }
 
+  @Override
+  protected void doAfterWriter(ExecutorService es) throws Exception {
+    // Force writer to do reader pooling, always, so that
+    // all merged segments, even for merges before
+    // doSearching is called, are warmed:
+    writer.getReader().close();
+  }
+  
   private IndexSearcher fixedSearcher;
 
   protected IndexSearcher getCurrentSearcher() throws Exception {
