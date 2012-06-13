@@ -86,4 +86,9 @@ public abstract class AnalyzerWrapper extends Analyzer {
   public final int getOffsetGap(IndexableField field) {
     return getWrappedAnalyzer(field.name()).getOffsetGap(field);
   }
+
+  @Override
+  public final Reader initReader(String fieldName, Reader reader) {
+    return getWrappedAnalyzer(fieldName).initReader(fieldName, reader);
+  }
 }

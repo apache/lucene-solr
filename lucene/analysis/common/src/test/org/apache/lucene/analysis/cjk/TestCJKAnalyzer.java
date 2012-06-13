@@ -215,7 +215,7 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
       }
 
       @Override
-      protected Reader initReader(Reader reader) {
+      protected Reader initReader(String fieldName, Reader reader) {
         return new MappingCharFilter(norm, CharReader.get(reader));
       }
     };

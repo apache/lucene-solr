@@ -314,7 +314,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
         }
 
         @Override
-        protected Reader initReader(Reader reader) {
+        protected Reader initReader(String fieldName, Reader reader) {
           return new PatternReplaceCharFilter(p, replacement, CharReader.get(reader));
         }
       };

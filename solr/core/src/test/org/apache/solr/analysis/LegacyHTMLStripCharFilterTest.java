@@ -267,7 +267,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
       }
 
       @Override
-      protected Reader initReader(Reader reader) {
+      protected Reader initReader(String fieldName, Reader reader) {
         return new LegacyHTMLStripCharFilter(CharReader.get(new BufferedReader(reader)));
       }
     };

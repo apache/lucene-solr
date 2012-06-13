@@ -57,18 +57,19 @@ public final class TokenizerChain extends SolrAnalyzer {
       super(source, result);
     }
 
+    // TODO: what is going on here?
     @Override
     protected void reset(Reader reader) throws IOException {
       // the tokenizers are currently reset by the indexing process, so only
       // the tokenizer needs to be reset.
-      Reader r = initReader(reader);
+      Reader r = initReader(null, reader);
       super.reset(r);
     }
   }
   
   
   @Override
-  public Reader initReader(Reader reader) {
+  public Reader initReader(String fieldName, Reader reader) {
     if (charFilters != null && charFilters.length > 0) {
       CharStream cs = CharReader.get( reader );
       for (CharFilterFactory charFilter : charFilters) {
@@ -81,7 +82,7 @@ public final class TokenizerChain extends SolrAnalyzer {
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
-    Tokenizer tk = tokenizer.create( initReader(aReader) );
+    Tokenizer tk = tokenizer.create( initReader(fieldName, aReader) );
     TokenStream ts = tk;
     for (TokenFilterFactory filter : filters) {
       ts = filter.create(ts);

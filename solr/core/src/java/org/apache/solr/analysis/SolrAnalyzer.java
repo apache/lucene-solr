@@ -44,7 +44,7 @@ public abstract class SolrAnalyzer extends Analyzer {
   }
 
   @Override
-  protected Reader initReader(Reader reader) {
+  protected Reader initReader(String fieldName, Reader reader) {
     return charStream(reader);
   }
 }

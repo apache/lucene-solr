@@ -45,7 +45,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
       }
 
       @Override
-      protected Reader initReader(Reader reader) {
+      protected Reader initReader(String fieldName, Reader reader) {
         return new HTMLStripCharFilter(CharReader.get(reader));
       }
     };

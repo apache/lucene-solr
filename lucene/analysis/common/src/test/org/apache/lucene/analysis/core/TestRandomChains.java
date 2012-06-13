@@ -609,7 +609,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
 
     @Override
-    protected Reader initReader(Reader reader) {
+    protected Reader initReader(String fieldName, Reader reader) {
       Random random = new Random(seed);
       CharFilterSpec charfilterspec = newCharFilterChain(random, reader);
       return charfilterspec.reader;

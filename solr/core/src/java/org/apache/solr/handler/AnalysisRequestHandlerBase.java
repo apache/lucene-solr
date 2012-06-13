@@ -112,7 +112,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    TokenStream tokenStream = tfac.create(tokenizerChain.initReader(new StringReader(value)));
+    TokenStream tokenStream = tfac.create(tokenizerChain.initReader(null, new StringReader(value)));
     List<AttributeSource> tokens = analyzeTokenStream(tokenStream);
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
