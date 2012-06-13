@@ -510,6 +510,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private void verifyShardLeader(ZkStateReader reader, String collection, String shard, String expectedCore) throws InterruptedException, KeeperException {
     int maxIterations = 100;
     while(maxIterations-->0) {
+      reader.updateCloudState(true); // poll state
       ZkNodeProps props =  reader.getCloudState().getLeader(collection, shard);
       if(props!=null) {
         if(expectedCore.equals(props.get(ZkStateReader.CORE_NAME_PROP))) {
@@ -593,6 +594,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       server.shutdown();
     }
   }
+  
+  private AtomicInteger killCounter = new AtomicInteger();
 
   private class OverseerRestarter implements Runnable{
     SolrZkClient overseerClient = null;
@@ -607,33 +610,37 @@ public class OverseerTest extends SolrTestCaseJ4 {
     public void run() {
       try {
         overseerClient = electNewOverseer(zkAddress);
-      } catch (Throwable t) {
-        //t.printStackTrace();
-      }
-      Random rnd = random();
-      while (run) {
-        if(rnd.nextInt(20)==1){
+        Random rnd = random();
+        while (run) {
+          if (killCounter.get()>0) {
+            try {
+              killCounter.decrementAndGet();
+              log.info("Killing overseer.");
+              overseerClient.close();
+              overseerClient = electNewOverseer(zkAddress);
+            } catch (Throwable e) {
+              // e.printStackTrace();
+            }
+          }
           try {
-            overseerClient.close();
-            overseerClient = electNewOverseer(zkAddress);
+            Thread.sleep(100);
           } catch (Throwable e) {
-            //e.printStackTrace();
+            // e.printStackTrace();
           }
         }
-        try {
-          Thread.sleep(100);
-        } catch (Throwable e) {
-          //e.printStackTrace();
+      } catch (Throwable t) {
+        // ignore
+      } finally {
+        if (overseerClient != null) {
+          try {
+            overseerClient.close();
+          } catch (Throwable t) {
+            // ignore
+          }
         }
-      }
-      try {
-        overseerClient.close();
-      } catch (Throwable e) {
-        //e.printStackTrace();
       }
     }
   }
-
   
   @Test
   public void testShardLeaderChange() throws Exception {
@@ -657,10 +664,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
       killerThread = new Thread(killer);
       killerThread.start();
 
-      reader = new ZkStateReader(controllerClient);
-      reader.createClusterStateWatchersAndUpdate();
+      reader = new ZkStateReader(controllerClient); //no watches, we'll poll
 
       for (int i = 0; i < atLeast(4); i++) {
+        killCounter.incrementAndGet(); //for each round allow 1 kill
         mockController = new MockZKController(server.getZkAddress(), "node1", "collection1");
         mockController.publishState("core1", "state1",1);
         if(mockController2!=null) {
