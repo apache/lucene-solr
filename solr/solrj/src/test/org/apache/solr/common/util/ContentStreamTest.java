@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.net.ConnectException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -70,9 +71,12 @@ public class ContentStreamTest extends LuceneTestCase
     URL url = new URL( "http://svn.apache.org/repos/asf/lucene/dev/trunk/" );
     InputStream in = null;
     try {
-      URLConnection conn = url.openConnection();
+      HttpURLConnection conn = (HttpURLConnection)url.openConnection();
       conn.setConnectTimeout(1000);
       conn.setReadTimeout(1000);
+      conn.connect();
+      int code = conn.getResponseCode();
+      assumeTrue("wrong response code from server: " + code, 200 == code);
       in = conn.getInputStream();
       contentType = conn.getContentType();
       content = IOUtils.toByteArray(in);
