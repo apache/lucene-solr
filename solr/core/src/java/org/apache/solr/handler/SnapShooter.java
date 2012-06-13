@@ -165,7 +165,7 @@ public class SnapShooter {
   }
 
   public static final String SNAP_DIR = "snapDir";
-  public static final String DATE_FMT = "yyyyMMddHHmmss";
+  public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
   
 
   private class FileCopier {
