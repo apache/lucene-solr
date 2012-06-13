@@ -88,10 +88,13 @@ public class TestNumericQueryParser extends LuceneTestCase {
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
   
-  private static boolean checkDateFormatSanity(DateFormat dateFormat, long date)
-      throws ParseException {
-    return date == dateFormat.parse(dateFormat.format(new Date(date)))
+  private static boolean checkDateFormatSanity(DateFormat dateFormat, long date) {
+    try {
+      return date == dateFormat.parse(dateFormat.format(new Date(date)))
         .getTime();
+    } catch (ParseException e) {
+      return false;
+    }
   }
   
   @BeforeClass
