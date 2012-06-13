@@ -342,7 +342,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                     String source = diagnostics.get("source");
                     assertNotNull(source);
                     if (source.equals("merge")) {
-                      assertTrue("sub reader " + sub + " wasn't warmed: " + warmed, !assertMergedSegmentsWarmed || warmed.containsKey(((SegmentReader) sub).core));
+                      assertTrue("sub reader " + sub + " wasn't warmed: warmed=" + warmed + " diagnostics=" + diagnostics + " si=" + segReader.getSegmentInfo(),
+                                 !assertMergedSegmentsWarmed || warmed.containsKey(((SegmentReader) sub).core));
                     }
                   }
                   if (s.getIndexReader().numDocs() > 0) {
