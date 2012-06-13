@@ -17,6 +17,10 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.store.DataOutput;
+
 /**     
  * Implements {@link PackedInts.Mutable}, but grows the
  * bit count of the underlying packed ints on-demand.
@@ -109,6 +113,16 @@ public class GrowableWriter implements PackedInts.Mutable {
   public void fill(int fromIndex, int toIndex, long val) {
     ensureCapacity(val);
     current.fill(fromIndex, toIndex, val);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return current.ramBytesUsed();
+  }
+
+  @Override
+  public void save(DataOutput out) throws IOException {
+    current.save(out);
   }
 
 }

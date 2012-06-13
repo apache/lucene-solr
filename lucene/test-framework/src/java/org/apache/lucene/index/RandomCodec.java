@@ -99,8 +99,8 @@ public class RandomCodec extends Lucene40Codec {
         new NestedPulsingPostingsFormat(),
         new Lucene40WithOrds(),
         new SimpleTextPostingsFormat(),
-        new MemoryPostingsFormat(true),
-        new MemoryPostingsFormat(false));
+        new MemoryPostingsFormat(true, random.nextFloat()),
+        new MemoryPostingsFormat(false, random.nextFloat()));
 
     Collections.shuffle(formats, random);
   }

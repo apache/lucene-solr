@@ -54,6 +54,7 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.util.packed.PackedInts;
 
 // TODO: would be nice to somehow allow this to act like
 // InstantiatedIndex, by never writing to disk; ie you write
@@ -81,14 +82,16 @@ import org.apache.lucene.util.fst.Util;
 public class MemoryPostingsFormat extends PostingsFormat {
 
   private final boolean doPackFST;
+  private final float acceptableOverheadRatio;
 
   public MemoryPostingsFormat() {
-    this(false);
+    this(false, PackedInts.DEFAULT);
   }
 
-  public MemoryPostingsFormat(boolean doPackFST) {
+  public MemoryPostingsFormat(boolean doPackFST, float acceptableOverheadRatio) {
     super("Memory");
     this.doPackFST = doPackFST;
+    this.acceptableOverheadRatio = acceptableOverheadRatio;
   }
   
   @Override
@@ -102,13 +105,15 @@ public class MemoryPostingsFormat extends PostingsFormat {
     private final Builder<BytesRef> builder;
     private final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
     private final boolean doPackFST;
+    private final float acceptableOverheadRatio;
     private int termCount;
 
-    public TermsWriter(IndexOutput out, FieldInfo field, boolean doPackFST) {
+    public TermsWriter(IndexOutput out, FieldInfo field, boolean doPackFST, float acceptableOverheadRatio) {
       this.out = out;
       this.field = field;
       this.doPackFST = doPackFST;
-      builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doPackFST);
+      this.acceptableOverheadRatio = acceptableOverheadRatio;
+      builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doPackFST, acceptableOverheadRatio);
     }
 
     private class PostingsWriter extends PostingsConsumer {
@@ -265,7 +270,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
         out.writeVInt(docCount);
         FST<BytesRef> fst = builder.finish();
         if (doPackFST) {
-          fst = fst.pack(3, Math.max(10, fst.getNodeCount()/4));
+          fst = fst.pack(3, Math.max(10, fst.getNodeCount()/4), acceptableOverheadRatio);
         }
         fst.save(out);
         //System.out.println("finish field=" + field.name + " fp=" + out.getFilePointer());
@@ -290,7 +295,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       @Override
       public TermsConsumer addField(FieldInfo field) {
         //System.out.println("\naddField field=" + field.name);
-        return new TermsWriter(out, field, doPackFST);
+        return new TermsWriter(out, field, doPackFST, acceptableOverheadRatio);
       }
 
       @Override

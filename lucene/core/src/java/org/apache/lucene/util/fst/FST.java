@@ -37,8 +37,9 @@ import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.Builder.UnCompiledNode;
+import org.apache.lucene.util.packed.GrowableWriter;
+import org.apache.lucene.util.packed.PackedInts;
 
 // TODO: break this into WritableFST and ReadOnlyFST.. then
 // we can have subclasses of ReadOnlyFST to handle the
@@ -155,7 +156,7 @@ public final class FST<T> {
   public int arcWithOutputCount;
 
   private final boolean packed;
-  private final int[] nodeRefToAddress;
+  private PackedInts.Reader nodeRefToAddress;
 
   // If arc has this label then that arc is final/accepted
   public static final int END_LABEL = -1;
@@ -252,25 +253,23 @@ public final class FST<T> {
 
   private final BytesWriter writer;
 
-  // TODO: we can save RAM here by using growable packed
-  // ints...:
-  private int[] nodeAddress;
+  private GrowableWriter nodeAddress;
 
   // TODO: we could be smarter here, and prune periodically
   // as we go; high in-count nodes will "usually" become
   // clear early on:
-  private int[] inCounts;
+  private GrowableWriter inCounts;
 
   // make a new empty FST, for building; Builder invokes
   // this ctor
-  FST(INPUT_TYPE inputType, Outputs<T> outputs, boolean willPackFST) {
+  FST(INPUT_TYPE inputType, Outputs<T> outputs, boolean willPackFST, float acceptableOverheadRatio) {
     this.inputType = inputType;
     this.outputs = outputs;
     bytes = new byte[128];
     NO_OUTPUT = outputs.getNoOutput();
     if (willPackFST) {
-      nodeAddress = new int[8];
-      inCounts = new int[8];
+      nodeAddress = new GrowableWriter(PackedInts.bitsRequired(bytes.length - 1), 8, acceptableOverheadRatio);
+      inCounts = new GrowableWriter(1, 8, acceptableOverheadRatio);
     } else {
       nodeAddress = null;
       inCounts = null;
@@ -320,11 +319,7 @@ public final class FST<T> {
       throw new IllegalStateException("invalid input type " + t);
     }
     if (packed) {
-      final int nodeRefCount = in.readVInt();
-      nodeRefToAddress = new int[nodeRefCount];
-      for(int idx=0;idx<nodeRefCount;idx++) {
-        nodeRefToAddress[idx] = in.readVInt();
-      }
+      nodeRefToAddress = PackedInts.getReader(in);
     } else {
       nodeRefToAddress = null;
     }
@@ -348,10 +343,10 @@ public final class FST<T> {
   public int sizeInBytes() {
     int size = bytes.length;
     if (packed) {
-      size += nodeRefToAddress.length * RamUsageEstimator.NUM_BYTES_INT;
+      size += nodeRefToAddress.ramBytesUsed();
     } else if (nodeAddress != null) {
-      size += nodeAddress.length * RamUsageEstimator.NUM_BYTES_INT;
-      size += inCounts.length * RamUsageEstimator.NUM_BYTES_INT;
+      size += nodeAddress.ramBytesUsed();
+      size += inCounts.ramBytesUsed();
     }
     return size;
   }
@@ -374,7 +369,7 @@ public final class FST<T> {
   private int getNodeAddress(int node) {
     if (nodeAddress != null) {
       // Deref
-      return nodeAddress[node];
+      return (int) nodeAddress.get(node);
     } else {
       // Straight
       return node;
@@ -444,6 +439,9 @@ public final class FST<T> {
     if (nodeAddress != null) {
       throw new IllegalStateException("cannot save an FST pre-packed FST; it must first be packed");
     }
+    if (packed && !(nodeRefToAddress instanceof PackedInts.Mutable)) {
+      throw new IllegalStateException("cannot save a FST which has been loaded from disk ");
+    }
     CodecUtil.writeHeader(out, FILE_FORMAT_NAME, VERSION_CURRENT);
     if (packed) {
       out.writeByte((byte) 1);
@@ -469,11 +467,7 @@ public final class FST<T> {
     }
     out.writeByte(t);
     if (packed) {
-      assert nodeRefToAddress != null;
-      out.writeVInt(nodeRefToAddress.length);
-      for(int idx=0;idx<nodeRefToAddress.length;idx++) {
-        out.writeVInt(nodeRefToAddress[idx]);
-      }
+      ((PackedInts.Mutable) nodeRefToAddress).save(out);
     }
     out.writeVInt(startNode);
     out.writeVInt(nodeCount);
@@ -624,7 +618,7 @@ public final class FST<T> {
       if (!targetHasArcs) {
         flags += BIT_STOP_NODE;
       } else if (inCounts != null) {
-        inCounts[target.node]++;
+        inCounts.set(target.node, inCounts.get(target.node) + 1);
       }
 
       if (arc.output != NO_OUTPUT) {
@@ -715,11 +709,11 @@ public final class FST<T> {
     final int node;
     if (nodeAddress != null) {
       // Nodes are addressed by 1+ord:
-      if (nodeCount == nodeAddress.length) {
-        nodeAddress = ArrayUtil.grow(nodeAddress);
-        inCounts = ArrayUtil.grow(inCounts);
+      if (nodeCount == nodeAddress.size()) {
+        nodeAddress = nodeAddress.resize(ArrayUtil.oversize(nodeAddress.size() + 1, nodeAddress.getBitsPerValue()));
+        inCounts = inCounts.resize(ArrayUtil.oversize(inCounts.size() + 1, inCounts.getBitsPerValue()));
       }
-      nodeAddress[nodeCount] = endAddress;
+      nodeAddress.set(nodeCount, endAddress);
       // System.out.println("  write nodeAddress[" + nodeCount + "] = " + endAddress);
       node = nodeCount;
     } else {
@@ -1005,9 +999,9 @@ public final class FST<T> {
           // Address is delta-coded from current address:
           arc.target = pos + code;
           //System.out.println("    delta pos=" + pos + " delta=" + code + " target=" + arc.target);
-        } else if (code < nodeRefToAddress.length) {
+        } else if (code < nodeRefToAddress.size()) {
           // Deref
-          arc.target = nodeRefToAddress[code];
+          arc.target = (int) nodeRefToAddress.get(code);
           //System.out.println("    deref code=" + code + " target=" + arc.target);
         } else {
           // Absolute
@@ -1420,7 +1414,7 @@ public final class FST<T> {
  */
 
   // Creates a packed FST
-  private FST(INPUT_TYPE inputType, int[] nodeRefToAddress, Outputs<T> outputs) {
+  private FST(INPUT_TYPE inputType, PackedInts.Reader nodeRefToAddress, Outputs<T> outputs) {
     packed = true;
     this.inputType = inputType;
     bytes = new byte[128];
@@ -1432,8 +1426,10 @@ public final class FST<T> {
 
   /** Expert: creates an FST by packing this one.  This
    *  process requires substantial additional RAM (currently
-   *  ~8 bytes per node), but then should produce a smaller FST. */
-  public FST<T> pack(int minInCountDeref, int maxDerefNodes) throws IOException {
+   *  up to ~8 bytes per node depending on
+   *  <code>acceptableOverheadRatio</code>), but then should
+   *  produce a smaller FST. */
+  public FST<T> pack(int minInCountDeref, int maxDerefNodes, float acceptableOverheadRatio) throws IOException {
 
     // TODO: other things to try
     //   - renumber the nodes to get more next / better locality?
@@ -1454,22 +1450,22 @@ public final class FST<T> {
 
     final BytesReader r = getBytesReader(0);
 
-    final int topN = Math.min(maxDerefNodes, inCounts.length);
+    final int topN = Math.min(maxDerefNodes, inCounts.size());
 
     // Find top nodes with highest number of incoming arcs:
     NodeQueue q = new NodeQueue(topN);
 
     // TODO: we could use more RAM efficient selection algo here...
     NodeAndInCount bottom = null;
-    for(int node=0;node<inCounts.length;node++) {
-      if (inCounts[node] >= minInCountDeref) {
+    for(int node=0; node<inCounts.size(); node++) {
+      if (inCounts.get(node) >= minInCountDeref) {
         if (bottom == null) {
-          q.add(new NodeAndInCount(node, inCounts[node]));
+          q.add(new NodeAndInCount(node, (int) inCounts.get(node)));
           if (q.size() == topN) {
             bottom = q.top();
           }
-        } else if (inCounts[node] > bottom.count) {
-          q.insertWithOverflow(new NodeAndInCount(node, inCounts[node]));
+        } else if (inCounts.get(node) > bottom.count) {
+          q.insertWithOverflow(new NodeAndInCount(node, (int) inCounts.get(node)));
         }
       }
     }
@@ -1484,20 +1480,17 @@ public final class FST<T> {
       //System.out.println("map node=" + n.node + " inCount=" + n.count + " to newID=" + downTo);
     }
 
-    // TODO: we can use packed ints:
-    // +1 because node ords start at 1 (0 is reserved as
-    // stop node):
-    final int[] nodeRefToAddressIn = new int[topNodeMap.size()];
-
-    final FST<T> fst = new FST<T>(inputType, nodeRefToAddressIn, outputs);
+    final FST<T> fst = new FST<T>(inputType, null, outputs);
 
     final BytesWriter writer = fst.writer;
-    
-    final int[] newNodeAddress = new int[1+nodeCount];
+
+    // +1 because node ords start at 1 (0 is reserved as stop node):
+    final GrowableWriter newNodeAddress = new GrowableWriter(
+        PackedInts.bitsRequired(bytes.length), 1 + nodeCount, acceptableOverheadRatio);
 
     // Fill initial coarse guess:
     for(int node=1;node<=nodeCount;node++) {
-      newNodeAddress[node] = 1 + bytes.length - nodeAddress[node];
+      newNodeAddress.set(node, 1 + bytes.length - nodeAddress.get(node));
     }
 
     int absCount;
@@ -1537,11 +1530,11 @@ public final class FST<T> {
         fst.nodeCount++;
         final int address = writer.posWrite;
         //System.out.println("  node: " + node + " address=" + address);
-        if (address != newNodeAddress[node]) {
-          addressError = address - newNodeAddress[node];
+        if (address != newNodeAddress.get(node)) {
+          addressError = address - (int) newNodeAddress.get(node);
           //System.out.println("    change: " + (address - newNodeAddress[node]));
           changed = true;
-          newNodeAddress[node] = address;
+          newNodeAddress.set(node, address);
           changedCount++;
         }
 
@@ -1621,10 +1614,10 @@ public final class FST<T> {
               if (ptr != null) {
                 absPtr = ptr;
               } else {
-                absPtr = topNodeMap.size() + newNodeAddress[arc.target] + addressError;
+                absPtr = topNodeMap.size() + (int) newNodeAddress.get(arc.target) + addressError;
               }
 
-              int delta = newNodeAddress[arc.target] + addressError - writer.posWrite - 2;
+              int delta = (int) newNodeAddress.get(arc.target) + addressError - writer.posWrite - 2;
               if (delta < 0) {
                 //System.out.println("neg: " + delta);
                 anyNegDelta = true;
@@ -1654,7 +1647,7 @@ public final class FST<T> {
 
             if (doWriteTarget) {
 
-              int delta = newNodeAddress[arc.target] + addressError - writer.posWrite;
+              int delta = (int) newNodeAddress.get(arc.target) + addressError - writer.posWrite;
               if (delta < 0) {
                 anyNegDelta = true;
                 //System.out.println("neg: " + delta);
@@ -1745,11 +1738,20 @@ public final class FST<T> {
       //System.out.println("  " + changedCount + " of " + fst.nodeCount + " changed; retry");
     }
 
-    for(Map.Entry<Integer,Integer> ent : topNodeMap.entrySet()) {
-      nodeRefToAddressIn[ent.getValue()] = newNodeAddress[ent.getKey()];
+    long maxAddress = 0;
+    for (int key : topNodeMap.keySet()) {
+      maxAddress = Math.max(maxAddress, newNodeAddress.get(key));
     }
 
-    fst.startNode = newNodeAddress[startNode];
+    PackedInts.Mutable nodeRefToAddressIn = PackedInts.getMutable(topNodeMap.size(),
+        PackedInts.bitsRequired(maxAddress), acceptableOverheadRatio);
+    for(Map.Entry<Integer,Integer> ent : topNodeMap.entrySet()) {
+      nodeRefToAddressIn.set(ent.getValue(), newNodeAddress.get(ent.getKey()));
+    }
+    fst.nodeRefToAddress = nodeRefToAddressIn;
+    
+
+    fst.startNode = (int) newNodeAddress.get(startNode);
     //System.out.println("new startNode=" + fst.startNode + " old startNode=" + startNode);
 
     if (emptyOutput != null) {

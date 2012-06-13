@@ -101,6 +101,11 @@ public class PackedInts {
     int size();
 
     /**
+     * Return the in-memory size in bytes.
+     */
+    long ramBytesUsed();
+
+    /**
      * Expert: if the bit-width of this reader matches one of
      * java's native types, returns the underlying array
      * (ie, byte[], short[], int[], long[]); else, returns
@@ -118,6 +123,7 @@ public class PackedInts {
      * @see #getArray
      */
     boolean hasArray();
+
   }
 
   /**
@@ -171,6 +177,7 @@ public class PackedInts {
    * @lucene.internal
    */
   public static interface Mutable extends Reader {
+
     /**
      * Set the value at the given index in the array.
      * @param index where the value should be positioned.
@@ -196,6 +203,13 @@ public class PackedInts {
      * Sets all values to 0.
      */
     void clear();
+
+    /**
+     * Save this mutable into <code>out</code>. Instantiating a reader from
+     * the generated data will return a reader with the same number of bits
+     * per value.
+     */
+    void save(DataOutput out) throws IOException;
 
   }
 
@@ -239,6 +253,7 @@ public class PackedInts {
       }
       return gets;
     }
+
   }
 
   public static abstract class MutableImpl extends ReaderImpl implements Mutable {
@@ -267,6 +282,18 @@ public class PackedInts {
       }
     }
 
+    protected int getFormat() {
+      return PACKED;
+    }
+
+    @Override
+    public void save(DataOutput out) throws IOException {
+      Writer writer = getWriterByFormat(out, valueCount, bitsPerValue, getFormat());
+      for (int i = 0; i < valueCount; ++i) {
+        writer.add(get(i));
+      }
+      writer.finish();
+    }
   }
 
   /** A write-once Writer.
@@ -470,28 +497,40 @@ public class PackedInts {
     int maxBitsPerValue = bitsPerValue + (int) acceptableOverheadPerValue;
 
     if (bitsPerValue <= 8 && maxBitsPerValue >= 8) {
-      return new PackedWriter(out, valueCount, 8);
+      return getWriterByFormat(out, valueCount, 8, PACKED);
     } else if (bitsPerValue <= 16 && maxBitsPerValue >= 16) {
-      return new PackedWriter(out, valueCount, 16);
+      return getWriterByFormat(out, valueCount, 16, PACKED);
     } else if (bitsPerValue <= 32 && maxBitsPerValue >= 32) {
-      return new PackedWriter(out, valueCount, 32);
+      return getWriterByFormat(out, valueCount, 32, PACKED);
     } else if (bitsPerValue <= 64 && maxBitsPerValue >= 64) {
-      return new PackedWriter(out, valueCount, 64);
+      return getWriterByFormat(out, valueCount, 64, PACKED);
     } else if (valueCount <= Packed8ThreeBlocks.MAX_SIZE && bitsPerValue <= 24 && maxBitsPerValue >= 24) {
-      return new PackedWriter(out, valueCount, 24);
+      return getWriterByFormat(out, valueCount, 24, PACKED);
     } else if (valueCount <= Packed16ThreeBlocks.MAX_SIZE && bitsPerValue <= 48 && maxBitsPerValue >= 48) {
-      return new PackedWriter(out, valueCount, bitsPerValue);
+      return getWriterByFormat(out, valueCount, 48, PACKED);
     } else {
       for (int bpv = bitsPerValue; bpv <= maxBitsPerValue; ++bpv) {
         if (Packed64SingleBlock.isSupported(bpv)) {
           float overhead = Packed64SingleBlock.overheadPerValue(bpv);
           float acceptableOverhead = acceptableOverheadPerValue + bitsPerValue - bpv;
           if (overhead <= acceptableOverhead) {
-            return new Packed64SingleBlockWriter(out, valueCount, bpv);
+            return getWriterByFormat(out, valueCount, bpv, PACKED_SINGLE_BLOCK);
           }
         }
       }
-      return new PackedWriter(out, valueCount, bitsPerValue);
+      return getWriterByFormat(out, valueCount, bitsPerValue, PACKED);
+    }
+  }
+
+  private static Writer getWriterByFormat(DataOutput out,
+      int valueCount, int bitsPerValue, int format) throws IOException {
+    switch (format) {
+      case PACKED:
+        return new PackedWriter(out, valueCount, bitsPerValue);
+      case PACKED_SINGLE_BLOCK:
+        return new Packed64SingleBlockWriter(out, valueCount, bitsPerValue);
+      default:
+        throw new IllegalArgumentException("Unknown format " + format);
     }
   }
 
