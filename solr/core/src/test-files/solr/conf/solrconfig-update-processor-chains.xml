@@ -224,6 +224,126 @@
     <processor class="solr.TrimFieldUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="truncate">
+    <processor class="solr.TruncateFieldUpdateProcessorFactory">
+      <str name="fieldName">trunc</str>
+      <int name="maxLength">5</int>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-not-in-schema">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-some">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldRegex">.*_raw</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="clone-single">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <str name="source">source1_s</str>
+      <str name="dest">dest_s</str>
+    </processor>
+  </updateRequestProcessorChain>
+  <updateRequestProcessorChain name="clone-multi">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <str name="source">source1_s</str>
+      <str name="source">source2_s</str>
+      <str name="dest">dest_s</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="clone-array">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <arr name="source">
+        <str>source1_s</str>
+        <str>source2_s</str>
+      </arr>
+      <str name="dest">dest_s</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="clone-selector">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <lst name="source">
+        <str name="fieldRegex">source\d_.*</str>
+        <lst name="exclude">
+          <str name="fieldRegex">source0_.*</str>
+        </lst>
+      </lst>
+      <str name="dest">dest_s</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="clone-max-chars">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <str name="source">field1</str>
+      <str name="dest">toField</str>
+    </processor>
+    <processor class="solr.TruncateFieldUpdateProcessorFactory">
+      <str name="fieldName">toField</str>
+      <int name="maxLength">3</int>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="clone-move">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <str name="source">field1</str>
+      <str name="dest">toField</str>
+    </processor>
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldName">field1</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="clone-replace">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldName">toField</str>
+    </processor>
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <str name="source">field1</str>
+      <str name="dest">toField</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="clone-append">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <str name="source">field1</str>
+      <str name="source">field2</str>
+      <str name="dest">toField</str>
+    </processor>
+    <processor class="solr.ConcatFieldUpdateProcessorFactory">
+      <str name="delimiter">; </str>
+      <str name="fieldName">toField</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <!-- example used in CloneFieldUpdateProcessorFactory javadocs -->
+  <updateRequestProcessorChain name="multiple-clones">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <str name="source">category</str>
+      <str name="dest">category_s</str>
+    </processor>
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <arr name="source">
+        <str>authors</str>
+        <str>editors</str>
+      </arr>
+      <str name="dest">contributors</str>
+    </processor>
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <lst name="source">
+        <str name="fieldRegex">.*_price</str>
+        <lst name="exclude">
+          <str name="fieldName">list_price</str>
+        </lst>
+      </lst>
+      <str name="dest">all_prices</str>
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="regex-replace">
     <processor class="solr.RegexReplaceProcessorFactory">
       <str name="fieldName">content</str>

@@ -252,6 +252,8 @@ New Features
       LastFieldValueUpdateProcessorFactory
       MinFieldValueUpdateProcessorFactory
       MaxFieldValueUpdateProcessorFactory
+      TruncateFieldUpdateProcessorFactory
+      IgnoreFieldUpdateProcessorFactory 
   (hossman, janhoy)
 
 * SOLR-3120: Optional post filtering for spatial queries bbox and geofilt
@@ -356,6 +358,10 @@ New Features
   override the "mm" parameter, specify "spellcheck.collateParam.mm".  This is helpful
   in cases where testing spellcheck collations for result counts should use different
   parameters from the main query (James Dyer)
+
+* SOLR-2599: CloneFieldUpdateProcessorFactory provides similar functionality 
+  to schema.xml's <copyField/> declaration but as an update processor that can 
+  be combined with other processors in any order. (Jan Høydahl & hossman)
 
 Optimizations
 ----------------------
