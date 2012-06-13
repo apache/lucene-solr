@@ -56,7 +56,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       }
 
       @Override
-      protected Reader initReader(Reader reader) {
+      protected Reader initReader(String fieldName, Reader reader) {
         reader = new MockCharFilter(reader, 0);
         reader = new MappingCharFilter(map, reader);
         return reader;

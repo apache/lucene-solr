@@ -1,12 +1,15 @@
 package org.apache.lucene.analysis.miscellaneous;
 
+import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /*
@@ -55,5 +58,33 @@ public class TestPerFieldAnalzyerWrapper extends BaseTokenStreamTestCase {
     assertEquals("SimpleAnalyzer lowercases",
                  "qwerty",
                  termAtt.toString());
+  }
+  
+  public void testCharFilters() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        return new TokenStreamComponents(new MockTokenizer(reader));
+      }
+
+      @Override
+      protected Reader initReader(String fieldName, Reader reader) {
+        return new MockCharFilter(CharReader.get(reader), 7);
+      }
+    };
+    assertAnalyzesTo(a, "ab",
+        new String[] { "aab" },
+        new int[] { 0 },
+        new int[] { 2 }
+    );
+    
+    // now wrap in PFAW
+    PerFieldAnalyzerWrapper p = new PerFieldAnalyzerWrapper(a, Collections.<String,Analyzer>emptyMap());
+    
+    assertAnalyzesTo(p, "ab",
+        new String[] { "aab" },
+        new int[] { 0 },
+        new int[] { 2 }
+    );
   }
 }

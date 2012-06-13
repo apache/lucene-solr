@@ -326,7 +326,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
       }
 
       @Override
-      protected Reader initReader(Reader reader) {
+      protected Reader initReader(String fieldName, Reader reader) {
         return new MappingCharFilter(normMap, CharReader.get(reader));
       }
     };

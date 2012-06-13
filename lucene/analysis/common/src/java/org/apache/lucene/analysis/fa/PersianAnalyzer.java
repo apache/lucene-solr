@@ -139,7 +139,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    * Wraps the Reader with {@link PersianCharFilter}
    */
   @Override
-  protected Reader initReader(Reader reader) {
+  protected Reader initReader(String fieldName, Reader reader) {
     return matchVersion.onOrAfter(Version.LUCENE_31) ? 
        new PersianCharFilter(CharReader.get(reader)) :
        reader;
