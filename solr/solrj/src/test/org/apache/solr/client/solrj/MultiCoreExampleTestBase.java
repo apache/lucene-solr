@@ -53,10 +53,11 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
     
-    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-"
+    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-core1-"
         + System.currentTimeMillis());
     dataDir2.mkdirs();
     
+    System.setProperty( "solr.core0.data.dir", this.dataDir.getCanonicalPath() ); 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() ); 
   }
   
@@ -69,7 +70,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
       System.err.println("NOTE: per solr.test.leavedatadir, dataDir2 will not be removed: " + dataDir2.getAbsolutePath());
     } else {
       if (!recurseDelete(dataDir2)) {
-        System.err.println("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
+        System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
   }
