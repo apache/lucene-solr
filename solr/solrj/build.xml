@@ -35,7 +35,9 @@
       <fileset dir="${common-solr.dir}/lib">
         <include name="commons-codec-*.jar"/>
         <include name="commons-io-*.jar"/>
-        <include name="commons-httpclient-*.jar"/>
+        <include name="httpcore*.jar"/>
+        <include name="httpclient*.jar"/>
+        <include name="httpmime*.jar"/>
         <include name="*stax-*.jar" />
         <include name="wstx-*.jar" />
         <include name="jcl-over-slf4j-*.jar" />

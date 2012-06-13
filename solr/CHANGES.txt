@@ -494,6 +494,9 @@ Bug Fixes
 * SOLR-2352: Fixed TermVectorComponent so that it will not fail if the fl 
   param contains globs or psuedo-fields (hossman)
 
+* SOLR-3541: add missing solrj dependencies to binary packages.
+  (Thijs Vonk via siren)
+
 Other Changes
 ----------------------
 
