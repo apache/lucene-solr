@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -435,6 +436,31 @@ public class TestPostingsOffsets extends LuceneTestCase {
     } catch (IllegalArgumentException expected) {
       // expected
     }
+  }
+  
+  public void testLegalbutVeryLargeOffsets() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    Document doc = new Document();
+    Token t1 = new Token("foo", 0, Integer.MAX_VALUE-500);
+    if (random().nextBoolean()) {
+      t1.setPayload(new BytesRef("test"));
+    }
+    Token t2 = new Token("foo", Integer.MAX_VALUE-500, Integer.MAX_VALUE);
+    TokenStream tokenStream = new CannedTokenStream(
+        new Token[] { t1, t2 }
+    );
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    // store some term vectors for the checkindex cross-check
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorPositions(true);
+    ft.setStoreTermVectorOffsets(true);
+    Field field = new Field("foo", tokenStream, ft);
+    doc.add(field);
+    iw.addDocument(doc);
+    iw.close();
+    dir.close();
   }
   // TODO: more tests with other possibilities
   
