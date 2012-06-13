@@ -70,6 +70,9 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
       starts[i] = maxDoc;
       final IndexReader r = subReaders[i];
       maxDoc += r.maxDoc();      // compute maxDocs
+      if (maxDoc < 0 /* overflow */) {
+        throw new IllegalArgumentException("Too many documents, composite IndexReaders cannot exceed " + Integer.MAX_VALUE);
+      }
       numDocs += r.numDocs();    // compute numDocs
       if (r.hasDeletions()) {
         hasDeletions = true;
