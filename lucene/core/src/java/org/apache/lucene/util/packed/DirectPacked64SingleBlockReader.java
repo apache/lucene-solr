@@ -51,4 +51,9 @@ final class DirectPacked64SingleBlockReader extends PackedInts.ReaderImpl {
       throw new IllegalStateException("failed", e);
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
 }

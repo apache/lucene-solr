@@ -560,4 +560,40 @@ public class TestPackedInts extends LuceneTestCase {
     assertEquals(1 << 10, wrt.get(valueCount - 1));
   }
 
+  public void testSave() throws IOException {
+    final int valueCount = _TestUtil.nextInt(random(), 1, 2048);
+    for (int bpv = 1; bpv <= 64; ++bpv) {
+      final int maxValue = (int) Math.min(PackedInts.maxValue(31), PackedInts.maxValue(bpv));
+      final RAMDirectory directory = new RAMDirectory();
+      List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bpv);
+      for (PackedInts.Mutable mutable : packedInts) {
+        for (int i = 0; i < mutable.size(); ++i) {
+          mutable.set(i, random().nextInt(maxValue));
+        }
+
+        IndexOutput out = directory.createOutput("packed-ints.bin", IOContext.DEFAULT);
+        mutable.save(out);
+        out.close();
+
+        IndexInput in = directory.openInput("packed-ints.bin", IOContext.DEFAULT);
+        PackedInts.Reader reader = PackedInts.getReader(in);
+        assertEquals(mutable.getBitsPerValue(), reader.getBitsPerValue());
+        assertEquals(valueCount, reader.size());
+        if (mutable instanceof Packed64SingleBlock) {
+          // make sure that we used the right format so that the reader has
+          // the same performance characteristics as the mutable that has been
+          // serialized
+          assertTrue(reader instanceof Packed64SingleBlock);
+        } else {
+          assertFalse(reader instanceof Packed64SingleBlock);
+        }
+        for (int i = 0; i < valueCount; ++i) {
+          assertEquals(mutable.get(i), reader.get(i));
+        }
+        in.close();
+        directory.deleteFile("packed-ints.bin");
+      }
+    }
+  }
+
 }

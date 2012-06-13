@@ -41,7 +41,7 @@ public class TestRollingUpdates extends LuceneTestCase {
 
     //provider.register(new MemoryCodec());
     if (random().nextBoolean()) {
-      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean())));
+      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
     }
 
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));

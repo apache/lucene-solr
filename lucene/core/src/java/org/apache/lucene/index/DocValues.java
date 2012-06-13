@@ -32,6 +32,7 @@ import org.apache.lucene.document.PackedLongDocValuesField; // javadocs
 import org.apache.lucene.document.ShortDocValuesField; // javadocs
 import org.apache.lucene.document.SortedBytesDocValuesField; // javadocs
 import org.apache.lucene.document.StraightBytesDocValuesField; // javadocs
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -410,6 +411,11 @@ public abstract class DocValues implements Closeable {
         len = Math.min(len, size() - index);
         Arrays.fill(arr, off, off+len, 0);
         return len;
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return 0;
       }
     };
 

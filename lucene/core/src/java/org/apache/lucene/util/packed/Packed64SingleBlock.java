@@ -285,6 +285,11 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
   }
 
   @Override
+  protected int getFormat() {
+    return PackedInts.PACKED_SINGLE_BLOCK;
+  }
+
+  @Override
   public String toString() {
     return getClass().getSimpleName() + "(bitsPerValue=" + bitsPerValue
         + ", size=" + size() + ", elements.length=" + blocks.length + ")";

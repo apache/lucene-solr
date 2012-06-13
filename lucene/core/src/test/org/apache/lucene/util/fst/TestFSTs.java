@@ -64,6 +64,7 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
+import org.apache.lucene.util.packed.PackedInts;
 
 @SuppressCodecs({ "SimpleText", "Memory" })
 public class TestFSTs extends LuceneTestCase {
@@ -536,7 +537,7 @@ public class TestFSTs extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: now rewrite");
         }
-        final FST<T> packed = fst.pack(_TestUtil.nextInt(random, 1, 10), _TestUtil.nextInt(random, 0, 10000000));
+        final FST<T> packed = fst.pack(_TestUtil.nextInt(random, 1, 10), _TestUtil.nextInt(random, 0, 10000000), random.nextFloat());
         if (VERBOSE) {
           System.out.println("TEST: now verify packed FST");
         }
@@ -1182,7 +1183,7 @@ public class TestFSTs extends LuceneTestCase {
           if (rewriteIter == 1) {
             if (doRewrite) {
               // Verify again, with packed FST:
-              fst = fst.pack(_TestUtil.nextInt(random, 1, 10), _TestUtil.nextInt(random, 0, 10000000));
+              fst = fst.pack(_TestUtil.nextInt(random, 1, 10), _TestUtil.nextInt(random, 0, 10000000), random.nextFloat());
             } else {
               break;
             }
@@ -1324,7 +1325,7 @@ public class TestFSTs extends LuceneTestCase {
 
         if (doPack) {
           System.out.println("Pack...");
-          fst = fst.pack(4, 100000000);
+          fst = fst.pack(4, 100000000, random().nextFloat());
           System.out.println("New size " + fst.sizeInBytes() + " bytes");
         }
         
@@ -1927,7 +1928,7 @@ public class TestFSTs extends LuceneTestCase {
     final Long nothing = outputs.getNoOutput();
     final Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
 
-    final FST<Long> fst = new FST<Long>(FST.INPUT_TYPE.BYTE1, outputs, false);
+    final FST<Long> fst = new FST<Long>(FST.INPUT_TYPE.BYTE1, outputs, false, PackedInts.COMPACT);
 
     final Builder.UnCompiledNode<Long> rootNode = new Builder.UnCompiledNode<Long>(b, 0);
 

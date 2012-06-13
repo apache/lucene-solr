@@ -73,4 +73,9 @@ final class DirectPackedReader extends PackedInts.ReaderImpl {
       throw new IllegalStateException("failed", ioe);
     }
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
+  }
 }
