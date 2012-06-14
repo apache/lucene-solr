@@ -96,9 +96,6 @@ public class JavabinLoader extends ContentStreamLoader {
         update = new JavaBinUpdateRequestCodec().unmarshal(in, handler);
       } catch (EOFException e) {
         break; // this is expected
-      } catch (Exception e) {
-        log.error("Exception while processing update request", e);
-        break;
       }
       if (update.getDeleteById() != null || update.getDeleteQuery() != null) {
         delete(req, update, processor);

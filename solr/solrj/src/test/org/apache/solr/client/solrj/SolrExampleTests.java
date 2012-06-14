@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,6 +31,7 @@ import junit.framework.Assert;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
@@ -67,6 +69,9 @@ import org.junit.Test;
  */
 abstract public class SolrExampleTests extends SolrJettyTestBase
 {
+  static {
+    ignoreException("uniqueKey");
+  }
   /**
    * query the example
    */
@@ -499,9 +504,38 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     catch(Throwable t) {
       t.printStackTrace();
       Assert.fail("should have thrown a SolrException! not: "+t);
+
+    }
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "DOCID", 1.0f);
+    doc.addField("id", "DOCID2", 1.0f);
+    doc.addField("name", "hello", 1.0f);
+
+    if (server instanceof HttpSolrServer) {
+      try {
+        server.add(doc);
+        fail("Should throw exception!");
+      } catch (SolrException ex) {
+        assertEquals(400, ex.code());
+        assertTrue(ex.getMessage().indexOf(
+            "contains multiple values for uniqueKey") > 0); // The reason should get passed through
+      } catch (Throwable t) {
+        Assert.fail("should have thrown a SolrException! not: " + t);
+      }
+    } else if (server instanceof ConcurrentUpdateSolrServer) {
+      //XXX concurrentupdatesolrserver reports errors differently
+      ConcurrentUpdateSolrServer cs = (ConcurrentUpdateSolrServer) server;
+      Field field = cs.getClass().getDeclaredField("lastError");
+      field.setAccessible(true);
+      field.set(cs,  null);
+      cs.add(doc);
+      cs.blockUntilFinished();
+      Throwable lastError = (Throwable)field.get(cs);
+      assertNotNull("Should throw exception!", lastError); //XXX 
+    } else {
+      log.info("Ignorig update test for client:" + server.getClass().getName());
     }
   }
-
 
   @Test
   public void testAugmentFields() throws Exception
@@ -1103,7 +1137,6 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     QueryResponse rsp = server.query( query );
     assertEquals(1, rsp.getResults().getNumFound());
   }
-  
 
   @Test
   public void testRealtimeGet() throws Exception
