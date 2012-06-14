@@ -907,6 +907,9 @@ New features
 * LUCENE-3440: Add ordered fragments feature with IDF-weighted terms for FVH.
   (Sebastian Lutze via Koji Sekiguchi)
 
+* LUCENE-4082: Added explain to ToParentBlockJoinQuery.
+  (Christoph Kaser, Martijn van Groningen)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
