@@ -13,6 +13,9 @@ Bug Fixes
 ----------------------
 * SOLR-3430: Added a new test against a real SQL database.  Fixed problems revealed by this new test
              related to  the expanded cache support added to 3.6/SOLR-2382 (James Dyer)
+             
+* SOLR-1958: When using the MailEntityProcessor, import would fail if fetchMailsSince was not specified.
+             (Max Lynch via James Dyer) 
 
 Other Changes
 ----------------------

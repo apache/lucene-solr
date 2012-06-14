@@ -82,7 +82,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     }
     batchSize = getIntFromContext("batchSize", 20);
     customFilter = getStringFromContext("customFilter", "");
-    String s = getStringFromContext("fetchMailsSince", "");
+    String s = getStringFromContext("fetchMailsSince", null);
     if (s != null)
       try {
         fetchMailsSince = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s);
