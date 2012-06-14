@@ -631,6 +631,15 @@ public class TestBlockJoin extends LuceneTestCase {
         assertNull(joinResults);
       } else {
         compareHits(r, joinR, results, joinResults);
+        TopDocs b = joinS.search(childJoinQuery, 10);
+        for (ScoreDoc hit : b.scoreDocs) {
+          Explanation explanation = joinS.explain(childJoinQuery, hit.doc);
+          Document document = joinS.doc(hit.doc - 1);
+          int childId = Integer.parseInt(document.get("childID"));
+          assertTrue(explanation.isMatch());
+          assertEquals(hit.score, explanation.getValue(), 0.0f);
+          assertEquals(String.format("Score based on child doc range from %d to %d", hit.doc - 1 - childId, hit.doc - 1), explanation.getDescription());
+        }
       }
 
       // Test joining in the opposite direction (parent to
