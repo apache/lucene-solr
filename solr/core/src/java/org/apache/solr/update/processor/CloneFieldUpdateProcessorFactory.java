@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
  * If the <code>dest</code> field already exists in the document, then the 
  * values from the <code>source</code> fields will be added to it.  The 
  * "boost" value associated with the <code>dest</code> will not be changed, 
- * and any bost specified on the <code>source</code> fields will be ignored.  
+ * and any boost specified on the <code>source</code> fields will be ignored.  
  * (If the <code>dest</code> field did not exist prior to this processor, the 
  * newly created <code>dest</code> field will have the default boost of 1.0)
  * </p>
