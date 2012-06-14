@@ -161,21 +161,10 @@ public final class SolrCore implements SolrInfoMBean {
 
   public String getIndexDir() {
     synchronized (searcherLock) {
-      RefCounted<SolrIndexSearcher> searcherRef = getNewestSearcher(false);
-      String indexDir;
-      try {
-        if (searcherRef == null) {
-          return dataDir + "index/";
-        }
-        SolrIndexSearcher searcher = searcherRef.get();
-        indexDir = searcher.getIndexDir() == null ? dataDir + "index/"
-            : searcher.getIndexDir();
-      } finally {
-        if (searcherRef != null) {
-          searcherRef.decref();
-        }
-      }
-      return indexDir;
+      if (_searcher == null)
+        return dataDir + "index/";
+      SolrIndexSearcher searcher = _searcher.get();
+      return searcher.getIndexDir() == null ? dataDir + "index/" : searcher.getIndexDir();
     }
   }
 
