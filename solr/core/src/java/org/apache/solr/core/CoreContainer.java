@@ -629,7 +629,18 @@ public class CoreContainer
 
     if (zkController != null) {
       // this happens before we can receive requests
-      zkController.preRegister(core.getCoreDescriptor());
+      try {
+        zkController.preRegister(core.getCoreDescriptor());
+      } catch (KeeperException e) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      }
     }
     
     SolrCore old = null;
@@ -662,7 +673,6 @@ public class CoreContainer
     }
   }
 
-
   private void registerInZk(SolrCore core) {
     if (zkController != null) {
       try {
@@ -676,7 +686,18 @@ public class CoreContainer
       } catch (Exception e) {
         // if register fails, this is really bad - close the zkController to
         // minimize any damage we can cause
-        zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+        try {
+          zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+        } catch (KeeperException e1) {
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        } catch (InterruptedException e1) {
+          Thread.currentThread().interrupt();
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        }
         SolrException.log(log, "", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);

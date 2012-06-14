@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.SafeStopThread;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -52,6 +53,7 @@ import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,11 +100,10 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   
   private void recoveryFailed(final SolrCore core,
       final ZkController zkController, final String baseUrl,
-      final String shardZkNodeName, final CoreDescriptor cd) {
+      final String shardZkNodeName, final CoreDescriptor cd) throws KeeperException, InterruptedException {
     SolrException.log(log, "Recovery failed - I give up.");
     try {
-      zkController.publishAsRecoveryFailed(baseUrl, cd,
-          shardZkNodeName, core.getName());
+      zkController.publish(cd, ZkStateReader.RECOVERY_FAILED);
     } finally {
       close();
     }
@@ -208,7 +209,18 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
       log.info("Starting recovery process. recoveringAfterStartup=" + recoveringAfterStartup);
 
-      doRecovery(core);
+      try {
+        doRecovery(core);
+      } catch (KeeperException e) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        SolrException.log(log, "", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
+            e);
+      }
     } finally {
       if (core != null) core.close();
       SolrRequestInfo.clearRequestInfo();
@@ -216,7 +228,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   }
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
-  public void doRecovery(SolrCore core) {
+  public void doRecovery(SolrCore core) throws KeeperException, InterruptedException {
     boolean replayed = false;
     boolean successfulRecovery = false;
 
@@ -327,8 +339,8 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             // }
 
             // sync success - register as active and return
-            zkController.publishAsActive(baseUrl, core.getCoreDescriptor(),
-                coreZkNodeName, coreName);
+            zkController.publish(core.getCoreDescriptor(),
+                ZkStateReader.ACTIVE);
             successfulRecovery = true;
             close = true;
             return;
@@ -352,8 +364,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
           log.info("Recovery was successful - registering as Active");
           // if there are pending recovery requests, don't advert as active
-          zkController.publishAsActive(baseUrl, core.getCoreDescriptor(),
-              coreZkNodeName, coreName);
+          zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
           close = true;
           successfulRecovery = true;
         } catch (InterruptedException e) {

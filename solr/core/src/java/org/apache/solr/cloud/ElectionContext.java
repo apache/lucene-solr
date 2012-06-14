@@ -8,7 +8,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkClientConnectionStrategy;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -96,6 +95,13 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           leaderProps == null ? null : ZkStateReader.toJSON(leaderProps),
           CreateMode.EPHEMERAL, true);
     }
+    
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        "leader", ZkStateReader.SHARD_ID_PROP, shardId,
+        ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
+        leaderProps.getProperties().get(ZkStateReader.BASE_URL_PROP),
+        ZkStateReader.CORE_NAME_PROP, leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP));
+    Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
   } 
 
 }
@@ -240,10 +246,10 @@ final class OverseerElectionContext extends ElectionContext {
   private final SolrZkClient zkClient;
   private final ZkStateReader stateReader;
 
-  public OverseerElectionContext(final String zkNodeName, SolrZkClient zkClient, ZkStateReader stateReader) {
+  public OverseerElectionContext(final String zkNodeName, ZkStateReader stateReader) {
     super(zkNodeName, "/overseer_elect", "/overseer_elect/leader", null, stateReader.getZkClient());
-    this.zkClient = zkClient;
     this.stateReader = stateReader;
+    this.zkClient = stateReader.getZkClient();
   }
 
   @Override
@@ -265,7 +271,7 @@ final class OverseerElectionContext extends ElectionContext {
           CreateMode.EPHEMERAL, true);
     }
   
-    new Overseer(zkClient, stateReader, id);
+    new Overseer(stateReader, id);
   }
   
 }

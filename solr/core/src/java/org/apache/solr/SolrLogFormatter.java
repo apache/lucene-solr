@@ -19,13 +19,14 @@ package org.apache.solr;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.CloudState;
-import org.apache.solr.common.cloud.CoreState;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -94,15 +95,11 @@ public class SolrLogFormatter extends Formatter {
     methodAlias.put(new Method("org.apache.solr.update.processor.LogUpdateProcessor","finish"), "");
   }
 
-
-
-
   public static class CoreInfo {
-    public static int maxCoreNum;
-    public String shortId;
-    public String url;
-    CoreState coreState;  // should be fine to keep a hard reference to this
-    // CloudState cloudState;  // should be fine to keep this hard reference since cloudstate is immutable and doesn't have pointers to anything heavyweight (like SolrCore, CoreContainer, etc)
+    static int maxCoreNum;
+    String shortId;
+    String url;
+    Map<String, String> coreProps;
   }
 
   Map<SolrCore, CoreInfo> coreInfoMap = new WeakHashMap<SolrCore, CoreInfo>();    // TODO: use something that survives across a core reload?
@@ -199,11 +196,15 @@ sb.append("(group_name=").append(tg.getName()).append(")");
           sb.append(" url="+info.url + " node="+zkController.getNodeName());
         }
 
-        // look to see if local core state changed
-        CoreState coreState = zkController.getCoreState(core.getName());
-        if (coreState != info.coreState) {
-          sb.append(" " + info.shortId + "_STATE=" + coreState);
-          info.coreState = coreState;
+        if(info.coreProps == null) {
+          info.coreProps = getCoreProps(zkController, core);
+        }
+
+        Map<String, String> coreProps = getCoreProps(zkController, core);
+        if(!coreProps.equals(info.coreProps)) {
+          info.coreProps = coreProps;
+          final String corePropsString = "coll:" + core.getCoreDescriptor().getCloudDescriptor().getCollectionName() + " core:" + core.getName() + " props:" + coreProps;
+          sb.append(" " + info.shortId + "_STATE=" + corePropsString);
         }
       }
     }
@@ -259,6 +260,16 @@ sb.append("(group_name=").append(tg.getName()).append(")");
     
     return sb.toString();
   }
+
+  private Map<String,String> getCoreProps(ZkController zkController, SolrCore core) {
+    final String collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+    ZkNodeProps props = zkController.getCloudState().getShardProps(collection,  ZkStateReader.getCoreNodeName(zkController.getNodeName(), core.getName()));
+    if(props!=null) {
+      return props.getProperties(); 
+    }
+    return Collections.EMPTY_MAP;
+  }
+
 
   private Method classAndMethod = new Method(null,null); // don't need to be thread safe
   private String getShortClassName(String name, String method) {
