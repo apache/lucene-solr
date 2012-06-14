@@ -20,6 +20,8 @@ package org.apache.solr.client.solrj.embedded;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
@@ -42,14 +44,19 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
       // setup the server...
       String url = "http://localhost:"+port+context;       // smaller queue size hits locks more often
       ConcurrentUpdateSolrServer s = new ConcurrentUpdateSolrServer( url, 2, 5 ) {
-
-		@Override
+        
+        public Throwable lastError = null;
+        @Override
         public void handleError(Throwable ex) {
-          // do something...    TODO?
+          lastError = ex;
         }
       };
+
+      s.setParser(new XMLResponseParser());
+      s.setRequestWriter(new RequestWriter());
       return s;
     }
+    
     catch( Exception ex ) {
       throw new RuntimeException( ex );
     }

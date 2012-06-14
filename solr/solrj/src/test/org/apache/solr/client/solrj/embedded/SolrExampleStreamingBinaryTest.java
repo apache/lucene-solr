@@ -17,39 +17,18 @@ package org.apache.solr.client.solrj.embedded;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
-import org.apache.solr.util.ExternalPaths;
-import org.junit.BeforeClass;
 
-public class SolrExampleStreamingBinaryTest extends SolrExampleTests {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createJetty(ExternalPaths.EXAMPLE_HOME, null, null);
-  }
+public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
   @Override
-  public SolrServer createNewSolrServer()
-  {
-    try {
-      // setup the server...
-      String url = "http://localhost:"+port+context;
-      // smaller queue size hits locks more often
-      ConcurrentUpdateSolrServer s = new ConcurrentUpdateSolrServer( url, 2, 5 ) {
-        @Override
-        public void handleError(Throwable ex) {
-          ex.printStackTrace();
-        }
-      };
-      s.setParser(new BinaryResponseParser());
-      s.setRequestWriter(new BinaryRequestWriter());
-      return s;
-    }
-    catch( Exception ex ) {
-      throw new RuntimeException( ex );
-    }
+  public SolrServer createNewSolrServer() {
+    ConcurrentUpdateSolrServer s = (ConcurrentUpdateSolrServer)super.createNewSolrServer();
+    s.setParser(new BinaryResponseParser());
+    s.setRequestWriter(new BinaryRequestWriter());
+    return s;
   }
 }
