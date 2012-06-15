@@ -74,29 +74,37 @@ public class TestSort extends SolrTestCaseJ4 {
     SolrQueryRequest req = lrf.makeRequest("q", "*:*");
 
     final int iters = atLeast(5000);
-    int numberOfOddities = 0;
+
+    // infinite loop abort when trying to generate a non-blank sort "name"
+    final int nonBlankAttempts = 37;
 
     for (int i = 0; i < iters; i++) {
       final StringBuilder input = new StringBuilder();
       final String[] names = new String[_TestUtil.nextInt(r,1,10)];
       final boolean[] reverse = new boolean[names.length];
       for (int j = 0; j < names.length; j++) {
-        names[j] = _TestUtil.randomRealisticUnicodeString(r, 1, 20);
+        names[j] = null;
+        for (int k = 0; k < nonBlankAttempts && null == names[j]; k++) {
+          names[j] = _TestUtil.randomRealisticUnicodeString(r, 1, 100);
 
-        // reduce the likelyhood that the random str is a valid query or func 
-        names[j] = names[j].replaceFirst("\\{","\\{\\{");
-        names[j] = names[j].replaceFirst("\\(","\\(\\(");
-        names[j] = names[j].replaceFirst("(\\\"|\\')","$1$1");
-        names[j] = names[j].replaceFirst("(\\d)","$1x");
+          // munge anything that might make this a function
+          names[j] = names[j].replaceFirst("\\{","\\{\\{");
+          names[j] = names[j].replaceFirst("\\(","\\(\\(");
+          names[j] = names[j].replaceFirst("(\\\"|\\')","$1$1z");
+          names[j] = names[j].replaceFirst("(\\d)","$1x");
 
-        // eliminate pesky problem chars
-        names[j] = names[j].replaceAll("\\p{Cntrl}|\\p{javaWhitespace}","");
-
-        if (0 == names[j].length()) {
-          numberOfOddities++;
-          // screw it, i'm taking my toys and going home
-          names[j] = "last_ditch_i_give_up";
+          // eliminate pesky problem chars
+          names[j] = names[j].replaceAll("\\p{Cntrl}|\\p{javaWhitespace}","");
+          
+          if (0 == names[j].length()) {
+            names[j] = null;
+          }
         }
+        // with luck this bad, never go to vegas
+        // alternatively: if (null == names[j]) names[j] = "never_go_to_vegas";
+        assertNotNull("Unable to generate a (non-blank) names["+j+"] after "
+                      + nonBlankAttempts + " attempts", names[j]);
+
         reverse[j] = r.nextBoolean();
 
         input.append(r.nextBoolean() ? " " : "");
@@ -120,38 +128,25 @@ public class TestSort extends SolrTestCaseJ4 {
         final Type type = sorts[j].getType();
 
         if (Type.SCORE.equals(type)) {
-          numberOfOddities++;
           assertEquals("sorts["+j+"] is (unexpectedly) type score : " + input,
                        "score", names[j]);
         } else if (Type.DOC.equals(type)) {
-          numberOfOddities++;
           assertEquals("sorts["+j+"] is (unexpectedly) type doc : " + input,
                        "_docid_", names[j]);
         } else if (Type.CUSTOM.equals(type) || Type.REWRITEABLE.equals(type)) {
-          numberOfOddities++;
 
-          // our orig string better be parsable as a func/query
-          QParser qp = 
-            QParser.getParser(names[j], FunctionQParserPlugin.NAME, req);
-          try { 
-            Query q = qp.getQuery();
-            assertNotNull("sorts["+j+"] had type " + type + 
-                          " but parsed to null func/query: " + input, q);
-          } catch (Exception e) {
-            assertNull("sorts["+j+"] had type " + type + 
-                       " but errored parsing as func/query: " + input, e);
-          }
+          fail("sorts["+j+"] resulted in a '" + type.toString()
+               + "', either sort parsing code is broken, or func/query " 
+               + "semantics have gotten broader and munging in this test "
+               + "needs improved: " + input);
+
         } else {
-          assertEquals("sorts["+j+"] had unexpected field: " + input,
+          assertEquals("sorts["+j+"] ("+type.toString()+
+                       ") had unexpected field in: " + input,
                        names[j], sorts[j].getField());
         }
       }
     }
-
-    assertTrue("Over 0.2% oddities in test: " +
-               numberOfOddities + "/" + iters +
-               " have func/query parsing semenatics gotten broader?",
-               numberOfOddities < 0.002 * iters);
   }
 
 
