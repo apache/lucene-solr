@@ -4,8 +4,6 @@
         <entity name="item" query="select * from item"
                 deltaQuery="select id from item where last_modified > '${dataimporter.last_index_time}'">
             <field column="NAME" name="name" />
-            <field column="NAME" name="nameSort" />
-            <field column="NAME" name="alphaNameSort" />
 
             <entity name="feature"  
                     query="select DESCRIPTION from FEATURE where ITEM_ID='${item.ID}'"
