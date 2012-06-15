@@ -158,7 +158,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       // TODO: doesn't handle graph inputs
       CJKBigramFilter.class,
       // TODO: doesn't handle graph inputs (or even look at positionIncrement)
-      HyphenatedWordsFilter.class
+      HyphenatedWordsFilter.class,
+      // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
+      TypeTokenFilter.class
     );
   }
   
