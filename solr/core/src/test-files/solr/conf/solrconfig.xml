@@ -232,12 +232,6 @@
     </lst>
   </requestHandler>
 
-  <requestHandler name="dismaxNoDefaults" class="solr.SearchHandler" >
-     <lst name="defaults">
-       <str name="defType">dismax</str>
-     </lst>
- </requestHandler>
-
   <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
