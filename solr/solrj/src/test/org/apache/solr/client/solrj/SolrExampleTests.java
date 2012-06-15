@@ -23,6 +23,7 @@ import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -525,8 +526,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     } else if (server instanceof ConcurrentUpdateSolrServer) {
       //XXX concurrentupdatesolrserver reports errors differently
       ConcurrentUpdateSolrServer cs = (ConcurrentUpdateSolrServer) server;
-      Field field = cs.getClass().getDeclaredField("lastError");
-      field.setAccessible(true);
+      Field field = getCUSSExceptionField(cs);
       field.set(cs,  null);
       cs.add(doc);
       cs.blockUntilFinished();
@@ -535,6 +535,14 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     } else {
       log.info("Ignorig update test for client:" + server.getClass().getName());
     }
+  }
+  
+  private static Field getCUSSExceptionField(Object cs)
+      throws SecurityException, NoSuchFieldException, IllegalArgumentException,
+      IllegalAccessException {
+    Field field = cs.getClass().getDeclaredField("lastError");
+    field.setAccessible(true);
+    return field;
   }
 
   @Test
@@ -1174,6 +1182,71 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals("DOCID", out.get("id"));
     assertEquals("hello", out.get("name"));
     assertEquals("aaa", out.get("aaa"));
+  }
+  
+  @Test
+  public void testUpdateField() throws Exception {
+    //no versions
+    SolrServer server = getSolrServer();
+    server.deleteByQuery("*:*");
+    server.commit();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "unique");
+    doc.addField("name", "gadget");
+    doc.addField("price_f", 1);
+    server.add(doc);
+    server.commit();
+    SolrQuery q = new SolrQuery("*:*");
+    q.setFields("id","price_f","name", "_version_");
+    QueryResponse resp = server.query(q);
+    assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
+    Long version = (Long)resp.getResults().get(0).getFirstValue("_version_");
+    assertNotNull("no version returned", version);
+    assertEquals(1.0f, resp.getResults().get(0).getFirstValue("price_f"));
+
+    //update "price" with incorrect version (optimistic locking)
+    HashMap<String, Object> oper = new HashMap<String, Object>();  //need better api for this???
+    oper.put("set",100);
+
+    doc = new SolrInputDocument();
+    doc.addField("id", "unique");
+    doc.addField("_version_", version+1);
+    doc.addField("price_f", oper);
+    try {
+      server.add(doc);
+      if(server instanceof HttpSolrServer) { //XXX concurrent server reports exceptions differently
+        fail("Operation should throw an exception!");
+      } else {
+        server.commit(); //just to be sure the client has sent the doc
+        assertTrue("CUSS did not report an error", ((Throwable)getCUSSExceptionField(server).get(server)).getMessage().contains("Conflict"));
+      }
+    } catch (SolrException se) {
+      assertTrue("No identifiable error message", se.getMessage().contains("version conflict for unique"));
+    }
+    
+    //update "price", use correct version (optimistic locking)
+    doc = new SolrInputDocument();
+    doc.addField("id", "unique");
+    doc.addField("_version_", version);
+    doc.addField("price_f", oper);
+    server.add(doc);
+    server.commit();
+    resp = server.query(q);
+    assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
+    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue("price_f"));
+    assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
+
+    //update "price", no version
+    oper.put("set", 200);
+    doc = new SolrInputDocument();
+    doc.addField("id", "unique");
+    doc.addField("price_f", oper);
+    server.add(doc);
+    server.commit();
+    resp = server.query(q);
+    assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
+    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue("price_f"));
+    assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
   }
   
   @Test
