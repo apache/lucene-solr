@@ -363,6 +363,9 @@ New Features
   to schema.xml's <copyField/> declaration but as an update processor that can 
   be combined with other processors in any order. (Jan Høydahl & hossman)
 
+* SOLR-3542: Add WeightedFragListBuilder for FVH and set it to default fragListBuilder
+  in example solrconfig.xml. (Sebastian Lutze, koji)
+
 Optimizations
 ----------------------
 
