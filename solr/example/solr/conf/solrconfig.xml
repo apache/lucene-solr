@@ -1486,13 +1486,17 @@
 
       <!-- Configure the standard fragListBuilder -->
       <fragListBuilder name="simple" 
-                       default="true"
                        class="solr.highlight.SimpleFragListBuilder"/>
-
+      
       <!-- Configure the single fragListBuilder -->
       <fragListBuilder name="single" 
                        class="solr.highlight.SingleFragListBuilder"/>
-
+      
+      <!-- Configure the weighted fragListBuilder -->
+      <fragListBuilder name="weighted" 
+                       default="true"
+                       class="solr.highlight.WeightedFragListBuilder"/>
+      
       <!-- default tag FragmentsBuilder -->
       <fragmentsBuilder name="default" 
                         default="true"
