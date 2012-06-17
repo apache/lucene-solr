@@ -39,8 +39,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -72,7 +70,7 @@ public class QueryParsing {
 
 
   /**
-   * Returns the "prefered" default operator for use by Query Parsers, 
+   * Returns the "preferred" default operator for use by Query Parsers,
    * based on the settings in the IndexSchema which may be overridden using 
    * an optional String override value.
    *
@@ -86,6 +84,15 @@ public class QueryParsing {
     return "AND".equals(val) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
   }
 
+  /**
+   * Returns the effective default field based on the 'df' param or
+   * hardcoded schema default.  May be null if either exists specified.
+   * @see org.apache.solr.common.params.CommonParams#DF
+   * @see org.apache.solr.schema.IndexSchema#getDefaultSearchFieldName
+   */
+  public static String getDefaultField(final IndexSchema s, final String df) {
+    return df != null ? df : s.getDefaultSearchFieldName();
+  }
 
   // note to self: something needs to detect infinite recursion when parsing queries
   public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params) throws ParseException {

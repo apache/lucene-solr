@@ -21,6 +21,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
@@ -63,6 +64,23 @@ public class DisMaxQParser extends QParser {
                       op.equals(QueryParser.Operator.AND) ? "100%" : "0%");
   }
 
+  /**
+   * Uses {@link SolrPluginUtils#parseFieldBoosts(String)} with the 'qf' parameter. Falls back to the 'df' parameter
+   * or {@link org.apache.solr.schema.IndexSchema#getDefaultSearchFieldName()}.
+   */
+  public static Map<String, Float> parseQueryFields(final IndexSchema indexSchema, final SolrParams solrParams)
+      throws ParseException {
+    Map<String, Float> queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
+    if (queryFields.isEmpty()) {
+      String df = QueryParsing.getDefaultField(indexSchema, solrParams.get(CommonParams.DF));
+      if (df == null) {
+        throw new ParseException("Neither "+DisMaxParams.QF+", "+CommonParams.DF +", nor the default search field are present.");
+      }
+      queryFields.put(df, 1.0f);
+    }
+    return queryFields;
+  }
+
   public DisMaxQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
@@ -81,10 +99,7 @@ public class DisMaxQParser extends QParser {
   public Query parse() throws ParseException {
     SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
 
-    queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
-    if (0 == queryFields.size()) {
-      queryFields.put(req.getSchema().getDefaultSearchFieldName(), 1.0f);
-    }
+    queryFields = parseQueryFields(req.getSchema(), solrParams);
     
     /* the main query we will execute.  we disable the coord because
      * this query is an artificial construct

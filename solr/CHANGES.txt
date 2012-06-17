@@ -655,6 +655,10 @@ Other Changes
   field can no longer be populated via <copyField/> or <field default=...>
   in the schema.xml.
 
+* SOLR-3534: The Dismax and eDismax query parsers will fall back on the 'df' parameter
+  when 'qf' is absent.  And if neither is present nor the schema default search field
+  then an exception will be thrown now. (dsmiley)
+
 Documentation
 ----------------------
 
@@ -701,6 +705,9 @@ Upgrading from Solr 3.5
   are strongly advised that they should re-index as document signatures may 
   have now changed. (see SOLR-3200 & SOLR-3226 for details)
 
+* SOLR-2724: Specifying <defaultSearchField> and <solrQueryParser defaultOperator="..."/> in
+  schema.xml is now considered deprecated.  Instead you are encouraged to specify these via the "df"
+  and "q.op" parameters in your request handler definition.  (David Smiley)
 
 New Features
 ----------------------

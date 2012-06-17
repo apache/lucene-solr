@@ -103,12 +103,8 @@ class SurroundQParser extends QParser {
     // so what do we do with the SrndQuery ??
     // processing based on example in LIA Ch 9
 
-    String defaultField = getParam(CommonParams.DF);
-    if (defaultField == null) {
-      defaultField = getReq().getSchema().getDefaultSearchFieldName();
-    }
-
     BasicQueryFactory bqFactory = new BasicQueryFactory(this.maxBasicQueries);
+    String defaultField = QueryParsing.getDefaultField(getReq().getSchema(),getParam(CommonParams.DF));
     Query lquery = sq.makeLuceneQueryField(defaultField, bqFactory);
     return lquery;
   }
