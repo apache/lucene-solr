@@ -74,20 +74,21 @@ public final class ReaderUtil {
       return run(docBase, topReader);
     }
 
-    private int run(int base, IndexReader reader) throws IOException {
+    private int run(final int base, final IndexReader reader) throws IOException {
       IndexReader[] subReaders = reader.getSequentialSubReaders();
       if (subReaders == null) {
         // atomic reader
         add(base, reader);
-        base += reader.maxDoc();
+        return base + reader.maxDoc();
       } else {
         // composite reader
+        int newBase = base;
         for (int i = 0; i < subReaders.length; i++) {
-          base = run(base, subReaders[i]);
+          newBase = run(newBase, subReaders[i]);
         }
+        assert newBase == base + reader.maxDoc();
+        return newBase;
       }
-
-      return base;
     }
 
     protected abstract void add(int base, IndexReader r) throws IOException;
