@@ -101,20 +101,21 @@ public final class ReaderUtil {
       return run(docBase, topReader);
     }
 
-    private int run(int base, IndexReader reader) throws IOException {
+    private int run(final int base, final IndexReader reader) throws IOException {
       if (reader instanceof AtomicReader) {
         // atomic reader
         add(base, (AtomicReader) reader);
-        base += reader.maxDoc();
+        return base + reader.maxDoc();
       } else {
         assert reader instanceof CompositeReader : "must be a composite reader";
+        int newBase = base;
         IndexReader[] subReaders = ((CompositeReader) reader).getSequentialSubReaders();
         for (int i = 0; i < subReaders.length; i++) {
-          base = run(base, subReaders[i]);
+          newBase = run(newBase, subReaders[i]);
         }
+        assert newBase == base + reader.maxDoc();
+        return newBase;
       }
-
-      return base;
     }
 
     protected abstract void add(int base, AtomicReader r) throws IOException;
