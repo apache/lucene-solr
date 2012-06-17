@@ -123,6 +123,11 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
                "q","100"), oner
     );
 
+    assertQ("qf defaults to df",
+        req("defType", "edismax", "df", "trait_ss",
+        "q","Tool"), twor
+    );
+
    assertQ("qf defaults to defaultSearchField"
            , req( "defType", "edismax"
                  ,"q","op")
