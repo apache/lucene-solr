@@ -111,6 +111,7 @@ public final class CompositeReaderContext extends IndexReaderContext {
           children[i] = build(newParent, sequentialSubReaders[i], i, newDocBase);
           newDocBase += sequentialSubReaders[i].maxDoc();
         }
+        assert newDocBase == cr.maxDoc();
         return newParent;
       }
     }
