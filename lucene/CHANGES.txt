@@ -6,16 +6,6 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
 
-New features
-
-* LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
-  the taxonomy in place with the given one. (Shai Erera)
-  
-API Changes
-
-* LUCENE-4132: IndexWriter.getConfig() now returns a LiveIndexWriterConfig object 
-  which can be used to change the IndexWriter's live settings. IndexWriterConfig 
-  is used only for initializing the IndexWriter. (Shai Erera)
 
 ======================= Lucene 4.0.0-ALPHA =======================
 
@@ -542,6 +532,10 @@ API Changes
 
 * LUCENE-4122: Replace Payload with BytesRef. (Andrzej Bialecki)
 
+* LUCENE-4132: IndexWriter.getConfig() now returns a LiveIndexWriterConfig object 
+  which can be used to change the IndexWriter's live settings. IndexWriterConfig 
+  is used only for initializing the IndexWriter. (Shai Erera)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
@@ -915,6 +909,9 @@ New features
 
 * LUCENE-4082: Added explain to ToParentBlockJoinQuery.
   (Christoph Kaser, Martijn van Groningen)
+
+* LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
+  the taxonomy in place with the given one. (Shai Erera)
 
 Optimizations
 
