@@ -6,17 +6,6 @@ http://s.apache.org/luceneversions
 For "contrib" changes prior to 4.0, please see:
 http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
 
-New features
-
-* LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
-  the taxonomy in place with the given one. (Shai Erera)
-  
-API Changes
-
-* LUCENE-4132: IndexWriter.getConfig() now returns a LiveIndexWriterConfig object 
-  which can be used to change the IndexWriter's live settings. IndexWriterConfig 
-  is used only for initializing the IndexWriter. (Shai Erera)
-
 ======================= Lucene 4.0.0-ALPHA =======================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
@@ -538,6 +527,10 @@ API Changes
 
 * LUCENE-4122: Replace Payload with BytesRef. (Andrzej Bialecki)
 
+* LUCENE-4132: IndexWriter.getConfig() now returns a LiveIndexWriterConfig object 
+  which can be used to change the IndexWriter's live settings. IndexWriterConfig 
+  is used only for initializing the IndexWriter. (Shai Erera)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
@@ -912,6 +905,9 @@ New features
 * LUCENE-4082: Added explain to ToParentBlockJoinQuery.
   (Christoph Kaser, Martijn van Groningen)
 
+* LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
+  the taxonomy in place with the given one. (Shai Erera)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
@@ -975,9 +971,6 @@ Optimizations
 
 * LUCENE-4098: Add bulk get/set methods to PackedInts (Adrien Grand
   via Mike McCandless)
-
-* LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
-  the taxonomy in place with the given one. (Shai Erera)
 
 Bug fixes
 
