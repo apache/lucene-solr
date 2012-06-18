@@ -258,7 +258,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   // The instance that was passed to the constructor. It is saved only in order
   // to allow users to query an IndexWriter settings.
-  private final IndexWriterConfig config;
+  private final LiveIndexWriterConfig config;
 
   // The PayloadProcessorProvider to use when segments are merged
   private PayloadProcessorProvider payloadProcessorProvider;
@@ -586,11 +586,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public IndexWriter(Directory d, IndexWriterConfig conf)
       throws CorruptIndexException, LockObtainFailedException, IOException {
-    if (conf.inUseByIndexWriter.get()) {
-      throw new IllegalStateException("the provided IndexWriterConfig was previously used by a different IndexWriter; please make a new one instead");
-    }
-    config = conf.clone();
-    config.inUseByIndexWriter.set(true);
+    config = new LiveIndexWriterConfig(conf.clone());
     directory = d;
     analyzer = config.getAnalyzer();
     infoStream = config.getInfoStream();
@@ -757,17 +753,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
   
   /**
-   * Returns the private {@link IndexWriterConfig}, cloned
-   * from the {@link IndexWriterConfig} passed to
-   * {@link #IndexWriter(Directory, IndexWriterConfig)}.
-   * <p>
-   * <b>NOTE:</b> some settings may be changed on the
-   * returned {@link IndexWriterConfig}, and will take
-   * effect in the current IndexWriter instance.  See the
-   * javadocs for the specific setters in {@link
-   * IndexWriterConfig} for details.
+   * Returns a {@link LiveIndexWriterConfig}, which can be used to query the IndexWriter
+   * current settings, as well as modify "live" ones.
    */
-  public IndexWriterConfig getConfig() {
+  public LiveIndexWriterConfig getConfig() {
     ensureOpen(false);
     return config;
   }

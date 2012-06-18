@@ -135,7 +135,7 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
     numThreadStatesActive = 0;
   }
 
-  void initialize(DocumentsWriter documentsWriter, FieldNumbers globalFieldMap, IndexWriterConfig config) {
+  void initialize(DocumentsWriter documentsWriter, FieldNumbers globalFieldMap, LiveIndexWriterConfig config) {
     this.documentsWriter.set(documentsWriter); // thread pool is bound to DW
     this.globalFieldMap.set(globalFieldMap);
     for (int i = 0; i < threadStates.length; i++) {

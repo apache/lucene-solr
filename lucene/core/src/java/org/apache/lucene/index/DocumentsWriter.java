@@ -133,7 +133,7 @@ final class DocumentsWriter {
   final DocumentsWriterFlushControl flushControl;
   
   final Codec codec;
-  DocumentsWriter(Codec codec, IndexWriterConfig config, Directory directory, IndexWriter writer, FieldNumbers globalFieldNumbers,
+  DocumentsWriter(Codec codec, LiveIndexWriterConfig config, Directory directory, IndexWriter writer, FieldNumbers globalFieldNumbers,
       BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.codec = codec;
     this.directory = directory;

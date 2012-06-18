@@ -52,7 +52,7 @@ import org.apache.lucene.util.SetOnce;
  */
 abstract class FlushPolicy implements Cloneable {
   protected SetOnce<DocumentsWriter> writer = new SetOnce<DocumentsWriter>();
-  protected IndexWriterConfig indexWriterConfig;
+  protected LiveIndexWriterConfig indexWriterConfig;
 
   /**
    * Called for each delete term. If this is a delete triggered due to an update

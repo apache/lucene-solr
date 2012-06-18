@@ -25,8 +25,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -114,18 +112,70 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   @Test
   public void testSettersChaining() throws Exception {
-    // Ensures that every setter returns IndexWriterConfig to enable easy
-    // chaining.
+    // Ensures that every setter returns IndexWriterConfig to allow chaining.
+    HashSet<String> liveSetters = new HashSet<String>();
+    HashSet<String> allSetters = new HashSet<String>();
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
-      if (m.getDeclaringClass() == IndexWriterConfig.class
-          && m.getName().startsWith("set")
-          && !Modifier.isStatic(m.getModifiers())) {
-        assertEquals("method " + m.getName() + " does not return IndexWriterConfig",
-            IndexWriterConfig.class, m.getReturnType());
+      if (m.getName().startsWith("set") && !Modifier.isStatic(m.getModifiers())) {
+        allSetters.add(m.getName());
+        // setters overridden from LiveIndexWriterConfig are returned twice, once with 
+        // IndexWriterConfig return type and second with LiveIndexWriterConfig. The ones
+        // from LiveIndexWriterConfig are marked 'synthetic', so just collect them and
+        // assert in the end that we also received them from IWC.
+        if (m.isSynthetic()) {
+          liveSetters.add(m.getName());
+        } else {
+          assertEquals("method " + m.getName() + " does not return IndexWriterConfig",
+              IndexWriterConfig.class, m.getReturnType());
+        }
       }
+    }
+    for (String setter : liveSetters) {
+      assertTrue("setter method not overridden by IndexWriterConfig: " + setter, allSetters.contains(setter));
     }
   }
 
+  @Test
+  public void testReuse() throws Exception {
+    Directory dir = newDirectory();
+    // test that if the same IWC is reused across two IWs, it is cloned by each.
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, conf);
+    LiveIndexWriterConfig liveConf1 = iw.w.getConfig();
+    iw.close();
+    
+    iw = new RandomIndexWriter(random(), dir, conf);
+    LiveIndexWriterConfig liveConf2 = iw.w.getConfig();
+    iw.close();
+    
+    // LiveIndexWriterConfig's "copy" constructor doesn't clone objects.
+    assertNotSame("IndexWriterConfig should have been cloned", liveConf1.getMergePolicy(), liveConf2.getMergePolicy());
+    
+    dir.close();
+  }
+  
+  @Test
+  public void testOverrideGetters() throws Exception {
+    // Test that IndexWriterConfig overrides all getters, so that javadocs
+    // contain all methods for the users. Also, ensures that IndexWriterConfig
+    // doesn't declare getters that are not declared on LiveIWC.
+    HashSet<String> liveGetters = new HashSet<String>();
+    for (Method m : LiveIndexWriterConfig.class.getDeclaredMethods()) {
+      if (m.getName().startsWith("get") && !Modifier.isStatic(m.getModifiers())) {
+        liveGetters.add(m.getName());
+      }
+    }
+    
+    for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
+      if (m.getName().startsWith("get") && !Modifier.isStatic(m.getModifiers())) {
+        assertEquals("method " + m.getName() + " not overrided by IndexWriterConfig", 
+            IndexWriterConfig.class, m.getDeclaringClass());
+        assertTrue("method " + m.getName() + " not declared on LiveIndexWriterConfig", 
+            liveGetters.contains(m.getName()));
+      }
+    }
+  }
+  
   @Test
   public void testConstants() throws Exception {
     // Tests that the values of the constants does not change
@@ -276,53 +326,4 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
   }
 
-  public void testReuse() throws Exception {
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    Directory dir = newDirectory();
-    Document doc = new Document();
-    doc.add(newTextField("foo", "bar", Store.YES));
-    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
-    riw.addDocument(doc);
-    riw.close();
-
-    // Sharing IWC should be fine:
-    riw = new RandomIndexWriter(random(), dir, iwc);
-    riw.addDocument(doc);
-    riw.close();
-
-    dir.close();
-  }
-
-  public void testIWCClone() throws Exception {
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    Directory dir = newDirectory();
-    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
-
-    // Cannot clone IW's private IWC clone:
-    try {
-      riw.w.getConfig().clone();
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-    riw.close();
-    dir.close();
-  }
-
-  public void testIWCInvalidReuse() throws Exception {
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    Directory dir = newDirectory();
-    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
-    IndexWriterConfig privateIWC = riw.w.getConfig();
-    riw.close();
-
-    // Cannot clone IW's private IWC clone:
-    try {
-      new RandomIndexWriter(random(), dir, privateIWC);
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-    dir.close();
-  }
 }
