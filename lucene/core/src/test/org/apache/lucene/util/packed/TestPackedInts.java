@@ -445,7 +445,7 @@ public class TestPackedInts extends LuceneTestCase {
   public void testBulkGet() {
     final int valueCount = 1111;
     final int index = random().nextInt(valueCount);
-    final int len = random().nextInt(valueCount * 2);
+    final int len = _TestUtil.nextInt(random(), 1, valueCount * 2);
     final int off = random().nextInt(77);
 
     for (int bpv = 1; bpv <= 64; ++bpv) {
@@ -479,7 +479,7 @@ public class TestPackedInts extends LuceneTestCase {
   public void testBulkSet() {
     final int valueCount = 1111;
     final int index = random().nextInt(valueCount);
-    final int len = random().nextInt(valueCount * 2);
+    final int len = _TestUtil.nextInt(random(), 1, valueCount * 2);
     final int off = random().nextInt(77);
     long[] arr = new long[off+len];
 
