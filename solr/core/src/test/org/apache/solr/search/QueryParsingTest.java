@@ -231,4 +231,26 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     req.close();
   }
 
+  public void testLiteralFunction() throws Exception {
+    
+    final String NAME = FunctionQParserPlugin.NAME;
+
+    SolrQueryRequest req = req("variable", "foobar");
+    
+    assertNotNull(QParser.getParser
+                  ("literal('a value')",
+                   NAME, req).getQuery());
+    assertNotNull(QParser.getParser
+                  ("literal('a value')",
+                   NAME, req).getQuery());
+    assertNotNull(QParser.getParser
+                  ("literal(\"a value\")",
+                   NAME, req).getQuery());
+    assertNotNull(QParser.getParser
+                  ("literal($variable)",
+                   NAME, req).getQuery());
+    assertNotNull(QParser.getParser
+                  ("strdist(\"a value\",literal('a value'),edit)",
+                   NAME, req).getQuery());
+  }
 }

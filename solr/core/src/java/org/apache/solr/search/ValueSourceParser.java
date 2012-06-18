@@ -104,7 +104,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("literal", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
-        return new LiteralValueSource(fp.getString());
+        return new LiteralValueSource(fp.parseArg());
       }
     });
     addParser("rord", new ValueSourceParser() {
