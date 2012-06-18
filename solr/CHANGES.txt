@@ -509,6 +509,8 @@ Bug Fixes
 * SOLR-3541: add missing solrj dependencies to binary packages.
   (Thijs Vonk via siren)
 
+* SOLR-3522: fixed parsing of the 'literal()' function (hossman)
+
 Other Changes
 ----------------------
 
