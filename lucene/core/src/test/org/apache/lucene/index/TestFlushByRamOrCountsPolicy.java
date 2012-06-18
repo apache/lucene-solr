@@ -294,7 +294,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   public class IndexThread extends Thread {
     IndexWriter writer;
-    IndexWriterConfig iwc;
+    LiveIndexWriterConfig iwc;
     LineFileDocs docs;
     private AtomicInteger pendingDocs;
     private final boolean doRandomCommit;

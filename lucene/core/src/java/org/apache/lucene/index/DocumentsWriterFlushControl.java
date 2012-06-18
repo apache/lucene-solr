@@ -65,10 +65,9 @@ final class DocumentsWriterFlushControl implements MemoryController {
   private final FlushPolicy flushPolicy;
   private boolean closed = false;
   private final DocumentsWriter documentsWriter;
-  private final IndexWriterConfig config;
+  private final LiveIndexWriterConfig config;
 
-  DocumentsWriterFlushControl(DocumentsWriter documentsWriter,
-      IndexWriterConfig config) {
+  DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config) {
     this.stallControl = new DocumentsWriterStallControl();
     this.perThreadPool = documentsWriter.perThreadPool;
     this.flushPolicy = documentsWriter.flushPolicy;
