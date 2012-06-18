@@ -26,14 +26,9 @@ import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.TimeZone;
 
 
 public class SimpleFacetsTest extends SolrTestCaseJ4 {
@@ -117,6 +112,42 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     add_doc("id", "2002", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "10");
     add_doc("id", "2003", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
     add_doc("id", "2004", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
+  }
+
+  @Test
+  public void testSimpleGroupedQueryRangeFacets() throws Exception {
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "id:[2000 TO 2004]",
+            "group", "true",
+            "group.facet", "true",
+            "group.field", "hotel_s1",
+            "facet", "true",
+            "facet.query", "airport_s1:ams"
+        ),
+        "//lst[@name='facet_queries']/int[@name='airport_s1:ams'][.='2']"
+    );
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "id:[2000 TO 2004]",
+            "group", "true",
+            "group.facet", "true",
+            "group.field", "hotel_s1",
+            "facet", "true",
+            "facet.range", "duration_i1",
+            "facet.range.start", "5",
+            "facet.range.end", "11",
+            "facet.range.gap", "1"
+        ),
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='5'][.='2']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='6'][.='0']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='7'][.='0']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='8'][.='0']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='9'][.='0']",
+        "//lst[@name='facet_ranges']/lst[@name='duration_i1']/lst[@name='counts']/int[@name='10'][.='2']"
+    );
   }
 
   @Test
