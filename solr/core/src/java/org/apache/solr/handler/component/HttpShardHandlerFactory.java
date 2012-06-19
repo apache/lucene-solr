@@ -141,7 +141,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
       T temp = (T) initArgs.get(configKey);
       toReturn = (temp != null) ? temp : defaultValue;
     }
-    log.info("Setting {} to: {}", configKey, soTimeout);
+    log.info("Setting {} to: {}", configKey, toReturn);
     return toReturn;
   }
 }
