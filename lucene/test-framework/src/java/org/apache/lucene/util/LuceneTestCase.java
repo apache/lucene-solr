@@ -436,11 +436,12 @@ public abstract class LuceneTestCase extends Assert {
    * do tests on that segment's reader. This is an utility method to help them.
    */
   public static SegmentReader getOnlySegmentReader(DirectoryReader reader) {
-    IndexReader[] subReaders = reader.getSequentialSubReaders();
-    if (subReaders.length != 1)
-      throw new IllegalArgumentException(reader + " has " + subReaders.length + " segments instead of exactly one");
-    assertTrue(subReaders[0] instanceof SegmentReader);
-    return (SegmentReader) subReaders[0];
+    List<? extends IndexReader> subReaders = reader.getSequentialSubReaders();
+    if (subReaders.size() != 1)
+      throw new IllegalArgumentException(reader + " has " + subReaders.size() + " segments instead of exactly one");
+    final IndexReader r = subReaders.get(0);
+    assertTrue(r instanceof SegmentReader);
+    return (SegmentReader) r;
   }
 
   /**

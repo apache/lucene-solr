@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.index.FieldInfo;
@@ -471,7 +472,7 @@ public class TestDocSet extends LuceneTestCase {
 
     DocIdSet da;
     DocIdSet db;
-    AtomicReaderContext[] leaves = topLevelContext.leaves();
+    List<AtomicReaderContext> leaves = topLevelContext.leaves();
 
     // first test in-sequence sub readers
     for (AtomicReaderContext readerContext : leaves) {
@@ -480,10 +481,10 @@ public class TestDocSet extends LuceneTestCase {
       doTestIteratorEqual(da, db);
     }  
 
-    int nReaders = leaves.length;
+    int nReaders = leaves.size();
     // now test out-of-sequence sub readers
     for (int i=0; i<nReaders; i++) {
-      AtomicReaderContext readerContext = leaves[rand.nextInt(nReaders)];
+      AtomicReaderContext readerContext = leaves.get(rand.nextInt(nReaders));
       da = fa.getDocIdSet(readerContext, null);
       db = fb.getDocIdSet(readerContext, null);
       doTestIteratorEqual(da, db);

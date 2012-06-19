@@ -68,12 +68,12 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
   @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
-    for (int i = 0; i < subReaders.length; i++) {
+    for (final IndexReader r : getSequentialSubReaders()) {
       try {
         if (closeSubReaders) {
-          subReaders[i].close();
+          r.close();
         } else {
-          subReaders[i].decRef();
+          r.decRef();
         }
       } catch (IOException e) {
         if (ioe == null) ioe = e;

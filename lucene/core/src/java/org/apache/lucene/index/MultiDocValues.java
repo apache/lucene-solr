@@ -29,13 +29,18 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util.ReaderUtil.Gather;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
 /**
  * A wrapper for CompositeIndexReader providing access to per segment
  * {@link DocValues}
  * 
+ * <p><b>NOTE</b>: for multi readers, you'll get better
+ * performance by gathering the sub readers using
+ * {@link IndexReader#getTopReaderContext()} to get the
+ * atomic leaves and then operate per-AtomicReader,
+ * instead of using this class.
+ *
  * @lucene.experimental
  * @lucene.internal
  */
@@ -69,6 +74,8 @@ public class MultiDocValues extends DocValues {
   }
   
   private static class DocValuesPuller {
+    public DocValuesPuller() {}
+
     public DocValues pull(AtomicReader reader, String field) throws IOException {
       return reader.docValues(field);
     }
@@ -94,8 +101,9 @@ public class MultiDocValues extends DocValues {
    * their values on the fly.
    * 
    * <p>
-   * <b>NOTE</b>: this is a slow way to access DocValues. It's better to get the
-   * sub-readers (using {@link Gather}) and iterate through them yourself.
+   * <b>NOTE</b>: this is a slow way to access DocValues.
+   * It's better to get the sub-readers and iterate through them
+   * yourself.
    */
   public static DocValues getDocValues(IndexReader r, final String field) throws IOException {
     return getDocValues(r, field, DEFAULT_PULLER);
@@ -106,80 +114,74 @@ public class MultiDocValues extends DocValues {
    * their values on the fly.
    * 
    * <p>
-   * <b>NOTE</b>: this is a slow way to access DocValues. It's better to get the
-   * sub-readers (using {@link Gather}) and iterate through them yourself.
+   * <b>NOTE</b>: this is a slow way to access DocValues.
+   * It's better to get the sub-readers and iterate through them
+   * yourself.
    */
   public static DocValues getNormDocValues(IndexReader r, final String field) throws IOException {
     return getDocValues(r, field, NORMS_PULLER);
   }
   
  
-  private static DocValues getDocValues(IndexReader r, final String field, final DocValuesPuller puller) throws IOException {
-    if (r instanceof AtomicReader) {
+  private static DocValues getDocValues(IndexReader reader, final String field, final DocValuesPuller puller) throws IOException {
+    if (reader instanceof AtomicReader) {
       // already an atomic reader
-      return puller.pull((AtomicReader) r, field);
+      return puller.pull((AtomicReader) reader, field);
     }
-    assert r instanceof CompositeReader;
-    final IndexReader[] subs = ((CompositeReader) r).getSequentialSubReaders();
-    if (subs.length == 0) {
-      // no fields
-      return null;
-    } else if (subs.length == 1) {
-      return getDocValues(subs[0], field, puller);
-    } else {      
-      final List<DocValuesSlice> slices = new ArrayList<DocValuesSlice>();
-      
-      final TypePromoter promotedType[] = new TypePromoter[1];
-      promotedType[0] = TypePromoter.getIdentityPromoter();
-      
-      // gather all docvalues fields, accumulating a promoted type across 
-      // potentially incompatible types
-      
-      new ReaderUtil.Gather(r) {
-        boolean stop = false;
-        @Override
-        protected void add(int base, AtomicReader r) throws IOException {
-          if (stop) {
-            return;
-          }
+    assert reader instanceof CompositeReader;
+    final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+    switch (leaves.size()) {
+      case 0:
+        // no fields
+        return null;
+      case 1:
+        // already an atomic reader / reader with one leave
+        return getDocValues(leaves.get(0).reader(), field, puller);
+      default:
+        final List<DocValuesSlice> slices = new ArrayList<DocValuesSlice>();
+        
+        TypePromoter promotedType =  TypePromoter.getIdentityPromoter();
+        
+        // gather all docvalues fields, accumulating a promoted type across 
+        // potentially incompatible types
+        for (final AtomicReaderContext ctx : leaves) {
+          final AtomicReader r = ctx.reader();
           final DocValues d = puller.pull(r, field);
           if (d != null) {
             TypePromoter incoming = TypePromoter.create(d.getType(), d.getValueSize());
-            promotedType[0] = promotedType[0].promote(incoming);
+            promotedType = promotedType.promote(incoming);
           } else if (puller.stopLoadingOnNull(r, field)){
-            promotedType[0] = TypePromoter.getIdentityPromoter(); // set to identity to return null
-            stop = true;
+            return null;
           }
-          slices.add(new DocValuesSlice(d, base, r.maxDoc()));
+          slices.add(new DocValuesSlice(d, ctx.docBase, r.maxDoc()));
         }
-      }.run();
-      
-      // return null if no docvalues encountered anywhere
-      if (promotedType[0] == TypePromoter.getIdentityPromoter()) {
-        return null;
-      }
-           
-      // populate starts and fill gaps with empty docvalues 
-      int starts[] = new int[slices.size()];
-      for (int i = 0; i < slices.size(); i++) {
-        DocValuesSlice slice = slices.get(i);
-        starts[i] = slice.start;
-        if (slice.docValues == null) {
-          Type promoted = promotedType[0].type();
-          switch(promoted) {
-            case BYTES_FIXED_DEREF:
-            case BYTES_FIXED_STRAIGHT:
-            case BYTES_FIXED_SORTED:
-              assert promotedType[0].getValueSize() >= 0;
-              slice.docValues = new EmptyFixedDocValues(slice.length, promoted, promotedType[0].getValueSize());
-              break;
-            default:
-              slice.docValues = new EmptyDocValues(slice.length, promoted);
+        
+        // return null if no docvalues encountered anywhere
+        if (promotedType == TypePromoter.getIdentityPromoter()) {
+          return null;
+        }
+             
+        // populate starts and fill gaps with empty docvalues 
+        int starts[] = new int[slices.size()];
+        for (int i = 0; i < slices.size(); i++) {
+          DocValuesSlice slice = slices.get(i);
+          starts[i] = slice.start;
+          if (slice.docValues == null) {
+            Type promoted = promotedType.type();
+            switch(promoted) {
+              case BYTES_FIXED_DEREF:
+              case BYTES_FIXED_STRAIGHT:
+              case BYTES_FIXED_SORTED:
+                assert promotedType.getValueSize() >= 0;
+                slice.docValues = new EmptyFixedDocValues(slice.length, promoted, promotedType.getValueSize());
+                break;
+              default:
+                slice.docValues = new EmptyDocValues(slice.length, promoted);
+            }
           }
         }
-      }
-      
-      return new MultiDocValues(slices.toArray(new DocValuesSlice[slices.size()]), starts, promotedType[0]);
+        
+        return new MultiDocValues(slices.toArray(new DocValuesSlice[slices.size()]), starts, promotedType);
     }
   }
 

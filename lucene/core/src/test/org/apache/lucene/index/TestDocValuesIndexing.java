@@ -80,7 +80,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.close(true);
 
     DirectoryReader reader = DirectoryReader.open(dir, 1);
-    assertEquals(1, reader.getSequentialSubReaders().length);
+    assertEquals(1, reader.getSequentialSubReaders().size());
 
     IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -753,7 +753,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, r.getSequentialSubReaders()[0].docValues("field").load().getInt(0));
+    assertEquals(17, getOnlySegmentReader(r).docValues("field").load().getInt(0));
     r.close();
     d.close();
   }
@@ -997,8 +997,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.addDocument(doc);
     bytes[0] = 1;
     w.addDocument(doc);
+    w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    Source s = r.getSequentialSubReaders()[0].docValues("field").getSource();
+    Source s = getOnlySegmentReader(r).docValues("field").getSource();
 
     BytesRef bytes1 = s.getBytes(0, new BytesRef());
     assertEquals(bytes.length, bytes1.length);

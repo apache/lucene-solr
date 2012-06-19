@@ -118,8 +118,8 @@ final class StandardDirectoryReader extends DirectoryReader {
       writer, segmentInfos, writer.getConfig().getReaderTermsIndexDivisor(), applyAllDeletes);
   }
 
-  /** This constructor is only used for {@link #doOpenIfChanged()} */
-  private static DirectoryReader open(Directory directory, IndexWriter writer, SegmentInfos infos, AtomicReader[] oldReaders,
+  /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos, IndexWriter)} */
+  private static DirectoryReader open(Directory directory, IndexWriter writer, SegmentInfos infos, List<? extends AtomicReader> oldReaders,
     int termInfosIndexDivisor) throws IOException {
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
@@ -127,8 +127,9 @@ final class StandardDirectoryReader extends DirectoryReader {
 
     if (oldReaders != null) {
       // create a Map SegmentName->SegmentReader
-      for (int i = 0; i < oldReaders.length; i++) {
-        segmentReaders.put(((SegmentReader) oldReaders[i]).getSegmentName(), Integer.valueOf(i));
+      for (int i = 0, c = oldReaders.size(); i < c; i++) {
+        final SegmentReader sr = (SegmentReader) oldReaders.get(i);
+        segmentReaders.put(sr.getSegmentName(), Integer.valueOf(i));
       }
     }
     
@@ -146,7 +147,7 @@ final class StandardDirectoryReader extends DirectoryReader {
         newReaders[i] = null;
       } else {
         // there is an old reader for this segment - we'll try to reopen it
-        newReaders[i] = (SegmentReader) oldReaders[oldReaderIndex.intValue()];
+        newReaders[i] = (SegmentReader) oldReaders.get(oldReaderIndex.intValue());
       }
 
       boolean success = false;
@@ -216,9 +217,9 @@ final class StandardDirectoryReader extends DirectoryReader {
     if (writer != null) {
       buffer.append(":nrt");
     }
-    for(int i=0;i<subReaders.length;i++) {
+    for (final AtomicReader r : getSequentialSubReaders()) {
       buffer.append(' ');
-      buffer.append(subReaders[i]);
+      buffer.append(r);
     }
     buffer.append(')');
     return buffer.toString();
@@ -298,7 +299,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, IndexWriter writer) throws CorruptIndexException, IOException {
-    return StandardDirectoryReader.open(directory, writer, infos, subReaders, termInfosIndexDivisor);
+    return StandardDirectoryReader.open(directory, writer, infos, getSequentialSubReaders(), termInfosIndexDivisor);
   }
 
   @Override
@@ -329,10 +330,10 @@ final class StandardDirectoryReader extends DirectoryReader {
   @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
-    for (int i = 0; i < subReaders.length; i++) {
+    for (final AtomicReader r : getSequentialSubReaders()) {
       // try to close each reader, even if an exception is thrown
       try {
-        subReaders[i].decRef();
+        r.decRef();
       } catch (IOException e) {
         if (ioe == null) ioe = e;
       }

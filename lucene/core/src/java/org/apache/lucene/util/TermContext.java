@@ -57,7 +57,7 @@ public final class TermContext {
     if (context.leaves() == null) {
       len = 1;
     } else {
-      len = context.leaves().length;
+      len = context.leaves().size();
     }
     states = new TermState[len];
   }
@@ -85,11 +85,10 @@ public final class TermContext {
     final String field = term.field();
     final BytesRef bytes = term.bytes();
     final TermContext perReaderTermState = new TermContext(context);
-    final AtomicReaderContext[] leaves = context.leaves();
     //if (DEBUG) System.out.println("prts.build term=" + term);
-    for (int i = 0; i < leaves.length; i++) {
+    for (final AtomicReaderContext ctx : context.leaves()) {
       //if (DEBUG) System.out.println("  r=" + leaves[i].reader);
-      final Fields fields = leaves[i].reader().fields();
+      final Fields fields = ctx.reader().fields();
       if (fields != null) {
         final Terms terms = fields.terms(field);
         if (terms != null) {
@@ -97,7 +96,7 @@ public final class TermContext {
           if (termsEnum.seekExact(bytes, cache)) { 
             final TermState termState = termsEnum.termState();
             //if (DEBUG) System.out.println("    found");
-            perReaderTermState.register(termState, leaves[i].ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
+            perReaderTermState.register(termState, ctx.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
           }
         }
       }

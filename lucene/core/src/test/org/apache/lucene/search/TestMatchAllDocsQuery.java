@@ -54,7 +54,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
     IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits;
-
+    
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
     assertEquals(3, hits.length);
     assertEquals("one", is.doc(hits[0].doc).get("key"));

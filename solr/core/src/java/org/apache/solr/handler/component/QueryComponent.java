@@ -437,11 +437,11 @@ public class QueryComponent extends SearchComponent
       NamedList<Object[]> sortVals = new NamedList<Object[]>(); // order is important for the sort fields
       Field field = new StringField("dummy", "", Field.Store.NO); // a dummy Field
       IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
+      List<AtomicReaderContext> leaves = topReaderContext.leaves();
       AtomicReaderContext currentLeaf = null;
-      if (leaves.length==1) {
+      if (leaves.size()==1) {
         // if there is a single segment, use that subReader and avoid looking up each time
-        currentLeaf = leaves[0];
+        currentLeaf = leaves.get(0);
         leaves=null;
       }
 
@@ -478,7 +478,7 @@ public class QueryComponent extends SearchComponent
 
           if (leaves != null) {
             idx = ReaderUtil.subIndex(doc, leaves);
-            currentLeaf = leaves[idx];
+            currentLeaf = leaves.get(idx);
             if (idx != lastIdx) {
               // we switched segments.  invalidate comparator.
               comparator = null;

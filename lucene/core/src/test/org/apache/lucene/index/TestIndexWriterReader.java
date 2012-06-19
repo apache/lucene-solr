@@ -986,7 +986,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new TextField("f", "val", Field.Store.NO));
     w.addDocument(doc);
-    IndexReader r = DirectoryReader.open(w, true).getSequentialSubReaders()[0];
+    SegmentReader r = getOnlySegmentReader(DirectoryReader.open(w, true));
     try {
       _TestUtil.docs(random(), r, "f", new BytesRef("val"), null, null, false);
       fail("should have failed to seek since terms index was not loaded.");

@@ -18,6 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
@@ -47,12 +50,16 @@ import org.apache.lucene.util.ReaderUtil;
  * @lucene.internal
  */
 public abstract class BaseCompositeReader<R extends IndexReader> extends CompositeReader {
-  protected final R[] subReaders;
-  protected final int[] starts;       // 1st docno for each reader
+  private final R[] subReaders;
+  private final int[] starts;       // 1st docno for each reader
   private final int maxDoc;
   private final int numDocs;
   private final boolean hasDeletions;
-  
+
+  /** List view solely for {@link #getSequentialSubReaders()},
+   * for effectiveness the array is used internally. */
+  private final List<R> subReadersList;
+
   /**
    * Constructs a {@code BaseCompositeReader} on the given subReaders.
    * @param subReaders the wrapped sub-readers. This array is returned by
@@ -63,6 +70,7 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
    */
   protected BaseCompositeReader(R[] subReaders) throws IOException {
     this.subReaders = subReaders;
+    this.subReadersList = Collections.unmodifiableList(Arrays.asList(subReaders));
     starts = new int[subReaders.length + 1];    // build starts array
     int maxDoc = 0, numDocs = 0;
     boolean hasDeletions = false;
@@ -135,8 +143,16 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     return ReaderUtil.subIndex(docID, this.starts);
   }
   
+  /** Helper method for subclasses to get the docBase of the given sub-reader index. */
+  protected final int readerBase(int readerIndex) {
+    if (readerIndex < 0 || readerIndex >= subReaders.length) {
+      throw new IllegalArgumentException("readerIndex must be >= 0 and < getSequentialSubReaders().size()");
+    }
+    return this.starts[readerIndex];
+  }
+  
   @Override
-  public final R[] getSequentialSubReaders() {
-    return subReaders;
+  public final List<? extends R> getSequentialSubReaders() {
+    return subReadersList;
   }
 }

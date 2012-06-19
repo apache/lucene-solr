@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ReaderUtil; // javadoc
 
 import org.apache.lucene.index.DirectoryReader; // javadoc
 import org.apache.lucene.index.MultiReader; // javadoc
@@ -32,17 +31,16 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * MultiReader} or {@link DirectoryReader}) to emulate an
  * atomic reader.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
- * MultiFields}, {@link MultiDocValues}, 
- * by stepping through the sub-readers to merge fields/terms, 
- * appending docs, etc.
+ * MultiFields}, {@link MultiDocValues}, by stepping through
+ * the sub-readers to merge fields/terms, appending docs, etc.
  *
  * <p><b>NOTE</b>: this class almost always results in a
  * performance hit.  If this is important to your use case,
- * it's better to get the sequential sub readers (see {@link
- * ReaderUtil#gatherSubReaders}, instead, and iterate through them
- * yourself.</p>
+ * you'll get better performance by gathering the sub readers using
+ * {@link IndexReader#getTopReaderContext()} to get the
+ * atomic leaves and then operate per-AtomicReader,
+ * instead of using this class.
  */
-
 public final class SlowCompositeReaderWrapper extends AtomicReader {
 
   private final CompositeReader in;

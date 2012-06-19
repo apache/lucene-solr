@@ -17,7 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.ReaderSlice;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -123,7 +124,7 @@ public final class MultiDocsEnum extends DocsEnum {
   // TODO: implement bulk read more efficiently than super
   public final static class EnumWithSlice {
     public DocsEnum docsEnum;
-    public ReaderUtil.Slice slice;
+    public ReaderSlice slice;
     
     @Override
     public String toString() {

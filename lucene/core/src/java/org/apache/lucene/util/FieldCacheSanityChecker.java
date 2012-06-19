@@ -280,9 +280,9 @@ public final class FieldCacheSanityChecker {
     for (int i = 0; i < all.size(); i++) {
       Object obj = all.get(i);
       if (obj instanceof CompositeReader) {
-        IndexReader[] subs = ((CompositeReader)obj).getSequentialSubReaders();
-        for (int j = 0; (null != subs) && (j < subs.length); j++) {
-          all.add(subs[j].getCoreCacheKey());
+        List<? extends IndexReader> subs = ((CompositeReader)obj).getSequentialSubReaders();
+        for (int j = 0; (null != subs) && (j < subs.size()); j++) {
+          all.add(subs.get(j).getCoreCacheKey());
         }
       }
       

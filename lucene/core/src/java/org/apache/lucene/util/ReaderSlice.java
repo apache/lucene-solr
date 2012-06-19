@@ -17,30 +17,23 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-/** Exposes a slice of an existing Bits as a new Bits. */
+/**
+ * Subreader slice from a parent composite reader.
+ */
+public final class ReaderSlice {
+  public static final ReaderSlice[] EMPTY_ARRAY = new ReaderSlice[0];
+  public final int start;
+  public final int length;
+  public final int readerIndex;
 
-public final class BitsSlice implements Bits {
-  private final Bits parent;
-  private final int start;
-  private final int length;
-
-  // start is inclusive; end is exclusive (length = end-start)
-  public BitsSlice(Bits parent, ReaderSlice slice) {
-    this.parent = parent;
-    this.start = slice.start;
-    this.length = slice.length;
-    assert length >= 0: "length=" + length;
-  }
-    
-  public boolean get(int doc) {
-    if (doc >= length) {
-      throw new RuntimeException("doc " + doc + " is out of bounds 0 .. " + (length-1));
-    }
-    assert doc < length: "doc=" + doc + " length=" + length;
-    return parent.get(doc+start);
+  public ReaderSlice(int start, int length, int readerIndex) {
+    this.start = start;
+    this.length = length;
+    this.readerIndex = readerIndex;
   }
 
-  public int length() {
-    return length;
+  @Override
+  public String toString() {
+    return "slice start=" + start + " length=" + length + " readerIndex=" + readerIndex;
   }
 }

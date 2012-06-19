@@ -629,25 +629,16 @@ public class TestGrouping extends LuceneTestCase {
     public final int[] docStarts;
 
     public ShardState(IndexSearcher s) {
-      List<AtomicReader> subReaders = new ArrayList<AtomicReader>();
-      ReaderUtil.gatherSubReaders(subReaders, s.getIndexReader());
-      subSearchers = new ShardSearcher[subReaders.size()];
       final IndexReaderContext ctx = s.getTopReaderContext();
-      if (ctx instanceof AtomicReaderContext) {
-        assert subSearchers.length == 1;
-        subSearchers[0] = new ShardSearcher((AtomicReaderContext) ctx, ctx);
-      } else {
-        final CompositeReaderContext compCTX = (CompositeReaderContext) ctx;
-        for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) {
-          subSearchers[searcherIDX] = new ShardSearcher(compCTX.leaves()[searcherIDX], compCTX);
-        }
+      final List<AtomicReaderContext> leaves = ctx.leaves();
+      subSearchers = new ShardSearcher[leaves.size()];
+      for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) {
+        subSearchers[searcherIDX] = new ShardSearcher(leaves.get(searcherIDX), ctx);
       }
 
       docStarts = new int[subSearchers.length];
-      int docBase = 0;
       for(int subIDX=0;subIDX<docStarts.length;subIDX++) {
-        docStarts[subIDX] = docBase;
-        docBase += subReaders.get(subIDX).maxDoc();
+        docStarts[subIDX] = leaves.get(subIDX).docBase;
         //System.out.println("docStarts[" + subIDX + "]=" + docStarts[subIDX]);
       }
     }
@@ -1316,24 +1307,20 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   private static class ShardSearcher extends IndexSearcher {
-    private final AtomicReaderContext[] ctx;
+    private final List<AtomicReaderContext> ctx;
 
     public ShardSearcher(AtomicReaderContext ctx, IndexReaderContext parent) {
       super(parent);
-      this.ctx = new AtomicReaderContext[] {ctx};
+      this.ctx = Collections.singletonList(ctx);
     }
 
     public void search(Weight weight, Collector collector) throws IOException {
       search(ctx, weight, collector);
     }
 
-    public TopDocs search(Weight weight, int topN) throws IOException {
-      return search(ctx, weight, null, topN);
-    }
-
     @Override
     public String toString() {
-      return "ShardSearcher(" + ctx[0].reader() + ")";
+      return "ShardSearcher(" + ctx.get(0).reader() + ")";
     }
   }
 

@@ -67,7 +67,7 @@ public class TestBalancedSegmentMergePolicy extends LuceneTestCase {
     int numSegments = _TestUtil.nextInt(random(), 1, 4);
     iw.forceMerge(numSegments);
     DirectoryReader ir = iw.getReader();
-    assertTrue(ir.getSequentialSubReaders().length <= numSegments);
+    assertTrue(ir.getSequentialSubReaders().size() <= numSegments);
     ir.close();
   }
   

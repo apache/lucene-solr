@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -39,11 +40,11 @@ import org.apache.lucene.util._TestUtil;
 public class TestTopDocsMerge extends LuceneTestCase {
 
   private static class ShardSearcher extends IndexSearcher {
-    private final AtomicReaderContext[] ctx;
+    private final List<AtomicReaderContext> ctx;
 
     public ShardSearcher(AtomicReaderContext ctx, IndexReaderContext parent) {
       super(parent);
-      this.ctx = new AtomicReaderContext[] {ctx};
+      this.ctx = Collections.singletonList(ctx);
     }
 
     public void search(Weight weight, Collector collector) throws IOException {
@@ -56,7 +57,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
     @Override
     public String toString() {
-      return "ShardSearcher(" + ctx[0] + ")";
+      return "ShardSearcher(" + ctx.get(0) + ")";
     }
   }
 
@@ -131,13 +132,15 @@ public class TestTopDocsMerge extends LuceneTestCase {
       docStarts[0] = 0;
     } else {
       final CompositeReaderContext compCTX = (CompositeReaderContext) ctx;
-      subSearchers = new ShardSearcher[compCTX.leaves().length];
-      docStarts = new int[compCTX.leaves().length];
+      final int size = compCTX.leaves().size();
+      subSearchers = new ShardSearcher[size];
+      docStarts = new int[size];
       int docBase = 0;
-      for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) { 
-        subSearchers[searcherIDX] = new ShardSearcher(compCTX.leaves()[searcherIDX], compCTX);
+      for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) {
+        final AtomicReaderContext leave = compCTX.leaves().get(searcherIDX);
+        subSearchers[searcherIDX] = new ShardSearcher(leave, compCTX);
         docStarts[searcherIDX] = docBase;
-        docBase += compCTX.leaves()[searcherIDX].reader().maxDoc();
+        docBase += leave.reader().maxDoc();
       }
     }
 

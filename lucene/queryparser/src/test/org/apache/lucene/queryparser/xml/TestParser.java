@@ -44,6 +44,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
 
 public class TestParser extends LuceneTestCase {
@@ -194,8 +195,8 @@ public class TestParser extends LuceneTestCase {
   }
 
   public void testDuplicateFilterQueryXML() throws ParserException, IOException {
-    AtomicReaderContext leaves[] = searcher.getTopReaderContext().leaves();
-    Assume.assumeTrue(leaves == null || leaves.length == 1);
+    List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    Assume.assumeTrue(leaves.size() == 1);
     Query q = parse("DuplicateFilterQuery.xml");
     int h = searcher.search(q, null, 1000).totalHits;
     assertEquals("DuplicateFilterQuery should produce 1 result ", 1, h);

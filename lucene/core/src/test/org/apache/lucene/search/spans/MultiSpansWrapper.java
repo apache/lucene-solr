@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -42,14 +42,16 @@ import org.apache.lucene.util.TermContext;
 public class MultiSpansWrapper extends Spans { // can't be package private due to payloads
 
   private SpanQuery query;
-  private AtomicReaderContext[] leaves;
+  private List<AtomicReaderContext> leaves;
   private int leafOrd = 0;
   private Spans current;
   private Map<Term,TermContext> termContexts;
+  private final int numLeaves;
 
-  private MultiSpansWrapper(AtomicReaderContext[] leaves, SpanQuery query, Map<Term,TermContext> termContexts) {
+  private MultiSpansWrapper(List<AtomicReaderContext> leaves, SpanQuery query, Map<Term,TermContext> termContexts) {
     this.query = query;
     this.leaves = leaves;
+    this.numLeaves = leaves.size();
     this.termContexts = termContexts;
 
   }
@@ -61,27 +63,30 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
     for (Term term : terms) {
       termContexts.put(term, TermContext.build(topLevelReaderContext, term, true));
     }
-    AtomicReaderContext[] leaves = topLevelReaderContext.leaves();
-    if(leaves.length == 1) {
-      return query.getSpans(leaves[0], leaves[0].reader().getLiveDocs(), termContexts);
+    final List<AtomicReaderContext> leaves = topLevelReaderContext.leaves();
+    if(leaves.size() == 1) {
+      final AtomicReaderContext ctx = leaves.get(0);
+      return query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
     }
     return new MultiSpansWrapper(leaves, query, termContexts);
   }
 
   @Override
   public boolean next() throws IOException {
-    if (leafOrd >= leaves.length) {
+    if (leafOrd >= numLeaves) {
       return false;
     }
     if (current == null) {
-      current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader().getLiveDocs(), termContexts);
+      final AtomicReaderContext ctx = leaves.get(leafOrd);
+      current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
     }
     while(true) {
       if (current.next()) {
         return true;
       }
-      if (++leafOrd < leaves.length) {
-        current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader().getLiveDocs(), termContexts);
+      if (++leafOrd < numLeaves) {
+        final AtomicReaderContext ctx = leaves.get(leafOrd);
+        current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
       } else {
         current = null;
         break;
@@ -92,27 +97,30 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
 
   @Override
   public boolean skipTo(int target) throws IOException {
-    if (leafOrd >= leaves.length) {
+    if (leafOrd >= numLeaves) {
       return false;
     }
 
     int subIndex = ReaderUtil.subIndex(target, leaves);
     assert subIndex >= leafOrd;
     if (subIndex != leafOrd) {
-      current = query.getSpans(leaves[subIndex], leaves[subIndex].reader().getLiveDocs(), termContexts);
+      final AtomicReaderContext ctx = leaves.get(subIndex);
+      current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
       leafOrd = subIndex;
     } else if (current == null) {
-      current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader().getLiveDocs(), termContexts);
+      final AtomicReaderContext ctx = leaves.get(leafOrd);
+      current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
     }
     while (true) {
-      if (current.skipTo(target - leaves[leafOrd].docBase)) {
+      if (current.skipTo(target - leaves.get(leafOrd).docBase)) {
         return true;
       }
-      if (++leafOrd < leaves.length) {
-        current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader().getLiveDocs(), termContexts);
+      if (++leafOrd < numLeaves) {
+        final AtomicReaderContext ctx = leaves.get(leafOrd);
+        current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
       } else {
-          current = null;
-          break;
+        current = null;
+        break;
       }
     }
 
@@ -124,7 +132,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
     if (current == null) {
       return DocIdSetIterator.NO_MORE_DOCS;
     }
-    return current.doc() + leaves[leafOrd].docBase;
+    return current.doc() + leaves.get(leafOrd).docBase;
   }
 
   @Override

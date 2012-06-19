@@ -25,6 +25,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -60,7 +61,7 @@ public class ScaleFloatFunction extends ValueSource {
   }
 
   private ScaleInfo createScaleInfo(Map context, AtomicReaderContext readerContext) throws IOException {
-    final AtomicReaderContext[] leaves = ReaderUtil.getTopLevelContext(readerContext).leaves();
+    final List<AtomicReaderContext> leaves = ReaderUtil.getTopLevelContext(readerContext).leaves();
 
     float minVal = Float.POSITIVE_INFINITY;
     float maxVal = Float.NEGATIVE_INFINITY;
