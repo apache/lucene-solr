@@ -511,6 +511,11 @@ Bug Fixes
 
 * SOLR-3522: fixed parsing of the 'literal()' function (hossman)
 
+* SOLR-3548: Fixed a bug in the cachability of queries using the {!join} 
+  parser or the strdist() function, as well as some minor improvements to 
+  the hashCode implementation of {!bbox} and {!geofilt} queries.
+  (hossman)
+
 Other Changes
 ----------------------
 

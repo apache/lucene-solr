@@ -106,4 +106,20 @@ public final class LevensteinDistance implements StringDistance {
         return 1.0f - ((float) p[n] / Math.max(other.length(), sa.length));
     }
 
+  @Override
+  public int hashCode() {
+    return 163 * getClass().hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (null == obj) return false;
+    return (getClass() == obj.getClass());
+  }
+
+  @Override
+  public String toString() {
+    return "levenstein";
+  }
 }

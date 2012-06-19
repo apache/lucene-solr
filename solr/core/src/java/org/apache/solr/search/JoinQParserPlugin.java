@@ -549,7 +549,7 @@ class JoinQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    if (getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     JoinQuery other = (JoinQuery)o;
     return this.fromField.equals(other.fromField)
            && this.toField.equals(other.toField)
@@ -562,7 +562,9 @@ class JoinQuery extends Query {
 
   @Override
   public int hashCode() {
-    int h = q.hashCode() + (int)fromCoreOpenTime;
+    int h = super.hashCode();
+    h = h * 31 + q.hashCode();
+    h = h * 31 + (int)fromCoreOpenTime;
     h = h * 31 + fromField.hashCode();
     h = h * 31 + toField.hashCode();
     return h;
