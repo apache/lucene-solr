@@ -261,7 +261,7 @@ public class TestFSTs extends LuceneTestCase {
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(random().nextBoolean());
       final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
       for(int idx=0;idx<terms.length;idx++) {
-        pairs.add(new FSTTester.InputOutput<Long>(terms[idx], random().nextLong() & Long.MAX_VALUE));
+        pairs.add(new FSTTester.InputOutput<Long>(terms[idx], _TestUtil.nextLong(random(), 0, Long.MAX_VALUE)));
       }
       new FSTTester<Long>(random(), dir, inputMode, pairs, outputs, false).doTest();
     }
@@ -630,7 +630,7 @@ public class TestFSTs extends LuceneTestCase {
 
         final int num = atLeast(100);
         for(int iter=0;iter<num;iter++) {
-          Long v = minLong + random.nextLong() % (maxLong - minLong);
+          Long v = _TestUtil.nextLong(random, minLong, maxLong);
           IntsRef input = Util.getByOutput(fstLong, v);
           assertTrue(validOutputs.contains(v) || input == null);
         }

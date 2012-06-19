@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -210,7 +212,23 @@ public class _TestUtil {
 
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
-    return start + r.nextInt(end-start+1);
+    return RandomInts.randomIntBetween(r, start, end);
+  }
+
+  /** start and end are BOTH inclusive */
+  public static long nextLong(Random r, long start, long end) {
+    assert end >= start;
+    final BigInteger range = BigInteger.valueOf(end).add(BigInteger.valueOf(1)).subtract(BigInteger.valueOf(start));
+    if (range.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) <= 0) {
+      return start + r.nextInt(range.intValue());
+    } else {
+      // probably not evenly distributed when range is large, but OK for tests
+      final BigInteger augend = new BigDecimal(range).multiply(new BigDecimal(r.nextDouble())).toBigInteger();
+      final long result = BigInteger.valueOf(start).add(augend).longValue();
+      assert result >= start;
+      assert result <= end;
+      return result;
+    }
   }
 
   public static String randomSimpleString(Random r, int maxLength) {
