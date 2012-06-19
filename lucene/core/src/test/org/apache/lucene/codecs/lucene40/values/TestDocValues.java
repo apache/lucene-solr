@@ -360,7 +360,7 @@ public class TestDocValues extends LuceneTestCase {
       final Counter trackBytes = Counter.newCounter();
       DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, type, newIOContext(random()));
       for (int i = 0; i < NUM_VALUES; i++) {
-        final long v = random().nextLong() % (1 + maxV);
+        final long v = _TestUtil.nextLong(random(), -maxV, maxV);
         valueHolder.numberValue = values[i] = v;
         w.add(i, valueHolder);
       }
