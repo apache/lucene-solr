@@ -300,7 +300,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         // verify that the taxo-writer hasn't been closed on us.
         ensureOpen();
         if (readerManager == null) {
-          readerManager = new ReaderManager(indexWriter, false); 
+          readerManager = new ReaderManager(indexWriter, false);
+          shouldRefreshReaderManager = false;
         }
       }
     }
@@ -400,16 +401,19 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       return res;
     }
 
+    // if we get here, it means the category is not in the cache, and it is not
+    // complete, and therefore we must look for the category on disk.
+    
     // We need to get an answer from the on-disk index.
     initReaderManager();
 
     int doc = -1;
     DirectoryReader reader = readerManager.acquire();
     try {
+      final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter));
       int base = 0;
       for (AtomicReader r : reader.getSequentialSubReaders()) {
-        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, 
-            new BytesRef(categoryPath.toString(delimiter)), false);
+        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, false);
         if (docs != null) {
           doc = docs.nextDoc() + base;
           break;
@@ -449,10 +453,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     int doc = -1;
     DirectoryReader reader = readerManager.acquire();
     try {
+      final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter, prefixLen));
       int base = 0;
       for (AtomicReader r : reader.getSequentialSubReaders()) {
-        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, 
-            new BytesRef(categoryPath.toString(delimiter, prefixLen)), false);
+        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, false);
         if (docs != null) {
           doc = docs.nextDoc() + base;
           break;
@@ -498,7 +502,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   /**
    * Add a new category into the index (and the cache), and return its new
    * ordinal.
-   * <P>
+   * <p>
    * Actually, we might also need to add some of the category's ancestors
    * before we can add the category itself (while keeping the invariant that a
    * parent is always added to the taxonomy before its child). We do this by
@@ -565,10 +569,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     indexWriter.addDocument(d);
     int id = nextID++;
 
-    addToCache(categoryPath, length, id);
-    
     // added a category document, mark that ReaderManager is not up-to-date
     shouldRefreshReaderManager = true;
+    
+    addToCache(categoryPath, length, id);
     
     // also add to the parent array
     getParentArray().add(id, parent);

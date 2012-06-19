@@ -44,16 +44,14 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
 
   // A No-Op TaxonomyWriterCache which always discards all given categories, and
   // always returns true in put(), to indicate some cache entries were cleared.
-  private static class NoOpCache implements TaxonomyWriterCache {
-
-    NoOpCache() { }
+  private static TaxonomyWriterCache NO_OP_CACHE = new TaxonomyWriterCache() {
     
     @Override
     public void close() {}
     @Override
     public int get(CategoryPath categoryPath) { return -1; }
     @Override
-    public int get(CategoryPath categoryPath, int length) { return get(categoryPath); }
+    public int get(CategoryPath categoryPath, int length) { return -1; }
     @Override
     public boolean put(CategoryPath categoryPath, int ordinal) { return true; }
     @Override
@@ -63,14 +61,14 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     @Override
     public void clear() {}
     
-  }
+  };
   
   @Test
   public void testCommit() throws Exception {
     // Verifies that nothing is committed to the underlying Directory, if
     // commit() wasn't called.
     Directory dir = newDirectory();
-    DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
+    DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     assertFalse(DirectoryReader.indexExists(dir));
     ltw.commit(); // first commit, so that an index will be created
     ltw.addCategory(new CategoryPath("a"));
@@ -86,7 +84,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
   public void testCommitUserData() throws Exception {
     // Verifies taxonomy commit data
     Directory dir = newDirectory();
-    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     taxoWriter.addCategory(new CategoryPath("a"));
     taxoWriter.addCategory(new CategoryPath("b"));
     Map <String, String> userCommitData = new HashMap<String, String>();
@@ -104,7 +102,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // open DirTaxoWriter again and commit, INDEX_CREATE_TIME should still exist
     // in the commit data, otherwise DirTaxoReader.refresh() might not detect
     // that the taxonomy index has been recreated.
-    taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
+    taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     taxoWriter.addCategory(new CategoryPath("c")); // add a category so that commit will happen
     taxoWriter.commit(new HashMap<String, String>(){{
       put("just", "data");
@@ -164,7 +162,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // DirTaxoReader succeeding to refresh().
     Directory dir = newDirectory();
     
-    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     touchTaxo(taxoWriter, new CategoryPath("a"));
     
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
@@ -176,11 +174,11 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
 
     // now recreate the taxonomy, and check that the timestamp is preserved after opening DirTW again.
     taxoWriter.close();
-    taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, new NoOpCache());
+    taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, NO_OP_CACHE);
     touchTaxo(taxoWriter, new CategoryPath("c"));
     taxoWriter.close();
     
-    taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
+    taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     touchTaxo(taxoWriter, new CategoryPath("d"));
     taxoWriter.close();
 
@@ -205,7 +203,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // create an empty index first, so that DirTaxoWriter initializes createTime to null.
     new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
     
-    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     // we cannot commit null keys/values, this ensures that if DirTW.createTime is null, we can still commit.
     taxoWriter.close();
     
@@ -230,7 +228,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     } else if (TEST_NIGHTLY && d > 0.98) {
       // this is the slowest, but tests the writer concurrency when no caching is done.
       // only pick it during NIGHTLY tests, and even then, with very low chances.
-      cache = new NoOpCache();
+      cache = NO_OP_CACHE;
     } else {
       // this is slower than CL2O, but less memory consuming, and exercises finding categories on disk too.
       cache = new LruTaxonomyWriterCache(ncats / 10);
@@ -307,4 +305,18 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     input.close();
   }
 
+  @Test
+  public void testReaderFreshness() throws Exception {
+    // ensures that the internal index reader is always kept fresh. Previously,
+    // this simple scenario failed, if the cache just evicted the category that
+    // is being added.
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, NO_OP_CACHE);
+    int o1 = taxoWriter.addCategory(new CategoryPath("a"));
+    int o2 = taxoWriter.addCategory(new CategoryPath("a"));
+    assertTrue("ordinal for same category that is added twice should be the same !", o1 == o2);
+    taxoWriter.close();
+    dir.close();
+  }
+  
 }
