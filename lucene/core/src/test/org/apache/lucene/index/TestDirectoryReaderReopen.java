@@ -469,9 +469,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
 
     DirectoryReader r = DirectoryReader.open(dir);
     if (multiSegment) {
-      assertTrue(r.getSequentialSubReaders().length > 1);
+      assertTrue(r.getSequentialSubReaders().size() > 1);
     } else {
-      assertTrue(r.getSequentialSubReaders().length == 1);
+      assertTrue(r.getSequentialSubReaders().size() == 1);
     }
     r.close();
   }
@@ -542,9 +542,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     }
     
     if (checkSubReaders && reader instanceof CompositeReader) {
-      IndexReader[] subReaders = ((CompositeReader) reader).getSequentialSubReaders();
-      for (int i = 0; i < subReaders.length; i++) {
-        assertReaderClosed(subReaders[i], checkSubReaders, checkNormsClosed);
+      List<? extends IndexReader> subReaders = ((CompositeReader) reader).getSequentialSubReaders();
+      for (IndexReader r : subReaders) {
+        assertReaderClosed(r, checkSubReaders, checkNormsClosed);
       }
     }
   }

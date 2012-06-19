@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /** An {@link CompositeReader} which reads multiple, parallel indexes.  Each index added
@@ -85,44 +86,45 @@ public final class ParallelCompositeReader extends BaseCompositeReader<IndexRead
         throw new IllegalArgumentException("There must be at least one main reader if storedFieldsReaders are used.");
       return new IndexReader[0];
     } else {
-      final IndexReader[] firstSubReaders = readers[0].getSequentialSubReaders();
+      final List<? extends IndexReader> firstSubReaders = readers[0].getSequentialSubReaders();
 
       // check compatibility:
-      final int maxDoc = readers[0].maxDoc();
-      final int[] childMaxDoc = new int[firstSubReaders.length];
-      final boolean[] childAtomic = new boolean[firstSubReaders.length];
-      for (int i = 0; i < firstSubReaders.length; i++) {
-        childMaxDoc[i] = firstSubReaders[i].maxDoc();
-        childAtomic[i] = firstSubReaders[i] instanceof AtomicReader;
+      final int maxDoc = readers[0].maxDoc(), noSubs = firstSubReaders.size();
+      final int[] childMaxDoc = new int[noSubs];
+      final boolean[] childAtomic = new boolean[noSubs];
+      for (int i = 0; i < noSubs; i++) {
+        final IndexReader r = firstSubReaders.get(i);
+        childMaxDoc[i] = r.maxDoc();
+        childAtomic[i] = r instanceof AtomicReader;
       }
       validate(readers, maxDoc, childMaxDoc, childAtomic);
       validate(storedFieldsReaders, maxDoc, childMaxDoc, childAtomic);
 
       // hierarchically build the same subreader structure as the first CompositeReader with Parallel*Readers:
-      final IndexReader[] subReaders = new IndexReader[firstSubReaders.length];
+      final IndexReader[] subReaders = new IndexReader[noSubs];
       for (int i = 0; i < subReaders.length; i++) {
-        if (firstSubReaders[i] instanceof AtomicReader) {
+        if (firstSubReaders.get(i) instanceof AtomicReader) {
           final AtomicReader[] atomicSubs = new AtomicReader[readers.length];
           for (int j = 0; j < readers.length; j++) {
-            atomicSubs[j] = (AtomicReader) readers[j].getSequentialSubReaders()[i];
+            atomicSubs[j] = (AtomicReader) readers[j].getSequentialSubReaders().get(i);
           }
           final AtomicReader[] storedSubs = new AtomicReader[storedFieldsReaders.length];
           for (int j = 0; j < storedFieldsReaders.length; j++) {
-            storedSubs[j] = (AtomicReader) storedFieldsReaders[j].getSequentialSubReaders()[i];
+            storedSubs[j] = (AtomicReader) storedFieldsReaders[j].getSequentialSubReaders().get(i);
           }
           // we simply enable closing of subReaders, to prevent incRefs on subReaders
           // -> for synthetic subReaders, close() is never
           // called by our doClose()
           subReaders[i] = new ParallelAtomicReader(true, atomicSubs, storedSubs);
         } else {
-          assert firstSubReaders[i] instanceof CompositeReader;
+          assert firstSubReaders.get(i) instanceof CompositeReader;
           final CompositeReader[] compositeSubs = new CompositeReader[readers.length];
           for (int j = 0; j < readers.length; j++) {
-            compositeSubs[j] = (CompositeReader) readers[j].getSequentialSubReaders()[i];
+            compositeSubs[j] = (CompositeReader) readers[j].getSequentialSubReaders().get(i);
           }
           final CompositeReader[] storedSubs = new CompositeReader[storedFieldsReaders.length];
           for (int j = 0; j < storedFieldsReaders.length; j++) {
-            storedSubs[j] = (CompositeReader) storedFieldsReaders[j].getSequentialSubReaders()[i];
+            storedSubs[j] = (CompositeReader) storedFieldsReaders[j].getSequentialSubReaders().get(i);
           }
           // we simply enable closing of subReaders, to prevent incRefs on subReaders
           // -> for synthetic subReaders, close() is never called by our doClose()
@@ -136,18 +138,20 @@ public final class ParallelCompositeReader extends BaseCompositeReader<IndexRead
   private static void validate(CompositeReader[] readers, int maxDoc, int[] childMaxDoc, boolean[] childAtomic) {
     for (int i = 0; i < readers.length; i++) {
       final CompositeReader reader = readers[i];
-      final IndexReader[] subs = reader.getSequentialSubReaders();
+      final List<? extends IndexReader> subs = reader.getSequentialSubReaders();
       if (reader.maxDoc() != maxDoc) {
         throw new IllegalArgumentException("All readers must have same maxDoc: "+maxDoc+"!="+reader.maxDoc());
       }
-      if (subs.length != childMaxDoc.length) {
+      final int noSubs = subs.size();
+      if (noSubs != childMaxDoc.length) {
         throw new IllegalArgumentException("All readers must have same number of subReaders");
       }
-      for (int subIDX = 0; subIDX < subs.length; subIDX++) {
-        if (subs[subIDX].maxDoc() != childMaxDoc[subIDX]) {
+      for (int subIDX = 0; subIDX < noSubs; subIDX++) {
+        final IndexReader r = subs.get(subIDX);
+        if (r.maxDoc() != childMaxDoc[subIDX]) {
           throw new IllegalArgumentException("All readers must have same corresponding subReader maxDoc");
         }
-        if (!(childAtomic[subIDX] ? (subs[subIDX] instanceof AtomicReader) : (subs[subIDX] instanceof CompositeReader))) {
+        if (!(childAtomic[subIDX] ? (r instanceof AtomicReader) : (r instanceof CompositeReader))) {
           throw new IllegalArgumentException("All readers must have same corresponding subReader types (atomic or composite)");
         }
       }

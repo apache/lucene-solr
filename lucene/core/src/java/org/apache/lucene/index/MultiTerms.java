@@ -23,7 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.ReaderSlice;
 
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
@@ -36,10 +36,10 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 public final class MultiTerms extends Terms {
   private final Terms[] subs;
-  private final ReaderUtil.Slice[] subSlices;
+  private final ReaderSlice[] subSlices;
   private final Comparator<BytesRef> termComp;
 
-  public MultiTerms(Terms[] subs, ReaderUtil.Slice[] subSlices) throws IOException {
+  public MultiTerms(Terms[] subs, ReaderSlice[] subSlices) throws IOException {
     this.subs = subs;
     this.subSlices = subSlices;
     

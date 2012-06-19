@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSet;
@@ -101,10 +102,11 @@ public class PKIndexSplitter {
     boolean success = false;
     final IndexWriter w = new IndexWriter(target, config);
     try {
-      final AtomicReaderContext[] leaves = reader.getTopReaderContext().leaves();
-      final IndexReader[] subReaders = new IndexReader[leaves.length];
-      for (int i = 0; i < leaves.length; i++) {
-        subReaders[i] = new DocumentFilteredAtomicIndexReader(leaves[i], preserveFilter, negateFilter);
+      final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+      final IndexReader[] subReaders = new IndexReader[leaves.size()];
+      int i = 0;
+      for (final AtomicReaderContext ctx : leaves) {
+        subReaders[i++] = new DocumentFilteredAtomicIndexReader(ctx, preserveFilter, negateFilter);
       }
       w.addIndexes(subReaders);
       success = true;

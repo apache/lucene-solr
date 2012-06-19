@@ -35,6 +35,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.ReaderSlice;
 
 /**
  * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
@@ -76,16 +77,9 @@ final class SegmentMerger {
    * @param reader
    */
   final void add(IndexReader reader) {
-    try {
-      new ReaderUtil.Gather(reader) {
-        @Override
-        protected void add(int base, AtomicReader r) {
-          mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(r, r.getLiveDocs(), r.numDeletedDocs()));
-        }
-      }.run();
-    } catch (IOException ioe) {
-      // won't happen
-      throw new RuntimeException(ioe);
+    for (final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
+      final AtomicReader r = ctx.reader();
+      mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(r, r.getLiveDocs(), r.numDeletedDocs()));
     }
   }
 
@@ -311,7 +305,7 @@ final class SegmentMerger {
   private final void mergeTerms(SegmentWriteState segmentWriteState) throws CorruptIndexException, IOException {
     
     final List<Fields> fields = new ArrayList<Fields>();
-    final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
+    final List<ReaderSlice> slices = new ArrayList<ReaderSlice>();
 
     int docBase = 0;
 
@@ -320,7 +314,7 @@ final class SegmentMerger {
       final Fields f = r.reader.fields();
       final int maxDoc = r.reader.maxDoc();
       if (f != null) {
-        slices.add(new ReaderUtil.Slice(docBase, maxDoc, readerIndex));
+        slices.add(new ReaderSlice(docBase, maxDoc, readerIndex));
         fields.add(f);
       }
       docBase += maxDoc;
@@ -331,7 +325,7 @@ final class SegmentMerger {
     try {
       consumer.merge(mergeState,
                      new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
-                                     slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY)));
+                                     slices.toArray(ReaderSlice.EMPTY_ARRAY)));
       success = true;
     } finally {
       if (success) {

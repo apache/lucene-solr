@@ -82,7 +82,7 @@ class PerSegmentSingleValuedFaceting {
     // reuse the translation logic to go from top level set to per-segment set
     baseSet = docs.getTopFilter();
 
-    final AtomicReaderContext[] leaves = searcher.getTopReaderContext().leaves();
+    final List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
     // The list of pending tasks that aren't immediately submitted
     // TODO: Is there a completion service, or a delegating executor that can
     // limit the number of concurrent tasks submitted to a bigger executor?
@@ -90,8 +90,8 @@ class PerSegmentSingleValuedFaceting {
 
     int threads = nThreads <= 0 ? Integer.MAX_VALUE : nThreads;
 
-    for (int i=0; i<leaves.length; i++) {
-      final SegFacet segFacet = new SegFacet(leaves[i]);
+    for (final AtomicReaderContext leave : leaves) {
+      final SegFacet segFacet = new SegFacet(leave);
 
       Callable<SegFacet> task = new Callable<SegFacet>() {
         public SegFacet call() throws Exception {
@@ -111,7 +111,7 @@ class PerSegmentSingleValuedFaceting {
 
 
     // now merge the per-segment results
-    PriorityQueue<SegFacet> queue = new PriorityQueue<SegFacet>(leaves.length) {
+    PriorityQueue<SegFacet> queue = new PriorityQueue<SegFacet>(leaves.size()) {
       @Override
       protected boolean lessThan(SegFacet a, SegFacet b) {
         return a.tempBR.compareTo(b.tempBR) < 0;
@@ -121,7 +121,7 @@ class PerSegmentSingleValuedFaceting {
 
     boolean hasMissingCount=false;
     int missingCount=0;
-    for (int i=0; i<leaves.length; i++) {
+    for (int i=0, c=leaves.size(); i<c; i++) {
       SegFacet seg = null;
 
       try {

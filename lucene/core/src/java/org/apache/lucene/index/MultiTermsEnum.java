@@ -22,7 +22,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitsSlice;
 import org.apache.lucene.util.MultiBits;
-import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.ReaderSlice;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -71,7 +71,7 @@ public final class MultiTermsEnum extends TermsEnum {
     return top;
   }
 
-  public MultiTermsEnum(ReaderUtil.Slice[] slices) {
+  public MultiTermsEnum(ReaderSlice[] slices) {
     queue = new TermMergeQueue(slices.length);
     top = new TermsEnumWithSlice[slices.length];
     subs = new TermsEnumWithSlice[slices.length];
@@ -494,12 +494,12 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   private final static class TermsEnumWithSlice {
-    private final ReaderUtil.Slice subSlice;
+    private final ReaderSlice subSlice;
     private TermsEnum terms;
     public BytesRef current;
     final int index;
 
-    public TermsEnumWithSlice(int index, ReaderUtil.Slice subSlice) {
+    public TermsEnumWithSlice(int index, ReaderSlice subSlice) {
       this.subSlice = subSlice;
       this.index = index;
       assert subSlice.length >= 0: "length=" + subSlice.length;

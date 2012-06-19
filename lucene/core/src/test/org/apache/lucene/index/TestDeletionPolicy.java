@@ -67,7 +67,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       IndexCommit lastCommit =  commits.get(commits.size()-1);
       DirectoryReader r = DirectoryReader.open(dir);
-      assertEquals("lastCommit.segmentCount()=" + lastCommit.getSegmentCount() + " vs IndexReader.segmentCount=" + r.getSequentialSubReaders().length, r.getSequentialSubReaders().length, lastCommit.getSegmentCount());
+      assertEquals("lastCommit.segmentCount()=" + lastCommit.getSegmentCount() + " vs IndexReader.segmentCount=" + r.getSequentialSubReaders().size(), r.getSequentialSubReaders().size(), lastCommit.getSegmentCount());
       r.close();
       verifyCommitOrder(commits);
       numOnCommit++;
@@ -325,7 +325,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       final boolean needsMerging;
       {
         DirectoryReader r = DirectoryReader.open(dir);
-        needsMerging = r.getSequentialSubReaders().length != 1;
+        needsMerging = r.getSequentialSubReaders().size() != 1;
         r.close();
       }
       if (needsMerging) {
@@ -442,7 +442,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
     DirectoryReader r = DirectoryReader.open(dir);
     // Still merged, still 11 docs
-    assertEquals(1, r.getSequentialSubReaders().length);
+    assertEquals(1, r.getSequentialSubReaders().size());
     assertEquals(11, r.numDocs());
     r.close();
 
@@ -458,7 +458,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     r = DirectoryReader.open(dir);
     // Not fully merged because we rolled it back, and now only
     // 10 docs
-    assertTrue(r.getSequentialSubReaders().length > 1);
+    assertTrue(r.getSequentialSubReaders().size() > 1);
     assertEquals(10, r.numDocs());
     r.close();
 
@@ -468,7 +468,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.close();
 
     r = DirectoryReader.open(dir);
-    assertEquals(1, r.getSequentialSubReaders().length);
+    assertEquals(1, r.getSequentialSubReaders().size());
     assertEquals(10, r.numDocs());
     r.close();
 
@@ -480,7 +480,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     // Reader still sees fully merged index, because writer
     // opened on the prior commit has not yet committed:
     r = DirectoryReader.open(dir);
-    assertEquals(1, r.getSequentialSubReaders().length);
+    assertEquals(1, r.getSequentialSubReaders().size());
     assertEquals(10, r.numDocs());
     r.close();
 
@@ -488,7 +488,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
     // Now reader sees not-fully-merged index:
     r = DirectoryReader.open(dir);
-    assertTrue(r.getSequentialSubReaders().length > 1);
+    assertTrue(r.getSequentialSubReaders().size() > 1);
     assertEquals(10, r.numDocs());
     r.close();
 

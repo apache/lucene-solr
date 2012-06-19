@@ -1,5 +1,8 @@
 package org.apache.lucene.index;
 
+import java.util.Collections;
+import java.util.List;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,7 +31,7 @@ public final class AtomicReaderContext extends IndexReaderContext {
   public final int docBase;
   
   private final AtomicReader reader;
-  private final AtomicReaderContext[] leaves;
+  private final List<AtomicReaderContext> leaves;
   
   /**
    * Creates a new {@link AtomicReaderContext} 
@@ -39,7 +42,7 @@ public final class AtomicReaderContext extends IndexReaderContext {
     this.ord = leafOrd;
     this.docBase = leafDocBase;
     this.reader = reader;
-    this.leaves = isTopLevel ? new AtomicReaderContext[] { this } : null;
+    this.leaves = isTopLevel ? Collections.singletonList(this) : null;
   }
   
   AtomicReaderContext(AtomicReader atomicReader) {
@@ -47,12 +50,15 @@ public final class AtomicReaderContext extends IndexReaderContext {
   }
   
   @Override
-  public AtomicReaderContext[] leaves() {
+  public List<AtomicReaderContext> leaves() {
+    if (!isTopLevel)
+      throw new UnsupportedOperationException("This is not a top-level context.");
+    assert leaves != null;
     return leaves;
   }
   
   @Override
-  public IndexReaderContext[] children() {
+  public List<IndexReaderContext> children() {
     return null;
   }
   

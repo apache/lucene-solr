@@ -17,8 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.List;
-
 /**
  * Concatenates multiple Bits together, on every lookup.
  *
@@ -36,13 +34,10 @@ public final class MultiBits implements Bits {
 
   private final boolean defaultValue;
 
-  public MultiBits(List<Bits> bits, List<Integer> starts, boolean defaultValue) {
-    assert starts.size() == 1+bits.size();
-    this.subs = bits.toArray(Bits.EMPTY_ARRAY);
-    this.starts = new int[starts.size()];
-    for(int i=0;i<this.starts.length;i++) {
-      this.starts[i] = starts.get(i);
-    }
+  public MultiBits(Bits[] subs, int[] starts, boolean defaultValue) {
+    assert starts.length == 1+subs.length;
+    this.subs = subs;
+    this.starts = starts;
     this.defaultValue = defaultValue;
   }
 
@@ -84,7 +79,7 @@ public final class MultiBits implements Bits {
 
   /**
    * Represents a sub-Bits from 
-   * {@link MultiBits#getMatchingSub(org.apache.lucene.util.ReaderUtil.Slice) getMatchingSub()}.
+   * {@link MultiBits#getMatchingSub(org.apache.lucene.util.ReaderSlice) getMatchingSub()}.
    */
   public final static class SubResult {
     public boolean matches;
@@ -99,7 +94,7 @@ public final class MultiBits implements Bits {
    * {@link SubResult#matches} instead to ensure the sub was 
    * actually found.
    */
-  public SubResult getMatchingSub(ReaderUtil.Slice slice) {
+  public SubResult getMatchingSub(ReaderSlice slice) {
     int reader = ReaderUtil.subIndex(slice.start, starts);
     assert reader != -1;
     assert reader < subs.length: "slice=" + slice + " starts[-1]=" + starts[starts.length-1];

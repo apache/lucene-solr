@@ -679,7 +679,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         if (buildOnCommit)  {
           buildSpellIndex(newSearcher);
         } else if (buildOnOptimize) {
-          if (newSearcher.getIndexReader().getSequentialSubReaders().length == 1)  {
+          if (newSearcher.getIndexReader().getSequentialSubReaders().size() == 1)  {
             buildSpellIndex(newSearcher);
           } else  {
             LOG.info("Index is not optimized therefore skipping building spell check index for: " + checker.getDictionaryName());

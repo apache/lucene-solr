@@ -602,11 +602,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    */
   public long lookupId(BytesRef idBytes) throws IOException {
     String field = schema.getUniqueKeyField().getName();
-    final AtomicReaderContext[] leaves = leafContexts;
 
-
-    for (int i=0; i<leaves.length; i++) {
-      final AtomicReaderContext leaf = leaves[i];
+    for (int i=0, c=leafContexts.size(); i<c; i++) {
+      final AtomicReaderContext leaf = leafContexts.get(i);
       final AtomicReader reader = leaf.reader();
 
       final Fields fields = reader.fields();
@@ -756,11 +754,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       collector = pf.postFilter;
     }
 
-    final AtomicReaderContext[] leaves = leafContexts;
-
-
-    for (int i=0; i<leaves.length; i++) {
-      final AtomicReaderContext leaf = leaves[i];
+    for (final AtomicReaderContext leaf : leafContexts) {
       final AtomicReader reader = leaf.reader();
       final Bits liveDocs = reader.getLiveDocs();   // TODO: the filter may already only have liveDocs...
       DocIdSet idSet = null;
@@ -989,10 +983,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (filter==null) {
       if (query instanceof TermQuery) {
         Term t = ((TermQuery)query).getTerm();
-        final AtomicReaderContext[] leaves = leafContexts;
-
-        for (int i=0; i<leaves.length; i++) {
-          final AtomicReaderContext leaf = leaves[i];
+        for (final AtomicReaderContext leaf : leafContexts) {
           final AtomicReader reader = leaf.reader();
           collector.setNextReader(leaf);
           Fields fields = reader.fields();
@@ -1799,7 +1790,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     while (iter.hasNext()) {
       int doc = iter.nextDoc();
       while (doc>=end) {
-        AtomicReaderContext leaf = leafContexts[readerIndex++];
+        AtomicReaderContext leaf = leafContexts.get(readerIndex++);
         base = leaf.docBase;
         end = base + leaf.reader().maxDoc();
         topCollector.setNextReader(leaf);

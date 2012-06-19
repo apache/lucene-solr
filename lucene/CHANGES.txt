@@ -278,6 +278,11 @@ Changes in backwards compatibility policy
 
 * LUCENE-4055: You can't put foreign files into the index dir anymore.
 
+* LUCENE-3866: CompositeReader.getSequentialSubReaders() now returns
+  unmodifiable List<? extends IndexReader>. ReaderUtil.Gather was
+  removed, as IndexReaderContext.leaves() is now the preferred way
+  to access sub-readers.  (Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -535,6 +540,10 @@ API Changes
 * LUCENE-4132: IndexWriter.getConfig() now returns a LiveIndexWriterConfig object 
   which can be used to change the IndexWriter's live settings. IndexWriterConfig 
   is used only for initializing the IndexWriter. (Shai Erera)
+
+* LUCENE-3866: IndexReaderContext.leaves() is now the preferred way to access
+  atomic sub-readers of any kind of IndexReader (for AtomicReaders it returns
+  itsself as only leaf with docBase=0).  (Uwe Schindler)
 
 New features
 

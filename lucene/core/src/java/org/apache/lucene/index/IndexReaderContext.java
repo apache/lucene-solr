@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import java.util.List;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -45,23 +47,19 @@ public abstract class IndexReaderContext {
   public abstract IndexReader reader();
   
   /**
-   * Returns the context's leaves if this context is a top-level context
-   * otherwise <code>null</code>. For convenience, if this is an
-   * {@link AtomicReaderContext} this returns itsself as the only leaf.
+   * Returns the context's leaves if this context is a top-level context.
+   * For convenience, if this is an {@link AtomicReaderContext} this
+   * returns itself as the only leaf.
    * <p>Note: this is convenience method since leaves can always be obtained by
-   * walking the context tree.
-   * <p><b>Warning:</b> Don't modify the returned array!
-   * Doing so will corrupt the internal structure of this
-   * {@code IndexReaderContext}.
+   * walking the context tree using {@link #children()}.
+   * @throws UnsupportedOperationExceception if this is not a top-level context.
+   * @see #children()
    */
-  public abstract AtomicReaderContext[] leaves();
+  public abstract List<AtomicReaderContext> leaves();
   
   /**
    * Returns the context's children iff this context is a composite context
    * otherwise <code>null</code>.
-   * <p><b>Warning:</b> Don't modify the returned array!
-   * Doing so will corrupt the internal structure of this
-   * {@code IndexReaderContext}.
    */
-  public abstract IndexReaderContext[] children();
+  public abstract List<IndexReaderContext> children();
 }

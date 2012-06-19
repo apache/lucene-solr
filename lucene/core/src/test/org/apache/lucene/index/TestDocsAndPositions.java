@@ -64,8 +64,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("1");
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
-      for (AtomicReaderContext atomicReaderContext : leaves) {
+      for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
@@ -140,8 +139,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
-      for (AtomicReaderContext atomicReaderContext : leaves) {
+      for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
@@ -216,8 +214,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
-      for (AtomicReaderContext context : leaves) {
+      for (AtomicReaderContext context : topReaderContext.leaves()) {
         int maxDoc = context.reader().maxDoc();
         DocsEnum docsEnum = _TestUtil.docs(random(), context.reader(), fieldName, bytes, null, null, true);
         if (findNext(freqInDoc, context.docBase, context.docBase + maxDoc) == Integer.MAX_VALUE) {
@@ -295,8 +292,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       BytesRef bytes = new BytesRef("even");
 
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
-      for (AtomicReaderContext atomicReaderContext : leaves) {
+      for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);

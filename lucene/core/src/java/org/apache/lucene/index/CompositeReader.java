@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.List;
+
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 
@@ -63,12 +65,12 @@ public abstract class CompositeReader extends IndexReader {
     final StringBuilder buffer = new StringBuilder();
     buffer.append(getClass().getSimpleName());
     buffer.append('(');
-    final IndexReader[] subReaders = getSequentialSubReaders();
+    final List<? extends IndexReader> subReaders = getSequentialSubReaders();
     assert subReaders != null;
-    if (subReaders.length > 0) {
-      buffer.append(subReaders[0]);
-      for (int i = 1; i < subReaders.length; ++i) {
-        buffer.append(" ").append(subReaders[i]);
+    if (!subReaders.isEmpty()) {
+      buffer.append(subReaders.get(0));
+      for (int i = 1, c = subReaders.size(); i < c; ++i) {
+        buffer.append(" ").append(subReaders.get(i));
       }
     }
     buffer.append(')');
@@ -81,11 +83,8 @@ public abstract class CompositeReader extends IndexReader {
    *  If this method returns an empty array, that means this
    *  reader is a null reader (for example a MultiReader
    *  that has no sub readers).
-   *  <p><b>Warning:</b> Don't modify the returned array!
-   *  Doing so will corrupt the internal structure of this
-   *  {@code CompositeReader}.
    */
-  public abstract IndexReader[] getSequentialSubReaders();
+  public abstract List<? extends IndexReader> getSequentialSubReaders();
 
   @Override
   public final CompositeReaderContext getTopReaderContext() {

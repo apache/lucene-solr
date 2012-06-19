@@ -187,7 +187,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       if (0 == pass) {
         writer.close();
         DirectoryReader reader = DirectoryReader.open(dir);
-        assertEquals(1, reader.getSequentialSubReaders().length);
+        assertEquals(1, reader.getSequentialSubReaders().size());
         reader.close();
       } else {
         // Get another segment to flush so we can verify it is
@@ -197,7 +197,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
         writer.close();
 
         DirectoryReader reader = DirectoryReader.open(dir);
-        assertTrue(reader.getSequentialSubReaders().length > 1);
+        assertTrue(reader.getSequentialSubReaders().size() > 1);
         reader.close();
 
         SegmentInfos infos = new SegmentInfos();

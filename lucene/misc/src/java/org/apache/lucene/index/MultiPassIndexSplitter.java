@@ -20,13 +20,13 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -101,7 +101,8 @@ public class MultiPassIndexSplitter {
           .setOpenMode(OpenMode.CREATE));
       System.err.println("Writing part " + (i + 1) + " ...");
       // pass the subreaders directly, as our wrapper's numDocs/hasDeletetions are not up-to-date
-      w.addIndexes(input.getSequentialSubReaders());
+      final List<? extends FakeDeleteAtomicIndexReader> sr = input.getSequentialSubReaders();
+      w.addIndexes(sr.toArray(new IndexReader[sr.size()])); // TODO: maybe take List<IR> here?
       w.close();
     }
     System.err.println("Done.");
@@ -177,33 +178,35 @@ public class MultiPassIndexSplitter {
   /**
    * This class emulates deletions on the underlying index.
    */
-  private static final class FakeDeleteIndexReader extends MultiReader {
+  private static final class FakeDeleteIndexReader extends BaseCompositeReader<FakeDeleteAtomicIndexReader> {
 
     public FakeDeleteIndexReader(IndexReader reader) throws IOException {
       super(initSubReaders(reader));
     }
     
-    private static AtomicReader[] initSubReaders(IndexReader reader) throws IOException {
-      final ArrayList<AtomicReader> subs = new ArrayList<AtomicReader>();
-      new ReaderUtil.Gather(reader) {
-        @Override
-        protected void add(int base, AtomicReader r) {
-          subs.add(new FakeDeleteAtomicIndexReader(r));
-        }
-      }.run();
-      return subs.toArray(new AtomicReader[subs.size()]);
+    private static FakeDeleteAtomicIndexReader[] initSubReaders(IndexReader reader) throws IOException {
+      final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+      final FakeDeleteAtomicIndexReader[] subs = new FakeDeleteAtomicIndexReader[leaves.size()];
+      int i = 0;
+      for (final AtomicReaderContext ctx : leaves) {
+        subs[i++] = new FakeDeleteAtomicIndexReader(ctx.reader());
+      }
+      return subs;
     }
         
     public void deleteDocument(int docID) {
       final int i = readerIndex(docID);
-      ((FakeDeleteAtomicIndexReader) subReaders[i]).deleteDocument(docID - starts[i]);
+      getSequentialSubReaders().get(i).deleteDocument(docID - readerBase(i));
     }
 
     public void undeleteAll()  {
-      for (IndexReader r : subReaders) {
-        ((FakeDeleteAtomicIndexReader) r).undeleteAll();
+      for (FakeDeleteAtomicIndexReader r : getSequentialSubReaders()) {
+        r.undeleteAll();
       }
     }
+
+    @Override
+    protected void doClose() throws IOException {}
 
     // no need to override numDocs/hasDeletions,
     // as we pass the subreaders directly to IW.addIndexes().

@@ -281,7 +281,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
 
   private static void printDocs(DirectoryReader r) throws Throwable {
-    IndexReader[] subs = r.getSequentialSubReaders();
+    List<? extends AtomicReader> subs = r.getSequentialSubReaders();
     for(IndexReader sub : subs) {
       // TODO: improve this
       Bits liveDocs = ((AtomicReader)sub).getLiveDocs();

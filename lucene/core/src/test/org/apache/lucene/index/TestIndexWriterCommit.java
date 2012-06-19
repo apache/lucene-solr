@@ -282,7 +282,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     // Reader should see index as multi-seg at this
     // point:
-    assertTrue("Reader incorrectly sees one segment", reader.getSequentialSubReaders().length > 1);
+    assertTrue("Reader incorrectly sees one segment", reader.getSequentialSubReaders().size() > 1);
     reader.close();
 
     // Abort the writer:
@@ -293,7 +293,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     reader = DirectoryReader.open(dir);
 
     // Reader should still see index as multi-segment
-    assertTrue("Reader incorrectly sees one segment", reader.getSequentialSubReaders().length > 1);
+    assertTrue("Reader incorrectly sees one segment", reader.getSequentialSubReaders().size() > 1);
     reader.close();
 
     if (VERBOSE) {
@@ -312,7 +312,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     reader = DirectoryReader.open(dir);
 
     // Reader should see index as one segment
-    assertEquals("Reader incorrectly sees more than one segment", 1, reader.getSequentialSubReaders().length);
+    assertEquals("Reader incorrectly sees more than one segment", 1, reader.getSequentialSubReaders().size());
     reader.close();
     dir.close();
   }

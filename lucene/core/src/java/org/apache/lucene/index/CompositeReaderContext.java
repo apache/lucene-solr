@@ -17,16 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import org.apache.lucene.util.ReaderUtil;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * {@link IndexReaderContext} for {@link CompositeReader} instance.
  * @lucene.experimental
  */
 public final class CompositeReaderContext extends IndexReaderContext {
-  private final IndexReaderContext[] children;
-  private final AtomicReaderContext[] leaves;
+  private final List<IndexReaderContext> children;
+  private final List<AtomicReaderContext> leaves;
   private final CompositeReader reader;
   
   static CompositeReaderContext create(CompositeReader reader) {
@@ -38,34 +40,37 @@ public final class CompositeReaderContext extends IndexReaderContext {
    * not top-level readers in the current context
    */
   CompositeReaderContext(CompositeReaderContext parent, CompositeReader reader,
-      int ordInParent, int docbaseInParent, IndexReaderContext[] children) {
+      int ordInParent, int docbaseInParent, List<IndexReaderContext> children) {
     this(parent, reader, ordInParent, docbaseInParent, children, null);
   }
   
   /**
    * Creates a {@link CompositeReaderContext} for top-level readers with parent set to <code>null</code>
    */
-  CompositeReaderContext(CompositeReader reader, IndexReaderContext[] children, AtomicReaderContext[] leaves) {
+  CompositeReaderContext(CompositeReader reader, List<IndexReaderContext> children, List<AtomicReaderContext> leaves) {
     this(null, reader, 0, 0, children, leaves);
   }
   
   private CompositeReaderContext(CompositeReaderContext parent, CompositeReader reader,
-      int ordInParent, int docbaseInParent, IndexReaderContext[] children,
-      AtomicReaderContext[] leaves) {
+      int ordInParent, int docbaseInParent, List<IndexReaderContext> children,
+      List<AtomicReaderContext> leaves) {
     super(parent, ordInParent, docbaseInParent);
-    this.children = children;
-    this.leaves = leaves;
+    this.children = Collections.unmodifiableList(children);
+    this.leaves = leaves == null ? null : Collections.unmodifiableList(leaves);
     this.reader = reader;
   }
 
   @Override
-  public AtomicReaderContext[] leaves() {
+  public List<AtomicReaderContext> leaves() {
+    if (!isTopLevel)
+      throw new UnsupportedOperationException("This is not a top-level context.");
+    assert leaves != null;
     return leaves;
   }
   
   
   @Override
-  public IndexReaderContext[] children() {
+  public List<IndexReaderContext> children() {
     return children;
   }
   
@@ -76,13 +81,11 @@ public final class CompositeReaderContext extends IndexReaderContext {
   
   private static final class Builder {
     private final CompositeReader reader;
-    private final AtomicReaderContext[] leaves;
-    private int leafOrd = 0;
+    private final List<AtomicReaderContext> leaves = new ArrayList<AtomicReaderContext>();
     private int leafDocBase = 0;
     
     public Builder(CompositeReader reader) {
       this.reader = reader;
-      leaves = new AtomicReaderContext[numLeaves(reader)];
     }
     
     public CompositeReaderContext build() {
@@ -92,14 +95,14 @@ public final class CompositeReaderContext extends IndexReaderContext {
     private IndexReaderContext build(CompositeReaderContext parent, IndexReader reader, int ord, int docBase) {
       if (reader instanceof AtomicReader) {
         final AtomicReader ar = (AtomicReader) reader;
-        final AtomicReaderContext atomic = new AtomicReaderContext(parent, ar, ord, docBase, leafOrd, leafDocBase);
-        leaves[leafOrd++] = atomic;
+        final AtomicReaderContext atomic = new AtomicReaderContext(parent, ar, ord, docBase, leaves.size(), leafDocBase);
+        leaves.add(atomic);
         leafDocBase += reader.maxDoc();
         return atomic;
       } else {
         final CompositeReader cr = (CompositeReader) reader;
-        final IndexReader[] sequentialSubReaders = cr.getSequentialSubReaders();
-        final IndexReaderContext[] children = new IndexReaderContext[sequentialSubReaders.length];
+        final List<? extends IndexReader> sequentialSubReaders = cr.getSequentialSubReaders();
+        final List<IndexReaderContext> children = Arrays.asList(new IndexReaderContext[sequentialSubReaders.size()]);
         final CompositeReaderContext newParent;
         if (parent == null) {
           newParent = new CompositeReaderContext(cr, children, leaves);
@@ -107,31 +110,15 @@ public final class CompositeReaderContext extends IndexReaderContext {
           newParent = new CompositeReaderContext(parent, cr, ord, docBase, children);
         }
         int newDocBase = 0;
-        for (int i = 0; i < sequentialSubReaders.length; i++) {
-          children[i] = build(newParent, sequentialSubReaders[i], i, newDocBase);
-          newDocBase += sequentialSubReaders[i].maxDoc();
+        for (int i = 0, c = sequentialSubReaders.size(); i < c; i++) {
+          final IndexReader r = sequentialSubReaders.get(i);
+          children.set(i, build(newParent, r, i, newDocBase));
+          newDocBase += r.maxDoc();
         }
         assert newDocBase == cr.maxDoc();
         return newParent;
       }
     }
-    
-    private int numLeaves(IndexReader reader) {
-      final int[] numLeaves = new int[1];
-      try {
-        new ReaderUtil.Gather(reader) {
-          @Override
-          protected void add(int base, AtomicReader r) {
-            numLeaves[0]++;
-          }
-        }.run();
-      } catch (IOException ioe) {
-        // won't happen
-        throw new RuntimeException(ioe);
-      }
-      return numLeaves[0];
-    }
-    
   }
 
 }
