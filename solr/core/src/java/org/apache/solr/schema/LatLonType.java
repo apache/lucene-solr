@@ -595,6 +595,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     // don't bother making the hash expensive - the center latitude + min longitude will be very uinque 
     long hash = Double.doubleToLongBits(latCenter);
     hash = hash * 31 + Double.doubleToLongBits(lonMin);
+    hash = hash * 31 + (long)super.hashCode();
     return (int)(hash >> 32 + hash);
   }
 
