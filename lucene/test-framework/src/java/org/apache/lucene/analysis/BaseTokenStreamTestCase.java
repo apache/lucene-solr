@@ -49,7 +49,6 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Assume;
 
 /** 
  * Base class for all Lucene unit tests that use TokenStreams. 
@@ -438,11 +437,11 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     boolean useCharFilter = random.nextBoolean();
     Directory dir = null;
     RandomIndexWriter iw = null;
-    if (rarely(random)) {
-      final String postingsFormat =  _TestUtil.getPostingsFormat("dummy");
-      Assume.assumeTrue(iterations * maxWordLength < 100000 ||
-                        !(postingsFormat.equals("Memory") ||
-                          postingsFormat.equals("SimpleText")));
+    final String postingsFormat =  _TestUtil.getPostingsFormat("dummy");
+    boolean codecOk = iterations * maxWordLength < 100000 ||
+        !(postingsFormat.equals("Memory") ||
+            postingsFormat.equals("SimpleText"));
+    if (rarely(random) && codecOk) {
       dir = newFSDirectory(_TestUtil.getTempDir("bttc"));
       iw = new RandomIndexWriter(new Random(seed), dir, a);
     }
