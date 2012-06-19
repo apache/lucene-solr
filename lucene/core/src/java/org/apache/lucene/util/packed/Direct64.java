@@ -24,10 +24,9 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * Direct wrapping of 32 bit values to a backing array of ints.
+ * Direct wrapping of 64 bit values to a backing array of longs.
  * @lucene.internal
  */
-
 class Direct64 extends PackedInts.MutableImpl {
   private final long[] values;
   private static final int BITS_PER_VALUE = 64;
@@ -64,8 +63,26 @@ class Direct64 extends PackedInts.MutableImpl {
     return values[index];
   }
 
+  @Override
+  public int get(int index, long[] arr, int off, int len) {
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+    final int gets = Math.min(valueCount - index, len);
+    System.arraycopy(values, index, arr, off, gets);
+    return gets;
+  }
+
   public void set(final int index, final long value) {
     values[index] = value;
+  }
+
+  @Override
+  public int set(int index, long[] arr, int off, int len) {
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+    final int sets = Math.min(valueCount - index, len);
+    System.arraycopy(arr, off, values, index, sets);
+    return sets;
   }
 
   @Override
@@ -90,4 +107,5 @@ class Direct64 extends PackedInts.MutableImpl {
   public boolean hasArray() {
     return true;
   }
+
 }
