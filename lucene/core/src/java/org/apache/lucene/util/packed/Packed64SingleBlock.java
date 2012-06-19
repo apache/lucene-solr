@@ -28,12 +28,13 @@ import org.apache.lucene.util.RamUsageEstimator;
  * speed by ensuring that a single block needs to be read/written in order to
  * read/write a value.
  */
-abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
+final class Packed64SingleBlock extends PackedInts.MutableImpl {
 
   private static final int[] SUPPORTED_BITS_PER_VALUE = new int[] {1, 2, 3, 4,
-      5, 6, 7, 9, 10, 12, 21};
-  private static final long[][] WRITE_MASKS = new long[22][];
-  private static final int[][] SHIFTS = new int[22][];
+      5, 6, 7, 8, 9, 10, 12, 16, 21, 32};
+  static final int MAX_SUPPORTED_BITS_PER_VALUE = 32;
+  private static final long[][] WRITE_MASKS = new long[MAX_SUPPORTED_BITS_PER_VALUE+1][];
+  private static final int[][] SHIFTS = new int[MAX_SUPPORTED_BITS_PER_VALUE+1][];
   static {
     for (int bpv : SUPPORTED_BITS_PER_VALUE) {
       initMasks(bpv);
@@ -54,33 +55,10 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
   }
 
   public static Packed64SingleBlock create(int valueCount, int bitsPerValue) {
-    switch (bitsPerValue) {
-      case 1:
-        return new Packed64SingleBlock1(valueCount);
-      case 2:
-        return new Packed64SingleBlock2(valueCount);
-      case 3:
-        return new Packed64SingleBlock3(valueCount);
-      case 4:
-        return new Packed64SingleBlock4(valueCount);
-      case 5:
-        return new Packed64SingleBlock5(valueCount);
-      case 6:
-        return new Packed64SingleBlock6(valueCount);
-      case 7:
-        return new Packed64SingleBlock7(valueCount);
-      case 9:
-        return new Packed64SingleBlock9(valueCount);
-      case 10:
-        return new Packed64SingleBlock10(valueCount);
-      case 12:
-        return new Packed64SingleBlock12(valueCount);
-      case 21:
-        return new Packed64SingleBlock21(valueCount);
-      default:
-        throw new IllegalArgumentException("Unsupported bitsPerValue: "
-            + bitsPerValue);
+    if (isSupported(bitsPerValue)) {
+      return new Packed64SingleBlock(valueCount, bitsPerValue);
     }
+    throw new IllegalArgumentException("Unsupported bitsPerValue: " + bitsPerValue);
   }
 
   public static Packed64SingleBlock create(DataInput in,
@@ -102,14 +80,15 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     return (float) overhead / valuesPerBlock;
   }
 
-  protected final long[] blocks;
-  protected final int valuesPerBlock;
-  protected final int[] shifts;
-  protected final long[] writeMasks;
-  protected final long readMask;
+  final long[] blocks;
+  final int valuesPerBlock;
+  final int[] shifts;
+  final long[] writeMasks;
+  final long readMask;
 
   Packed64SingleBlock(int valueCount, int bitsPerValue) {
     super(valueCount, bitsPerValue);
+    assert isSupported(bitsPerValue);
     valuesPerBlock = Long.SIZE / bitsPerValue;
     blocks = new long[requiredCapacity(valueCount, valuesPerBlock)];
     shifts = SHIFTS[bitsPerValue];
@@ -122,11 +101,11 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
         + (valueCount % valuesPerBlock == 0 ? 0 : 1);
   }
 
-  protected int blockOffset(int offset) {
+  private int blockOffset(int offset) {
     return offset / valuesPerBlock;
   }
 
-  protected int offsetInBlock(int offset) {
+  private int offsetInBlock(int offset) {
     return offset % valuesPerBlock;
   }
 
@@ -135,7 +114,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     final int o = blockOffset(index);
     final int b = offsetInBlock(index);
 
-    return (blocks[o] >> shifts[b]) & readMask;
+    return (blocks[o] >>> shifts[b]) & readMask;
   }
 
   @Override
@@ -295,204 +274,4 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
         + ", size=" + size() + ", elements.length=" + blocks.length + ")";
   }
 
-  // Specialisations that allow the JVM to optimize computation of the block
-  // offset as well as the offset in block
-
-  static final class Packed64SingleBlock21 extends Packed64SingleBlock {
-
-    Packed64SingleBlock21(int valueCount) {
-      super(valueCount, 21);
-      assert valuesPerBlock == 3;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset / 3;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset % 3;
-    }
-  }
-
-  static final class Packed64SingleBlock12 extends Packed64SingleBlock {
-
-    Packed64SingleBlock12(int valueCount) {
-      super(valueCount, 12);
-      assert valuesPerBlock == 5;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset / 5;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset % 5;
-    }
-  }
-
-  static final class Packed64SingleBlock10 extends Packed64SingleBlock {
-
-    Packed64SingleBlock10(int valueCount) {
-      super(valueCount, 10);
-      assert valuesPerBlock == 6;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset / 6;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset % 6;
-    }
-  }
-
-  static final class Packed64SingleBlock9 extends Packed64SingleBlock {
-
-    Packed64SingleBlock9(int valueCount) {
-      super(valueCount, 9);
-      assert valuesPerBlock == 7;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset / 7;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset % 7;
-    }
-  }
-
-  static final class Packed64SingleBlock7 extends Packed64SingleBlock {
-
-    Packed64SingleBlock7(int valueCount) {
-      super(valueCount, 7);
-      assert valuesPerBlock == 9;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset / 9;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset % 9;
-    }
-  }
-
-  static final class Packed64SingleBlock6 extends Packed64SingleBlock {
-
-    Packed64SingleBlock6(int valueCount) {
-      super(valueCount, 6);
-      assert valuesPerBlock == 10;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset / 10;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset % 10;
-    }
-  }
-
-  static final class Packed64SingleBlock5 extends Packed64SingleBlock {
-
-    Packed64SingleBlock5(int valueCount) {
-      super(valueCount, 5);
-      assert valuesPerBlock == 12;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset / 12;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset % 12;
-    }
-  }
-
-  static final class Packed64SingleBlock4 extends Packed64SingleBlock {
-
-    Packed64SingleBlock4(int valueCount) {
-      super(valueCount, 4);
-      assert valuesPerBlock == 16;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset >> 4;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset & 15;
-    }
-  }
-
-  static final class Packed64SingleBlock3 extends Packed64SingleBlock {
-
-    Packed64SingleBlock3(int valueCount) {
-      super(valueCount, 3);
-      assert valuesPerBlock == 21;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset / 21;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset % 21;
-    }
-  }
-
-  static final class Packed64SingleBlock2 extends Packed64SingleBlock {
-
-    Packed64SingleBlock2(int valueCount) {
-      super(valueCount, 2);
-      assert valuesPerBlock == 32;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset >> 5;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset & 31;
-    }
-  }
-
-  static final class Packed64SingleBlock1 extends Packed64SingleBlock {
-
-    Packed64SingleBlock1(int valueCount) {
-      super(valueCount, 1);
-      assert valuesPerBlock == 64;
-    }
-
-    @Override
-    protected int blockOffset(int offset) {
-      return offset >> 6;
-    }
-
-    @Override
-    protected int offsetInBlock(int offset) {
-      return offset & 63;
-    }
-  }
 }

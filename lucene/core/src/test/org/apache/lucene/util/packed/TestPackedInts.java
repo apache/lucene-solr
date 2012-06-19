@@ -268,7 +268,7 @@ public class TestPackedInts extends LuceneTestCase {
       packedInts.add(new Packed64(valueCount, bitsPerValue));
     }
     packedInts.add(new Direct64(valueCount));
-    for (int bpv = bitsPerValue; bpv <= 64; ++bpv) {
+    for (int bpv = bitsPerValue; bpv <= Packed64SingleBlock.MAX_SUPPORTED_BITS_PER_VALUE; ++bpv) {
       if (Packed64SingleBlock.isSupported(bpv)) {
         packedInts.add(Packed64SingleBlock.create(valueCount, bpv));
       }
@@ -463,6 +463,7 @@ public class TestPackedInts extends LuceneTestCase {
         final int gets = ints.get(index, arr, off, len);
         assertTrue(msg, gets > 0);
         assertTrue(msg, gets <= len);
+        assertTrue(msg, gets <= ints.size() - index);
 
         for (int i = 0; i < arr.length; ++i) {
           String m = msg + ", i=" + i;
