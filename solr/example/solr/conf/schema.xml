@@ -205,11 +205,20 @@
    -->
  <uniqueKey>id</uniqueKey>
 
- <!-- field for the QueryParser to use when an explicit fieldname is absent -->
- <defaultSearchField>text</defaultSearchField>
+ <!-- DEPRECATED: The defaultSearchField is consulted by various query parsers when
+  parsing a query string that isn't explicit about the field.  Machine (non-user)
+  generated queries are best made explicit, or they can use the "df" request parameter
+  which takes precedence over this.
+  Note: Un-commenting defaultSearchField will be insufficient if your request handler
+  in solrconfig.xml defines "df", which takes precedence. That would need to be removed.
+ <defaultSearchField>text</defaultSearchField> -->
 
- <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
- <solrQueryParser defaultOperator="OR"/>
+ <!-- DEPRECATED: The defaultOperator (AND|OR) is consulted by various query parsers
+  when parsing a query string to determine if a clause of the query should be marked as
+  required or optional, assuming the clause isn't already marked by some operator.
+  The default is OR, which is generally assumed so it is not a good idea to change it
+  globally here.  The "q.op" request parameter takes precedence over this.
+ <solrQueryParser defaultOperator="OR"/> -->
 
   <!-- copyField commands copy one field to another at the time a document
         is added to the index.  It's used either to index the same field differently,

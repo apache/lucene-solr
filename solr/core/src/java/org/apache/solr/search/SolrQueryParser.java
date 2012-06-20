@@ -135,7 +135,7 @@ public class SolrQueryParser extends QueryParser {
     if (field == null && defaultField == null) {
       throw new SolrException
         (SolrException.ErrorCode.BAD_REQUEST,
-         "no field name specified in query and no defaultSearchField defined in schema.xml");
+         "no field name specified in query and no default specified via 'df' param");
     }
   }
 
@@ -194,6 +194,7 @@ public class SolrQueryParser extends QueryParser {
   }
   @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
+    checkNullField(field);
     // *:* -> MatchAllDocsQuery
     if ("*".equals(field) && "*".equals(termStr)) {
       return newMatchAllDocsQuery();
