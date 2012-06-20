@@ -39,7 +39,7 @@ public interface CommonParams {
    */
   public static final String TZ = "TZ";
 
-  /** the query type - which query handler should handle the request */
+  /** the Request Handler (formerly known as the Query Type) - which Request Handler should handle the request */
   public static final String QT ="qt";
   
   /** the response writer type - the format of the response */

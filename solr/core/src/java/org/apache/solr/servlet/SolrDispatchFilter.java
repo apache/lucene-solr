@@ -234,7 +234,7 @@ public class SolrDispatchFilter implements Filter
                 if( qt != null && qt.startsWith("/") && (handler instanceof ContentStreamHandlerBase)) {
                   //For security reasons it's a bad idea to allow a leading '/', ex: /select?qt=/update see SOLR-3161
                   //There was no restriction from Solr 1.4 thru 3.5 and it's not supported for update handlers.
-                  throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid query type.  Do not use /select to access: "+qt);
+                  throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid Request Handler ('qt').  Do not use /select to access: "+qt);
                 }
               }
             }

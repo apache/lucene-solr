@@ -57,7 +57,7 @@ public class TermsResponseTest extends SolrJettyTestBase {
     getSolrServer().commit(true, true);
 
     SolrQuery query = new SolrQuery();
-    query.setQueryType("/terms");
+    query.setRequestHandler("/terms");
     query.setTerms(true);
     query.setTermsLimit(5);
     query.setTermsLower("s");
