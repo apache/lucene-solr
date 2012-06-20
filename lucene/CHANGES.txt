@@ -985,6 +985,9 @@ Optimizations
 
 * LUCENE-4098: Add bulk get/set methods to PackedInts (Adrien Grand
   via Mike McCandless)
+  
+* LUCENE-4156: DirectoryTaxonomyWriter.getSize is no longer synchronized.
+  (Shai Erera, Sivan Yogev)
 
 Bug fixes
 
