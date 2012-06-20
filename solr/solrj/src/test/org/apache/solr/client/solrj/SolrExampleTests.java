@@ -495,7 +495,9 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     }
     
     try {
-      server.deleteByQuery( "??::?? ignore_exception" ); // query syntax error
+      //the df=text here is a kluge for the test to supply a default field in case there is none in schema.xml
+      // alternatively, the resulting assertion could be modified to assert that no default field is specified.
+      server.deleteByQuery( "{!df=text} ??::?? ignore_exception" ); // query syntax error
       Assert.fail("should have a number format exception");
     }
     catch(SolrException ex) {
@@ -1162,7 +1164,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     server.commit();  // Since the transaction log is disabled in the example, we need to commit
     
     SolrQuery q = new SolrQuery();
-    q.setQueryType("/get");
+    q.setRequestHandler("/get");
     q.set("id", "DOCID");
     q.set("fl", "id,name,aaa:[value v=aaa]");
     
