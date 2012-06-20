@@ -486,6 +486,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     add("MockVariableIntBlock");
     add("MockSep");
     add("MockRandom");
+    add("For");
   }};
   
   private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) throws IOException {

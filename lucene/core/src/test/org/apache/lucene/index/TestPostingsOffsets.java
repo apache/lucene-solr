@@ -49,7 +49,7 @@ import org.apache.lucene.util._TestUtil;
 // TODO: we really need to test indexingoffsets, but then getting only docs / docs + freqs.
 // not all codecs store prx separate...
 // TODO: fix sep codec to index offsets so we can greatly reduce this list!
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
+@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom","For"})
 public class TestPostingsOffsets extends LuceneTestCase {
   IndexWriterConfig iwc;
   
@@ -436,14 +436,6 @@ public class TestPostingsOffsets extends LuceneTestCase {
     } catch (IllegalArgumentException expected) {
       // expected
     }
-  }
-  
-  public void testStackedTokens() throws Exception {
-    checkTokens(new Token[] { 
-        makeToken("foo", 1, 0, 3),
-        makeToken("foo", 0, 0, 3),
-        makeToken("foo", 0, 0, 3)
-     });
   }
   
   public void testLegalbutVeryLargeOffsets() throws Exception {

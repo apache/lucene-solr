@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.mockrandom;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -61,6 +61,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.codecs.pfor.*;
 
 /**
  * Randomly combines terms index impl w/ postings impls.
@@ -93,6 +94,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
       final int baseBlockSize = _TestUtil.nextInt(random, 1, 127);
       delegates.add(new MockVariableIntBlockPostingsFormat.MockIntFactory(baseBlockSize));
       // TODO: others
+      delegates.add(new ForFactory());
     }
 
     private static String getExtension(String fileName) {
