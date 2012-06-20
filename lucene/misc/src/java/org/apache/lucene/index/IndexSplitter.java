@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.lucene.index.IndexWriter;  // Required for javadocs
 import org.apache.lucene.store.FSDirectory;
 
 /**
@@ -46,11 +45,6 @@ import org.apache.lucene.store.FSDirectory;
  * @lucene.experimental You can easily
  * accidentally remove segments from your index so be
  * careful!
- *
- * <p><b>NOTE</b>: this tool is unaware of documents added
- * atomically via {@link IndexWriter#addDocuments} or {@link
- * IndexWriter#updateDocuments}, which means it can easily
- * break up such document groups.
  */
 public class IndexSplitter {
   public SegmentInfos infos;
