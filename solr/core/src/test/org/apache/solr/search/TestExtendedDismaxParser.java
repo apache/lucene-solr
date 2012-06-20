@@ -66,6 +66,39 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     // the super classes version
     super.tearDown();
   }
+  
+
+  public void testLowercaseOperators() {
+    assertQ("Upper case operator",
+        req("q","Zapp AND Brannigan",
+            "qf", "name",
+            "lowercaseOperators", "false",
+            "defType","edismax")
+        ,"*[count(//doc)=1]");
+    
+    assertQ("Upper case operator, allow lowercase",
+        req("q","Zapp AND Brannigan",
+            "qf", "name",
+            "lowercaseOperators", "true",
+            "defType","edismax")
+        ,"*[count(//doc)=1]");
+    
+    assertQ("Lower case operator, don't allow lowercase operators",
+        req("q","Zapp and Brannigan",
+            "qf", "name",
+            "q.op", "AND", 
+            "lowercaseOperators", "false",
+            "defType","edismax")
+        ,"*[count(//doc)=0]");
+    
+    assertQ("Lower case operator, allow lower case operators",
+        req("q","Zapp and Brannigan",
+            "qf", "name",
+            "q.op", "AND", 
+            "lowercaseOperators", "true",
+            "defType","edismax")
+        ,"*[count(//doc)=1]");
+  }
     
   // test the edismax query parser based on the dismax parser
   public void testFocusQueryParser() {

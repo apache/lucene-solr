@@ -226,7 +226,7 @@ class ExtendedDismaxQParser extends QParser {
         Clause clause = clauses.get(i);
         String s = clause.raw;
         // and and or won't be operators at the start or end
-        if (i>0 && i+1<clauses.size()) {
+        if (lowercaseOperators && i>0 && i+1<clauses.size()) {
           if ("AND".equalsIgnoreCase(s)) {
             s="AND";
           } else if ("OR".equalsIgnoreCase(s)) {
