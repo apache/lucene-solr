@@ -162,7 +162,7 @@
        based HashBitset. -->
 
   <!-- requestHandler plugins... incoming queries will be dispatched to the
-     correct handler based on the qt (query type) param matching the
+     correct handler based on the 'qt' param matching the
      name of registered handlers.
       The "standard" request handler is the default and will be used if qt
      is not specified in the request.

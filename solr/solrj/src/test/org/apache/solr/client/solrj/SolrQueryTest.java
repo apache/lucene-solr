@@ -166,7 +166,7 @@ public class SolrQueryTest extends LuceneTestCase {
       assertEquals("foo", q.setQuery("foo").getQuery());
       assertEquals(10, q.setRows(10).getRows().intValue());
       assertEquals(10, q.setStart(10).getStart().intValue());
-      assertEquals("foo", q.setQueryType("foo").getQueryType());
+      assertEquals("foo", q.setRequestHandler("foo").getRequestHandler());
       assertEquals(10, q.setTimeAllowed(10).getTimeAllowed().intValue());
       
       // non-standard

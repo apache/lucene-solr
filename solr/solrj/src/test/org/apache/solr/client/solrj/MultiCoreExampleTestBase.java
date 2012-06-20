@@ -203,7 +203,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     catch( Exception ex ) {}
     assertEquals( 1, getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) ).getResults().size() );
 
-    NamedList<Object> response = getSolrCore("corefoo").query(new SolrQuery().setQueryType("/admin/system")).getResponse();
+    NamedList<Object> response = getSolrCore("corefoo").query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
     NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
     String indexDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("index");
     // test delete index on core

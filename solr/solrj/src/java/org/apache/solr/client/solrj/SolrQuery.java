@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
@@ -26,7 +25,6 @@ import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.DateUtil;
 
-import java.text.NumberFormat;
 import java.util.Date;
 import java.util.regex.Pattern;
 
@@ -709,19 +707,37 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   /**
-   * Query type used to determine the request handler. 
-   * @see org.apache.solr.client.solrj.request.QueryRequest#getPath()
-   * 
-   * @param qt Query Type that corresponds to the query request handler on the server.
+   * The Request Handler to use (see the solrconfig.xml), which is stored in the "qt" parameter.
+   * Normally it starts with a '/' and if so it will be used by
+   * {@link org.apache.solr.client.solrj.request.QueryRequest#getPath()} in the URL instead of the "qt" parameter.
+   * If this is left blank, then the default of "/select" is assumed.
+   *
+   * @param qt The Request Handler name corresponding to one in solrconfig.xml on the server.
    * @return this
    */
-  public SolrQuery setQueryType(String qt) {
+  public SolrQuery setRequestHandler(String qt) {
     this.set(CommonParams.QT, qt);
     return this;
   }
 
-  public String getQueryType() {
+  public String getRequestHandler() {
     return this.get(CommonParams.QT);
+  }
+
+  /**
+   * @deprecated See {@link #setRequestHandler(String)}.
+   */
+  @Deprecated
+  public SolrQuery setQueryType(String qt) {
+    return setRequestHandler(qt);
+  }
+
+  /**
+   * @deprecated See {@link #getRequestHandler()}.
+   */
+  @Deprecated
+  public String getQueryType() {
+    return getRequestHandler();
   }
 
   /**
