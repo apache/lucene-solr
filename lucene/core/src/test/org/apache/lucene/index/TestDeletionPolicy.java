@@ -35,6 +35,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -214,10 +215,9 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.commit(commitData);
     writer.close();
 
-    final int ITER = 9;
-
     long lastDeleteTime = 0;
-    for(int i=0;i<ITER;i++) {
+    final int targetNumDelete = _TestUtil.nextInt(random(), 1, 5);
+    while (policy.numDelete < targetNumDelete) {
       // Record last time when writer performed deletes of
       // past commits
       lastDeleteTime = System.currentTimeMillis();
@@ -237,15 +237,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
       writer.commit(commitData);
       writer.close();
 
-      if (i < ITER-1) {
-        // Make sure to sleep long enough so that some commit
-        // points will be deleted:
-        Thread.sleep((int) (1000.0*(SECONDS/5.0)));
-      }
+      Thread.sleep((int) (1000.0*(SECONDS/5.0)));
     }
-
-    // First, make sure the policy in fact deleted something:
-    assertTrue("no commits were deleted", policy.numDelete > 0);
 
     // Then simplistic check: just verify that the
     // segments_N's that still exist are in fact within SECONDS
