@@ -202,7 +202,6 @@ final class DocumentsWriter {
    *  discarding any docs added since last flush. */
   synchronized void abort() throws IOException {
     boolean success = false;
-
     synchronized (this) {
       deleteQueue.clear();
     }
@@ -233,6 +232,7 @@ final class DocumentsWriter {
           perThread.unlock();
         }
       }
+      flushControl.waitForFlush();
       success = true;
     } finally {
       if (infoStream.isEnabled("DW")) {

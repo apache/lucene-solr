@@ -463,15 +463,15 @@ class DocumentsWriterPerThread {
       pendingDeletes.docIDs.clear();
     }
 
-    if (infoStream.isEnabled("DWPT")) {
-      infoStream.message("DWPT", "flush postings as segment " + flushState.segmentInfo.name + " numDocs=" + numDocsInRAM);
-    }
-
     if (aborting) {
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush: skip because aborting is set");
       }
       return null;
+    }
+
+    if (infoStream.isEnabled("DWPT")) {
+      infoStream.message("DWPT", "flush postings as segment " + flushState.segmentInfo.name + " numDocs=" + numDocsInRAM);
     }
 
     boolean success = false;
