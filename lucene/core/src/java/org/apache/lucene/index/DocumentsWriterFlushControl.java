@@ -26,7 +26,6 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
-import org.apache.lucene.index.DocumentsWriterStallControl.MemoryController;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -41,7 +40,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * {@link IndexWriterConfig#getRAMPerThreadHardLimitMB()} to prevent address
  * space exhaustion.
  */
-final class DocumentsWriterFlushControl implements MemoryController {
+final class DocumentsWriterFlushControl  {
 
   private final long hardMaxBytesPerDWPT;
   private long activeBytes = 0;
@@ -88,7 +87,7 @@ final class DocumentsWriterFlushControl implements MemoryController {
     return flushBytes + activeBytes;
   }
   
-  public long stallLimitBytes() {
+  private long stallLimitBytes() {
     final double maxRamMB = config.getRAMBufferSizeMB();
     return maxRamMB != IndexWriterConfig.DISABLE_AUTO_FLUSH ? (long)(2 * (maxRamMB * 1024 * 1024)) : Long.MAX_VALUE;
   }
@@ -178,7 +177,7 @@ final class DocumentsWriterFlushControl implements MemoryController {
       }
       return flushingDWPT;
     } finally {
-      stallControl.updateStalled(this);
+      updateStallState();
       assert assertMemory();
     }
   }
@@ -192,11 +191,28 @@ final class DocumentsWriterFlushControl implements MemoryController {
       assert assertMemory();
     } finally {
       try {
-        stallControl.updateStalled(this);
+       updateStallState();
       } finally {
         notifyAll();
       }
     }
+  }
+  
+  private final void updateStallState() {
+    
+    assert Thread.holdsLock(this);
+    final long limit = stallLimitBytes();
+    /*
+     * we block indexing threads if net byte grows due to slow flushes
+     * yet, for small ram buffers and large documents we can easily
+     * reach the limit without any ongoing flushes. we need to ensure
+     * that we don't stall/block if an ongoing or pending flush can
+     * not free up enough memory to release the stall lock.
+     */
+    final boolean stall = ((activeBytes + flushBytes) > limit)  &&
+                          (activeBytes < limit) &&
+                          !closed;
+    stallControl.updateStalled(stall);
   }
   
   public synchronized void waitForFlush() {
@@ -238,7 +254,7 @@ final class DocumentsWriterFlushControl implements MemoryController {
       // Take it out of the loop this DWPT is stale
       perThreadPool.replaceForFlush(state, closed);
     } finally {
-      stallControl.updateStalled(this);
+      updateStallState();
     }
   }
 
@@ -288,7 +304,7 @@ final class DocumentsWriterFlushControl implements MemoryController {
       }
       return null;
     } finally {
-      stallControl.updateStalled(this);
+      updateStallState();
     }
   }
 
@@ -304,7 +320,7 @@ final class DocumentsWriterFlushControl implements MemoryController {
     synchronized (this) {
       final DocumentsWriterPerThread poll;
       if ((poll = flushQueue.poll()) != null) {
-        stallControl.updateStalled(this);
+        updateStallState();
         return poll;
       }
       fullFlush = this.fullFlush;
@@ -458,7 +474,7 @@ final class DocumentsWriterFlushControl implements MemoryController {
       assert assertBlockedFlushes(documentsWriter.deleteQueue);
       flushQueue.addAll(fullFlushBuffer);
       fullFlushBuffer.clear();
-      stallControl.updateStalled(this);
+      updateStallState();
     }
     assert assertActiveDeleteQueue(documentsWriter.deleteQueue);
   }
@@ -537,7 +553,7 @@ final class DocumentsWriterFlushControl implements MemoryController {
       }
     } finally {
       fullFlush = false;
-      stallControl.updateStalled(this);
+      updateStallState();
     }
   }
   
@@ -572,7 +588,7 @@ final class DocumentsWriterFlushControl implements MemoryController {
       fullFlush = false;
       flushQueue.clear();
       blockedFlushes.clear();
-      stallControl.updateStalled(this);
+      updateStallState();
     }
   }
   
