@@ -121,8 +121,10 @@
        Note: This replaces <indexDefaults> and <mainIndex> from older versions
        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
   <indexConfig>
-    <!-- maxFieldLength specifies max number of *tokens* indexed per field. Default: 10000 -->
-    <!-- <maxFieldLength>10000</maxFieldLength>  -->
+    <!-- maxFieldLength was removed in 4.0. To get similar behavior, include a 
+         LimitTokenCountFilterFactory in your fieldType definition. E.g. 
+     <filter class="solr.LimitTokenCountFilterFactory" maxTokenCount="10000"/>
+    -->
     <!-- Maximum time to wait for a write lock (ms) for an IndexWriter. Default: 1000 -->
     <!-- <writeLockTimeout>1000</writeLockTimeout>  -->
 
