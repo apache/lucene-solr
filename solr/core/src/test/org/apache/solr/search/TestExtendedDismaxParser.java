@@ -659,5 +659,46 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
         "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc\"~3^333.0')]",
         "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc vvvv\"~3^333.0')]"
      );
+
+    assertQ(
+        "ps2 not working",
+        req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw^10", "ps2",
+            "2", "bf", "boost_d", "fl", "score,*", "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s0']");
+    
+    assertQ(
+        "Specifying slop in pf2 param not working",
+        req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw~2^10", "bf",
+            "boost_d", "fl", "score,*", "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s0']");
+    
+    assertQ(
+        "Slop in ps2 parameter should override ps",
+        req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw^10", "ps",
+            "0", "ps2", "2", "bf", "boost_d", "fl", "score,*", "defType",
+            "edismax"), "//doc[1]/str[@name='id'][.='s0']");
+
+    assertQ(
+        "ps3 not working",
+        req("q", "a bar foo", "qf", "phrase_sw", "pf3", "phrase_sw^10", "ps3",
+            "3", "bf", "boost_d", "fl", "score,*", "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s1']");
+    
+    assertQ(
+        "Specifying slop in pf3 param not working",
+        req("q", "a bar foo", "qf", "phrase_sw", "pf3", "phrase_sw~3^10", "bf",
+            "boost_d", "fl", "score,*", "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s1']");
+   
+    assertQ("ps2 should not override slop specified inline in pf2",
+        req("q", "zzzz xxxx cccc vvvv",
+            "qf", "phrase_sw",
+            "pf2", "phrase_sw~2^22",
+            "ps2", "4",
+            "defType", "edismax",
+            "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx\"~2^22.0')]"
+     );
+
   }
 }
