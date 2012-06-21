@@ -17,16 +17,15 @@
 
 package org.apache.lucene.spatial;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -37,7 +36,7 @@ import java.util.*;
 public abstract class SpatialTestCase extends LuceneTestCase {
 
   private DirectoryReader indexReader;
-  private IndexWriter indexWriter;
+  private RandomIndexWriter indexWriter;
   private Directory directory;
   private IndexSearcher indexSearcher;
 
@@ -45,26 +44,15 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    Random random = random();
 
     directory = newDirectory();
-
-    IndexWriterConfig writerConfig = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(random));
-    indexWriter = new IndexWriter(directory, writerConfig);
+    indexWriter = new RandomIndexWriter(random(),directory);
   }
 
   @Override
   @After
   public void tearDown() throws Exception {
-    if (indexWriter != null) {
-      indexWriter.close();
-    }
-    if (indexReader != null) {
-      indexReader.close();
-    }
-    if (directory != null) {
-      directory.close();
-    }
+    IOUtils.close(indexWriter,indexReader,directory);
     super.tearDown();
   }
 
@@ -87,11 +75,8 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
   protected void commit() throws IOException {
     indexWriter.commit();
-    if (indexReader == null) {
-      indexReader = DirectoryReader.open(directory);
-    } else {
-      indexReader = DirectoryReader.openIfChanged(indexReader);
-    }
+    IOUtils.close(indexReader);
+    indexReader = indexWriter.getReader();
     indexSearcher = newSearcher(indexReader);
   }
 
