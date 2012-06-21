@@ -34,6 +34,12 @@ public interface DisMaxParams {
   /** query and init param for phrase boost fields */
   public static String PF = "pf";
   
+  /** query and init param for bigram phrase boost fields */
+  public static String PF2 = "pf2";
+  
+  /** query and init param for trigram phrase boost fields */
+  public static String PF3 = "pf3";
+  
   /** query and init param for MinShouldMatch specification */
   public static String MM = "mm";
   
@@ -43,6 +49,12 @@ public interface DisMaxParams {
    */
   public static String PS = "ps";
   
+  /** default phrase slop for bigram phrases (pf2)  */
+  public static String PS2 = "ps2";
+  
+  /** default phrase slop for bigram phrases (pf3)  */
+  public static String PS3 = "ps3";
+    
   /**
    * query and init param for phrase Slop value in phrases
    * explicitly included in the user's query string ( in qf fields)

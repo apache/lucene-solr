@@ -15,11 +15,6 @@
  * limitations under the License.
  */
 
-/*
- * This parser was originally derived from DismaxQParser from Solr.
- * All changes are Copyright 2008, Lucid Imagination, Inc.
- */
-
 package org.apache.solr.search;
 
 import java.util.ArrayList;
@@ -52,7 +47,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * An advanced multi-field query parser.
+ * An advanced multi-field query parser based on the DisMax parser.
+ * See Wiki page http://wiki.apache.org/solr/ExtendedDisMax
  * @lucene.experimental
  */
 public class ExtendedDismaxQParserPlugin extends QParserPlugin {
@@ -134,21 +130,26 @@ class ExtendedDismaxQParser extends QParser {
     userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
     
     queryFields = DisMaxQParser.parseQueryFields(req.getSchema(), solrParams);
+
+    // Phrase slop array
+    int pslop[] = new int[4];
+    pslop[0] = solrParams.getInt(DisMaxParams.PS, 0);
+    pslop[2] = solrParams.getInt(DisMaxParams.PS2, pslop[0]);
+    pslop[3] = solrParams.getInt(DisMaxParams.PS3, pslop[0]);
+
     
     // Boosted phrase of the full query string
     List<FieldParams> phraseFields = 
-      U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF),0);
+      U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF),0,pslop[0]);
     // Boosted Bi-Term Shingles from the query string
     List<FieldParams> phraseFields2 = 
-      U.parseFieldBoostsAndSlop(solrParams.getParams("pf2"),2);
+      U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF2),2,pslop[2]);
     // Boosted Tri-Term Shingles from the query string
     List<FieldParams> phraseFields3 = 
-      U.parseFieldBoostsAndSlop(solrParams.getParams("pf3"),3);
-
+      U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF3),3,pslop[3]);
 
     float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
 
-    int pslop = solrParams.getInt(DisMaxParams.PS, 0);
     int qslop = solrParams.getInt(DisMaxParams.QS, 0);
 
     // remove stopwords from mandatory "matching" component?
@@ -332,11 +333,10 @@ class ExtendedDismaxQParser extends QParser {
 
         // full phrase and shingles
         for (FieldParams phraseField: allPhraseFields) {
-          int slop = (phraseField.getSlop() == 0) ? pslop : phraseField.getSlop();
           Map<String,Float> pf = new HashMap<String,Float>(1);
           pf.put(phraseField.getField(),phraseField.getBoost());
           addShingledPhraseQueries(query, normalClauses, pf,   
-				   phraseField.getWordGrams(),tiebreaker, slop);
+          phraseField.getWordGrams(),tiebreaker, phraseField.getSlop());
         }
         
       }
