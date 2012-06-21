@@ -109,7 +109,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       assertTrue(maxRAMBytes < flushControl.peakActiveBytes);
     }
     if (ensureNotStalled) {
-      assertFalse(docsWriter.flushControl.stallControl.wasStalled);
+      assertFalse(docsWriter.flushControl.stallControl.wasStalled());
     }
     writer.close();
     assertEquals(0, flushControl.activeBytes());
@@ -222,7 +222,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     assertEquals(numDocumentsToIndex, r.numDocs());
     assertEquals(numDocumentsToIndex, r.maxDoc());
     if (!flushPolicy.flushOnRAM()) {
-      assertFalse("never stall if we don't flush on RAM", docsWriter.flushControl.stallControl.wasStalled);
+      assertFalse("never stall if we don't flush on RAM", docsWriter.flushControl.stallControl.wasStalled());
       assertFalse("never block if we don't flush on RAM", docsWriter.flushControl.stallControl.hasBlocked());
     }
     r.close();
@@ -275,7 +275,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
             docsWriter.flushControl.stallControl.hasBlocked());
       }
       if (docsWriter.flushControl.peakNetBytes > (2.d * iwc.getRAMBufferSizeMB() * 1024.d * 1024.d)) {
-        assertTrue(docsWriter.flushControl.stallControl.wasStalled);
+        assertTrue(docsWriter.flushControl.stallControl.wasStalled());
       }
       assertActiveBytesAfter(flushControl);
       writer.close(true);

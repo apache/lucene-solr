@@ -16,7 +16,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -37,107 +38,81 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * continue indexing.
  */
 final class DocumentsWriterStallControl {
-  @SuppressWarnings("serial")
-  private static final class Sync extends AbstractQueuedSynchronizer {
-
-    Sync() {
-      setState(0);
-    }
-
-    boolean isHealthy() {
-      return getState() == 0;
-    }
-
-    boolean trySetStalled() {
-      int state = getState();
-      return compareAndSetState(state, state + 1);
-    }
-
-    boolean tryReset() {
-      final int oldState = getState();
-      if (oldState == 0) {
-        return true;
-      }
-      if (compareAndSetState(oldState, 0)) {
-        return releaseShared(0);
-      }
-      return false;
-    }
-
-    @Override
-    public int tryAcquireShared(int acquires) {
-      return getState() == 0 ? 1 : -1;
-    }
-
-   
-
-    @Override
-    public boolean tryReleaseShared(int newState) {
-      return (getState() == 0);
-    }
-  }
-
-  private final Sync sync = new Sync();
-  volatile boolean wasStalled = false; // only with asserts
-
-  boolean anyStalledThreads() {
-    return !sync.isHealthy();
-  }
-
+  
+  private volatile boolean stalled;
+  private int numWaiting; // only with assert
+  private boolean wasStalled; // only with assert
+  private final Map<Thread, Boolean> waiting = new IdentityHashMap<Thread, Boolean>(); // only with assert
+  
   /**
    * Update the stalled flag status. This method will set the stalled flag to
    * <code>true</code> iff the number of flushing
    * {@link DocumentsWriterPerThread} is greater than the number of active
    * {@link DocumentsWriterPerThread}. Otherwise it will reset the
-   * {@link DocumentsWriterStallControl} to healthy and release all threads waiting on
-   * {@link #waitIfStalled()}
+   * {@link DocumentsWriterStallControl} to healthy and release all threads
+   * waiting on {@link #waitIfStalled()}
    */
-  void updateStalled(MemoryController controller) {
-    do {
-      final long netBytes = controller.netBytes();
-      final long flushBytes = controller.flushBytes();
-      final long limit = controller.stallLimitBytes();
-      assert netBytes >= flushBytes;
-      assert limit > 0;
-      /*
-       * we block indexing threads if net byte grows due to slow flushes
-       * yet, for small ram buffers and large documents we can easily
-       * reach the limit without any ongoing flushes. we need to ensure
-       * that we don't stall/block if an ongoing or pending flush can 
-       * not free up enough memory to release the stall lock.
-       */
-      while (netBytes > limit && (netBytes - flushBytes) < limit) {
-        if (sync.trySetStalled()) {
-          assert wasStalled = true;
-          return;
-        }
-      }
-    } while (!sync.tryReset());
+  synchronized void updateStalled(boolean stalled) {
+    this.stalled = stalled;
+    if (stalled) {
+      wasStalled = true;
+    }
+    notifyAll();
   }
-
+  
+  /**
+   * Blocks if documents writing is currently in a stalled state. 
+   * 
+   */
   void waitIfStalled() {
-    try {
-      sync.acquireSharedInterruptibly(0);
-    } catch (InterruptedException e) {
-      throw new ThreadInterruptedException(e);
+    if (stalled) {
+      synchronized (this) {
+        boolean hasWaited = false;
+        while (stalled) {
+          try {
+            assert hasWaited || incWaiters();
+            assert (hasWaited = true);
+            wait();
+          } catch (InterruptedException e) {
+            throw new ThreadInterruptedException(e);
+          }
+        }
+        assert !hasWaited || decrWaiters();
+      }
     }
   }
   
-  boolean hasBlocked() { // for tests
-    return sync.hasQueuedThreads();
+  boolean anyStalledThreads() {
+    return stalled;
   }
   
-  static interface MemoryController {
-    long netBytes();
-    long flushBytes();
-    long stallLimitBytes();
+  
+  private boolean incWaiters() {
+    numWaiting++;
+    assert waiting.put(Thread.currentThread(), Boolean.TRUE) == null;
+    
+    return numWaiting > 0;
+  }
+  
+  private boolean decrWaiters() {
+    numWaiting--;
+    assert waiting.remove(Thread.currentThread()) != null;
+    return numWaiting >= 0;
+  }
+  
+  synchronized boolean hasBlocked() { // for tests
+    return numWaiting > 0;
+  }
+  
+  boolean isHealthy() { // for tests
+    return !stalled; // volatile read!
+  }
+  
+  synchronized boolean isThreadQueued(Thread t) { // for tests
+    return waiting.containsKey(t);
   }
 
-  public boolean isHealthy() {
-    return sync.isHealthy();
-  }
-  
-  public boolean isThreadQueued(Thread t) {
-    return sync.isQueued(t);
+  synchronized boolean wasStalled() { // for tests
+    return wasStalled;
   }
 }
