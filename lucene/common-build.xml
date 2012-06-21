@@ -95,6 +95,7 @@
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
   <property name="tests.heapsize" value="512M"/>
+	<property name="tests.tempDir" value="${build.dir}/test"/>
 
   <!-- Override these in your local properties to your desire. -->
   <!-- Show simple class names (no package) in test suites. -->
@@ -705,7 +706,7 @@
     <attribute name="junit.output.dir" default="${junit.output.dir}"/>
     <attribute name="junit.classpath" default="junit.classpath"/>
     <attribute name="testsDir" default="${build.dir}/classes/test"/>
-    <attribute name="tempDir" default="${build.dir}/test"/>
+    <attribute name="tempDir" default="${tests.tempDir}"/>
     <attribute name="threadNum" default="1"/>
     <attribute name="tests.nightly" default="${tests.nightly}"/>
     <attribute name="tests.weekly" default="${tests.weekly}"/>
