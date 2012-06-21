@@ -343,8 +343,10 @@ final class DocumentsWriterFlushControl  {
 
   synchronized void setClosed() {
     // set by DW to signal that we should not release new DWPT after close
-    this.closed = true;
-    perThreadPool.deactivateUnreleasedStates();
+    if (!closed) {
+      this.closed = true;
+      perThreadPool.deactivateUnreleasedStates();
+    }
   }
 
   /**

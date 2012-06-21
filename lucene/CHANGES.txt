@@ -1062,6 +1062,9 @@ Bug fixes
 * LUCENE-4114: Fix int overflow bugs in BYTES_FIXED_STRAIGHT and
   BYTES_FIXED_DEREF doc values implementations (Walt Elder via Mike McCandless).
 
+* LUCENE-4147: Fixed thread safety issues when rollback() and commit()
+  are called simultaneously.  (Simon Willnauer, Mike McCandless)
+
 Documentation
 
 * LUCENE-3958: Javadocs corrections for IndexWriter.

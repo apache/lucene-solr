@@ -841,15 +841,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public void close(boolean waitForMerges) throws CorruptIndexException, IOException {
 
-    // Ensure that only one thread actually gets to do the closing:
-    if (shouldClose()) {
-      // If any methods have hit OutOfMemoryError, then abort
-      // on close, in case the internal state of IndexWriter
-      // or DocumentsWriter is corrupt
-      if (hitOOM)
-        rollbackInternal();
-      else
-        closeInternal(waitForMerges);
+    // Ensure that only one thread actually gets to do the
+    // closing, and make sure no commit is also in progress:
+    synchronized(commitLock) {
+      if (shouldClose()) {
+        // If any methods have hit OutOfMemoryError, then abort
+        // on close, in case the internal state of IndexWriter
+        // or DocumentsWriter is corrupt
+        if (hitOOM) {
+          rollbackInternal();
+        } else {
+          closeInternal(waitForMerges, !hitOOM);
+        }
+      }
     }
   }
 
@@ -868,12 +872,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // successfully) or another (fails to close)
           doWait();
         }
-      } else
+      } else {
         return false;
+      }
     }
   }
 
-  private void closeInternal(boolean waitForMerges) throws CorruptIndexException, IOException {
+  private void closeInternal(boolean waitForMerges, boolean doFlush) throws CorruptIndexException, IOException {
 
     try {
 
@@ -889,8 +894,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Only allow a new merge to be triggered if we are
       // going to wait for merges:
-      if (!hitOOM) {
+      if (doFlush) {
         flush(waitForMerges, true);
+      } else {
+        docWriter.abort(); // already closed
       }
 
       if (waitForMerges)
@@ -910,7 +917,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         infoStream.message("IW", "now call final commit()");
       }
 
-      if (!hitOOM) {
+      if (doFlush) {
         commitInternal(null);
       }
 
@@ -1774,9 +1781,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   public void rollback() throws IOException {
     ensureOpen();
 
-    // Ensure that only one thread actually gets to do the closing:
-    if (shouldClose())
-      rollbackInternal();
+    // Ensure that only one thread actually gets to do the
+    // closing, and make sure no commit is also in progress:
+    synchronized(commitLock) {
+      if (shouldClose()) {
+        rollbackInternal();
+      }
+    }
   }
 
   private void rollbackInternal() throws IOException {
@@ -1786,6 +1797,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "rollback");
     }
+    
 
     try {
       synchronized(this) {
@@ -1804,7 +1816,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       mergeScheduler.close();
 
       bufferedDeletesStream.clear();
-
+      docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
+      docWriter.abort();
       synchronized(this) {
 
         if (pendingCommit != null) {
@@ -1826,8 +1839,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (infoStream.isEnabled("IW") ) {
           infoStream.message("IW", "rollback: infos=" + segString(segmentInfos));
         }
-
-        docWriter.abort();
+        
 
         assert testPoint("rollback before checkpoint");
 
@@ -1854,7 +1866,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
-    closeInternal(false);
+    closeInternal(false, false);
   }
 
   /**
@@ -2482,99 +2494,102 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   public final void prepareCommit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
     ensureOpen(false);
 
-    if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "prepareCommit: flush");
-      infoStream.message("IW", "  index before flush " + segString());
-    }
+    synchronized(commitLock) {
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "prepareCommit: flush");
+        infoStream.message("IW", "  index before flush " + segString());
+      }
 
-    if (hitOOM) {
-      throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot commit");
-    }
+      if (hitOOM) {
+        throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot commit");
+      }
 
-    if (pendingCommit != null) {
-      throw new IllegalStateException("prepareCommit was already called with no corresponding call to commit");
-    }
+      if (pendingCommit != null) {
+        throw new IllegalStateException("prepareCommit was already called with no corresponding call to commit");
+      }
 
-    doBeforeFlush();
-    assert testPoint("startDoFlush");
-    SegmentInfos toCommit = null;
-    boolean anySegmentsFlushed = false;
+      doBeforeFlush();
+      assert testPoint("startDoFlush");
+      SegmentInfos toCommit = null;
+      boolean anySegmentsFlushed = false;
 
-    // This is copied from doFlush, except it's modified to
-    // clone & incRef the flushed SegmentInfos inside the
-    // sync block:
+      // This is copied from doFlush, except it's modified to
+      // clone & incRef the flushed SegmentInfos inside the
+      // sync block:
 
-    try {
+      try {
 
-      synchronized (fullFlushLock) {
-        boolean flushSuccess = false;
-        boolean success = false;
-        try {
-          anySegmentsFlushed = docWriter.flushAllThreads();
-          if (!anySegmentsFlushed) {
-            // prevent double increment since docWriter#doFlush increments the flushcount
-            // if we flushed anything.
-            flushCount.incrementAndGet();
-          }
-          flushSuccess = true;
-
-          synchronized(this) {
-            maybeApplyDeletes(true);
-
-            readerPool.commit(segmentInfos);
-
-            // Must clone the segmentInfos while we still
-            // hold fullFlushLock and while sync'd so that
-            // no partial changes (eg a delete w/o
-            // corresponding add from an updateDocument) can
-            // sneak into the commit point:
-            toCommit = segmentInfos.clone();
-
-            pendingCommitChangeCount = changeCount;
-
-            // This protects the segmentInfos we are now going
-            // to commit.  This is important in case, eg, while
-            // we are trying to sync all referenced files, a
-            // merge completes which would otherwise have
-            // removed the files we are now syncing.    
-            filesToCommit = toCommit.files(directory, false);
-            deleter.incRef(filesToCommit);
-          }
-          success = true;
-        } finally {
-          if (!success) {
-            if (infoStream.isEnabled("IW")) {
-              infoStream.message("IW", "hit exception during prepareCommit");
+        synchronized (fullFlushLock) {
+          boolean flushSuccess = false;
+          boolean success = false;
+          try {
+            anySegmentsFlushed = docWriter.flushAllThreads();
+            if (!anySegmentsFlushed) {
+              // prevent double increment since docWriter#doFlush increments the flushcount
+              // if we flushed anything.
+              flushCount.incrementAndGet();
             }
-          }
-          // Done: finish the full flush!
-          docWriter.finishFullFlush(flushSuccess);
-          doAfterFlush();
-        }
-      }
-    } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "prepareCommit");
-    }
- 
-    boolean success = false;
-    try {
-      if (anySegmentsFlushed) {
-        maybeMerge();
-      }
-      success = true;
-    } finally {
-      if (!success) {
-        synchronized (this) {
-          deleter.decRef(filesToCommit);
-          filesToCommit = null;
-        }
-      }
-    }
+            flushSuccess = true;
 
-    startCommit(toCommit, commitUserData);
+            synchronized(this) {
+              maybeApplyDeletes(true);
+
+              readerPool.commit(segmentInfos);
+
+              // Must clone the segmentInfos while we still
+              // hold fullFlushLock and while sync'd so that
+              // no partial changes (eg a delete w/o
+              // corresponding add from an updateDocument) can
+              // sneak into the commit point:
+              toCommit = segmentInfos.clone();
+
+              pendingCommitChangeCount = changeCount;
+
+              // This protects the segmentInfos we are now going
+              // to commit.  This is important in case, eg, while
+              // we are trying to sync all referenced files, a
+              // merge completes which would otherwise have
+              // removed the files we are now syncing.    
+              filesToCommit = toCommit.files(directory, false);
+              deleter.incRef(filesToCommit);
+            }
+            success = true;
+          } finally {
+            if (!success) {
+              if (infoStream.isEnabled("IW")) {
+                infoStream.message("IW", "hit exception during prepareCommit");
+              }
+            }
+            // Done: finish the full flush!
+            docWriter.finishFullFlush(flushSuccess);
+            doAfterFlush();
+          }
+        }
+      } catch (OutOfMemoryError oom) {
+        handleOOM(oom, "prepareCommit");
+      }
+ 
+      boolean success = false;
+      try {
+        if (anySegmentsFlushed) {
+          maybeMerge();
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          synchronized (this) {
+            deleter.decRef(filesToCommit);
+            filesToCommit = null;
+          }
+        }
+      }
+
+      startCommit(toCommit, commitUserData);
+    }
   }
 
-  // Used only by commit, below; lock order is commitLock -> IW
+  // Used only by commit and prepareCommit, below; lock
+  // order is commitLock -> IW
   private final Object commitLock = new Object();
 
   /**
@@ -2634,6 +2649,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     synchronized(commitLock) {
+      ensureOpen(false);
+
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "commit: enter lock");
       }
