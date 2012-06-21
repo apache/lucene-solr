@@ -17,13 +17,31 @@
 
 package org.apache.lucene.spatial.vector;
 
-import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.spatial.SpatialMatchConcern;
+import org.apache.lucene.spatial.StrategyTestCase;
+import org.apache.lucene.spatial.util.NumericFieldInfo;
+import org.junit.Before;
+import org.junit.Test;
 
-public class TestTwoDoublesStrategy extends BaseTwoDoublesStrategyTestCase {
+import java.io.IOException;
 
+public class TestTwoDoublesStrategy extends StrategyTestCase<TwoDoublesFieldInfo> {
+
+  @Before
   @Override
-  protected SpatialContext getSpatialContext() {
-    return SimpleSpatialContext.GEO_KM;
+  public void setUp() throws Exception {
+    super.setUp();
+    this.ctx = SimpleSpatialContext.GEO_KM;
+    this.strategy = new TwoDoublesStrategy(ctx,
+        new NumericFieldInfo(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER);
+    this.fieldInfo = new TwoDoublesFieldInfo(getClass().getSimpleName());
+  }
+
+  @Test
+  public void testCitiesWithinBBox() throws IOException {
+    getAddAndVerifyIndexedDocuments(DATA_WORLD_CITIES_POINTS);
+    executeQueries(SpatialMatchConcern.FILTER, QTEST_Cities_IsWithin_BBox);
   }
 }
