@@ -22,13 +22,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 /**

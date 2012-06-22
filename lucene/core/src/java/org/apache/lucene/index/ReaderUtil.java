@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,12 +19,9 @@ package org.apache.lucene.util;
 
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
 
 /**
- * Common util methods for dealing with {@link IndexReader}s.
+ * Common util methods for dealing with {@link IndexReader}s and {@link IndexReaderContext}s.
  *
  * @lucene.internal
  */

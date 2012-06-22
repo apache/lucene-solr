@@ -19,13 +19,13 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.DocValues; // javadoc
 import org.apache.lucene.index.DocValues.Type; // javadoc
 import org.apache.lucene.store.DataOutput; // javadoc
-import org.apache.lucene.util.CodecUtil; // javadoc
 
 /**
  * Lucene 4.0 Field Infos format.

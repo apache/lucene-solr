@@ -27,10 +27,10 @@ import java.util.TreeSet;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util.TermContext;
 
 /**
  * 

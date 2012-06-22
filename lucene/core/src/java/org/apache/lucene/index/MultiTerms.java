@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderSlice;
 
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 

@@ -283,6 +283,11 @@ Changes in backwards compatibility policy
   removed, as IndexReaderContext.leaves() is now the preferred way
   to access sub-readers.  (Uwe Schindler)
 
+* LUCENE-4155: oal.util.ReaderUtil, TwoPhaseCommit, TwoPhaseCommitTool
+  classes were moved to oal.index package. oal.util.CodecUtil class was moved
+  to oal.codecs package. oal.util.DummyConcurrentLock was removed
+  (no longer used in Lucene 4.0).  (Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you

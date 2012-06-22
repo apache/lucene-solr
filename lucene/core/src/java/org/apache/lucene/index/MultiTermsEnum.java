@@ -20,9 +20,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BitsSlice;
-import org.apache.lucene.util.MultiBits;
-import org.apache.lucene.util.ReaderSlice;
 
 import java.io.IOException;
 import java.util.Arrays;

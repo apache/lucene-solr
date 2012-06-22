@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,36 +17,25 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-
 /**
- * A dummy lock as a replacement for {@link ReentrantLock} to disable locking
+ * Subreader slice from a parent composite reader.
+ *
  * @lucene.internal
  */
-public final class DummyConcurrentLock implements Lock {
+public final class ReaderSlice {
+  public static final ReaderSlice[] EMPTY_ARRAY = new ReaderSlice[0];
+  public final int start;
+  public final int length;
+  public final int readerIndex;
 
-  /** a default instance, can be always used, as this {@link Lock} is stateless. */
-  public static final DummyConcurrentLock INSTANCE = new DummyConcurrentLock();
-
-  public void lock() {}
-  
-  public void lockInterruptibly() {}
-  
-  public boolean tryLock() {
-    return true;
-  }
-  
-  public boolean tryLock(long time, TimeUnit unit) {
-    return true;
-  }
-  
-  public void unlock() {}
-  
-  public Condition newCondition() {
-    throw new UnsupportedOperationException();
+  public ReaderSlice(int start, int length, int readerIndex) {
+    this.start = start;
+    this.length = length;
+    this.readerIndex = readerIndex;
   }
 
+  @Override
+  public String toString() {
+    return "slice start=" + start + " length=" + length + " readerIndex=" + readerIndex;
+  }
 }

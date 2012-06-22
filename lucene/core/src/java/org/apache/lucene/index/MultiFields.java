@@ -27,8 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MultiBits;
-import org.apache.lucene.util.ReaderSlice;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.

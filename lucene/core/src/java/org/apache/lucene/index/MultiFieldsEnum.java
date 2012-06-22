@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.ReaderSlice;
 
 import java.io.IOException;
 import java.util.List;

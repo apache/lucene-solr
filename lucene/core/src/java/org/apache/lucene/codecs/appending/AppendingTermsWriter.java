@@ -20,10 +20,10 @@ package org.apache.lucene.codecs.appending;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.CodecUtil;
 
 /**
  * Append-only version of {@link BlockTreeTermsWriter}

@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -32,7 +33,6 @@ import org.apache.lucene.index.FieldInfos; // javadocs
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput; // javadocs
-import org.apache.lucene.util.CodecUtil; // javadocs
 import org.apache.lucene.util.fst.FST; // javadocs
 
 /** 

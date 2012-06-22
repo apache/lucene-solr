@@ -20,12 +20,12 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.MutableBits;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like

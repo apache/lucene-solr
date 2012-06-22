@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
@@ -41,7 +42,6 @@ import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.TrackingDirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;

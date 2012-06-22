@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,14 +20,7 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Maintains a {@link IndexReader} {@link TermState} view over

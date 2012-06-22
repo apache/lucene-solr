@@ -23,11 +23,11 @@ import java.util.Map;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 

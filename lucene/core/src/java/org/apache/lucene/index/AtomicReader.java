@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;         // for javadocs
 
 /** {@code AtomicReader} is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,

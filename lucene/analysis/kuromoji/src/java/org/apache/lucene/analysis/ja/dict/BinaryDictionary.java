@@ -26,9 +26,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IOUtils;
 

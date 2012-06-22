@@ -17,13 +17,13 @@ package org.apache.lucene.codecs.lucene40;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.SegmentInfos; // javadocs
 import org.apache.lucene.store.DataOutput; // javadocs
-import org.apache.lucene.util.CodecUtil; // javadocs
 
 /**
  * Lucene 4.0 Segment info format.

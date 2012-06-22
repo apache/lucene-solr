@@ -1,4 +1,6 @@
-package org.apache.lucene.util;
+package org.apache.lucene.index;
+
+import org.apache.lucene.util.Bits;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,8 +27,7 @@ package org.apache.lucene.util;
  *
  * @lucene.experimental
  */
-
-public final class MultiBits implements Bits {
+final class MultiBits implements Bits {
   private final Bits[] subs;
 
   // length is 1+subs.length (the last entry has the maxDoc):
@@ -79,7 +80,7 @@ public final class MultiBits implements Bits {
 
   /**
    * Represents a sub-Bits from 
-   * {@link MultiBits#getMatchingSub(org.apache.lucene.util.ReaderSlice) getMatchingSub()}.
+   * {@link MultiBits#getMatchingSub(org.apache.lucene.index.ReaderSlice) getMatchingSub()}.
    */
   public final static class SubResult {
     public boolean matches;

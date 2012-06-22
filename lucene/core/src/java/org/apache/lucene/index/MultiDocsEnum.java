@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.ReaderSlice;
 
 import java.io.IOException;
 import java.util.Arrays;
