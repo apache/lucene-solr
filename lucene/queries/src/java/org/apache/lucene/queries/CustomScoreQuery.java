@@ -107,8 +107,8 @@ public class CustomScoreQuery extends Query {
   @Override
   public void extractTerms(Set<Term> terms) {
     subQuery.extractTerms(terms);
-    for(int i = 0; i < scoringQueries.length; i++) {
-      scoringQueries[i].extractTerms(terms);
+    for (Query scoringQuery : scoringQueries) {
+      scoringQuery.extractTerms(terms);
     }
   }
 
@@ -129,8 +129,8 @@ public class CustomScoreQuery extends Query {
   public String toString(String field) {
     StringBuilder sb = new StringBuilder(name()).append("(");
     sb.append(subQuery.toString(field));
-    for(int i = 0; i < scoringQueries.length; i++) {
-      sb.append(", ").append(scoringQueries[i].toString(field));
+    for (Query scoringQuery : scoringQueries) {
+      sb.append(", ").append(scoringQuery.toString(field));
     }
     sb.append(")");
     sb.append(strict?" STRICT" : "");
@@ -199,11 +199,11 @@ public class CustomScoreQuery extends Query {
     @Override
     public float getValueForNormalization() throws IOException {
       float sum = subQueryWeight.getValueForNormalization();
-      for(int i = 0; i < valSrcWeights.length; i++) {
+      for (Weight valSrcWeight : valSrcWeights) {
         if (qStrict) {
-          valSrcWeights[i].getValueForNormalization(); // do not include ValueSource part in the query normalization
+          valSrcWeight.getValueForNormalization(); // do not include ValueSource part in the query normalization
         } else {
-          sum += valSrcWeights[i].getValueForNormalization();
+          sum += valSrcWeight.getValueForNormalization();
         }
       }
       sum *= getBoost() * getBoost(); // boost each sub-weight
@@ -215,11 +215,11 @@ public class CustomScoreQuery extends Query {
     public void normalize(float norm, float topLevelBoost) {
       topLevelBoost *= getBoost(); // incorporate boost
       subQueryWeight.normalize(norm, topLevelBoost);
-      for(int i = 0; i < valSrcWeights.length; i++) {
+      for (Weight valSrcWeight : valSrcWeights) {
         if (qStrict) {
-          valSrcWeights[i].normalize(1, 1); // do not normalize the ValueSource part
+          valSrcWeight.normalize(1, 1); // do not normalize the ValueSource part
         } else {
-          valSrcWeights[i].normalize(norm, topLevelBoost);
+          valSrcWeight.normalize(norm, topLevelBoost);
         }
       }
     }
@@ -283,10 +283,10 @@ public class CustomScoreQuery extends Query {
    */
   private class CustomScorer extends Scorer {
     private final float qWeight;
-    private Scorer subQueryScorer;
-    private Scorer[] valSrcScorers;
+    private final Scorer subQueryScorer;
+    private final Scorer[] valSrcScorers;
     private final CustomScoreProvider provider;
-    private float vScores[]; // reused in score() to avoid allocating this array for each doc 
+    private final float[] vScores; // reused in score() to avoid allocating this array for each doc
 
     // constructor
     private CustomScorer(CustomScoreProvider provider, CustomWeight w, float qWeight,
@@ -303,8 +303,8 @@ public class CustomScoreQuery extends Query {
     public int nextDoc() throws IOException {
       int doc = subQueryScorer.nextDoc();
       if (doc != NO_MORE_DOCS) {
-        for (int i = 0; i < valSrcScorers.length; i++) {
-          valSrcScorers[i].advance(doc);
+        for (Scorer valSrcScorer : valSrcScorers) {
+          valSrcScorer.advance(doc);
         }
       }
       return doc;
@@ -328,8 +328,8 @@ public class CustomScoreQuery extends Query {
     public int advance(int target) throws IOException {
       int doc = subQueryScorer.advance(target);
       if (doc != NO_MORE_DOCS) {
-        for (int i = 0; i < valSrcScorers.length; i++) {
-          valSrcScorers[i].advance(doc);
+        for (Scorer valSrcScorer : valSrcScorers) {
+          valSrcScorer.advance(doc);
         }
       }
       return doc;

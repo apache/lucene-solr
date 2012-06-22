@@ -53,7 +53,7 @@ import java.util.Map;
  */
 
 public class ReverseOrdFieldSource extends ValueSource {
-  public String field;
+  public final String field;
 
   public ReverseOrdFieldSource(String field) {
     this.field = field;
@@ -95,6 +95,6 @@ public class ReverseOrdFieldSource extends ValueSource {
   @Override
   public int hashCode() {
     return hcode + field.hashCode();
-  };
+  }
 
 }

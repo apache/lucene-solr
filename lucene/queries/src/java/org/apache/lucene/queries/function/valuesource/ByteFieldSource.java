@@ -33,7 +33,7 @@ import org.apache.lucene.search.FieldCache;
 
 public class ByteFieldSource extends FieldCacheSource {
 
-  private FieldCache.ByteParser parser;
+  private final FieldCache.ByteParser parser;
 
   public ByteFieldSource(String field) {
     this(field, null);

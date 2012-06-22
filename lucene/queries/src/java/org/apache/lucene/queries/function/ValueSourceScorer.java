@@ -25,7 +25,7 @@ import org.apache.lucene.util.Bits;
 import java.io.IOException;
 
 public class ValueSourceScorer extends Scorer {
-  protected IndexReader reader;
+  protected final IndexReader reader;
   private int doc = -1;
   protected final int maxDoc;
   protected final FunctionValues values;

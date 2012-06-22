@@ -237,7 +237,6 @@ class QueryDocValues extends FloatDocValues {
           // a match!
           mval.value = scorer.score();
           mval.exists = true;
-          return;
         } catch (IOException e) {
           throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
         }

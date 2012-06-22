@@ -61,7 +61,7 @@ public abstract class FunctionValues {
     }
     target.copyChars(s);
     return true;
-  };
+  }
 
   /** Native Java Object representation of the value */
   public Object objectVal(int doc) {

@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public class NormValueSource extends ValueSource {
-  protected String field;
+  protected final String field;
   public NormValueSource(String field) {
     this.field = field;
   }

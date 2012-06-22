@@ -65,7 +65,7 @@ public class TermsFilter extends Filter {
 
     BytesRef br = new BytesRef();
     String lastField = null;
-    Terms termsC = null;
+    Terms termsC;
     TermsEnum termsEnum = null;
     DocsEnum docs = null;
     for (Term term : terms) {
@@ -80,6 +80,7 @@ public class TermsFilter extends Filter {
 
       if (terms != null) { // TODO this check doesn't make sense, decide which variable its supposed to be for
         br.copyBytes(term.bytes());
+        assert termsEnum != null;
         if (termsEnum.seekCeil(br) == TermsEnum.SeekStatus.FOUND) {
           docs = termsEnum.docs(acceptDocs, docs, false);
           while (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {

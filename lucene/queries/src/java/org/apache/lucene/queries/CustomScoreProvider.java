@@ -78,8 +78,8 @@ public class CustomScoreProvider {
       return customScore(doc, subQueryScore, 1);
     }
     float score = subQueryScore;
-    for(int i = 0; i < valSrcScores.length; i++) {
-      score *= valSrcScores[i];
+    for (float valSrcScore : valSrcScores) {
+      score *= valSrcScore;
     }
     return score;
   }
@@ -127,13 +127,13 @@ public class CustomScoreProvider {
       return subQueryExpl;
     }
     float valSrcScore = 1;
-    for (int i = 0; i < valSrcExpls.length; i++) {
-      valSrcScore *= valSrcExpls[i].getValue();
+    for (Explanation valSrcExpl : valSrcExpls) {
+      valSrcScore *= valSrcExpl.getValue();
     }
     Explanation exp = new Explanation( valSrcScore * subQueryExpl.getValue(), "custom score: product of:");
     exp.addDetail(subQueryExpl);
-    for (int i = 0; i < valSrcExpls.length; i++) {
-      exp.addDetail(valSrcExpls[i]);
+    for (Explanation valSrcExpl : valSrcExpls) {
+      exp.addDetail(valSrcExpl);
     }
     return exp;
   }
