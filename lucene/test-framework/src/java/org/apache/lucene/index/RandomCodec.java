@@ -103,6 +103,9 @@ public class RandomCodec extends Lucene40Codec {
         new MemoryPostingsFormat(false, random.nextFloat()));
 
     Collections.shuffle(formats, random);
+
+    // Avoid too many open files:
+    formats.subList(4, formats.size()).clear();
   }
 
   public RandomCodec(Random random) {
