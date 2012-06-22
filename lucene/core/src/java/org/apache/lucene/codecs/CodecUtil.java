@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.codecs;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Utility class for reading and writing versioned headers.

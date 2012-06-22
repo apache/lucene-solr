@@ -28,7 +28,6 @@ import org.apache.lucene.index.SortedBytesMergeUtils.SortedSourceSlice;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PagedBytes;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
 /**

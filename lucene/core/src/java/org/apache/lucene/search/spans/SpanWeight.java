@@ -20,11 +20,11 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.TermContext;
 
 import java.io.IOException;
 import java.util.HashMap;

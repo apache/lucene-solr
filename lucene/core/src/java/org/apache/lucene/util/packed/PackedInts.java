@@ -19,10 +19,10 @@ package org.apache.lucene.util.packed;
 
 import java.io.Closeable;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.CodecUtil;
 
 import java.io.IOException;
 

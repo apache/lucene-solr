@@ -27,10 +27,10 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.CodecUtil;
 
 import org.apache.lucene.analysis.ja.dict.BinaryDictionary;
 

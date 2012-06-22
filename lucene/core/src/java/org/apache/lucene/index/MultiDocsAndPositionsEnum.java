@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderSlice;
 
 import java.io.IOException;
 

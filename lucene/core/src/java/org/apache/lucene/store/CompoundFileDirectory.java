@@ -18,11 +18,11 @@ package org.apache.lucene.store;
  */
 
 import org.apache.lucene.codecs.Codec; // javadocs
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.DataOutput; // javadocs
-import org.apache.lucene.util.CodecUtil; // javadocs
 import org.apache.lucene.util.IOUtils;
 
 import java.util.Collection;

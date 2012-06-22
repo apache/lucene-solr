@@ -23,13 +23,13 @@ import java.util.Map;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopTermsRewrite;
 import org.apache.lucene.search.ScoringRewrite;
 import org.apache.lucene.search.BooleanClause.Occur; // javadocs only
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.TermContext;
 
 /**
  * Wraps any {@link MultiTermQuery} as a {@link SpanQuery}, 

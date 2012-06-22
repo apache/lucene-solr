@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;
 
 /** Base class for implementing {@link CompositeReader}s based on an array
  * of sub-readers. The implementing class has to add code for

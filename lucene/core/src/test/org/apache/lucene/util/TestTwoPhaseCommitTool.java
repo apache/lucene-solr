@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.TwoPhaseCommitTool.TwoPhaseCommitWrapper;
+import org.apache.lucene.index.TwoPhaseCommit;
+import org.apache.lucene.index.TwoPhaseCommitTool;
+import org.apache.lucene.index.TwoPhaseCommitTool.TwoPhaseCommitWrapper;
 
 public class TestTwoPhaseCommitTool extends LuceneTestCase {
 

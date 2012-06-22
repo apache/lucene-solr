@@ -19,9 +19,9 @@ package org.apache.lucene.search.spans;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.TermContext;
 
 import java.io.IOException;
 import java.util.ArrayList;

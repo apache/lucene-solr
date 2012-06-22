@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Map;
