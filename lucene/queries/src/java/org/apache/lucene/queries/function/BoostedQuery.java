@@ -35,7 +35,7 @@ import java.util.Map;
 // something has to give
 public class BoostedQuery extends Query {
   private Query q;
-  private ValueSource boostVal; // optional, can be null
+  private final ValueSource boostVal; // optional, can be null
 
   public BoostedQuery(Query subQuery, ValueSource boostVal) {
     this.q = subQuery;
@@ -65,7 +65,7 @@ public class BoostedQuery extends Query {
   }
 
   private class BoostedWeight extends Weight {
-    IndexSearcher searcher;
+    final IndexSearcher searcher;
     Weight qWeight;
     Map fcontext;
 

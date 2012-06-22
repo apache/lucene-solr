@@ -40,7 +40,7 @@ import org.apache.lucene.util.mutable.MutableValueLong;
 
 public class LongFieldSource extends FieldCacheSource {
 
-  protected FieldCache.LongParser parser;
+  protected final FieldCache.LongParser parser;
 
   public LongFieldSource(String field) {
     this(field, null);

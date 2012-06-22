@@ -210,9 +210,8 @@ public class VectorValueSource extends MultiValueSource {
 
     VectorValueSource that = (VectorValueSource) o;
 
-    if (!sources.equals(that.sources)) return false;
+    return sources.equals(that.sources);
 
-    return true;
   }
 
   @Override

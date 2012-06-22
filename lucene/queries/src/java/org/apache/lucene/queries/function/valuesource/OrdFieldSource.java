@@ -52,7 +52,7 @@ import java.util.Map;
  */
 
 public class OrdFieldSource extends ValueSource {
-  protected String field;
+  protected final String field;
 
   public OrdFieldSource(String field) {
     this.field = field;
@@ -124,6 +124,6 @@ public class OrdFieldSource extends ValueSource {
   @Override
   public int hashCode() {
     return hcode + field.hashCode();
-  };
+  }
 
 }

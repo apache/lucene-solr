@@ -124,10 +124,10 @@ class ConstDoubleDocValues extends DoubleDocValues {
  * @lucene.internal
  */
 public class DocFreqValueSource extends ValueSource {
-  protected String field;
-  protected String indexedField;
-  protected String val;
-  protected BytesRef indexedBytes;
+  protected final String field;
+  protected final String indexedField;
+  protected final String val;
+  protected final BytesRef indexedBytes;
 
   public DocFreqValueSource(String field, String val, String indexedField, BytesRef indexedBytes) {
     this.field = field;

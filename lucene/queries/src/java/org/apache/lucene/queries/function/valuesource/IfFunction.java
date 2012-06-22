@@ -31,9 +31,9 @@ import java.util.Map;
 
 
 public class IfFunction extends BoolFunction {
-  private ValueSource ifSource;
-  private ValueSource trueSource;
-  private ValueSource falseSource;
+  private final ValueSource ifSource;
+  private final ValueSource trueSource;
+  private final ValueSource falseSource;
 
 
   public IfFunction(ValueSource ifSource, ValueSource trueSource, ValueSource falseSource) {
