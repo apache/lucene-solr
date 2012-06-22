@@ -26,9 +26,9 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.ja.dict.CharacterDefinition;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.util.CodecUtil;
 
 public final class CharacterDefinitionWriter {
 
