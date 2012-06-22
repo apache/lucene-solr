@@ -58,8 +58,8 @@ public class QueryParsing {
   public static final String OP = "q.op";  // the SolrParam used to override the QueryParser "default operator"
   public static final String V = "v";      // value of this parameter
   public static final String F = "f";      // field that a query or command pertains to
-  public static final String TYPE = "type";// type of this query or command
-  public static final String DEFTYPE = "defType"; // default type for any direct subqueries
+  public static final String TYPE = "type";// parser for this query or command
+  public static final String DEFTYPE = "defType"; // default parser for any direct subqueries
   public static final String LOCALPARAM_START = "{!";
   public static final char LOCALPARAM_END = '}';
   public static final String DOCID = "_docid_";

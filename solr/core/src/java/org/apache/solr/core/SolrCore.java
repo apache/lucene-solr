@@ -1753,7 +1753,7 @@ public final class SolrCore implements SolrInfoMBean {
   public QParserPlugin getQueryPlugin(String parserName) {
     QParserPlugin plugin = qParserPlugins.get(parserName);
     if (plugin != null) return plugin;
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown query type '"+parserName+"'");
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown query parser '"+parserName+"'");
   }
   
   private final HashMap<String, ValueSourceParser> valueSourceParsers = new HashMap<String, ValueSourceParser>();
