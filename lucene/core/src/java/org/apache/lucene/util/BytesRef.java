@@ -23,7 +23,13 @@ import java.util.Comparator;
  *  existing byte[].  The {@link #bytes} member should never be null;
  *  use {@link #EMPTY_BYTES} if necessary.
  *
- *  @lucene.experimental */
+ * <p><b>Important note:</b> Unless otherwise noted, Lucene uses this class to
+ * represent terms that are encoded as <b>UTF8</b> bytes in the index. To
+ * convert them to a Java {@link String} (which is UTF16), use {@link #utf8ToString}.
+ * Using code like {@code new String(bytes, offset, length)} to do this
+ * is <b>wrong</b>, as it does not respect the correct character set
+ * and may return wrong results (depending on the platform's defaults)!
+ */
 public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /** An empty byte array for convenience */
   public static final byte[] EMPTY_BYTES = new byte[0]; 
