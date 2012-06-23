@@ -27,9 +27,7 @@ import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.Iterator;
 
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
@@ -37,6 +35,7 @@ import java.security.PrivilegedActionException;
 import java.lang.reflect.Method;
 
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.WeakIdentityMap;
 
 /** File-based {@link Directory} implementation that uses
  *  mmap for reading, and {@link
@@ -261,7 +260,7 @@ public class MMapDirectory extends FSDirectory {
     private ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
   
     private boolean isClone = false;
-    private final Set<MMapIndexInput> clones = Collections.newSetFromMap(new WeakHashMap<MMapIndexInput,Boolean>());
+    private final WeakIdentityMap<MMapIndexInput,Boolean> clones = WeakIdentityMap.newConcurrentHashMap();
 
     MMapIndexInput(String resourceDescription, RandomAccessFile raf, long offset, long length, int chunkSizePower) throws IOException {
       super(resourceDescription);
@@ -431,9 +430,7 @@ public class MMapDirectory extends FSDirectory {
       }
       
       // register the new clone in our clone list to clean it up on closing:
-      synchronized(this.clones) {
-        this.clones.add(clone);
-      }
+      this.clones.put(clone, Boolean.TRUE);
       
       return clone;
     }
@@ -449,34 +446,24 @@ public class MMapDirectory extends FSDirectory {
       try {
         if (isClone || buffers == null) return;
         
-        // for extra safety unset also all clones' buffers:
-        synchronized(this.clones) {
-          for (final MMapIndexInput clone : this.clones) {
-            assert clone.isClone;
-            clone.unsetBuffers();
-          }
-          this.clones.clear();
-        }
+        // make local copy, then un-set early
+        final ByteBuffer[] bufs = buffers;
+        unsetBuffers();
         
-        curBuf = null; curBufIndex = 0; // nuke curr pointer early
-        for (int bufNr = 0; bufNr < buffers.length; bufNr++) {
-          cleanMapping(buffers[bufNr]);
+        // for extra safety unset also all clones' buffers:
+        for (Iterator<MMapIndexInput> it = this.clones.keyIterator(); it.hasNext();) {
+          final MMapIndexInput clone = it.next();
+          assert clone.isClone;
+          clone.unsetBuffers();
+        }
+        this.clones.clear();
+        
+        for (final ByteBuffer b : bufs) {
+          cleanMapping(b);
         }
       } finally {
         unsetBuffers();
       }
-    }
-
-    // make sure we have identity on equals/hashCode for WeakHashMap
-    @Override
-    public int hashCode() {
-      return System.identityHashCode(this);
-    }
-
-    // make sure we have identity on equals/hashCode for WeakHashMap
-    @Override
-    public boolean equals(Object obj) {
-      return obj == this;
     }
   }
 
