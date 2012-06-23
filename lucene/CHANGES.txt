@@ -994,6 +994,11 @@ Optimizations
 * LUCENE-4156: DirectoryTaxonomyWriter.getSize is no longer synchronized.
   (Shai Erera, Sivan Yogev)
 
+* LUCENE-4163: Improve concurrency of MMapIndexInput.clone() by using
+  the new WeakIdentityMap on top of a ConcurrentHashMap to manage
+  the cloned instances. WeakIdentityMap was extended to support
+  iterating over its keys.  (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
