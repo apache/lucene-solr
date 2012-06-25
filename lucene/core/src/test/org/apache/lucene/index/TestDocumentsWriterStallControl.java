@@ -63,7 +63,6 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     
     Thread[] stallThreads = new Thread[atLeast(3)];
     for (int i = 0; i < stallThreads.length; i++) {
-      final int threadId = i;
       final int stallProbability = 1 +random().nextInt(10);
       stallThreads[i] = new Thread() {
         public void run() {

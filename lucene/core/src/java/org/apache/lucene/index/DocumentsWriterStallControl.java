@@ -67,17 +67,16 @@ final class DocumentsWriterStallControl {
   void waitIfStalled() {
     if (stalled) {
       synchronized (this) {
-        boolean hasWaited = false;
-        while (stalled) {
+        if (stalled) { // react on the first wakeup call!
+          // don't loop here, higher level logic will re-stall!
           try {
-            assert hasWaited || incWaiters();
-            assert (hasWaited = true);
+            assert incWaiters();
             wait();
+            assert  decrWaiters();
           } catch (InterruptedException e) {
             throw new ThreadInterruptedException(e);
           }
         }
-        assert !hasWaited || decrWaiters();
       }
     }
   }
