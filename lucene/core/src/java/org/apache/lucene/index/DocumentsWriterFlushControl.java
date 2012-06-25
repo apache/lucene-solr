@@ -633,7 +633,13 @@ final class DocumentsWriterFlushControl  {
    * checked out DWPT are available
    */
   void waitIfStalled() {
-      stallControl.waitIfStalled();
+    if (documentsWriter.infoStream.isEnabled("DWFC")) {
+      documentsWriter.infoStream.message("DWFC",
+          "waitIfStalled: numFlushesPending: " + flushQueue.size()
+              + " netBytes: " + netBytes() + " flushBytes: " + flushBytes()
+              + " fullFlush: " + fullFlush);
+    }
+    stallControl.waitIfStalled();
   }
 
   /**
