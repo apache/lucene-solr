@@ -1089,7 +1089,7 @@
          <str name="confFiles">schema.xml,stopwords.txt</str>
        </lst>
        <lst name="slave">
-         <str name="masterUrl">http://localhost:8983/solr/replication</str>
+         <str name="masterUrl">http://localhost:8983/solr</str>
          <str name="pollInterval">00:00:60</str>
        </lst>
      </requestHandler>
