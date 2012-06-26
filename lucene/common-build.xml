@@ -1019,13 +1019,11 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="install-junit4-taskdef">
     <!-- JUnit4 taskdef. -->
+    <ivy:resolve   file="${common.dir}/test-framework/ivy.xml" type="jar" log="quiet" />
+    <ivy:cachepath file="${common.dir}/test-framework/ivy.xml" conf="junit4-stdalone" type="jar" transitive="false" pathid="path.junit4" />
+
     <taskdef resource="com/carrotsearch/junit4/antlib.xml">
-      <classpath>
-         <fileset dir="${common.dir}/test-framework/lib">
-            <include name="junit4-ant-*.jar" />
-            <include name="junit-*.jar" />
-         </fileset>
-      </classpath>
+      <classpath refid="path.junit4" />
     </taskdef>
   </target>
 

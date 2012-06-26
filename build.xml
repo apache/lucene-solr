@@ -65,7 +65,7 @@
     </subant></sequential>
   </target>
 
-  <target name="resolve" description="Resolves all dependencies">
+  <target name="resolve" depends="clean-jars" description="Resolves all dependencies">
     <sequential><subant target="resolve" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
@@ -116,7 +116,7 @@
     </sequential>
   </target>
 
-  <target name="eclipse" description="Setup Eclipse configuration" depends="resolve">
+  <target name="eclipse" depends="clean-jars, resolve" description="Setup Eclipse configuration">
     <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false"/>
     <copy file="dev-tools/eclipse/dot.classpath" tofile=".classpath" overwrite="true"/>
     <mkdir dir=".settings"/>
@@ -129,7 +129,7 @@
     </echo>
   </target>
 
-  <target name="idea" description="Setup IntelliJ IDEA configuration" depends="resolve">
+  <target name="idea" depends="clean-jars, resolve" description="Setup IntelliJ IDEA configuration">
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
     </copy>
@@ -138,6 +138,7 @@
       File | Project Structure | Project | Project SDK.
     </echo>
   </target>
+
   <target name="clean-idea"
           description="Removes all IntelliJ IDEA configuration files">
     <delete dir=".idea" failonerror="true"/>
@@ -148,7 +149,7 @@
     </delete>
   </target>
 
-  <target name="clean" description="Clean Lucene and Solr">
+  <target name="clean" depends="clean-jars" description="Clean Lucene and Solr">
     <delete dir="dist" />
     <sequential>
       <subant target="clean" inheritall="false" failonerror="true">
