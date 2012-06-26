@@ -17,8 +17,26 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.solr.schema.SchemaAware; // javadocs
+import org.apache.solr.schema.FieldType; // javadocs
 import org.apache.solr.common.params.SolrParams;
 
+
+/**
+ * A factory interface for configuring a {@link Similarity} in the Solr 
+ * schema.xml.  
+ * 
+ * <p>
+ * Subclasses of <code>SimilarityFactory</code> which are {@link SchemaAware} 
+ * must take responsibility for either consulting the similarities configured 
+ * on individual field types, or generating appropriate error/warning messages 
+ * if field type specific similarities exist but are being ignored.  The 
+ * <code>IndexSchema</code> will provide such error checking if a 
+ * non-<code>SchemaAware</code> instance of <code>SimilarityFactory</code> 
+ * is used.
+ * 
+ * @see FieldType#getSimilarity
+ */
 public abstract class SimilarityFactory {
   protected SolrParams params;
 

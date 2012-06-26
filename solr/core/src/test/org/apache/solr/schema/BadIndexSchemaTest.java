@@ -86,4 +86,9 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
            "can not be configured with a default value");
   }
 
+  public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {
+    doTest("bad-schema-sim-global-vs-ft-mismatch.xml", "global similarity does not support it");
+  }
+
+
 }

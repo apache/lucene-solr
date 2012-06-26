@@ -435,6 +435,16 @@ public final class IndexSchema {
     }
     if (simFactory instanceof SchemaAware) {
       ((SchemaAware)simFactory).inform(this);
+    } else {
+      // if the sim facotry isn't schema aware, then we are responsible for
+      // erroring if a field type is trying to specify a sim.
+      for (FieldType ft : fieldTypes.values()) {
+        if (null != ft.getSimilarity()) {
+          String msg = "FieldType '" + ft.getTypeName() + "' is configured with a similarity, but the global similarity does not support it: " + simFactory.getClass();
+          log.error(msg);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+        }
+      }
     }
     similarity = simFactory.getSimilarity();
 

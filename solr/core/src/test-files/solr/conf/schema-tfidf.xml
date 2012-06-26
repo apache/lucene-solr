@@ -27,14 +27,24 @@
       <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
       <similarity class="solr.DefaultSimilarityFactory"/>
     </fieldType>
+
+    <!-- TF/IDF -->
+    <fieldType name="text_overlap" class="solr.TextField">
+      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+      <similarity class="solr.DefaultSimilarityFactory">
+        <bool name="discountOverlaps">false</bool>
+      </similarity>
+    </fieldType>
    
   </types>
 
   <fields>
     <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="text" type="text" indexed="true" stored="false"/>
+    <field name="text_overlap" type="text_overlap" indexed="true" stored="false"/>
   </fields>
 
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
+  <similarity class="solr.SchemaSimilarityFactory"/>
 </schema>

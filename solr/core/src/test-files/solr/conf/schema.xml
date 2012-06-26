@@ -401,33 +401,6 @@
              providerClass="solr.OpenExchangeRatesOrgProvider"
              ratesFileLocation="open-exchange-rates.json" />
 
-  <!--  some per-field similarity examples -->
-  
-  <!--  specify a Similarity classname directly -->
-  <fieldType name="sim1" class="solr.TextField">
-    <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
-    </analyzer>
-    <similarity class="org.apache.lucene.misc.SweetSpotSimilarity"/>
-  </fieldType>
-
-  <!--  specify a Similarity factory -->  
-  <fieldType name="sim2" class="solr.TextField">
-    <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
-    </analyzer>
-    <similarity class="solr.CustomSimilarityFactory">
-      <str name="echo">is there an echo?</str>
-    </similarity>
-  </fieldType>
-  
-  <!-- don't specify any sim at all: get the default  -->
-  <fieldType name="sim3" class="solr.TextField">
-    <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
-    </analyzer>
-  </fieldType>
-  
   <!-- omitPositions example -->
   <fieldType name="nopositions" class="solr.TextField" omitPositions="true">
     <analyzer>
@@ -570,10 +543,6 @@
    <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
    <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
 
-   <field name="sim1text" type="sim1" indexed="true" stored="true"/>
-   <field name="sim2text" type="sim2" indexed="true" stored="true"/>
-   <field name="sim3text" type="sim3" indexed="true" stored="true"/>
-   
    <field name="nopositionstext" type="nopositions" indexed="true" stored="true"/>
 
    <field name="tlong" type="tlong" indexed="true" stored="true" />
@@ -665,11 +634,6 @@
 
    <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true" />
 
-   <!-- make sure custom sims work with dynamic fields -->
-   <dynamicField name="*_sim1" type="sim1" indexed="true" stored="true"/>
-   <dynamicField name="*_sim2" type="sim2" indexed="true" stored="true"/>
-   <dynamicField name="*_sim3" type="sim3" indexed="true" stored="true"/>
-   
    <!-- Type used to index the lat and lon components for the "location" FieldType -->
    <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false" omitNorms="true" />
  </fields>

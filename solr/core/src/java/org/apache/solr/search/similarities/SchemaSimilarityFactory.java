@@ -26,9 +26,21 @@ import org.apache.solr.schema.SchemaAware;
 import org.apache.solr.schema.SimilarityFactory;
 
 /**
- * SimilarityFactory that returns a PerFieldSimilarityWrapper
- * that delegates to the fieldtype, if its configured, otherwise
+ * SimilarityFactory that returns a {@link PerFieldSimilarityWrapper}
+ * that delegates to the field type, if its configured, otherwise
  * {@link DefaultSimilarity}.
+ *
+ * <p>
+ * <b>NOTE:</b> Users should be aware that in addition to supporting 
+ * <code>Similarity</code> configurations specified on individual 
+ * field types, this factory also differs in behavior from 
+ * {@link DefaultSimilarityFactory} because of other differences in the 
+ * implementations of <code>PerFieldSimilarityWrapper</code> and 
+ * <code>DefaultSimilarity</code> - notably in methods such as 
+ * {@link Similarity#coord} and {@link Similarity#queryNorm}.  
+ * </p>
+ *
+ * @see FieldType#getSimilarity
  */
 public class SchemaSimilarityFactory extends SimilarityFactory implements SchemaAware {
   private Similarity similarity;
