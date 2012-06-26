@@ -2243,29 +2243,41 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       handleOOM(oom, "addIndexes(Directory...)");
     }
   }
-
-  /** Merges the provided indexes into this index.
-   * <p>The provided IndexReaders are not closed.</p>
-   *
-   * <p><b>NOTE:</b> while this is running, any attempts to
-   * add or delete documents (with another thread) will be
-   * paused until this method completes.
-   *
-   * <p>See {@link #addIndexes} for details on transactional 
-   * semantics, temporary free space required in the Directory, 
-   * and non-CFS segments on an Exception.</p>
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
-   * href="#OOME">above</a> for details.</p>
-   *
-   * <p><b>NOTE</b>: if you call {@link #close(boolean)}
-   * with <tt>false</tt>, which aborts all running merges,
-   * then any thread still running this method might hit a
-   * {@link MergePolicy.MergeAbortedException}.
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
+  
+  /**
+   * Merges the provided indexes into this index.
+   * 
+   * <p>
+   * The provided IndexReaders are not closed.
+   * 
+   * <p>
+   * See {@link #addIndexes} for details on transactional semantics, temporary
+   * free space required in the Directory, and non-CFS segments on an Exception.
+   * 
+   * <p>
+   * <b>NOTE</b>: if this method hits an OutOfMemoryError you should immediately
+   * close the writer. See <a href="#OOME">above</a> for details.
+   * 
+   * <p>
+   * <b>NOTE:</b> this method merges all given {@link IndexReader}s in one
+   * merge. If you intend to merge a large number of readers, it may be better
+   * to call this method multiple times, each time with a small set of readers.
+   * In principle, if you use a merge policy with a {@code mergeFactor} or
+   * {@code maxMergeAtOnce} parameter, you should pass that many readers in one
+   * call. Also, if the given readers are {@link DirectoryReader}s, they can be
+   * opened with {@code termIndexInterval=-1} to save RAM, since during merge
+   * the in-memory structure is not used. See
+   * {@link DirectoryReader#open(Directory, int)}.
+   * 
+   * <p>
+   * <b>NOTE</b>: if you call {@link #close(boolean)} with <tt>false</tt>, which
+   * aborts all running merges, then any thread still running this method might
+   * hit a {@link MergePolicy.MergeAbortedException}.
+   * 
+   * @throws CorruptIndexException
+   *           if the index is corrupt
+   * @throws IOException
+   *           if there is a low-level IO error
    */
   public void addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
     ensureOpen();
