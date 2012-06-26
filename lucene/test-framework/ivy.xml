@@ -18,13 +18,23 @@
 -->
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="core-test-framework"/>
-    <dependencies>
-      <dependency org="org.apache.ant" name="ant" rev="1.8.2" transitive="false"/>
-      <dependency org="org.apache.ant" name="ant-junit" rev="1.8.2" transitive="false"/>
-      <dependency org="junit" name="junit" rev="4.10" transitive="false"/>
 
-      <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="1.5.0" transitive="false" />
-      <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="1.5.0" transitive="false"/>
+    <configurations>
+      <conf name="default" />
+      <!-- 
+      JUnit4 ANT task only, no ANT.
+      This is used from build scripts for taskdefs.
+      -->
+      <conf name="junit4-stdalone" />
+    </configurations>
+
+    <dependencies defaultconf="default">
+      <dependency org="org.apache.ant" name="ant" rev="1.8.2" transitive="false" />
+      <dependency org="org.apache.ant" name="ant-junit" rev="1.8.2" transitive="false" />
+
+      <dependency org="junit" name="junit" rev="4.10" transitive="false" conf="default->*;junit4-stdalone->*" />
+      <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="1.5.0" transitive="false" conf="default->*;junit4-stdalone->*" />
+      <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="1.5.0" transitive="false" conf="default->*;junit4-stdalone->*" />
 
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
