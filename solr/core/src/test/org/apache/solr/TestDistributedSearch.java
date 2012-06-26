@@ -348,7 +348,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         downJettys.add(downJetty);
       }
       
-      queryPartialResults(upShards, upClients, "q","*:*",ShardParams.SHARDS_INFO,"true",ShardParams.SHARDS_TOLERANT,"true");
+      queryPartialResults(upShards, upClients, 
+          "q","*:*",
+          "facet","true", 
+          "facet.field",t1,
+          "facet.limit",5,
+          ShardParams.SHARDS_INFO,"true",
+          ShardParams.SHARDS_TOLERANT,"true");
       
       // restart the jettys
       for (JettySolrRunner downJetty : downJettys) {
