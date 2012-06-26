@@ -20,9 +20,11 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -291,7 +293,16 @@ public class FacetComponent extends SearchComponent
 
     for (ShardResponse srsp: sreq.responses) {
       int shardNum = rb.getShardNum(srsp.getShard());
-      NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
+      NamedList facet_counts = null;
+      try {
+        facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
+      }
+      catch(Exception ex) {
+        if(rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+          continue; // looks like a shard did not return anything
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to read facet info for shard: "+srsp.getShard(), ex);
+      }
 
       // handle facet queries
       NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
@@ -439,7 +450,7 @@ public class FacetComponent extends SearchComponent
           long maxCount = sfc.count;
           for (int shardNum=0; shardNum<rb.shards.length; shardNum++) {
             OpenBitSet obs = dff.counted[shardNum];
-            if (!obs.get(sfc.termNum)) {
+            if (obs!=null && !obs.get(sfc.termNum)) {  // obs can be null if a shard request failed
               // if missing from this shard, add the max it could be
               maxCount += dff.maxPossible(sfc,shardNum);
             }
@@ -454,7 +465,7 @@ public class FacetComponent extends SearchComponent
           // add a query for each shard missing the term that needs refinement
           for (int shardNum=0; shardNum<rb.shards.length; shardNum++) {
             OpenBitSet obs = dff.counted[shardNum];
-            if (!obs.get(sfc.termNum) && dff.maxPossible(sfc,shardNum)>0) {
+            if(obs!=null && !obs.get(sfc.termNum) && dff.maxPossible(sfc,shardNum)>0) {
               dff.needRefinements = true;
               List<String> lst = dff._toRefine[shardNum];
               if (lst == null) {
