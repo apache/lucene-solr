@@ -42,7 +42,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -602,10 +601,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (showSlaveDetails && snapPuller != null) {
       Properties props = loadReplicationProperties();
       try {
-        NamedList<String> command = new NamedList<String>();
-        command.add(COMMAND, CMD_DETAILS);
-        command.add("slave", "false");
-        NamedList nl = snapPuller.getCommandResponse(command);
+        NamedList nl = snapPuller.getDetails();
         slave.add("masterDetails", nl.get(CMD_DETAILS));
       } catch (Exception e) {
         LOG.warn("Exception while invoking 'details' method for replication on master ", e);

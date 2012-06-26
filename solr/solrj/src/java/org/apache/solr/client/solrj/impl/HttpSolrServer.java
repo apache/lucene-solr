@@ -201,8 +201,10 @@ public class HttpSolrServer extends SolrServer {
     // The parser 'wt=' and 'version=' params are used instead of the original
     // params
     ModifiableSolrParams wparams = new ModifiableSolrParams(params);
-    wparams.set(CommonParams.WT, parser.getWriterType());
-    wparams.set(CommonParams.VERSION, parser.getVersion());
+    if (parser != null) {
+      wparams.set(CommonParams.WT, parser.getWriterType());
+      wparams.set(CommonParams.VERSION, parser.getVersion());
+    }
     if (invariantParams != null) {
       wparams.add(invariantParams);
     }
@@ -352,7 +354,6 @@ public class HttpSolrServer extends SolrServer {
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents
-      String charset = EntityUtils.getContentCharSet(response.getEntity());
       respBody = response.getEntity().getContent();
       
       // handle some http level checks before trying to parse the response
@@ -377,6 +378,13 @@ public class HttpSolrServer extends SolrServer {
               + response.getStatusLine().getReasonPhrase());
           
       }
+      if (processor == null) {
+        // no processor specified, return raw stream
+        NamedList<Object> rsp = new NamedList<Object>();
+        rsp.add("stream", respBody);
+        return rsp;
+      }
+      String charset = EntityUtils.getContentCharSet(response.getEntity());
       NamedList<Object> rsp = processor.processResponse(respBody, charset);
       if (httpStatus != HttpStatus.SC_OK) {
         String reason = null;
@@ -409,7 +417,7 @@ public class HttpSolrServer extends SolrServer {
       throw new SolrServerException(
           "IOException occured when talking to server at: " + getBaseURL(), e);
     } finally {
-      if (respBody != null) {
+      if (respBody != null && processor!=null) {
         try {
           respBody.close();
         } catch (Throwable t) {} // ignore
