@@ -371,6 +371,10 @@ New Features
 * SOLR-3542: Add WeightedFragListBuilder for FVH and set it to default fragListBuilder
   in example solrconfig.xml. (Sebastian Lutze, koji)
 
+* SOLR-1856: In Solr Cell, literals should override Tika-parsed values.
+  Patch adds a param "literalsOverride" which defaults to true, but can be set 
+  to "false" to let Tika-parsed values be appended to literal values (Chris Harris, janhoy)
+
 Optimizations
 ----------------------
 
