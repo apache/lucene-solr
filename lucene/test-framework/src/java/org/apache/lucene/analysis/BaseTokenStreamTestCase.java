@@ -25,16 +25,9 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -480,14 +473,14 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
   }
 
-  static final Set<String> doesntSupportOffsets = new HashSet<String>() {{ 
-    add("Lucene3x"); 
-    add("MockFixedIntBlock");
-    add("MockVariableIntBlock");
-    add("MockSep");
-    add("MockRandom");
-  }};
-  
+  static final Set<String> doesntSupportOffsets = new HashSet<String>(Arrays.asList( 
+    "Lucene3x",
+    "MockFixedIntBlock",
+    "MockVariableIntBlock",
+    "MockSep",
+    "MockRandom"
+  ));
+
   private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) throws IOException {
 
     final LineFileDocs docs = new LineFileDocs(random);
