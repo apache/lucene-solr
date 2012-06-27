@@ -670,6 +670,9 @@ Other Changes
 * SOLR-3534: The Dismax and eDismax query parsers will fall back on the 'df' parameter
   when 'qf' is absent.  And if neither is present nor the schema default search field
   then an exception will be thrown now. (dsmiley)
+  
+* SOLR-1770: Move the default core instance directory into a collection1 folder.
+  (Mark Miller)
 
 Documentation
 ----------------------

@@ -50,6 +50,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -76,45 +77,17 @@ public class TestHarness {
   private final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
   public UpdateRequestHandler updater;
         
-  public static SolrConfig createConfig(String confFile) {
-      // set some system properties for use by tests
-      System.setProperty("solr.test.sys.prop1", "propone");
-      System.setProperty("solr.test.sys.prop2", "proptwo");
-      try {
-      return new SolrConfig(confFile);
-      }
-      catch(Exception xany) {
-        throw new RuntimeException(xany);
-      }
+  public static SolrConfig createConfig(String solrHome, String confFile) {
+    // set some system properties for use by tests
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+    try {
+      return new SolrConfig(solrHome + File.separator + "collection1", confFile, null);
+    } catch (Exception xany) {
+      throw new RuntimeException(xany);
+    }
   }
-        
-  /**
-   * Assumes "solrconfig.xml" is the config file to use, and
-   * "schema.xml" is the schema path to use.
-   *
-   * @param dataDirectory path for index data, will not be cleaned up
-   */
-  public TestHarness( String dataDirectory) {
-    this( dataDirectory, "schema.xml");
-  }
-  
-  /**
-   * Assumes "solrconfig.xml" is the config file to use.
-   *
-   * @param dataDirectory path for index data, will not be cleaned up
-   * @param schemaFile path of schema file
-   */
-  public TestHarness( String dataDirectory, String schemaFile) {
-    this( dataDirectory, "solrconfig.xml", schemaFile);
-  }
-  /**
-   * @param dataDirectory path for index data, will not be cleaned up
-   * @param configFile solrconfig filename
-   * @param schemaFile schema filename
-   */
-   public TestHarness( String dataDirectory, String configFile, String schemaFile) {
-     this( dataDirectory, createConfig(configFile), schemaFile);
-   }
+
    /**
     * @param dataDirectory path for index data, will not be cleaned up
     * @param solrConfig solronfig instance

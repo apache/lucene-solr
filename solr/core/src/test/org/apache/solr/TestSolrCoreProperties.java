@@ -37,7 +37,7 @@ import java.util.Properties;
  * @since solr 1.4
  */
 public class TestSolrCoreProperties extends LuceneTestCase {
-  private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
+  private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
   JettySolrRunner solrJetty;
   SolrServer client;
 
@@ -106,8 +106,8 @@ public class TestSolrCoreProperties extends LuceneTestCase {
             getClass().getName() + "-" + System.currentTimeMillis());
 
 
-    dataDir = new File(homeDir, "data");
-    confDir = new File(homeDir, "conf");
+    dataDir = new File(homeDir + "/collection1", "data");
+    confDir = new File(homeDir + "/collection1", "conf");
 
 
     homeDir.mkdirs();

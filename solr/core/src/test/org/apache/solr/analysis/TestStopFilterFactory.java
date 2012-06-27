@@ -32,7 +32,7 @@ import java.util.HashMap;
 public class TestStopFilterFactory extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     assertTrue("loader is null and it shouldn't be", loader != null);
     StopFilterFactory factory = new StopFilterFactory();
     Map<String, String> args = new HashMap<String, String>();

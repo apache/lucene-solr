@@ -85,7 +85,7 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenStreamTestCase {
    */
   public void testProtected() throws Exception {
     SnowballPorterFilterFactory factory = new SnowballPorterFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     Map<String,String> args = new HashMap<String,String>();
     args.put("protected", "protwords.txt");
     args.put("language", "English");

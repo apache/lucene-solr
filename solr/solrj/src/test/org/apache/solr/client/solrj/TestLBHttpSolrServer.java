@@ -74,7 +74,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     httpClient = HttpClientUtil.createClient(null);
     HttpClientUtil.setConnectionTimeout(httpClient,  1000);
     for (int i = 0; i < solr.length; i++) {
-      solr[i] = new SolrInstance("solr" + i, 0);
+      solr[i] = new SolrInstance("solr/collection1" + i, 0);
       solr[i].setUp();
       solr[i].startJetty();
       addDocs(solr[i]);
@@ -156,10 +156,10 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     solr[0].jetty = null;
     resp = lbHttpSolrServer.query(solrQuery);
     String name = resp.getResults().get(0).getFieldValue("name").toString();
-    Assert.assertEquals("solr1", name);
+    Assert.assertEquals("solr/collection11", name);
     resp = lbHttpSolrServer.query(solrQuery);
     name = resp.getResults().get(0).getFieldValue("name").toString();
-    Assert.assertEquals("solr1", name);
+    Assert.assertEquals("solr/collection11", name);
     solr[1].jetty.stop();
     solr[1].jetty = null;
     solr[0].startJetty();
@@ -172,7 +172,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
       resp = lbHttpSolrServer.query(solrQuery);
     }
     name = resp.getResults().get(0).getFieldValue("name").toString();
-    Assert.assertEquals("solr0", name);
+    Assert.assertEquals("solr/collection10", name);
   }
 
   public void testReliability() throws Exception {
@@ -256,8 +256,8 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
 
 
       homeDir = new File(home, name);
-      dataDir = new File(homeDir, "data");
-      confDir = new File(homeDir, "conf");
+      dataDir = new File(homeDir + "/collection1", "data");
+      confDir = new File(homeDir + "/collection1", "conf");
 
       homeDir.mkdirs();
       dataDir.mkdirs();

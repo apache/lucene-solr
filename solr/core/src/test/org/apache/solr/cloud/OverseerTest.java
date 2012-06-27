@@ -202,7 +202,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             }
           });
 
-      System.setProperty("bootstrap_confdir", getFile("solr/conf")
+      System.setProperty("bootstrap_confdir", getFile("solr/collection1/conf")
           .getAbsolutePath());
 
       final int numShards=6;
@@ -287,7 +287,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           });
       }
 
-      System.setProperty("bootstrap_confdir", getFile("solr/conf")
+      System.setProperty("bootstrap_confdir", getFile("solr/collection1/conf")
           .getAbsolutePath());
 
       
@@ -402,7 +402,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
         }
       server.shutdown();
       for (int i = 0; i < nodeCount; i++) {
-        nodeExecutors[i].shutdownNow();
+        if (nodeExecutors[i] != null) {
+          nodeExecutors[i].shutdownNow();
+        }
       }
     }
   }

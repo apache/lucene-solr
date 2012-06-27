@@ -38,7 +38,7 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestC
     args.put(DelimitedPayloadTokenFilterFactory.ENCODER_ATTR, "float");
     DelimitedPayloadTokenFilterFactory factory = new DelimitedPayloadTokenFilterFactory();
     factory.init(args);
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     factory.inform(loader);
 
     TokenStream input = new MockTokenizer(new StringReader("the|0.1 quick|0.1 red|0.1"), MockTokenizer.WHITESPACE, false);
@@ -61,7 +61,7 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestC
     args.put(DelimitedPayloadTokenFilterFactory.DELIMITER_ATTR, "*");
     DelimitedPayloadTokenFilterFactory factory = new DelimitedPayloadTokenFilterFactory();
     factory.init(args);
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     factory.inform(loader);
 
     TokenStream input = new MockTokenizer(new StringReader("the*0.1 quick*0.1 red*0.1"), MockTokenizer.WHITESPACE, false);

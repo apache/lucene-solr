@@ -42,7 +42,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamTestCase {
     args.put("synonyms", "synonyms.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new SolrResourceLoader(null, null));
+    factory.inform(new SolrResourceLoader("solr/collection1"));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
     assertTrue(ts instanceof SynonymFilter);
     assertTokenStreamContents(ts, 
@@ -59,7 +59,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamTestCase {
     args.put("synonyms", "synonyms.txt");
     factory.setLuceneMatchVersion(Version.LUCENE_33);
     factory.init(args);
-    factory.inform(new SolrResourceLoader(null, null));
+    factory.inform(new SolrResourceLoader("solr/collection1"));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
     assertTrue(ts instanceof SlowSynonymFilter);
     assertTokenStreamContents(ts, 

@@ -17,6 +17,8 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
+import java.io.File;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.IndexSchema;
@@ -42,10 +44,13 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
   @Test
   public void testTieredMPSolrIndexConfigCreation() throws Exception {
-    SolrConfig solrConfig = new SolrConfig("solrconfig-mergepolicy.xml");
-    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    SolrConfig solrConfig = new SolrConfig("solr" + File.separator
+        + "collection1", "solrconfig-mergepolicy.xml", null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null,
+        null);
     assertNotNull(solrIndexConfig);
-    assertEquals("org.apache.lucene.index.TieredMergePolicy", solrIndexConfig.defaultMergePolicyClassName);
+    assertEquals("org.apache.lucene.index.TieredMergePolicy",
+        solrIndexConfig.defaultMergePolicyClassName);
     IndexSchema indexSchema = new IndexSchema(solrConfig, "schema.xml", null);
     solrIndexConfig.toIndexWriterConfig(indexSchema);
   }

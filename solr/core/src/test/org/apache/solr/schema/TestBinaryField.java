@@ -55,21 +55,21 @@ public class TestBinaryField extends LuceneTestCase {
         "solrtest-TestBinaryField-" + System.currentTimeMillis());
 
     File homeDir = new File(home, "example");
-    File dataDir = new File(homeDir, "data");
-    File confDir = new File(homeDir, "conf");
+    File dataDir = new File(homeDir + "/collection1", "data");
+    File confDir = new File(homeDir + "/collection1", "conf");
 
     homeDir.mkdirs();
     dataDir.mkdirs();
     confDir.mkdirs();
 
-    SolrResourceLoader loader = new SolrResourceLoader(null, null);
+    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
     File f = new File(confDir, "solrconfig.xml");
-    String fname = "solr/conf/solrconfig-slave1.xml";
+    String fname = "solr/collection1/conf/solrconfig-slave1.xml";
     FileOutputStream out = new FileOutputStream(f);
     IOUtils.copy(loader.openResource(fname), out);
     out.close();
     f = new File(confDir, "schema.xml");
-    fname = "solr/conf/schema-binaryfield.xml";
+    fname = "solr/collection1/conf/schema-binaryfield.xml";
     out = new FileOutputStream(f);
     IOUtils.copy(loader.openResource(fname), out);
     out.close();
