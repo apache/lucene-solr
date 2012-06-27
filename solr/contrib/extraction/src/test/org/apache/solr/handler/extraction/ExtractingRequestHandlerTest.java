@@ -444,7 +444,71 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     }
     catch(Exception expected){}
   }
-  
+
+  public void testLiteralsOverride() throws Exception {
+    ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+ 
+    assertQ(req("*:*"), "//*[@numFound='0']");
+
+    // Here Tika should parse out a title for this document:
+    loadLocal("extraction/solr-word.pdf", 
+            "fmap.created", "extractedDate", 
+            "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", 
+            "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
+            "literal.id", "three",
+            "fmap.content", "extractedContent",
+            "fmap.language", "extractedLanguage",
+            "fmap.Creation-Date", "extractedDate",
+            "fmap.AAPL:Keywords", "ignored_a",
+            "fmap.xmpTPg:NPages", "ignored_a",
+            "fmap.Last-Modified", "extractedDate");
+
+    // Here the literal value should override the Tika-parsed title:
+    loadLocal("extraction/solr-word.pdf",
+            "literal.title", "wolf-man",
+            "fmap.created", "extractedDate",
+            "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator",
+            "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
+            "literal.id", "four",
+            "fmap.content", "extractedContent",
+            "fmap.language", "extractedLanguage",
+            "fmap.Creation-Date", "extractedDate",
+            "fmap.AAPL:Keywords", "ignored_a",
+            "fmap.xmpTPg:NPages", "ignored_a",
+            "fmap.Last-Modified", "extractedDate");
+
+    // Here we mimic the old behaviour where literals are added, not overridden
+    loadLocal("extraction/solr-word.pdf",
+            "literalsOverride", "false",
+            // Trick - we first map the metadata-title to an ignored field before we replace with literal title
+            "fmap.title", "ignored_a",
+            "literal.title", "old-behaviour",
+            "literal.extractedKeywords", "literalkeyword",
+            "fmap.created", "extractedDate",
+            "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator",
+            "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
+            "literal.id", "five",
+            "fmap.content", "extractedContent",
+            "fmap.language", "extractedLanguage",
+            "fmap.Creation-Date", "extractedDate",
+            "fmap.AAPL:Keywords", "ignored_a",
+            "fmap.xmpTPg:NPages", "ignored_a",
+            "fmap.Last-Modified", "extractedDate");
+
+    assertU(commit());
+
+    assertQ(req("title:solr-word"), "//*[@numFound='1']");
+    assertQ(req("title:wolf-man"), "//*[@numFound='1']");
+    assertQ(req("extractedKeywords:(solr AND word AND pdf AND literalkeyword)"), "//*[@numFound='1']");
+  }
+
   SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
     try {

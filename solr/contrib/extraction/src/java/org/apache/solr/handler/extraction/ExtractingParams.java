@@ -96,6 +96,10 @@ public interface ExtractingParams {
    */
   public static final String CAPTURE_ATTRIBUTES = "captureAttr";
 
+  /**
+   * Literal field values will by default override other values such as metadata and content. Set this to false to revert to pre-4.0 behaviour
+   */
+  public static final String LITERALS_OVERRIDE = "literalsOverride";
 
   /**
    * Capture the specified fields (and everything included below it that isn't capture by some other capture field) separately from the default.  This is different
