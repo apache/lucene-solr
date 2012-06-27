@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
 import java.io.File;
@@ -29,7 +30,7 @@ import java.util.TimeZone;
  * Tests that defaults are set for Primitive (non-analyzed) fields
  */
 public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
-  private final String testConfHome = TEST_HOME() + File.separator + "conf"+ File.separator; 
+  private final String testConfHome = TEST_HOME() + File.separator + "collection1" + File.separator + "conf"+ File.separator; 
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
   protected SolrConfig config;
   protected IndexSchema schema;
@@ -43,7 +44,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
     initMap = new HashMap<String,String>();
-    config = new SolrConfig(testConfHome + "solrconfig.xml");
+    config = new SolrConfig(new SolrResourceLoader("solr/collection1"), testConfHome + "solrconfig.xml", null);
   }
 
   @SuppressWarnings("deprecation")

@@ -41,7 +41,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     mockParams = new HashMap<String,String>();;
     mockParams.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, "open-exchange-rates.json");  
     oerp = new OpenExchangeRatesOrgProvider();
-    loader = new SolrResourceLoader("solr");
+    loader = new SolrResourceLoader("solr/collection1");
   }
   
   @Test

@@ -55,7 +55,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   private void init(String config, String schema) throws Exception {
     //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
     createTempDir();
-    File parent = new File(TEST_HOME(), "conf");
+    File parent = new File(TEST_HOME() + "/collection1", "conf");
     File elevateFile = new File(parent, "elevate.xml");
     File elevateDataFile = new File(dataDir, "elevate-data.xml");
     FileUtils.copyFile(elevateFile, elevateDataFile);

@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -120,11 +121,11 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             }
           });
 
-      zkController.uploadToZK(getFile("solr/conf"),
+      zkController.uploadToZK(new File(ExternalPaths.EXAMPLE_HOME + "/collection1/conf"),
           ZkController.CONFIGS_ZKNODE + "/config1");
       
       // uploading again should overwrite, not error...
-      zkController.uploadToZK(getFile("solr/conf"),
+      zkController.uploadToZK(new File(ExternalPaths.EXAMPLE_HOME + "/collection1/conf"),
           ZkController.CONFIGS_ZKNODE + "/config1");
 
       if (DEBUG) {
@@ -179,7 +180,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             }
           });
       
-      System.setProperty("bootstrap_confdir", getFile("solr/conf")
+      System.setProperty("bootstrap_confdir", getFile("solr/collection1/conf")
           .getAbsolutePath());
       
       final int numShards = 2;

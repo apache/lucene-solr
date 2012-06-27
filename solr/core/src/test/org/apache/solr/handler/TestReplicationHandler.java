@@ -65,7 +65,9 @@ import org.junit.BeforeClass;
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
-  private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
+  private static final String CONF_DIR = "." + File.separator + "solr"
+      + File.separator + "collection1" + File.separator + "conf"
+      + File.separator;
 
   static JettySolrRunner masterJetty, slaveJetty;
   static SolrServer masterClient, slaveClient;
@@ -1000,8 +1002,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                            
 
       homeDir = new File(home, name);
-      dataDir = new File(homeDir, "data");
-      confDir = new File(homeDir, "conf");
+      dataDir = new File(homeDir + "/collection1", "data");
+      confDir = new File(homeDir + "/collection1", "conf");
 
       homeDir.mkdirs();
       dataDir.mkdirs();

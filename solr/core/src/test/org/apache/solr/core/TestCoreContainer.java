@@ -195,7 +195,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertEquals("There should not be cores", 0, cores.getCores().size());
       
       //add a new core
-      CoreDescriptor coreDescriptor = new CoreDescriptor(cores, "core1", SolrTestCaseJ4.TEST_HOME());
+      CoreDescriptor coreDescriptor = new CoreDescriptor(cores, "core1", SolrTestCaseJ4.TEST_HOME() + "/collection1");
       SolrCore newCore = cores.create(coreDescriptor);
       cores.register(newCore, false);
       

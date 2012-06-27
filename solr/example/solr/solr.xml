@@ -44,6 +44,6 @@
     If 'null' (or absent), cores will not be manageable via request handler
   -->
   <cores adminPath="/admin/cores" defaultCoreName="collection1" host="${host:}" hostPort="${jetty.port:}">
-    <core name="collection1" instanceDir="." />
+    <core name="collection1" instanceDir="collection1" />
   </cores>
 </solr>

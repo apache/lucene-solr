@@ -40,7 +40,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     Reader reader = new StringReader("min veninde som er lidt af en læsehest");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     Map<String,String> args = new HashMap<String,String>();
     args.put("hyphenator", "da_UTF8.xml");
     args.put("dictionary", "da_compoundDictionary.txt");
@@ -64,7 +64,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     Reader reader = new StringReader("basketballkurv");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     Map<String,String> args = new HashMap<String,String>();
     args.put("hyphenator", "da_UTF8.xml");
     args.put("minSubwordSize", "2");

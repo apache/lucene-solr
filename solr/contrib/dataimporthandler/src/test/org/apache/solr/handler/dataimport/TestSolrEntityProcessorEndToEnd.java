@@ -51,7 +51,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   private static final String SOLR_CONFIG = "dataimport-solrconfig.xml";
   private static final String SOLR_SCHEMA = "dataimport-schema.xml";
   private static final String SOLR_HOME = "dih/solr";
-  private static final String CONF_DIR = "dih" + File.separator + "solr" + File.separator + "conf" + File.separator;
+  private static final String CONF_DIR = "dih" + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
   
   private static final List<Map<String,Object>> DB_DOCS = new ArrayList<Map<String,Object>>();
   private static final List<Map<String,Object>> SOLR_DOCS = new ArrayList<Map<String,Object>>();
@@ -308,8 +308,8 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
           + System.currentTimeMillis());
       
       homeDir = new File(home + "inst");
-      dataDir = new File(homeDir, "data");
-      confDir = new File(homeDir, "conf");
+      dataDir = new File(homeDir + "/collection1", "data");
+      confDir = new File(homeDir + "/collection1", "conf");
       
       homeDir.mkdirs();
       dataDir.mkdirs();

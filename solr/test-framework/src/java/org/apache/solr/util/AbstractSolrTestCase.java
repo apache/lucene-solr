@@ -148,7 +148,7 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
     System.setProperty("solr.solr.home", getSolrHome());
     if (configFile != null) {
 
-      solrConfig = TestHarness.createConfig(getSolrConfigFile());
+      solrConfig = TestHarness.createConfig(getSolrHome(), getSolrConfigFile());
       h = new TestHarness( dataDir.getAbsolutePath(),
               solrConfig,
               getSchemaFile());

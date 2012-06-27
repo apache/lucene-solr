@@ -139,6 +139,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void initCore(String config, String schema, String solrHome) throws Exception {
     configString = config;
     schemaString = schema;
+    testSolrHome = solrHome;
     if (solrHome != null) {
       System.setProperty("solr.solr.home", solrHome);
     }
@@ -233,6 +234,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   protected static String configString;
   protected static String schemaString;
+  protected static String testSolrHome;
 
   protected static SolrConfig solrConfig;
 
@@ -324,7 +326,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static void createCore() throws Exception {
-    solrConfig = TestHarness.createConfig(getSolrConfigFile());
+    solrConfig = TestHarness.createConfig(testSolrHome, getSolrConfigFile());
     h = new TestHarness( dataDir.getAbsolutePath(),
             solrConfig,
             getSchemaFile());
@@ -1366,7 +1368,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
   
   public static String TEST_HOME() {
-    return getFile("solr/conf").getParent();
+    return getFile("solr/collection1").getParent();
   }
 
   public static Throwable getRootCause(Throwable t) {

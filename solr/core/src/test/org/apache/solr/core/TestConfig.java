@@ -130,7 +130,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   // If defaults change, add test methods to cover each version
   @Test
   public void testDefaults() throws Exception {
-    SolrConfig sc = new SolrConfig("solrconfig-basic.xml");
+    SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
     assertTrue("default ramBufferSizeMB should be 32", sic.ramBufferSizeMB == 32);
     assertTrue("default useCompoundFile should be false", sic.useCompoundFile == false);

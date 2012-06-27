@@ -37,7 +37,7 @@ import java.util.HashMap;
 public class CommonGramsQueryFilterFactoryTest extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsQueryFilterFactory factory = new CommonGramsQueryFilterFactory();
     Map<String, String> args = new HashMap<String, String>();
@@ -87,7 +87,7 @@ public class CommonGramsQueryFilterFactoryTest extends BaseTokenStreamTestCase {
    * If no words are provided, then a set of english default stopwords is used.
    */
   public void testDefaults() throws Exception {
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsQueryFilterFactory factory = new CommonGramsQueryFilterFactory();
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);

@@ -29,8 +29,8 @@ public class ExternalPaths {
   public static String WEBAPP_HOME = new File(SOURCE_HOME, "webapp/web").getAbsolutePath();
   public static String EXAMPLE_HOME = new File(SOURCE_HOME, "example/solr").getAbsolutePath();
   public static String EXAMPLE_MULTICORE_HOME = new File(SOURCE_HOME, "example/multicore").getAbsolutePath();
-  public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"/conf/schema.xml";
-  public static String EXAMPLE_CONFIG=EXAMPLE_HOME+"/conf/solrconfig.xml";
+  public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"/collection1/conf/schema.xml";
+  public static String EXAMPLE_CONFIG=EXAMPLE_HOME+"/collection1/conf/solrconfig.xml";
   
   static String determineSourceHome() {
     // ugly, ugly hack to determine the example home without depending on the CWD

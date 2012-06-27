@@ -25,10 +25,10 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <!-- see TestConfig.testLib() -->
-  <lib dir="../lib-dirs/a" />
-  <lib dir="../lib-dirs/b" regex="b." />
-  <lib dir="../lib-dirs/c" regex="c1" />
-  <lib path="../lib-dirs/d/d1/" />
+  <lib dir="../../lib-dirs/a" />
+  <lib dir="../../lib-dirs/b" regex="b." />
+  <lib dir="../../lib-dirs/c" regex="c1" />
+  <lib path="../../lib-dirs/d/d1/" />
   
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
