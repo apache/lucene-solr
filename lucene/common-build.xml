@@ -96,6 +96,9 @@
   <property name="tests.infostream" value="${tests.verbose}"/>
   <property name="tests.heapsize" value="512M"/>
 
+  <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
+  <property name="tests.cachefilehistory" value="20" />
+
   <!-- Override these in your local properties to your desire. -->
   <!-- Show simple class names (no package) in test suites. -->
   <property name="tests.useSimpleNames" value="false" />
@@ -669,12 +672,11 @@
   </macrodef>
 
   <target name="test-updatecache" description="Overwrite tests' timings cache for balancing." depends="install-junit4-taskdef">
-    <mergehints file="${common.dir}/tools/junit4/cached-timehints.txt">
+    <touch file="${tests.cachefile}" mkdirs="true" verbose="false" />
+    <mergehints file="${tests.cachefile}" historyLength="${tests.cachefilehistory}">
       <resources>
         <!-- The order is important. Include previous stats first, then append new stats. -->
-        <fileset dir="${common.dir}/tools/junit4">
-          <include name="*.txt" />
-        </fileset>
+        <file file="${tests.cachefile}" />
         <fileset dir="${common.dir}/..">
           <include name="**/tests-timehints.txt" />
           <exclude name="lucene/tools/junit4/**" />
