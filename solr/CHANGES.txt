@@ -368,6 +368,11 @@ New Features
 
 * SOLR-3351: eDismax: ps2 and ps3 params (janhoy)
 
+* SOLR-1929: Index encrypted documents with ExtractingUpdateRequestHandler.
+  By supplying resource.password=<mypw> or specifying an external file with regular
+  expressions matching file names, Solr will decrypt and index PDFs and DOCX formats.
+  (janhoy, Yiannis Pericleous)
+
 * SOLR-3542: Add WeightedFragListBuilder for FVH and set it to default fragListBuilder
   in example solrconfig.xml. (Sebastian Lutze, koji)
 
