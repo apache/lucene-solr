@@ -168,9 +168,6 @@ public class CoreContainer
       setAbortOnConfigurationError(0 < cores.numCoresAbortOnConfigError);
       
       solrConfigFilename = cores.getConfigFile().getName();
-      if (cores.cores.isEmpty()){
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No cores were created, please check the logs for errors");
-      }
       
       return cores;
     }

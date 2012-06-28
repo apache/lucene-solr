@@ -41,6 +41,8 @@ Bug Fixes:
 
 * SOLR-3489: Config file replication less error prone (Jochen Just via janhoy)
 
+* SOLR-3477: SOLR does not start up when no cores are defined (Tomás Fernández Löbbe via tommaso)
+
 ==================  3.6.0  ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
