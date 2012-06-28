@@ -22,11 +22,22 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  */
+@SuppressCodecs("Lucene3x") // binary terms
 public class TestAnalyzingQueryParser extends LuceneTestCase {
 
   private Analyzer a;
@@ -138,5 +149,28 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
       Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
       return new TokenStreamComponents(result, new FoldingFilter(result));
     }
-  }  
+  }
+  
+  // LUCENE-4176
+  public void testByteTerms() throws Exception {
+    Directory ramDir = newDirectory();
+    Analyzer analyzer = new MockBytesAnalyzer();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, analyzer);
+    Document doc = new Document();
+    FieldType fieldType = new FieldType();
+    fieldType.setIndexed(true);
+    fieldType.setTokenized(true);
+    fieldType.setStored(true);
+    Field field = new Field("content","เข", fieldType);
+    doc.add(field);
+    writer.addDocument(doc);
+    writer.close();
+    DirectoryReader ir = DirectoryReader.open(ramDir);
+    IndexSearcher is = new IndexSearcher(ir);
+    QueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, "content", analyzer);
+    Query q = qp.parse("[เข TO เข]");
+    assertEquals(1, is.search(q, 10).totalHits);
+    ir.close();
+    ramDir.close();
+  }
 }
