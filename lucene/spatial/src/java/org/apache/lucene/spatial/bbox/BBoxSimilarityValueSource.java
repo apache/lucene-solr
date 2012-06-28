@@ -38,13 +38,6 @@ public class BBoxSimilarityValueSource extends ValueSource {
   private final BBoxFieldInfo field;
   private final BBoxSimilarity similarity;
 
-  /**
-   * Constructor.
-   *
-   * @param queryEnvelope the query envelope
-   * @param queryPower the query power (scoring algorithm)
-   * @param targetPower the target power (scoring algorithm)
-   */
   public BBoxSimilarityValueSource(BBoxSimilarity similarity, BBoxFieldInfo field) {
     this.similarity = similarity;
     this.field = field;
@@ -64,7 +57,7 @@ public class BBoxSimilarityValueSource extends ValueSource {
   /**
    * Returns the DocValues used by the function query.
    *
-   * @param reader the index reader
+   * @param readerContext the AtomicReaderContext which holds an AtomicReader
    * @return the values
    */
   @Override
