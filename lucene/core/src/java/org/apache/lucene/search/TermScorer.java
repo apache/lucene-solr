@@ -39,7 +39,7 @@ final class TermScorer extends Scorer {
    *          The </code>Similarity.ExactSimScorer</code> implementation 
    *          to be used for score computations.
    */
-  TermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer) throws IOException {
+  TermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer) {
     super(weight);
     this.docScorer = docScorer;
     this.docsEnum = td;

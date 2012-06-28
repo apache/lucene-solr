@@ -39,7 +39,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1003,7 +1002,7 @@ public void testFilesOpenClose() throws IOException {
     dir.close();
   }
   
-  public void testTryIncRef() throws CorruptIndexException, LockObtainFailedException, IOException {
+  public void testTryIncRef() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.addDocument(new Document());
@@ -1017,7 +1016,7 @@ public void testFilesOpenClose() throws IOException {
     dir.close();
   }
   
-  public void testStressTryIncRef() throws CorruptIndexException, LockObtainFailedException, IOException, InterruptedException {
+  public void testStressTryIncRef() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.addDocument(new Document());

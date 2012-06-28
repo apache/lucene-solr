@@ -77,7 +77,7 @@ public class TestCodecs extends LuceneTestCase {
   private final static int TERM_DOC_FREQ_RAND = 20;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     NUM_TEST_ITER = atLeast(20);
   }
 

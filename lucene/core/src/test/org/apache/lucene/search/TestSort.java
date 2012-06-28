@@ -43,7 +43,6 @@ import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -56,7 +55,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdBitSet;
@@ -90,7 +88,7 @@ public class TestSort extends LuceneTestCase {
   private Sort sort;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     NUM_STRINGS = atLeast(500);
   }
 
@@ -228,7 +226,7 @@ public class TestSort extends LuceneTestCase {
     return getIndex (true, true);
   }
   
-  private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
+  private IndexSearcher getFullStrings() throws IOException {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
     IndexWriter writer = new IndexWriter(

@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -36,7 +34,7 @@ public final class BinaryTokenStream extends TokenStream {
   }
   
   @Override
-  public boolean incrementToken() throws IOException {
+  public boolean incrementToken() {
     if (available) {
       available = false;
       return true;
@@ -45,7 +43,7 @@ public final class BinaryTokenStream extends TokenStream {
   }
   
   @Override
-  public void reset() throws IOException {
+  public void reset() {
     available = true;
   }
   

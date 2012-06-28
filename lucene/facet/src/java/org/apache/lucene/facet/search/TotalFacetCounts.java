@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.store.LockObtainFailedException;
 
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
@@ -73,7 +72,7 @@ public class TotalFacetCounts {
    * Construct by key - from index Directory or by recomputing.
    */
   private TotalFacetCounts (TaxonomyReader taxonomy, FacetIndexingParams facetIndexingParams,
-      int[][] counts, CreationType createType4Test) throws IOException, LockObtainFailedException {
+      int[][] counts, CreationType createType4Test) {
     this.taxonomy = taxonomy;
     this.facetIndexingParams = facetIndexingParams;
     this.totalCounts = counts;

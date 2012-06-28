@@ -208,7 +208,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     final ExecutorService es = random().nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory("testIntermediateClose"));
     final SearcherFactory factory = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader r) throws IOException {
+      public IndexSearcher newSearcher(IndexReader r) {
         try {
           if (triedReopen.get()) {
             awaitEnterWarm.countDown();
@@ -334,7 +334,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
     final SearcherFactory theEvilOne = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader ignored) throws IOException {
+      public IndexSearcher newSearcher(IndexReader ignored) {
         return new IndexSearcher(other);
       }
       };

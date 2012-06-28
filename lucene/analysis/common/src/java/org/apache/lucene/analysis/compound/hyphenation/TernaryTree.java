@@ -648,7 +648,7 @@ public class TernaryTree implements Cloneable {
 
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     TernaryTree tt = new TernaryTree();
     tt.insert("Carlos", 'C');
     tt.insert("Car", 'r');

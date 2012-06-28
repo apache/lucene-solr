@@ -60,7 +60,7 @@ public class SimpleFSLockFactory extends FSLockFactory {
    * directory itself. Be sure to create one instance for each directory
    * your create!
    */
-  public SimpleFSLockFactory() throws IOException {
+  public SimpleFSLockFactory() {
     this((File) null);
   }
 
@@ -68,7 +68,7 @@ public class SimpleFSLockFactory extends FSLockFactory {
    * Instantiate using the provided directory (as a File instance).
    * @param lockDir where lock files should be created.
    */
-  public SimpleFSLockFactory(File lockDir) throws IOException {
+  public SimpleFSLockFactory(File lockDir) {
     setLockDir(lockDir);
   }
 
@@ -76,7 +76,7 @@ public class SimpleFSLockFactory extends FSLockFactory {
    * Instantiate using the provided directory name (String).
    * @param lockDirName where lock files should be created.
    */
-  public SimpleFSLockFactory(String lockDirName) throws IOException {
+  public SimpleFSLockFactory(String lockDirName) {
     setLockDir(new File(lockDirName));
   }
 

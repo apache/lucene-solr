@@ -186,8 +186,7 @@ public class TestSimilarityBase extends LuceneTestCase {
    * Similarities in {@link #sims} and checks if the score is valid; i.e. it
    * is a finite positive real number.
    */
-  private void unitTestCore(BasicStats stats, float freq, int docLen)
-      throws IOException { 
+  private void unitTestCore(BasicStats stats, float freq, int docLen) {
     for (SimilarityBase sim : sims) {
       BasicStats realStats = (BasicStats) sim.computeWeight(stats.getTotalBoost(),
           toCollectionStats(stats), 
@@ -519,8 +518,7 @@ public class TestSimilarityBase extends LuceneTestCase {
    * Similarities in {@link #sims} and compares the score against the manually
    * computed {@code gold}.
    */
-  private void correctnessTestCore(SimilarityBase sim, float gold)
-      throws IOException {
+  private void correctnessTestCore(SimilarityBase sim, float gold) {
     BasicStats stats = createStats();
     BasicStats realStats = (BasicStats) sim.computeWeight(stats.getTotalBoost(),
         toCollectionStats(stats), 

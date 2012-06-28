@@ -252,22 +252,22 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     // once we find it...
     final StoredFieldVisitor getUniqValue = new StoredFieldVisitor() {
       @Override 
-      public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+      public void stringField(FieldInfo fieldInfo, String value) {
         uniqValues.add(value);
       }
 
       @Override 
-      public void intField(FieldInfo fieldInfo, int value) throws IOException {
+      public void intField(FieldInfo fieldInfo, int value) {
         uniqValues.add(Integer.toString(value));
       }
 
       @Override 
-      public void longField(FieldInfo fieldInfo, long value) throws IOException {
+      public void longField(FieldInfo fieldInfo, long value) {
         uniqValues.add(Long.toString(value));
       }
 
       @Override
-      public Status needsField(FieldInfo fieldInfo) throws IOException {
+      public Status needsField(FieldInfo fieldInfo) {
         return (fieldInfo.name.equals(finalUniqFieldName)) ? Status.YES : Status.NO;
       }
     };

@@ -427,7 +427,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int freq() throws IOException {
+    public int freq() {
       assert indexOptions != IndexOptions.DOCS_ONLY;
       return freq;
     }
@@ -627,7 +627,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int freq() throws IOException {
+    public int freq() {
       return freq;
     }
   }
@@ -647,7 +647,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       fstEnum = new BytesRefFSTEnum<BytesRef>(fst);
     }
 
-    private void decodeMetaData() throws IOException {
+    private void decodeMetaData() {
       if (!didDecode) {
         buffer.reset(current.output.bytes, 0, current.output.length);
         docFreq = buffer.readVInt();
@@ -696,7 +696,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
       decodeMetaData();
       FSTDocsEnum docsEnum;
 
@@ -714,7 +714,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) {
 
       boolean hasOffsets = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (needsOffsets && !hasOffsets) {
@@ -757,13 +757,13 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int docFreq() throws IOException {
+    public int docFreq() {
       decodeMetaData();
       return docFreq;
     }
 
     @Override
-    public long totalTermFreq() throws IOException {
+    public long totalTermFreq() {
       decodeMetaData();
       return totalTermFreq;
     }
@@ -817,17 +817,17 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public long getSumDocFreq() throws IOException {
+    public long getSumDocFreq() {
       return sumDocFreq;
     }
 
     @Override
-    public int getDocCount() throws IOException {
+    public int getDocCount() {
       return docCount;
     }
 
     @Override
-    public long size() throws IOException {
+    public long size() {
       return termCount;
     }
 

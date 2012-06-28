@@ -326,7 +326,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     }
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       if (tokenIterator.hasNext()) {
         clearAttributes();
         AttributeSource next = tokenIterator.next();

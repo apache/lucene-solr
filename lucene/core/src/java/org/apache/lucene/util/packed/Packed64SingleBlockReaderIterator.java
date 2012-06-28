@@ -29,8 +29,7 @@ final class Packed64SingleBlockReaderIterator extends ReaderIteratorImpl {
   private final long mask;
   private int position;
 
-  Packed64SingleBlockReaderIterator(int valueCount, int bitsPerValue, IndexInput in)
-      throws IOException {
+  Packed64SingleBlockReaderIterator(int valueCount, int bitsPerValue, IndexInput in) {
     super(valueCount, bitsPerValue, in);
     pending = 0;
     shift = 64;

@@ -586,7 +586,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
   
   /** for testing DateTools support */
-  private String getDate(Date d, DateTools.Resolution resolution) throws Exception {
+  private String getDate(Date d, DateTools.Resolution resolution) {
      return DateTools.dateToString(d, resolution);
   }
   
@@ -936,13 +936,13 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     final int[] type = new int[1];
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
       @Override
-      protected Query getWildcardQuery(String field, String termStr) throws ParseException {
+      protected Query getWildcardQuery(String field, String termStr) {
         // override error checking of superclass
         type[0]=1;
         return new TermQuery(new Term(field,termStr));
       }
       @Override
-      protected Query getPrefixQuery(String field, String termStr) throws ParseException {
+      protected Query getPrefixQuery(String field, String termStr) {
         // override error checking of superclass
         type[0]=2;        
         return new TermQuery(new Term(field,termStr));

@@ -18,13 +18,10 @@ package org.apache.solr.handler.component;
  */
 
 import java.io.File;
-import java.io.IOException;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.util.FileUtils;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -44,13 +41,13 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
   }
   
   @BeforeClass
-  public static void beforeClass() throws IOException {
+  public static void beforeClass() {
     System.setProperty("elevate.data.file", "elevate.xml");
     File parent = new File(TEST_HOME(), "conf");
   }
   
   @AfterClass
-  public static void afterClass() throws IOException {
+  public static void afterClass() {
     System.clearProperty("elevate.data.file");
   }
 

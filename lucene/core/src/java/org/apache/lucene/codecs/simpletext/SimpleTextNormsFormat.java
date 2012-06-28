@@ -95,8 +95,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
   public static class SimpleTextNormsPerDocConsumer extends
       SimpleTextPerDocConsumer {
     
-    public SimpleTextNormsPerDocConsumer(PerDocWriteState state)
-      throws IOException {
+    public SimpleTextNormsPerDocConsumer(PerDocWriteState state) {
       super(state, NORMS_SEG_SUFFIX);
     }
     

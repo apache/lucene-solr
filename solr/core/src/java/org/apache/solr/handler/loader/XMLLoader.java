@@ -48,7 +48,6 @@ import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
@@ -190,9 +189,7 @@ public class XMLLoader extends ContentStreamLoader {
    * @since solr 1.2
    */
   void processUpdate(SolrQueryRequest req, UpdateRequestProcessor processor, XMLStreamReader parser)
-          throws XMLStreamException, IOException, FactoryConfigurationError,
-          InstantiationException, IllegalAccessException,
-          TransformerConfigurationException {
+          throws XMLStreamException, IOException, FactoryConfigurationError {
     AddUpdateCommand addCmd = null;
     SolrParams params = req.getParams();
     while (true) {

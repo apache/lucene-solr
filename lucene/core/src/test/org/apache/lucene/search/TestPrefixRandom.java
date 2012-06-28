@@ -95,7 +95,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     private class SimplePrefixTermsEnum extends FilteredTermsEnum {
       private final BytesRef prefix;
 
-      private SimplePrefixTermsEnum(TermsEnum tenum, BytesRef prefix) throws IOException {
+      private SimplePrefixTermsEnum(TermsEnum tenum, BytesRef prefix) {
         super(tenum);
         this.prefix = prefix;
         setInitialSeekTerm(new BytesRef(""));

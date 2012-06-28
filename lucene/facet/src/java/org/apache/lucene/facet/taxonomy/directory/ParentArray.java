@@ -147,7 +147,7 @@ class ParentArray {
    * NOTE: add() and refresh() CANNOT be used together. If you call add(),
    * this changes the arrays and refresh() can no longer be used.
    */
-  void add(int ordinal, int parentOrdinal) throws IOException {
+  void add(int ordinal, int parentOrdinal) {
     if (ordinal >= prefetchParentOrdinal.length) {
       // grow the array, if necessary.
       // In Java 6, we could just do Arrays.copyOf()...

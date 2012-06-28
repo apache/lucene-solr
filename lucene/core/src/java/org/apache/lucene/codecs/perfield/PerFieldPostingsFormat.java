@@ -85,7 +85,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     
     private final SegmentWriteState segmentWriteState;
 
-    public FieldsWriter(SegmentWriteState state) throws IOException {
+    public FieldsWriter(SegmentWriteState state) {
       segmentWriteState = state;
     }
 
@@ -206,7 +206,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public String next() throws IOException {
+      public String next() {
         if (it.hasNext()) {
           current = it.next();
         } else {

@@ -93,11 +93,9 @@ public class CategoryDocumentBuilder {
    * @param taxonomyWriter
    *            to which new categories will be added, as well as translating
    *            known categories to ordinals
-   * @throws IOException
-   * 
+   *
    */
-  public CategoryDocumentBuilder(TaxonomyWriter taxonomyWriter)
-      throws IOException {
+  public CategoryDocumentBuilder(TaxonomyWriter taxonomyWriter) {
     this(taxonomyWriter, new DefaultFacetIndexingParams());
   }
 
@@ -111,10 +109,9 @@ public class CategoryDocumentBuilder {
    * @param params
    *            holds all parameters the indexing process should use such as
    *            category-list parameters
-   * @throws IOException
    */
   public CategoryDocumentBuilder(TaxonomyWriter taxonomyWriter,
-      FacetIndexingParams params) throws IOException {
+      FacetIndexingParams params) {
     this.taxonomyWriter = taxonomyWriter;
     this.indexingParams = params;
     this.categoriesMap = new HashMap<String, List<CategoryAttribute>>();

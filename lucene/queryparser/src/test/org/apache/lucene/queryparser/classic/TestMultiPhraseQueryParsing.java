@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.classic;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -67,7 +66,7 @@ public class TestMultiPhraseQueryParsing extends LuceneTestCase {
     }
 
     @Override
-    public final boolean incrementToken() throws IOException {
+    public final boolean incrementToken() {
       clearAttributes();
       if (upto < tokens.length) {
         final TokenAndPos token = tokens[upto++];

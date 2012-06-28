@@ -122,7 +122,7 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
     }
   
     @Override
-    public void setNextEnum(TermsEnum termsEnum) throws IOException {
+    public void setNextEnum(TermsEnum termsEnum) {
       this.termsEnum = termsEnum;
     }
       

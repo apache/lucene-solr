@@ -19,14 +19,9 @@ package org.apache.solr;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util._TestUtil;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.TestUtils;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -80,7 +75,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     model = indexDocs(types, model, ndocs);
   }
 
-  void deleteSomeDocs() throws Exception {
+  void deleteSomeDocs() {
     Random rand = random();
     int percent = rand.nextInt(100);
     if (model == null) return;

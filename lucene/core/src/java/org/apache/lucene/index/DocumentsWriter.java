@@ -134,7 +134,7 @@ final class DocumentsWriter {
   
   final Codec codec;
   DocumentsWriter(Codec codec, LiveIndexWriterConfig config, Directory directory, IndexWriter writer, FieldNumbers globalFieldNumbers,
-      BufferedDeletesStream bufferedDeletesStream) throws IOException {
+      BufferedDeletesStream bufferedDeletesStream) {
     this.codec = codec;
     this.directory = directory;
     this.indexWriter = writer;
@@ -200,7 +200,7 @@ final class DocumentsWriter {
    *  updating the index files) and must discard all
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
-  synchronized void abort() throws IOException {
+  synchronized void abort() {
     boolean success = false;
     synchronized (this) {
       deleteQueue.clear();
@@ -219,8 +219,6 @@ final class DocumentsWriter {
           if (perThread.isActive()) { // we might be closed
             try {
               perThread.dwpt.abort();
-            } catch (IOException ex) {
-              // continue
             } finally {
               perThread.dwpt.checkAndResetHasAborted();
               flushControl.doOnAbort(perThread);
@@ -276,7 +274,7 @@ final class DocumentsWriter {
     flushControl.setClosed();
   }
 
-  private boolean preUpdate() throws CorruptIndexException, IOException {
+  private boolean preUpdate() throws IOException {
     ensureOpen();
     boolean maybeMerge = false;
     if (flushControl.anyStalledThreads() || flushControl.numQueuedFlushes() > 0) {
@@ -325,7 +323,7 @@ final class DocumentsWriter {
   }
 
   boolean updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
-                          final Term delTerm) throws CorruptIndexException, IOException {
+                          final Term delTerm) throws IOException {
     boolean maybeMerge = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
@@ -356,7 +354,7 @@ final class DocumentsWriter {
   }
 
   boolean updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
-      final Term delTerm) throws CorruptIndexException, IOException {
+      final Term delTerm) throws IOException {
 
     boolean maybeMerge = preUpdate();
 

@@ -43,7 +43,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.commit();
   }
   
-  private static IndexWriterConfig newWriterConfig() throws IOException {
+  private static IndexWriterConfig newWriterConfig() {
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);

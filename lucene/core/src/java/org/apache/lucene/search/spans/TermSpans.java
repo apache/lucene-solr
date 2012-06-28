@@ -37,7 +37,7 @@ public class TermSpans extends Spans {
   protected int count;
   protected int position;
 
-  public TermSpans(DocsAndPositionsEnum postings, Term term) throws IOException {
+  public TermSpans(DocsAndPositionsEnum postings, Term term) {
     this.postings = postings;
     this.term = term;
     doc = -1;

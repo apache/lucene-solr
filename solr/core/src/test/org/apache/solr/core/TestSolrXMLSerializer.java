@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -90,8 +89,7 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
   }
 
   private void assertResults(byte[] bytes)
-      throws ParserConfigurationException, UnsupportedEncodingException,
-      IOException, SAXException, XPathExpressionException {
+      throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     BufferedInputStream is = new BufferedInputStream(new ByteArrayInputStream(bytes));
     Document document;

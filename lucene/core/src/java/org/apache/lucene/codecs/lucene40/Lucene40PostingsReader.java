@@ -319,7 +319,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     protected boolean skipped;
     protected final Bits liveDocs;
     
-    SegmentDocsEnumBase(IndexInput startFreqIn, Bits liveDocs) throws IOException {
+    SegmentDocsEnumBase(IndexInput startFreqIn, Bits liveDocs) {
       this.startFreqIn = startFreqIn;
       this.freqIn = (IndexInput)startFreqIn.clone();
       this.liveDocs = liveDocs;
@@ -353,7 +353,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
     
     @Override
-    public final int freq() throws IOException {
+    public final int freq() {
       assert !indexOmitsTF;
       return freq;
     }
@@ -499,7 +499,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   
   private final class AllDocsSegmentDocsEnum extends SegmentDocsEnumBase {
 
-    AllDocsSegmentDocsEnum(IndexInput startFreqIn) throws IOException {
+    AllDocsSegmentDocsEnum(IndexInput startFreqIn) {
       super(startFreqIn, null);
       assert liveDocs == null;
     }
@@ -576,7 +576,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   
   private final class LiveDocsSegmentDocsEnum extends SegmentDocsEnumBase {
 
-    LiveDocsSegmentDocsEnum(IndexInput startFreqIn, Bits liveDocs) throws IOException {
+    LiveDocsSegmentDocsEnum(IndexInput startFreqIn, Bits liveDocs) {
       super(startFreqIn, liveDocs);
       assert liveDocs != null;
     }
@@ -696,7 +696,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     Lucene40SkipListReader skipper;
     private long lazyProxPointer;
 
-    public SegmentDocsAndPositionsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
+    public SegmentDocsAndPositionsEnum(IndexInput freqIn, IndexInput proxIn) {
       startFreqIn = freqIn;
       this.freqIn = (IndexInput) freqIn.clone();
       this.proxIn = (IndexInput) proxIn.clone();
@@ -772,7 +772,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int freq() throws IOException {
+    public int freq() {
       return freq;
     }
 
@@ -853,12 +853,12 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int startOffset() throws IOException {
+    public int startOffset() {
       return -1;
     }
 
     @Override
-    public int endOffset() throws IOException {
+    public int endOffset() {
       return -1;
     }
 
@@ -909,7 +909,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     int offsetLength;
     int startOffset;
 
-    public SegmentFullPositionsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
+    public SegmentFullPositionsEnum(IndexInput freqIn, IndexInput proxIn) {
       startFreqIn = freqIn;
       this.freqIn = (IndexInput) freqIn.clone();
       this.proxIn = (IndexInput) proxIn.clone();

@@ -18,19 +18,28 @@ package org.apache.lucene.search.grouping;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -195,7 +204,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     }
   }
 
-  private GroupingSearch createRandomGroupingSearch(String groupField, Sort groupSort, int docsInGroup, boolean canUseIDV) throws IOException {
+  private GroupingSearch createRandomGroupingSearch(String groupField, Sort groupSort, int docsInGroup, boolean canUseIDV) {
     GroupingSearch groupingSearch;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);

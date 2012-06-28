@@ -166,7 +166,7 @@ public final class SegmentInfo {
    * modify it.
    */
 
-  public Set<String> files() throws IOException {
+  public Set<String> files() {
     if (setFiles == null) {
       throw new IllegalStateException("files were not computed yet");
     }

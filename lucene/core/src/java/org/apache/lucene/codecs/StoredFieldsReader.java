@@ -19,7 +19,6 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.StoredFieldVisitor;
 
 /**
@@ -33,7 +32,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 public abstract class StoredFieldsReader implements Cloneable, Closeable {
   
   /** Visit the stored fields for document <code>n</code> */
-  public abstract void visitDocument(int n, StoredFieldVisitor visitor) throws CorruptIndexException, IOException;
+  public abstract void visitDocument(int n, StoredFieldVisitor visitor) throws IOException;
 
   public abstract StoredFieldsReader clone();
 }

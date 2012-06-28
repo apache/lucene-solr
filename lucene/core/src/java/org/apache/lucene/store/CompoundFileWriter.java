@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -84,7 +83,7 @@ final class CompoundFileWriter implements Closeable{
    * @throws NullPointerException
    *           if <code>dir</code> or <code>name</code> is null
    */
-  CompoundFileWriter(Directory dir, String name) throws IOException {
+  CompoundFileWriter(Directory dir, String name) {
     if (dir == null)
       throw new NullPointerException("directory cannot be null");
     if (name == null)
@@ -180,7 +179,7 @@ final class CompoundFileWriter implements Closeable{
    * output stream.
    */
   private final long copyFileEntry(IndexOutput dataOut, FileEntry fileEntry)
-      throws IOException, MergeAbortedException {
+      throws IOException {
     final IndexInput is = fileEntry.dir.openInput(fileEntry.file, IOContext.READONCE);
     boolean success = false;
     try {

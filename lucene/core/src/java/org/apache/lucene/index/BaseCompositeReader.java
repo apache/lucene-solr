@@ -67,7 +67,7 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
    * cloned and not protected for modification, the subclass is responsible 
    * to do this.
    */
-  protected BaseCompositeReader(R[] subReaders) throws IOException {
+  protected BaseCompositeReader(R[] subReaders) {
     this.subReaders = subReaders;
     this.subReadersList = Collections.unmodifiableList(Arrays.asList(subReaders));
     starts = new int[subReaders.length + 1];    // build starts array
@@ -112,7 +112,7 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   }
 
   @Override
-  public final void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  public final void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
     final int i = readerIndex(docID);                          // find subreader num
     subReaders[i].document(docID - starts[i], visitor);    // dispatch to subreader

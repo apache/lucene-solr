@@ -54,7 +54,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public final boolean incrementToken() throws IOException {
+    public final boolean incrementToken() {
       clearAttributes();
       if (index < testToken.length) {
         Token t = testToken[index++];

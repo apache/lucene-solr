@@ -199,7 +199,7 @@ public class NativeUnixDirectory extends FSDirectory {
     //}
 
     @Override
-    public void flush() throws IOException {
+    public void flush() {
       // TODO -- I don't think this method is necessary?
     }
 
@@ -257,7 +257,7 @@ public class NativeUnixDirectory extends FSDirectory {
     }
 
     @Override
-    public long length() throws IOException {
+    public long length() {
       return fileLength + bufferPos;
     }
 

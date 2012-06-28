@@ -22,7 +22,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ConcurrentLFUCache;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.List;
@@ -155,7 +154,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
     return state;
   }
 
-  public void warm(SolrIndexSearcher searcher, SolrCache old) throws IOException {
+  public void warm(SolrIndexSearcher searcher, SolrCache old) {
     if (regenerator == null) return;
     long warmingStartTime = System.currentTimeMillis();
     LFUCache other = (LFUCache) old;

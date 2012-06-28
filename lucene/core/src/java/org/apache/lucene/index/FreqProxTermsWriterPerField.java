@@ -76,7 +76,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   boolean hasPayloads;
 
   @Override
-  void skippingLongTerm() throws IOException {}
+  void skippingLongTerm() {}
 
   public int compareTo(FreqProxTermsWriterPerField other) {
     return fieldInfo.name.compareTo(other.fieldInfo.name);
@@ -326,7 +326,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
    * instances) found in this field and serialize them
    * into a single RAM segment. */
   void flush(String fieldName, FieldsConsumer consumer,  final SegmentWriteState state)
-    throws CorruptIndexException, IOException {
+    throws IOException {
 
     if (!fieldInfo.isIndexed()) {
       return; // nothing to flush, don't bother the codec with the unindexed field

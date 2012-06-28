@@ -35,12 +35,12 @@ public class RecoveryZkTest extends FullSolrCloudTest {
   private StopableIndexingThread indexThread;
   private StopableIndexingThread indexThread2;
   @BeforeClass
-  public static void beforeSuperClass() throws Exception {
+  public static void beforeSuperClass() {
 
   }
   
   @AfterClass
-  public static void afterSuperClass() throws Exception {
+  public static void afterSuperClass() {
 
   }
   

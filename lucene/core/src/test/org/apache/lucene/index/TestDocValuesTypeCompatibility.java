@@ -33,7 +33,6 @@ import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -44,8 +43,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 @SuppressCodecs("Lucene3x")
 public class TestDocValuesTypeCompatibility extends LuceneTestCase {
   
-  public void testAddCompatibleIntTypes() throws CorruptIndexException,
-      LockObtainFailedException, IOException {
+  public void testAddCompatibleIntTypes() throws IOException {
     int numIter = atLeast(10);
     for (int i = 0; i < numIter; i++) {
       Directory dir = newDirectory();
@@ -99,8 +97,7 @@ public class TestDocValuesTypeCompatibility extends LuceneTestCase {
     }
   }
   
-  public void testAddCompatibleDoubleTypes() throws CorruptIndexException,
-      LockObtainFailedException, IOException {
+  public void testAddCompatibleDoubleTypes() throws IOException {
     int numIter = atLeast(10);
     for (int i = 0; i < numIter; i++) {
       Directory dir = newDirectory();
@@ -153,8 +150,7 @@ public class TestDocValuesTypeCompatibility extends LuceneTestCase {
     }
   }
   
-  public void testAddCompatibleDoubleTypes2() throws CorruptIndexException,
-      LockObtainFailedException, IOException {
+  public void testAddCompatibleDoubleTypes2() throws IOException {
     int numIter = atLeast(10);
     for (int i = 0; i < numIter; i++) {
       Directory dir = newDirectory();
@@ -185,8 +181,7 @@ public class TestDocValuesTypeCompatibility extends LuceneTestCase {
     
   }
   
-  public void testAddCompatibleByteTypes() throws CorruptIndexException,
-      LockObtainFailedException, IOException {
+  public void testAddCompatibleByteTypes() throws IOException {
     int numIter = atLeast(10);
     for (int i = 0; i < numIter; i++) {
       Directory dir = newDirectory();
@@ -264,7 +259,7 @@ public class TestDocValuesTypeCompatibility extends LuceneTestCase {
   }
   
   private void addDoc(IndexWriter writer, IndexableField... fields)
-      throws CorruptIndexException, IOException {
+      throws IOException {
     Document doc = new Document();
     for (IndexableField indexableField : fields) {
       doc.add(indexableField);

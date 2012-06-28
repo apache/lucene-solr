@@ -17,8 +17,6 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -42,7 +40,7 @@ public final class CannedTokenStream extends TokenStream {
   }
   
   @Override
-  public boolean incrementToken() throws IOException {
+  public boolean incrementToken() {
     if (upto < tokens.length) {
       final Token token = tokens[upto++];     
       // TODO: can we just capture/restoreState so

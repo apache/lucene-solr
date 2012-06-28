@@ -19,23 +19,17 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeError;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 
 public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode {
 
   private int value = 0;
 
   /**
-   * @throws QueryNodeException
-   * @throws QueryNodeParseException
-   * @exception QueryNodeParseException
-   *              throw in overridden method to disallow
+   * @exception QueryNodeError throw in overridden method to disallow
    */
-  public PhraseSlopQueryNode(QueryNode query, int value)
-      throws QueryNodeException {
+  public PhraseSlopQueryNode(QueryNode query, int value) {
     if (query == null) {
       throw new QueryNodeError(new MessageImpl(
           QueryParserMessages.NODE_ACTION_NOT_SUPPORTED, "query", "null"));

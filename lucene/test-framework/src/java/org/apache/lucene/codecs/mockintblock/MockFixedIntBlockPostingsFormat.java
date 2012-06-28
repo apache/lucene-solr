@@ -84,7 +84,7 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
       return new FixedIntBlockIndexInput(dir.openInput(fileName, context)) {
 
         @Override
-        protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
+        protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) {
           return new BlockReader() {
             public void seek(long pos) {}
             public void readBlock() throws IOException {

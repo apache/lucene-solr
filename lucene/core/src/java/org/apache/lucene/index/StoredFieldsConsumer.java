@@ -126,7 +126,7 @@ final class StoredFieldsConsumer {
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument end");
   }
 
-  public void addField(IndexableField field, FieldInfo fieldInfo) throws IOException {
+  public void addField(IndexableField field, FieldInfo fieldInfo) {
     if (numStoredFields == storedFields.length) {
       int newSize = ArrayUtil.oversize(numStoredFields + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
       IndexableField[] newArray = new IndexableField[newSize];

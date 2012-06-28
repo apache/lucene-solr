@@ -27,7 +27,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.store.DataInput;
@@ -284,7 +283,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
                                         final MergeState.IndexReaderAndLiveDocs reader,
                                         int rawDocLengths[],
                                         int rawDocLengths2[])
-          throws IOException, MergeAbortedException {
+          throws IOException {
     final int maxDoc = reader.reader.maxDoc();
     final Bits liveDocs = reader.liveDocs;
     int totalNumDocs = 0;
@@ -337,7 +336,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
                                       final MergeState.IndexReaderAndLiveDocs reader,
                                       int rawDocLengths[],
                                       int rawDocLengths2[])
-          throws IOException, MergeAbortedException {
+          throws IOException {
     final int maxDoc = reader.reader.maxDoc();
     if (matchingVectorsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
@@ -362,7 +361,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   }
   
   @Override
-  public void finish(FieldInfos fis, int numDocs) throws IOException {
+  public void finish(FieldInfos fis, int numDocs) {
     if (HEADER_LENGTH_INDEX+((long) numDocs)*16 != tvx.getFilePointer())
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and
@@ -382,7 +381,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   }
 
   @Override
-  public Comparator<BytesRef> getComparator() throws IOException {
+  public Comparator<BytesRef> getComparator() {
     return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 }

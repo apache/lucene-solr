@@ -17,24 +17,25 @@
 package org.apache.solr.search;
 
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.ByteUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.update.UpdateLog;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -60,7 +61,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
   
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {
@@ -892,7 +893,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       // WARNING... assumes format of .00000n where n is less than 9
       long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf(".") + 1));
-      String fname2 = String.format(Locale.ENGLISH, 
+      String fname2 = String.format(Locale.ENGLISH,
           UpdateLog.LOG_FILENAME_PATTERN,
           UpdateLog.TLOG_NAME,
           logNumber + 1);

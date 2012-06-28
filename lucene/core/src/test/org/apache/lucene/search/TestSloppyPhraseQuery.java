@@ -207,7 +207,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       Scorer scorer;
       
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorer scorer) {
         this.scorer = scorer;
       }
       
@@ -218,7 +218,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       }
       
       @Override
-      public void setNextReader(AtomicReaderContext context) throws IOException {
+      public void setNextReader(AtomicReaderContext context) {
         // do nothing
       }
       

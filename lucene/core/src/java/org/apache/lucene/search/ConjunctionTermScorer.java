@@ -32,7 +32,7 @@ class ConjunctionTermScorer extends Scorer {
   private final DocsAndFreqs lead;
 
   ConjunctionTermScorer(Weight weight, float coord,
-      DocsAndFreqs[] docsAndFreqs) throws IOException {
+      DocsAndFreqs[] docsAndFreqs) {
     super(weight);
     this.coord = coord;
     this.docsAndFreqs = docsAndFreqs;

@@ -83,7 +83,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     doTestPercentageAutowarm(100, 0, new int[]{}, new int[]{1, 10, 25, 51, 55, 60, 70, 80, 99, 100, 200, 300});
   }
   
-  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) throws IOException {
+  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<Object, Object>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("size", String.valueOf(limit));
@@ -177,7 +177,7 @@ public class TestFastLRUCache extends LuceneTestCase {
   private CacheRegenerator createCodeRegenerator() {
     CacheRegenerator cr = new CacheRegenerator() {
         public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache,
-                                      SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
+                                      SolrCache oldCache, Object oldKey, Object oldVal) {
           newCache.put(oldKey, oldVal);
           return true;
         }

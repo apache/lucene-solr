@@ -23,14 +23,17 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -42,7 +45,6 @@ import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -248,8 +250,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     directory.close();
   }
   
-  public void testShrinkToAfterShortestMatch() throws CorruptIndexException,
-      LockObtainFailedException, IOException {
+  public void testShrinkToAfterShortestMatch() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
@@ -286,8 +287,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     directory.close();
   }
   
-  public void testShrinkToAfterShortestMatch2() throws CorruptIndexException,
-      LockObtainFailedException, IOException {
+  public void testShrinkToAfterShortestMatch2() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
@@ -322,8 +322,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     directory.close();
   }
   
-  public void testShrinkToAfterShortestMatch3() throws CorruptIndexException,
-      LockObtainFailedException, IOException {
+  public void testShrinkToAfterShortestMatch3() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));

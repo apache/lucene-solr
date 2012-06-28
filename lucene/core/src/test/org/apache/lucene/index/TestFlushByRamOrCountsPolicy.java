@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -48,22 +47,19 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     lineDocFile = null;
   }
 
-  public void testFlushByRam() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InterruptedException {
+  public void testFlushByRam() throws IOException, InterruptedException {
     final double ramBuffer = (TEST_NIGHTLY ? 1 : 10) + atLeast(2)
         + random().nextDouble();
     runFlushByRam(1 + random().nextInt(TEST_NIGHTLY ? 5 : 1), ramBuffer, false);
   }
   
-  public void testFlushByRamLargeBuffer() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InterruptedException {
+  public void testFlushByRamLargeBuffer() throws IOException, InterruptedException {
     // with a 256 mb ram buffer we should never stall
     runFlushByRam(1 + random().nextInt(TEST_NIGHTLY ? 5 : 1), 256.d, true);
   }
 
   protected void runFlushByRam(int numThreads, double maxRamMB,
-      boolean ensureNotStalled) throws IOException, CorruptIndexException,
-      LockObtainFailedException, InterruptedException {
+      boolean ensureNotStalled) throws IOException, InterruptedException {
     final int numDocumentsToIndex = 10 + atLeast(30);
     AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
     Directory dir = newDirectory();
@@ -116,8 +112,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     dir.close();
   }
 
-  public void testFlushDocCount() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InterruptedException {
+  public void testFlushDocCount() throws IOException, InterruptedException {
     int[] numThreads = new int[] { 2 + atLeast(1), 1 };
     for (int i = 0; i < numThreads.length; i++) {
 
@@ -230,8 +225,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     dir.close();
   }
 
-  public void testStallControl() throws InterruptedException,
-      CorruptIndexException, LockObtainFailedException, IOException {
+  public void testStallControl() throws InterruptedException, IOException {
 
     int[] numThreads = new int[] { 4 + random().nextInt(8), 1 };
     final int numDocumentsToIndex = 50 + random().nextInt(50);

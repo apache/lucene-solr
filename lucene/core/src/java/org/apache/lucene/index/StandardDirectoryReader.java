@@ -38,7 +38,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   
   /** called only from static open() methods */
   StandardDirectoryReader(Directory directory, AtomicReader[] readers, IndexWriter writer,
-    SegmentInfos sis, int termInfosIndexDivisor, boolean applyAllDeletes) throws IOException {
+    SegmentInfos sis, int termInfosIndexDivisor, boolean applyAllDeletes) {
     super(directory, readers);
     this.writer = writer;
     this.segmentInfos = sis;
@@ -48,10 +48,10 @@ final class StandardDirectoryReader extends DirectoryReader {
 
   /** called from DirectoryReader.open(...) methods */
   static DirectoryReader open(final Directory directory, final IndexCommit commit,
-                          final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+                          final int termInfosIndexDivisor) throws IOException {
     return (DirectoryReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
-      protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
+      protected Object doBody(String segmentFileName) throws IOException {
         SegmentInfos sis = new SegmentInfos();
         sis.read(directory, segmentFileName);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
@@ -226,12 +226,12 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   @Override
-  protected DirectoryReader doOpenIfChanged() throws CorruptIndexException, IOException {
+  protected DirectoryReader doOpenIfChanged() throws IOException {
     return doOpenIfChanged(null);
   }
 
   @Override
-  protected DirectoryReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
+  protected DirectoryReader doOpenIfChanged(final IndexCommit commit) throws IOException {
     ensureOpen();
 
     // If we were obtained by writer.getReader(), re-ask the
@@ -244,7 +244,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   @Override
-  protected DirectoryReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+  protected DirectoryReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws IOException {
     ensureOpen();
     if (writer == this.writer && applyAllDeletes == this.applyAllDeletes) {
       return doOpenFromWriter(null);
@@ -253,7 +253,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     }
   }
 
-  private DirectoryReader doOpenFromWriter(IndexCommit commit) throws CorruptIndexException, IOException {
+  private DirectoryReader doOpenFromWriter(IndexCommit commit) throws IOException {
     if (commit != null) {
       throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
     }
@@ -273,7 +273,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     return reader;
   }
 
-  private synchronized DirectoryReader doOpenNoWriter(IndexCommit commit) throws CorruptIndexException, IOException {
+  private synchronized DirectoryReader doOpenNoWriter(IndexCommit commit) throws IOException {
 
     if (commit == null) {
       if (isCurrent()) {
@@ -290,7 +290,7 @@ final class StandardDirectoryReader extends DirectoryReader {
 
     return (DirectoryReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
-      protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
+      protected Object doBody(String segmentFileName) throws IOException {
         final SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
         return doOpenIfChanged(infos, null);
@@ -298,7 +298,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     }.run(commit);
   }
 
-  synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, IndexWriter writer) throws CorruptIndexException, IOException {
+  synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, IndexWriter writer) throws IOException {
     return StandardDirectoryReader.open(directory, writer, infos, getSequentialSubReaders(), termInfosIndexDivisor);
   }
 
@@ -309,7 +309,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   @Override
-  public boolean isCurrent() throws CorruptIndexException, IOException {
+  public boolean isCurrent() throws IOException {
     ensureOpen();
     if (writer == null || writer.isClosed()) {
       // Fully read the segments file: this ensures that it's

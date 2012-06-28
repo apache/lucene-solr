@@ -57,8 +57,7 @@ class VarDerefBytesImpl {
    * order and merge them in a streamed fashion. 
    */
   static class Writer extends DerefBytesWriterBase {
-    public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
-        throws IOException {
+    public Writer(Directory dir, String id, Counter bytesUsed, IOContext context) {
       super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, Type.BYTES_VAR_DEREF);
       size = 0;
     }

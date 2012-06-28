@@ -1,7 +1,5 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 
@@ -41,12 +39,12 @@ abstract class Consts {
     private String fullPath;
 
     @Override
-    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+    public void stringField(FieldInfo fieldInfo, String value) {
       fullPath = value;
     }
 
     @Override
-    public Status needsField(FieldInfo fieldInfo) throws IOException {
+    public Status needsField(FieldInfo fieldInfo) {
       return fullPath == null ? Status.YES : Status.STOP;
     }
 

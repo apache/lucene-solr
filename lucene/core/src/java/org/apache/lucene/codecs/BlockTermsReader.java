@@ -18,7 +18,6 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeMap;
@@ -30,7 +29,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -713,7 +711,7 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public void seekExact(BytesRef target, TermState otherState) throws IOException {
+      public void seekExact(BytesRef target, TermState otherState) {
         //System.out.println("BTR.seekExact termState target=" + target.utf8ToString() + " " + target + " this=" + this);
         assert otherState != null && otherState instanceof BlockTermState;
         assert !doOrd || ((BlockTermState) otherState).ord < numTerms;

@@ -136,7 +136,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     indexStream.seek(HEADER_LENGTH_IDX + docID * 8L);
   }
 
-  public final void visitDocument(int n, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  public final void visitDocument(int n, StoredFieldVisitor visitor) throws IOException {
     seekIndex(n);
     fieldsStream.seek(indexStream.readLong());
 

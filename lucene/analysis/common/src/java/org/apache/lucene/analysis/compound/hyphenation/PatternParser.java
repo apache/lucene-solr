@@ -64,7 +64,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
 
   static final int ELEM_HYPHEN = 4;
 
-  public PatternParser() throws HyphenationException {
+  public PatternParser() {
     token = new StringBuilder();
     parser = createParser();
     parser.setContentHandler(this);
@@ -74,7 +74,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
 
   }
 
-  public PatternParser(PatternConsumer consumer) throws HyphenationException {
+  public PatternParser(PatternConsumer consumer) {
     this();
     this.consumer = consumer;
   }

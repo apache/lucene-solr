@@ -466,7 +466,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
 
     @Override
-    public int getDocCount() throws IOException {
+    public int getDocCount() {
       return docCount;
     }
 
@@ -863,7 +863,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public BytesRef term() throws IOException {
+      public BytesRef term() {
         return term;
       }
 
@@ -1156,22 +1156,22 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+      public boolean seekExact(BytesRef text, boolean useCache) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public void seekExact(long ord) throws IOException {
+      public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public long ord() throws IOException {
+      public long ord() {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+      public SeekStatus seekCeil(BytesRef text, boolean useCache) {
         throw new UnsupportedOperationException();
       }
     }
@@ -2144,7 +2144,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public void seekExact(BytesRef target, TermState otherState) throws IOException {
+      public void seekExact(BytesRef target, TermState otherState) {
         // if (DEBUG) {
         //   System.out.println("BTTR.seekExact termState seg=" + segment + " target=" + target.utf8ToString() + " " + target + " state=" + otherState);
         // }
@@ -2174,7 +2174,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public void seekExact(long ord) throws IOException {
+      public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
 
@@ -2351,7 +2351,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // }
         }
 
-        void rewind() throws IOException {
+        void rewind() {
 
           // Force reload:
           fp = fpOrig;

@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -103,7 +102,7 @@ public class TestSpellChecker extends LuceneTestCase {
   }
 
 
-  public void testBuild() throws CorruptIndexException, IOException {
+  public void testBuild() throws IOException {
     IndexReader r = DirectoryReader.open(userindex);
 
     spellChecker.clearIndex();

@@ -92,15 +92,14 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     private final BlockReader blockReader;
     private final IntsRef bulkResult = new IntsRef();
 
-    public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader)
-      throws IOException {
+    public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader) {
       this.in = in;
       this.pending = pending;
       bulkResult.ints = pending;
       this.blockReader = blockReader;
     }
 
-    void seek(final long fp, final int upto) throws IOException {
+    void seek(final long fp, final int upto) {
       // TODO: should we do this in real-time, not lazy?
       pendingFP = fp;
       pendingUpto = upto;

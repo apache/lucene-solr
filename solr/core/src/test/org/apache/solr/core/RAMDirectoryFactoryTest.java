@@ -37,7 +37,7 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
     final Directory directory = new RAMDirectory();
     RAMDirectoryFactory factory = new RAMDirectoryFactory()  {
       @Override
-      protected Directory create(String path) throws IOException {
+      protected Directory create(String path) {
         return directory;
       }
     };

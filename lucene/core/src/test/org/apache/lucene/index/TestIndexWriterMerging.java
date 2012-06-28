@@ -312,7 +312,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
   private class MyMergeScheduler extends MergeScheduler {
     @Override
     synchronized public void merge(IndexWriter writer)
-      throws CorruptIndexException, IOException {
+      throws IOException {
 
       while(true) {
         MergePolicy.OneMerge merge = writer.getNextMerge();

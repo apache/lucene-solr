@@ -942,7 +942,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         stream.write(out);
       }
 
-      public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
+      public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) {
         throw new RuntimeException("This is a binary writer , Cannot write to a characterstream");
       }
 

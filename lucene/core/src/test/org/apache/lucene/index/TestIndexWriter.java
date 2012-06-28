@@ -820,7 +820,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     @Override
-    protected void doBeforeFlush() throws IOException {
+    protected void doBeforeFlush() {
       beforeWasCalled = true;
     }
   }
@@ -1527,7 +1527,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     @Override
-    public final boolean incrementToken() throws IOException {
+    public final boolean incrementToken() {
       clearAttributes();      
       if (upto < tokens.length) {
         termAtt.setEmpty();

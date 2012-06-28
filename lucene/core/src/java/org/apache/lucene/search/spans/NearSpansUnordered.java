@@ -285,7 +285,7 @@ public class NearSpansUnordered extends Spans {
     }
   }
 
-  private void addToList(SpansCell cell) throws IOException {
+  private void addToList(SpansCell cell) {
     if (last != null) {			  // add next to end of list
       last.next = cell;
     } else
@@ -301,7 +301,7 @@ public class NearSpansUnordered extends Spans {
     last.next = null;
   }
 
-  private void queueToList() throws IOException {
+  private void queueToList() {
     last = first = null;
     while (queue.top() != null) {
       addToList(queue.pop());

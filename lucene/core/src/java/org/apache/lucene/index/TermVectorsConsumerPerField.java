@@ -90,7 +90,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
    *  are enabled, to write the vectors to
    *  RAMOutputStream, which is then quickly flushed to
    *  the real term vectors files in the Directory. */  @Override
-  void finish() throws IOException {
+  void finish() {
     if (!doVectors || termsHashPerField.bytesHash.size() == 0) {
       return;
     }

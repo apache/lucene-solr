@@ -118,11 +118,10 @@ final class IndexFileDeleter {
    * the Directory, incref the files they reference, call
    * the policy to let it delete commits.  This will remove
    * any files not referenced by any of the commits.
-   * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
   public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos,
-                          InfoStream infoStream, IndexWriter writer) throws CorruptIndexException, IOException {
+                          InfoStream infoStream, IndexWriter writer) throws IOException {
     this.infoStream = infoStream;
     this.writer = writer;
 
@@ -469,14 +468,14 @@ final class IndexFileDeleter {
     }
   }
 
-  void incRef(Collection<String> files) throws IOException {
+  void incRef(Collection<String> files) {
     assert locked();
     for(final String file : files) {
       incRef(file);
     }
   }
 
-  void incRef(String fileName) throws IOException {
+  void incRef(String fileName) {
     assert locked();
     RefCount rc = getRefCount(fileName);
     if (infoStream.isEnabled("IFD")) {
@@ -661,7 +660,7 @@ final class IndexFileDeleter {
     }
 
     @Override
-    public Collection<String> getFileNames() throws IOException {
+    public Collection<String> getFileNames() {
       return files;
     }
 

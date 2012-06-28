@@ -17,7 +17,6 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -50,7 +49,7 @@ public final class TermFreqArrayIterator implements TermFreqIterator {
   }
 
   @Override
-  public BytesRef next() throws IOException {
+  public BytesRef next() {
     if (i.hasNext()) {
       current = i.next();
       spare.copyBytes(current.term);

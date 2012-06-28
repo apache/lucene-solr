@@ -66,7 +66,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   private Initializer init2;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
   

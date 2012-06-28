@@ -46,7 +46,7 @@ public class TestErrorHandling extends AbstractDataImportHandlerTestCase {
   }
   
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {

@@ -117,7 +117,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
       CharacterRunAutomaton runAutomaton = new CharacterRunAutomaton(automaton);
       CharsRef utf16 = new CharsRef(10);
 
-      private SimpleAutomatonTermsEnum(TermsEnum tenum) throws IOException {
+      private SimpleAutomatonTermsEnum(TermsEnum tenum) {
         super(tenum);
         setInitialSeekTerm(new BytesRef(""));
       }

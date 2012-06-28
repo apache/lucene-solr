@@ -92,7 +92,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   /** If the total number of positions (summed across all docs
    *  for this term) is <= maxPositions, then the postings are
    *  inlined into terms dict */
-  public PulsingPostingsWriter(int maxPositions, PostingsWriterBase wrappedPostingsWriter) throws IOException {
+  public PulsingPostingsWriter(int maxPositions, PostingsWriterBase wrappedPostingsWriter) {
     pending = new Position[maxPositions];
     for(int i=0;i<maxPositions;i++) {
       pending[i] = new Position();

@@ -430,7 +430,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     return true;
   }
 
-  private int[] createExpectedGroupHeads(String searchTerm, GroupDoc[] groupDocs, Sort docSort, boolean sortByScoreOnly, int[] fieldIdToDocID) throws IOException {
+  private int[] createExpectedGroupHeads(String searchTerm, GroupDoc[] groupDocs, Sort docSort, boolean sortByScoreOnly, int[] fieldIdToDocID) {
     Map<BytesRef, List<GroupDoc>> groupHeads = new HashMap<BytesRef, List<GroupDoc>>();
     for (GroupDoc groupDoc : groupDocs) {
       if (!groupDoc.content.startsWith(searchTerm)) {
@@ -519,7 +519,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
-  private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, Type valueType) throws IOException {
+  private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, Type valueType) {
     AbstractAllGroupHeadsCollector<? extends AbstractAllGroupHeadsCollector.GroupHead> collector;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);

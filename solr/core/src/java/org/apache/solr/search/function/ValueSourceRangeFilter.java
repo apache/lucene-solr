@@ -81,7 +81,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
          return valueSource.getValues(context, readerContext).getRangeScorer(readerContext.reader(), lowerVal, upperVal, includeLower, includeUpper);
        }
        @Override
-       public Bits bits() throws IOException {
+       public Bits bits() {
          return null;  // don't use random access
        }
      }, acceptDocs);

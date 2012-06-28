@@ -18,7 +18,6 @@
 package org.apache.solr.update;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,7 +50,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   }
   
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {

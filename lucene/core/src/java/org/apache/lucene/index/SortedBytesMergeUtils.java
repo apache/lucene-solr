@@ -218,7 +218,7 @@ public final class SortedBytesMergeUtils {
       current = top[0].current;
     }
 
-    private void pushTop() throws IOException {
+    private void pushTop() {
       // call next() on each top, and put back into queue
       for (int i = 0; i < numTop; i++) {
         top[i].current = top[i].next();

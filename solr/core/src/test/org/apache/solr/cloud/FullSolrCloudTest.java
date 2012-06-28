@@ -20,9 +20,12 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
-import java.util.concurrent.TimeoutException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.params.CoreConnectionPNames;
@@ -46,12 +49,10 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * 
@@ -61,7 +62,7 @@ import org.junit.Ignore;
  */
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @BeforeClass
-  public static void beforeFullSolrCloudTest() throws Exception {
+  public static void beforeFullSolrCloudTest() {
     // shorten the log output more for this test type
     if (formatter != null) formatter.setShorterFormat();
   }
@@ -148,7 +149,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     System
         .setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solrcloud.update.delay", "0");
@@ -327,8 +328,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
-      List<SolrServer> clients) throws Exception, IOException, KeeperException,
-      URISyntaxException {
+      List<SolrServer> clients) throws Exception {
     zkStateReader.updateCloudState(true);
     shardToClient.clear();
     shardToJetty.clear();
@@ -596,8 +596,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
   }
   
-  private long testUpdateAndDelete() throws Exception, SolrServerException,
-      IOException {
+  private long testUpdateAndDelete() throws Exception {
     long docId = 99999999L;
     indexr("id", docId, t1, "originalcontent");
     
@@ -632,9 +631,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     return docId;
   }
   
-  private void addNewReplica() throws Exception, InterruptedException,
-      TimeoutException, IOException, KeeperException, URISyntaxException,
-      SolrServerException {
+  private void addNewReplica() throws Exception {
     JettySolrRunner newReplica = createJettys(1).get(0);
     
     waitForRecoveriesToFinish(false);
@@ -656,8 +653,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose);
   }
   
-  private void brindDownShardIndexSomeDocsAndRecover() throws Exception,
-      SolrServerException, IOException, InterruptedException {
+  private void brindDownShardIndexSomeDocsAndRecover() throws Exception {
     SolrQuery query = new SolrQuery("*:*");
     query.set("distrib", false);
     

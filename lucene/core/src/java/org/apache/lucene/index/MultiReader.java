@@ -45,7 +45,7 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
   * <p>Note that all subreaders are closed if this Multireader is closed.</p>
   * @param subReaders set of (sub)readers
   */
-  public MultiReader(IndexReader... subReaders) throws IOException {
+  public MultiReader(IndexReader... subReaders) {
     this(subReaders, true);
   }
 
@@ -55,7 +55,7 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
    * @param closeSubReaders indicates whether the subreaders should be closed
    * when this MultiReader is closed
    */
-  public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
+  public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) {
     super(subReaders.clone());
     this.closeSubReaders = closeSubReaders;
     if (!closeSubReaders) {

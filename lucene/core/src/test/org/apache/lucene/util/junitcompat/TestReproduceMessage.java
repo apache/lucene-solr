@@ -293,7 +293,7 @@ public class TestReproduceMessage extends WithNestedTests {
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
   }
 
-  private String runAndReturnSyserr() throws Exception {
+  private String runAndReturnSyserr() {
     JUnitCore.runClasses(Nested.class);
 
     String err = getSysErr();

@@ -162,7 +162,7 @@ public final class ParallelAtomicReader extends AtomicReader {
     }
     
     @Override
-    public String next() throws IOException {
+    public String next() {
       if (keys.hasNext()) {
         currentField = keys.next();
       } else {
@@ -172,7 +172,7 @@ public final class ParallelAtomicReader extends AtomicReader {
     }
     
     @Override
-    public Terms terms() throws IOException {
+    public Terms terms() {
       return fields.terms(currentField);
     }
     
@@ -185,22 +185,22 @@ public final class ParallelAtomicReader extends AtomicReader {
     ParallelFields() {
     }
     
-    void addField(String fieldName, Terms terms) throws IOException {
+    void addField(String fieldName, Terms terms) {
       fields.put(fieldName, terms);
     }
     
     @Override
-    public FieldsEnum iterator() throws IOException {
+    public FieldsEnum iterator() {
       return new ParallelFieldsEnum(this);
     }
     
     @Override
-    public Terms terms(String field) throws IOException {
+    public Terms terms(String field) {
       return fields.get(field);
     }
     
     @Override
-    public int size() throws IOException {
+    public int size() {
       return fields.size();
     }
   }
@@ -249,7 +249,7 @@ public final class ParallelAtomicReader extends AtomicReader {
   }
   
   @Override
-  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
     for (final AtomicReader reader: storedFieldsReaders) {
       reader.document(docID, visitor);

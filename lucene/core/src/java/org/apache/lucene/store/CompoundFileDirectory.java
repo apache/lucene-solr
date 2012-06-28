@@ -337,7 +337,7 @@ public final class CompoundFileDirectory extends Directory {
   }
   
   @Override
-  public void sync(Collection<String> names) throws IOException {
+  public void sync(Collection<String> names) {
     throw new UnsupportedOperationException();
   }
   
@@ -360,7 +360,7 @@ public final class CompoundFileDirectory extends Directory {
     }
     return new IndexInputSlicer() {
       @Override
-      public void close() throws IOException {
+      public void close() {
       }
       
       @Override

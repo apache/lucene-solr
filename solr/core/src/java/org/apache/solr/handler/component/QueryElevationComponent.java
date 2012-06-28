@@ -480,7 +480,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   private SentinelIntSet ordSet; //the key half of the map
   private BytesRef[] termValues;//the value half of the map
 
-  public ElevationComparatorSource(final QueryElevationComponent.ElevationObj elevations) throws IOException {
+  public ElevationComparatorSource(final QueryElevationComponent.ElevationObj elevations) {
     this.elevations = elevations;
     int size = elevations.ids.size();
     ordSet = new SentinelIntSet(size, -1);
@@ -506,7 +506,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         bottomVal = values[slot];
       }
 
-      private int docVal(int doc) throws IOException {
+      private int docVal(int doc) {
         if (ordSet.size() > 0) {
           int slot = ordSet.find(doc);
           if (slot >= 0) {
@@ -519,12 +519,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
 
       @Override
-      public int compareBottom(int doc) throws IOException {
+      public int compareBottom(int doc) {
         return bottomVal - docVal(doc);
       }
 
       @Override
-      public void copy(int slot, int doc) throws IOException {
+      public void copy(int slot, int doc) {
         values[slot] = docVal(doc);
       }
 
@@ -562,7 +562,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
 
       @Override
-      public int compareDocToValue(int doc, Integer valueObj) throws IOException {
+      public int compareDocToValue(int doc, Integer valueObj) {
         final int value = valueObj.intValue();
         final int docValue = docVal(doc);
         return docValue - value;  // values will be small enough that there is no overflow concern

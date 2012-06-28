@@ -27,8 +27,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.index.AtomicReaderContext;
 
-import java.io.IOException;
-
 /** A base class that may be usefull for implementing DocSets */
 abstract class DocSetBase implements DocSet {
 
@@ -140,7 +138,7 @@ abstract class DocSetBase implements DocSet {
 
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet(final AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(final AtomicReaderContext context, Bits acceptDocs) {
         AtomicReader reader = context.reader();
         // all Solr DocSets that are used as filters only include live docs
         final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
@@ -155,7 +153,7 @@ abstract class DocSetBase implements DocSet {
 
         return BitsFilteredDocIdSet.wrap(new DocIdSet() {
           @Override
-          public DocIdSetIterator iterator() throws IOException {
+          public DocIdSetIterator iterator() {
             return new DocIdSetIterator() {
               int pos=base-1;
               int adjustedDoc=-1;
@@ -166,13 +164,13 @@ abstract class DocSetBase implements DocSet {
               }
 
               @Override
-              public int nextDoc() throws IOException {
+              public int nextDoc() {
                 pos = bs.nextSetBit(pos+1);
                 return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
               }
 
               @Override
-              public int advance(int target) throws IOException {
+              public int advance(int target) {
                 if (target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
                 pos = bs.nextSetBit(target+base);
                 return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
@@ -186,7 +184,7 @@ abstract class DocSetBase implements DocSet {
           }
 
           @Override
-          public Bits bits() throws IOException {
+          public Bits bits() {
             // sparse filters should not use random access
             return null;
           }

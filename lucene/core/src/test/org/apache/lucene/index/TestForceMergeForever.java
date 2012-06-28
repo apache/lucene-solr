@@ -40,7 +40,7 @@ public class TestForceMergeForever extends LuceneTestCase {
     }
 
     @Override
-    public void merge(MergePolicy.OneMerge merge) throws CorruptIndexException, IOException {
+    public void merge(MergePolicy.OneMerge merge) throws IOException {
       if (merge.maxNumSegments != -1 && (first || merge.segments.size() == 1)) {
         first = false;
         if (VERBOSE) {

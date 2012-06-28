@@ -16,8 +16,7 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -42,7 +41,7 @@ public class FieldQParserPlugin extends QParserPlugin {
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       @Override
-      public Query parse() throws ParseException {
+      public Query parse() {
         String field = localParams.get(QueryParsing.F);
         String queryText = localParams.get(QueryParsing.V);
         SchemaField sf = req.getSchema().getField(field);

@@ -32,8 +32,7 @@ final class DirectPackedReader extends PackedInts.ReaderImpl {
   // masks[n-1] masks for bottom n bits
   private final long[] masks;
 
-  public DirectPackedReader(int bitsPerValue, int valueCount, IndexInput in)
-    throws IOException {
+  public DirectPackedReader(int bitsPerValue, int valueCount, IndexInput in) {
     super(valueCount, bitsPerValue);
     this.in = in;
 

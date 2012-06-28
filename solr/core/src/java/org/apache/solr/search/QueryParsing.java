@@ -637,7 +637,7 @@ public class QueryParsing {
       }
     }
 
-    float getFloat() throws ParseException {
+    float getFloat() {
       eatws();
       char[] arr = new char[end - pos];
       int i;
@@ -657,7 +657,7 @@ public class QueryParsing {
       return Float.parseFloat(new String(arr, 0, i));
     }
 
-    Number getNumber() throws ParseException {
+    Number getNumber() {
       eatws();
       int start = pos;
       boolean flt = false;
@@ -682,7 +682,7 @@ public class QueryParsing {
       }
     }
 
-    double getDouble() throws ParseException {
+    double getDouble() {
       eatws();
       char[] arr = new char[end - pos];
       int i;
@@ -702,7 +702,7 @@ public class QueryParsing {
       return Double.parseDouble(new String(arr, 0, i));
     }
 
-    int getInt() throws ParseException {
+    int getInt() {
       eatws();
       char[] arr = new char[end - pos];
       int i;

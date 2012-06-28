@@ -224,7 +224,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
   
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     tokenizers = null;
     tokenfilters = null;
     charfilters = null;

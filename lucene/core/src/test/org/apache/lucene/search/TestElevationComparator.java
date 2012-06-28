@@ -157,7 +157,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
        bottomVal = values[slot];
      }
 
-     private int docVal(int doc) throws IOException {
+     private int docVal(int doc) {
        int ord = idIndex.getOrd(doc);
        if (ord == 0) {
          return 0;
@@ -169,12 +169,12 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public int compareBottom(int doc) throws IOException {
+     public int compareBottom(int doc) {
        return docVal(doc) - bottomVal;
      }
 
      @Override
-     public void copy(int slot, int doc) throws IOException {
+     public void copy(int slot, int doc) {
        values[slot] = docVal(doc);
      }
 
@@ -190,7 +190,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public int compareDocToValue(int doc, Integer valueObj) throws IOException {
+     public int compareDocToValue(int doc, Integer valueObj) {
        final int value = valueObj.intValue();
        final int docValue = docVal(doc);
        // values will be small enough that there is no overflow concern

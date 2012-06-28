@@ -27,8 +27,6 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.lucene.index.IndexReader;
-
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig;
@@ -43,13 +41,11 @@ import org.apache.commons.codec.binary.Base64;
 
 public final class HttpCacheHeaderUtil {
   
-  public static void sendNotModified(HttpServletResponse res)
-    throws IOException {
+  public static void sendNotModified(HttpServletResponse res) {
     res.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
   }
 
-  public static void sendPreconditionFailed(HttpServletResponse res)
-    throws IOException {
+  public static void sendPreconditionFailed(HttpServletResponse res) {
     res.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
   }
   
@@ -215,8 +211,7 @@ public final class HttpCacheHeaderUtil {
   public static boolean doCacheHeaderValidation(final SolrQueryRequest solrReq,
                                                 final HttpServletRequest req,
                                                 final Method reqMethod,
-                                                final HttpServletResponse resp)
-    throws IOException {
+                                                final HttpServletResponse resp) {
     
     if (Method.POST==reqMethod || Method.OTHER==reqMethod) {
       return false;
@@ -244,14 +239,12 @@ public final class HttpCacheHeaderUtil {
    * Check for etag related conditional headers and set status 
    * 
    * @return true if no request processing is necessary and HTTP response status has been set, false otherwise.
-   * @throws IOException
    */
   @SuppressWarnings("unchecked")
   public static boolean checkETagValidators(final HttpServletRequest req,
                                             final HttpServletResponse resp,
                                             final Method reqMethod,
-                                            final String etag)
-    throws IOException {
+                                            final String etag) {
     
     // First check If-None-Match because this is the common used header
     // element by HTTP clients
@@ -281,12 +274,10 @@ public final class HttpCacheHeaderUtil {
    * Check for modify time related conditional headers and set status 
    * 
    * @return true if no request processing is necessary and HTTP response status has been set, false otherwise.
-   * @throws IOException
    */
   public static boolean checkLastModValidators(final HttpServletRequest req,
                                                final HttpServletResponse resp,
-                                               final long lastMod)
-    throws IOException {
+                                               final long lastMod) {
 
     try {
       // First check for If-Modified-Since because this is the common

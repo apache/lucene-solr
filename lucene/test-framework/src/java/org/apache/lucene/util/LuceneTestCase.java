@@ -756,7 +756,7 @@ public abstract class LuceneTestCase extends Assert {
    * some features of Windows, such as not allowing open files to be
    * overwritten.
    */
-  public static MockDirectoryWrapper newDirectory() throws IOException {
+  public static MockDirectoryWrapper newDirectory() {
     return newDirectory(random());
   }
 
@@ -764,7 +764,7 @@ public abstract class LuceneTestCase extends Assert {
    * Returns a new Directory instance, using the specified random.
    * See {@link #newDirectory()} for more information.
    */
-  public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
+  public static MockDirectoryWrapper newDirectory(Random r) {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
     closeAfterSuite(new CloseableDirectory(dir, suiteFailureMarker));
@@ -786,12 +786,12 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static MockDirectoryWrapper newFSDirectory(File f) throws IOException {
+  public static MockDirectoryWrapper newFSDirectory(File f) {
     return newFSDirectory(f, null);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) throws IOException {
+  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 

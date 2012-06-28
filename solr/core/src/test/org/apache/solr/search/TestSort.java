@@ -203,7 +203,7 @@ public class TestSort extends SolrTestCaseJ4 {
       for (int i=0; i<qiter; i++) {
         Filter filt = new Filter() {
           @Override
-          public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+          public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
             return BitsFilteredDocIdSet.wrap(randSet(context.reader().maxDoc()), acceptDocs);
           }
         };

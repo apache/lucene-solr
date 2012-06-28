@@ -651,7 +651,7 @@ public class SnapPuller {
   /**
    * Copy all index files from the temp index dir to the actual index. The segments_N file is copied last.
    */
-  private boolean copyIndexFiles(File tmpIdxDir, File indexDir) throws IOException {
+  private boolean copyIndexFiles(File tmpIdxDir, File indexDir) {
     String segmentsFile = null;
     List<String> copiedfiles = new ArrayList<String>();
     for (Map<String, Object> f : filesDownloaded) {
@@ -678,7 +678,7 @@ public class SnapPuller {
   /**
    * The conf files are copied to the tmp dir to the conf dir. A backup of the old file is maintained
    */
-  private void copyTmpConfFiles2Conf(File tmpconfDir) throws IOException {
+  private void copyTmpConfFiles2Conf(File tmpconfDir) {
     File confDir = new File(solrCore.getResourceLoader().getConfigDir());
     for (File file : tmpconfDir.listFiles()) {
       File oldFile = new File(confDir, file.getName());

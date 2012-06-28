@@ -680,8 +680,7 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   /** for testing DateTools support */
-  private String getDate(Date d, DateTools.Resolution resolution)
-      throws Exception {
+  private String getDate(Date d, DateTools.Resolution resolution) {
     return DateTools.dateToString(d, resolution);
   }
   

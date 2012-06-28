@@ -44,7 +44,7 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestDeletionPolicy extends LuceneTestCase {
   
-  private void verifyCommitOrder(List<? extends IndexCommit> commits) throws IOException {
+  private void verifyCommitOrder(List<? extends IndexCommit> commits) {
     final IndexCommit firstCommit =  commits.get(0);
     long last = SegmentInfos.generationFromSegmentsFileName(firstCommit.getSegmentsFileName());
     assertEquals(last, firstCommit.getGeneration());

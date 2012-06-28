@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -81,14 +80,14 @@ public class TestBooleanScorer extends LuceneTestCase
     BooleanWeight weight = (BooleanWeight) new BooleanQuery().createWeight(searcher);
     Scorer[] scorers = new Scorer[] {new Scorer(weight) {
       private int doc = -1;
-      @Override public float score() throws IOException { return 0; }
+      @Override public float score() { return 0; }
       @Override public int docID() { return doc; }
       
-      @Override public int nextDoc() throws IOException {
+      @Override public int nextDoc() {
         return doc = doc == -1 ? 3000 : NO_MORE_DOCS;
       }
 
-      @Override public int advance(int target) throws IOException {
+      @Override public int advance(int target) {
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
       }
       
@@ -104,7 +103,7 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       
       @Override
-      public void collect(int doc) throws IOException {
+      public void collect(int doc) {
         hits.add(docBase+doc);
       }
       
@@ -158,7 +157,7 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       
       @Override
-      public void collect(int doc) throws IOException {
+      public void collect(int doc) {
         count[0]++;
       }
       

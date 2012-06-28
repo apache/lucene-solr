@@ -190,8 +190,7 @@ class WordDictionary extends AbstractDictionary {
    * @throws IOException
    * @throws UnsupportedEncodingException
    */
-  private int loadMainDataFromFile(String dctFilePath)
-      throws FileNotFoundException, IOException, UnsupportedEncodingException {
+  private int loadMainDataFromFile(String dctFilePath) throws IOException {
     int i, cnt, length, total = 0;
     // The file only counted 6763 Chinese characters plus 5 reserved slots 3756~3760.
     // The 3756th is used (as a header) to store information.

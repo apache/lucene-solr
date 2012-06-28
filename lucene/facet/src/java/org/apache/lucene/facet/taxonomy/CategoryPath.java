@@ -1013,7 +1013,7 @@ public class CategoryPath implements Serializable, Cloneable, Comparable<Categor
     osw.flush();
   }
   
-  private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+  private void readObject(java.io.ObjectInputStream in) throws IOException {
     InputStreamReader isr = new InputStreamReader(in, "UTF-8");
     this.deserializeFromStreamReader(isr);
   }

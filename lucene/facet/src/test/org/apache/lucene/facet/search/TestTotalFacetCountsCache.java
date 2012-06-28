@@ -8,7 +8,6 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -140,8 +139,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
   }
 
   private void doTestGeneralSynchronization(int numThreads, int sleepMillis,
-      int cacheSize) throws Exception, CorruptIndexException, IOException,
-      InterruptedException {
+      int cacheSize) throws Exception {
     TFC.setCacheSize(cacheSize);
     SlowRAMDirectory slowIndexDir = new SlowRAMDirectory(-1, random());
     MockDirectoryWrapper indexDir = new MockDirectoryWrapper(random(), slowIndexDir);

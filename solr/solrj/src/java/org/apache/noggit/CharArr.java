@@ -198,7 +198,7 @@ public class CharArr implements CharSequence, Appendable {
     return null;
   }
 
-  public final Appendable append(char c) throws IOException {
+  public final Appendable append(char c) {
     write(c);
     return this;
   }

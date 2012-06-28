@@ -338,13 +338,13 @@ public abstract class CachingCollector extends Collector {
       }
       
       @Override
-      public void setScorer(Scorer scorer) throws IOException {}
+      public void setScorer(Scorer scorer) {}
 
       @Override
-      public void collect(int doc) throws IOException {}
+      public void collect(int doc) {}
 
       @Override
-      public void setNextReader(AtomicReaderContext context) throws IOException {}
+      public void setNextReader(AtomicReaderContext context) {}
 
     };
     return create(other, cacheScores, maxRAMMB);

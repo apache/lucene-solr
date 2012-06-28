@@ -17,8 +17,6 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -46,7 +44,7 @@ public final class SingleTokenTokenStream extends TokenStream {
   }
 
   @Override
-  public final boolean incrementToken() throws IOException {
+  public final boolean incrementToken() {
     if (exhausted) {
       return false;
     } else {
@@ -58,7 +56,7 @@ public final class SingleTokenTokenStream extends TokenStream {
   }
 
   @Override
-  public void reset() throws IOException {
+  public void reset() {
     exhausted = false;
   }
 

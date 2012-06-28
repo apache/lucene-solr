@@ -299,7 +299,7 @@ public class TestJoinUtil extends LuceneTestCase {
             topScoreDocCollector.collect(doc);
           }
 
-          public void setNextReader(AtomicReaderContext context) throws IOException {
+          public void setNextReader(AtomicReaderContext context) {
             docBase = context.docBase;
             topScoreDocCollector.setNextReader(context);
           }
@@ -496,7 +496,7 @@ public class TestJoinUtil extends LuceneTestCase {
             reuse = null;
           }
 
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorer scorer) {
             this.scorer = scorer;
           }
 
@@ -528,7 +528,7 @@ public class TestJoinUtil extends LuceneTestCase {
             terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField);
           }
 
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorer scorer) {
             this.scorer = scorer;
           }
 
@@ -587,7 +587,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           public boolean acceptsDocsOutOfOrder() {return false;}
-          public void setScorer(Scorer scorer) throws IOException {}
+          public void setScorer(Scorer scorer) {}
         });
       } else {
         toSearcher.search(new MatchAllDocsQuery(), new Collector() {
@@ -596,7 +596,7 @@ public class TestJoinUtil extends LuceneTestCase {
           private int docBase;
           private final BytesRef spare = new BytesRef();
 
-          public void collect(int doc) throws IOException {
+          public void collect(int doc) {
             JoinScore joinScore = joinValueToJoinScores.get(terms.getTerm(doc, spare));
             if (joinScore == null) {
               return;
@@ -610,7 +610,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           public boolean acceptsDocsOutOfOrder() {return false;}
-          public void setScorer(Scorer scorer) throws IOException {}
+          public void setScorer(Scorer scorer) {}
         });
       }
       queryVals.put(uniqueRandomValue, docToJoinScore);
@@ -625,7 +625,7 @@ public class TestJoinUtil extends LuceneTestCase {
   private TopDocs createExpectedTopDocs(String queryValue,
                                         final boolean from,
                                         final ScoreMode scoreMode,
-                                        IndexIterationContext context) throws IOException {
+                                        IndexIterationContext context) {
 
     Map<Integer, JoinScore> hitsToJoinScores;
     if (from) {

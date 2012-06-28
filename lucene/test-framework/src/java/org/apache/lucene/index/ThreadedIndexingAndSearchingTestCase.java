@@ -117,8 +117,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                                          final long stopTime,
                                          final Set<String> delIDs,
                                          final Set<String> delPackIDs,
-                                         final List<SubDocs> allSubDocs)
-    throws Exception {
+                                         final List<SubDocs> allSubDocs) {
     final Thread[] threads = new Thread[numThreads];
     for(int thread=0;thread<numThreads;thread++) {
       threads[thread] = new Thread() {

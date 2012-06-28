@@ -27,7 +27,6 @@ import junit.framework.Assert;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -185,8 +184,7 @@ public class CheckHits {
   }
 
   /** Tests that a Hits has an expected order of documents */
-  public static void checkDocIds(String mes, int[] results, ScoreDoc[] hits)
-  throws IOException {
+  public static void checkDocIds(String mes, int[] results, ScoreDoc[] hits) {
     Assert.assertEquals(mes + " nr of hits", hits.length, results.length);
     for (int i = 0; i < results.length; i++) {
       Assert.assertEquals(mes + " doc nrs for hit " + i, results[i], hits[i].doc);
@@ -200,15 +198,14 @@ public class CheckHits {
         Query query,
         ScoreDoc[] hits1,
         ScoreDoc[] hits2,
-        int[] results)
-          throws IOException {
+        int[] results) {
 
     checkDocIds("hits1", results, hits1);
     checkDocIds("hits2", results, hits2);
     checkEqual(query, hits1, hits2);
   }
 
-  public static void checkEqual(Query query, ScoreDoc[] hits1, ScoreDoc[] hits2) throws IOException {
+  public static void checkEqual(Query query, ScoreDoc[] hits1, ScoreDoc[] hits2) {
      final float scoreTolerance = 1.0e-6f;
      if (hits1.length != hits2.length) {
        Assert.fail("Unequal lengths: hits1="+hits1.length+",hits2="+hits2.length);
@@ -231,7 +228,7 @@ public class CheckHits {
     }
   }
 
-  public static String hits2str(ScoreDoc[] hits1, ScoreDoc[] hits2, int start, int end) throws IOException {
+  public static String hits2str(ScoreDoc[] hits1, ScoreDoc[] hits2, int start, int end) {
     StringBuilder sb = new StringBuilder();
     int len1=hits1==null ? 0 : hits1.length;
     int len2=hits2==null ? 0 : hits2.length;
@@ -422,7 +419,7 @@ public class CheckHits {
    * @see ExplanationAsserter
    */
   public static class ExplanationAssertingSearcher extends IndexSearcher {
-    public ExplanationAssertingSearcher(IndexReader r) throws IOException {
+    public ExplanationAssertingSearcher(IndexReader r) {
       super(r);
     }
     protected void checkExplanations(Query q) throws IOException {

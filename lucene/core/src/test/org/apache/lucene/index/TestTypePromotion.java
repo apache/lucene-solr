@@ -70,8 +70,7 @@ public class TestTypePromotion extends LuceneTestCase {
     Int, Float, Byte
   }
 
-  private void runTest(EnumSet<Type> types, TestType type)
-      throws CorruptIndexException, IOException {
+  private void runTest(EnumSet<Type> types, TestType type) throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -121,7 +120,7 @@ public class TestTypePromotion extends LuceneTestCase {
 
   
   private void assertValues(TestType type, Directory dir, long[] values, Type[] sourceType)
-      throws CorruptIndexException, IOException {
+      throws IOException {
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.getSequentialSubReaders().size());
     IndexReaderContext topReaderContext = reader.getTopReaderContext();
@@ -183,7 +182,7 @@ public class TestTypePromotion extends LuceneTestCase {
 
   public void index(IndexWriter writer,
       Type valueType, long[] values, Type[] sourceTypes, int offset, int num)
-      throws CorruptIndexException, IOException {
+      throws IOException {
     final Field valField;
 
     if (VERBOSE) {
@@ -324,8 +323,7 @@ public class TestTypePromotion extends LuceneTestCase {
     runTest(INTEGERS, TestType.Int);
   }
 
-  public void testPromotFloatingPoint() throws CorruptIndexException,
-      IOException {
+  public void testPromotFloatingPoint() throws IOException {
     runTest(FLOATS, TestType.Float);
   }
   

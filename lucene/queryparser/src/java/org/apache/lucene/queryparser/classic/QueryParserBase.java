@@ -482,11 +482,7 @@ public abstract class QueryParserBase {
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
 
-    try {
-      buffer.reset();
-    } catch (IOException e) {
-      throw new ParseException("Unable to initialize TokenStream to analyze query text", e);
-    }
+    buffer.reset();
 
     if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
       termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
@@ -1076,7 +1072,7 @@ public abstract class QueryParserBase {
   }
 
   // extracted from the .jj grammar
-  Query handleBoost(Query q, Token boost) throws ParseException {
+  Query handleBoost(Query q, Token boost) {
     if (boost != null) {
       float f = (float) 1.0;
       try {

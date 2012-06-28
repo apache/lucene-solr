@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 /**
  * A {@link MergeScheduler} which never executes any merges. It is also a
  * singleton and can be accessed through {@link NoMergeScheduler#INSTANCE}. Use
@@ -42,5 +40,5 @@ public final class NoMergeScheduler extends MergeScheduler {
   public void close() {}
 
   @Override
-  public void merge(IndexWriter writer) throws CorruptIndexException, IOException {}
+  public void merge(IndexWriter writer) {}
 }

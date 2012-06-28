@@ -73,13 +73,13 @@ public class SimpleFSDirectory extends FSDirectory {
       }
 
       @Override
-      public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
+      public IndexInput openSlice(String sliceDescription, long offset, long length) {
         return new SimpleFSIndexInput("SimpleFSIndexInput(" + sliceDescription + " in path=\"" + file.getPath() + "\" slice=" + offset + ":" + (offset+length) + ")", descriptor, offset,
             length, BufferedIndexInput.bufferSize(context), getReadChunkSize());
       }
 
       @Override
-      public IndexInput openFullSlice() throws IOException {
+      public IndexInput openFullSlice() {
         return openSlice("full-slice", 0, descriptor.length);
       }
     };
@@ -124,7 +124,7 @@ public class SimpleFSDirectory extends FSDirectory {
       this.end = file.length;
     }
     
-    public SimpleFSIndexInput(String resourceDesc, Descriptor file, long off, long length, int bufferSize, int chunkSize) throws IOException {
+    public SimpleFSIndexInput(String resourceDesc, Descriptor file, long off, long length, int bufferSize, int chunkSize) {
       super(resourceDesc, bufferSize);
       this.file = file;
       this.chunkSize = chunkSize;

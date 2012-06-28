@@ -20,7 +20,6 @@ package org.apache.solr.update;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -31,7 +30,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -632,11 +630,7 @@ public class UpdateLog implements PluginInfoInitialized {
   private void ensureLog() {
     if (tlog == null) {
       String newLogName = String.format(Locale.ENGLISH, LOG_FILENAME_PATTERN, TLOG_NAME, id);
-      try {
-        tlog = new TransactionLog(new File(tlogDir, newLogName), globalStrings);
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can't open new tlog!", e);
-      }
+      tlog = new TransactionLog(new File(tlogDir, newLogName), globalStrings);
     }
   }
 

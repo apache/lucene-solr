@@ -240,7 +240,7 @@ public class CloudState implements JSONWriter.Writable {
 	/**
 	 * Create CloudState from json string that is typically stored in zookeeper.
 	 */
-	public static CloudState load(byte[] bytes, Set<String> liveNodes) throws KeeperException, InterruptedException {
+	public static CloudState load(byte[] bytes, Set<String> liveNodes) {
     if (bytes == null || bytes.length == 0) {
       return new CloudState(liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
     }

@@ -18,7 +18,6 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.FastInputStream;
@@ -27,13 +26,19 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
-import java.rmi.registry.LocateRegistry;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -129,11 +134,11 @@ public class TransactionLog {
   }
 
 
-  TransactionLog(File tlogFile, Collection<String> globalStrings) throws IOException {
+  TransactionLog(File tlogFile, Collection<String> globalStrings) {
     this(tlogFile, globalStrings, false);
   }
 
-  TransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) throws IOException {
+  TransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
     try {
       if (debug) {
         log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size=" + tlogFile.length() + ", openExisting=" + openExisting);
@@ -596,7 +601,7 @@ public class TransactionLog {
     ChannelFastInputStream fis;
     private LogCodec codec = new LogCodec() {
       @Override
-      public SolrInputDocument readSolrInputDocument(FastInputStream dis) throws IOException {
+      public SolrInputDocument readSolrInputDocument(FastInputStream dis) {
         // Given that the SolrInputDocument is last in an add record, it's OK to just skip
         // reading it completely.
         return null;

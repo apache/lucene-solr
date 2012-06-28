@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
@@ -86,10 +85,9 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
    *          The buffer size before the documents are sent to the server
    * @param threadCount
    *          The number of background threads used to empty the queue
-   * @throws MalformedURLException
    */
   public ConcurrentUpdateSolrServer(String solrServerUrl, int queueSize,
-      int threadCount) throws MalformedURLException {
+      int threadCount) {
     this(solrServerUrl, null, queueSize, threadCount);
   }
 
@@ -99,8 +97,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
    * ThreadSafeClientConnManager.
    */
   public ConcurrentUpdateSolrServer(String solrServerUrl,
-      HttpClient client, int queueSize, int threadCount)
-      throws MalformedURLException {
+      HttpClient client, int queueSize, int threadCount) {
     this.server = new HttpSolrServer(solrServerUrl, client);
     this.server.setFollowRedirects(false);
     queue = new LinkedBlockingQueue<UpdateRequest>(queueSize);

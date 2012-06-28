@@ -48,8 +48,7 @@ public interface ShardResultTransformer<T, R> {
    * @param sortWithinGroup The sort inside a group
    * @param shard The shard address where the response originated from
    * @return native structure of the data
-   * @throws IOException If I/O related errors occur during transforming
    */
-  R transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) throws IOException;
+  R transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard);
 
 }

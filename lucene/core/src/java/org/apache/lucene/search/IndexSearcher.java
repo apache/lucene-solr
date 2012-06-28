@@ -34,7 +34,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -182,17 +181,17 @@ public class IndexSearcher {
   }
 
   /** Sugar for <code>.getIndexReader().document(docID)</code> */
-  public Document doc(int docID) throws CorruptIndexException, IOException {
+  public Document doc(int docID) throws IOException {
     return reader.document(docID);
   }
 
   /** Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code> */
-  public void doc(int docID, StoredFieldVisitor fieldVisitor) throws CorruptIndexException, IOException {
+  public void doc(int docID, StoredFieldVisitor fieldVisitor) throws IOException {
     reader.document(docID, fieldVisitor);
   }
 
   /** Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code> */
-  public final Document document(int docID, Set<String> fieldsToLoad) throws CorruptIndexException, IOException {
+  public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }
 

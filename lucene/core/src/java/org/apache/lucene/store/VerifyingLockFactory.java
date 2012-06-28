@@ -69,8 +69,7 @@ public class VerifyingLockFactory extends LockFactory {
     }
 
     @Override
-    public synchronized boolean obtain(long lockWaitTimeout)
-      throws LockObtainFailedException, IOException {
+    public synchronized boolean obtain(long lockWaitTimeout) throws IOException {
       boolean obtained = lock.obtain(lockWaitTimeout);
       if (obtained)
         verify((byte) 1);
@@ -78,8 +77,7 @@ public class VerifyingLockFactory extends LockFactory {
     }
 
     @Override
-    public synchronized boolean obtain()
-      throws LockObtainFailedException, IOException {
+    public synchronized boolean obtain() throws IOException {
       return lock.obtain();
     }
 
@@ -105,7 +103,7 @@ public class VerifyingLockFactory extends LockFactory {
    * @param port the port {@link LockVerifyServer} is
             listening on
   */
-  public VerifyingLockFactory(byte id, LockFactory lf, String host, int port) throws IOException {
+  public VerifyingLockFactory(byte id, LockFactory lf, String host, int port) {
     this.id = id;
     this.lf = lf;
     this.host = host;

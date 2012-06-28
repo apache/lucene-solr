@@ -135,7 +135,7 @@ class DocumentsWriterPerThread {
    *  updating the index files) and must discard all
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
-  void abort() throws IOException {
+  void abort() {
     hasAborted = aborting = true;
     try {
       if (infoStream.isEnabled("DWPT")) {
@@ -352,7 +352,7 @@ class DocumentsWriterPerThread {
     return docCount;
   }
   
-  private void finishDocument(Term delTerm) throws IOException {
+  private void finishDocument(Term delTerm) {
     /*
      * here we actually finish the document in two steps 1. push the delete into
      * the queue and update our slice. 2. increment the DWPT private document
@@ -412,7 +412,7 @@ class DocumentsWriterPerThread {
   }
 
   /** Reset after a flush */
-  private void doAfterFlush() throws IOException {
+  private void doAfterFlush() {
     segmentInfo = null;
     consumer.doAfterFlush();
     directory.getCreatedFiles().clear();

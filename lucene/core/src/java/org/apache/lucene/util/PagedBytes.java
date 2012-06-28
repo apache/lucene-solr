@@ -288,7 +288,7 @@ public final class PagedBytes {
   }
 
   /** Copy BytesRef in */
-  public void copy(BytesRef bytes) throws IOException {
+  public void copy(BytesRef bytes) {
     int byteCount = bytes.length;
     int bytesUpto = bytes.offset;
     while (byteCount > 0) {
@@ -318,7 +318,7 @@ public final class PagedBytes {
   /** Copy BytesRef in, setting BytesRef out to the result.
    * Do not use this if you will use freeze(true).
    * This only supports bytes.length <= blockSize */
-  public void copy(BytesRef bytes, BytesRef out) throws IOException {
+  public void copy(BytesRef bytes, BytesRef out) {
     int left = blockSize - upto;
     if (bytes.length > left || currentBlock==null) {
       if (currentBlock != null) {
@@ -374,7 +374,7 @@ public final class PagedBytes {
 
   /** Copy bytes in, writing the length as a 1 or 2 byte
    *  vInt prefix. */
-  public long copyUsingLengthPrefix(BytesRef bytes) throws IOException {
+  public long copyUsingLengthPrefix(BytesRef bytes) {
     if (bytes.length >= 32768) {
       throw new IllegalArgumentException("max length is 32767 (got " + bytes.length + ")");
     }
@@ -488,7 +488,7 @@ public final class PagedBytes {
     }
 
     @Override
-    public void writeBytes(byte[] b, int offset, int length) throws IOException {
+    public void writeBytes(byte[] b, int offset, int length) {
       assert b.length >= offset + length;
       if (length == 0) {
         return;

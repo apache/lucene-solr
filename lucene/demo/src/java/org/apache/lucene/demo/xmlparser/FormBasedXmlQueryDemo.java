@@ -37,7 +37,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -126,7 +125,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
     }
   }
 
-  private void openExampleIndex() throws CorruptIndexException, IOException {
+  private void openExampleIndex() throws IOException {
     //Create a RAM-based index from our test data file
     RAMDirectory rd = new RAMDirectory();
     IndexWriterConfig iwConfig = new IndexWriterConfig(Version.LUCENE_40, analyzer);

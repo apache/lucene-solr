@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
@@ -51,7 +50,7 @@ public class TermQParserPlugin extends QParserPlugin {
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       @Override
-      public Query parse() throws ParseException {
+      public Query parse() {
         String fname = localParams.get(QueryParsing.F);
         FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
         String val = localParams.get(QueryParsing.V);

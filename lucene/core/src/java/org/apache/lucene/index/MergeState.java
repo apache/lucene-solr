@@ -247,7 +247,7 @@ public class MergeState {
      * @lucene.internal */
     static final MergeState.CheckAbort NONE = new MergeState.CheckAbort(null, null) {
       @Override
-      public void work(double units) throws MergePolicy.MergeAbortedException {
+      public void work(double units) {
         // do nothing
       }
     };

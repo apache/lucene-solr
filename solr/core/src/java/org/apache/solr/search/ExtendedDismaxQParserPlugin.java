@@ -420,9 +420,8 @@ class ExtendedDismaxQParser extends QParser {
    * Extracts all the alised fields from the requests and adds them to up
    * @param up
    * @param tiebreaker
-   * @throws ParseException 
    */
-  private void addAliasesFromRequest(ExtendedSolrQueryParser up, float tiebreaker) throws ParseException {
+  private void addAliasesFromRequest(ExtendedSolrQueryParser up, float tiebreaker) {
     Iterator<String> it = solrParams.getParameterNamesIterator();
     while(it.hasNext()) {
       String param = it.next();
@@ -1155,7 +1154,7 @@ class ExtendedDismaxQParser extends QParser {
        return lst;
      }
 
-    private Query getQuery() throws ParseException {
+    private Query getQuery() {
       try {
 
         switch (type) {

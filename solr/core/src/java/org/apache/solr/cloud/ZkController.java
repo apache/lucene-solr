@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
@@ -460,10 +459,9 @@ public final class ZkController {
    * @return config value
    * @throws KeeperException
    * @throws InterruptedException
-   * @throws IOException 
    */
   public String readConfigName(String collection) throws KeeperException,
-      InterruptedException, IOException {
+      InterruptedException {
 
     String configName = null;
 
@@ -685,17 +683,12 @@ public final class ZkController {
    * @param core
    * @param cc
    * @return whether or not a recovery was started
-   * @throws InterruptedException
-   * @throws KeeperException
-   * @throws IOException
-   * @throws ExecutionException
    */
   private boolean checkRecovery(String coreName, final CoreDescriptor desc,
       boolean recoverReloadedCores, final boolean isLeader,
       final CloudDescriptor cloudDesc, final String collection,
       final String shardZkNodeName, String shardId, ZkNodeProps leaderProps,
-      SolrCore core, CoreContainer cc) throws InterruptedException,
-      KeeperException, IOException, ExecutionException {
+      SolrCore core, CoreContainer cc) {
     if (SKIP_AUTO_RECOVERY) {
       log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
       return false;
@@ -814,7 +807,7 @@ public final class ZkController {
     zkClient.printLayoutToStdOut();
   }
 
-  public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException, IOException {
+  public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException {
     String collection = cd.getCollectionName();
     
     log.info("Check for collection zkNode:" + collection);
@@ -943,8 +936,7 @@ public final class ZkController {
     return zkStateReader;
   }
 
-  private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor)
-      throws InterruptedException {
+  private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor) {
     final String shardZkNodeName = getNodeName() + "_" + coreName;
     int retryCount = 120;
     while (retryCount-- > 0) {
@@ -996,11 +988,7 @@ public final class ZkController {
     String shardZkNodeName = getCoreNodeName(cd);
     if (cd.getCloudDescriptor().getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getCloudState(), shardZkNodeName)) {
       String shardId;
-      try {
-        shardId = doGetShardIdProcess(cd.getName(), cd.getCloudDescriptor());
-      } catch (InterruptedException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
-      }
+      shardId = doGetShardIdProcess(cd.getName(), cd.getCloudDescriptor());
       cd.getCloudDescriptor().setShardId(shardId);
     }
 

@@ -21,7 +21,6 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -90,7 +89,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
   }
 
   private int[] buildIndex(RandomIndexWriter writer, int docs)
-      throws IOException, CorruptIndexException {
+      throws IOException {
     int[] docStates = new int[docs];
     for (int i = 0; i < docs; i++) {
       Document doc = new Document();

@@ -421,7 +421,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    */ 
   @Override
   public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos)
-      throws CorruptIndexException, IOException {
+      throws IOException {
     final List<SegmentInfoPerCommit> segments = segmentInfos.asList();
     final int numSegments = segments.size();
 
