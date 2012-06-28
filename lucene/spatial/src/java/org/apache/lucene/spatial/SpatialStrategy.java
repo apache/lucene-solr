@@ -66,7 +66,6 @@ public abstract class SpatialStrategy<T extends SpatialFieldInfo> {
    * The value source yields a number that is proportional to the distance between the query shape and indexed data.
    * @param args
    * @param fieldInfo
-   * @return
    */
   public abstract ValueSource makeValueSource(SpatialArgs args, T fieldInfo);
 
