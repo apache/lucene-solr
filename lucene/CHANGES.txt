@@ -16,6 +16,11 @@ API Changes
   has a different API (carries a list of tags instead of a compound tag). Upgrade
   of embedded morfologik dictionaries to version 1.9. (Dawid Weiss)
 
+Bug Fixes
+
+* LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,
+  so that it works correctly with Analyzers that produce binary non-UTF-8 terms
+  such as CollationAnalyzer. (Nattapong Sirilappanich via Robert Muir) 
 
 ======================= Lucene 4.0.0-ALPHA =======================
 
