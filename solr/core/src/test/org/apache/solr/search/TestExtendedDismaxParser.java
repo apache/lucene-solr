@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Test;
 
 public class TestExtendedDismaxParser extends AbstractSolrTestCase {
   @Override
@@ -700,5 +701,44 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
         "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx\"~2^22.0')]"
      );
 
+  }
+
+  /**
+   * verify that all reserved characters are properly escaped when being set in
+   * {@link org.apache.solr.search.ExtendedDismaxQParser.Clause#val}.
+   *
+   * @see ExtendedDismaxQParser#splitIntoClauses(String, boolean)
+   */
+  @Test
+  public void testEscapingOfReservedCharacters() throws Exception {
+    // create a document that contains all reserved characters
+    String allReservedCharacters = "!():^[]{}~*?\"+-\\|&/";
+
+    assertU(adoc("id", "reservedChars",
+                 "name", allReservedCharacters,
+                 "cat_s", "foo/"));
+    assertU(commit());
+
+    // the backslash needs to be manually escaped (the query parser sees the raw backslash as an escape the subsequent
+    // character)
+    String query = allReservedCharacters.replace("\\", "\\\\");
+
+    // query for all those reserved characters. This will fail to parse in the initial parse, meaning that the escaped
+    // query will then be used
+    assertQ("Escaping reserved characters",
+        req("q", query,
+            "qf", "name",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+    
+    // Query string field 'cat_s' for special char / - causes ParseException without patch SOLR-3467
+    assertQ("Escaping string with reserved / character",
+        req("q", "foo/",
+            "qf", "cat_s",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+    
   }
 }
