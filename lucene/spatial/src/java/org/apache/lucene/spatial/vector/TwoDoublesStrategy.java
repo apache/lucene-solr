@@ -113,10 +113,13 @@ public class TwoDoublesStrategy extends SpatialStrategy<TwoDoublesFieldInfo> {
   public Query makeQuery(SpatialArgs args, TwoDoublesFieldInfo fieldInfo) {
     // For starters, just limit the bbox
     Shape shape = args.getShape();
-    if (!(shape instanceof Rectangle)) {
-      throw new InvalidShapeException("A rectangle is the only supported shape (so far), not "+shape.getClass());//TODO
+    if (!(shape instanceof Rectangle || shape instanceof Circle)) {
+      throw new InvalidShapeException("Only Rectangles and Circles are currently supported, " +
+          "found [" + shape.getClass() + "]");//TODO
     }
-    Rectangle bbox = (Rectangle) shape;
+
+    Rectangle bbox = shape.getBoundingBox();
+
     if (bbox.getCrossesDateLine()) {
       throw new UnsupportedOperationException( "Crossing dateline not yet supported" );
     }
