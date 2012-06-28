@@ -36,6 +36,7 @@ import java.util.logging.Logger;
 
 public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends SpatialTestCase {
 
+  public static final String DATA_SIMPLE_BBOX = "simple-bbox.txt";
   public static final String DATA_STATES_POLY = "states-poly.txt";
   public static final String DATA_STATES_BBOX = "states-bbox.txt";
   public static final String DATA_COUNTRIES_POLY = "countries-poly.txt";
@@ -44,8 +45,8 @@ public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends Spati
 
   public static final String QTEST_States_IsWithin_BBox   = "states-IsWithin-BBox.txt";
   public static final String QTEST_States_Intersects_BBox = "states-Intersects-BBox.txt";
-
   public static final String QTEST_Cities_IsWithin_BBox = "cities-IsWithin-BBox.txt";
+  public static final String QTEST_Simple_Queries_BBox = "simple-Queries-BBox.txt";
 
   private Logger log = Logger.getLogger(getClass().getName());
 
@@ -112,8 +113,12 @@ public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends Spati
         Iterator<String> ids = q.ids.iterator();
         for (SearchResult r : got.results) {
           String id = r.document.get("id");
+          if(!ids.hasNext()) {
+            Assert.fail(msg + " :: Did not get enough results.  Expect" + q.ids+", got: "+got.toDebugString());
+          }
           Assert.assertEquals( "out of order: " + msg, ids.next(), id);
         }
+        
         if (ids.hasNext()) {
           Assert.fail(msg + " :: expect more results then we got: " + ids.next());
         }

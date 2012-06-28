@@ -109,6 +109,22 @@ public abstract class SpatialTestCase extends LuceneTestCase {
       this.numFound = numFound;
       this.results = results;
     }
+
+    public StringBuilder toDebugString() {
+      StringBuilder str = new StringBuilder();
+      str.append("found: ").append(numFound).append('[');
+      for(SearchResult r : results) {
+        String id = r.document.get("id");
+        str.append(id).append(", ");
+      }
+      str.append(']');
+      return str;
+    }
+
+    @Override
+    public String toString() {
+      return "[found:"+numFound+" "+results+"]";
+    }
   }
 
   protected static class SearchResult {
@@ -119,6 +135,11 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     public SearchResult(float score, Document document) {
       this.score = score;
       this.document = document;
+    }
+    
+    @Override
+    public String toString() {
+      return "["+score+"="+document+"]";
     }
   }
 }

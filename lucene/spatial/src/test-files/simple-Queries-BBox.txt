@@ -1,0 +1,13 @@
+C5 @ IsWithin(-6 -6 6 6)
+C5 @ BBoxWithin(-6 -6 6 6)
+C10 @ Contains(-6 -6 6 6)
+C10 @ IsEqualTo(-10 -10 10 10)
+C5 C10 @ Intersects(-2 -2 2 2)
+C5 C10 @ Overlaps(-2 -2 2 2)
+C5 C10 @ BBoxIntersects(-2 -2 2 2)
+NW15 @ IsDisjointTo(-10 -10 10 10)
+
+
+
+
+

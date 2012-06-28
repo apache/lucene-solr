@@ -1,0 +1,5 @@
+#id	name	shape	
+C5	CenterAt5	-5 -5 5 5
+C10	CenterAt10	-10 -10 10 10
+NW15	NorthWest	15 15 20 20
+
