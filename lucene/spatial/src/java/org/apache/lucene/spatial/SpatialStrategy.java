@@ -21,8 +21,10 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.query.SpatialArgs;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.Query;
 
 /**
@@ -60,13 +62,25 @@ public abstract class SpatialStrategy<T extends SpatialFieldInfo> {
     return new IndexableField[] { createField(fieldInfo, shape, index, store) };
   }
 
+  /**
+   * The value source yields a number that is proportional to the distance between the query shape and indexed data.
+   * @param args
+   * @param fieldInfo
+   * @return
+   */
   public abstract ValueSource makeValueSource(SpatialArgs args, T fieldInfo);
 
   /**
-   * Make a query
+   * Make a query which has a score based on the distance from the data to the query shape.
+   * The default implementation constructs a {@link FilteredQuery} based on
+   * {@link #makeFilter(com.spatial4j.core.query.SpatialArgs, SpatialFieldInfo)} and
+   * {@link #makeValueSource(com.spatial4j.core.query.SpatialArgs, SpatialFieldInfo)}.
    */
-  public abstract Query makeQuery(SpatialArgs args, T fieldInfo);
-
+  public Query makeQuery(SpatialArgs args, T fieldInfo) {
+    Filter filter = makeFilter(args, fieldInfo);
+    ValueSource vs = makeValueSource(args, fieldInfo);
+    return new FilteredQuery(new FunctionQuery(vs), filter);
+  }
   /**
    * Make a Filter
    */
