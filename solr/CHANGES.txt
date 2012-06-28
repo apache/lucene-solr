@@ -141,6 +141,8 @@ New Features
   (yonik, Mark Miller, siren)
   SOLR-3437: Recovery issues a spurious commit to the cluster. (Trym R. Møller via Mark Miller)
   SOLR-2822: Skip update processors already run on other nodes (hossman)
+  SOLR-3582: Our ZooKeeper watchers respond to session events as if they are change events, 
+  creating undesirable side effects. (Trym R. Møller, Mark Miller)
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
