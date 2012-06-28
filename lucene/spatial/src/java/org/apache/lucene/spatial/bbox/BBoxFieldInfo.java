@@ -21,7 +21,9 @@ import org.apache.lucene.spatial.SpatialFieldInfo;
 
 /**
  * The Bounding Box gets stored as four fields for x/y min/max and a flag 
- * that says if the box crosses the dateline (xdl)
+ * that says if the box crosses the dateline (xdl).
+ *
+ * @lucene.experimental
  */
 public class BBoxFieldInfo implements SpatialFieldInfo {
 

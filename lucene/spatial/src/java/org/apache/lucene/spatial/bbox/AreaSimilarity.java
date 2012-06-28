@@ -39,8 +39,11 @@ import com.spatial4j.core.shape.Rectangle;
  * <br/>  targetFactor = Math.pow(targetRatio,targetPower);
  * <br/>  score = queryFactor * targetFactor;
  * <p/>
- * original:
- * http://geoportal.svn.sourceforge.net/svnroot/geoportal/Geoportal/trunk/src/com/esri/gpt/catalog/lucene/SpatialRankingValueSource.java
+ * Based on Geoportal's
+ * <a href="http://geoportal.svn.sourceforge.net/svnroot/geoportal/Geoportal/trunk/src/com/esri/gpt/catalog/lucene/SpatialRankingValueSource.java">
+ *   SpatialRankingValueSource</a>.
+ *
+ * @lucene.experimental
  */
 public class AreaSimilarity implements BBoxSimilarity {
   /**

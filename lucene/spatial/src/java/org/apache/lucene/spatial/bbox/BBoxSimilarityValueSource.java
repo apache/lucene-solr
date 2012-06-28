@@ -32,6 +32,8 @@ import com.spatial4j.core.shape.simple.RectangleImpl;
 
 /**
  * An implementation of the Lucene ValueSource model to support spatial relevance ranking.
+ *
+ * @lucene.experimental
  */
 public class BBoxSimilarityValueSource extends ValueSource {
 

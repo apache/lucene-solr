@@ -20,8 +20,9 @@ import org.apache.lucene.search.Explanation;
 
 import com.spatial4j.core.shape.Rectangle;
 
-
-
+/**
+ * @lucene.experimental
+ */
 public interface BBoxSimilarity {
 
   public double score(Rectangle extent, Explanation exp);

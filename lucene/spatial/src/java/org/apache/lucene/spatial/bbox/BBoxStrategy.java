@@ -44,8 +44,10 @@ import com.spatial4j.core.shape.*;
 
 
 /**
- * original:
- * http://geoportal.svn.sourceforge.net/svnroot/geoportal/Geoportal/trunk/src/com/esri/gpt/catalog/lucene/SpatialClauseAdapter.java
+ * Based on GeoPortal's
+ * <a href="http://geoportal.svn.sourceforge.net/svnroot/geoportal/Geoportal/trunk/src/com/esri/gpt/catalog/lucene/SpatialClauseAdapter.java">SpatialClauseAdapter</a>.
+ *
+ * @lucene.experimental
  */
 public class BBoxStrategy extends SpatialStrategy<BBoxFieldInfo> {
   public double queryPower = 1.0;
