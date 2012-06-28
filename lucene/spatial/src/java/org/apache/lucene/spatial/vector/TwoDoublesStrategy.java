@@ -38,6 +38,9 @@ import org.apache.lucene.spatial.util.CachingDoubleValueSource;
 import org.apache.lucene.spatial.util.NumericFieldInfo;
 import org.apache.lucene.spatial.util.ValueSourceFilter;
 
+/**
+ * @lucene.experimental
+ */
 public class TwoDoublesStrategy extends SpatialStrategy<TwoDoublesFieldInfo> {
 
   private final NumericFieldInfo finfo;

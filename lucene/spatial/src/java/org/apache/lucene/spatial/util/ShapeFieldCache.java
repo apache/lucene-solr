@@ -22,6 +22,9 @@ import com.spatial4j.core.shape.Shape;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @lucene.internal
+ */
 public class ShapeFieldCache<T extends Shape> {
   private List<T>[] cache;
   public int defaultLength;

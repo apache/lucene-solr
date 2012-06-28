@@ -19,6 +19,8 @@ package org.apache.lucene.spatial;
 
 /**
  * Information the strategy needs for the lucene fields
+ *
+ * @lucene.experimental
  */
 public interface SpatialFieldInfo {
 }

@@ -27,6 +27,9 @@ import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 
+/**
+ * @lucene.internal
+ */
 public class ValueSourceFilter extends Filter {
 
   final Filter startingFilter;

@@ -29,6 +29,8 @@ import org.apache.lucene.search.Query;
 
 /**
  * must be thread safe
+ *
+ * @lucene.experimental
  */
 public abstract class SpatialStrategy<T extends SpatialFieldInfo> {
 
@@ -64,8 +66,6 @@ public abstract class SpatialStrategy<T extends SpatialFieldInfo> {
 
   /**
    * The value source yields a number that is proportional to the distance between the query shape and indexed data.
-   * @param args
-   * @param fieldInfo
    */
   public abstract ValueSource makeValueSource(SpatialArgs args, T fieldInfo);
 

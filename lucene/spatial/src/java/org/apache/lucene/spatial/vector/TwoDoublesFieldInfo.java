@@ -19,6 +19,9 @@ package org.apache.lucene.spatial.vector;
 
 import org.apache.lucene.spatial.SpatialFieldInfo;
 
+/**
+ * @lucene.experimental
+ */
 public class TwoDoublesFieldInfo implements SpatialFieldInfo {
 
   public static final String SUFFIX_X = "__x";

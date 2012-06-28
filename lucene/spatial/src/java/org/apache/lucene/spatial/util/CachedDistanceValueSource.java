@@ -28,9 +28,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
  * An implementation of the Lucene ValueSource model to support spatial relevance ranking.
  *
+ * @lucene.internal
  */
 public class CachedDistanceValueSource extends ValueSource {
 

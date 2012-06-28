@@ -33,6 +33,8 @@ import java.util.List;
 /**
  * A basic implementation using a large {@link TermsFilter} of all the nodes from
  * {@link SpatialPrefixTree#getNodes(com.spatial4j.core.shape.Shape, int, boolean)}.
+ *
+ * @lucene.experimental
  */
 public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
 

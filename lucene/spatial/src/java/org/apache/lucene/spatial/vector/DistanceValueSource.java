@@ -32,9 +32,9 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- *
  * An implementation of the Lucene ValueSource model to support spatial relevance ranking.
  *
+ * @lucene.internal
  */
 public class DistanceValueSource extends ValueSource {
 
