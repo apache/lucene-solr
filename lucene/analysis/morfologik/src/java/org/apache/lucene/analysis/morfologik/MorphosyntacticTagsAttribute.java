@@ -18,6 +18,8 @@ package org.apache.lucene.analysis.morfologik;
  * limitations under the License.
  */
 
+import java.util.List;
+
 import org.apache.lucene.util.Attribute;
 
 /** 
@@ -25,15 +27,18 @@ import org.apache.lucene.util.Attribute;
  * surface forms. For the exact format and description of these,
  * see the project's documentation (annotations vary by dictionary!).
  */
-public interface MorphosyntacticTagAttribute extends Attribute {
+public interface MorphosyntacticTagsAttribute extends Attribute {
   /** 
    * Set the POS tag. The default value (no-value) is null.
-   * @param pos POS tag corresponding to current lemma
+   * 
+   * @param tags A list of POS tags corresponding to current lemma.
    */
-  public void setTag(CharSequence pos);
+  public void setTags(List<StringBuilder> tags);
 
-  /** Returns the POS tag of the term. */
-  public CharSequence getTag();
+  /** 
+   * Returns the POS tag of the term.
+   */
+  public List<StringBuilder> getTags();
 
   /** Clear to default value. */
   public void clear();
