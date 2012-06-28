@@ -303,7 +303,7 @@
       <dependency>
         <groupId>org.carrot2</groupId>
         <artifactId>morfologik-polish</artifactId>
-        <version>1.5.2</version>
+        <version>1.5.3</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.woodstox</groupId>

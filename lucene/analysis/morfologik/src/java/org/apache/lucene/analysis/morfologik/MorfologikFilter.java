@@ -19,8 +19,7 @@ package org.apache.lucene.analysis.morfologik;
  */
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import morfologik.stemming.*;
 import morfologik.stemming.PolishStemmer.DICTIONARY;
@@ -30,13 +29,12 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharacterUtils;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.*;
 
 /**
  * {@link TokenFilter} using Morfologik library.
  *
- * MorfologikFilter contains a {@link MorphosyntacticTagAttribute}, which provides morphosyntactic
+ * MorfologikFilter contains a {@link MorphosyntacticTagsAttribute}, which provides morphosyntactic
  * annotations for produced lemmas. See the Morfologik documentation for details.
  * 
  * @see <a href="http://morfologik.blogspot.com/">Morfologik project page</a>
@@ -44,7 +42,7 @@ import org.apache.lucene.util.Version;
 public class MorfologikFilter extends TokenFilter {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final MorphosyntacticTagAttribute tagAtt = addAttribute(MorphosyntacticTagAttribute.class);
+  private final MorphosyntacticTagsAttribute tagsAtt = addAttribute(MorphosyntacticTagsAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
   private final CharsRef scratch = new CharsRef(0);
@@ -55,6 +53,8 @@ public class MorfologikFilter extends TokenFilter {
   private final IStemmer stemmer;
   
   private List<WordData> lemmaList;
+  private final ArrayList<StringBuilder> tagsList = new ArrayList<StringBuilder>();
+
   private int lemmaListIndex;
 
   /**
@@ -73,9 +73,43 @@ public class MorfologikFilter extends TokenFilter {
   }
 
   private void popNextLemma() {
-    final WordData lemma = lemmaList.get(lemmaListIndex++);
-    termAtt.setEmpty().append(lemma.getStem());
-    tagAtt.setTag(lemma.getTag());
+    // Collect all tags for the next unique lemma.
+    CharSequence currentStem;
+    int tags = 0;
+    do {
+      final WordData lemma = lemmaList.get(lemmaListIndex++);
+      currentStem = lemma.getStem();
+      final CharSequence tag = lemma.getTag();
+      if (tag != null) {
+        if (tagsList.size() <= tags) {
+          tagsList.add(new StringBuilder());
+        }
+
+        final StringBuilder buffer = tagsList.get(tags++);  
+        buffer.setLength(0);
+        buffer.append(lemma.getTag());
+      }
+    } while (lemmaListIndex < lemmaList.size() &&
+             equalCharSequences(lemmaList.get(lemmaListIndex).getStem(), currentStem));
+
+    // Set the lemma's base form and tags as attributes.
+    termAtt.setEmpty().append(currentStem);
+    tagsAtt.setTags(tagsList.subList(0, tags));
+  }
+
+  /**
+   * Compare two char sequences for equality. Assumes non-null arguments. 
+   */
+  private static final boolean equalCharSequences(CharSequence s1, CharSequence s2) {
+    int len1 = s1.length();
+    int len2 = s2.length();
+    if (len1 != len2) return false;
+    for (int i = len1; --i >= 0;) {
+      if (s1.charAt(i) != s2.charAt(i)) { 
+        return false; 
+      }
+    }
+    return true;
   }
 
   /**
@@ -101,7 +135,7 @@ public class MorfologikFilter extends TokenFilter {
         current = captureState();
         popNextLemma();
       } else {
-        tagAtt.clear();
+        tagsAtt.clear();
       }
       return true;
     } else {
@@ -130,6 +164,7 @@ public class MorfologikFilter extends TokenFilter {
   public void reset() throws IOException {
     lemmaListIndex = 0;
     lemmaList = Collections.emptyList();
+    tagsList.clear();
     super.reset();
   }
 }
