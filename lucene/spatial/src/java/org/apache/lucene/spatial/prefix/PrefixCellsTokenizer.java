@@ -25,7 +25,7 @@ import java.io.Reader;
 
 
 /**
- *
+ * @lucene.internal
  */
 class PrefixCellsTokenizer extends Tokenizer {
   public PrefixCellsTokenizer(Reader input) {

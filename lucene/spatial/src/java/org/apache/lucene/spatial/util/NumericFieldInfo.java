@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexableField;
 
 /**
  * Hold some of the parameters used by solr...
+ * @lucene.experimental
  */
 public class NumericFieldInfo {
   public int precisionStep = 8; // same as solr default

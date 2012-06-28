@@ -24,6 +24,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import java.io.IOException;
 
+/**
+ * @lucene.internal
+ */
 public class TruncateFilter extends TokenFilter {
 
   private final int maxTokenLength;

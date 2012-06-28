@@ -24,7 +24,8 @@ import java.io.IOException;
 import java.util.Iterator;
 
 /**
- * Put a list of strings directly into the token stream
+ * Put a list of strings directly into the token stream.
+ * @lucene.internal
  */
 public final class StringListTokenizer extends TokenStream {
 

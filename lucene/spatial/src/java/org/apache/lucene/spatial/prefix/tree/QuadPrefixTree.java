@@ -29,7 +29,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-
+/**
+ * @lucene.experimental
+ */
 public class QuadPrefixTree extends SpatialPrefixTree {
 
   public static class Factory extends SpatialPrefixTreeFactory {

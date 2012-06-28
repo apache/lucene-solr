@@ -27,6 +27,8 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 
 /**
  * Based on {@link RecursivePrefixTreeFilter}.
+ *
+ * @lucene.experimental
  */
 public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 

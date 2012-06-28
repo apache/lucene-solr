@@ -17,7 +17,9 @@
 
 package org.apache.lucene.spatial;
 
-
+/**
+ * @lucene.experimental
+ */
 public class SimpleSpatialFieldInfo implements SpatialFieldInfo {
 
   private final String fieldName;
