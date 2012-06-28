@@ -81,8 +81,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   /**
    * Get system info
    */
-  private SimpleOrderedMap<Object> getCoreInfo( SolrCore core ) throws Exception 
-  {
+  private SimpleOrderedMap<Object> getCoreInfo( SolrCore core ) {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     
     IndexSchema schema = core.getSchema();
@@ -110,8 +109,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   /**
    * Get system info
    */
-  public static SimpleOrderedMap<Object> getSystemInfo() throws Exception 
-  {
+  public static SimpleOrderedMap<Object> getSystemInfo() {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
@@ -255,8 +253,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     return jvm;
   }
   
-  private static SimpleOrderedMap<Object> getLuceneInfo() throws Exception 
-  {
+  private static SimpleOrderedMap<Object> getLuceneInfo() {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
 
     Package p = SolrCore.class.getPackage();

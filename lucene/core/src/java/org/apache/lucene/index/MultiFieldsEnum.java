@@ -110,7 +110,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
     final int index;
     String current;
 
-    public FieldsEnumWithSlice(FieldsEnum fields, ReaderSlice slice, int index) throws IOException {
+    public FieldsEnumWithSlice(FieldsEnum fields, ReaderSlice slice, int index) {
       this.slice = slice;
       this.index = index;
       assert slice.length >= 0: "length=" + slice.length;

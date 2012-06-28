@@ -57,7 +57,7 @@ class PackedIntValues {
     private int lastDocId = -1;
 
     protected PackedIntsWriter(Directory dir, String id, Counter bytesUsed,
-        IOContext context) throws IOException {
+        IOContext context) {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, Type.VAR_INTS);
       bytesRef = new BytesRef(8);
     }

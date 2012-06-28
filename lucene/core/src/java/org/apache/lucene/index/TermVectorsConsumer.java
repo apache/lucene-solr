@@ -158,7 +158,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   }
 
   @Override
-  void startDocument() throws IOException {
+  void startDocument() {
     assert clearLastVectorFieldName();
     reset();
   }

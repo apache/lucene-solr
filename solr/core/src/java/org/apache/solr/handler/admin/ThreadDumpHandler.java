@@ -79,8 +79,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
   //--------------------------------------------------------------------------------
   //--------------------------------------------------------------------------------
   
-  private static SimpleOrderedMap<Object> getThreadInfo( ThreadInfo ti, ThreadMXBean tmbean ) throws IOException 
-  {
+  private static SimpleOrderedMap<Object> getThreadInfo( ThreadInfo ti, ThreadMXBean tmbean ) {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     long tid = ti.getThreadId();
 

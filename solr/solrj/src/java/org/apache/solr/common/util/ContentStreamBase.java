@@ -73,7 +73,7 @@ public abstract class ContentStreamBase implements ContentStream
   {
     private final URL url;
     
-    public URLStream( URL url ) throws IOException {
+    public URLStream( URL url ) {
       this.url = url; 
       sourceInfo = "url";
     }
@@ -95,7 +95,7 @@ public abstract class ContentStreamBase implements ContentStream
   {
     private final File file;
     
-    public FileStream( File f ) throws IOException {
+    public FileStream( File f ) {
       file = f; 
       
       contentType = null; // ??

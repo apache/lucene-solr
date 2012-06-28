@@ -57,9 +57,8 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
    * @param groupField      The field to group by
    * @param sortWithinGroup The sort within each group
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
-   * @throws IOException If I/O related errors occur
    */
-  public static AbstractAllGroupHeadsCollector<?> create(String groupField, Sort sortWithinGroup) throws IOException {
+  public static AbstractAllGroupHeadsCollector<?> create(String groupField, Sort sortWithinGroup) {
     return create(groupField, sortWithinGroup, DEFAULT_INITIAL_SIZE);
   }
 
@@ -73,9 +72,8 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
    *                    the total number of expected unique groups. Be aware that the heap usage is
    *                    4 bytes * initialSize.
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
-   * @throws IOException If I/O related errors occur
    */
-  public static AbstractAllGroupHeadsCollector<?> create(String groupField, Sort sortWithinGroup, int initialSize) throws IOException {
+  public static AbstractAllGroupHeadsCollector<?> create(String groupField, Sort sortWithinGroup, int initialSize) {
     boolean sortAllScore = true;
     boolean sortAllFieldValue = true;
 
@@ -113,7 +111,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
     private Scorer scorer;
 
-    GeneralAllGroupHeadsCollector(String groupField, Sort sortWithinGroup) throws IOException {
+    GeneralAllGroupHeadsCollector(String groupField, Sort sortWithinGroup) {
       super(groupField, sortWithinGroup.getSort().length);
       this.sortWithinGroup = sortWithinGroup;
       groups = new HashMap<BytesRef, GroupHead>();
@@ -409,7 +407,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       BytesRef[] sortValues;
       int[] sortOrds;
 
-      private GroupHead(int doc, BytesRef groupValue) throws IOException {
+      private GroupHead(int doc, BytesRef groupValue) {
         super(groupValue, doc + readerContext.docBase);
         sortValues = new BytesRef[sortsIndex.length];
         sortOrds = new int[sortsIndex.length];

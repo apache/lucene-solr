@@ -89,8 +89,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     private final int blockSize;
     private final IntsRef bulkResult = new IntsRef();
 
-    public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader)
-    throws IOException {
+    public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader) {
       this.in = in;
       this.pending = pending;
       this.blockSize = pending.length;

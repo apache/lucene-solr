@@ -34,7 +34,6 @@ import org.apache.lucene.spatial.prefix.tree.Node;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.util.CachedDistanceValueSource;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -126,7 +125,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
     CharSequence nextTokenStringNeedingLeaf = null;
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       clearAttributes();
       if (nextTokenStringNeedingLeaf != null) {
         termAtt.append(nextTokenStringNeedingLeaf);

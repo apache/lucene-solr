@@ -22,12 +22,10 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.store.Directory;
@@ -209,7 +207,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   }
 
   @Override
-  public void finish(FieldInfos fis, int numDocs) throws IOException {
+  public void finish(FieldInfos fis, int numDocs) {
     if (HEADER_LENGTH_IDX+((long) numDocs)*8 != indexStream.getFilePointer())
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and
@@ -255,7 +253,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
 
   private int copyFieldsWithDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
                                       final Lucene40StoredFieldsReader matchingFieldsReader, int rawDocLengths[])
-    throws IOException, MergeAbortedException, CorruptIndexException {
+    throws IOException {
     int docCount = 0;
     final int maxDoc = reader.reader.maxDoc();
     final Bits liveDocs = reader.liveDocs;
@@ -309,7 +307,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
 
   private int copyFieldsNoDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
                                     final Lucene40StoredFieldsReader matchingFieldsReader, int rawDocLengths[])
-    throws IOException, MergeAbortedException, CorruptIndexException {
+    throws IOException {
     final int maxDoc = reader.reader.maxDoc();
     int docCount = 0;
     if (matchingFieldsReader != null) {

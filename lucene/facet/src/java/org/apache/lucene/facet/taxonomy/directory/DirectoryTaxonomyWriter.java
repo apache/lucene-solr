@@ -312,7 +312,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * {@link #defaultTaxonomyWriterCache()}.
    */
   public DirectoryTaxonomyWriter(Directory directory, OpenMode openMode)
-  throws CorruptIndexException, LockObtainFailedException, IOException {
+  throws IOException {
     this(directory, openMode, defaultTaxonomyWriterCache());
   }
 
@@ -330,9 +330,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
   // convenience constructors:
 
-  public DirectoryTaxonomyWriter(Directory d)
-  throws CorruptIndexException, LockObtainFailedException,
-  IOException {
+  public DirectoryTaxonomyWriter(Directory d) throws IOException {
     this(d, OpenMode.CREATE_OR_APPEND);
   }
 
@@ -342,14 +340,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * {@link Directory}.
    */
   @Override
-  public synchronized void close() throws CorruptIndexException, IOException {
+  public synchronized void close() throws IOException {
     if (!isClosed) {
       indexWriter.commit(combinedCommitData(null));
       doClose();
     }
   }
   
-  private void doClose() throws CorruptIndexException, IOException {
+  private void doClose() throws IOException {
     indexWriter.close();
     isClosed = true;
     closeResources();
@@ -656,7 +654,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * See {@link TaxonomyWriter#commit()}
    */ 
   @Override
-  public synchronized void commit() throws CorruptIndexException, IOException {
+  public synchronized void commit() throws IOException {
     ensureOpen();
     indexWriter.commit(combinedCommitData(null));
   }
@@ -681,7 +679,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * See {@link TaxonomyWriter#commit(Map)}. 
    */
   @Override
-  public synchronized void commit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
+  public synchronized void commit(Map<String,String> commitUserData) throws IOException {
     ensureOpen();
     indexWriter.commit(combinedCommitData(commitUserData));
   }
@@ -691,7 +689,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * See {@link IndexWriter#prepareCommit}.
    */
   @Override
-  public synchronized void prepareCommit() throws CorruptIndexException, IOException {
+  public synchronized void prepareCommit() throws IOException {
     ensureOpen();
     indexWriter.prepareCommit(combinedCommitData(null));
   }
@@ -701,7 +699,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * See {@link IndexWriter#prepareCommit(Map)}
    */
   @Override
-  public synchronized void prepareCommit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
+  public synchronized void prepareCommit(Map<String,String> commitUserData) throws IOException {
     ensureOpen();
     indexWriter.prepareCommit(combinedCommitData(commitUserData));
   }

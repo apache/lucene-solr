@@ -18,7 +18,6 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
@@ -46,12 +45,11 @@ public class DocMakerTest extends BenchmarkTestCase {
     private boolean finish = false;
     
     @Override
-    public void close() throws IOException {
+    public void close() {
     }
 
     @Override
-    public DocData getNextDocData(DocData docData) throws NoMoreDataException,
-        IOException {
+    public DocData getNextDocData(DocData docData) throws NoMoreDataException {
       if (finish) {
         throw new NoMoreDataException();
       }

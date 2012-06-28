@@ -1,6 +1,5 @@
 package org.apache.lucene.sandbox.queries;
 
-import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
 
@@ -90,7 +89,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
   public void testSort() throws Exception {
     SortField sf = new SortField("field", new FieldComparatorSource() {
       @Override
-      public FieldComparator<String> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) throws IOException {
+      public FieldComparator<String> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
         return new SlowCollatedStringComparator(numHits, fieldname, collator);
       }
     });

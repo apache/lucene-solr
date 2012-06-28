@@ -204,7 +204,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     SimpleTextUtil.readLine(in, scratch);
   }
   
-  private int parseIntAt(int offset) throws IOException {
+  private int parseIntAt(int offset) {
     UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+offset, scratch.length-offset, scratchUTF16);
     return ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
   }
@@ -217,7 +217,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   private class SimpleTVFields extends Fields {
     private final SortedMap<String,SimpleTVTerms> fields;
     
-    SimpleTVFields(SortedMap<String,SimpleTVTerms> fields) throws IOException {
+    SimpleTVFields(SortedMap<String,SimpleTVTerms> fields) {
       this.fields = fields;
     }
 
@@ -228,7 +228,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         private Map.Entry<String,SimpleTVTerms> current = null;
         
         @Override
-        public String next() throws IOException {
+        public String next() {
           if (!iterator.hasNext()) {
             return null;
           } else {
@@ -238,7 +238,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         }
 
         @Override
-        public Terms terms() throws IOException {
+        public Terms terms() {
           return current.getValue();
         }
       };

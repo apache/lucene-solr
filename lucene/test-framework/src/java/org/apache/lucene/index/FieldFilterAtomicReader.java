@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
 
-import org.apache.lucene.index.FilterAtomicReader;
-
 public final class FieldFilterAtomicReader extends FilterAtomicReader {
   
   private final Set<String> fields;
@@ -63,7 +61,7 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   }
 
   @Override
-  public void document(final int docID, final StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  public void document(final int docID, final StoredFieldVisitor visitor) throws IOException {
     super.document(docID, new StoredFieldVisitor() {
       @Override
       public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {

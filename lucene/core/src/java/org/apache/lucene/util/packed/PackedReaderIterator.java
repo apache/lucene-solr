@@ -29,8 +29,7 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
   // masks[n-1] masks for bottom n bits
   private final long[] masks;
 
-  public PackedReaderIterator(int valueCount, int bitsPerValue, IndexInput in)
-    throws IOException {
+  public PackedReaderIterator(int valueCount, int bitsPerValue, IndexInput in) {
     super(valueCount, bitsPerValue, in);
 
     masks = new long[bitsPerValue];

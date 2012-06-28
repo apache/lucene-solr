@@ -20,8 +20,16 @@ package org.apache.lucene.queries;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionTestSetup;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.TopDocs;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import java.io.IOException;
@@ -178,7 +186,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       final int[] values = FieldCache.DEFAULT.getInts(context.reader(), INT_FIELD, false);
       return new CustomScoreProvider(context) {
         @Override
-        public float customScore(int doc, float subScore, float valSrcScore) throws IOException {
+        public float customScore(int doc, float subScore, float valSrcScore) {
           assertTrue(doc <= context.reader().maxDoc());
           return values[doc];
         }

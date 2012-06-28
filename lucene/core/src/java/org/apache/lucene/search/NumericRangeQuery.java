@@ -415,7 +415,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     private final LinkedList<BytesRef> rangeBounds = new LinkedList<BytesRef>();
     private final Comparator<BytesRef> termComp;
 
-    NumericRangeTermsEnum(final TermsEnum tenum) throws IOException {
+    NumericRangeTermsEnum(final TermsEnum tenum) {
       super(tenum);
       switch (dataType) {
         case LONG:
@@ -517,7 +517,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     }
     
     @Override
-    protected final BytesRef nextSeekTerm(BytesRef term) throws IOException {
+    protected final BytesRef nextSeekTerm(BytesRef term) {
       while (rangeBounds.size() >= 2) {
         nextRange();
         

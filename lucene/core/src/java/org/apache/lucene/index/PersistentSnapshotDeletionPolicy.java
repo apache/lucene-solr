@@ -28,7 +28,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Version;
 
 /**
@@ -106,8 +105,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
    *          IndexWriter.
    */
   public PersistentSnapshotDeletionPolicy(IndexDeletionPolicy primary,
-      Directory dir, OpenMode mode, Version matchVersion)
-      throws CorruptIndexException, LockObtainFailedException, IOException {
+      Directory dir, OpenMode mode, Version matchVersion) throws IOException {
     super(primary, null);
 
     // Initialize the index writer over the snapshot directory.
@@ -175,7 +173,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   }
 
   /** Closes the index which writes the snapshots to the directory. */
-  public void close() throws CorruptIndexException, IOException {
+  public void close() throws IOException {
     writer.close();
   }
 

@@ -51,12 +51,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   private volatile boolean stopStress = false;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     createTempDir();
   }
   
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
 
   }
   

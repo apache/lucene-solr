@@ -125,13 +125,13 @@ public class ScoredDocIdsUtils {
           public boolean isCacheable() { return true; }
 
           @Override
-          public DocIdSetIterator iterator() throws IOException {
+          public DocIdSetIterator iterator() {
             return new DocIdSetIterator() {
 
               private int next = -1;
 
               @Override
-              public int advance(int target) throws IOException {
+              public int advance(int target) {
                 while (next < size && docids[next++] < target) {
                 }
                 return next == size ? NO_MORE_DOCS : docids[next];
@@ -143,7 +143,7 @@ public class ScoredDocIdsUtils {
               }
 
               @Override
-              public int nextDoc() throws IOException {
+              public int nextDoc() {
                 if (++next >= size) {
                   return NO_MORE_DOCS;
                 }
@@ -155,7 +155,7 @@ public class ScoredDocIdsUtils {
         };
       }
 
-      public ScoredDocIDsIterator iterator() throws IOException {
+      public ScoredDocIDsIterator iterator() {
         return new ScoredDocIDsIterator() {
 
           int next = -1;
@@ -251,12 +251,12 @@ public class ScoredDocIdsUtils {
         }
 
         @Override
-        public DocIdSetIterator iterator() throws IOException {
+        public DocIdSetIterator iterator() {
           return new DocIdSetIterator() {
             private int next = -1;
 
             @Override
-            public int advance(int target) throws IOException {
+            public int advance(int target) {
               if (target <= next) {
                 target = next + 1;
               }
@@ -270,7 +270,7 @@ public class ScoredDocIdsUtils {
             }
 
             @Override
-            public int nextDoc() throws IOException {
+            public int nextDoc() {
               return ++next < maxDoc ? next : NO_MORE_DOCS;
             }
 
@@ -337,13 +337,13 @@ public class ScoredDocIdsUtils {
         }
 
         @Override
-        public DocIdSetIterator iterator() throws IOException {
+        public DocIdSetIterator iterator() {
           return new DocIdSetIterator() {
             final Bits liveDocs = MultiFields.getLiveDocs(reader);
             private int next = -1;
 
             @Override
-            public int advance(int target) throws IOException {
+            public int advance(int target) {
               if (target > next) {
                 next = target - 1;
               }
@@ -356,7 +356,7 @@ public class ScoredDocIdsUtils {
             }
 
             @Override
-            public int nextDoc() throws IOException {
+            public int nextDoc() {
               do {
                 ++next;
               } while (next < maxDoc && liveDocs != null && !liveDocs.get(next));

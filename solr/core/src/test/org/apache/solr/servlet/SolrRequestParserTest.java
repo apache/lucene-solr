@@ -54,7 +54,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   static SolrRequestParsers parser;
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     parser = null;
   }
   

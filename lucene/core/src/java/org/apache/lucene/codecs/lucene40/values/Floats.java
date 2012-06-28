@@ -47,7 +47,7 @@ public class Floats {
   protected static final int VERSION_CURRENT = VERSION_START;
   
   public static DocValuesConsumer getWriter(Directory dir, String id, Counter bytesUsed,
-      IOContext context, Type type) throws IOException {
+      IOContext context, Type type) {
     return new FloatsWriter(dir, id, bytesUsed, context, type);
   }
 
@@ -72,7 +72,7 @@ public class Floats {
     private final int size; 
     private final DocValuesArraySource template;
     public FloatsWriter(Directory dir, String id, Counter bytesUsed,
-        IOContext context, Type type) throws IOException {
+        IOContext context, Type type) {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
       size = typeToSize(type);
       this.bytesRef = new BytesRef(size);

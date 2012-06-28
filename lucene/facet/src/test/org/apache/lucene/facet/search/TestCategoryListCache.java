@@ -72,7 +72,7 @@ public class TestCategoryListCache extends FacetTestBase {
     doTest(true,true);
   }
   
-  private void doTest(boolean withCache, boolean plantWrongData) throws IOException, Exception {
+  private void doTest(boolean withCache, boolean plantWrongData) throws Exception {
     Map<CategoryPath,Integer> truth = facetCountsTruth();
     CategoryPath cp = (CategoryPath) truth.keySet().toArray()[0]; // any category path will do for this test 
     CountFacetRequest frq = new CountFacetRequest(cp, 10);

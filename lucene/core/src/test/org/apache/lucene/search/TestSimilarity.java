@@ -78,7 +78,7 @@ public class TestSimilarity extends LuceneTestCase {
     searcher.search(new TermQuery(b), new Collector() {
          private Scorer scorer;
          @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorer scorer) {
            this.scorer = scorer; 
          }
          @Override
@@ -101,7 +101,7 @@ public class TestSimilarity extends LuceneTestCase {
          private int base = 0;
          private Scorer scorer;
          @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorer scorer) {
            this.scorer = scorer; 
          }
          @Override
@@ -127,7 +127,7 @@ public class TestSimilarity extends LuceneTestCase {
        new Collector() {
          private Scorer scorer;
          @Override
-         public void setScorer(Scorer scorer) throws IOException {
+         public void setScorer(Scorer scorer) {
           this.scorer = scorer; 
          }
          @Override
@@ -148,7 +148,7 @@ public class TestSimilarity extends LuceneTestCase {
     searcher.search(pq, new Collector() {
       private Scorer scorer;
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorer scorer) {
         this.scorer = scorer; 
       }
       @Override

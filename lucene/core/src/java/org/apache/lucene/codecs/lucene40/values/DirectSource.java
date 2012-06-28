@@ -126,7 +126,7 @@ abstract class DirectSource extends Source {
   
   private static final class BytesToFloat extends ToNumeric {
     @Override
-    long toLong(IndexInput input) throws IOException {
+    long toLong(IndexInput input) {
       throw new UnsupportedOperationException("ints are not supported");
     }
 
@@ -137,7 +137,7 @@ abstract class DirectSource extends Source {
   
   private static final class BytesToDouble extends ToNumeric {
     @Override
-    long toLong(IndexInput input) throws IOException {
+    long toLong(IndexInput input) {
       throw new UnsupportedOperationException("ints are not supported");
     }
 
@@ -153,7 +153,7 @@ abstract class DirectSource extends Source {
       return input.readLong();
     }
 
-    double toDouble(IndexInput input) throws IOException {
+    double toDouble(IndexInput input) {
       throw new UnsupportedOperationException("doubles are not supported");
     }
   }

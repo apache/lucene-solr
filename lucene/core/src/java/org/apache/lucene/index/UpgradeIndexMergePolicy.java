@@ -74,12 +74,12 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   @Override
-  public MergeSpecification findMerges(SegmentInfos segmentInfos) throws CorruptIndexException, IOException {
+  public MergeSpecification findMerges(SegmentInfos segmentInfos) throws IOException {
     return base.findMerges(segmentInfos);
   }
   
   @Override
-  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) throws CorruptIndexException, IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) throws IOException {
     // first find all old segments
     final Map<SegmentInfoPerCommit,Boolean> oldSegments = new HashMap<SegmentInfoPerCommit,Boolean>();
     for (final SegmentInfoPerCommit si : segmentInfos) {
@@ -129,7 +129,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) throws CorruptIndexException, IOException {
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) throws IOException {
     return base.findForcedDeletesMerges(segmentInfos);
   }
   

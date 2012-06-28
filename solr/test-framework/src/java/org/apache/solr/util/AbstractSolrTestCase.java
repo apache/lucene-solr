@@ -105,12 +105,12 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
   
   @BeforeClass
-  public static void beforeClassAbstractSolrTestCase() throws Exception {
+  public static void beforeClassAbstractSolrTestCase() {
     SolrTestCaseJ4.startTrackingSearchers();
   }
   
   @AfterClass
-  public static void afterClassAbstractSolrTestCase() throws Exception {
+  public static void afterClassAbstractSolrTestCase() {
     SolrTestCaseJ4.endTrackingSearchers();
   }
   
@@ -458,7 +458,7 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
   }
 
   /** @see SolrTestCaseJ4#getFile */
-  public static File getFile(String name) throws IOException {
+  public static File getFile(String name) {
     return SolrTestCaseJ4.getFile(name);
   }
 }

@@ -95,7 +95,7 @@ public final class MultiTerms extends Terms {
   }
 
   @Override
-  public long size() throws IOException {
+  public long size() {
     return -1;
   }
 

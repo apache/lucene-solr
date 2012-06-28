@@ -75,7 +75,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
       private ScoreTerm st;
       
       @Override
-      public void setNextEnum(TermsEnum termsEnum) throws IOException {
+      public void setNextEnum(TermsEnum termsEnum) {
         this.termsEnum = termsEnum;
         this.termComp = termsEnum.getComparator();
         
@@ -89,7 +89,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     
       // for assert:
       private BytesRef lastTerm;
-      private boolean compareToLastTerm(BytesRef t) throws IOException {
+      private boolean compareToLastTerm(BytesRef t) {
         if (lastTerm == null && t != null) {
           lastTerm = BytesRef.deepCopyOf(t);
         } else if (t == null) {

@@ -97,7 +97,7 @@ public class QueryTemplateManager {
    * Fast means of constructing query using a precompiled stylesheet
    */
   public static String getQueryAsXmlString(Properties formProperties, Templates template)
-      throws SAXException, IOException, ParserConfigurationException, TransformerException {
+      throws ParserConfigurationException, TransformerException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     StreamResult result = new StreamResult(baos);
     transformCriteria(formProperties, template, result);
@@ -120,7 +120,7 @@ public class QueryTemplateManager {
    * Fast means of constructing query using a cached,precompiled stylesheet
    */
   public static Document getQueryAsDOM(Properties formProperties, Templates template)
-      throws SAXException, IOException, ParserConfigurationException, TransformerException {
+      throws ParserConfigurationException, TransformerException {
     DOMResult result = new DOMResult();
     transformCriteria(formProperties, template, result);
     return (Document) result.getNode();
@@ -159,13 +159,13 @@ public class QueryTemplateManager {
    * Fast transformation using a pre-compiled stylesheet (suitable for production environments)
    */
   public static void transformCriteria(Properties formProperties, Templates template, Result result)
-      throws SAXException, IOException, ParserConfigurationException, TransformerException {
+      throws ParserConfigurationException, TransformerException {
     transformCriteria(formProperties, template.newTransformer(), result);
   }
 
 
   public static void transformCriteria(Properties formProperties, Transformer transformer, Result result)
-      throws SAXException, IOException, ParserConfigurationException, TransformerException {
+      throws ParserConfigurationException, TransformerException {
     dbf.setNamespaceAware(true);
 
     //Create an XML document representing the search index document.

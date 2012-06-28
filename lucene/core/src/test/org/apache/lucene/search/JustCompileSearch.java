@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.similarities.Similarity;
@@ -41,18 +39,17 @@ final class JustCompileSearch {
   static final class JustCompileCollector extends Collector {
 
     @Override
-    public void collect(int doc) throws IOException {
+    public void collect(int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context)
-        throws IOException {
+    public void setNextReader(AtomicReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorer scorer) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -66,7 +63,7 @@ final class JustCompileSearch {
   static final class JustCompileDocIdSet extends DocIdSet {
 
     @Override
-    public DocIdSetIterator iterator() throws IOException {
+    public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -80,12 +77,12 @@ final class JustCompileSearch {
     }
 
     @Override
-    public int nextDoc() throws IOException {
+    public int nextDoc() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
     @Override
-    public int advance(int target) throws IOException {
+    public int advance(int target) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
@@ -114,12 +111,12 @@ final class JustCompileSearch {
     }
 
     @Override
-    public int compareBottom(int doc) throws IOException {
+    public int compareBottom(int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public void copy(int slot, int doc) throws IOException {
+    public void copy(int slot, int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -129,8 +126,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public FieldComparator<Object> setNextReader(AtomicReaderContext context)
-        throws IOException {
+    public FieldComparator<Object> setNextReader(AtomicReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -149,7 +145,7 @@ final class JustCompileSearch {
 
     @Override
     public FieldComparator<?> newComparator(String fieldname, int numHits,
-        int sortPos, boolean reversed) throws IOException {
+        int sortPos, boolean reversed) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -160,7 +156,7 @@ final class JustCompileSearch {
     // still added here in case someone will add abstract methods in the future.
     
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
       return null;
     }
   }
@@ -194,12 +190,12 @@ final class JustCompileSearch {
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
     JustCompilePhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-        Similarity.SloppySimScorer docScorer) throws IOException {
+        Similarity.SloppySimScorer docScorer) {
       super(weight, postings, docScorer);
     }
 
     @Override
-    protected float phraseFreq() throws IOException {
+    protected float phraseFreq() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -221,13 +217,12 @@ final class JustCompileSearch {
     }
 
     @Override
-    public boolean score(Collector collector, int max, int firstDocID)
-        throws IOException {
+    public boolean score(Collector collector, int max, int firstDocID) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
     @Override
-    public float score() throws IOException {
+    public float score() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -237,12 +232,12 @@ final class JustCompileSearch {
     }
 
     @Override
-    public int nextDoc() throws IOException {
+    public int nextDoc() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
     @Override
-    public int advance(int target) throws IOException {
+    public int advance(int target) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
@@ -255,12 +250,12 @@ final class JustCompileSearch {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+    public ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+    public SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -277,18 +272,17 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void collect(int doc) throws IOException {
+    public void collect(int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context)
-        throws IOException {
+    public void setNextReader(AtomicReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorer scorer) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -317,7 +311,7 @@ final class JustCompileSearch {
   static final class JustCompileWeight extends Weight {
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(AtomicReaderContext context, int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -332,14 +326,13 @@ final class JustCompileSearch {
     }
 
     @Override
-    public float getValueForNormalization() throws IOException {
+    public float getValueForNormalization() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs)
-        throws IOException {
+        boolean topScorer, Bits acceptDocs) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

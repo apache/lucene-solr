@@ -22,7 +22,6 @@ import org.apache.solr.core.SolrInfoMBean;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.IOException;
 
 
 /**
@@ -125,7 +124,7 @@ public interface SolrCache<K,V> extends SolrInfoMBean {
    * Warm this cache associated with <code>searcher</code> using the <code>old</code>
    * cache object.  <code>this</code> and <code>old</code> will have the same concrete type.
    */
-  void warm(SolrIndexSearcher searcher, SolrCache<K,V> old) throws IOException;
+  void warm(SolrIndexSearcher searcher, SolrCache<K,V> old);
   // Q: an alternative to passing the searcher here would be to pass it in
   // init and have the cache implementation save it.
 

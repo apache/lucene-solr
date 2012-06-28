@@ -75,7 +75,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
    * <p>
    * @param compiled CompiledAutomaton
    */
-  public AutomatonTermsEnum(TermsEnum tenum, CompiledAutomaton compiled) throws IOException {
+  public AutomatonTermsEnum(TermsEnum tenum, CompiledAutomaton compiled) {
     super(tenum);
     this.finite = compiled.finite;
     this.runAutomaton = compiled.runAutomaton;

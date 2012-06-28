@@ -294,7 +294,7 @@ public class TestHarness {
    * @see LocalSolrQueryRequest
    */
   public String validateQuery(SolrQueryRequest req, String... tests)
-    throws IOException, Exception {
+    throws Exception {
                 
     String res = query(req);
     return validateXPath(res, tests);
@@ -309,7 +309,7 @@ public class TestHarness {
    * @exception IOException if there is a problem writing the XML
    * @see LocalSolrQueryRequest
    */
-  public String query(SolrQueryRequest req) throws IOException, Exception {
+  public String query(SolrQueryRequest req) throws Exception {
     return query(req.getParams().get(CommonParams.QT), req);
   }
 
@@ -323,7 +323,7 @@ public class TestHarness {
    * @exception IOException if there is a problem writing the XML
    * @see LocalSolrQueryRequest
    */
-  public String query(String handler, SolrQueryRequest req) throws IOException, Exception {
+  public String query(String handler, SolrQueryRequest req) throws Exception {
     try {
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));

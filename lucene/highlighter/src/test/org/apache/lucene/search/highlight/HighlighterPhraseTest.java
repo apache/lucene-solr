@@ -31,7 +31,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -46,14 +45,12 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.FixedBitSet;
 
 public class HighlighterPhraseTest extends LuceneTestCase {
   private static final String FIELD = "text";
-  public void testConcurrentPhrase() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InvalidTokenOffsetsException {
+  public void testConcurrentPhrase() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox jumped";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
@@ -94,8 +91,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     }
   }
 
-  public void testConcurrentSpan() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InvalidTokenOffsetsException {
+  public void testConcurrentSpan() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox jumped";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
@@ -129,19 +125,17 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         }
 
         @Override
-        public void collect(int i) throws IOException {
+        public void collect(int i) {
           bitset.set(this.baseDoc + i);
         }
 
         @Override
-        public void setNextReader(AtomicReaderContext context)
-            throws IOException {
+        public void setNextReader(AtomicReaderContext context) {
           this.baseDoc = context.docBase;
         }
 
         @Override
-        public void setScorer(org.apache.lucene.search.Scorer scorer)
-            throws IOException {
+        public void setScorer(org.apache.lucene.search.Scorer scorer) {
           // Do Nothing
         }
       });
@@ -165,8 +159,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     }
   }
 
-  public void testSparsePhrase() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InvalidTokenOffsetsException {
+  public void testSparsePhrase() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
@@ -208,8 +201,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     }
   }
 
-  public void testSparsePhraseWithNoPositions() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InvalidTokenOffsetsException {
+  public void testSparsePhraseWithNoPositions() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
@@ -248,8 +240,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     }
   }
 
-  public void testSparseSpan() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InvalidTokenOffsetsException {
+  public void testSparseSpan() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
@@ -304,7 +295,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     }
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       this.i++;
       if (this.i >= this.tokens.length) {
         return false;
@@ -344,7 +335,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     }
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       this.i++;
       if (this.i >= this.tokens.length) {
         return false;

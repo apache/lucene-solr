@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -54,17 +53,14 @@ public final class NoMergePolicy extends MergePolicy {
   public void close() {}
 
   @Override
-  public MergeSpecification findMerges(SegmentInfos segmentInfos)
-      throws CorruptIndexException, IOException { return null; }
+  public MergeSpecification findMerges(SegmentInfos segmentInfos) { return null; }
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-             int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
-      throws CorruptIndexException, IOException { return null; }
+             int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) { return null; }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos)
-      throws CorruptIndexException, IOException { return null; }
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) { return null; }
 
   @Override
   public boolean useCompoundFile(SegmentInfos segments, SegmentInfoPerCommit newSegment) { return useCompoundFile; }

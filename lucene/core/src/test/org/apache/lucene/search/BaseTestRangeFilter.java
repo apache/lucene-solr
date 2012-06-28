@@ -54,9 +54,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
       this.minR = minR;
       this.maxR = maxR;
       this.allowNegativeRandomInts = allowNegativeRandomInts;
-      try {
-        index = newDirectory(random);
-      } catch (IOException e) { throw new RuntimeException(e); }
+      index = newDirectory(random);
     }
   }
   

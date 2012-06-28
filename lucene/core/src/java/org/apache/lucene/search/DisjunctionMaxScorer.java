@@ -55,7 +55,7 @@ class DisjunctionMaxScorer extends Scorer {
    *          length may be larger than the actual number of scorers.
    */
   public DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier,
-      Scorer[] subScorers, int numScorers) throws IOException {
+      Scorer[] subScorers, int numScorers) {
     super(weight);
     this.tieBreakerMultiplier = tieBreakerMultiplier;
     // The passed subScorers array includes only scorers which have documents

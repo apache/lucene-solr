@@ -299,7 +299,7 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
    *          the total set of segments in the index
    */
   public abstract MergeSpecification findMerges(SegmentInfos segmentInfos)
-      throws CorruptIndexException, IOException;
+      throws IOException;
 
   /**
    * Determine what set of merge operations is necessary in
@@ -324,7 +324,7 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
    */
   public abstract MergeSpecification findForcedMerges(
           SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
-      throws CorruptIndexException, IOException;
+      throws IOException;
 
   /**
    * Determine what set of merge operations is necessary in order to expunge all
@@ -334,7 +334,7 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
    *          the total set of segments in the index
    */
   public abstract MergeSpecification findForcedDeletesMerges(
-      SegmentInfos segmentInfos) throws CorruptIndexException, IOException;
+      SegmentInfos segmentInfos) throws IOException;
 
   /**
    * Release all resources for the policy.

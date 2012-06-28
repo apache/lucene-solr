@@ -17,15 +17,12 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -36,12 +33,12 @@ import org.junit.Ignore;
 public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
   
   @BeforeClass
-  public static void beforeSuperClass() throws Exception {
+  public static void beforeSuperClass() {
     
   }
   
   @AfterClass
-  public static void afterSuperClass() throws Exception {
+  public static void afterSuperClass() {
     
   }
   
@@ -119,8 +116,7 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
   }
 
-  private void waitForThingsToLevelOut() throws KeeperException,
-      InterruptedException, Exception, IOException, URISyntaxException {
+  private void waitForThingsToLevelOut() throws Exception {
     int cnt = 0;
     boolean retry = false;
     do {

@@ -91,7 +91,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
       }
 
       @Override
-      public float getValueForNormalization() throws IOException {
+      public float getValueForNormalization() {
         throw new IllegalStateException("Weight already normalized.");
       }
 

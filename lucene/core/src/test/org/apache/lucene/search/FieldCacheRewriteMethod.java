@@ -94,12 +94,12 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {
         
         @Override
-        public Comparator<BytesRef> getComparator() throws IOException {
+        public Comparator<BytesRef> getComparator() {
           return BytesRef.getUTF8SortedAsUnicodeComparator();
         }
         
         @Override
-        public TermsEnum iterator(TermsEnum reuse) throws IOException {
+        public TermsEnum iterator(TermsEnum reuse) {
           return fcsi.getTermsEnum();
         }
 
@@ -109,17 +109,17 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         }
 
         @Override
-        public long getSumDocFreq() throws IOException {
+        public long getSumDocFreq() {
           return -1;
         }
 
         @Override
-        public int getDocCount() throws IOException {
+        public int getDocCount() {
           return -1;
         }
 
         @Override
-        public long size() throws IOException {
+        public long size() {
           return -1;
         }
       });

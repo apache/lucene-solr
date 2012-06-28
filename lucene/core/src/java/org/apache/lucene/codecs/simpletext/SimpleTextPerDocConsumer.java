@@ -32,8 +32,7 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
 
   protected final PerDocWriteState state;
   protected final String segmentSuffix;
-  public SimpleTextPerDocConsumer(PerDocWriteState state, String segmentSuffix)
-      throws IOException {
+  public SimpleTextPerDocConsumer(PerDocWriteState state, String segmentSuffix) {
     this.state = state;
     this.segmentSuffix = segmentSuffix;
   }

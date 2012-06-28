@@ -90,8 +90,7 @@ public class RequestHandlerUtils
   /**
    * Modify UpdateCommand based on request parameters
    */
-  public static void updateCommit(CommitUpdateCommand cmd, SolrParams params) throws IOException
-  {
+  public static void updateCommit(CommitUpdateCommand cmd, SolrParams params) {
     if( params == null ) return;
 
     cmd.openSearcher = params.getBool( UpdateParams.OPEN_SEARCHER, cmd.openSearcher );

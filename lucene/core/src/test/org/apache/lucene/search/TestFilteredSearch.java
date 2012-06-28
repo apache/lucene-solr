@@ -24,14 +24,12 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
@@ -44,7 +42,7 @@ public class TestFilteredSearch extends LuceneTestCase {
 
   private static final String FIELD = "category";
   
-  public void testFilteredSearch() throws CorruptIndexException, LockObtainFailedException, IOException {
+  public void testFilteredSearch() throws IOException {
     boolean enforceSingleSegment = true;
     Directory directory = newDirectory();
     int[] filterBits = {1, 36};

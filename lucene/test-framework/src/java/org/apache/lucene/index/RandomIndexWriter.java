@@ -326,28 +326,28 @@ public class RandomIndexWriter implements Closeable {
     maybeCommit();
   }
   
-  public void addIndexes(Directory... dirs) throws CorruptIndexException, IOException {
+  public void addIndexes(Directory... dirs) throws IOException {
     w.addIndexes(dirs);
   }
 
-  public void addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
+  public void addIndexes(IndexReader... readers) throws IOException {
     w.addIndexes(readers);
   }
   
-  public void deleteDocuments(Term term) throws CorruptIndexException, IOException {
+  public void deleteDocuments(Term term) throws IOException {
     w.deleteDocuments(term);
   }
 
-  public void deleteDocuments(Query q) throws CorruptIndexException, IOException {
+  public void deleteDocuments(Query q) throws IOException {
     w.deleteDocuments(q);
   }
   
-  public void commit() throws CorruptIndexException, IOException {
+  public void commit() throws IOException {
     w.commit();
     switchDoDocValues();
   }
   
-  public int numDocs() throws IOException {
+  public int numDocs() {
     return w.numDocs();
   }
 

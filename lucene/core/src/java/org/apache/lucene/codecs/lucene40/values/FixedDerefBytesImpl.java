@@ -46,8 +46,7 @@ class FixedDerefBytesImpl {
   static final int VERSION_CURRENT = VERSION_START;
 
   public static class Writer extends DerefBytesWriterBase {
-    public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
-        throws IOException {
+    public Writer(Directory dir, String id, Counter bytesUsed, IOContext context) {
       super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, Type.BYTES_FIXED_DEREF);
     }
 

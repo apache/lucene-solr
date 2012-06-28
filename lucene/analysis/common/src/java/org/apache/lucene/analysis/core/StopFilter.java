@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -122,7 +121,7 @@ public final class StopFilter extends FilteringTokenFilter {
    * Returns the next input Token whose term() is not a stop word.
    */
   @Override
-  protected boolean accept() throws IOException {
+  protected boolean accept() {
     return !stopWords.contains(termAtt.buffer(), 0, termAtt.length());
   }
 

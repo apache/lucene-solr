@@ -35,7 +35,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreContainer.Initializer;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -67,7 +66,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   private ZkStateReader reader;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
   
@@ -245,7 +244,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     //Thread.sleep(100000);
   }
   
-  private String getLeader() throws InterruptedException, KeeperException {
+  private String getLeader() throws InterruptedException {
     
     ZkNodeProps props = reader.getLeaderProps("collection1", "shard1", 30000);
     String leader = props.get(ZkStateReader.NODE_NAME_PROP);

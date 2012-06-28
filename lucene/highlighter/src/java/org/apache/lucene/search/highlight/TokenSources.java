@@ -191,7 +191,7 @@ public class TokenSources {
       }
 
       @Override
-      public boolean incrementToken() throws IOException {
+      public boolean incrementToken() {
         if (currentToken >= tokens.length) {
           return false;
         }

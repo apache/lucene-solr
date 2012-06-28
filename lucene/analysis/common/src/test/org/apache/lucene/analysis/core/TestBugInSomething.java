@@ -1,6 +1,5 @@
 package org.apache.lucene.analysis.core;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
 
@@ -68,7 +67,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
   CharStream wrappedStream = new CharStream() {
 
     @Override
-    public void mark(int readAheadLimit) throws IOException {
+    public void mark(int readAheadLimit) {
       throw new UnsupportedOperationException("mark(int)");
     }
 
@@ -78,32 +77,32 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public int read() throws IOException {
+    public int read() {
       throw new UnsupportedOperationException("read()");
     }
 
     @Override
-    public int read(char[] cbuf) throws IOException {
+    public int read(char[] cbuf) {
       throw new UnsupportedOperationException("read(char[])");
     }
 
     @Override
-    public int read(CharBuffer target) throws IOException {
+    public int read(CharBuffer target) {
       throw new UnsupportedOperationException("read(CharBuffer)");
     }
 
     @Override
-    public boolean ready() throws IOException {
+    public boolean ready() {
       throw new UnsupportedOperationException("ready()");
     }
 
     @Override
-    public void reset() throws IOException {
+    public void reset() {
       throw new UnsupportedOperationException("reset()");
     }
 
     @Override
-    public long skip(long n) throws IOException {
+    public long skip(long n) {
       throw new UnsupportedOperationException("skip(long)");
     }
 
@@ -113,12 +112,12 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
       throw new UnsupportedOperationException("close()");
     }
 
     @Override
-    public int read(char[] arg0, int arg1, int arg2) throws IOException {
+    public int read(char[] arg0, int arg1, int arg2) {
       throw new UnsupportedOperationException("read(char[], int, int)");
     }
   };

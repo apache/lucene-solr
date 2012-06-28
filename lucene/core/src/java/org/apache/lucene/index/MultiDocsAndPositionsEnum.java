@@ -46,7 +46,7 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
     return this.parent == parent;
   }
 
-  public MultiDocsAndPositionsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {
+  public MultiDocsAndPositionsEnum reset(final EnumWithSlice[] subs, final int numSubs) {
     this.numSubs = numSubs;
     this.subs = new EnumWithSlice[subs.length];
     for(int i=0;i<subs.length;i++) {

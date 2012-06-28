@@ -52,7 +52,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   final PostingsReaderBase wrappedPostingsReader;
   int maxPositions;
 
-  public PulsingPostingsReader(PostingsReaderBase wrappedPostingsReader) throws IOException {
+  public PulsingPostingsReader(PostingsReaderBase wrappedPostingsReader) {
     this.wrappedPostingsReader = wrappedPostingsReader;
   }
 

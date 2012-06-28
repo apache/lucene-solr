@@ -126,7 +126,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     private BoostAttribute boostAtt;
     
     @Override
-    public void setNextEnum(TermsEnum termsEnum) throws IOException {
+    public void setNextEnum(TermsEnum termsEnum) {
       this.termsEnum = termsEnum;
       this.boostAtt = termsEnum.attributes().addAttribute(BoostAttribute.class);
     }

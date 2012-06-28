@@ -17,8 +17,6 @@ package org.apache.lucene.codecs.sep;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.codecs.lucene40.values.DocValuesWriterBase;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.store.Directory;
@@ -31,7 +29,7 @@ import org.apache.lucene.store.Directory;
 public class SepDocValuesConsumer extends DocValuesWriterBase {
   private final Directory directory;
 
-  public SepDocValuesConsumer(PerDocWriteState state) throws IOException {
+  public SepDocValuesConsumer(PerDocWriteState state) {
     super(state);
     this.directory = state.directory;
   }

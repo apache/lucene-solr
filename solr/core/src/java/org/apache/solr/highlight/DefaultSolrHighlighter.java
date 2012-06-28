@@ -202,9 +202,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * @param tokenStream document text CachingTokenStream
    * @param fieldName The name of the field
    * @param request The SolrQueryRequest
-   * @throws IOException 
    */
-  private QueryScorer getSpanQueryScorer(Query query, String fieldName, TokenStream tokenStream, SolrQueryRequest request) throws IOException {
+  private QueryScorer getSpanQueryScorer(Query query, String fieldName, TokenStream tokenStream, SolrQueryRequest request) {
     boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
     Boolean highlightMultiTerm = request.getParams().getBool(HighlightParams.HIGHLIGHT_MULTI_TERM, true);
     if(highlightMultiTerm == null) {

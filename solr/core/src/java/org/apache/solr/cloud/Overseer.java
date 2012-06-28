@@ -156,8 +156,7 @@ public class Overseer {
     }
 
     private CloudState processMessage(CloudState cloudState,
-        final ZkNodeProps message, final String operation)
-        throws KeeperException, InterruptedException {
+        final ZkNodeProps message, final String operation) {
       if ("state".equals(operation)) {
         cloudState = updateState(cloudState, message);
       } else if ("deletecore".equals(operation)) {
@@ -197,10 +196,8 @@ public class Overseer {
       }
       /**
        * Try to assign core to the cluster. 
-       * @throws KeeperException 
-       * @throws InterruptedException 
        */
-      private CloudState updateState(CloudState state, final ZkNodeProps message) throws KeeperException, InterruptedException {
+      private CloudState updateState(CloudState state, final ZkNodeProps message) {
         final String collection = message.get(ZkStateReader.COLLECTION_PROP);
         final String zkCoreNodeName = message.get(ZkStateReader.NODE_NAME_PROP) + "_" + message.get(ZkStateReader.CORE_NAME_PROP);
         final Integer numShards = message.get(ZkStateReader.NUM_SHARDS_PROP)!=null?Integer.parseInt(message.get(ZkStateReader.NUM_SHARDS_PROP)):null;
@@ -379,7 +376,7 @@ public class Overseer {
      }
   }
   
-  public Overseer(final ZkStateReader reader, final String id) throws KeeperException, InterruptedException {
+  public Overseer(final ZkStateReader reader, final String id) {
     log.info("Overseer (id=" + id + ") starting");
     createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread

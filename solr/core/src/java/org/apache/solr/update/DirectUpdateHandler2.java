@@ -42,11 +42,9 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
@@ -93,7 +91,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   protected final CommitTracker commitTracker;
   protected final CommitTracker softCommitTracker;
 
-  public DirectUpdateHandler2(SolrCore core) throws IOException {
+  public DirectUpdateHandler2(SolrCore core) {
     super(core);
    
     solrCoreState = new DefaultSolrCoreState(core.getDirectoryFactory());
@@ -109,7 +107,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
   }
   
-  public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) throws IOException {
+  public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
     super(core);
     if (updateHandler instanceof DirectUpdateHandler2) {
       this.solrCoreState = ((DirectUpdateHandler2) updateHandler).solrCoreState;

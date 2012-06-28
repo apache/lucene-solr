@@ -51,7 +51,7 @@ public class MultiDocValues extends DocValues {
       return reader.normValues(field);
     }
     
-    public boolean stopLoadingOnNull(AtomicReader reader, String field) throws IOException {
+    public boolean stopLoadingOnNull(AtomicReader reader, String field) {
       // for norms we drop all norms if one leaf reader has no norms and the field is present
       FieldInfos fieldInfos = reader.getFieldInfos();
       FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
@@ -79,7 +79,7 @@ public class MultiDocValues extends DocValues {
       return reader.docValues(field);
     }
     
-    public boolean stopLoadingOnNull(AtomicReader reader, String field) throws IOException {
+    public boolean stopLoadingOnNull(AtomicReader reader, String field) {
       return false;
     }
   }
@@ -437,7 +437,7 @@ public class MultiDocValues extends DocValues {
       ordToOffset = type == Type.BYTES_VAR_SORTED ? new long[2] : null;
     }
     @Override
-    public void consume(BytesRef ref, int ord, long offset) throws IOException {
+    public void consume(BytesRef ref, int ord, long offset) {
       pagedBytes.copy(ref);
       if (ordToOffset != null) {
         if (ord+1 >= ordToOffset.length) {

@@ -17,8 +17,6 @@ package org.apache.lucene.analysis.position;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
@@ -38,7 +36,7 @@ public class PositionFilterTest extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public final boolean incrementToken() throws IOException {
+    public final boolean incrementToken() {
       clearAttributes();
       if (index < testToken.length) {
         termAtt.setEmpty().append(testToken[index++]);

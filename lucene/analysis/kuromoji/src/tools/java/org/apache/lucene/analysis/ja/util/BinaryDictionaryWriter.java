@@ -224,7 +224,7 @@ public abstract class BinaryDictionaryWriter {
     lastWordId = wordId;
   }
 
-  protected final String getBaseFileName(String baseDir) throws IOException {
+  protected final String getBaseFileName(String baseDir) {
     return baseDir + File.separator + implClazz.getName().replace('.', File.separatorChar);
   }
   

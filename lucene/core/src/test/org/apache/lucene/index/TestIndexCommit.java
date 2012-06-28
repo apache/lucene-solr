@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -35,10 +34,10 @@ public class TestIndexCommit extends LuceneTestCase {
     IndexCommit ic1 = new IndexCommit() {
       @Override public String getSegmentsFileName() { return "a"; }
       @Override public Directory getDirectory() { return dir; }
-      @Override public Collection<String> getFileNames() throws IOException { return null; }
+      @Override public Collection<String> getFileNames() { return null; }
       @Override public void delete() {}
       @Override public long getGeneration() { return 0; }
-      @Override public Map<String, String> getUserData() throws IOException { return null; }
+      @Override public Map<String, String> getUserData() { return null; }
       @Override public boolean isDeleted() { return false; }
       @Override public int getSegmentCount() { return 2; }
     };
@@ -46,10 +45,10 @@ public class TestIndexCommit extends LuceneTestCase {
     IndexCommit ic2 = new IndexCommit() {
       @Override public String getSegmentsFileName() { return "b"; }
       @Override public Directory getDirectory() { return dir; }
-      @Override public Collection<String> getFileNames() throws IOException { return null; }
+      @Override public Collection<String> getFileNames() { return null; }
       @Override public void delete() {}
       @Override public long getGeneration() { return 0; }
-      @Override public Map<String, String> getUserData() throws IOException { return null; }
+      @Override public Map<String, String> getUserData() { return null; }
       @Override public boolean isDeleted() { return false; }
       @Override public int getSegmentCount() { return 2; }
     };

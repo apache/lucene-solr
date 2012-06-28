@@ -1458,7 +1458,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       }
 
       @Override
-      public boolean incrementToken() throws IOException {
+      public boolean incrementToken() {
         if(iter.hasNext()) {
           Token token = iter.next();
           clearAttributes();
@@ -1509,7 +1509,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       }
 
       @Override
-      public boolean incrementToken() throws IOException {
+      public boolean incrementToken() {
         if(iter.hasNext()) {
           Token token = iter.next();
           clearAttributes();

@@ -31,11 +31,11 @@ public abstract class DocIdSet {
     
     private final DocIdSetIterator iterator = new DocIdSetIterator() {
       @Override
-      public int advance(int target) throws IOException { return NO_MORE_DOCS; }
+      public int advance(int target) { return NO_MORE_DOCS; }
       @Override
       public int docID() { return NO_MORE_DOCS; }
       @Override
-      public int nextDoc() throws IOException { return NO_MORE_DOCS; }
+      public int nextDoc() { return NO_MORE_DOCS; }
     };
     
     @Override
@@ -50,7 +50,7 @@ public abstract class DocIdSet {
     
     // we explicitely provide no random access, as this filter is 100% sparse and iterator exits faster
     @Override
-    public Bits bits() throws IOException {
+    public Bits bits() {
       return null;
     }
   };

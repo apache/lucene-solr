@@ -323,7 +323,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     }
     
     @Override
-    public void reset() throws IOException {
+    public void reset() {
       startTerm = 0;
       nextStartOffset = 0;
       snippet = null;

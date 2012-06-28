@@ -41,7 +41,7 @@ public final class MappingMultiDocsEnum extends DocsEnum {
   int doc = -1;
   private MergeState mergeState;
 
-  MappingMultiDocsEnum reset(MultiDocsEnum docsEnum) throws IOException {
+  MappingMultiDocsEnum reset(MultiDocsEnum docsEnum) {
     this.numSubs = docsEnum.getNumSubs();
     this.subs = docsEnum.getSubs();
     upto = -1;
@@ -72,7 +72,7 @@ public final class MappingMultiDocsEnum extends DocsEnum {
   }
 
   @Override
-  public int advance(int target) throws IOException {
+  public int advance(int target) {
     throw new UnsupportedOperationException();
   }
 

@@ -34,12 +34,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -48,7 +44,6 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
@@ -58,7 +53,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Request;
@@ -392,7 +386,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   }
 
   private void testNumberOfCommitsWithCommitAfterAdd()
-      throws MalformedURLException, SolrServerException, IOException {
+      throws SolrServerException, IOException {
     long startCommits = getNumCommits((HttpSolrServer) clients.get(0));
     
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
@@ -406,7 +400,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     assertEquals(startCommits + 1L, endCommits);
   }
 
-  private Long getNumCommits(HttpSolrServer solrServer) throws MalformedURLException,
+  private Long getNumCommits(HttpSolrServer solrServer) throws
       SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(solrServer.getBaseURL());
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -552,15 +546,13 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   }
 
   private void createCollection(String collection,
-      List<SolrServer> collectionClients, String baseUrl, int num)
-      throws MalformedURLException, SolrServerException, IOException, InterruptedException {
+      List<SolrServer> collectionClients, String baseUrl, int num) {
     createCollection(collection, collectionClients, baseUrl, num, null);
   }
   
   private void createCollection(final String collection,
       List<SolrServer> collectionClients, final String baseUrl, final int num,
-      final String shardId) throws MalformedURLException, SolrServerException,
-      IOException, InterruptedException {
+      final String shardId) {
     Callable call = new Callable() {
       public Object call() {
         HttpSolrServer server;
@@ -594,8 +586,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     collectionClients.add(createNewSolrServer(collection, baseUrl));
   }
 
-  private void testMultipleCollections() throws MalformedURLException,
-      SolrServerException, IOException, Exception {
+  private void testMultipleCollections() throws Exception {
     // create another 2 collections and search across them
     createNewCollection("collection2");
     createNewCollection("collection3");
@@ -665,8 +656,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     client.add(doc);
   }
   
-  private void createNewCollection(final String collection)
-      throws MalformedURLException, SolrServerException, IOException, InterruptedException {
+  private void createNewCollection(final String collection) throws InterruptedException {
     final List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     otherCollectionClients.put(collection, collectionClients);
     int unique = 0;

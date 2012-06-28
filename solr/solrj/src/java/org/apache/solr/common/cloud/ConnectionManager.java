@@ -17,7 +17,6 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
@@ -83,7 +82,7 @@ class ConnectionManager implements Watcher {
             new ZkClientConnectionStrategy.ZkUpdate() {
               @Override
               public void update(SolrZooKeeper keeper)
-                  throws InterruptedException, TimeoutException, IOException {
+                  throws InterruptedException, TimeoutException {
                 synchronized (connectionStrategy) {
                   waitForConnected(SolrZkClient.DEFAULT_CLIENT_CONNECT_TIMEOUT);
                   client.updateKeeper(keeper);
@@ -118,7 +117,7 @@ class ConnectionManager implements Watcher {
   }
 
   public synchronized void waitForConnected(long waitForConnection)
-      throws InterruptedException, TimeoutException, IOException {
+      throws InterruptedException, TimeoutException {
     long expire = System.currentTimeMillis() + waitForConnection;
     long left = waitForConnection;
     while (!connected && left > 0) {

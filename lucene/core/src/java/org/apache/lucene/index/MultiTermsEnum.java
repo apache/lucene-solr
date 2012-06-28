@@ -258,12 +258,12 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public void seekExact(long ord) throws IOException {
+  public void seekExact(long ord) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public long ord() throws IOException {
+  public long ord() {
     throw new UnsupportedOperationException();
   }
 

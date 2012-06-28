@@ -92,7 +92,7 @@ public class WordnetSynonymParser extends SynonymMap.Builder {
     return analyze(analyzer, text, reuse);
   }
   
-  private void addInternal(CharsRef synset[], int size) throws IOException {
+  private void addInternal(CharsRef synset[], int size) {
     if (size <= 1) {
       return; // nothing to do
     }

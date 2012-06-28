@@ -148,8 +148,7 @@ class BigramDictionary extends AbstractDictionary {
    * @throws IOException
    * @throws UnsupportedEncodingException
    */
-  public void loadFromFile(String dctFilePath) throws FileNotFoundException,
-      IOException, UnsupportedEncodingException {
+  public void loadFromFile(String dctFilePath) throws IOException {
 
     int i, cnt, length, total = 0;
     // The file only counted 6763 Chinese characters plus 5 reserved slots 3756~3760.  

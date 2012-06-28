@@ -114,10 +114,10 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   }
 
   @Override
-  void finishDocument(TermsHash termsHash) throws IOException {
+  void finishDocument(TermsHash termsHash) {
   }
 
   @Override
-  void startDocument() throws IOException {
+  void startDocument() {
   }
 }

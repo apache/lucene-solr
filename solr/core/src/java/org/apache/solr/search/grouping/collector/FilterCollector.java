@@ -36,7 +36,7 @@ public class FilterCollector extends Collector {
   private int docBase;
   private int matches;
 
-  public FilterCollector(DocSet filter, Collector delegate) throws IOException {
+  public FilterCollector(DocSet filter, Collector delegate) {
     this.filter = filter;
     this.delegate = delegate;
   }

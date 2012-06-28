@@ -55,7 +55,7 @@ public class DictionaryBuilder {
     System.out.println("done");
   }
   
-  public static void main(String[] args) throws IOException, ClassNotFoundException {
+  public static void main(String[] args) throws IOException {
     DictionaryFormat format;
     if (args[0].equalsIgnoreCase("ipadic")) {
       format = DictionaryFormat.IPADIC;

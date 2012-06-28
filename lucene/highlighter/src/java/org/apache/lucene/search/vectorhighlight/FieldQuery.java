@@ -348,7 +348,7 @@ public class FieldQuery {
       return map;
     }
 
-      void add( Query query, IndexReader reader ) throws IOException {
+      void add( Query query, IndexReader reader ) {
       if( query instanceof TermQuery ){
         addTerm( ((TermQuery)query).getTerm(), query.getBoost() );
       }

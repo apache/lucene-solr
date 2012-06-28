@@ -33,7 +33,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 public class AllGroupsCollectorTest extends LuceneTestCase {
@@ -127,7 +126,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     }
   }
 
-  private AbstractAllGroupsCollector<?> createRandomCollector(String groupField, boolean canUseIDV) throws IOException {
+  private AbstractAllGroupsCollector<?> createRandomCollector(String groupField, boolean canUseIDV) {
     AbstractAllGroupsCollector<?> selected;
     if (random().nextBoolean() && canUseIDV) {
       boolean diskResident = random().nextBoolean();

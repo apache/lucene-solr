@@ -8,7 +8,6 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -53,7 +52,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 public class FacetTestUtils {
 
-  public static Directory[][] createIndexTaxonomyDirs(int number) throws IOException {
+  public static Directory[][] createIndexTaxonomyDirs(int number) {
     Directory[][] dirs = new Directory[number][2];
     for (int i = 0; i < number; i++) {
       dirs[i][0] = LuceneTestCase.newDirectory();
@@ -93,8 +92,7 @@ public class FacetTestUtils {
 
   public static Collector[] search(IndexSearcher searcher,
       TaxonomyReader taxonomyReader, DefaultFacetIndexingParams iParams,
-      int k, String... facetNames) throws IOException,
-      IllegalAccessException, InstantiationException {
+      int k, String... facetNames) throws IOException {
     
     Collector[] collectors = new Collector[2];
     
@@ -121,8 +119,7 @@ public class FacetTestUtils {
   }
   
   public static void add(FacetIndexingParams iParams, RandomIndexWriter iw,
-      TaxonomyWriter tw, String... strings) throws IOException,
-      CorruptIndexException {
+      TaxonomyWriter tw, String... strings) throws IOException {
     ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();
     CategoryPath cp = new CategoryPath(strings);
     cps.add(cp);

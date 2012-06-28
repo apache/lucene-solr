@@ -55,7 +55,7 @@ public class GenerateJFlexSupplementaryMacros {
       + " */" + NL + NL;
     
   
-  public static void main(String args[]) throws Exception {
+  public static void main(String args[]) {
     outputHeader();
     outputMacro("ALetterSupp",         "[:WordBreak=ALetter:]");
     outputMacro("FormatSupp",          "[:WordBreak=Format:]");

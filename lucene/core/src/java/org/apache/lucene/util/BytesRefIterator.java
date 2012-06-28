@@ -50,7 +50,7 @@ public interface BytesRefIterator {
   public static final BytesRefIterator EMPTY = new BytesRefIterator() {
 
     @Override
-    public BytesRef next() throws IOException {
+    public BytesRef next() {
       return null;
     }
     

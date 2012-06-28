@@ -39,7 +39,7 @@ public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
   public final static String DOC_VALUES_SEGMENT_SUFFIX = "dv";
 
 
-  public Lucene40DocValuesConsumer(PerDocWriteState state, String segmentSuffix) throws IOException {
+  public Lucene40DocValuesConsumer(PerDocWriteState state, String segmentSuffix) {
     super(state);
     this.segmentSuffix = segmentSuffix;
     mainDirectory = state.directory;

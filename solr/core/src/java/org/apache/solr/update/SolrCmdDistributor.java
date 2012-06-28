@@ -172,7 +172,7 @@ public class SolrCmdDistributor {
   }
   
   private void doDelete(DeleteUpdateCommand cmd, List<Node> nodes,
-      ModifiableSolrParams params) throws IOException {
+      ModifiableSolrParams params) {
     
     flushAdds(1);
     

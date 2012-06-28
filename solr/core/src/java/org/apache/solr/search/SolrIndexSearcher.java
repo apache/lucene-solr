@@ -1300,14 +1300,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       if (!needScores) {
         collector = new Collector () {
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorer scorer) {
           }
           @Override
-          public void collect(int doc) throws IOException {
+          public void collect(int doc) {
             numHits[0]++;
           }
           @Override
-          public void setNextReader(AtomicReaderContext context) throws IOException {
+          public void setNextReader(AtomicReaderContext context) {
           }
           @Override
           public boolean acceptsDocsOutOfOrder() {
@@ -1318,7 +1318,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         collector = new Collector() {
           Scorer scorer;
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorer scorer) {
             this.scorer = scorer;
           }
           @Override
@@ -1328,7 +1328,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
             if (score > topscore[0]) topscore[0]=score;            
           }
           @Override
-          public void setNextReader(AtomicReaderContext context) throws IOException {
+          public void setNextReader(AtomicReaderContext context) {
           }
           @Override
           public boolean acceptsDocsOutOfOrder() {
@@ -1441,7 +1441,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
          collector = setCollector = new DocSetDelegateCollector(smallSetSize, maxDoc, new Collector() {
            Scorer scorer;
            @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorer scorer) {
              this.scorer = scorer;
            }
            @Override
@@ -1450,7 +1450,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
              if (score > topscore[0]) topscore[0]=score;
            }
            @Override
-          public void setNextReader(AtomicReaderContext context) throws IOException {
+          public void setNextReader(AtomicReaderContext context) {
            }
            @Override
           public boolean acceptsDocsOutOfOrder() {

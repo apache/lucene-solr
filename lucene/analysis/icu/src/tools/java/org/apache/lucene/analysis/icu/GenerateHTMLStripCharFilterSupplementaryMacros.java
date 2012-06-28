@@ -52,7 +52,7 @@ public class GenerateHTMLStripCharFilterSupplementaryMacros {
       + " */" + NL + NL;
 
 
-  public static void main(String args[]) throws Exception {
+  public static void main(String args[]) {
     outputHeader();
     outputMacro("ID_Start_Supp", "[:ID_Start:]");
     outputMacro("ID_Continue_Supp", "[:ID_Continue:]");

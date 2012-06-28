@@ -141,7 +141,7 @@ public class QueryUtils {
   public static class FCInvisibleMultiReader extends MultiReader {
     private final Object cacheKey = new Object();
   
-    public FCInvisibleMultiReader(IndexReader... readers) throws IOException {
+    public FCInvisibleMultiReader(IndexReader... readers) {
       super(readers);
     }
     
@@ -268,7 +268,7 @@ public class QueryUtils {
           private int leafPtr;
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorer scorer) {
             this.sc = scorer;
           }
 
@@ -375,7 +375,7 @@ public class QueryUtils {
       private int leafPtr;
       private Bits liveDocs;
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorer scorer) {
         this.scorer = scorer;
       }
       @Override

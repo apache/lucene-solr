@@ -19,7 +19,6 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -271,12 +270,12 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     IOUtils.close(dirs[0]);
   }
 
-  private Directory[][] getDirs() throws IOException {
+  private Directory[][] getDirs() {
     return FacetTestUtils.createIndexTaxonomyDirs(1);
   }
 
   private void assertCorrectResults(FacetsCollector facetsCollector)
-  throws IOException, IllegalAccessException, InstantiationException {
+  throws IOException {
     List<FacetResult> res = facetsCollector.getFacetResults();
 
     FacetResult results = res.get(0);
@@ -354,7 +353,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   }
 
   private void seedIndex(RandomIndexWriter iw, TaxonomyWriter tw,
-                          FacetIndexingParams iParams) throws IOException, CorruptIndexException {
+                          FacetIndexingParams iParams) throws IOException {
     FacetTestUtils.add(iParams, iw, tw, "Author", "Mark Twain");
     FacetTestUtils.add(iParams, iw, tw, "Author", "Stephen King");
     FacetTestUtils.add(iParams, iw, tw, "Author", "Kurt Vonnegut");

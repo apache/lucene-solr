@@ -17,8 +17,6 @@
 
 package org.apache.solr.search;
 
-import java.io.IOException;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Test;
@@ -430,7 +428,7 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     
   }
   
-  public void testAliasing() throws IOException, Exception {
+  public void testAliasing() throws Exception {
     String oner = "*[count(//doc)=1]";
     String twor = "*[count(//doc)=2]";
     String nor = "*[count(//doc)=0]";
@@ -463,12 +461,12 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     
   }
   
-  public void testAliasingBoost() throws IOException, Exception {
+  public void testAliasingBoost() throws Exception {
     assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias", "f.myalias.qf","name trait_ss^0.5"), "//result/doc[1]/str[@name='id']=42", "//result/doc[2]/str[@name='id']=47");//doc 42 should score higher than 46
     assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.5"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
   }
   
-  public void testCyclicAliasing() throws IOException, Exception {
+  public void testCyclicAliasing() throws Exception {
     try {
       h.query(req("defType","edismax", "q","ignore_exception", "qf","who", "f.who.qf","name","f.name.qf","who"));
       fail("Simple cyclic alising");

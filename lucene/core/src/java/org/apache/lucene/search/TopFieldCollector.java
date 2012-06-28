@@ -51,7 +51,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final FieldValueHitQueue<Entry> queue;
     
     public OneComparatorNonScoringCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
       this.queue = queue;
       comparator = queue.getComparators()[0];
@@ -114,7 +114,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       OneComparatorNonScoringCollector {
 
     public OutOfOrderOneComparatorNonScoringCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
     }
     
@@ -161,7 +161,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     Scorer scorer;
 
     public OneComparatorScoringNoMaxScoreCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
     }
     
@@ -221,8 +221,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       OneComparatorScoringNoMaxScoreCollector {
 
     public OutOfOrderOneComparatorScoringNoMaxScoreCollector(
-        FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields)
-        throws IOException {
+        FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
     }
     
@@ -275,7 +274,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     Scorer scorer;
     
     public OneComparatorScoringMaxScoreCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
       // Must set maxScore to NEG_INF, or otherwise Math.max always returns NaN.
       maxScore = Float.NEGATIVE_INFINITY;
@@ -335,7 +334,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       OneComparatorScoringMaxScoreCollector {
 
     public OutOfOrderOneComparatorScoringMaxScoreCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
     }
     
@@ -386,7 +385,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final int[] reverseMul;
     final FieldValueHitQueue<Entry> queue;
     public MultiComparatorNonScoringCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
       this.queue = queue;
       comparators = queue.getComparators();
@@ -472,7 +471,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       MultiComparatorNonScoringCollector {
     
     public OutOfOrderMultiComparatorNonScoringCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
     }
     
@@ -541,7 +540,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     Scorer scorer;
     
     public MultiComparatorScoringMaxScoreCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
       // Must set maxScore to NEG_INF, or otherwise Math.max always returns NaN.
       maxScore = Float.NEGATIVE_INFINITY;
@@ -620,7 +619,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       extends MultiComparatorScoringMaxScoreCollector {
     
     public OutOfOrderMultiComparatorScoringMaxScoreCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
     }
     
@@ -693,7 +692,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     Scorer scorer;
     
     public MultiComparatorScoringNoMaxScoreCollector(FieldValueHitQueue<Entry> queue,
-        int numHits, boolean fillFields) throws IOException {
+        int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
     }
     
@@ -771,8 +770,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       extends MultiComparatorScoringNoMaxScoreCollector {
     
     public OutOfOrderMultiComparatorScoringNoMaxScoreCollector(
-        FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields)
-        throws IOException {
+        FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
       super(queue, numHits, fillFields);
     }
     
@@ -860,8 +858,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     
     public PagingFieldCollector(
                                 FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits, boolean fillFields,
-                                boolean trackDocScores, boolean trackMaxScore)
-        throws IOException {
+                                boolean trackDocScores, boolean trackMaxScore) {
       super(queue, numHits, fillFields);
       this.queue = queue;
       this.trackDocScores = trackDocScores;
@@ -981,7 +978,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorer scorer) {
       this.scorer = scorer;
       for (int i = 0; i < comparators.length; i++) {
         comparators[i].setScorer(scorer);

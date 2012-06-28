@@ -240,12 +240,12 @@ public abstract class TermsEnum implements BytesRefIterator {
     }
 
     @Override
-    public TermState termState() throws IOException {
+    public TermState termState() {
       throw new IllegalStateException("this method should never be called");
     }
 
     @Override
-    public void seekExact(BytesRef term, TermState state) throws IOException {
+    public void seekExact(BytesRef term, TermState state) {
       throw new IllegalStateException("this method should never be called");
     }
   };

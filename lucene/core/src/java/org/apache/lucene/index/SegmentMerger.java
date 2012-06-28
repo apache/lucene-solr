@@ -91,7 +91,7 @@ final class SegmentMerger {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  final MergeState merge() throws CorruptIndexException, IOException {
+  final MergeState merge() throws IOException {
     // NOTE: it's important to add calls to
     // checkAbort.work(...) if you make any changes to this
     // method that will spend alot of time.  The frequency
@@ -244,7 +244,7 @@ final class SegmentMerger {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  private int mergeFields() throws CorruptIndexException, IOException {
+  private int mergeFields() throws IOException {
     final StoredFieldsWriter fieldsWriter = codec.storedFieldsFormat().fieldsWriter(directory, mergeState.segmentInfo, context);
     
     try {
@@ -300,7 +300,7 @@ final class SegmentMerger {
     return docBase;
   }
 
-  private final void mergeTerms(SegmentWriteState segmentWriteState) throws CorruptIndexException, IOException {
+  private final void mergeTerms(SegmentWriteState segmentWriteState) throws IOException {
     
     final List<Fields> fields = new ArrayList<Fields>();
     final List<ReaderSlice> slices = new ArrayList<ReaderSlice>();

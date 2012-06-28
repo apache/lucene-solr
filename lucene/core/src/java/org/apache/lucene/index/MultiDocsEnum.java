@@ -42,7 +42,7 @@ public final class MultiDocsEnum extends DocsEnum {
     subDocsEnum = new DocsEnum[subReaderCount];
   }
 
-  MultiDocsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {
+  MultiDocsEnum reset(final EnumWithSlice[] subs, final int numSubs) {
     this.numSubs = numSubs;
 
     this.subs = new EnumWithSlice[subs.length];

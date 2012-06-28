@@ -51,7 +51,7 @@ public abstract class ScoredDocIdCollector extends Collector {
     public boolean acceptsDocsOutOfOrder() { return true; }
 
     @Override
-    public void collect(int doc) throws IOException {
+    public void collect(int doc) {
       docIds.fastSet(docBase + doc);
       ++numDocIds;
     }
@@ -62,7 +62,7 @@ public abstract class ScoredDocIdCollector extends Collector {
     }
 
     @Override
-    public ScoredDocIDsIterator scoredDocIdsIterator() throws IOException {
+    public ScoredDocIDsIterator scoredDocIdsIterator() {
       return new ScoredDocIDsIterator() {
 
         private DocIdSetIterator docIdsIter = docIds.iterator();
@@ -92,7 +92,7 @@ public abstract class ScoredDocIdCollector extends Collector {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {}
+    public void setScorer(Scorer scorer) {}
   }
 
   private static final class ScoringDocIdCollector extends ScoredDocIdCollector {
@@ -124,7 +124,7 @@ public abstract class ScoredDocIdCollector extends Collector {
     }
 
     @Override
-    public ScoredDocIDsIterator scoredDocIdsIterator() throws IOException {
+    public ScoredDocIDsIterator scoredDocIdsIterator() {
       return new ScoredDocIDsIterator() {
 
         private DocIdSetIterator docIdsIter = docIds.iterator();
@@ -160,7 +160,7 @@ public abstract class ScoredDocIdCollector extends Collector {
     public void setDefaultScore(float defaultScore) {}
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorer scorer) {
       this.scorer = scorer;
     }
   }

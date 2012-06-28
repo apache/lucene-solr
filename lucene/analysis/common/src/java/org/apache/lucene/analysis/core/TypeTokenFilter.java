@@ -48,7 +48,7 @@ public final class TypeTokenFilter extends FilteringTokenFilter {
    * When the useWhiteList parameter is set to true then accept the token if its type is contained in the stopTypes
    */
   @Override
-  protected boolean accept() throws IOException {
+  protected boolean accept() {
     return useWhiteList == stopTypes.contains(typeAttribute.type());
   }
 }

@@ -290,7 +290,7 @@ public class CustomScoreQuery extends Query {
 
     // constructor
     private CustomScorer(CustomScoreProvider provider, CustomWeight w, float qWeight,
-        Scorer subQueryScorer, Scorer[] valSrcScorers) throws IOException {
+        Scorer subQueryScorer, Scorer[] valSrcScorers) {
       super(w);
       this.qWeight = qWeight;
       this.subQueryScorer = subQueryScorer;

@@ -127,7 +127,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     parentArray.refresh(indexReader);
   }
 
-  protected DirectoryReader openIndexReader(Directory directory) throws CorruptIndexException, IOException {
+  protected DirectoryReader openIndexReader(Directory directory) throws IOException {
     return DirectoryReader.open(directory);
   }
 
@@ -218,7 +218,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     return ret;
   }
 
-  public CategoryPath getPath(int ordinal) throws CorruptIndexException, IOException {
+  public CategoryPath getPath(int ordinal) throws IOException {
     ensureOpen();
     // TODO (Facet): Currently, the LRU cache we use (getCategoryCache) holds
     // strings with delimiters, not CategoryPath objects, so even if
@@ -235,7 +235,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     return new CategoryPath(label, delimiter);
   }
 
-  public boolean getPath(int ordinal, CategoryPath result) throws CorruptIndexException, IOException {
+  public boolean getPath(int ordinal, CategoryPath result) throws IOException {
     ensureOpen();
     String label = getLabel(ordinal);
     if (label==null) {
@@ -246,7 +246,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     return true;
   }
 
-  private String getLabel(int catID) throws CorruptIndexException, IOException {
+  private String getLabel(int catID) throws IOException {
     ensureOpen();
     // First try to find the answer in the LRU cache. It is very
     // unfortunate that we need to allocate an Integer object here -

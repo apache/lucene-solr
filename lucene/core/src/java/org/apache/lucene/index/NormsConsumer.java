@@ -87,10 +87,10 @@ final class NormsConsumer extends InvertedDocEndConsumer {
   }
 
   @Override
-  void finishDocument() throws IOException {}
+  void finishDocument() {}
 
   @Override
-  void startDocument() throws IOException {}
+  void startDocument() {}
 
   @Override
   InvertedDocEndConsumerPerField addField(DocInverterPerField docInverterPerField,

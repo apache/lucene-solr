@@ -195,8 +195,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     rsp.setHttpCaching(false);
   }
 
-  private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp)
-      throws IOException {
+  private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp) {
     File adminFile = null;
     
     final SolrResourceLoader loader = req.getCore().getResourceLoader();

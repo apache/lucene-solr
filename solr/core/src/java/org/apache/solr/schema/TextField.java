@@ -186,11 +186,7 @@ public class TextField extends FieldType {
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
 
-    try {
-      buffer.reset();
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to initialize TokenStream to analyze query text", e);
-    }
+    buffer.reset();
 
     if (buffer.hasAttribute(CharTermAttribute.class)) {
       termAtt = buffer.getAttribute(CharTermAttribute.class);

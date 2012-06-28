@@ -125,14 +125,14 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     reader.document(docId, new StoredFieldVisitor() {
         
         @Override
-        public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+        public void stringField(FieldInfo fieldInfo, String value) {
           FieldType ft = new FieldType(TextField.TYPE_STORED);
           ft.setStoreTermVectors(fieldInfo.hasVectors());
           fields.add(new Field(fieldInfo.name, value, ft));
         }
 
         @Override
-        public Status needsField(FieldInfo fieldInfo) throws IOException {
+        public Status needsField(FieldInfo fieldInfo) {
           return fieldInfo.name.equals(fieldName) ? Status.YES : Status.NO;
         }
       });

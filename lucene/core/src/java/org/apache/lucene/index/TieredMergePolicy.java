@@ -553,8 +553,7 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos infos)
-      throws CorruptIndexException, IOException {
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos infos) throws IOException {
     if (verbose()) {
       message("findForcedDeletesMerges infos=" + writer.get().segString(infos) + " forceMergeDeletesPctAllowed=" + forceMergeDeletesPctAllowed);
     }
@@ -623,8 +622,7 @@ public class TieredMergePolicy extends MergePolicy {
   public void close() {
   }
 
-  private boolean isMerged(SegmentInfoPerCommit info)
-    throws IOException {
+  private boolean isMerged(SegmentInfoPerCommit info) {
     IndexWriter w = writer.get();
     assert w != null;
     boolean hasDeletions = w.numDeletedDocs(info) > 0;

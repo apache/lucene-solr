@@ -34,7 +34,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 public class TestTopKResultsHandlerRandom extends BaseTestTopK {
   
   private List<FacetResult> countFacets(int partitionSize, int numResults, final boolean doComplement)
-      throws IOException, IllegalAccessException, InstantiationException {
+      throws IOException {
     Query q = new MatchAllDocsQuery();
     FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, partitionSize);
     FacetsCollector fc = new FacetsCollector(facetSearchParams, indexReader, taxoReader) {

@@ -282,7 +282,7 @@ public class MockDirectoryWrapper extends Directory {
     }
   }
 
-  public synchronized void clearCrash() throws IOException {
+  public synchronized void clearCrash() {
     crashed = false;
     openLocks.clear();
   }
@@ -617,7 +617,7 @@ public class MockDirectoryWrapper extends Directory {
    *  checkIndex() or not. It might mask real problems, where we silently
    *  don't checkindex at all. instead we look for a segments file.
    */
-  private boolean indexPossiblyExists(Directory d) throws IOException {
+  private boolean indexPossiblyExists(Directory d) {
     String files[];
     try {
       files = d.listAll();

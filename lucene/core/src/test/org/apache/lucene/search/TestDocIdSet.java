@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -50,13 +49,13 @@ public class TestDocIdSet extends LuceneTestCase {
             }
             
             @Override
-            public int nextDoc() throws IOException {
+            public int nextDoc() {
               docid++;
               return docid < maxdoc ? docid : (docid = NO_MORE_DOCS);
             }
 
             @Override
-            public int advance(int target) throws IOException {
+            public int advance(int target) {
               while (nextDoc() < target) {}
               return docid;
             }
@@ -115,7 +114,7 @@ public class TestDocIdSet extends LuceneTestCase {
     // Now search w/ a Filter which returns a null DocIdSet
     Filter f = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
         return null;
       }
     };
@@ -141,7 +140,7 @@ public class TestDocIdSet extends LuceneTestCase {
       // Now search w/ a Filter which returns a null DocIdSet
     Filter f = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
         final DocIdSet innerNullIteratorSet = new DocIdSet() {
           @Override
           public DocIdSetIterator iterator() {

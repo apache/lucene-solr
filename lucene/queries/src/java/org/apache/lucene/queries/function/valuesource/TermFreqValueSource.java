@@ -80,12 +80,12 @@ public class TermFreqValueSource extends DocFreqValueSource {
             }
 
             @Override
-            public int nextDoc() throws IOException {
+            public int nextDoc() {
               return DocIdSetIterator.NO_MORE_DOCS;
             }
 
             @Override
-            public int advance(int target) throws IOException {
+            public int advance(int target) {
               return DocIdSetIterator.NO_MORE_DOCS;
             }
           };

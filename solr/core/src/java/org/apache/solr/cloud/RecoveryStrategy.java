@@ -18,12 +18,10 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -162,8 +160,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     }
   }
 
-  private void commitOnLeader(String leaderUrl) throws MalformedURLException,
-      SolrServerException, IOException {
+  private void commitOnLeader(String leaderUrl) throws SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(leaderUrl);
     server.setConnectionTimeout(30000);
     server.setSoTimeout(30000);
@@ -176,7 +173,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   }
 
   private void sendPrepRecoveryCmd(String leaderBaseUrl,
-      String leaderCoreName) throws MalformedURLException, SolrServerException,
+      String leaderCoreName) throws SolrServerException,
       IOException {
     HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
     server.setConnectionTimeout(45000);
@@ -430,7 +427,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   }
 
   private Future<RecoveryInfo> replay(UpdateLog ulog)
-      throws InterruptedException, ExecutionException, TimeoutException {
+      throws InterruptedException, ExecutionException {
     Future<RecoveryInfo> future = ulog.applyBufferedUpdates();
     if (future == null) {
       // no replay needed\

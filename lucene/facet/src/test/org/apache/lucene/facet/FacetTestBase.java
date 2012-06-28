@@ -15,7 +15,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -92,7 +91,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
   protected IndexSearcher searcher;
   
   @BeforeClass
-  public static void beforeClassFacetTestBase() throws Exception {
+  public static void beforeClassFacetTestBase() {
     TEST_DIR = _TestUtil.getTempDir("facets");
     dirsPerPartitionSize = new HashMap<Integer, FacetTestBase.SearchTaxoDirPair>(); 
   }
@@ -215,7 +214,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
    * <p>Subclasses can override this to test different scenarios
    */
   protected void populateIndex(RandomIndexWriter iw, TaxonomyWriter taxo, FacetIndexingParams iParams)
-      throws IOException, CorruptIndexException {
+      throws IOException {
     // add test documents 
     int numDocsToIndex = numDocsToIndex();
     for (int doc=0; doc<numDocsToIndex; doc++) {
@@ -257,8 +256,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
   
   /** utility Create a dummy document with specified categories and content */
   protected final void indexDoc(FacetIndexingParams iParams, RandomIndexWriter iw,
-      TaxonomyWriter tw, String content, List<CategoryPath> categories) throws IOException,
-      CorruptIndexException {
+      TaxonomyWriter tw, String content, List<CategoryPath> categories) throws IOException {
     Document d = new Document();
     CategoryDocumentBuilder builder = new CategoryDocumentBuilder(tw, iParams);
     builder.setCategoryPaths(categories);

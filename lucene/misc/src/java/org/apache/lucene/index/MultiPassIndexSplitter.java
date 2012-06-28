@@ -180,11 +180,11 @@ public class MultiPassIndexSplitter {
    */
   private static final class FakeDeleteIndexReader extends BaseCompositeReader<FakeDeleteAtomicIndexReader> {
 
-    public FakeDeleteIndexReader(IndexReader reader) throws IOException {
+    public FakeDeleteIndexReader(IndexReader reader) {
       super(initSubReaders(reader));
     }
     
-    private static FakeDeleteAtomicIndexReader[] initSubReaders(IndexReader reader) throws IOException {
+    private static FakeDeleteAtomicIndexReader[] initSubReaders(IndexReader reader) {
       final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
       final FakeDeleteAtomicIndexReader[] subs = new FakeDeleteAtomicIndexReader[leaves.size()];
       int i = 0;
@@ -206,7 +206,7 @@ public class MultiPassIndexSplitter {
     }
 
     @Override
-    protected void doClose() throws IOException {}
+    protected void doClose() {}
 
     // no need to override numDocs/hasDeletions,
     // as we pass the subreaders directly to IW.addIndexes().

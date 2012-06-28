@@ -84,11 +84,11 @@ public class BinaryRequestWriter extends RequestWriter {
         return new Long(baos.size());
       }
 
-      public InputStream getStream() throws IOException {
+      public InputStream getStream() {
         return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
       }
 
-      public Reader getReader() throws IOException {
+      public Reader getReader() {
         throw new RuntimeException("No reader available . this is a binarystream");
       }
     };

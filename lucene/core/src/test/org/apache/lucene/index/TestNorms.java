@@ -175,8 +175,7 @@ public class TestNorms extends LuceneTestCase {
     otherDir.close();
   }
 
-  public void buildIndex(Directory dir, boolean writeNorms) throws IOException,
-      CorruptIndexException {
+  public void buildIndex(Directory dir, boolean writeNorms) throws IOException {
     Random random = random();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));

@@ -16,7 +16,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -570,21 +570,13 @@ final class DocumentsWriterFlushControl  {
     try {
       for (DocumentsWriterPerThread dwpt : flushQueue) {
         doAfterFlush(dwpt);
-        try {
-          dwpt.abort();
-        } catch (IOException ex) {
-          // continue
-        }
+        dwpt.abort();
       }
       for (BlockedFlush blockedFlush : blockedFlushes) {
         flushingWriters
             .put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
         doAfterFlush(blockedFlush.dwpt);
-        try {
-          blockedFlush.dwpt.abort();
-        } catch (IOException ex) {
-          // continue
-        }
+        blockedFlush.dwpt.abort();
       }
     } finally {
       fullFlush = false;
