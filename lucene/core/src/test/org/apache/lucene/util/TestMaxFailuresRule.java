@@ -45,9 +45,11 @@ public class TestMaxFailuresRule extends WithNestedTests {
 
   @Test
   public void testMaxFailures() {
-    int maxFailures = LuceneTestCase.ignoreAfterMaxFailures.getMaxFailures();
+    int maxFailures = LuceneTestCase.ignoreAfterMaxFailures.maxFailures;
+    int failuresSoFar = LuceneTestCase.ignoreAfterMaxFailures.failuresSoFar;
     try {
-      LuceneTestCase.ignoreAfterMaxFailures.setMaxFailures(2);
+      LuceneTestCase.ignoreAfterMaxFailures.maxFailures = 2;
+      LuceneTestCase.ignoreAfterMaxFailures.failuresSoFar = 0;
 
       JUnitCore core = new JUnitCore();
       final int [] assumptions = new int [1];
@@ -59,14 +61,16 @@ public class TestMaxFailuresRule extends WithNestedTests {
       });
 
       Result result = core.run(Nested.class);
-      Assert.assertEquals(2, result.getFailureCount());
-      Assert.assertEquals(0, result.getIgnoreCount());
       Assert.assertEquals(100, result.getRunCount());
+      Assert.assertEquals(0, result.getIgnoreCount());
+      Assert.assertEquals(2, result.getFailureCount());
+
       // JUnit doesn't pass back the number of successful tests, just make sure
       // we did have enough assumption-failures.
       Assert.assertTrue(assumptions[0] > 50);
     } finally {
-      LuceneTestCase.ignoreAfterMaxFailures.setMaxFailures(maxFailures);
+      LuceneTestCase.ignoreAfterMaxFailures.maxFailures = maxFailures;
+      LuceneTestCase.ignoreAfterMaxFailures.failuresSoFar = failuresSoFar;
     }
   }
 }

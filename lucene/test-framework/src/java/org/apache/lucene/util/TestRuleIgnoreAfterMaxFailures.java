@@ -37,14 +37,14 @@ import com.carrotsearch.randomizedtesting.annotations.Repeat;
  */
 public final class TestRuleIgnoreAfterMaxFailures implements TestRule {
   /**
-   * Maximum failures.
+   * Maximum failures. Package scope for tests.
    */
-  private int maxFailures;
+  int maxFailures;
 
   /**
-   * Current count of failures.
+   * Current count of failures. Package scope for tests.
    */
-  private int failuresSoFar;
+  int failuresSoFar;
   
   /**
    * @param maxFailures
@@ -70,21 +70,11 @@ public final class TestRuleIgnoreAfterMaxFailures implements TestRule {
           s.evaluate();
         } catch (Throwable t) {
           if (!TestRuleMarkFailure.isAssumption(t)) {
-            System.out.println("#" + d);
             failuresSoFar++;
           }
           throw t;
         }
       }
     };
-  }
-
-  /** For tests only. */
-  void setMaxFailures(int maxFailures) {
-    this.maxFailures = maxFailures;
-  }
-  
-  int getMaxFailures() {
-    return maxFailures;
   }
 }
