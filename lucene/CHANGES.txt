@@ -22,6 +22,10 @@ API Changes
   has a different API (carries a list of tags instead of a compound tag). Upgrade
   of embedded morfologik dictionaries to version 1.9. (Dawid Weiss)
 
+* LUCENE-4178: set 'tokenized' to true on FieldType by default, so that if you
+  make a custom FieldType and set indexed = true, its analyzed by the analyzer.
+  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,
