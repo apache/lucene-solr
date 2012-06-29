@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,10 +17,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix;
-
 import com.spatial4j.core.distance.DistanceCalculator;
-import com.spatial4j.core.query.SpatialArgs;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.analysis.TokenStream;
@@ -32,6 +31,7 @@ import org.apache.lucene.spatial.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.tree.Node;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.CachedDistanceValueSource;
 
 import java.util.Iterator;

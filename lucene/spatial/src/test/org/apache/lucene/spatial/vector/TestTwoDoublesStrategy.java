@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.vector;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,12 +17,8 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.vector;
-
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.query.SpatialArgs;
-import com.spatial4j.core.query.SpatialOperation;
 import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.simple.CircleImpl;
@@ -29,6 +27,8 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.util.NumericFieldInfo;
 import org.junit.Before;
 import org.junit.Test;
