@@ -753,9 +753,11 @@ public class Field implements IndexableField {
       break;
     case NOT_ANALYZED:
       ft.setIndexed(true);
+      ft.setTokenized(false);
       break;
     case NOT_ANALYZED_NO_NORMS:
       ft.setIndexed(true);
+      ft.setTokenized(false);
       ft.setOmitNorms(true);
       break;
     case NO:
