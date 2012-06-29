@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -42,6 +43,7 @@ import org.junit.BeforeClass;
 /**
  * Super basic testing, no shard restarting or anything.
  */
+@Slow
 public class FullSolrCloudDistribCmdsTest extends FullSolrCloudTest {
   
   

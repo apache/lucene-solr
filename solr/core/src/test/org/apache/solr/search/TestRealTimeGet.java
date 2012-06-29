@@ -26,6 +26,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -51,6 +52,7 @@ import static  org.apache.solr.core.SolrCore.verbose;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 
+@Slow
 public class TestRealTimeGet extends SolrTestCaseJ4 {
 
   // means we've seen the leader and have version info (i.e. we are a non-leader replica)

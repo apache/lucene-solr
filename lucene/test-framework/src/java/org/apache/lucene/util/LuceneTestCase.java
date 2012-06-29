@@ -162,15 +162,15 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Annotation for tests that are really slow and should be run only when specifically 
-   * asked to run.
+   * Annotation for tests that are slow. Slow tests do run by default but can be
+   * disabled if a quick run is needed.
    */
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = SYSPROP_SLOW)
+  @TestGroup(enabled = true, sysProperty = SYSPROP_SLOW)
   public @interface Slow {}
-
+  
   /**
    * Annotation for test classes that should avoid certain codec types
    * (because they are expensive, for example).

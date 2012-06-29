@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.params.CoreConnectionPNames;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -60,6 +61,7 @@ import org.junit.BeforeClass;
  * what we test now - the default update chain
  * 
  */
+@Slow
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @BeforeClass
   public static void beforeFullSolrCloudTest() {

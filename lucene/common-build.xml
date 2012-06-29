@@ -89,7 +89,7 @@
   <property name="tests.loggingfile" value="/dev/null"/>
   <property name="tests.nightly" value="false" />
   <property name="tests.weekly" value="false" />
-  <property name="tests.slow" value="false" />
+  <property name="tests.slow" value="true" />
   <property name="tests.cleanthreads.sysprop" value="perMethod"/>
   <property name="tests.asserts.gracious" value="false"/>
   <property name="tests.verbose" value="false"/>

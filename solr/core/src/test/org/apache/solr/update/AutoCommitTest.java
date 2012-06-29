@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -104,6 +105,7 @@ class NewSearcherListener implements SolrEventListener {
   }
 }
 
+@Slow
 public class AutoCommitTest extends AbstractSolrTestCase {
 
   @Override

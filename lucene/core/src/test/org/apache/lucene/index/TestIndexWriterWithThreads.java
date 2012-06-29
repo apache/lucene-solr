@@ -39,10 +39,12 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
  * MultiThreaded IndexWriter tests
  */
+@Slow
 public class TestIndexWriterWithThreads extends LuceneTestCase {
 
   // Used by test cases below

@@ -40,7 +40,9 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
+@Slow
 public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
 
   private SynonymMap.Builder b;

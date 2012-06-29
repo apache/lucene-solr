@@ -24,10 +24,12 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
  * Tests {@link NGramTokenizer} for correctness.
  */
+@Slow
 public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   private StringReader input;
   

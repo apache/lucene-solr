@@ -36,6 +36,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.TestDistributedSearch;
@@ -62,6 +63,7 @@ import org.junit.BeforeClass;
  * @since 1.4
  */
 // TODO: can this test be sped up? it used to not be so slow...
+@Slow
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 

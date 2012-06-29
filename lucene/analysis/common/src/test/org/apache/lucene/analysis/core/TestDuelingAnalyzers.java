@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -44,6 +45,7 @@ import org.apache.lucene.util.automaton.Transition;
  * Any tests here need to probably consider unicode version of the JRE (it could
  * cause false fails).
  */
+@Slow
 public class TestDuelingAnalyzers extends LuceneTestCase {
   private CharacterRunAutomaton jvmLetter;
   

@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import junit.framework.Assert;
 import junit.framework.TestCase;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -34,6 +35,7 @@ import org.apache.solr.common.util.NamedList;
  *
  * @see org.apache.solr.handler.component.SpellCheckComponent
  */
+@Slow
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
   
   private String requestHandlerName;
