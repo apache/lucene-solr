@@ -22,6 +22,11 @@ Bug Fixes
   so that it works correctly with Analyzers that produce binary non-UTF-8 terms
   such as CollationAnalyzer. (Nattapong Sirilappanich via Robert Muir) 
 
+Build
+
+* LUCENE-4115: JAR resolution/ cleanup should be done automatically for ant 
+  clean/ eclipse/ resolve (Dawid Weiss)
+
 ======================= Lucene 4.0.0-ALPHA =======================
 
 More information about this release, including any errata related to the 
@@ -1096,9 +1101,6 @@ Documentation
   (Iulius Curt via Robert Muir)
 
 Build
-
-* LUCENE-4115: JAR resolution/ cleanup should be done automatically for ant 
-  clean/ eclipse/ resolve (Dawid Weiss)
 
 * LUCENE-4047: Cleanup of LuceneTestCase: moved blocks of initialization/ cleanup
   code into JUnit instance and class rules. (Dawid Weiss)

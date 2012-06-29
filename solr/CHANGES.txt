@@ -24,6 +24,27 @@ $Id$
 
 (No changes)
 
+==================  4.0.0-BETA ===================
+
+New Features
+
+* SOLR-1856: In Solr Cell, literals should override Tika-parsed values.
+  Patch adds a param "literalsOverride" which defaults to true, but can be set 
+  to "false" to let Tika-parsed values be appended to literal values (Chris Harris, janhoy)
+
+Bug Fixes
+
+* SOLR-3582: Our ZooKeeper watchers respond to session events as if they are change events, 
+  creating undesirable side effects. (Trym R. Møller, Mark Miller)
+
+* SOLR-3467: ExtendedDismax escaping is missing several reserved characters
+  (Michael Dodsworth via janhoy)
+
+Other Changes
+
+* SOLR-1770: Move the default core instance directory into a collection1 folder.
+  (Mark Miller)
+
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
@@ -141,8 +162,6 @@ New Features
   (yonik, Mark Miller, siren)
   SOLR-3437: Recovery issues a spurious commit to the cluster. (Trym R. Møller via Mark Miller)
   SOLR-2822: Skip update processors already run on other nodes (hossman)
-  SOLR-3582: Our ZooKeeper watchers respond to session events as if they are change events, 
-  creating undesirable side effects. (Trym R. Møller, Mark Miller)
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
@@ -378,10 +397,6 @@ New Features
 * SOLR-3542: Add WeightedFragListBuilder for FVH and set it to default fragListBuilder
   in example solrconfig.xml. (Sebastian Lutze, koji)
 
-* SOLR-1856: In Solr Cell, literals should override Tika-parsed values.
-  Patch adds a param "literalsOverride" which defaults to true, but can be set 
-  to "false" to let Tika-parsed values be appended to literal values (Chris Harris, janhoy)
-
 Optimizations
 ----------------------
 
@@ -523,9 +538,6 @@ Bug Fixes
   (Thijs Vonk via siren)
 
 * SOLR-3522: fixed parsing of the 'literal()' function (hossman)
-
-* SOLR-3467: ExtendedDismax escaping is missing several reserved characters
-  (Michael Dodsworth via janhoy)
 
 * SOLR-3548: Fixed a bug in the cachability of queries using the {!join} 
   parser or the strdist() function, as well as some minor improvements to 
@@ -685,9 +697,6 @@ Other Changes
   when 'qf' is absent.  And if neither is present nor the schema default search field
   then an exception will be thrown now. (dsmiley)
   
-* SOLR-1770: Move the default core instance directory into a collection1 folder.
-  (Mark Miller)
-
 Documentation
 ----------------------
 
