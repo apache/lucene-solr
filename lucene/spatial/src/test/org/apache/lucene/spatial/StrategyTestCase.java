@@ -1,3 +1,6 @@
+package org.apache.lucene.spatial;
+
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,19 +18,16 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial;
-
-
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.io.sample.SampleData;
 import com.spatial4j.core.io.sample.SampleDataReader;
-import com.spatial4j.core.query.SpatialArgsParser;
 import com.spatial4j.core.shape.Shape;
-import org.junit.Assert;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.spatial.query.SpatialArgsParser;
+import org.junit.Assert;
 
 import java.io.IOException;
 import java.io.InputStream;

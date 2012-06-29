@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,10 +17,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial;
-
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.query.SpatialArgs;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -26,6 +25,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.query.SpatialArgs;
 
 /**
  * must be thread safe
@@ -72,8 +72,8 @@ public abstract class SpatialStrategy<T extends SpatialFieldInfo> {
   /**
    * Make a query which has a score based on the distance from the data to the query shape.
    * The default implementation constructs a {@link FilteredQuery} based on
-   * {@link #makeFilter(com.spatial4j.core.query.SpatialArgs, SpatialFieldInfo)} and
-   * {@link #makeValueSource(com.spatial4j.core.query.SpatialArgs, SpatialFieldInfo)}.
+   * {@link #makeFilter(org.apache.lucene.spatial.query.SpatialArgs, SpatialFieldInfo)} and
+   * {@link #makeValueSource(org.apache.lucene.spatial.query.SpatialArgs, SpatialFieldInfo)}.
    */
   public Query makeQuery(SpatialArgs args, T fieldInfo) {
     Filter filter = makeFilter(args, fieldInfo);

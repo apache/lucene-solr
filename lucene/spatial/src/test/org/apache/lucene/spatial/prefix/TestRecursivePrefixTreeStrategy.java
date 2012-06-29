@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,12 +17,8 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix;
-
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.query.SpatialArgs;
-import com.spatial4j.core.query.SpatialOperation;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
@@ -34,6 +32,8 @@ import org.apache.lucene.spatial.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Test;
 
 import java.io.IOException;

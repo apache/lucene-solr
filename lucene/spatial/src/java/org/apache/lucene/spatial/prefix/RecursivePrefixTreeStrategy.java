@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,15 +17,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix;
-
-import com.spatial4j.core.exception.UnsupportedSpatialOperation;
-import com.spatial4j.core.query.SpatialArgs;
-import com.spatial4j.core.query.SpatialOperation;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 
 /**
  * Based on {@link RecursivePrefixTreeFilter}.
