@@ -21,6 +21,7 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -46,6 +47,7 @@ import java.util.Set;
  *
  * @since solr 1.4
  */
+@Slow
 public class TestLBHttpSolrServer extends LuceneTestCase {
   SolrInstance[] solr = new SolrInstance[3];
   HttpClient httpClient;

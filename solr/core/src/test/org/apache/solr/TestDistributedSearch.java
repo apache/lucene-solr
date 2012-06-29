@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -43,6 +44,7 @@ import org.apache.solr.common.util.NamedList;
  *
  * @since solr 1.3
  */
+@Slow
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   String t1="a_t";

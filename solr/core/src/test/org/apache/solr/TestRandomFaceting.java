@@ -19,6 +19,7 @@ package org.apache.solr;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
@@ -27,6 +28,7 @@ import org.junit.Test;
 
 import java.util.*;
 
+@Slow
 public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   public static final String FOO_STRING_FIELD = "foo_s1";

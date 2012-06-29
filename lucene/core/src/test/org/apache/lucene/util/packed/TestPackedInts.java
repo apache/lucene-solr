@@ -25,8 +25,10 @@ import java.util.Random;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
+@Slow
 public class TestPackedInts extends LuceneTestCase {
   public void testBitsRequired() throws Exception {
     assertEquals(61, PackedInts.bitsRequired((long)Math.pow(2, 61)-1));

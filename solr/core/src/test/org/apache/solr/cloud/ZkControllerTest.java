@@ -24,6 +24,7 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -35,6 +36,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@Slow
 public class ZkControllerTest extends SolrTestCaseJ4 {
 
   private static final String COLLECTION_NAME = "collection1";

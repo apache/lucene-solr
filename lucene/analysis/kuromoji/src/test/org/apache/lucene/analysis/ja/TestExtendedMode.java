@@ -30,7 +30,9 @@ import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
+@Slow
 public class TestExtendedMode extends BaseTokenStreamTestCase {
   private final Analyzer analyzer = new Analyzer() {
     

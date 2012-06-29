@@ -40,11 +40,13 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
  * MultiThreaded IndexWriter tests
  */
 @SuppressCodecs("Lucene3x")
+@Slow
 public class TestIndexWriterWithThreads extends LuceneTestCase {
 
   // Used by test cases below

@@ -17,6 +17,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.*;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.store.*;
+import org.apache.lucene.search.*;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.junit.Ignore;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -140,7 +150,7 @@ public class Test2BTerms extends LuceneTestCase {
     }
   }
 
-  @Slow
+  @Ignore("Very slow. Enable manually by removing @Ignore.")
   public void test2BTerms() throws IOException {
 
     if ("Lucene3x".equals(Codec.getDefault().getName())) {

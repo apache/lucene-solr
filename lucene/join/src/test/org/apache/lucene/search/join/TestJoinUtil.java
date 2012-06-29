@@ -47,11 +47,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
 
+@Slow
 public class TestJoinUtil extends LuceneTestCase {
 
   public void testSimple() throws Exception {

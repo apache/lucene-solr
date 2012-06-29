@@ -24,10 +24,12 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
  * Test Kuromoji Japanese morphological analyzer
  */
+@Slow
 public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */

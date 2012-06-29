@@ -17,6 +17,7 @@ package org.apache.solr;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -31,6 +32,7 @@ import org.apache.solr.common.util.NamedList;
  *
  * @since solr 4.0
  */
+@Slow
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
   String t1="a_t";

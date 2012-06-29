@@ -53,6 +53,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
@@ -67,6 +68,7 @@ import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.packed.PackedInts;
 
 @SuppressCodecs({ "SimpleText", "Memory" })
+@Slow
 public class TestFSTs extends LuceneTestCase {
 
   private MockDirectoryWrapper dir;
