@@ -35,7 +35,6 @@ import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 import org.apache.lucene.util.automaton.RegExp;
 
 @SuppressCodecs({ "SimpleText", "Memory" })
@@ -257,7 +256,7 @@ public class TestTermsEnum extends LuceneTestCase {
           acceptTerms.add(s2);
           sortedAcceptTerms.add(new BytesRef(s2));
         }
-        a = DaciukMihovAutomatonBuilder.build(sortedAcceptTerms);
+        a = BasicAutomata.makeStringUnion(sortedAcceptTerms);
       }
       
       if (random().nextBoolean()) {

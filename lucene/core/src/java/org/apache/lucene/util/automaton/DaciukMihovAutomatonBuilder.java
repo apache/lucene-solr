@@ -24,15 +24,18 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
- * Builds a minimal deterministic automaton that accepts a set of strings. The
- * algorithm requires sorted input data, but is very fast (nearly linear with
- * the input size).
+ * Builds a minimal, deterministic {@link Automaton} that accepts a set of 
+ * strings. The algorithm requires sorted input data, but is very fast 
+ * (nearly linear with the input size).
+ * 
+ * @see #build(Collection)
+ * @see BasicAutomata#makeStringUnion(Collection)
  */
-public final class DaciukMihovAutomatonBuilder {
+final class DaciukMihovAutomatonBuilder {
   /**
    * DFSA state with <code>char</code> labels on transitions.
    */
-  public final static class State {
+  private final static class State {
     
     /** An empty set of labels. */
     private final static int[] NO_LABELS = new int[0];
@@ -63,26 +66,9 @@ public final class DaciukMihovAutomatonBuilder {
      * with <code>label</code>. If no such transition exists, returns
      * <code>null</code>.
      */
-    public State getState(int label) {
+    State getState(int label) {
       final int index = Arrays.binarySearch(labels, label);
       return index >= 0 ? states[index] : null;
-    }
-    
-    /**
-     * Returns an array of outgoing transition labels. The array is sorted in
-     * lexicographic order and indexes correspond to states returned from
-     * {@link #getStates()}.
-     */
-    public int[] getTransitionLabels() {
-      return this.labels;
-    }
-    
-    /**
-     * Returns an array of outgoing transitions from this state. The returned
-     * array must not be changed.
-     */
-    public State[] getStates() {
-      return this.states;
     }
     
     /**
@@ -100,21 +86,6 @@ public final class DaciukMihovAutomatonBuilder {
       return is_final == other.is_final
           && Arrays.equals(this.labels, other.labels)
           && referenceEquals(this.states, other.states);
-    }
-    
-    /**
-     * Return <code>true</code> if this state has any children (outgoing
-     * transitions).
-     */
-    public boolean hasChildren() {
-      return labels.length > 0;
-    }
-    
-    /**
-     * Is this state a final state in the automaton?
-     */
-    public boolean isFinal() {
-      return is_final;
     }
     
     /**
@@ -142,6 +113,14 @@ public final class DaciukMihovAutomatonBuilder {
     }
     
     /**
+     * Return <code>true</code> if this state has any children (outgoing
+     * transitions).
+     */
+    boolean hasChildren() {
+      return labels.length > 0;
+    }
+
+    /**
      * Create a new outgoing transition labeled <code>label</code> and return
      * the newly created target state for this transition.
      */
@@ -149,9 +128,9 @@ public final class DaciukMihovAutomatonBuilder {
       assert Arrays.binarySearch(labels, label) < 0 : "State already has transition labeled: "
           + label;
       
-      labels = copyOf(labels, labels.length + 1);
-      states = copyOf(states, states.length + 1);
-      
+      labels = Arrays.copyOf(labels, labels.length + 1);
+      states = Arrays.copyOf(states, states.length + 1);
+
       labels[labels.length - 1] = label;
       return states[states.length - 1] = new State();
     }
@@ -188,42 +167,27 @@ public final class DaciukMihovAutomatonBuilder {
     }
     
     /**
-     * JDK1.5-replacement of {@link Arrays#copyOf(int[], int)}
-     */
-    private static int[] copyOf(int[] original, int newLength) {
-      int[] copy = new int[newLength];
-      System.arraycopy(original, 0, copy, 0,
-          Math.min(original.length, newLength));
-      return copy;
-    }
-    
-    /**
-     * JDK1.5-replacement of {@link Arrays#copyOf(char[], int)}
-     */
-    public static State[] copyOf(State[] original, int newLength) {
-      State[] copy = new State[newLength];
-      System.arraycopy(original, 0, copy, 0,
-          Math.min(original.length, newLength));
-      return copy;
-    }
-    
-    /**
      * Compare two lists of objects for reference-equality.
      */
     private static boolean referenceEquals(Object[] a1, Object[] a2) {
-      if (a1.length != a2.length) return false;
-      
-      for (int i = 0; i < a1.length; i++)
-        if (a1[i] != a2[i]) return false;
-      
+      if (a1.length != a2.length) { 
+        return false;
+      }
+
+      for (int i = 0; i < a1.length; i++) {
+        if (a1[i] != a2[i]) { 
+          return false;
+        }
+      }
+
       return true;
     }
   }
   
   /**
-   * "register" for state interning.
+   * A "registry" for state interning.
    */
-  private HashMap<State,State> register = new HashMap<State,State>();
+  private HashMap<State,State> stateRegistry = new HashMap<State,State>();
   
   /**
    * Root automaton state.
@@ -231,10 +195,14 @@ public final class DaciukMihovAutomatonBuilder {
   private State root = new State();
   
   /**
-   * Previous sequence added to the automaton in {@link #add(CharSequence)}.
+   * Previous sequence added to the automaton in {@link #add(CharsRef)}.
    */
   private CharsRef previous;
-  
+
+  /**
+   * A comparator used for enforcing sorted UTF8 order, used in assertions only.
+   */
+  @SuppressWarnings("deprecation")
   private static final Comparator<CharsRef> comparator = CharsRef.getUTF16SortedAsUTF8Comparator();
 
   /**
@@ -243,12 +211,12 @@ public final class DaciukMihovAutomatonBuilder {
    * to this automaton (the input must be sorted).
    */
   public void add(CharsRef current) {
-    assert register != null : "Automaton already built.";
+    assert stateRegistry != null : "Automaton already built.";
     assert previous == null
-        || comparator.compare(previous, current) <= 0 : "Input must be sorted: "
+        || comparator.compare(previous, current) <= 0 : "Input must be in sorted UTF-8 order: "
         + previous + " >= " + current;
     assert setPrevious(current);
-    
+
     // Descend in the automaton (find matching prefix).
     int pos = 0, max = current.length();
     State next, state = root;
@@ -270,11 +238,11 @@ public final class DaciukMihovAutomatonBuilder {
    * @return Root automaton state.
    */
   public State complete() {
-    if (this.register == null) throw new IllegalStateException();
+    if (this.stateRegistry == null) throw new IllegalStateException();
     
     if (root.hasChildren()) replaceOrRegister(root);
     
-    register = null;
+    stateRegistry = null;
     return root;
   }
   
@@ -293,15 +261,16 @@ public final class DaciukMihovAutomatonBuilder {
     int i = 0;
     int[] labels = s.labels;
     for (DaciukMihovAutomatonBuilder.State target : s.states) {
-      converted.addTransition(new Transition(labels[i++], convert(target,
-          visited)));
+      converted.addTransition(
+          new Transition(labels[i++], convert(target, visited)));
     }
     
     return converted;
   }
-  
+
   /**
-   * Build a minimal, deterministic automaton from a sorted list of strings.
+   * Build a minimal, deterministic automaton from a sorted list of {@link BytesRef} representing
+   * strings in UTF-8. These strings must be binary-sorted.
    */
   public static Automaton build(Collection<BytesRef> input) {
     final DaciukMihovAutomatonBuilder builder = new DaciukMihovAutomatonBuilder();
@@ -313,7 +282,9 @@ public final class DaciukMihovAutomatonBuilder {
     }
     
     Automaton a = new Automaton();
-    a.initial = convert(builder.complete(), new IdentityHashMap<State,org.apache.lucene.util.automaton.State>());
+    a.initial = convert(
+        builder.complete(), 
+        new IdentityHashMap<State,org.apache.lucene.util.automaton.State>());
     a.deterministic = true;
     return a;
   }
@@ -330,21 +301,21 @@ public final class DaciukMihovAutomatonBuilder {
   
   /**
    * Replace last child of <code>state</code> with an already registered state
-   * or register the last child state.
+   * or stateRegistry the last child state.
    */
   private void replaceOrRegister(State state) {
     final State child = state.lastChild();
     
     if (child.hasChildren()) replaceOrRegister(child);
     
-    final State registered = register.get(child);
+    final State registered = stateRegistry.get(child);
     if (registered != null) {
       state.replaceLastChild(registered);
     } else {
-      register.put(child, child);
+      stateRegistry.put(child, child);
     }
   }
-  
+
   /**
    * Add a suffix of <code>current</code> starting at <code>fromIndex</code>
    * (inclusive) to state <code>state</code>.

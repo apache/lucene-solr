@@ -17,10 +17,35 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.UnicodeUtil;
+import java.util.*;
 
-public class TestBasicOperations extends LuceneTestCase { 
+import org.apache.lucene.util.*;
+
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+
+public class TestBasicOperations extends LuceneTestCase {
+  /** Test string union. */
+  public void testStringUnion() {
+    List<BytesRef> strings = new ArrayList<BytesRef>();
+    for (int i = RandomInts.randomIntBetween(random(), 0, 1000); --i >= 0;) {
+      strings.add(new BytesRef(_TestUtil.randomUnicodeString(random())));
+    }
+
+    Collections.sort(strings);
+    Automaton union = BasicAutomata.makeStringUnion(strings);
+    assertTrue(union.isDeterministic());
+    assertTrue(BasicOperations.sameLanguage(union, naiveUnion(strings)));
+  }
+
+  private static Automaton naiveUnion(List<BytesRef> strings) {
+    Automaton [] eachIndividual = new Automaton [strings.size()];
+    int i = 0;
+    for (BytesRef bref : strings) {
+      eachIndividual[i++] = BasicAutomata.makeString(bref.utf8ToString());
+    }
+    return BasicOperations.union(Arrays.asList(eachIndividual));
+  }
+
   /** Test optimization to concatenate() */
   public void testSingletonConcatenate() {
     Automaton singleton = BasicAutomata.makeString("prefix");
