@@ -1036,6 +1036,9 @@ Optimizations
   the cloned instances. WeakIdentityMap was extended to support
   iterating over its keys.  (Uwe Schindler)
 
+* LUCENE-4171: Performance improvements to Packed64.
+  (Toke Eskildsen via Adrien Grand)
+
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
