@@ -24,6 +24,13 @@ Bug Fixes
 
 Build
 
+* LUCENE-4160: Added a property to quit the tests after a given
+  number of failures has occurred. This is useful in combination
+  with -Dtests.iters=N (you can start N iterations and wait for M
+  failures, in particular M = 1). -Dtests.maxfailures=M. Alternatively,
+  specify -Dtests.failfast=true to skip all tests after the first failure.
+  (Dawid Weiss)
+
 * LUCENE-4115: JAR resolution/ cleanup should be done automatically for ant 
   clean/ eclipse/ resolve (Dawid Weiss)
 

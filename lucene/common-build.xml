@@ -818,6 +818,12 @@
             <sysproperty key="jetty.insecurerandom" value="1"/>
             <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
 
+            <!-- Only pass these to the test JVMs if defined in ANT. -->
+            <syspropertyset>
+                <propertyref prefix="tests.maxfailures" />
+                <propertyref prefix="tests.failfast" />
+            </syspropertyset>
+
             <!-- Use static cached test balancing statistcs. -->
             <balancers>
                 <execution-times>
@@ -961,6 +967,10 @@ ant test -Dtests.iters=N -Dtestcase=ClassName -Dtests.seed=dead:beef
 ant test -Dtests.iters=N -Dtestcase=ClassName -Dtestmethod=mytest
 ant test -Dtests.iters=N -Dtestcase=ClassName -Dtests.method=mytest*
 
+# Repeats N times but skips any tests after the first failure or M
+# initial failures.
+ant test -Dtests.iters=N -Dtests.failfast=yes -Dtestcase=...
+ant test -Dtests.iters=N -Dtests.maxfailures=M -Dtestcase=...
 
 #
 # Test groups. ----------------------------------------------------
