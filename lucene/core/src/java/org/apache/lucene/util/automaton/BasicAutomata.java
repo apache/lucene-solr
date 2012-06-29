@@ -29,8 +29,9 @@
 
 package org.apache.lucene.util.automaton;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
+
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Construction of basic automata.
@@ -238,5 +239,26 @@ final public class BasicAutomata {
     a.singleton = s;
     a.deterministic = true;
     return a;
+  }
+
+  /**
+   * Returns a new (deterministic and minimal) automaton that accepts the union
+   * of the given collection of {@link BytesRef}s representing UTF-8 encoded
+   * strings.
+   * 
+   * @param utf8Strings
+   *          The input strings, UTF-8 encoded. The collection must be in sorted
+   *          order.
+   * 
+   * @return An {@link Automaton} accepting all input strings. The resulting
+   *         automaton is codepoint based (full unicode codepoints on
+   *         transitions).
+   */
+  public static Automaton makeStringUnion(Collection<BytesRef> utf8Strings) {
+    if (utf8Strings.isEmpty()) {
+      return makeEmpty();
+    } else {
+      return DaciukMihovAutomatonBuilder.build(utf8Strings);
+    }
   }
 }

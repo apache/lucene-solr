@@ -35,13 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.AutomatonTestUtil;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
-import org.apache.lucene.util.automaton.RegExp;
-import org.apache.lucene.util.automaton.SpecialOperations;
+import org.apache.lucene.util.automaton.*;
 
 public class TestTermsEnum2 extends LuceneTestCase {
   private Directory dir;
@@ -72,7 +66,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    termsAutomaton = DaciukMihovAutomatonBuilder.build(terms);
+    termsAutomaton = BasicAutomata.makeStringUnion(terms);
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
@@ -97,7 +91,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
         }
       }
 
-      Automaton alternate = DaciukMihovAutomatonBuilder.build(matchedTerms);
+      Automaton alternate = BasicAutomata.makeStringUnion(matchedTerms);
       //System.out.println("match " + matchedTerms.size() + " " + alternate.getNumberOfStates() + " states, sigma=" + alternate.getStartPoints().length);
       //AutomatonTestUtil.minimizeSimple(alternate);
       //System.out.println("minmize done");
@@ -164,7 +158,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
         found.add(BytesRef.deepCopyOf(te.term()));
       }
       
-      Automaton actual = DaciukMihovAutomatonBuilder.build(found);     
+      Automaton actual = BasicAutomata.makeStringUnion(found);     
       assertTrue(BasicOperations.sameLanguage(expected, actual));
     }
   }
