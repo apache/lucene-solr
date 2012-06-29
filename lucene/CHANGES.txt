@@ -26,6 +26,11 @@ API Changes
   make a custom FieldType and set indexed = true, its analyzed by the analyzer.
   (Robert Muir)
 
+Optimizations
+
+* LUCENE-4171: Performance improvements to Packed64.
+  (Toke Eskildsen via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,
@@ -1035,9 +1040,6 @@ Optimizations
   the new WeakIdentityMap on top of a ConcurrentHashMap to manage
   the cloned instances. WeakIdentityMap was extended to support
   iterating over its keys.  (Uwe Schindler)
-
-* LUCENE-4171: Performance improvements to Packed64.
-  (Toke Eskildsen via Adrien Grand)
 
 Bug fixes
 
