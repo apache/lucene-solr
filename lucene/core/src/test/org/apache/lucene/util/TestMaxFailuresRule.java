@@ -20,21 +20,26 @@ package org.apache.lucene.util;
 import org.apache.lucene.util.junitcompat.WithNestedTests;
 import org.junit.Assert;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
+import com.carrotsearch.randomizedtesting.SysGlobals;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  * @see TestRuleIgnoreAfterMaxFailures
  * @see SystemPropertiesInvariantRule
  */
-@Ignore("DW: Check why this test doesn't pass from time to time.")
 public class TestMaxFailuresRule extends WithNestedTests {
+  @Rule
+  public SystemPropertiesRestoreRule restoreSysProps = new SystemPropertiesRestoreRule();
+
   public TestMaxFailuresRule() {
     super(true);
   }
@@ -50,6 +55,7 @@ public class TestMaxFailuresRule extends WithNestedTests {
   public void testMaxFailures() {
     int maxFailures = LuceneTestCase.ignoreAfterMaxFailures.maxFailures;
     int failuresSoFar = LuceneTestCase.ignoreAfterMaxFailures.failuresSoFar;
+    System.clearProperty(SysGlobals.SYSPROP_ITERATIONS());
     try {
       LuceneTestCase.ignoreAfterMaxFailures.maxFailures = 2;
       LuceneTestCase.ignoreAfterMaxFailures.failuresSoFar = 0;

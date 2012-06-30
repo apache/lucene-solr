@@ -39,7 +39,7 @@ public class TestSameRandomnessLocalePassedOrNot extends WithNestedTests {
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   public TestSameRandomnessLocalePassedOrNot() {
-    super(false);
+    super(true);
   }
   
   public static class Nested extends WithNestedTests.AbstractNestedTest {
