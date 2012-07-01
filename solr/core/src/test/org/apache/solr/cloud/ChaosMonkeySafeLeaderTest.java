@@ -29,7 +29,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
-@Ignore("SOLR-3126")
+//@Ignore("SOLR-3126")
 public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
   
   @BeforeClass
