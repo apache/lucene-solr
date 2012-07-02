@@ -1448,12 +1448,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * {@link MergePolicy.MergeAbortedException}.
    *
    * @param maxNumSegments maximum number of segments left
+   * in the index after merging finishes
    * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @see MergePolicy#findMerges
    *
-   * in the index after merging finishes
   */
   public void forceMerge(int maxNumSegments) throws IOException {
     forceMerge(maxNumSegments, true);
