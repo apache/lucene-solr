@@ -46,7 +46,6 @@ import java.util.Set;
 
 /**
  * Based off of Solr 3's SpatialFilterTest.
- * @author dsmiley
  */
 public class PortedSolr3Test extends StrategyTestCase {
 
