@@ -13,6 +13,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -96,6 +97,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           CreateMode.EPHEMERAL, true);
     }
     
+    // TODO: above we make it looks like leaderProps could be true, but here
+    // you would get an NPE if it was.
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         "leader", ZkStateReader.SHARD_ID_PROP, shardId,
         ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
@@ -245,10 +248,14 @@ final class OverseerElectionContext extends ElectionContext {
   
   private final SolrZkClient zkClient;
   private final ZkStateReader stateReader;
+  private ShardHandler shardHandler;
+  private String adminPath;
 
-  public OverseerElectionContext(final String zkNodeName, ZkStateReader stateReader) {
+  public OverseerElectionContext(ShardHandler shardHandler, String adminPath, final String zkNodeName, ZkStateReader stateReader) {
     super(zkNodeName, "/overseer_elect", "/overseer_elect/leader", null, stateReader.getZkClient());
     this.stateReader = stateReader;
+    this.shardHandler = shardHandler;
+    this.adminPath = adminPath;
     this.zkClient = stateReader.getZkClient();
   }
 
@@ -271,7 +278,7 @@ final class OverseerElectionContext extends ElectionContext {
           CreateMode.EPHEMERAL, true);
     }
   
-    new Overseer(stateReader, id);
+    new Overseer(shardHandler, adminPath, stateReader, id);
   }
   
 }

@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -226,7 +227,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     System.setProperty("collection", "control_collection");
     String numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
     System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
-    controlJetty = createJetty(testDir, testDir + "/control/data",
+    controlJetty = createJetty(new File(getSolrHome()), testDir + "/control/data",
         "control_shard");
     System.clearProperty("collection");
     if(numShards != null) {
@@ -258,7 +259,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, testDir + "/jetty"
+      JettySolrRunner j = createJetty(new File(getSolrHome()), testDir + "/jetty"
           + this.jettyIntCntr.incrementAndGet(), null, "solrconfig.xml", null);
       jettys.add(j);
       SolrServer client = createNewSolrServer(j.getLocalPort());

@@ -135,6 +135,9 @@ public class CloudState implements JSONWriter.Writable {
 		return Collections.unmodifiableSet(collectionStates.keySet());
 	}
 
+	/**
+	 * @return Map<collectionName, Map<sliceName,Slice>>
+	 */
 	public Map<String, Map<String, Slice>> getCollectionStates() {
 		return Collections.unmodifiableMap(collectionStates);
 	}

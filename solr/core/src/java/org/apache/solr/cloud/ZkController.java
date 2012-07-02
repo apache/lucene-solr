@@ -51,6 +51,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.DOMUtil;
 import org.apache.zookeeper.CreateMode;
@@ -83,7 +85,9 @@ public final class ZkController {
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
-  private final DistributedQueue overseerStatusQueue;
+  
+  private final DistributedQueue overseerJobQueue;
+  private final DistributedQueue overseerCollectionQueue;
   
   // package private for tests
 
@@ -113,7 +117,8 @@ public final class ZkController {
   private LeaderElector overseerElector;
   
 
-  // this can be null in which case recovery will be inactive
+  // for now, this can be null in tests, in which case recovery will be inactive, and other features
+  // may accept defaults or use mocks rather than pulling things from a CoreContainer
   private CoreContainer cc;
 
   /**
@@ -176,7 +181,7 @@ public final class ZkController {
    * @throws TimeoutException
    * @throws IOException
    */
-  public ZkController(CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
+  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
     this.cc = cc;
@@ -203,8 +208,19 @@ public final class ZkController {
               
               // seems we dont need to do this again...
               //Overseer.createClientNodes(zkClient, getNodeName());
-
-              ElectionContext context = new OverseerElectionContext(getNodeName(), zkStateReader);
+              ShardHandler shardHandler;
+              String adminPath;
+              if (cc == null) {
+                shardHandler = new HttpShardHandlerFactory().getShardHandler();
+                adminPath = "/admin/cores";
+              } else {
+                shardHandler = cc.getShardHandlerFactory().getShardHandler();
+                adminPath = cc.getAdminPath();
+              }
+              
+              ElectionContext context = new OverseerElectionContext(
+                  shardHandler, adminPath,
+                  getNodeName(), zkStateReader);
               overseerElector.joinElection(context);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
@@ -254,7 +270,8 @@ public final class ZkController {
 
  
         });
-    this.overseerStatusQueue = Overseer.getInQueue(zkClient);
+    this.overseerJobQueue = Overseer.getInQueue(zkClient);
+    this.overseerCollectionQueue = Overseer.getCollectionQueue(zkClient);
     cmdExecutor = new ZkCmdExecutor();
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
@@ -377,8 +394,19 @@ public final class ZkController {
       createEphemeralLiveNode();
       cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
 
+      ShardHandler shardHandler;
+      String adminPath;
+      if (cc == null) {
+        shardHandler = new HttpShardHandlerFactory().getShardHandler();
+        adminPath = "/admin/cores";
+      } else {
+        shardHandler = cc.getShardHandlerFactory().getShardHandler();
+        adminPath = cc.getAdminPath();
+      }
+      
       overseerElector = new LeaderElector(zkClient);
-      ElectionContext context = new OverseerElectionContext(getNodeName(), zkStateReader);
+      ElectionContext context = new OverseerElectionContext(shardHandler,
+          adminPath, getNodeName(), zkStateReader);
       overseerElector.setup(context);
       overseerElector.joinElection(context);
       zkStateReader.createClusterStateWatchersAndUpdate();
@@ -742,7 +770,7 @@ public final class ZkController {
             .getCollectionName(), ZkStateReader.STATE_PROP, state,
         ZkStateReader.NUM_SHARDS_PROP, numShards != null ? numShards.toString()
             : null);
-    overseerStatusQueue.offer(ZkStateReader.toJSON(m));
+    overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
 
   private boolean needsToBeAssignedShardId(final CoreDescriptor desc,
@@ -771,13 +799,21 @@ public final class ZkController {
         "deletecore", ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.COLLECTION_PROP, cloudDesc.getCollectionName());
-    overseerStatusQueue.offer(ZkStateReader.toJSON(m));
+    overseerJobQueue.offer(ZkStateReader.toJSON(m));
 
     final String zkNodeName = getNodeName() + "_" + coreName;
     ElectionContext context = electionContexts.remove(zkNodeName);
     if (context != null) {
       context.cancelElection();
     }
+  }
+  
+  public void createCollection(String collection) throws KeeperException,
+      InterruptedException {
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        "createcollection", ZkStateReader.NODE_NAME_PROP, getNodeName(),
+        ZkStateReader.COLLECTION_PROP, collection);
+    overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
 
   /**
@@ -1091,6 +1127,14 @@ public final class ZkController {
 
       ZkController.uploadConfigDir(zkClient, new File(idir, "conf"), confName);
     }
+  }
+
+  public DistributedQueue getOverseerJobQueue() {
+    return overseerJobQueue;
+  }
+
+  public DistributedQueue getOverseerCollectionQueue() {
+    return overseerCollectionQueue;
   }
 
 }

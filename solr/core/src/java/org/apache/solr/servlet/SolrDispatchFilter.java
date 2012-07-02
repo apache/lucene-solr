@@ -17,22 +17,17 @@
 
 package org.apache.solr.servlet;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.OutputStreamWriter;
-import java.io.ByteArrayInputStream;
+import java.io.Writer;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
-
-import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -44,23 +39,33 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.util.FastWriter;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.core.*;
-import org.apache.solr.handler.component.SearchHandler;
-import org.apache.solr.request.*;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.Config;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ContentStreamHandlerBase;
+import org.apache.solr.request.ServletSolrParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
+import org.apache.solr.util.FastWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -171,6 +176,13 @@ public class SolrDispatchFilter implements Filter
         // Check for the core admin page
         if( path.equals( cores.getAdminPath() ) ) {
           handler = cores.getMultiCoreHandler();
+          solrReq =  adminRequestParser.parse(null,path, req);
+          handleAdminRequest(req, response, handler, solrReq);
+          return;
+        }
+        // Check for the core admin collections url
+        if( path.equals( "/admin/collections" ) ) {
+          handler = cores.getCollectionsHandler();
           solrReq =  adminRequestParser.parse(null,path, req);
           handleAdminRequest(req, response, handler, solrReq);
           return;

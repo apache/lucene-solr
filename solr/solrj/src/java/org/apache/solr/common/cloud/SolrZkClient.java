@@ -680,4 +680,22 @@ public class SolrZkClient {
     return keeper;
   }
 
+  // yeah, it's recursive :(
+  public void clean(String path) throws InterruptedException, KeeperException {
+    List<String> children;
+    try {
+      children = getChildren(path, null, true);
+    } catch (NoNodeException r) {
+      return;
+    }
+    for (String string : children) {
+      clean(path + "/" + string);
+    }
+    try {
+      delete(path, -1, true);
+    } catch (NoNodeException r) {
+      return;
+    }
+  }
+
 }

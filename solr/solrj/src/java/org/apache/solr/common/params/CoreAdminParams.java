@@ -77,6 +77,10 @@ public interface CoreAdminParams
   /** If you unload a core, delete the index too */
   public final static String DELETE_INDEX = "deleteIndex";
 
+  public static final String DELETE_DATA_DIR = "deleteDataDir";
+
+  public static final String DELETE_INSTANCE_DIR = "deleteInstanceDir";
+
 
   public enum CoreAdminAction {
     STATUS,  
@@ -89,8 +93,7 @@ public interface CoreAdminParams
     RENAME,
     MERGEINDEXES,
     PREPRECOVERY, 
-    REQUESTRECOVERY, 
-    DISTRIBURL;
+    REQUESTRECOVERY;
     
     public static CoreAdminAction get( String p )
     {

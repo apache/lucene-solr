@@ -23,8 +23,10 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -37,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -47,11 +50,14 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -283,7 +289,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     // on shards with matches.
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
 
-
+    // would be better if these where all separate tests - but much, much
+    // slower
     doOptimisticLockingAndUpdating();
     testMultipleCollections();
     testANewCollectionInOneInstance();
@@ -293,10 +300,142 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
     testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-explicit");
     testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
+
+    testCollectionsAPI();
     
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
+    }
+  }
+
+  private void testCollectionsAPI() throws Exception {
+ 
+    // TODO: fragile - because we dont pass collection.confName, it will only
+    // find a default if a conf set with a name matching the collection name is found, or 
+    // if there is only one conf set. That and the fact that other tests run first in this
+    // env make this pretty fragile
+    
+    // create 2 new collections rapid fire
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    params.set("numReplicas", 1);
+    params.set("numShards", 3);
+    String collectionName = "awholynewcollection";
+    params.set("name", collectionName);
+    SolrRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+ 
+    clients.get(0).request(request);
+    
+    String collectionName2 = "awholynewcollection2";
+    params.set("name", collectionName2);
+    params.set("numShards", 2);
+    clients.get(1).request(request);
+    
+    checkForCollection(collectionName, 3);
+    checkForCollection(collectionName2, 2);
+
+    // lets try and use the solrj client to index and retrieve a couple documents
+    SolrInputDocument doc = getDoc(id, 6, i1, -600, tlong, 600, t1,
+        "humpty dumpy sat on a wall");
+    int which = (doc.getField(id).toString().hashCode() & 0x7fffffff)
+        % clients.size();
+    SolrServer client = clients.get(which);
+    client.add(doc);
+    
+    doc = getDoc(id, 7, i1, 123, tlong, 123, t1,
+        "humpty dumpy had a great fall");
+    which = (doc.getField(id).toString().hashCode() & 0x7fffffff)
+        % clients.size();
+    client = clients.get(which);
+    client.add(doc);
+    doc = getDoc(id, 8, i1, 876, tlong, 876, t1,
+        "all the kings horses and all the kings men");
+    which = (doc.getField(id).toString().hashCode() & 0x7fffffff)
+        % clients.size();
+    client = clients.get(which);
+    client.add(doc);
+    
+    commit();
+    
+    // remove a collection
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.DELETE.toString());
+    params.set("name", collectionName2);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+ 
+    clients.get(0).request(request);
+    
+    // ensure its out of the state
+    checkForMissingCollection(collectionName2);
+    
+    printLayout();
+  }
+
+  private void checkForCollection(String collectionName, int expectedSlices)
+      throws Exception {
+    // check for an expectedSlices new collection - we poll the state
+    long timeoutAt = System.currentTimeMillis() + 30000;
+    boolean found = false;
+    while (System.currentTimeMillis() < timeoutAt) {
+      solrj.getZkStateReader().updateCloudState(true);
+      CloudState cloudState = solrj.getZkStateReader().getCloudState();
+      Map<String,Map<String,Slice>> collections = cloudState
+          .getCollectionStates();
+      if (collections.containsKey(collectionName)) {
+        Map<String,Slice> slices = collections.get(collectionName);
+        // did we find expectedSlices slices/shards?
+        if (slices.size() == expectedSlices) {
+          found = true;
+          // also make sure each are active
+          Iterator<Entry<String,Slice>> it = slices.entrySet().iterator();
+          while (it.hasNext()) {
+            Entry<String,Slice> sliceEntry = it.next();
+            Map<String,ZkNodeProps> sliceShards = sliceEntry.getValue()
+                .getShards();
+            Iterator<Entry<String,ZkNodeProps>> shardIt = sliceShards
+                .entrySet().iterator();
+            while (shardIt.hasNext()) {
+              Entry<String,ZkNodeProps> shardEntry = shardIt.next();
+              if (!shardEntry.getValue().get(ZkStateReader.STATE_PROP)
+                  .equals(ZkStateReader.ACTIVE)) {
+                found = false;
+                break;
+              }
+            }
+            
+          }
+          if (found) break;
+        }
+      }
+      Thread.sleep(50);
+    }
+    if (!found) {
+      fail("Could not find new " + expectedSlices + " slice collection");
+    }
+  }
+  
+  private void checkForMissingCollection(String collectionName)
+      throws Exception {
+    // check for a  collection - we poll the state
+    long timeoutAt = System.currentTimeMillis() + 15000;
+    boolean found = true;
+    while (System.currentTimeMillis() < timeoutAt) {
+      solrj.getZkStateReader().updateCloudState(true);
+      CloudState cloudState = solrj.getZkStateReader().getCloudState();
+      Map<String,Map<String,Slice>> collections = cloudState
+          .getCollectionStates();
+      if (!collections.containsKey(collectionName)) {
+        found = false;
+        break;
+      }
+      Thread.sleep(50);
+    }
+    if (found) {
+      fail("Found collection that should be gone " + collectionName);
     }
   }
 
@@ -445,7 +584,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     
     assertAllActive(oneInstanceCollection2, solrj.getZkStateReader());
     
-   // TODO: enable when we don't falsly get slice1... 
+   // TODO: enable when we don't falsely get slice1... 
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice1", 30000);
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice2", 30000);
     client2.add(getDoc(id, "1")); 
