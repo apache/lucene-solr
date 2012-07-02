@@ -650,7 +650,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
   }
   
   /**
-   * Empty {@link UnmodifiableCharArrayMap} optimized for speed.
+   * Empty {@link org.apache.lucene.analysis.util.CharArrayMap.UnmodifiableCharArrayMap} optimized for speed.
    * Contains checks will always return <code>false</code> or throw
    * NPE if necessary.
    */

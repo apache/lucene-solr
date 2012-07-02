@@ -231,17 +231,18 @@ public class SnapPuller {
     }
   }
 
+  private boolean successfulInstall = false;
+
   /**
    * This command downloads all the necessary files from master to install a index commit point. Only changed files are
    * downloaded. It also downloads the conf files (if they are modified).
    *
    * @param core the SolrCore
+   * @param force force a replication in all cases 
    * @return true on success, false if slave is already in sync
    * @throws IOException if an exception occurs
    */
   @SuppressWarnings("unchecked")
-  private boolean successfulInstall = false;
-
   boolean fetchLatestIndex(SolrCore core, boolean force) throws IOException, InterruptedException {
     successfulInstall = false;
     replicationStartTime = System.currentTimeMillis();

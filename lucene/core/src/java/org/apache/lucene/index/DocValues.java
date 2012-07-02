@@ -208,7 +208,6 @@ public abstract class DocValues implements Closeable {
      * Returns a {@link BytesRef} for the given document id or throws an
      * {@link UnsupportedOperationException} if this source doesn't support
      * <tt>byte[]</tt> values.
-     * @throws IOException 
      * 
      * @throws UnsupportedOperationException
      *           if this source doesn't support <tt>byte[]</tt> values.

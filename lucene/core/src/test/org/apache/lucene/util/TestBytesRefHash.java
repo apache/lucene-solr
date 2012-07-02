@@ -91,7 +91,7 @@ public class TestBytesRefHash extends LuceneTestCase {
 
   /**
    * Test method for
-   * {@link org.apache.lucene.util.BytesRefHash#get(org.apache.lucene.util.BytesRefHash.Entry)}
+   * {@link org.apache.lucene.util.BytesRefHash#get(int, BytesRef)}
    * .
    */
   @Test

@@ -64,7 +64,7 @@ public class TransformerProvider {
   }
   
   /** Return a new Transformer, possibly created from our cached Templates object  
-   * @throws TransformerConfigurationException 
+   * @throws IOException 
    */ 
   public synchronized Transformer getTransformer(SolrConfig solrConfig, String filename,int cacheLifetimeSeconds) throws IOException {
     // For now, the Templates are blindly reloaded once cacheExpires is over.

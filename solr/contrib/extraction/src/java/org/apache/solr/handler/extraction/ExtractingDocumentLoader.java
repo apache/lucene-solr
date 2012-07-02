@@ -114,8 +114,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   /**
    * this must be MT safe... may be called concurrently from multiple threads.
    *
-   * @param
-   * @param
    */
   void doAdd(SolrContentHandler handler, AddUpdateCommand template)
           throws IOException {

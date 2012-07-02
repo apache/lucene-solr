@@ -34,7 +34,6 @@ public abstract class ZkOperation {
      * @return the result of the operation or null
      * @throws KeeperException
      * @throws InterruptedException
-     * @throws IOException 
      */
     public abstract Object execute() throws KeeperException, InterruptedException;
 }

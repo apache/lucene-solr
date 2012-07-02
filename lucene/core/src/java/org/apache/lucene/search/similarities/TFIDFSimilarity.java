@@ -611,7 +611,6 @@ public abstract class TFIDFSimilarity extends Similarity {
    * @param termStats term-level statistics for the term
    * @return an Explain object that includes both an idf score factor 
              and an explanation for the term.
-   * @throws IOException
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
@@ -632,7 +631,6 @@ public abstract class TFIDFSimilarity extends Similarity {
    * @return an Explain object that includes both an idf 
    *         score factor for the phrase and an explanation 
    *         for each term.
-   * @throws IOException
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
     final long max = collectionStats.maxDoc();

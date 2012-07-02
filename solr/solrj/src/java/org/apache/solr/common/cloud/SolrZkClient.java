@@ -207,8 +207,8 @@ public class SolrZkClient {
   /**
    * @param path
    * @return true if path exists
-   * @throws KeeperException
    * @param retryOnConnLoss  
+   * @throws KeeperException
    * @throws InterruptedException
    */
   public Boolean exists(final String path, boolean retryOnConnLoss)
