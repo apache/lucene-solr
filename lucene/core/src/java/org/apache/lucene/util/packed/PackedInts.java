@@ -62,9 +62,9 @@ public class PackedInts {
    */
   public static final int DEFAULT_BUFFER_SIZE = 1024; // 1K
 
-  private final static String CODEC_NAME = "PackedInts";
-  private final static int VERSION_START = 0;
-  private final static int VERSION_CURRENT = VERSION_START;
+  final static String CODEC_NAME = "PackedInts";
+  final static int VERSION_START = 0;
+  final static int VERSION_CURRENT = VERSION_START;
 
   static final int PACKED = 0;
   static final int PACKED_SINGLE_BLOCK = 1;

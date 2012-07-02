@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -53,23 +54,54 @@ public class TestPackedInts extends LuceneTestCase {
   public void testPackedInts() throws IOException {
     int num = atLeast(5);
     for (int iter = 0; iter < num; iter++) {
-      for(int nbits=1;nbits<63;nbits++) {
+      for(int nbits=1;nbits<=64;nbits++) {
         final long maxValue = PackedInts.maxValue(nbits);
         final int valueCount = 100+random().nextInt(500);
         final Directory d = newDirectory();
         
         IndexOutput out = d.createOutput("out.bin", newIOContext(random()));
         PackedInts.Writer w = PackedInts.getWriter(
-                                out, valueCount, nbits, random().nextFloat()*PackedInts.FASTEST);
+                                out, valueCount, nbits, random().nextFloat());
+        final long startFp = out.getFilePointer();
 
+        final int actualValueCount = random().nextBoolean() ? valueCount : _TestUtil.nextInt(random(), 0, valueCount);
         final long[] values = new long[valueCount];
-        for(int i=0;i<valueCount;i++) {
+        for(int i=0;i<actualValueCount;i++) {
           values[i] = _TestUtil.nextLong(random(), 0, maxValue);
           w.add(values[i]);
         }
         w.finish();
         final long fp = out.getFilePointer();
         out.close();
+
+        // packed writers should only write longs
+        assertEquals(0, (fp - startFp) % 8);
+        // ensure that finish() added the (valueCount-actualValueCount) missing values
+        final long bytes;
+        switch (w.getFormat()) {
+          case PackedInts.PACKED:
+            bytes = (long) Math.ceil((double) valueCount * w.bitsPerValue / 64) << 3;
+            break;
+          case PackedInts.PACKED_SINGLE_BLOCK:
+            final int valuesPerBlock = 64 / w.bitsPerValue;
+            bytes = (long) Math.ceil((double) valueCount / valuesPerBlock) << 3;
+            break;
+          default:
+            bytes = -1;
+        }
+        assertEquals(bytes, fp - startFp);
+
+        {// test header
+          IndexInput in = d.openInput("out.bin", newIOContext(random()));
+          // header = codec header | bitsPerValue | valueCount | format
+          CodecUtil.checkHeader(in, PackedInts.CODEC_NAME, PackedInts.VERSION_START, PackedInts.VERSION_CURRENT); // codec header
+          assertEquals(w.bitsPerValue, in.readVInt());
+          assertEquals(valueCount, in.readVInt());
+          assertEquals(w.getFormat(), in.readVInt());
+          assertEquals(startFp, in.getFilePointer());
+          in.close();
+        }
+
         {// test reader
           IndexInput in = d.openInput("out.bin", newIOContext(random()));
           PackedInts.Reader r = PackedInts.getReader(in);
