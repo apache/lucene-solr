@@ -31,7 +31,6 @@ import java.util.Random;
 import java.util.Set;
 
 import junit.framework.Assert;
-import junit.framework.TestCase;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.solr.client.solrj.SolrServer;
@@ -189,7 +188,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void createServers(int numShards) throws Exception {
-    controlJetty = createJetty(testDir, testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
+    controlJetty = createJetty(new File(getSolrHome()), testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
 
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
@@ -197,7 +196,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir,
+      JettySolrRunner j = createJetty(new File(getSolrHome()),
           testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
           getSchemaFile());
       jettys.add(j);
@@ -247,17 +246,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     jettys.clear();
   }
   
-  public JettySolrRunner createJetty(File baseDir, String dataDir) throws Exception {
-    return createJetty(baseDir, dataDir, null, null, null);
+  public JettySolrRunner createJetty(File solrHome, String dataDir) throws Exception {
+    return createJetty(solrHome, dataDir, null, null, null);
   }
 
-  public JettySolrRunner createJetty(File baseDir, String dataDir, String shardId) throws Exception {
-    return createJetty(baseDir, dataDir, shardId, null, null);
+  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardId) throws Exception {
+    return createJetty(solrHome, dataDir, shardId, null, null);
   }
   
-  public JettySolrRunner createJetty(File baseDir, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
+  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
 
-    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), "/solr", 0, solrConfigOverride, schemaOverride);
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), "/solr", 0, solrConfigOverride, schemaOverride);
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
     jetty.start();

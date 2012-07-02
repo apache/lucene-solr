@@ -62,6 +62,7 @@ import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
 import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
+import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -103,6 +104,7 @@ public class CoreContainer
   protected String hostContext;
   protected String host;
   protected CoreAdminHandler coreAdminHandler = null;
+  protected CollectionsHandler collectionsHandler = null;
   protected File configFile = null;
   protected String libDir = null;
   protected ClassLoader libLoader = null;
@@ -453,6 +455,8 @@ public class CoreContainer
       }
     }
 
+    collectionsHandler = new CollectionsHandler(this);
+    
     try {
       containerProperties = readProperties(cfg, ((NodeList) cfg.evaluate(DEFAULT_HOST_CONTEXT, XPathConstants.NODESET)).item(0));
     } catch (Throwable e) {
@@ -1021,6 +1025,10 @@ public class CoreContainer
 
   public CoreAdminHandler getMultiCoreHandler() {
     return coreAdminHandler;
+  }
+  
+  public CollectionsHandler getCollectionsHandler() {
+    return collectionsHandler;
   }
   
   /**

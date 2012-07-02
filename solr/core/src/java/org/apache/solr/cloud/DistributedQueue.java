@@ -1,4 +1,4 @@
-/**
+/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -262,6 +262,45 @@ public class DistributedQueue {
       return element();
     } catch (NoSuchElementException e) {
       return null;
+    }
+  }
+  
+  /**
+   * Returns the data at the first element of the queue, or null if the queue is
+   * empty.
+   * 
+   * @return data at the first element of the queue, or null.
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
+  public byte[] peek(boolean block) throws KeeperException, InterruptedException {
+    if (!block) {
+      return peek();
+    }
+    
+    TreeMap<Long,String> orderedChildren;
+    while (true) {
+      LatchChildWatcher childWatcher = new LatchChildWatcher();
+      try {
+        orderedChildren = orderedChildren(childWatcher);
+      } catch (KeeperException.NoNodeException e) {
+        zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT);
+        continue;
+      }
+      if (orderedChildren.size() == 0) {
+        childWatcher.await();
+        continue;
+      }
+      
+      for (String headNode : orderedChildren.values()) {
+        String path = dir + "/" + headNode;
+        try {
+          byte[] data = zookeeper.getData(path, false, null);
+          return data;
+        } catch (KeeperException.NoNodeException e) {
+          // Another client deleted the node first.
+        }
+      }
     }
   }
   

@@ -27,6 +27,9 @@ New Features
 * SOLR-1856: In Solr Cell, literals should override Tika-parsed values.
   Patch adds a param "literalsOverride" which defaults to true, but can be set 
   to "false" to let Tika-parsed values be appended to literal values (Chris Harris, janhoy)
+  
+* SOLR-3488: Added a Collection management API for SolrCloud.
+  (Tommaso Teofili, Sami Siren, yonik, Mark Miller)
 
 Bug Fixes
 

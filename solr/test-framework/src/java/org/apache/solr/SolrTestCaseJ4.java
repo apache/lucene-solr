@@ -1367,6 +1367,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
   
+  // TODO: use solr rather than solr/collection1
   public static String TEST_HOME() {
     return getFile("solr/collection1").getParent();
   }

@@ -19,7 +19,9 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.cloud.CloudState;
@@ -37,6 +39,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
   protected static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
   protected ZkTestServer zkServer;
+  private AtomicInteger homeCount = new AtomicInteger();
 
   @Before
   @Override
@@ -64,15 +67,22 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
   
   @Override
   protected void createServers(int numShards) throws Exception {
+    // give everyone there own solrhome
+    File controlHome = new File(new File(getSolrHome()).getParentFile(), "control" + homeCount.incrementAndGet());
+    FileUtils.copyDirectory(new File(getSolrHome()), controlHome);
+    
     System.setProperty("collection", "control_collection");
-    controlJetty = createJetty(testDir, testDir + "/control/data", "control_shard");
+    controlJetty = createJetty(controlHome, null, "control_shard");
     System.clearProperty("collection");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, testDir + "/jetty" + i, "shard" + (i + 2));
+      // give everyone there own solrhome
+      File jettyHome = new File(new File(getSolrHome()).getParentFile(), "jetty" + homeCount.incrementAndGet());
+      FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
+      JettySolrRunner j = createJetty(jettyHome, null, "shard" + (i + 2));
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
       sb.append("localhost:").append(j.getLocalPort()).append(context);
