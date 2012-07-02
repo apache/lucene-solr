@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.vector;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,11 +17,8 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.vector;
-
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.simple.PointImpl;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -84,8 +83,7 @@ public class DistanceValueSource extends ValueSource {
       public double doubleVal(int doc) {
         // make sure it has minX and area
         if (validX.get(doc) && validY.get(doc)) {
-          PointImpl pt = new PointImpl( ptX[doc],  ptY[doc] );
-          return calculator.distance(from, pt);
+          return calculator.distance(from, ptX[doc], ptY[doc]);
         }
         return 0;
       }
