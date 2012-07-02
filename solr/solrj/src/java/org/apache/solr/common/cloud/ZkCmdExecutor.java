@@ -55,7 +55,6 @@ public class ZkCmdExecutor {
    * Perform the given operation, retrying if the connection fails
    * 
    * @param operation
-   * @return
    * @throws KeeperException
    * @throws InterruptedException
    */
