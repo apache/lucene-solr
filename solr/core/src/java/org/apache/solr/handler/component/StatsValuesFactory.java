@@ -429,11 +429,11 @@ class StringStatsValues extends AbstractStatsValues<String> {
   }
 
   /**
-   * Determines which of the given Strings is the maximum, as computed by {@link String#compareTo(Object)}
+   * Determines which of the given Strings is the maximum, as computed by {@link String#compareTo(String)}
    *
    * @param str1 String to compare against b
    * @param str2 String compared against a
-   * @return str1 if it is considered greater by {@link String#compareTo(Object)}, str2 otherwise
+   * @return str1 if it is considered greater by {@link String#compareTo(String)}, str2 otherwise
    */
   private static String max(String str1, String str2) {
     if (str1 == null) {
@@ -445,11 +445,11 @@ class StringStatsValues extends AbstractStatsValues<String> {
   }
 
   /**
-   * Determines which of the given Strings is the minimum, as computed by {@link String#compareTo(Object)}
+   * Determines which of the given Strings is the minimum, as computed by {@link String#compareTo(String)}
    *
    * @param str1 String to compare against b
    * @param str2 String compared against a
-   * @return str1 if it is considered less by {@link String#compareTo(Object)}, str2 otherwise
+   * @return str1 if it is considered less by {@link String#compareTo(String)}, str2 otherwise
    */
   private static String min(String str1, String str2) {
     if (str1 == null) {

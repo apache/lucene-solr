@@ -61,7 +61,7 @@ public final class CompositeReaderContext extends IndexReaderContext {
   }
 
   @Override
-  public List<AtomicReaderContext> leaves() {
+  public List<AtomicReaderContext> leaves() throws UnsupportedOperationException {
     if (!isTopLevel)
       throw new UnsupportedOperationException("This is not a top-level context.");
     assert leaves != null;

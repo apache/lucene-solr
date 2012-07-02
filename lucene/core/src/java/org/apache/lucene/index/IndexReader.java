@@ -53,7 +53,7 @@ import org.apache.lucene.util.BytesRef;
  
  <p>IndexReader instances for indexes on disk are usually constructed
  with a call to one of the static <code>DirectoryReader.open()</code> methods,
- e.g. {@link DirectoryReader#open(Directory)}. {@link DirectoryReader} implements
+ e.g. {@link DirectoryReader#open(org.apache.lucene.store.Directory)}. {@link DirectoryReader} implements
  the {@link CompositeReader} interface, it is not possible to directly get postings.
 
  <p> For efficiency, in this API documents are often referred to via

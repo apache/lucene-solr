@@ -277,8 +277,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * the writer nor calling {@link #commit}.
    *
    * <p>Note that this is functionally equivalent to calling
-   * {#flush} and then using {@link IndexReader#open} to
-   * open a new reader.  But the turnaround time of this
+   * {#flush} and then opening a new reader.  But the turnaround time of this
    * method should be faster since it avoids the potentially
    * costly {@link #commit}.</p>
    *
@@ -1450,12 +1449,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * then any thread still running this method might hit a
    * {@link MergePolicy.MergeAbortedException}.
    *
+   * @param maxNumSegments maximum number of segments left
+   * in the index after merging finishes
+   * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @see MergePolicy#findMerges
    *
-   * @param maxNumSegments maximum number of segments left
-   * in the index after merging finishes
   */
   public void forceMerge(int maxNumSegments) throws IOException {
     forceMerge(maxNumSegments, true);
@@ -2004,11 +2004,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   /**
    * Prepares the {@link SegmentInfo} for the new flushed segment and persists
    * the deleted documents {@link MutableBits}. Use
-   * {@link #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes, FrozenBufferedDeletes)} to
+   * {@link #publishFlushedSegment(SegmentInfoPerCommit, FrozenBufferedDeletes, FrozenBufferedDeletes)} to
    * publish the returned {@link SegmentInfo} together with its segment private
    * delete packet.
    * 
-   * @see #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes, FrozenBufferedDeletes)
+   * @see #publishFlushedSegment(SegmentInfoPerCommit, FrozenBufferedDeletes, FrozenBufferedDeletes)
    */
   SegmentInfoPerCommit prepareFlushedSegment(FlushedSegment flushedSegment) throws IOException {
     assert flushedSegment != null;

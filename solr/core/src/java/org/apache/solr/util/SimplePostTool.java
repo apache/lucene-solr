@@ -218,8 +218,7 @@ public class SimplePostTool {
   
   /**
    * Opens the file and posts it's contents to the solrUrl,
-   * writes to response to output.
-   * @throws UnsupportedEncodingException 
+   * writes to response to output. 
    */
   public void postFile(File file, OutputStream output, String type) {
 

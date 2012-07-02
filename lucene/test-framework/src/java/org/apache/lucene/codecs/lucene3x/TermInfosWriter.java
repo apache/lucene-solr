@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -66,8 +67,8 @@ final class TermInfosWriter implements Closeable {
    * tweaking this is rarely useful.*/
   int indexInterval = 128;
 
-  /** Expert: The fraction of {@link TermDocs} entries stored in skip tables,
-   * used to accelerate {@link TermDocs#skipTo(int)}.  Larger values result in
+  /** Expert: The fraction of term entries stored in skip tables,
+   * used to accelerate skipping.  Larger values result in
    * smaller indexes, greater acceleration, but fewer accelerable cases, while
    * smaller values result in bigger indexes, less acceleration and more
    * accelerable cases. More detailed experiments would be useful here. */

@@ -81,7 +81,6 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
    * "foo bar the"=>"foo:1|bar:2,bar-the:2|the:3=> "foo" "bar-the" (2 tokens
    * out)
    * 
-   * @return Map<String,String>
    */
   public void testCommonGramsQueryFilter() throws Exception {
     Analyzer a = new Analyzer() {

@@ -429,9 +429,6 @@ public class PackedInts {
    * @param acceptableOverheadRatio an acceptable overhead
    *        ratio per value
    * @return a mutable packed integer array
-   * @throws java.io.IOException if the Mutable could not be created. With the
-   *         current implementations, this never happens, but the method
-   *         signature allows for future persistence-backed Mutables.
    * @lucene.internal
    */
   public static Mutable getMutable(int valueCount,

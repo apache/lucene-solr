@@ -49,8 +49,6 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   /**
    * Set up a new index in RAM with three test phrases and the supplied Analyzer.
    *
-   * @param analyzer the analyzer to use
-   * @return an indexSearcher on the test index.
    * @throws Exception if an error occurs with index writer or searcher
    */
   @Override

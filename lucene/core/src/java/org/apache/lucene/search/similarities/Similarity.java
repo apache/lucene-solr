@@ -99,7 +99,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * </ol>
  * <p>
  * <a name="explaintime"/>
- * When {@link IndexSearcher#explain(Query, int)} is called, queries consult the Similarity's DocScorer for an 
+ * When {@link IndexSearcher#explain(org.apache.lucene.search.Query, int)} is called, queries consult the Similarity's DocScorer for an 
  * explanation of how it computed its score. The query passes in a the document id and an explanation of how the frequency
  * was computed.
  *

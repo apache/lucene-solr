@@ -92,7 +92,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
    * <p>
    * Does simple (non-glob-supporting) parsing on the 
    * {@link TermVectorParams#FIELDS} param if specified, otherwise it returns 
-   * the concrete field values specified in {@link CommonParams.FL} -- 
+   * the concrete field values specified in {@link CommonParams#FL} -- 
    * ignoring functions, transformers, or literals.  
    * </p>
    * <p>
