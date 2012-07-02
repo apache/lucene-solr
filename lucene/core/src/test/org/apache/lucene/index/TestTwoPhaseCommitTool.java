@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,9 +21,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.TwoPhaseCommit;
-import org.apache.lucene.index.TwoPhaseCommitTool;
 import org.apache.lucene.index.TwoPhaseCommitTool.TwoPhaseCommitWrapper;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTwoPhaseCommitTool extends LuceneTestCase {
 
