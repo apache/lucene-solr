@@ -85,7 +85,7 @@ def parse(baseURL, html):
     parser.close()
   except HTMLParseError:
     parser.printFile()
-    print '  WARNING: failed to parse:'
+    print '  WARNING: failed to parse %s:' % baseURL
     traceback.print_exc()
     failures = True
     return [], []
