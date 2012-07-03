@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.pfor;
 
 import java.nio.IntBuffer;
 
-final class ForDecompressImpl {
+final class PackedIntsDecompress {
 
   // nocommit: assess perf of this to see if specializing is really needed
 

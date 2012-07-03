@@ -23,7 +23,7 @@ import java.nio.*;
 import org.apache.lucene.codecs.pfor.*;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestForUtil extends LuceneTestCase {
+public class TestPForUtil extends LuceneTestCase {
   static final int[] MASK={ 0x00000000,
     0x00000001, 0x00000003, 0x00000007, 0x0000000f, 0x0000001f, 0x0000003f,
     0x0000007f, 0x000000ff, 0x000001ff, 0x000003ff, 0x000007ff, 0x00000fff,
@@ -53,25 +53,25 @@ public class TestForUtil extends LuceneTestCase {
     byte[] res = new byte[4+sz*8];
     IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
     for (int i=0; i<sz-1; ++i)
-      buff[i]=gen.nextInt() & 0;
+      buff[i]=gen.nextInt() & 1;
     buff[sz-1]=gen.nextInt() & 0xffffffff;   // create only one exception
 
     Collections.shuffle(Arrays.asList(buff),new Random(seed));
     for (int i=0; i<sz; ++i)
       data[i] = buff[i];
 
-    int ensz = ForUtil.compress(data,sz,resBuffer);
+    int ensz = PForUtil.compress(data,sz,resBuffer);
 
     if (ensz > sz*8+4) {
       println("Excceed? "+ensz+">"+(sz*8+4));
       ensz=sz*8+4;
     }
     resBuffer.rewind();
-    ForUtil.decompress(resBuffer,copy);
+    PForUtil.decompress(resBuffer,copy);
 
-//    println(getHex(data,sz)+"\n");
-//    println(getHex(res,ensz)+"\n");
-//    println(getHex(copy,sz)+"\n");
+    //println(getHex(data,sz)+"\n");
+    //println(getHex(res,ensz)+"\n");
+    //println(getHex(copy,sz)+"\n");
     
     assert cmp(data,sz,copy,sz)==true;
   }
@@ -99,15 +99,14 @@ public class TestForUtil extends LuceneTestCase {
     for (i=0; i<sz; ++i)
       data[i] = buff[i];
 
-    int ensz = ForUtil.compress(data,sz,resBuffer);
+    int ensz = PForUtil.compress(data,sz,resBuffer);
     
     if (ensz > sz*8+4) {
       println("Excceed? "+ensz+">"+(sz*8+4));
       ensz=sz*8+4;
     }
     int[] copy = new int[sz];
-
-    ForUtil.decompress(resBuffer,copy);
+    PForUtil.decompress(resBuffer,copy);
 
 //    println(getHex(data,sz)+"\n");
 //    println(getHex(res,ensz)+"\n");

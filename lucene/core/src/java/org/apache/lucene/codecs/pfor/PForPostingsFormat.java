@@ -38,25 +38,25 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.sep.SepPostingsReader;
 import org.apache.lucene.codecs.sep.SepPostingsWriter;
 /**
- * This class actually only pass the ForFactory
+ * This class actually only pass the PForFactory
  * to a PostingsWriter/ReaderBase, and get customized
  * format plugged.
  */
-public final class ForPostingsFormat extends PostingsFormat {
+public final class PForPostingsFormat extends PostingsFormat {
   private final int blockSize;
   private final int minBlockSize;
   private final int maxBlockSize;
   protected final static int DEFAULT_BLOCK_SIZE = 128;
   protected final static int DEFAULT_TERM_CACHED_SIZE = 1024;
 
-  public ForPostingsFormat() {
-    super("For");
+  public PForPostingsFormat() {
+    super("PFor");
     this.blockSize = DEFAULT_BLOCK_SIZE;
     this.minBlockSize = BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE;
     this.maxBlockSize = BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE;
   }
-  public ForPostingsFormat(int minBlockSize, int maxBlockSize) {
-    super("For");
+  public PForPostingsFormat(int minBlockSize, int maxBlockSize) {
+    super("PFor");
     this.blockSize = DEFAULT_BLOCK_SIZE;
     this.minBlockSize = minBlockSize;
     assert minBlockSize > 1;
@@ -72,7 +72,7 @@ public final class ForPostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     // TODO: implement a new PostingsWriterBase to improve skip-settings
-    PostingsWriterBase postingsWriter = new SepPostingsWriter(state, new ForFactory()); 
+    PostingsWriterBase postingsWriter = new SepPostingsWriter(state, new PForFactory()); 
     boolean success = false;
     try {
       FieldsConsumer ret = new BlockTreeTermsWriter(state, 
@@ -94,7 +94,7 @@ public final class ForPostingsFormat extends PostingsFormat {
                                                               state.fieldInfos,
                                                               state.segmentInfo,
                                                               state.context,
-                                                              new ForFactory(),
+                                                              new PForFactory(),
                                                               state.segmentSuffix);
 
     boolean success = false;

@@ -21,16 +21,15 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 // Encode all values in normal area, based on the bit size for max value
-public final class ForUtil {
+public class ForUtil {
   public static final int HEADER_INT_SIZE=1;
-  private static final int[] MASK = {   0x00000000,
+  protected static final int[] MASK = {   0x00000000,
     0x00000001, 0x00000003, 0x00000007, 0x0000000f, 0x0000001f, 0x0000003f,
     0x0000007f, 0x000000ff, 0x000001ff, 0x000003ff, 0x000007ff, 0x00000fff,
     0x00001fff, 0x00003fff, 0x00007fff, 0x0000ffff, 0x0001ffff, 0x0003ffff,
     0x0007ffff, 0x000fffff, 0x001fffff, 0x003fffff, 0x007fffff, 0x00ffffff,
     0x01ffffff, 0x03ffffff, 0x07ffffff, 0x0fffffff, 0x1fffffff, 0x3fffffff,
     0x7fffffff, 0xffffffff};
-  private static final int[] PER_EXCEPTION_SIZE = {1,2,4};
 
   public static int compress(final int[] data, int size, IntBuffer intBuffer) {
     int numBits=getNumBits(data,size);
@@ -51,40 +50,40 @@ public final class ForUtil {
     int numInts = (header & MASK[8]) + 1;
     int numBits = ((header >> 8) & MASK[5]) + 1;
 
-    // TODO: ForDecompressImpl is hardewired to size==128 only
+    // TODO: PackedIntsDecompress is hardewired to size==128 only
     switch(numBits) {
-      case 1: ForDecompressImpl.decode1(intBuffer, data); break;
-      case 2: ForDecompressImpl.decode2(intBuffer, data); break;
-      case 3: ForDecompressImpl.decode3(intBuffer, data); break;
-      case 4: ForDecompressImpl.decode4(intBuffer, data); break;
-      case 5: ForDecompressImpl.decode5(intBuffer, data); break;
-      case 6: ForDecompressImpl.decode6(intBuffer, data); break;
-      case 7: ForDecompressImpl.decode7(intBuffer, data); break;
-      case 8: ForDecompressImpl.decode8(intBuffer, data); break;
-      case 9: ForDecompressImpl.decode9(intBuffer, data); break;
-      case 10: ForDecompressImpl.decode10(intBuffer, data); break;
-      case 11: ForDecompressImpl.decode11(intBuffer, data); break;
-      case 12: ForDecompressImpl.decode12(intBuffer, data); break;
-      case 13: ForDecompressImpl.decode13(intBuffer, data); break;
-      case 14: ForDecompressImpl.decode14(intBuffer, data); break;
-      case 15: ForDecompressImpl.decode15(intBuffer, data); break;
-      case 16: ForDecompressImpl.decode16(intBuffer, data); break;
-      case 17: ForDecompressImpl.decode17(intBuffer, data); break;
-      case 18: ForDecompressImpl.decode18(intBuffer, data); break;
-      case 19: ForDecompressImpl.decode19(intBuffer, data); break;
-      case 20: ForDecompressImpl.decode20(intBuffer, data); break;
-      case 21: ForDecompressImpl.decode21(intBuffer, data); break;
-      case 22: ForDecompressImpl.decode22(intBuffer, data); break;
-      case 23: ForDecompressImpl.decode23(intBuffer, data); break;
-      case 24: ForDecompressImpl.decode24(intBuffer, data); break;
-      case 25: ForDecompressImpl.decode25(intBuffer, data); break;
-      case 26: ForDecompressImpl.decode26(intBuffer, data); break;
-      case 27: ForDecompressImpl.decode27(intBuffer, data); break;
-      case 28: ForDecompressImpl.decode28(intBuffer, data); break;
-      case 29: ForDecompressImpl.decode29(intBuffer, data); break;
-      case 30: ForDecompressImpl.decode30(intBuffer, data); break;
-      case 31: ForDecompressImpl.decode31(intBuffer, data); break;
-      case 32: ForDecompressImpl.decode32(intBuffer, data); break;
+      case 1: PackedIntsDecompress.decode1(intBuffer, data); break;
+      case 2: PackedIntsDecompress.decode2(intBuffer, data); break;
+      case 3: PackedIntsDecompress.decode3(intBuffer, data); break;
+      case 4: PackedIntsDecompress.decode4(intBuffer, data); break;
+      case 5: PackedIntsDecompress.decode5(intBuffer, data); break;
+      case 6: PackedIntsDecompress.decode6(intBuffer, data); break;
+      case 7: PackedIntsDecompress.decode7(intBuffer, data); break;
+      case 8: PackedIntsDecompress.decode8(intBuffer, data); break;
+      case 9: PackedIntsDecompress.decode9(intBuffer, data); break;
+      case 10: PackedIntsDecompress.decode10(intBuffer, data); break;
+      case 11: PackedIntsDecompress.decode11(intBuffer, data); break;
+      case 12: PackedIntsDecompress.decode12(intBuffer, data); break;
+      case 13: PackedIntsDecompress.decode13(intBuffer, data); break;
+      case 14: PackedIntsDecompress.decode14(intBuffer, data); break;
+      case 15: PackedIntsDecompress.decode15(intBuffer, data); break;
+      case 16: PackedIntsDecompress.decode16(intBuffer, data); break;
+      case 17: PackedIntsDecompress.decode17(intBuffer, data); break;
+      case 18: PackedIntsDecompress.decode18(intBuffer, data); break;
+      case 19: PackedIntsDecompress.decode19(intBuffer, data); break;
+      case 20: PackedIntsDecompress.decode20(intBuffer, data); break;
+      case 21: PackedIntsDecompress.decode21(intBuffer, data); break;
+      case 22: PackedIntsDecompress.decode22(intBuffer, data); break;
+      case 23: PackedIntsDecompress.decode23(intBuffer, data); break;
+      case 24: PackedIntsDecompress.decode24(intBuffer, data); break;
+      case 25: PackedIntsDecompress.decode25(intBuffer, data); break;
+      case 26: PackedIntsDecompress.decode26(intBuffer, data); break;
+      case 27: PackedIntsDecompress.decode27(intBuffer, data); break;
+      case 28: PackedIntsDecompress.decode28(intBuffer, data); break;
+      case 29: PackedIntsDecompress.decode29(intBuffer, data); break;
+      case 30: PackedIntsDecompress.decode30(intBuffer, data); break;
+      case 31: PackedIntsDecompress.decode31(intBuffer, data); break;
+      case 32: PackedIntsDecompress.decode32(intBuffer, data); break;
       default:
         throw new IllegalStateException("Unknown numFrameBits " + numBits);
     }

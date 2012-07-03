@@ -36,11 +36,11 @@ import org.apache.lucene.codecs.intblock.FixedIntBlockIndexOutput;
  * Things really make sense are: flushBlock() and readBlock()
  */
 
-public final class ForFactory extends IntStreamFactory {
+public final class PForFactory extends IntStreamFactory {
   private final int blockSize;
 
-  public ForFactory() {
-    this.blockSize=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
+  public PForFactory() {
+    this.blockSize=PForPostingsFormat.DEFAULT_BLOCK_SIZE;
   }
 
   @Override
@@ -48,7 +48,7 @@ public final class ForFactory extends IntStreamFactory {
     IndexOutput out = dir.createOutput(fileName, context);
     boolean success = false;
     try {
-      FixedIntBlockIndexOutput ret = new  ForIndexOutput(out, blockSize);
+      FixedIntBlockIndexOutput ret = new  PForIndexOutput(out, blockSize);
       success = true;
       return ret;
     } finally {
@@ -61,21 +61,21 @@ public final class ForFactory extends IntStreamFactory {
   }
   @Override
   public IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException {
-    FixedIntBlockIndexInput ret = new ForIndexInput(dir.openInput(fileName, context));
+    FixedIntBlockIndexInput ret = new PForIndexInput(dir.openInput(fileName, context));
     return ret;
   }
 
   // wrap input and output with buffer support
-  private class ForIndexInput extends FixedIntBlockIndexInput {
-    ForIndexInput(final IndexInput in) throws IOException {
+  private class PForIndexInput extends FixedIntBlockIndexInput {
+    PForIndexInput(final IndexInput in) throws IOException {
       super(in);
     }
-    class ForBlockReader implements FixedIntBlockIndexInput.BlockReader {
+    class PForBlockReader implements FixedIntBlockIndexInput.BlockReader {
       byte[] encoded;
       int[] buffer;
       IndexInput in;
       IntBuffer encodedBuffer;
-      ForBlockReader(final IndexInput in, final int[] buffer) {
+      PForBlockReader(final IndexInput in, final int[] buffer) {
         this.encoded = new byte[blockSize*8+4];
         this.in=in;
         this.buffer=buffer;
@@ -87,26 +87,26 @@ public final class ForFactory extends IntStreamFactory {
         final int numBytes = in.readInt();
         assert numBytes <= blockSize*8+4;
         in.readBytes(encoded,0,numBytes);
-        ForUtil.decompress(encodedBuffer,buffer);
+        PForUtil.decompress(encodedBuffer,buffer);
       }
     }
     @Override
     protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
-      return new ForBlockReader(in,buffer);
+      return new PForBlockReader(in,buffer);
     }
   }
 
-  private class ForIndexOutput extends FixedIntBlockIndexOutput {
+  private class PForIndexOutput extends FixedIntBlockIndexOutput {
       private byte[] encoded;
       private IntBuffer encodedBuffer;
-    ForIndexOutput(IndexOutput out, int blockSize) throws IOException {
+    PForIndexOutput(IndexOutput out, int blockSize) throws IOException {
       super(out,blockSize);
       this.encoded = new byte[blockSize*8+4];
       this.encodedBuffer=ByteBuffer.wrap(encoded).asIntBuffer();
     }
     @Override
     protected void flushBlock() throws IOException {
-      final int numBytes = ForUtil.compress(buffer,buffer.length,encodedBuffer);
+      final int numBytes = PForUtil.compress(buffer,buffer.length,encodedBuffer);
       out.writeInt(numBytes);
       out.writeBytes(encoded, numBytes);
     }

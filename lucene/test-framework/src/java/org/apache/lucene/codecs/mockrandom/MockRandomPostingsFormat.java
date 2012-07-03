@@ -95,6 +95,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
       delegates.add(new MockVariableIntBlockPostingsFormat.MockIntFactory(baseBlockSize));
       // TODO: others
       delegates.add(new ForFactory());
+      delegates.add(new PForFactory());
     }
 
     private static String getExtension(String fileName) {

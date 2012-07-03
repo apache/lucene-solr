@@ -21,7 +21,6 @@ Generate source code for java classes for FOR decompression.
 """
 
 USE_SCRATCH = False
-#USE_SCRATCH = True 
 
 def bitsExpr(i, numFrameBits):
   framePos = i * numFrameBits
@@ -51,7 +50,7 @@ def bitsExpr(i, numFrameBits):
 
 
 def genDecompress():
-  className = "ForDecompressImpl"
+  className = "PackedIntsDecompress"
   fileName = className + ".java"
   imports = "import java.nio.IntBuffer;\n"
   f = open(fileName, 'w')
@@ -80,7 +79,7 @@ def genDecompress():
 
     w("import java.nio.IntBuffer;\n\n")
 
-    w("final class ForDecompressImpl {\n")
+    w("final class PackedIntsDecompress {\n")
 
     w('\n  // nocommit: assess perf of this to see if specializing is really needed\n')
 
@@ -118,7 +117,7 @@ def genDecompress():
 
 def genSwitch():
   for numFrameBits in xrange(1, 33):
-    print '      case %d: ForDecompressImpl.decode%d(compressedBuffer, encoded); break;' % (numFrameBits, numFrameBits)
+    print '      case %d: PackedIntsDecompress.decode%d(compressedBuffer, encoded); break;' % (numFrameBits, numFrameBits)
 
 if __name__ == "__main__":
   genDecompress()
