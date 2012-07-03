@@ -22,7 +22,9 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -160,37 +162,67 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     try {
 
       if (cmd.overwrite) {
-        Term updateTerm;
-        Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
-        boolean del = false;
-        if (cmd.updateTerm == null) {
-          updateTerm = idTerm;
+
+        // Check for delete by query commands newer (i.e. reordered).  This should always be null on a leader
+        List<UpdateLog.DBQ> deletesAfter = null;
+        if (ulog != null && cmd.version > 0) {
+          deletesAfter = ulog.getDBQNewer(cmd.version);
+        }
+
+        if (deletesAfter != null) {
+          List<Query> dbqList = new ArrayList<Query>(deletesAfter.size());
+          for (UpdateLog.DBQ dbq : deletesAfter) {
+            try {
+              DeleteUpdateCommand tmpDel = new DeleteUpdateCommand(cmd.req);
+              tmpDel.query = dbq.q;
+              tmpDel.version = -dbq.version;
+              dbqList.add( getQuery(tmpDel) );
+            } catch (Exception e) {
+              log.error("Exception parsing reordered query : " + dbq, e);
+            }
+          }
+
+          addAndDelete(cmd, dbqList);
         } else {
-          del = true;
-          updateTerm = cmd.updateTerm;
+          // normal update
+
+          Term updateTerm;
+          Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
+          boolean del = false;
+          if (cmd.updateTerm == null) {
+            updateTerm = idTerm;
+          } else {
+            del = true;
+            updateTerm = cmd.updateTerm;
+          }
+
+          Document luceneDocument = cmd.getLuceneDocument();
+          // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
+          writer.updateDocument(updateTerm, luceneDocument);
+          // SolrCore.verbose("updateDocument",updateTerm,"DONE");
+
+
+          if(del) { // ensure id remains unique
+            BooleanQuery bq = new BooleanQuery();
+            bq.add(new BooleanClause(new TermQuery(updateTerm), Occur.MUST_NOT));
+            bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
+            writer.deleteDocuments(bq);
+          }
+
+
+          // Add to the transaction log *after* successfully adding to the index, if there was no error.
+          // This ordering ensures that if we log it, it's definitely been added to the the index.
+          // This also ensures that if a commit sneaks in-between, that we know everything in a particular
+          // log version was definitely committed.
+          if (ulog != null) ulog.add(cmd);
         }
 
-        Document luceneDocument = cmd.getLuceneDocument();
-        // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
-        writer.updateDocument(updateTerm, luceneDocument);
-        // SolrCore.verbose("updateDocument",updateTerm,"DONE");
-
-        if(del) { // ensure id remains unique
-          BooleanQuery bq = new BooleanQuery();
-          bq.add(new BooleanClause(new TermQuery(updateTerm), Occur.MUST_NOT));
-          bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
-          writer.deleteDocuments(bq);
-        }
       } else {
         // allow duplicates
         writer.addDocument(cmd.getLuceneDocument());
+        if (ulog != null) ulog.add(cmd);
       }
 
-      // Add to the transaction log *after* successfully adding to the index, if there was no error.
-      // This ordering ensures that if we log it, it's definitely been added to the the index.
-      // This also ensures that if a commit sneaks in-between, that we know everything in a particular
-      // log version was definitely committed.
-      if (ulog != null) ulog.add(cmd);
 
       if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
         commitTracker.addedDocument( -1 );
@@ -243,6 +275,43 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     updateDeleteTrackers(cmd);
   }
 
+
+  public void clearIndex() throws IOException {
+    deleteAll();
+    if (ulog != null) {
+      ulog.deleteAll();
+    }
+  }
+
+
+  private Query getQuery(DeleteUpdateCommand cmd) {
+    Query q;
+    try {
+      // move this higher in the stack?
+      QParser parser = QParser.getParser(cmd.getQuery(), "lucene", cmd.req);
+      q = parser.getQuery();
+      q = QueryUtils.makeQueryable(q);
+
+      // Make sure not to delete newer versions
+      if (ulog != null && cmd.getVersion() != 0 && cmd.getVersion() != -Long.MAX_VALUE) {
+        BooleanQuery bq = new BooleanQuery();
+        bq.add(q, Occur.MUST);
+        SchemaField sf = ulog.getVersionInfo().getVersionField();
+        ValueSource vs = sf.getType().getValueSource(sf, null);
+        ValueSourceRangeFilter filt = new ValueSourceRangeFilter(vs, null, Long.toString(Math.abs(cmd.getVersion())), true, true);
+        FunctionRangeQuery range = new FunctionRangeQuery(filt);
+        bq.add(range, Occur.MUST);
+        q = bq;
+      }
+
+      return q;
+
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+  }
+
+
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
@@ -250,34 +319,18 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     deleteByQueryCommandsCumulative.incrementAndGet();
     boolean madeIt=false;
     try {
-      Query q;
-      try {
-        // TODO: move this higher in the stack?
-        QParser parser = QParser.getParser(cmd.query, "lucene", cmd.req);
-        q = parser.getQuery();
-        q = QueryUtils.makeQueryable(q);
-
-        // peer-sync can cause older deleteByQueries to be executed and could
-        // delete newer documents.  We prevent this by adding a clause restricting
-        // version.
-        if ((cmd.getFlags() & UpdateCommand.PEER_SYNC) != 0) {
-          BooleanQuery bq = new BooleanQuery();
-          bq.add(q, Occur.MUST);
-          SchemaField sf = core.getSchema().getField(VersionInfo.VERSION_FIELD);
-          ValueSource vs = sf.getType().getValueSource(sf, null);
-          ValueSourceRangeFilter filt = new ValueSourceRangeFilter(vs, null, Long.toString(Math.abs(cmd.version)), true, true);
-          FunctionRangeQuery range = new FunctionRangeQuery(filt);
-          bq.add(range, Occur.MUST);
-          q = bq;
-        }
-
-
-
-      } catch (ParseException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-      }
+      Query q = getQuery(cmd);
       
       boolean delAll = MatchAllDocsQuery.class == q.getClass();
+
+      // currently for testing purposes.  Do a delete of complete index w/o worrying about versions, don't log, clean up most state in update log, etc
+      if (delAll && cmd.getVersion() == -Long.MAX_VALUE) {
+        synchronized (this) {
+          deleteAll();
+          ulog.deleteAll();
+          return;
+        }
+      }
 
       //
       // synchronized to prevent deleteByQuery from running during the "open new searcher"
@@ -306,6 +359,31 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
     }
   }
+
+
+
+  /** Add a document execute the deletes as atomically as possible */
+  private void addAndDelete(AddUpdateCommand cmd, List<Query> dbqList) throws IOException {
+    Document luceneDocument = cmd.getLuceneDocument();
+    Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
+
+    // see comment in deleteByQuery
+    synchronized (this) {
+      IndexWriter writer = solrCoreState.getIndexWriter(core);
+
+      writer.updateDocument(idTerm, luceneDocument);
+
+      for (Query q : dbqList) {
+        writer.deleteDocuments(q);
+      }
+
+      if (ulog != null) ulog.add(cmd, true);
+    }
+
+  }
+
+
+
 
   @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {

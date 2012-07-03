@@ -881,13 +881,14 @@ public final class SolrCore implements SolrInfoMBean {
   public static void verbose(Object... args) {
     if (!VERBOSE) return;
     StringBuilder sb = new StringBuilder("VERBOSE:");
-    sb.append(Thread.currentThread().getName());
-    sb.append(':');
+//    sb.append(Thread.currentThread().getName());
+//    sb.append(':');
     for (Object o : args) {
       sb.append(' ');
       sb.append(o==null ? "(null)" : o.toString());
     }
-    System.out.println(sb.toString());
+    // System.out.println(sb.toString());
+    log.info(sb.toString());
   }
 
 

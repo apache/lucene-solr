@@ -63,6 +63,18 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
 
+  // since we make up fake versions in these tests, we can get messed up by a DBQ with a real version
+  // since Solr can think following updates were reordered.
+  @Override
+  public void clearIndex() {
+    try {
+      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE), DISTRIB_UPDATE_PARAM,FROM_LEADER));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+
   @Test
   public void testGetRealtime() throws Exception {
     clearIndex();
@@ -212,7 +224,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     assertU(commit());
 
     // make sure a reordered add doesn't take affect.
-    updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(version - 1))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+    long version2 = deleteByQueryAndGetVersion("id:2", null);
 
     // test that it's still deleted
     assertJQ(req("qt","/get","id","1")
@@ -220,9 +232,33 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     );
 
     version = addAndGetVersion(sdoc("id","2"), null);
-    long version2 = deleteByQueryAndGetVersion("id:2", null);
+    version2 = deleteByQueryAndGetVersion("id:2", null);
     assertTrue(Math.abs(version2) > version );
-    
+
+    // test that it's deleted
+    assertJQ(req("qt","/get","id","2")
+        ,"=={'doc':null}");
+
+
+    version2 = Math.abs(version2) + 1000;
+    updateJ(jsonAdd(sdoc("id","3", "_version_",Long.toString(version2+100))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+    updateJ(jsonAdd(sdoc("id","4", "_version_",Long.toString(version2+200))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+    // this should only affect id:3 so far
+    deleteByQueryAndGetVersion("id:(3 4 5 6)", params(DISTRIB_UPDATE_PARAM,FROM_LEADER, "_version_",Long.toString(-(version2+150))) );
+
+    assertJQ(req("qt","/get","id","3"),"=={'doc':null}");
+    assertJQ(req("qt","/get","id","4", "fl","id"),"=={'doc':{'id':'4'}}");
+
+    updateJ(jsonAdd(sdoc("id","5", "_version_",Long.toString(version2+201))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+    updateJ(jsonAdd(sdoc("id","6", "_version_",Long.toString(version2+101))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+   // the DBQ should also have caused id:6 to be removed
+    assertJQ(req("qt","/get","id","5", "fl","id"),"=={'doc':{'id':'5'}}");
+    assertJQ(req("qt","/get","id","6"),"=={'doc':null}");
+
+    assertU(commit());
+
   }
 
   @Test
@@ -425,7 +461,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     }
 
     public String toString() {
-      return "{version="+version+",val="+val+"\"";
+      return "{version="+version+",val="+val+"}";
     }
   }
 
@@ -978,7 +1014,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int commitPercent = 5 + random().nextInt(20);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random().nextInt(25);
-    final int deleteByQueryPercent = 0;  // delete-by-query can't be reordered on replicas
+    final int deleteByQueryPercent = 1+random().nextInt(7);
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
     int nWriteThreads = 5 + random().nextInt(25);
 
@@ -988,6 +1024,24 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int percentRealtimeQuery = 75;
     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
     int nReadThreads = 5 + random().nextInt(25);
+
+
+    /** // testing
+    final int commitPercent = 5;
+    final int softCommitPercent = 100; // what percent of the commits are soft
+    final int deletePercent = 0;
+    final int deleteByQueryPercent = 50;
+    final int ndocs = 1;
+    int nWriteThreads = 2;
+
+    final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
+
+    // query variables
+    final int percentRealtimeQuery = 101;
+    final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
+    int nReadThreads = 1;
+    **/
+
 
     initModel(ndocs);
 
@@ -1094,6 +1148,26 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 verbose("deleting id", id, "val=",nextVal,"version",version,"DONE");
               } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
 
+                verbose("deleteByQuery id",id,"val=",nextVal,"version",version);
+
+                Long returnedVersion = deleteByQueryAndGetVersion("id:"+Integer.toString(id), params("_version_",Long.toString(-version), DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+                // TODO: returning versions for these types of updates is redundant
+                // but if we do return, they had better be equal
+                if (returnedVersion != null) {
+                  assertEquals(-version, returnedVersion.longValue());
+                }
+
+                // only update model if the version is newer
+                synchronized (model) {
+                  DocInfo currInfo = model.get(id);
+                  if (Math.abs(version) > Math.abs(currInfo.version)) {
+                    model.put(id, new DocInfo(version, -nextVal));
+                  }
+                }
+
+                verbose("deleteByQuery id", id, "val=",nextVal,"version",version,"DONE");
+
               } else {
                 verbose("adding id", id, "val=", nextVal,"version",version);
 
@@ -1123,6 +1197,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
           }
           } catch (Throwable e) {
             operations.set(-1L);
+            log.error("",e);
             throw new RuntimeException(e);
           }
         }
@@ -1185,6 +1260,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
             }
           } catch (Throwable e) {
             operations.set(-1L);
+            log.error("",e);
             throw new RuntimeException(e);
           }
         }
@@ -1225,7 +1301,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int commitPercent = 5 + random().nextInt(10);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random().nextInt(25);
-    final int deleteByQueryPercent = 0;  // real-time get isn't currently supported with delete-by-query
+    final int deleteByQueryPercent = random().nextInt(5);  // real-time get isn't currently supported with delete-by-query
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
     int nWriteThreads = 2 + random().nextInt(10);  // fewer write threads to give recovery thread more of a chance
 
@@ -1363,6 +1439,26 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                 verbose("deleting id", id, "val=",nextVal,"version",version,"DONE");
               } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
+
+                verbose("deleteByQuery id",id,"val=",nextVal,"version",version);
+
+                Long returnedVersion = deleteByQueryAndGetVersion("id:"+Integer.toString(id), params("_version_",Long.toString(-version), DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+                // TODO: returning versions for these types of updates is redundant
+                // but if we do return, they had better be equal
+                if (returnedVersion != null) {
+                  assertEquals(-version, returnedVersion.longValue());
+                }
+
+                // only update model if the version is newer
+                synchronized (model) {
+                  DocInfo currInfo = model.get(id);
+                  if (Math.abs(version) > Math.abs(currInfo.version)) {
+                    model.put(id, new DocInfo(version, -nextVal));
+                  }
+                }
+
+                verbose("deleteByQuery id", id, "val=",nextVal,"version",version,"DONE");
 
               } else {
                 verbose("adding id", id, "val=", nextVal,"version",version);

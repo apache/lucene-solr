@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -104,13 +105,27 @@ public class UpdateLog implements PluginInfoInitialized {
   private TransactionLog prevMapLog2;  // the transaction log used to look up entries found in prevMap
 
   private final int numDeletesToKeep = 1000;
+  private final int numDeletesByQueryToKeep = 100;
   public final int numRecordsToKeep = 100;
+
   // keep track of deletes only... this is not updated on an add
   private LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
     protected boolean removeEldestEntry(Map.Entry eldest) {
       return size() > numDeletesToKeep;
     }
   };
+
+  public class DBQ {
+    public String q;     // the query string
+    public long version; // positive version of the DBQ
+
+    @Override
+    public String toString() {
+      return "DBQ{version=" + version + ",q="+q+"}";
+    }
+  }
+
+  private LinkedList<DBQ> deleteByQueries = new LinkedList<DBQ>();
 
   private String[] tlogFiles;
   private File tlogDir;
@@ -207,6 +222,16 @@ public class UpdateLog implements PluginInfoInitialized {
         DeleteUpdate du = startingUpdates.deleteList.get(i);
         oldDeletes.put(new BytesRef(du.id), new LogPtr(-1,du.version));
       }
+
+      // populate recent deleteByQuery commands
+      for (int i=startingUpdates.deleteByQueryList.size()-1; i>=0; i--) {
+        Update update = startingUpdates.deleteByQueryList.get(i);
+        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
+        long version = (Long) dbq.get(1);
+        String q = (String) dbq.get(2);
+        trackDeleteByQuery(q, version);
+      }
+
     } finally {
       startingUpdates.close();
     }
@@ -280,6 +305,11 @@ public class UpdateLog implements PluginInfoInitialized {
 
 
   public void add(AddUpdateCommand cmd) {
+    add(cmd, false);
+  }
+
+
+  public void add(AddUpdateCommand cmd, boolean clearCaches) {
     // don't log if we are replaying from another log
     // TODO: we currently need to log to maintain correct versioning, rtg, etc
     // if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) return;
@@ -293,20 +323,42 @@ public class UpdateLog implements PluginInfoInitialized {
         pos = tlog.write(cmd, operationFlags);
       }
 
-      // TODO: in the future we could support a real position for a REPLAY update.
-      // Only currently would be useful for RTG while in recovery mode though.
-      LogPtr ptr = new LogPtr(pos, cmd.getVersion());
+      if (!clearCaches) {
+        // TODO: in the future we could support a real position for a REPLAY update.
+        // Only currently would be useful for RTG while in recovery mode though.
+        LogPtr ptr = new LogPtr(pos, cmd.getVersion());
 
-      // only update our map if we're not buffering
-      if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
-        map.put(cmd.getIndexedId(), ptr);
+        // only update our map if we're not buffering
+        if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
+          map.put(cmd.getIndexedId(), ptr);
+        }
+
+        if (trace) {
+          log.trace("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+        }
+
+      } else {
+        // replicate the deleteByQuery logic.  See deleteByQuery for comments.
+
+        map.clear();
+
+        try {
+          RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
+          holder.decref();
+        } catch (Throwable e) {
+          SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
+        }
+
+        if (trace) {
+          log.trace("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " clearCaches=true");
+        }
+
       }
 
-      if (trace) {
-        log.trace("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
-      }
     }
   }
+
+
 
   public void delete(DeleteUpdateCommand cmd) {
     BytesRef br = cmd.getIndexedId();
@@ -350,6 +402,8 @@ public class UpdateLog implements PluginInfoInitialized {
         // affected and hence we must purge our caches.
         map.clear();
 
+        trackDeleteByQuery(cmd.getQuery(), cmd.getVersion());
+
         // oldDeletes.clear();
 
         // We must cause a new IndexReader to be opened before anything looks at these caches again
@@ -373,6 +427,72 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
+  /** currently for testing only */
+  public void deleteAll() {
+    synchronized (this) {
+
+      try {
+        RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
+        holder.decref();
+      } catch (Throwable e) {
+        SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
+      }
+
+      map.clear();
+      oldDeletes.clear();
+      deleteByQueries.clear();
+    }
+  }
+
+
+  void trackDeleteByQuery(String q, long version) {
+    version = Math.abs(version);
+    DBQ dbq = new DBQ();
+    dbq.q = q;
+    dbq.version = version;
+
+    synchronized (this) {
+      if (deleteByQueries.isEmpty() || deleteByQueries.getFirst().version < version) {
+        // common non-reordered case
+        deleteByQueries.addFirst(dbq);
+      } else {
+        // find correct insertion point
+        ListIterator<DBQ> iter = deleteByQueries.listIterator();
+        iter.next();  // we already checked the first element in the previous "if" clause
+        while (iter.hasNext()) {
+          DBQ oldDBQ = iter.next();
+          if (oldDBQ.version < version) {
+            iter.previous();
+            break;
+          } else if (oldDBQ.version == version && oldDBQ.q.equals(q)) {
+            // a duplicate
+            return;
+          }
+        }
+        iter.add(dbq);  // this also handles the case of adding at the end when hasNext() == false
+      }
+
+      if (deleteByQueries.size() > numDeletesByQueryToKeep) {
+        deleteByQueries.removeLast();
+      }
+    }
+  }
+
+  public List<DBQ> getDBQNewer(long version) {
+    synchronized (this) {
+      if (deleteByQueries.isEmpty() || deleteByQueries.getFirst().version < version) {
+        // fast common case
+        return null;
+      }
+
+      List<DBQ> dbqList = new ArrayList<DBQ>();
+      for (DBQ dbq : deleteByQueries) {
+        if (dbq.version <= version) break;
+        dbqList.add(dbq);
+      }
+      return dbqList;
+    }
+  }
 
   private void newMap() {
     prevMap2 = prevMap;
