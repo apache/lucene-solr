@@ -127,12 +127,13 @@ public final class CompoundFileDirectory extends Directory {
   /** Helper method that reads CFS entries from an input stream */
   private static final Map<String, FileEntry> readEntries(
       IndexInputSlicer handle, Directory dir, String name) throws IOException {
+    IOException priorE = null;
+    IndexInput stream = null, entriesStream = null;
     // read the first VInt. If it is negative, it's the version number
     // otherwise it's the count (pre-3.1 indexes)
-    final IndexInput stream = handle.openFullSlice();
-    final Map<String, FileEntry> mapping;
-    boolean success = false;
     try {
+      final Map<String,FileEntry> mapping;
+      stream = handle.openFullSlice();
       final int firstInt = stream.readVInt();
       // impossible for 3.0 to have 63 files in a .cfs, CFS writer was not visible
       // and separate norms/etc are outside of cfs.
@@ -148,41 +149,33 @@ public final class CompoundFileDirectory extends Directory {
         }
         CodecUtil.checkHeaderNoMagic(stream, CompoundFileWriter.DATA_CODEC, 
             CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
-        IndexInput input = null;
-        try {
-          final String entriesFileName = IndexFileNames.segmentFileName(
-                                                IndexFileNames.stripExtension(name), "",
-                                                IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-          input = dir.openInput(entriesFileName, IOContext.READONCE);
-          CodecUtil.checkHeader(input, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
-          final int numEntries = input.readVInt();
-          mapping = new HashMap<String, CompoundFileDirectory.FileEntry>(
-              numEntries);
-          for (int i = 0; i < numEntries; i++) {
-            final FileEntry fileEntry = new FileEntry();
-            final String id = input.readString();
-            assert !mapping.containsKey(id): "id=" + id + " was written multiple times in the CFS";
-            mapping.put(id, fileEntry);
-            fileEntry.offset = input.readLong();
-            fileEntry.length = input.readLong();
-          }
-          return mapping;
-        } finally {
-          IOUtils.close(input);
+        final String entriesFileName = IndexFileNames.segmentFileName(
+                                              IndexFileNames.stripExtension(name), "",
+                                              IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+        entriesStream = dir.openInput(entriesFileName, IOContext.READONCE);
+        CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
+        final int numEntries = entriesStream.readVInt();
+        mapping = new HashMap<String,FileEntry>(numEntries);
+        for (int i = 0; i < numEntries; i++) {
+          final FileEntry fileEntry = new FileEntry();
+          final String id = entriesStream.readString();
+          assert !mapping.containsKey(id): "id=" + id + " was written multiple times in the CFS";
+          mapping.put(id, fileEntry);
+          fileEntry.offset = entriesStream.readLong();
+          fileEntry.length = entriesStream.readLong();
         }
       } else {
         // TODO remove once 3.x is not supported anymore
         mapping = readLegacyEntries(stream, firstInt);
       }
-      success = true;
       return mapping;
+    } catch (IOException ioe) {
+      priorE = ioe;
     } finally {
-      if (success) {
-        IOUtils.close(stream);
-      } else {
-        IOUtils.closeWhileHandlingException(stream);
-      }
+      IOUtils.closeWhileHandlingException(priorE, stream, entriesStream);
     }
+    // this is needed until Java 7's real try-with-resources:
+    throw new AssertionError("impossible to get here");
   }
 
   private static Map<String, FileEntry> readLegacyEntries(IndexInput stream,
