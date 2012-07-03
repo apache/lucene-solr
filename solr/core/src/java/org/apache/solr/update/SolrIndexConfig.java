@@ -157,7 +157,11 @@ public class SolrIndexConfig {
   }
 
   public IndexWriterConfig toIndexWriterConfig(IndexSchema schema) {
-    IndexWriterConfig iwc = new IndexWriterConfig(luceneVersion, schema.getAnalyzer());
+    // so that we can update the analyzer on core reload, we pass null
+    // for the default analyzer, and explicitly pass an analyzer on 
+    // appropriate calls to IndexWriter
+    
+    IndexWriterConfig iwc = new IndexWriterConfig(luceneVersion, null);
     if (maxBufferedDocs != -1)
       iwc.setMaxBufferedDocs(maxBufferedDocs);
 
