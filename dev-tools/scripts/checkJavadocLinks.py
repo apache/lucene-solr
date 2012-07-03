@@ -17,8 +17,8 @@ import traceback
 import os
 import sys
 import re
-from HTMLParser import HTMLParser, HTMLParseError
-import urlparse
+from html.parser import HTMLParser, HTMLParseError
+import urllib.parse as urlparse
 
 reHyperlink = re.compile(r'<a(\s+.*?)>', re.I)
 reAtt = re.compile(r"""(?:\s+([a-z]+)\s*=\s*("[^"]*"|'[^']?'|[^'"\s]+))+""", re.I)
@@ -57,7 +57,7 @@ class FindHyperlinks(HTMLParser):
             pass
           else:
             self.printFile()
-            print '    WARNING: anchor "%s" appears more than once' % name
+            print('    WARNING: anchor "%s" appears more than once' % name)
         else:
           self.anchors.add(name)
       elif href is not None:
@@ -73,8 +73,8 @@ class FindHyperlinks(HTMLParser):
 
   def printFile(self):
     if not self.printed:
-      print
-      print '  ' + self.baseURL
+      print()
+      print('  ' + self.baseURL)
       self.printed = True
                    
 def parse(baseURL, html):
@@ -85,8 +85,8 @@ def parse(baseURL, html):
     parser.close()
   except HTMLParseError:
     parser.printFile()
-    print '  WARNING: failed to parse %s:' % baseURL
-    traceback.print_exc()
+    print('  WARNING: failed to parse %s:' % baseURL)
+    traceback.print_exc(file=sys.stdout)
     failures = True
     return [], []
   
@@ -104,8 +104,8 @@ def checkAll(dirName):
   global failures
 
   # Find/parse all HTML files first
-  print
-  print 'Crawl/parse...'
+  print()
+  print('Crawl/parse...')
   allFiles = {}
 
   if os.path.isfile(dirName):
@@ -131,8 +131,8 @@ def checkAll(dirName):
         allFiles[fullPath] = parse(fullPath, open('%s/%s' % (root, f)).read())
 
   # ... then verify:
-  print
-  print 'Verify...'
+  print()
+  print('Verify...')
   for fullPath, (links, anchors) in allFiles.items():
     #print fullPath
     printed = False
@@ -176,16 +176,16 @@ def checkAll(dirName):
              and os.path.basename(fullPath) != 'Changes.html':
           if not printed:
             printed = True
-            print
-            print fullPath
-          print '  BAD EXTERNAL LINK: %s' % link
+            print()
+            print(fullPath)
+          print('  BAD EXTERNAL LINK: %s' % link)
       elif link.startswith('mailto:'):
         if link.find('@lucene.apache.org') == -1 and link.find('@apache.org') != -1:
           if not printed:
             printed = True
-            print
-            print fullPath
-          print '  BROKEN MAILTO (?): %s' % link
+            print()
+            print(fullPath)
+          print('  BROKEN MAILTO (?): %s' % link)
       elif link.startswith('javascript:'):
         # ok...?
         pass
@@ -200,15 +200,15 @@ def checkAll(dirName):
         if not os.path.exists(link):
           if not printed:
             printed = True
-            print
-            print fullPath
-          print '  BROKEN LINK: %s' % link
+            print()
+            print(fullPath)
+          print('  BROKEN LINK: %s' % link)
       elif anchor is not None and anchor not in allFiles[link][1]:
         if not printed:
           printed = True
-          print
-          print fullPath
-        print '  BROKEN ANCHOR: %s' % origLink
+          print()
+          print(fullPath)
+        print('  BROKEN ANCHOR: %s' % origLink)
 
     failures = failures or printed
 
@@ -216,8 +216,8 @@ def checkAll(dirName):
 
 if __name__ == '__main__':
   if checkAll(sys.argv[1]):
-    print
-    print 'Broken javadocs links were found!'
+    print()
+    print('Broken javadocs links were found!')
     sys.exit(1)
   sys.exit(0)
   
