@@ -147,10 +147,14 @@
     </fieldtype>
 
     <fieldtype name="teststop" class="solr.TextField">
-       <analyzer>
+      <analyzer type="index">
         <tokenizer class="solr.LowerCaseTokenizerFactory"/>
         <filter class="solr.StandardFilterFactory"/>
         <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.LowerCaseTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
       </analyzer>
     </fieldtype>
 
