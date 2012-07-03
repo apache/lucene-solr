@@ -31,6 +31,9 @@ Optimizations
 * LUCENE-4171: Performance improvements to Packed64.
   (Toke Eskildsen via Adrien Grand)
 
+* LUCENE-4184: Performance improvements to the aligned packed bits impl.
+  (Toke Eskildsen, Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,
