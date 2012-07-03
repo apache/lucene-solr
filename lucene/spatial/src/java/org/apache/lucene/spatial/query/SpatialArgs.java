@@ -23,6 +23,8 @@ import com.spatial4j.core.exception.InvalidSpatialArgument;
 import com.spatial4j.core.shape.Shape;
 
 /**
+ * Principally holds the query {@link Shape} and the {@link SpatialOperation}.
+ *
  * @lucene.experimental
  */
 public class SpatialArgs {
@@ -46,34 +48,31 @@ public class SpatialArgs {
     this.shape = shape;
   }
 
-  /**
-   * Check if the arguments make sense -- throw an exception if not
-   */
+  /** Check if the arguments make sense -- throw an exception if not */
   public void validate() throws InvalidSpatialArgument {
     if (operation.isTargetNeedsArea() && !shape.hasArea()) {
       throw new InvalidSpatialArgument(operation + " only supports geometry with area");
     }
   }
 
-  public String toString( SpatialContext context ) {
+  public String toString(SpatialContext context) {
     StringBuilder str = new StringBuilder();
-    str.append( operation.getName() ).append( '(' );
-    str.append( context.toString( shape ) );
-    if( min != null ) {
+    str.append(operation.getName()).append('(');
+    str.append(context.toString(shape));
+    if (min != null) {
       str.append(" min=").append(min);
     }
-    if( max != null ) {
+    if (max != null) {
       str.append(" max=").append(max);
     }
-    str.append(" distPrec=").append(String.format("%.2f%%", distPrecision/100d));
-    str.append( ')' );
+    str.append(" distPrec=").append(String.format("%.2f%%", distPrecision / 100d));
+    str.append(')');
     return str.toString();
   }
 
   @Override
-  public String toString()
-  {
-    return toString( SimpleSpatialContext.GEO_KM );
+  public String toString() {
+    return toString(SimpleSpatialContext.GEO_KM);
   }
 
   //------------------------------------------------
@@ -88,9 +87,7 @@ public class SpatialArgs {
     this.operation = operation;
   }
 
-  /**
-   * Considers {@link SpatialOperation#BBoxWithin} in returning the shape.
-   */
+  /** Considers {@link SpatialOperation#BBoxWithin} in returning the shape. */
   public Shape getShape() {
     if (shape != null && (operation == SpatialOperation.BBoxWithin || operation == SpatialOperation.BBoxIntersects))
       return shape.getBoundingBox();
@@ -102,9 +99,10 @@ public class SpatialArgs {
   }
 
   /**
-   * The fraction of the distance from the center of the query shape to its nearest edge that is considered acceptable
-   * error. The algorithm for computing the distance to the nearest edge is actually a little different. It normalizes
-   * the shape to a square given it's bounding box area:
+   * The fraction of the distance from the center of the query shape to its nearest edge
+   * that is considered acceptable error. The algorithm for computing the distance to the
+   * nearest edge is actually a little different. It normalizes the shape to a square
+   * given it's bounding box area:
    * <pre>sqrt(shape.bbox.area)/2</pre>
    * And the error distance is beyond the shape such that the shape is a minimum shape.
    */

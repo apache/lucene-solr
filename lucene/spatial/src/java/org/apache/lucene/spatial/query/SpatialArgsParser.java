@@ -27,10 +27,32 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 /**
+ * Parses a string that usually looks like "OPERATION(SHAPE)" into a {@link SpatialArgs}
+ * object. The set of operations supported are defined in {@link SpatialOperation}, such
+ * as "Intersects" being a common one. The shape portion is defined by {@link
+ * SpatialContext#readShape(String)}. There are some optional name-value pair parameters
+ * that follow the closing parenthesis.  Example:
+ * <pre>
+ *   Intersects(-10,20,-8,22) distPec=0.025
+ * </pre>
+ * <p/>
+ * In the future it would be good to support something at least semi-standardized like a
+ * variant of <a href="http://docs.geoserver.org/latest/en/user/filter/ecql_reference.html#spatial-predicate">
+ *   [E]CQL</a>.
+ *
  * @lucene.experimental
  */
-public class SpatialArgsParser
-{
+public class SpatialArgsParser {
+
+  /**
+   * Parses a string such as "Intersects(-10,20,-8,22) distPec=0.025".
+   *
+   * @param v   The string to parse. Mandatory.
+   * @param ctx The spatial context. Mandatory.
+   * @return Not null.
+   * @throws InvalidSpatialArgument If there is a problem parsing the string.
+   * @throws InvalidShapeException  Thrown from {@link SpatialContext#readShape(String)}
+   */
   public SpatialArgs parse(String v, SpatialContext ctx) throws InvalidSpatialArgument, InvalidShapeException {
     int idx = v.indexOf('(');
     int edx = v.lastIndexOf(')');
@@ -47,13 +69,13 @@ public class SpatialArgsParser
     }
 
     Shape shape = ctx.readShape(body);
-    SpatialArgs args = new SpatialArgs(op,shape);
+    SpatialArgs args = new SpatialArgs(op, shape);
 
     if (v.length() > (edx + 1)) {
-      body = v.substring( edx+1 ).trim();
+      body = v.substring(edx + 1).trim();
       if (body.length() > 0) {
-        Map<String,String> aa = parseMap(body);
-        args.setMin(readDouble(aa.remove("min")) );
+        Map<String, String> aa = parseMap(body);
+        args.setMin(readDouble(aa.remove("min")));
         args.setMax(readDouble(aa.remove("max")));
         args.setDistPrecision(readDouble(aa.remove("distPrec")));
         if (!aa.isEmpty()) {
@@ -65,15 +87,15 @@ public class SpatialArgsParser
   }
 
   protected static Double readDouble(String v) {
-      return v == null ? null : Double.valueOf(v);
+    return v == null ? null : Double.valueOf(v);
   }
 
   protected static boolean readBool(String v, boolean defaultValue) {
-      return v == null ? defaultValue : Boolean.parseBoolean(v);
+    return v == null ? defaultValue : Boolean.parseBoolean(v);
   }
 
-  protected static Map<String,String> parseMap(String body) {
-    Map<String,String> map = new HashMap<String,String>();
+  protected static Map<String, String> parseMap(String body) {
+    Map<String, String> map = new HashMap<String, String>();
     StringTokenizer st = new StringTokenizer(body, " \n\t");
     while (st.hasMoreTokens()) {
       String a = st.nextToken();
