@@ -35,6 +35,10 @@ New Features
 * SOLR-3488: Added a Collection management API for SolrCloud.
   (Tommaso Teofili, Sami Siren, yonik, Mark Miller)
 
+* SOLR-3559: Full deleteByQuery support with SolrCloud distributed indexing.
+  All replicas of a shard will be consistent, even if updates arrive in a
+  different order on different replicas.  (yonik)
+
 Bug Fixes
 
 * SOLR-3582: Our ZooKeeper watchers respond to session events as if they are change events, 
