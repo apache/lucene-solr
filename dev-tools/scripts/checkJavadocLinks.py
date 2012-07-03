@@ -128,7 +128,7 @@ def checkAll(dirName):
         # deprecated-list.html can fail to escape generics types
         fullPath = os.path.join(root, f)
         #print '  %s' % fullPath
-        allFiles[fullPath] = parse(fullPath, open('%s/%s' % (root, f)).read())
+        allFiles[fullPath] = parse(fullPath, open('%s/%s' % (root, f), encoding='UTF-8').read())
 
   # ... then verify:
   print()
