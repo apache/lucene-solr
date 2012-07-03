@@ -122,50 +122,43 @@ public final class CompoundFileDirectory extends Directory {
   /** Helper method that reads CFS entries from an input stream */
   private static final Map<String, FileEntry> readEntries(
       IndexInputSlicer handle, Directory dir, String name) throws IOException {
-    final IndexInput stream = handle.openFullSlice();
-    final Map<String, FileEntry> mapping;
-    boolean success = false;
+    IOException priorE = null;
+    IndexInput stream = null, entriesStream = null;
     try {
+      stream = handle.openFullSlice();
       final int firstInt = stream.readInt();
       // NOTE: as long as we want to throw indexformattooold (vs corruptindexexception), we need
       // to read the magic ourselves. See SegmentInfos which also has this.
       if (firstInt == CodecUtil.CODEC_MAGIC) {
         CodecUtil.checkHeaderNoMagic(stream, CompoundFileWriter.DATA_CODEC, 
             CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
-        IndexInput input = null;
-        try {
-          final String entriesFileName = IndexFileNames.segmentFileName(
-                                                IndexFileNames.stripExtension(name), "",
-                                                IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-          input = dir.openInput(entriesFileName, IOContext.READONCE);
-          CodecUtil.checkHeader(input, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
-          final int numEntries = input.readVInt();
-          mapping = new HashMap<String, CompoundFileDirectory.FileEntry>(
-              numEntries);
-          for (int i = 0; i < numEntries; i++) {
-            final FileEntry fileEntry = new FileEntry();
-            final String id = input.readString();
-            assert !mapping.containsKey(id): "id=" + id + " was written multiple times in the CFS";
-            mapping.put(id, fileEntry);
-            fileEntry.offset = input.readLong();
-            fileEntry.length = input.readLong();
-          }
-          success = true;
-          return mapping;
-        } finally {
-          IOUtils.close(input);
+        final String entriesFileName = IndexFileNames.segmentFileName(
+                                              IndexFileNames.stripExtension(name), "",
+                                              IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+        entriesStream = dir.openInput(entriesFileName, IOContext.READONCE);
+        CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
+        final int numEntries = entriesStream.readVInt();
+        final Map<String, FileEntry> mapping = new HashMap<String,FileEntry>(numEntries);
+        for (int i = 0; i < numEntries; i++) {
+          final FileEntry fileEntry = new FileEntry();
+          final String id = entriesStream.readString();
+          assert !mapping.containsKey(id): "id=" + id + " was written multiple times in the CFS";
+          mapping.put(id, fileEntry);
+          fileEntry.offset = entriesStream.readLong();
+          fileEntry.length = entriesStream.readLong();
         }
+        return mapping;
       } else {
         throw new IndexFormatTooOldException(stream, firstInt,
             CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
+    } catch (IOException ioe) {
+      priorE = ioe;
     } finally {
-      if (success) {
-        IOUtils.close(stream);
-      } else {
-        IOUtils.closeWhileHandlingException(stream);
-      }
+      IOUtils.closeWhileHandlingException(priorE, stream, entriesStream);
     }
+    // this is needed until Java 7's real try-with-resources:
+    throw new AssertionError("impossible to get here");
   }
   
   public Directory getDirectory() {
