@@ -20,15 +20,17 @@ package org.apache.lucene.spatial.query;
 import com.spatial4j.core.exception.InvalidSpatialArgument;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * A clause that compares a stored geometry to a supplied geometry.
  *
  * @see <a href="http://edndoc.esri.com/arcsde/9.1/general_topics/understand_spatial_relations.htm">
  *   ESRIs docs on spatial relations</a>
- * @see <a href="http://docs.geoserver.org/latest/en/user/filter/ecql_reference.html#spatial-predicate">
- *   GeoServer ECQL Spatial Predicates</a>
  *
  * @lucene.experimental
  */
