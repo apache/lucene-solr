@@ -139,6 +139,49 @@ class Packed64 extends PackedInts.MutableImpl {
   }
 
   @Override
+  public int get(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    len = Math.min(len, valueCount - index);
+    assert off + len <= arr.length;
+
+    final int originalIndex = index;
+    final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
+
+    // go to the next block where the value does not span across two blocks
+    final int offsetInBlocks = index % op.values();
+    if (offsetInBlocks != 0) {
+      for (int i = offsetInBlocks; i < op.values() && len > 0; ++i) {
+        arr[off++] = get(index++);
+        --len;
+      }
+      if (len == 0) {
+        return index - originalIndex;
+      }
+    }
+
+    // bulk get
+    assert index % op.values() == 0;
+    int blockIndex = (int) ((long) index * bitsPerValue) >>> BLOCK_BITS;
+    assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
+    final int iterations = len / op.values();
+    op.get(blocks, blockIndex, arr, off, iterations);
+    final int gotValues = iterations * op.values();
+    index += gotValues;
+    len -= gotValues;
+    assert len >= 0;
+
+    if (index > originalIndex) {
+      // stay at the block boundary
+      return index - originalIndex;
+    } else {
+      // no progress so far => already at a block boundary but no full block to get
+      assert index == originalIndex;
+      return super.get(index, arr, off, len);
+    }
+  }
+
+  @Override
   public void set(final int index, final long value) {
     // The abstract index in a contiguous bit stream
     final long majorBitPos = (long)index * bitsPerValue;
@@ -159,6 +202,48 @@ class Packed64 extends PackedInts.MutableImpl {
         | (value << (BLOCK_SIZE - endBits));
   }
 
+  @Override
+  public int set(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    len = Math.min(len, valueCount - index);
+    assert off + len <= arr.length;
+
+    final int originalIndex = index;
+    final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
+
+    // go to the next block where the value does not span across two blocks
+    final int offsetInBlocks = index % op.values();
+    if (offsetInBlocks != 0) {
+      for (int i = offsetInBlocks; i < op.values() && len > 0; ++i) {
+        set(index++, arr[off++]);
+        --len;
+      }
+      if (len == 0) {
+        return index - originalIndex;
+      }
+    }
+
+    // bulk get
+    assert index % op.values() == 0;
+    int blockIndex = (int) ((long) index * bitsPerValue) >>> BLOCK_BITS;
+    assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
+    final int iterations = len / op.values();
+    op.set(blocks, blockIndex, arr, off, iterations);
+    final int setValues = iterations * op.values();
+    index += setValues;
+    len -= setValues;
+    assert len >= 0;
+
+    if (index > originalIndex) {
+      // stay at the block boundary
+      return index - originalIndex;
+    } else {
+      // no progress so far => already at a block boundary but no full block to get
+      assert index == originalIndex;
+      return super.set(index, arr, off, len);
+    }
+  }
 
   @Override
   public String toString() {

@@ -58,12 +58,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     return Arrays.binarySearch(SUPPORTED_BITS_PER_VALUE, bitsPerValue) >= 0;
   }
 
-  public static float overheadPerValue(int bitsPerValue) {
-    int valuesPerBlock = 64 / bitsPerValue;
-    int overhead = 64 %% bitsPerValue;
-    return (float) overhead / valuesPerBlock;
-  }
-
   private static int requiredCapacity(int valueCount, int valuesPerBlock) {
     return valueCount / valuesPerBlock
         + (valueCount %% valuesPerBlock == 0 ? 0 : 1);
@@ -111,16 +105,14 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
 
     // bulk get
     assert index %% valuesPerBlock == 0;
-    final long readMask = (1L << bitsPerValue) - 1;
-    final int startBlock = index / valuesPerBlock;
-    final int endBlock = (index + len) / valuesPerBlock;
-    final int diff = (endBlock - startBlock) * valuesPerBlock;
+    final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
+    assert op.blocks() == 1;
+    assert op.values() == valuesPerBlock;
+    final int blockIndex = index / valuesPerBlock;
+    final int nblocks = (index + len) / valuesPerBlock - blockIndex;
+    op.get(blocks, blockIndex, arr, off, nblocks);
+    final int diff = nblocks * valuesPerBlock;
     index += diff; len -= diff;
-    for (int block = startBlock; block < endBlock; ++block) {
-      for (int i = 0; i < valuesPerBlock; ++i) {
-        arr[off++] = (blocks[block] >>> (i * bitsPerValue)) & readMask;
-      }
-    }
 
     if (index > originalIndex) {
       // stay at the block boundary
@@ -157,17 +149,14 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
 
     // bulk set
     assert index %% valuesPerBlock == 0;
-    final int startBlock = index / valuesPerBlock;
-    final int endBlock = (index + len) / valuesPerBlock;
-    final int diff = (endBlock - startBlock) * valuesPerBlock;
+    final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
+    assert op.blocks() == 1;
+    assert op.values() == valuesPerBlock;
+    final int blockIndex = index / valuesPerBlock;
+    final int nblocks = (index + len) / valuesPerBlock - blockIndex;
+    op.set(blocks, blockIndex, arr, off, nblocks);
+    final int diff = nblocks * valuesPerBlock;
     index += diff; len -= diff;
-    for (int block = startBlock; block < endBlock; ++block) {
-      long next = 0L;
-      for (int i = 0; i < valuesPerBlock; ++i) {
-        next |= (arr[off++] << (i * bitsPerValue));
-      }
-      blocks[block] = next;
-    }
 
     if (index > originalIndex) {
       // stay at the block boundary
@@ -221,8 +210,8 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
   }
 
   @Override
-  protected int getFormat() {
-    return PackedInts.PACKED_SINGLE_BLOCK;
+  protected PackedInts.Format getFormat() {
+    return PackedInts.Format.PACKED_SINGLE_BLOCK;
   }
 
   @Override
