@@ -63,17 +63,15 @@ public final class BulkVIntPostingsFormat extends PostingsFormat {
     this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, DEFAULT_BLOCK_SIZE);
   }
 
-  // nocommit: can't expose this until we write blockSize
+  // nocommit: can't make this public until we write blockSize
   // into index somewhere (where/how? private file?  pass through to
   // sep somehow?)
-  /*
-  public BulkVIntPostingsFormat(int minBlockSize, int maxBlockSize, int blockSize) {
+  private BulkVIntPostingsFormat(int minBlockSize, int maxBlockSize, int blockSize) {
     super("BulkVInt");
     this.blockSize = blockSize;
     this.minBlockSize = minBlockSize;
     this.maxBlockSize = maxBlockSize;
   }
-  */
 
   @Override
   public String toString() {
