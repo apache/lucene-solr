@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.LongsRef;
 
 import java.io.IOException;
 
@@ -34,7 +35,6 @@ import java.io.IOException;
  *
  * @lucene.internal
  */
-
 public class PackedInts {
 
   /**
@@ -62,12 +62,184 @@ public class PackedInts {
    */
   public static final int DEFAULT_BUFFER_SIZE = 1024; // 1K
 
-  final static String CODEC_NAME = "PackedInts";
-  final static int VERSION_START = 0;
-  final static int VERSION_CURRENT = VERSION_START;
+  public final static String CODEC_NAME = "PackedInts";
+  public final static int VERSION_START = 0;
+  public final static int VERSION_CURRENT = VERSION_START;
 
-  static final int PACKED = 0;
-  static final int PACKED_SINGLE_BLOCK = 1;
+  /**
+   * A format to write packed ints.
+   *
+   * @lucene.internal
+   */
+  public enum Format {
+    /**
+     * Compact format, all bits are written contiguously.
+     */
+    PACKED(0) {
+
+      @Override
+      public int nblocks(int bitsPerValue, int values) {
+        return (int) Math.ceil((double) values * bitsPerValue / 64);
+      }
+
+    },
+
+    /**
+     * A format that may insert padding bits to improve encoding and decoding
+     * speed. Since this format doesn't support all possible bits per value, you
+     * should never use it directly, but rather use
+     * {@link PackedInts#fastestFormatAndBits(int, int, float)} to find the
+     * format that best suits your needs.
+     */
+    PACKED_SINGLE_BLOCK(1) {
+
+      @Override
+      public int nblocks(int bitsPerValue, int values) {
+        final int valuesPerBlock = 64 / bitsPerValue;
+        return (int) Math.ceil((double) values / valuesPerBlock);
+      }
+
+      @Override
+      public boolean isSupported(int bitsPerValue) {
+        return Packed64SingleBlock.isSupported(bitsPerValue);
+      }
+
+      @Override
+      public float overheadPerValue(int bitsPerValue) {
+        assert isSupported(bitsPerValue);
+        final int valuesPerBlock = 64 / bitsPerValue;
+        final int overhead = 64 % bitsPerValue;
+        return (float) overhead / valuesPerBlock;
+      }
+
+    };
+
+    /**
+     * Get a format according to its ID.
+     */
+    public static Format byId(int id) {
+      for (Format format : Format.values()) {
+        if (format.getId() == id) {
+          return format;
+        }
+      }
+      throw new IllegalArgumentException("Unknown format id: " + id);
+    }
+
+    private Format(int id) {
+      this.id = id;
+    }
+
+    public int id;
+
+    /**
+     * Returns the ID of the format.
+     */
+    public int getId() {
+      return id;
+    }
+
+    /**
+     * Computes how many blocks are needed to store <code>values</code> values
+     * of size <code>bitsPerValue</code>.
+     */
+    public abstract int nblocks(int bitsPerValue, int values);
+
+    /**
+     * Tests whether the provided number of bits per value is supported by the
+     * format.
+     */
+    public boolean isSupported(int bitsPerValue) {
+      return bitsPerValue >= 1 && bitsPerValue <= 64;
+    }
+
+    /**
+     * Returns the overhead per value, in bits.
+     */
+    public float overheadPerValue(int bitsPerValue) {
+      assert isSupported(bitsPerValue);
+      return 0f;
+    }
+
+    /**
+     * Returns the overhead ratio (<code>overhead per value / bits per value</code>).
+     */
+    public final float overheadRatio(int bitsPerValue) {
+      assert isSupported(bitsPerValue);
+      return overheadPerValue(bitsPerValue) / bitsPerValue;
+    }
+  }
+
+  /**
+   * Simple class that holds a format and a number of bits per value.
+   */
+  public static class FormatAndBits {
+    public final Format format;
+    public final int bitsPerValue;
+    public FormatAndBits(Format format, int bitsPerValue) {
+      this.format = format;
+      this.bitsPerValue = bitsPerValue;
+    }
+  }
+
+  /**
+   * Try to find the {@link Format} and number of bits per value that would
+   * restore from disk the fastest reader whose overhead is less than
+   * <code>acceptableOverheadRatio</code>.
+   * </p><p>
+   * The <code>acceptableOverheadRatio</code> parameter makes sense for
+   * random-access {@link Reader}s. In case you only plan to perform
+   * sequential access on this stream later on, you should probably use
+   * {@link PackedInts#COMPACT}.
+   * </p><p>
+   * If you don't know how many values you are going to write, use
+   * <code>valueCount = -1</code>.
+   */
+  public static FormatAndBits fastestFormatAndBits(int valueCount, int bitsPerValue, float acceptableOverheadRatio) {
+    if (valueCount == -1) {
+      valueCount = Integer.MAX_VALUE;
+    }
+
+    acceptableOverheadRatio = Math.max(COMPACT, acceptableOverheadRatio);
+    acceptableOverheadRatio = Math.min(FASTEST, acceptableOverheadRatio);
+    float acceptableOverheadPerValue = acceptableOverheadRatio * bitsPerValue; // in bits
+
+    int maxBitsPerValue = bitsPerValue + (int) acceptableOverheadPerValue;
+
+    int actualBitsPerValue = -1;
+    Format format = Format.PACKED;
+
+    if (bitsPerValue <= 8 && maxBitsPerValue >= 8) {
+      actualBitsPerValue = 8;
+    } else if (bitsPerValue <= 16 && maxBitsPerValue >= 16) {
+      actualBitsPerValue = 16;
+    } else if (bitsPerValue <= 32 && maxBitsPerValue >= 32) {
+      actualBitsPerValue = 32;
+    } else if (bitsPerValue <= 64 && maxBitsPerValue >= 64) {
+      actualBitsPerValue = 64;
+    } else if (valueCount <= Packed8ThreeBlocks.MAX_SIZE && bitsPerValue <= 24 && maxBitsPerValue >= 24) {
+      actualBitsPerValue = 24;
+    } else if (valueCount <= Packed16ThreeBlocks.MAX_SIZE && bitsPerValue <= 48 && maxBitsPerValue >= 48) {
+      actualBitsPerValue = 48;
+    } else {
+      for (int bpv = bitsPerValue; bpv <= maxBitsPerValue; ++bpv) {
+        if (Format.PACKED_SINGLE_BLOCK.isSupported(bpv)) {
+          float overhead = Format.PACKED_SINGLE_BLOCK.overheadPerValue(bpv);
+          float acceptableOverhead = acceptableOverheadPerValue + bitsPerValue - bpv;
+          if (overhead <= acceptableOverhead) {
+            actualBitsPerValue = bpv;
+            format = Format.PACKED_SINGLE_BLOCK;
+            break;
+          }
+        }
+      }
+      if (actualBitsPerValue < 0) {
+        actualBitsPerValue = bitsPerValue;
+      }
+    }
+
+    return new FormatAndBits(format, actualBitsPerValue);
+  }
 
   /**
    * A read-only random access array of positive integers.
@@ -132,28 +304,37 @@ public class PackedInts {
   public static interface ReaderIterator extends Closeable {
     /** Returns next value */
     long next() throws IOException;
+    /** Returns at least 1 and at most <code>count</code> next values,
+     * the returned ref MUST NOT be modified */
+    LongsRef next(int count) throws IOException;
     /** Returns number of bits per value */
     int getBitsPerValue();
     /** Returns number of values */
     int size();
     /** Returns the current position */
     int ord();
-    /** Skips to the given ordinal and returns its value.
-     * @return the value at the given position
-     * @throws IOException if reading the value throws an IOException*/
-    long advance(int ord) throws IOException;
   }
 
   static abstract class ReaderIteratorImpl implements ReaderIterator {
 
-    protected final IndexInput in;
+    protected final DataInput in;
     protected final int bitsPerValue;
     protected final int valueCount;
 
-    protected ReaderIteratorImpl(int valueCount, int bitsPerValue, IndexInput in) {
+    protected ReaderIteratorImpl(int valueCount, int bitsPerValue, DataInput in) {
       this.in = in;
       this.bitsPerValue = bitsPerValue;
       this.valueCount = valueCount;
+    }
+
+    @Override
+    public long next() throws IOException {
+      LongsRef nextValues = next(1);
+      assert nextValues.length > 0;
+      final long result = nextValues.longs[nextValues.offset];
+      ++nextValues.offset;
+      --nextValues.length;
+      return result;
     }
 
     @Override
@@ -168,7 +349,9 @@ public class PackedInts {
 
     @Override
     public void close() throws IOException {
-      in.close();
+      if (in instanceof Closeable) {
+        ((Closeable) in).close();
+      }
     }
   }
 
@@ -217,7 +400,7 @@ public class PackedInts {
    * A simple base for Readers that keeps track of valueCount and bitsPerValue.
    * @lucene.internal
    */
-  public static abstract class ReaderImpl implements Reader {
+  static abstract class ReaderImpl implements Reader {
     protected final int bitsPerValue;
     protected final int valueCount;
 
@@ -257,7 +440,7 @@ public class PackedInts {
 
   }
 
-  public static abstract class MutableImpl extends ReaderImpl implements Mutable {
+  static abstract class MutableImpl extends ReaderImpl implements Mutable {
 
     protected MutableImpl(int valueCount, int bitsPerValue) {
       super(valueCount, bitsPerValue);
@@ -283,13 +466,15 @@ public class PackedInts {
       }
     }
 
-    protected int getFormat() {
-      return PACKED;
+    protected Format getFormat() {
+      return Format.PACKED;
     }
 
     @Override
     public void save(DataOutput out) throws IOException {
-      Writer writer = getWriterByFormat(out, valueCount, bitsPerValue, getFormat());
+      Writer writer = getWriterNoHeader(out, getFormat(),
+          valueCount, bitsPerValue, DEFAULT_BUFFER_SIZE);
+      writer.writeHeader();
       for (int i = 0; i < valueCount; ++i) {
         writer.add(get(i));
       }
@@ -302,121 +487,209 @@ public class PackedInts {
    */
   public static abstract class Writer {
     protected final DataOutput out;
-    protected final int bitsPerValue;
     protected final int valueCount;
+    protected final int bitsPerValue;
 
     protected Writer(DataOutput out, int valueCount, int bitsPerValue)
       throws IOException {
       assert bitsPerValue <= 64;
-
+      assert valueCount >= 0 || valueCount == -1;
       this.out = out;
       this.valueCount = valueCount;
       this.bitsPerValue = bitsPerValue;
+    }
+
+    void writeHeader() throws IOException {
+      assert valueCount != -1;
       CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
       out.writeVInt(bitsPerValue);
       out.writeVInt(valueCount);
-      out.writeVInt(getFormat());
+      out.writeVInt(getFormat().getId());
     }
 
-    protected abstract int getFormat();
+    /** The format used to serialize values. */
+    protected abstract PackedInts.Format getFormat();
+
+    /** Add a value to the stream. */
     public abstract void add(long v) throws IOException;
+
+    /** The number of bits per value. */
+    public final int bitsPerValue() {
+      return bitsPerValue;
+    }
+
+    /** Perform end-of-stream operations. */
     public abstract void finish() throws IOException;
+
+    /**
+     * Returns the current ord in the stream (number of values that have been
+     * written so far minus one).
+     */
+    public abstract int ord();
   }
 
   /**
-   * Retrieve PackedInt data from the DataInput and return a packed int
-   * structure based on it.
+   * Expert: Restore a {@link Reader} from a stream without reading metadata at
+   * the beginning of the stream. This method is useful to restore data from
+   * streams which have been created using
+   * {@link PackedInts#getWriterNoHeader(DataOutput, Format, int, int, int)}.
    *
-   * @param in positioned at the beginning of a stored packed int structure.
-   * @return a read only random access capable array of positive integers.
-   * @throws IOException if the structure could not be retrieved.
+   * @param in           the stream to read data from, positioned at the beginning of the packed values
+   * @param format       the format used to serialize
+   * @param version      the version used to serialize the data
+   * @param valueCount   how many values the stream holds
+   * @param bitsPerValue the number of bits per value
+   * @return             a Reader
+   * @throws IOException
+   * @see PackedInts#getWriterNoHeader(DataOutput, Format, int, int, int)
    * @lucene.internal
    */
-  public static Reader getReader(DataInput in) throws IOException {
-    CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
-    final int bitsPerValue = in.readVInt();
-    assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
-    final int valueCount = in.readVInt();
-    final int format = in.readVInt();
-
+  public static Reader getReaderNoHeader(DataInput in, Format format, int version,
+      int valueCount, int bitsPerValue) throws IOException {
     switch (format) {
+      case PACKED_SINGLE_BLOCK:
+        return Packed64SingleBlock.create(in, valueCount, bitsPerValue);
       case PACKED:
         switch (bitsPerValue) {
           case 8:
             return new Direct8(in, valueCount);
           case 16:
             return new Direct16(in, valueCount);
-          case 24:
-            return new Packed8ThreeBlocks(in, valueCount);
           case 32:
             return new Direct32(in, valueCount);
-          case 48:
-            return new Packed16ThreeBlocks(in, valueCount);
           case 64:
             return new Direct64(in, valueCount);
-          default:
-            return new Packed64(in, valueCount, bitsPerValue);
+          case 24:
+            if (valueCount <= Packed8ThreeBlocks.MAX_SIZE) {
+              return new Packed8ThreeBlocks(in, valueCount);
+            }
+            break;
+          case 48:
+            if (valueCount <= Packed16ThreeBlocks.MAX_SIZE) {
+              return new Packed16ThreeBlocks(in, valueCount);
+            }
+            break;
         }
-      case PACKED_SINGLE_BLOCK:
-        return Packed64SingleBlock.create(in, valueCount, bitsPerValue);
+        return new Packed64(in, valueCount, bitsPerValue);
       default:
         throw new AssertionError("Unknwown Writer format: " + format);
     }
   }
 
   /**
+   * Restore a {@link Reader} from a stream.
+   *
+   * @param in           the stream to read data from
+   * @return             a Reader
+   * @throws IOException
+   * @lucene.internal
+   */
+  public static Reader getReader(DataInput in) throws IOException {
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
+    final int bitsPerValue = in.readVInt();
+    assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
+    final int valueCount = in.readVInt();
+    final Format format = Format.byId(in.readVInt());
+
+    return getReaderNoHeader(in, format, version, valueCount, bitsPerValue);
+  }
+
+  /**
+   * Expert: Restore a {@link ReaderIterator} from a stream without reading
+   * metadata at the beginning of the stream. This method is useful to restore
+   * data from streams which have been created using
+   * {@link PackedInts#getWriterNoHeader(DataOutput, Format, int, int, int)}.
+   *
+   * @param in           the stream to read data from, positioned at the beginning of the packed values
+   * @param format       the format used to serialize
+   * @param version      the version used to serialize the data
+   * @param valueCount   how many values the stream holds
+   * @param bitsPerValue the number of bits per value
+   * @param mem          how much memory the iterator is allowed to use to read-ahead (likely to speed up iteration)
+   * @return             a ReaderIterator
+   * @throws IOException
+   * @see PackedInts#getWriterNoHeader(DataOutput, Format, int, int, int)
+   * @lucene.internal
+   */
+  public static ReaderIterator getReaderIteratorNoHeader(DataInput in, Format format, int version,
+      int valueCount, int bitsPerValue, int mem) throws IOException {
+    return new PackedReaderIterator(format, valueCount, bitsPerValue, in, mem);
+  }
+
+  /**
    * Retrieve PackedInts as a {@link ReaderIterator}
    * @param in positioned at the beginning of a stored packed int structure.
+   * @param mem how much memory the iterator is allowed to use to read-ahead (likely to speed up iteration)
    * @return an iterator to access the values
    * @throws IOException if the structure could not be retrieved.
    * @lucene.internal
    */
-  public static ReaderIterator getReaderIterator(IndexInput in) throws IOException {
-    CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
+  public static ReaderIterator getReaderIterator(DataInput in, int mem) throws IOException {
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
-    final int format = in.readVInt();
-    switch (format) {
-      case PACKED:
-        return new PackedReaderIterator(valueCount, bitsPerValue, in);
-      case PACKED_SINGLE_BLOCK:
-        return new Packed64SingleBlockReaderIterator(valueCount, bitsPerValue, in);
-      default:
-        throw new AssertionError("Unknwown Writer format: " + format);
-    }
+    final Format format = Format.byId(in.readVInt());
+    return getReaderIteratorNoHeader(in, format, version, valueCount, bitsPerValue, mem);
   }
-  
+
   /**
-   * Retrieve PackedInts.Reader that does not load values
-   * into RAM but rather accesses all values via the
-   * provided IndexInput.
-   * @param in positioned at the beginning of a stored packed int structure.
-   * @return an Reader to access the values
-   * @throws IOException if the structure could not be retrieved.
+   * Expert: Construct a direct {@link Reader} from a stream without reading
+   * metadata at the beginning of the stream. This method is useful to restore
+   * data from streams which have been created using
+   * {@link PackedInts#getWriterNoHeader(DataOutput, Format, int, int, int)}.
+   * </p><p>
+   * The returned reader will have very little memory overhead, but every call
+   * to {@link Reader#get(int)} is likely to perform a disk seek.
+   *
+   * @param in           the stream to read data from
+   * @param format       the format used to serialize
+   * @param version      the version used to serialize the data
+   * @param valueCount   how many values the stream holds
+   * @param bitsPerValue the number of bits per value
+   * @return a direct Reader
+   * @throws IOException
    * @lucene.internal
    */
-  public static Reader getDirectReader(IndexInput in) throws IOException {
-    CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
-    final int bitsPerValue = in.readVInt();
-    assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
-    final int valueCount = in.readVInt();
-    final int format = in.readVInt();
+  public static Reader getDirectReaderNoHeader(IndexInput in, Format format,
+      int version, int valueCount, int bitsPerValue) throws IOException {
     switch (format) {
       case PACKED:
         return new DirectPackedReader(bitsPerValue, valueCount, in);
       case PACKED_SINGLE_BLOCK:
         return new DirectPacked64SingleBlockReader(bitsPerValue, valueCount, in);
       default:
-        throw new AssertionError("Unknwown Writer format: " + format);
+        throw new AssertionError("Unknwown format: " + format);
     }
+  }
+
+  /**
+   * Construct a direct {@link Reader} from an {@link IndexInput}. This method
+   * is useful to restore data from streams which have been created using
+   * {@link PackedInts#getWriter(DataOutput, int, int, float)}.
+   * </p><p>
+   * The returned reader will have very little memory overhead, but every call
+   * to {@link Reader#get(int)} is likely to perform a disk seek.
+   *
+   * @param in           the stream to read data from
+   * @return a direct Reader
+   * @throws IOException
+   * @lucene.internal
+   */
+  public static Reader getDirectReader(IndexInput in) throws IOException {
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
+    final int bitsPerValue = in.readVInt();
+    assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
+    final int valueCount = in.readVInt();
+    final Format format = Format.byId(in.readVInt());
+    return getDirectReaderNoHeader(in, format, version, valueCount, bitsPerValue);
   }
   
   /**
    * Create a packed integer array with the given amount of values initialized
    * to 0. the valueCount and the bitsPerValue cannot be changed after creation.
    * All Mutables known by this factory are kept fully in RAM.
-   * 
+   * </p><p>
    * Positive values of <code>acceptableOverheadRatio</code> will trade space
    * for speed by selecting a faster but potentially less memory-efficient
    * implementation. An <code>acceptableOverheadRatio</code> of
@@ -433,103 +706,130 @@ public class PackedInts {
    */
   public static Mutable getMutable(int valueCount,
       int bitsPerValue, float acceptableOverheadRatio) {
-    acceptableOverheadRatio = Math.max(COMPACT, acceptableOverheadRatio);
-    acceptableOverheadRatio = Math.min(FASTEST, acceptableOverheadRatio);
-    float acceptableOverheadPerValue = acceptableOverheadRatio * bitsPerValue; // in bits
+    assert valueCount >= 0;
 
-    int maxBitsPerValue = bitsPerValue + (int) acceptableOverheadPerValue;
-
-    if (bitsPerValue <= 8 && maxBitsPerValue >= 8) {
-      return new Direct8(valueCount);
-    } else if (bitsPerValue <= 16 && maxBitsPerValue >= 16) {
-      return new Direct16(valueCount);
-    } else if (bitsPerValue <= 32 && maxBitsPerValue >= 32) {
-      return new Direct32(valueCount);
-    } else if (bitsPerValue <= 64 && maxBitsPerValue >= 64) {
-      return new Direct64(valueCount);
-    } else if (valueCount <= Packed8ThreeBlocks.MAX_SIZE && bitsPerValue <= 24 && maxBitsPerValue >= 24) {
-      return new Packed8ThreeBlocks(valueCount);
-    } else if (valueCount <= Packed16ThreeBlocks.MAX_SIZE && bitsPerValue <= 48 && maxBitsPerValue >= 48) {
-      return new Packed16ThreeBlocks(valueCount);
-    } else {
-      for (int bpv = bitsPerValue; bpv <= maxBitsPerValue; ++bpv) {
-        if (Packed64SingleBlock.isSupported(bpv)) {
-          float overhead = Packed64SingleBlock.overheadPerValue(bpv);
-          float acceptableOverhead = acceptableOverheadPerValue + bitsPerValue - bpv;
-          if (overhead <= acceptableOverhead) {
-            return Packed64SingleBlock.create(valueCount, bpv);
-          }
+    final FormatAndBits formatAndBits = fastestFormatAndBits(valueCount, bitsPerValue, acceptableOverheadRatio);
+    switch (formatAndBits.format) {
+      case PACKED_SINGLE_BLOCK:
+        return Packed64SingleBlock.create(valueCount, formatAndBits.bitsPerValue);
+      case PACKED:
+        switch (formatAndBits.bitsPerValue) {
+          case 8:
+            return new Direct8(valueCount);
+          case 16:
+            return new Direct16(valueCount);
+          case 32:
+            return new Direct32(valueCount);
+          case 64:
+            return new Direct64(valueCount);
+          case 24:
+            if (valueCount <= Packed8ThreeBlocks.MAX_SIZE) {
+              return new Packed8ThreeBlocks(valueCount);
+            }
+            break;
+          case 48:
+            if (valueCount <= Packed16ThreeBlocks.MAX_SIZE) {
+              return new Packed16ThreeBlocks(valueCount);
+            }
+            break;
         }
-      }
-      return new Packed64(valueCount, bitsPerValue);
+        return new Packed64(valueCount, formatAndBits.bitsPerValue);
+      default:
+        throw new AssertionError();
     }
   }
 
   /**
-   * Create a packed integer array writer for the given number of values at the
-   * given bits/value. Writers append to the given IndexOutput and has very
-   * low memory overhead.
+   * Expert: Create a packed integer array writer for the given output, format,
+   * value count, and number of bits per value.
+   * </p><p>
+   * The resulting stream will be long-aligned. This means that depending on
+   * the format which is used, up to 63 bits will be wasted. An easy way to
+   * make sure that no space is lost is to always use a <code>valueCount</code>
+   * that is a multiple of 64.
+   * </p><p>
+   * This method does not write any metadata to the stream, meaning that it is
+   * your responsibility to store it somewhere else in order to be able to
+   * recover data from the stream later on:
+   * <ul>
+   *   <li><code>format</code> (using {@link Format#getId()}),</li>
+   *   <li><code>valueCount</code>,</li>
+   *   <li><code>bitsPerValue</code>,</li>
+   *   <li>{@link #VERSION_CURRENT}.</li>
+   * </ul>
+   * </p><p>
+   * It is possible to start writing values without knowing how many of them you
+   * are actually going to write. To do this, just pass <code>-1</code> as
+   * <code>valueCount</code>. On the other hand, for any positive value of
+   * <code>valueCount</code>, the returned writer will make sure that you don't
+   * write more values than expected and pad the end of stream with zeros in
+   * case you have written less than <code>valueCount</code> when calling
+   * {@link Writer#finish()}.
+   * </p><p>
+   * The <code>mem</code> parameter lets you control how much memory can be used
+   * to buffer changes in memory before flushing to disk. High values of
+   * <code>mem</code> are likely to improve throughput. On the other hand, if
+   * speed is not that important to you, a value of <code>0</code> will use as
+   * little memory as possible and should already offer reasonable throughput.
    *
-   * Positive values of <code>acceptableOverheadRatio</code> will trade space
+   * @param out          the data output
+   * @param format       the format to use to serialize the values
+   * @param valueCount   the number of values
+   * @param bitsPerValue the number of bits per value
+   * @param mem          how much memory (in bytes) can be used to speed up serialization
+   * @return             a Writer
+   * @throws IOException
+   * @see PackedInts#getReaderIteratorNoHeader(DataInput, Format, int, int, int, int)
+   * @see PackedInts#getReaderNoHeader(DataInput, Format, int, int, int)
+   * @lucene.internal
+   */
+  public static Writer getWriterNoHeader(
+      DataOutput out, Format format, int valueCount, int bitsPerValue, int mem) throws IOException {
+    return new PackedWriter(format, out, valueCount, bitsPerValue, mem);
+  }
+
+  /**
+   * Create a packed integer array writer for the given output, format, value
+   * count, and number of bits per value.
+   * </p><p>
+   * The resulting stream will be long-aligned. This means that depending on
+   * the format which is used under the hoods, up to 63 bits will be wasted.
+   * An easy way to make sure that no space is lost is to always use a
+   * <code>valueCount</code> that is a multiple of 64.
+   * </p><p>
+   * This method writes metadata to the stream, so that the resulting stream is
+   * sufficient to restore a {@link Reader} from it. You don't need to track
+   * <code>valueCount</code> or <code>bitsPerValue</code> by yourself. In case
+   * this is a problem, you should probably look at
+   * {@link #getWriterNoHeader(DataOutput, Format, int, int, int)}.
+   * </p><p>
+   * The <code>acceptableOverheadRatio</code> parameter controls how
+   * readers that will be restored from this stream trade space
    * for speed by selecting a faster but potentially less memory-efficient
    * implementation. An <code>acceptableOverheadRatio</code> of
    * {@link PackedInts#COMPACT} will make sure that the most memory-efficient
    * implementation is selected whereas {@link PackedInts#FASTEST} will make sure
-   * that the fastest implementation is selected.
+   * that the fastest implementation is selected. In case you are only interested
+   * in reading this stream sequentially later on, you should probably use
+   * {@link PackedInts#COMPACT}.
    *
-   * @param out          the destination for the produced bits.
-   * @param valueCount   the number of elements.
-   * @param bitsPerValue the number of bits available for any given value.
+   * @param out          the data output
+   * @param valueCount   the number of values
+   * @param bitsPerValue the number of bits per value
    * @param acceptableOverheadRatio an acceptable overhead ratio per value
-   * @return a Writer ready for receiving values.
-   * @throws IOException if bits could not be written to out.
+   * @return             a Writer
+   * @throws IOException
    * @lucene.internal
    */
   public static Writer getWriter(DataOutput out,
       int valueCount, int bitsPerValue, float acceptableOverheadRatio)
     throws IOException {
-    acceptableOverheadRatio = Math.max(COMPACT, acceptableOverheadRatio);
-    acceptableOverheadRatio = Math.min(FASTEST, acceptableOverheadRatio);
-    float acceptableOverheadPerValue = acceptableOverheadRatio * bitsPerValue; // in bits
+    assert valueCount >= 0;
 
-    int maxBitsPerValue = bitsPerValue + (int) acceptableOverheadPerValue;
-
-    if (bitsPerValue <= 8 && maxBitsPerValue >= 8) {
-      return getWriterByFormat(out, valueCount, 8, PACKED);
-    } else if (bitsPerValue <= 16 && maxBitsPerValue >= 16) {
-      return getWriterByFormat(out, valueCount, 16, PACKED);
-    } else if (bitsPerValue <= 32 && maxBitsPerValue >= 32) {
-      return getWriterByFormat(out, valueCount, 32, PACKED);
-    } else if (bitsPerValue <= 64 && maxBitsPerValue >= 64) {
-      return getWriterByFormat(out, valueCount, 64, PACKED);
-    } else if (valueCount <= Packed8ThreeBlocks.MAX_SIZE && bitsPerValue <= 24 && maxBitsPerValue >= 24) {
-      return getWriterByFormat(out, valueCount, 24, PACKED);
-    } else if (valueCount <= Packed16ThreeBlocks.MAX_SIZE && bitsPerValue <= 48 && maxBitsPerValue >= 48) {
-      return getWriterByFormat(out, valueCount, 48, PACKED);
-    } else {
-      for (int bpv = bitsPerValue; bpv <= maxBitsPerValue; ++bpv) {
-        if (Packed64SingleBlock.isSupported(bpv)) {
-          float overhead = Packed64SingleBlock.overheadPerValue(bpv);
-          float acceptableOverhead = acceptableOverheadPerValue + bitsPerValue - bpv;
-          if (overhead <= acceptableOverhead) {
-            return getWriterByFormat(out, valueCount, bpv, PACKED_SINGLE_BLOCK);
-          }
-        }
-      }
-      return getWriterByFormat(out, valueCount, bitsPerValue, PACKED);
-    }
-  }
-
-  private static Writer getWriterByFormat(DataOutput out,
-      int valueCount, int bitsPerValue, int format) throws IOException {
-    switch (format) {
-      case PACKED:
-        return new PackedWriter(out, valueCount, bitsPerValue);
-      case PACKED_SINGLE_BLOCK:
-        return new Packed64SingleBlockWriter(out, valueCount, bitsPerValue);
-      default:
-        throw new IllegalArgumentException("Unknown format " + format);
-    }
+    final FormatAndBits formatAndBits = fastestFormatAndBits(valueCount, bitsPerValue, acceptableOverheadRatio);
+    final Writer writer = getWriterNoHeader(out, formatAndBits.format, valueCount, formatAndBits.bitsPerValue, DEFAULT_BUFFER_SIZE);
+    writer.writeHeader();
+    return writer;
   }
 
   /** Returns how many bits are required to hold values up

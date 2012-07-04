@@ -24,6 +24,7 @@ import java.util.Random;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.*;
+import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -57,6 +58,9 @@ public class TestPackedInts extends LuceneTestCase {
       for(int nbits=1;nbits<=64;nbits++) {
         final long maxValue = PackedInts.maxValue(nbits);
         final int valueCount = 100+random().nextInt(500);
+        final int bufferSize = random().nextBoolean()
+            ? _TestUtil.nextInt(random(), 0, 48)
+            : _TestUtil.nextInt(random(), 0, 4096);
         final Directory d = newDirectory();
         
         IndexOutput out = d.createOutput("out.bin", newIOContext(random()));
@@ -79,10 +83,10 @@ public class TestPackedInts extends LuceneTestCase {
         // ensure that finish() added the (valueCount-actualValueCount) missing values
         final long bytes;
         switch (w.getFormat()) {
-          case PackedInts.PACKED:
+          case PACKED:
             bytes = (long) Math.ceil((double) valueCount * w.bitsPerValue / 64) << 3;
             break;
-          case PackedInts.PACKED_SINGLE_BLOCK:
+          case PACKED_SINGLE_BLOCK:
             final int valuesPerBlock = 64 / w.bitsPerValue;
             bytes = (long) Math.ceil((double) valueCount / valuesPerBlock) << 3;
             break;
@@ -97,7 +101,7 @@ public class TestPackedInts extends LuceneTestCase {
           CodecUtil.checkHeader(in, PackedInts.CODEC_NAME, PackedInts.VERSION_START, PackedInts.VERSION_CURRENT); // codec header
           assertEquals(w.bitsPerValue, in.readVInt());
           assertEquals(valueCount, in.readVInt());
-          assertEquals(w.getFormat(), in.readVInt());
+          assertEquals(w.getFormat().getId(), in.readVInt());
           assertEquals(startFp, in.getFilePointer());
           in.close();
         }
@@ -113,37 +117,34 @@ public class TestPackedInts extends LuceneTestCase {
           }
           in.close();
         }
+
         { // test reader iterator next
           IndexInput in = d.openInput("out.bin", newIOContext(random()));
-          PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in);
+          PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in, bufferSize);
           for(int i=0;i<valueCount;i++) {
             assertEquals("index=" + i + " valueCount="
                     + valueCount + " nbits=" + nbits + " for "
                     + r.getClass().getSimpleName(), values[i], r.next());
+            assertEquals(i, r.ord());
           }
           assertEquals(fp, in.getFilePointer());
           in.close();
         }
-        { // test reader iterator next vs. advance
+
+        { // test reader iterator bulk next
           IndexInput in = d.openInput("out.bin", newIOContext(random()));
-          PackedInts.ReaderIterator intsEnum = PackedInts.getReaderIterator(in);
-          for (int i = 0; i < valueCount; i += 
-            1 + ((valueCount - i) <= 20 ? random().nextInt(valueCount - i)
-              : random().nextInt(20))) {
-            final String msg = "index=" + i + " valueCount="
-                + valueCount + " nbits=" + nbits + " for "
-                + intsEnum.getClass().getSimpleName();
-            if (i - intsEnum.ord() == 1 && random().nextBoolean()) {
-              assertEquals(msg, values[i], intsEnum.next());
-            } else {
-              assertEquals(msg, values[i], intsEnum.advance(i));
+          PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in, bufferSize);
+          int i = 0;
+          while (i < valueCount) {
+            final int count = _TestUtil.nextInt(random(), 1, 95);
+            final LongsRef next = r.next(count);
+            for (int k = 0; k < next.length; ++k) {
+              assertEquals("index=" + i + " valueCount="
+                  + valueCount + " nbits=" + nbits + " for "
+                  + r.getClass().getSimpleName(), values[i + k], next.longs[next.offset + k]);
             }
-            assertEquals(msg, i, intsEnum.ord());
+            i += next.length;
           }
-          if (intsEnum.ord() < valueCount - 1)
-            assertEquals(values[valueCount - 1], intsEnum
-                .advance(valueCount - 1));
-          assertEquals(valueCount - 1, intsEnum.ord());
           assertEquals(fp, in.getFilePointer());
           in.close();
         }

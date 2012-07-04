@@ -1,3 +1,5 @@
+// This file has been automatically generated, DO NOT EDIT
+
 package org.apache.lucene.util.packed;
 
 /*
@@ -24,70 +26,31 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * Direct wrapping of 64 bit values to a backing array of longs.
+ * Direct wrapping of 64-bits values to a backing array.
  * @lucene.internal
  */
-class Direct64 extends PackedInts.MutableImpl {
-  private final long[] values;
-  private static final int BITS_PER_VALUE = 64;
+final class Direct64 extends PackedInts.MutableImpl {
+  final long[] values;
 
-  public Direct64(int valueCount) {
-    super(valueCount, BITS_PER_VALUE);
+  Direct64(int valueCount) {
+    super(valueCount, 64);
     values = new long[valueCount];
   }
 
-  public Direct64(DataInput in, int valueCount) throws IOException {
-    super(valueCount, BITS_PER_VALUE);
-    long[] values = new long[valueCount];
-    for(int i=0;i<valueCount;i++) {
+  Direct64(DataInput in, int valueCount) throws IOException {
+    this(valueCount);
+    for (int i = 0; i < valueCount; ++i) {
       values[i] = in.readLong();
     }
-
-    this.values = values;
   }
 
-  /**
-   * Creates an array backed by the given values.
-   * </p><p>
-   * Note: The values are used directly, so changes to the given values will
-   * affect the structure.
-   * @param values   used as the internal backing array.
-   */
-  public Direct64(long[] values) {
-    super(values.length, BITS_PER_VALUE);
-    this.values = values;
-  }
-
+  @Override
   public long get(final int index) {
-    assert index >= 0 && index < size();
     return values[index];
   }
 
-  @Override
-  public int get(int index, long[] arr, int off, int len) {
-    assert index >= 0 && index < valueCount;
-    assert off + len <= arr.length;
-    final int gets = Math.min(valueCount - index, len);
-    System.arraycopy(values, index, arr, off, gets);
-    return gets;
-  }
-
   public void set(final int index, final long value) {
-    values[index] = value;
-  }
-
-  @Override
-  public int set(int index, long[] arr, int off, int len) {
-    assert index >= 0 && index < valueCount;
-    assert off + len <= arr.length;
-    final int sets = Math.min(valueCount - index, len);
-    System.arraycopy(arr, off, values, index, sets);
-    return sets;
-  }
-
-  @Override
-  public void fill(int fromIndex, int toIndex, long val) {
-    Arrays.fill(values, fromIndex, toIndex, val);
+    values[index] = (value);
   }
 
   public long ramBytesUsed() {
@@ -99,7 +62,7 @@ class Direct64 extends PackedInts.MutableImpl {
   }
 
   @Override
-  public long[] getArray() {
+  public Object getArray() {
     return values;
   }
 
@@ -108,4 +71,29 @@ class Direct64 extends PackedInts.MutableImpl {
     return true;
   }
 
+  @Override
+  public int get(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int gets = Math.min(valueCount - index, len);
+    System.arraycopy(values, index, arr, off, gets);
+    return gets;
+  }
+
+  public int set(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int sets = Math.min(valueCount - index, len);
+    System.arraycopy(arr, off, values, index, sets);
+    return sets;
+  }
+
+  @Override
+  public void fill(int fromIndex, int toIndex, long val) {
+    Arrays.fill(values, fromIndex, toIndex, val);
+  }
 }

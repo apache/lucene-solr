@@ -1,3 +1,5 @@
+// This file has been automatically generated, DO NOT EDIT
+
 package org.apache.lucene.util.packed;
 
 /*
@@ -24,62 +26,37 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * Direct wrapping of 16 bit values to a backing array of shorts.
+ * Direct wrapping of 16-bits values to a backing array.
  * @lucene.internal
  */
+final class Direct16 extends PackedInts.MutableImpl {
+  final short[] values;
 
-class Direct16 extends PackedInts.MutableImpl {
-  private final short[] values;
-  private static final int BITS_PER_VALUE = 16;
-
-  public Direct16(int valueCount) {
-    super(valueCount, BITS_PER_VALUE);
+  Direct16(int valueCount) {
+    super(valueCount, 16);
     values = new short[valueCount];
   }
 
-  public Direct16(DataInput in, int valueCount) throws IOException {
-    super(valueCount, BITS_PER_VALUE);
-    short[] values = new short[valueCount];
-    for(int i=0;i<valueCount;i++) {
+  Direct16(DataInput in, int valueCount) throws IOException {
+    this(valueCount);
+    for (int i = 0; i < valueCount; ++i) {
       values[i] = in.readShort();
     }
     final int mod = valueCount % 4;
     if (mod != 0) {
-      final int pad = 4-mod;
-      // round out long
-      for(int i=0;i<pad;i++) {
+      for (int i = mod; i < 4; ++i) {
         in.readShort();
       }
     }
-
-    this.values = values;
-  }
-
-  /**
-   * Creates an array backed by the given values.
-   * </p><p>
-   * Note: The values are used directly, so changes to the values will
-   * affect the structure.
-   * @param values   used as the internal backing array.
-   */
-  public Direct16(short[] values) {
-    super(values.length, BITS_PER_VALUE);
-    this.values = values;
-  }
-
-  public long get(final int index) {
-    assert index >= 0 && index < size();
-    return 0xFFFFL & values[index];
-  }
-
-  public void set(final int index, final long value) {
-    values[index] = (short)(value & 0xFFFF);
   }
 
   @Override
-  public void fill(int fromIndex, int toIndex, long val) {
-    assert (val & 0xffffL) == val;
-    Arrays.fill(values, fromIndex, toIndex, (short) val);
+  public long get(final int index) {
+    return values[index] & 0xFFFFL;
+  }
+
+  public void set(final int index, final long value) {
+    values[index] = (short) (value);
   }
 
   public long ramBytesUsed() {
@@ -87,7 +64,7 @@ class Direct16 extends PackedInts.MutableImpl {
   }
 
   public void clear() {
-    Arrays.fill(values, (short)0);
+    Arrays.fill(values, (short) 0L);
   }
 
   @Override
@@ -98,5 +75,36 @@ class Direct16 extends PackedInts.MutableImpl {
   @Override
   public boolean hasArray() {
     return true;
+  }
+
+  @Override
+  public int get(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int gets = Math.min(valueCount - index, len);
+    for (int i = index, o = off, end = index + gets; i < end; ++i, ++o) {
+      arr[o] = values[i] & 0xFFFFL;
+    }
+    return gets;
+  }
+
+  public int set(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int sets = Math.min(valueCount - index, len);
+    for (int i = index, o = off, end = index + sets; i < end; ++i, ++o) {
+      values[i] = (short) arr[o];
+    }
+    return sets;
+  }
+
+  @Override
+  public void fill(int fromIndex, int toIndex, long val) {
+    assert val == (val & 0xFFFFL);
+    Arrays.fill(values, fromIndex, toIndex, (short) val);
   }
 }

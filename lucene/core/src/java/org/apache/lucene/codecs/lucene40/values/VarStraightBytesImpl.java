@@ -121,7 +121,7 @@ class VarStraightBytesImpl {
           final IndexInput cloneIdx = reader.cloneIndex();
           try {
             numDataBytes = cloneIdx.readVLong();
-            final ReaderIterator iter = PackedInts.getReaderIterator(cloneIdx);
+            final ReaderIterator iter = PackedInts.getReaderIterator(cloneIdx, PackedInts.DEFAULT_BUFFER_SIZE);
             for (int i = 0; i < maxDocs; i++) {
               long offset = iter.next();
               ++lastDocID;

@@ -315,10 +315,10 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           try {
             // Subsample the index terms
             clone1.seek(packedIndexStart);
-            final PackedInts.ReaderIterator termsDictOffsetsIter = PackedInts.getReaderIterator(clone1);
+            final PackedInts.ReaderIterator termsDictOffsetsIter = PackedInts.getReaderIterator(clone1, PackedInts.DEFAULT_BUFFER_SIZE);
 
             clone2.seek(packedOffsetsStart);
-            final PackedInts.ReaderIterator termOffsetsIter = PackedInts.getReaderIterator(clone2);
+            final PackedInts.ReaderIterator termOffsetsIter = PackedInts.getReaderIterator(clone2,  PackedInts.DEFAULT_BUFFER_SIZE);
 
             // TODO: often we can get by w/ fewer bits per
             // value, below.. .but this'd be more complex:

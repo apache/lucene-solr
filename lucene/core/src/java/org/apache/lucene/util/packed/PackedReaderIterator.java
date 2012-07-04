@@ -17,76 +17,71 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.IndexInput;
-
+import java.io.EOFException;
 import java.io.IOException;
 
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.util.LongsRef;
+
 final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
-  private long pending;
-  private int pendingBitsLeft;
-  private int position = -1;
 
-  // masks[n-1] masks for bottom n bits
-  private final long[] masks;
+  final PackedInts.Format format;
+  final BulkOperation bulkOperation;
+  final long[] nextBlocks;
+  final LongsRef nextValues;
+  final int iterations;
+  int position;
 
-  public PackedReaderIterator(int valueCount, int bitsPerValue, IndexInput in) {
+  PackedReaderIterator(PackedInts.Format format, int valueCount, int bitsPerValue, DataInput in, int mem) {
     super(valueCount, bitsPerValue, in);
-
-    masks = new long[bitsPerValue];
-
-    long v = 1;
-    for (int i = 0; i < bitsPerValue; i++) {
-      v *= 2;
-      masks[i] = v - 1;
-    }
+    this.format = format;
+    bulkOperation = BulkOperation.of(format, bitsPerValue);
+    iterations = bulkOperation.computeIterations(valueCount, mem);
+    assert iterations > 0;
+    nextBlocks = new long[iterations * bulkOperation.blocks()];
+    nextValues = new LongsRef(new long[iterations * bulkOperation.values()], 0, 0);
+    assert iterations * bulkOperation.values() == nextValues.longs.length;
+    assert iterations * bulkOperation.blocks() == nextBlocks.length;
+    nextValues.offset = nextValues.longs.length;
+    position = -1;
   }
 
-  public long next() throws IOException {
-    if (pendingBitsLeft == 0) {
-      pending = in.readLong();
-      pendingBitsLeft = 64;
-    }
+  @Override
+  public LongsRef next(int count) throws IOException {
+    assert nextValues.length >= 0;
+    assert count > 0;
+    assert nextValues.offset + nextValues.length <= nextValues.longs.length;
     
-    final long result;
-    if (pendingBitsLeft >= bitsPerValue) { // not split
-      result = (pending >> (pendingBitsLeft - bitsPerValue)) & masks[bitsPerValue-1];
-      pendingBitsLeft -= bitsPerValue;
-    } else { // split
-      final int bits1 = bitsPerValue - pendingBitsLeft;
-      final long result1 = (pending & masks[pendingBitsLeft-1]) << bits1;
-      pending = in.readLong();
-      final long result2 = (pending >> (64 - bits1)) & masks[bits1-1];
-      pendingBitsLeft = 64 + pendingBitsLeft - bitsPerValue;
-      result = result1 | result2;
+    nextValues.offset += nextValues.length;
+
+    final int remaining = valueCount - position - 1;
+    if (remaining <= 0) {
+      throw new EOFException();
     }
-    
-    ++position;
-    return result;
+    count = Math.min(remaining, count);
+
+    if (nextValues.offset == nextValues.longs.length) {
+      final int remainingBlocks = format.nblocks(bitsPerValue, remaining);
+      final int blocksToRead = Math.min(remainingBlocks, nextBlocks.length);
+      for (int i = 0; i < blocksToRead; ++i) {
+        nextBlocks[i] = in.readLong();
+      }
+      for (int i = blocksToRead; i < nextBlocks.length; ++i) {
+        nextBlocks[i] = 0L;
+      }
+
+      bulkOperation.get(nextBlocks, 0, nextValues.longs, 0, iterations);
+      nextValues.offset = 0;
+    }
+
+    nextValues.length = Math.min(nextValues.longs.length - nextValues.offset, count);
+    position += nextValues.length;
+    return nextValues;
   }
 
+  @Override
   public int ord() {
     return position;
   }
 
-  public long advance(final int ord) throws IOException{
-    assert ord < valueCount : "ord must be less than valueCount";
-    assert ord > position : "ord must be greater than the current position";
-    final long bits = (long) bitsPerValue;
-    final int posToSkip = ord - 1 - position;
-    final long bitsToSkip = (bits * (long)posToSkip);
-    if (bitsToSkip < pendingBitsLeft) { // enough bits left - no seek required
-      pendingBitsLeft -= bitsToSkip;
-    } else {
-      final long skip = bitsToSkip-pendingBitsLeft;
-      final long closestByte = (skip >> 6) << 3;
-      if (closestByte != 0) { // need to seek 
-        final long filePointer = in.getFilePointer();
-        in.seek(filePointer + closestByte);
-      }
-      pending = in.readLong();
-      pendingBitsLeft = 64 - (int)(skip % 64);
-    }
-    position = ord-1;
-    return next();
-  }
 }

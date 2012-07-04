@@ -19,101 +19,79 @@ package org.apache.lucene.util.packed;
 
 import org.apache.lucene.store.DataOutput;
 
+import java.io.EOFException;
 import java.io.IOException;
 
 // Packs high order byte first, to match
 // IndexOutput.writeInt/Long/Short byte order
 
-/**
- * Generic writer for space-optimal packed values. The resulting bits can be
- * used directly by Packed32, Packed64 and PackedDirect* and will always be
- * long-aligned.
- */
+final class PackedWriter extends PackedInts.Writer {
 
-class PackedWriter extends PackedInts.Writer {
-  private long pending;
-  private int pendingBitPos;
+  boolean finished;
+  final PackedInts.Format format;
+  final BulkOperation bulkOperation;
+  final long[] nextBlocks;
+  final long[] nextValues;
+  final int iterations;
+  int off;
+  int written;
 
-  // masks[n-1] masks for bottom n bits
-  private final long[] masks;
-  private int written = 0;
-
-  public PackedWriter(DataOutput out, int valueCount, int bitsPerValue)
-                                                            throws IOException {
+  PackedWriter(PackedInts.Format format, DataOutput out, int valueCount, int bitsPerValue, int mem)
+      throws IOException {
     super(out, valueCount, bitsPerValue);
-
-    pendingBitPos = 64;
-    masks = new long[bitsPerValue - 1];
-
-    long v = 1;
-    for (int i = 0; i < bitsPerValue - 1; i++) {
-      v *= 2;
-      masks[i] = v - 1;
-    }
+    this.format = format;
+    bulkOperation = BulkOperation.of(format, bitsPerValue);
+    iterations = bulkOperation.computeIterations(valueCount, mem);
+    nextBlocks = new long[iterations * bulkOperation.blocks()];
+    nextValues = new long[iterations * bulkOperation.values()];
+    off = 0;
+    written = 0;
+    finished = false;
   }
 
   @Override
-  protected int getFormat() {
-    return PackedInts.PACKED;
+  protected PackedInts.Format getFormat() {
+    return format;
   }
 
-  /**
-   * Do not call this after finish
-   */
   @Override
   public void add(long v) throws IOException {
-    assert v <= PackedInts.maxValue(bitsPerValue) : "v=" + v
-            + " maxValue=" + PackedInts.maxValue(bitsPerValue);
-    assert v >= 0;
-    //System.out.println("    packedw add v=" + v + " pendingBitPos=" + pendingBitPos);
-
-    // TODO
-    if (pendingBitPos >= bitsPerValue) {
-      // not split
-
-      // write-once, so we can |= w/o first masking to 0s
-      pending |= v << (pendingBitPos - bitsPerValue);
-      if (pendingBitPos == bitsPerValue) {
-        // flush
-        out.writeLong(pending);
-        pending = 0;
-        pendingBitPos = 64;
-      } else {
-        pendingBitPos -= bitsPerValue;
-      }
-
-    } else {
-      // split
-
-      // write top pendingBitPos bits of value into bottom bits of pending
-      pending |= (v >> (bitsPerValue - pendingBitPos)) & masks[pendingBitPos - 1];
-      //System.out.println("      part1 (v >> " + (bitsPerValue - pendingBitPos) + ") & " + masks[pendingBitPos-1]);
-
-      // flush
-      out.writeLong(pending);
-
-      // write bottom (bitsPerValue - pendingBitPos) bits of value into top bits of pending
-      pendingBitPos = 64 - bitsPerValue + pendingBitPos;
-      //System.out.println("      part2 v << " + pendingBitPos);
-      pending = (v << pendingBitPos);
+    assert v >= 0 && v <= PackedInts.maxValue(bitsPerValue);
+    assert !finished;
+    if (valueCount != -1 && written >= valueCount) {
+      throw new EOFException("Writing past end of stream");
     }
-    written++;
+    nextValues[off++] = v;
+    if (off == nextValues.length) {
+      flush(nextValues.length);
+      off = 0;
+    }
+    ++written;
   }
 
   @Override
   public void finish() throws IOException {
-    while (written < valueCount) {
-      add(0L); // Auto flush
+    assert !finished;
+    if (valueCount != -1) {
+      while (written < valueCount) {
+        add(0L);
+      }
     }
+    flush(off);
+    finished = true;
+  }
 
-    if (pendingBitPos != 64) {
-      out.writeLong(pending);
+  private void flush(int nvalues) throws IOException {
+    bulkOperation.set(nextBlocks, 0, nextValues, 0, iterations);
+    final int blocks = format.nblocks(bitsPerValue, nvalues);
+    for (int i = 0; i < blocks; ++i) {
+      out.writeLong(nextBlocks[i]);
     }
+    off = 0;
   }
 
   @Override
-  public String toString() {
-    return "PackedWriter(written " + written + "/" + valueCount + " with "
-            + bitsPerValue + " bits/value)";
+  public int ord() {
+    return written - 1;
   }
 }

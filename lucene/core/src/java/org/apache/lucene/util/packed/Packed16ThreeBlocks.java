@@ -1,10 +1,6 @@
+// This file has been automatically generated, DO NOT EDIT
+
 package org.apache.lucene.util.packed;
-
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,32 +19,38 @@ import org.apache.lucene.util.RamUsageEstimator;
  * limitations under the License.
  */
 
-/** 48 bitsPerValue backed by short[] */
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.util.RamUsageEstimator;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+/**
+ * Packs integers into 3 shorts (48 bits per value).
+ * @lucene.internal
+ */
 final class Packed16ThreeBlocks extends PackedInts.MutableImpl {
+  final short[] blocks;
 
   public static final int MAX_SIZE = Integer.MAX_VALUE / 3;
-
-  private final short[] blocks;
 
   Packed16ThreeBlocks(int valueCount) {
     super(valueCount, 48);
     if (valueCount > MAX_SIZE) {
       throw new ArrayIndexOutOfBoundsException("MAX_SIZE exceeded");
     }
-    this.blocks = new short[3 * valueCount];
+    blocks = new short[valueCount * 3];
   }
 
   Packed16ThreeBlocks(DataInput in, int valueCount) throws IOException {
     this(valueCount);
-    for (int i = 0; i < blocks.length; i++) {
+    for (int i = 0; i < 3 * valueCount; ++i) {
       blocks[i] = in.readShort();
     }
     final int mod = blocks.length % 4;
     if (mod != 0) {
-      final int pad = 4 - mod;
-      // round out long
-      for (int i = 0; i < pad; i++) {
-        in.readShort();
+      for (int i = mod; i < 4; ++i) {
+         in.readShort();
       }
     }
   }
@@ -56,26 +58,55 @@ final class Packed16ThreeBlocks extends PackedInts.MutableImpl {
   @Override
   public long get(int index) {
     final int o = index * 3;
-    return (blocks[o] & 0xffffL) << 32 | (blocks[o+1] & 0xffffL) << 16 | (blocks[o+2] & 0xffffL);
+    return (blocks[o] & 0xFFFFL) << 32 | (blocks[o+1] & 0xFFFFL) << 16 | (blocks[o+2] & 0xFFFFL);
+  }
+
+  @Override
+  public int get(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int gets = Math.min(valueCount - index, len);
+    for (int i = index * 3, end = (index + gets) * 3; i < end; i+=3) {
+      arr[off++] = (blocks[i] & 0xFFFFL) << 32 | (blocks[i+1] & 0xFFFFL) << 16 | (blocks[i+2] & 0xFFFFL);
+    }
+    return gets;
   }
 
   @Override
   public void set(int index, long value) {
     final int o = index * 3;
-    blocks[o] = (short) (value >> 32);
-    blocks[o+1] = (short) (value >> 16);
+    blocks[o] = (short) (value >>> 32);
+    blocks[o+1] = (short) (value >>> 16);
     blocks[o+2] = (short) value;
   }
 
   @Override
+  public int set(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int sets = Math.min(valueCount - index, len);
+    for (int i = off, o = index * 3, end = off + sets; i < end; ++i) {
+      final long value = arr[i];
+      blocks[o++] = (short) (value >>> 32);
+      blocks[o++] = (short) (value >>> 16);
+      blocks[o++] = (short) value;
+    }
+    return sets;
+  }
+
+  @Override
   public void fill(int fromIndex, int toIndex, long val) {
-    short block1 = (short) (val >> 32);
-    short block2 = (short) (val >> 16);
-    short block3 = (short) val;
-    for (int i = fromIndex * 3, end = toIndex * 3; i < end; ) {
-      blocks[i++] = block1;
-      blocks[i++] = block2;
-      blocks[i++] = block3;
+    final short block1 = (short) (val >>> 32);
+    final short block2 = (short) (val >>> 16);
+    final short block3 = (short) val;
+    for (int i = fromIndex * 3, end = toIndex * 3; i < end; i += 3) {
+      blocks[i] = block1;
+      blocks[i+1] = block2;
+      blocks[i+2] = block3;
     }
   }
 

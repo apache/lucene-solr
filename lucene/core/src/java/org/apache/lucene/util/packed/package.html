@@ -19,9 +19,16 @@
 <head></head>
 <body bgcolor="white">
 
+<p>Packed integer arrays and streams.</p>
+
 <p>
-    The packed package provides random access capable arrays of positive longs.
-    The implementations provides different trade offs between memory usage and
+    The packed package provides
+    <ul>
+    	<li>sequential and random access capable arrays of positive longs,</li>
+    	<li>routines for efficient serialization and deserialization of streams of packed integers.</li>
+    </ul>
+
+    The implementations provide different trade-offs between memory usage and
     access speed. The standard usage scenario is replacing large int or long
     arrays in order to reduce the memory footprint.
 </p><p>
