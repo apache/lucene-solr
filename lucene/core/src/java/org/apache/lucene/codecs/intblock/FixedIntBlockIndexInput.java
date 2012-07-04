@@ -77,19 +77,17 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
 
   private static class Reader extends IntIndexInput.Reader {
     private final IndexInput in;
-
-    protected final int[] pending;
-    int upto;
-
-    private boolean seekPending;
-    private long pendingFP;
-    private int pendingUpto;
-    private long lastBlockFP;
     private final BlockReader blockReader;
     private final int blockSize;
+    private final int[] pending;
+
+    private int upto;
+    private boolean seekPending;
+    private long pendingFP;
+    private long lastBlockFP = -1;
 
     public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader)
-    throws IOException {
+      throws IOException {
       this.in = in;
       this.pending = pending;
       this.blockSize = pending.length;
@@ -98,33 +96,28 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     }
 
     void seek(final long fp, final int upto) {
-      pendingFP = fp;
-      pendingUpto = upto;
-      seekPending = true;
-    }
-
-    private void maybeSeek() throws IOException {
-      if (seekPending) {
-        if (pendingFP != lastBlockFP) {
-          // need new block
-          in.seek(pendingFP);
-          lastBlockFP = pendingFP;
-          blockReader.readBlock();
-        }
-        upto = pendingUpto;
-        seekPending = false;
+      assert upto < blockSize;
+      if (seekPending || fp != lastBlockFP) {
+        pendingFP = fp;
+        seekPending = true;
       }
+      this.upto = upto;
     }
 
     @Override
     public int next() throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
+      if (seekPending) {
+        // Seek & load new block
+        in.seek(pendingFP);
+        lastBlockFP = pendingFP;
+        blockReader.readBlock();
+        seekPending = false;
+      } else if (upto == blockSize) {
+        // Load new block
         lastBlockFP = in.getFilePointer();
         blockReader.readBlock();
         upto = 0;
       }
-
       return pending[upto++];
     }
   }
