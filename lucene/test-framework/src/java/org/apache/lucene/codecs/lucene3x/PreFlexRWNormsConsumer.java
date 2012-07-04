@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -240,10 +241,10 @@ class PreFlexRWNormsConsumer extends PerDocConsumer {
         if (fi.hasNorms()) {
           startField(fi);
           int numMergedDocsForField = 0;
-          for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
-            final int maxDoc = reader.reader.maxDoc();
+          for (AtomicReader reader : mergeState.readers) {
+            final int maxDoc = reader.maxDoc();
             byte[] normBuffer;
-            DocValues normValues = reader.reader.normValues(fi.name);
+            DocValues normValues = reader.normValues(fi.name);
             if (normValues == null) {
               // Can be null if this segment doesn't have
               // any docs with this field
@@ -254,14 +255,14 @@ class PreFlexRWNormsConsumer extends PerDocConsumer {
               assert directSource.hasArray();
               normBuffer = (byte[]) directSource.getArray();
             }
-            if (reader.liveDocs == null) {
+            if (reader.getLiveDocs() == null) {
               //optimized case for segments without deleted docs
               output.writeBytes(normBuffer, maxDoc);
               numMergedDocsForField += maxDoc;
             } else {
               // this segment has deleted docs, so we have to
               // check for every doc if it is deleted or not
-              final Bits liveDocs = reader.liveDocs;
+              final Bits liveDocs = reader.getLiveDocs();
               for (int k = 0; k < maxDoc; k++) {
                 if (liveDocs.get(k)) {
                   numMergedDocsForField++;

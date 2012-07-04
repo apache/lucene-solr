@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.SetOnce;
 
@@ -74,7 +73,6 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
     int maxNumSegments = -1;        // used by IndexWriter
     public long estimatedMergeBytes;       // used by IndexWriter
     List<SegmentReader> readers;        // used by IndexWriter
-    List<Bits> readerLiveDocs;      // used by IndexWriter
     public final List<SegmentInfoPerCommit> segments;
     public final int totalDocCount;
     boolean aborted;
