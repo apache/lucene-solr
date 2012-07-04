@@ -60,7 +60,7 @@ final class SegmentMerger {
                 FieldInfos.FieldNumbers fieldNumbers, IOContext context) {
     mergeState.segmentInfo = segmentInfo;
     mergeState.infoStream = infoStream;
-    mergeState.readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
+    mergeState.readers = new ArrayList<AtomicReader>();
     mergeState.checkAbort = checkAbort;
     mergeState.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
@@ -77,12 +77,12 @@ final class SegmentMerger {
   final void add(IndexReader reader) {
     for (final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
       final AtomicReader r = ctx.reader();
-      mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(r, r.getLiveDocs(), r.numDeletedDocs()));
+      mergeState.readers.add(r);
     }
   }
 
-  final void add(SegmentReader reader, Bits liveDocs, int delCount) {
-    mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(reader, liveDocs, delCount));
+  final void add(SegmentReader reader) {
+    mergeState.readers.add(reader);
   }
 
   /**
@@ -138,14 +138,14 @@ final class SegmentMerger {
     // FieldInfos, then we can do a bulk copy of the
     // stored fields:
     for (int i = 0; i < numReaders; i++) {
-      MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(i);
+      AtomicReader reader = mergeState.readers.get(i);
       // TODO: we may be able to broaden this to
       // non-SegmentReaders, since FieldInfos is now
       // required?  But... this'd also require exposing
       // bulk-copy (TVs and stored fields) API in foreign
       // readers..
-      if (reader.reader instanceof SegmentReader) {
-        SegmentReader segmentReader = (SegmentReader) reader.reader;
+      if (reader instanceof SegmentReader) {
+        SegmentReader segmentReader = (SegmentReader) reader;
         boolean same = true;
         FieldInfos segmentFieldInfos = segmentReader.getFieldInfos();
         for (FieldInfo fi : segmentFieldInfos) {
@@ -188,8 +188,7 @@ final class SegmentMerger {
     Map<FieldInfo,TypePromoter> docValuesTypes = new HashMap<FieldInfo,TypePromoter>();
     Map<FieldInfo,TypePromoter> normValuesTypes = new HashMap<FieldInfo,TypePromoter>();
 
-    for (MergeState.IndexReaderAndLiveDocs readerAndLiveDocs : mergeState.readers) {
-      final AtomicReader reader = readerAndLiveDocs.reader;
+    for (AtomicReader reader : mergeState.readers) {
       FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fi : readerFieldInfos) {
         FieldInfo merged = fieldInfosBuilder.add(fi);
@@ -283,7 +282,7 @@ final class SegmentMerger {
     int i = 0;
     while(i < mergeState.readers.size()) {
 
-      final MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(i);
+      final AtomicReader reader = mergeState.readers.get(i);
 
       mergeState.docBase[i] = docBase;
       final MergeState.DocMap docMap = MergeState.DocMap.build(reader);
@@ -291,7 +290,7 @@ final class SegmentMerger {
       docBase += docMap.numDocs();
 
       if (mergeState.payloadProcessorProvider != null) {
-        mergeState.readerPayloadProcessor[i] = mergeState.payloadProcessorProvider.getReaderProcessor(reader.reader);
+        mergeState.readerPayloadProcessor[i] = mergeState.payloadProcessorProvider.getReaderProcessor(reader);
       }
 
       i++;
@@ -308,9 +307,9 @@ final class SegmentMerger {
     int docBase = 0;
 
     for(int readerIndex=0;readerIndex<mergeState.readers.size();readerIndex++) {
-      final MergeState.IndexReaderAndLiveDocs r = mergeState.readers.get(readerIndex);
-      final Fields f = r.reader.fields();
-      final int maxDoc = r.reader.maxDoc();
+      final AtomicReader reader = mergeState.readers.get(readerIndex);
+      final Fields f = reader.fields();
+      final int maxDoc = reader.maxDoc();
       if (f != null) {
         slices.add(new ReaderSlice(docBase, maxDoc, readerIndex));
         fields.add(f);

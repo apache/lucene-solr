@@ -31,18 +31,6 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental */
 public class MergeState {
 
-  public static class IndexReaderAndLiveDocs {
-    public final AtomicReader reader;
-    public final Bits liveDocs;
-    public final int numDeletedDocs;
-
-    public IndexReaderAndLiveDocs(AtomicReader reader, Bits liveDocs, int numDeletedDocs) {
-      this.reader = reader;
-      this.liveDocs = liveDocs;
-      this.numDeletedDocs = numDeletedDocs;
-    }
-  }
-
   public static abstract class DocMap {
     private final Bits liveDocs;
 
@@ -50,17 +38,17 @@ public class MergeState {
       this.liveDocs = liveDocs;
     }
 
-    public static DocMap build(IndexReaderAndLiveDocs reader) {
-      final int maxDoc = reader.reader.maxDoc();
-      final int numDeletes = reader.numDeletedDocs;
+    public static DocMap build(AtomicReader reader) {
+      final int maxDoc = reader.maxDoc();
+      final int numDeletes = reader.numDeletedDocs();
       final int numDocs = maxDoc - numDeletes;
-      assert reader.liveDocs != null || numDeletes == 0;
+      assert reader.getLiveDocs() != null || numDeletes == 0;
       if (numDeletes == 0) {
         return new NoDelDocMap(maxDoc);
       } else if (numDeletes < numDocs) {
-        return buildDelCountDocmap(maxDoc, numDeletes, reader.liveDocs, PackedInts.COMPACT);
+        return buildDelCountDocmap(maxDoc, numDeletes, reader.getLiveDocs(), PackedInts.COMPACT);
       } else {
-        return buildDirectDocMap(maxDoc, numDocs, reader.liveDocs, PackedInts.COMPACT);
+        return buildDirectDocMap(maxDoc, numDocs, reader.getLiveDocs(), PackedInts.COMPACT);
       }
     }
 
@@ -197,7 +185,7 @@ public class MergeState {
 
   public SegmentInfo segmentInfo;
   public FieldInfos fieldInfos;
-  public List<IndexReaderAndLiveDocs> readers;        // Readers & liveDocs being merged
+  public List<AtomicReader> readers;                  // Readers being merged
   public DocMap[] docMaps;                            // Maps docIDs around deletions
   public int[] docBase;                               // New docID base per reader
   public CheckAbort checkAbort;

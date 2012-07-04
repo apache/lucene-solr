@@ -20,6 +20,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexableField;
@@ -74,9 +75,9 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
-    for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
-      final int maxDoc = reader.reader.maxDoc();
-      final Bits liveDocs = reader.liveDocs;
+    for (AtomicReader reader : mergeState.readers) {
+      final int maxDoc = reader.maxDoc();
+      final Bits liveDocs = reader.getLiveDocs();
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs != null && !liveDocs.get(i)) {
           // skip deleted docs
@@ -88,7 +89,7 @@ public abstract class StoredFieldsWriter implements Closeable {
         // on the fly?
         // NOTE: it's very important to first assign to doc then pass it to
         // fieldsWriter.addDocument; see LUCENE-1282
-        Document doc = reader.reader.document(i);
+        Document doc = reader.document(i);
         addDocument(doc, mergeState.fieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);

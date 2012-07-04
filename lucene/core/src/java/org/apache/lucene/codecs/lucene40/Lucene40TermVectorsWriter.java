@@ -23,6 +23,7 @@ import java.util.Comparator;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -254,7 +255,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
 
     int idx = 0;
     int numDocs = 0;
-    for (final MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
+    for (final AtomicReader reader : mergeState.readers) {
       final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
       Lucene40TermVectorsReader matchingVectorsReader = null;
       if (matchingSegmentReader != null) {
@@ -264,7 +265,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
             matchingVectorsReader = (Lucene40TermVectorsReader) vectorsReader;
         }
       }
-      if (reader.liveDocs != null) {
+      if (reader.getLiveDocs() != null) {
         numDocs += copyVectorsWithDeletions(mergeState, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
       } else {
         numDocs += copyVectorsNoDeletions(mergeState, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
@@ -280,12 +281,12 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
 
   private int copyVectorsWithDeletions(MergeState mergeState,
                                         final Lucene40TermVectorsReader matchingVectorsReader,
-                                        final MergeState.IndexReaderAndLiveDocs reader,
+                                        final AtomicReader reader,
                                         int rawDocLengths[],
                                         int rawDocLengths2[])
           throws IOException {
-    final int maxDoc = reader.reader.maxDoc();
-    final Bits liveDocs = reader.liveDocs;
+    final int maxDoc = reader.maxDoc();
+    final Bits liveDocs = reader.getLiveDocs();
     int totalNumDocs = 0;
     if (matchingVectorsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
@@ -322,7 +323,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
         
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Fields vectors = reader.reader.getTermVectors(docNum);
+        Fields vectors = reader.getTermVectors(docNum);
         addAllDocVectors(vectors, mergeState.fieldInfos);
         totalNumDocs++;
         mergeState.checkAbort.work(300);
@@ -333,11 +334,11 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   
   private int copyVectorsNoDeletions(MergeState mergeState,
                                       final Lucene40TermVectorsReader matchingVectorsReader,
-                                      final MergeState.IndexReaderAndLiveDocs reader,
+                                      final AtomicReader reader,
                                       int rawDocLengths[],
                                       int rawDocLengths2[])
           throws IOException {
-    final int maxDoc = reader.reader.maxDoc();
+    final int maxDoc = reader.maxDoc();
     if (matchingVectorsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
       int docCount = 0;
@@ -352,7 +353,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
       for (int docNum = 0; docNum < maxDoc; docNum++) {
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Fields vectors = reader.reader.getTermVectors(docNum);
+        Fields vectors = reader.getTermVectors(docNum);
         addAllDocVectors(vectors, mergeState.fieldInfos);
         mergeState.checkAbort.work(300);
       }

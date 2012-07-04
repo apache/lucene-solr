@@ -50,7 +50,7 @@ public abstract class PerDocConsumer implements Closeable {
       mergeState.fieldInfo = fieldInfo; // set the field we are merging
       if (canMerge(fieldInfo)) {
         for (int i = 0; i < docValues.length; i++) {
-          docValues[i] = getDocValuesForMerge(mergeState.readers.get(i).reader, fieldInfo);
+          docValues[i] = getDocValuesForMerge(mergeState.readers.get(i), fieldInfo);
         }
         Type docValuesType = getDocValuesType(fieldInfo);
         assert docValuesType != null;

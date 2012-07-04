@@ -2881,7 +2881,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       SegmentInfoPerCommit info = sourceSegments.get(i);
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
       final int docCount = info.info.getDocCount();
-      final Bits prevLiveDocs = merge.readerLiveDocs.get(i);
+      final Bits prevLiveDocs = merge.readers.get(i).getLiveDocs();
       final Bits currentLiveDocs;
       final ReadersAndLiveDocs rld = readerPool.get(info, false);
       // We hold a ref so it should still be in the pool:
@@ -3429,7 +3429,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     merge.readers = new ArrayList<SegmentReader>();
-    merge.readerLiveDocs = new ArrayList<Bits>();
 
     // This is try/finally to make sure merger's readers are
     // closed:
@@ -3443,7 +3442,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
         final ReadersAndLiveDocs rld = readerPool.get(info, true);
-        final SegmentReader reader = rld.getMergeReader(context);
+        SegmentReader reader = rld.getMergeReader(context);
         assert reader != null;
 
         // Carefully pull the most recent live docs:
@@ -3469,11 +3468,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         }
-        merge.readerLiveDocs.add(liveDocs);
+
+        // Deletes might have happened after we pulled the merge reader and
+        // before we got a read-only copy of the segment's actual live docs
+        // (taking pending deletes into account). In that case we need to
+        // make a new reader with updated live docs and del count.
+        if (reader.numDeletedDocs() != delCount) {
+          // fix the reader's live docs and del count
+          assert delCount > reader.numDeletedDocs(); // beware of zombies
+
+          SegmentReader newReader = new SegmentReader(info, reader.core, liveDocs, info.info.getDocCount() - delCount);
+          boolean released = false;
+          try {
+            rld.release(reader);
+            released = true;
+          } finally {
+            if (!released) {
+              newReader.decRef();
+            }
+          }
+
+          reader = newReader;
+        }
+
         merge.readers.add(reader);
         assert delCount <= info.info.getDocCount(): "delCount=" + delCount + " info.docCount=" + info.info.getDocCount() + " rld.pendingDeleteCount=" + rld.getPendingDeleteCount() + " info.getDelCount()=" + info.getDelCount();
         if (delCount < info.info.getDocCount()) {
-          merger.add(reader, liveDocs, delCount);
+          merger.add(reader);
         }
         segUpto++;
       }

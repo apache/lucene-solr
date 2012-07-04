@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -143,9 +144,9 @@ public abstract class TermVectorsWriter implements Closeable {
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
-    for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
-      final int maxDoc = reader.reader.maxDoc();
-      final Bits liveDocs = reader.liveDocs;
+    for (AtomicReader reader : mergeState.readers) {
+      final int maxDoc = reader.maxDoc();
+      final Bits liveDocs = reader.getLiveDocs();
       for (int docID = 0; docID < maxDoc; docID++) {
         if (liveDocs != null && !liveDocs.get(docID)) {
           // skip deleted docs
@@ -153,7 +154,7 @@ public abstract class TermVectorsWriter implements Closeable {
         }
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Fields vectors = reader.reader.getTermVectors(docID);
+        Fields vectors = reader.getTermVectors(docID);
         addAllDocVectors(vectors, mergeState.fieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);
