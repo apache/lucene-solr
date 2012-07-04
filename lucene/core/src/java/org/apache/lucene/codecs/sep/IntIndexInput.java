@@ -44,7 +44,7 @@ public abstract class IntIndexInput implements Closeable {
     /** Seeks primary stream to the last read offset */
     public abstract void seek(IntIndexInput.Reader stream) throws IOException;
 
-    public abstract void set(Index other);
+    public abstract void copyFrom(Index other);
     
     @Override
     public abstract Index clone();

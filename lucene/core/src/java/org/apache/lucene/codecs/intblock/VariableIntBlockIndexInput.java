@@ -183,7 +183,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void set(final IntIndexInput.Index other) {
+    public void copyFrom(final IntIndexInput.Index other) {
       final Index idx = (Index) other;
       fp = idx.fp;
       upto = idx.upto;
