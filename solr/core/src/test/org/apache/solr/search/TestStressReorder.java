@@ -22,6 +22,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,16 +33,26 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.solr.core.SolrCore.verbose;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class TestStressReorder extends TestRTGBase {
+  public static Logger log = LoggerFactory.getLogger(TestStressReorder.class);
+
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
 
+  public static void verbose(Object... args) {
+    // if (!log.isDebugEnabled()) return;
+    StringBuilder sb = new StringBuilder("VERBOSE:");
+    for (Object o : args) {
+      sb.append(' ');
+      sb.append(o==null ? "(null)" : o.toString());
+    }
+    log.info(sb.toString());
+  }
 
   // This version simulates updates coming from the leader and sometimes being reordered
   @Test

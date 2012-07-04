@@ -170,6 +170,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
 
         if (deletesAfter != null) {
+          log.info("Reordered DBQs detected.  Update="+cmd+" DBQs="+deletesAfter);
           List<Query> dbqList = new ArrayList<Query>(deletesAfter.size());
           for (UpdateLog.DBQ dbq : deletesAfter) {
             try {
