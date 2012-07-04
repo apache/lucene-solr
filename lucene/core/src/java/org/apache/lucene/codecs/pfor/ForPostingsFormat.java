@@ -46,8 +46,7 @@ public final class ForPostingsFormat extends PostingsFormat {
   private final int blockSize;
   private final int minBlockSize;
   private final int maxBlockSize;
-  protected final static int DEFAULT_BLOCK_SIZE = 128;
-  protected final static int DEFAULT_TERM_CACHED_SIZE = 1024;
+  public final static int DEFAULT_BLOCK_SIZE = 128;
 
   public ForPostingsFormat() {
     super("For");
@@ -55,6 +54,7 @@ public final class ForPostingsFormat extends PostingsFormat {
     this.minBlockSize = BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE;
     this.maxBlockSize = BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE;
   }
+
   public ForPostingsFormat(int minBlockSize, int maxBlockSize) {
     super("For");
     this.blockSize = DEFAULT_BLOCK_SIZE;

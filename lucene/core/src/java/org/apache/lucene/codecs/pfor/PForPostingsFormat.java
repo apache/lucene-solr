@@ -46,8 +46,7 @@ public final class PForPostingsFormat extends PostingsFormat {
   private final int blockSize;
   private final int minBlockSize;
   private final int maxBlockSize;
-  protected final static int DEFAULT_BLOCK_SIZE = 128;
-  protected final static int DEFAULT_TERM_CACHED_SIZE = 1024;
+  public final static int DEFAULT_BLOCK_SIZE = 128;
 
   public PForPostingsFormat() {
     super("PFor");

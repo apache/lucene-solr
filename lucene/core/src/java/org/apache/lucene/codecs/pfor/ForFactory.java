@@ -40,29 +40,17 @@ public final class ForFactory extends IntStreamFactory {
   private final int blockSize;
 
   public ForFactory() {
-    this.blockSize=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
+    this.blockSize = ForPostingsFormat.DEFAULT_BLOCK_SIZE;
   }
 
   @Override
   public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context)  throws IOException {
-    IndexOutput out = dir.createOutput(fileName, context);
-    boolean success = false;
-    try {
-      FixedIntBlockIndexOutput ret = new  ForIndexOutput(out, blockSize);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        // TODO: why handle exception like this? 
-        // and why not use similar codes for read part?
-        IOUtils.closeWhileHandlingException(out);
-      }
-    }
+    return new ForIndexOutput(dir.createOutput(fileName, context), blockSize);
   }
+
   @Override
   public IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException {
-    FixedIntBlockIndexInput ret = new ForIndexInput(dir.openInput(fileName, context));
-    return ret;
+    return new ForIndexInput(dir.openInput(fileName, context));
   }
 
   // wrap input and output with buffer support
@@ -102,13 +90,15 @@ public final class ForFactory extends IntStreamFactory {
   }
 
   private class ForIndexOutput extends FixedIntBlockIndexOutput {
-      private byte[] encoded;
-      private IntBuffer encodedBuffer;
+    private final byte[] encoded;
+    private final IntBuffer encodedBuffer;
+
     ForIndexOutput(IndexOutput out, int blockSize) throws IOException {
       super(out,blockSize);
       this.encoded = new byte[blockSize*8+4];
       this.encodedBuffer=ByteBuffer.wrap(encoded).asIntBuffer();
     }
+
     @Override
     protected void flushBlock() throws IOException {
       final int numBytes = ForUtil.compress(buffer,buffer.length,encodedBuffer);
