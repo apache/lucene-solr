@@ -340,7 +340,9 @@ public class UpdateLog implements PluginInfoInitialized {
       } else {
         // replicate the deleteByQuery logic.  See deleteByQuery for comments.
 
-        map.clear();
+        if (map != null) map.clear();
+        if (prevMap != null) prevMap.clear();
+        if (prevMap2 != null) prevMap2.clear();
 
         try {
           RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
@@ -400,7 +402,9 @@ public class UpdateLog implements PluginInfoInitialized {
       if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
         // given that we just did a delete-by-query, we don't know what documents were
         // affected and hence we must purge our caches.
-        map.clear();
+        if (map != null) map.clear();
+        if (prevMap != null) prevMap.clear();
+        if (prevMap2 != null) prevMap2.clear();
 
         trackDeleteByQuery(cmd.getQuery(), cmd.getVersion());
 
@@ -438,7 +442,10 @@ public class UpdateLog implements PluginInfoInitialized {
         SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
       }
 
-      map.clear();
+      if (map != null) map.clear();
+      if (prevMap != null) prevMap.clear();
+      if (prevMap2 != null) prevMap2.clear();
+
       oldDeletes.clear();
       deleteByQueries.clear();
     }
