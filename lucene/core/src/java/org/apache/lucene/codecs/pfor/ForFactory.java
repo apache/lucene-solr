@@ -85,10 +85,8 @@ public final class ForFactory extends IntStreamFactory {
         this.encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
       }
 
-      public void seek(long pos) {
-      }
-
       // TODO: implement public void skipBlock() {} ?
+      @Override
       public void readBlock() throws IOException {
         final int numBytes = in.readInt();
         assert numBytes <= blockSize*8+4;
