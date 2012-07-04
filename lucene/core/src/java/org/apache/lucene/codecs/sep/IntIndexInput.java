@@ -54,23 +54,5 @@ public abstract class IntIndexInput implements Closeable {
 
     /** Reads next single int */
     public abstract int next() throws IOException;
-
-    /** Reads next chunk of ints */
-    private IntsRef bulkResult;
-
-    /** Read up to count ints. */
-    public IntsRef read(int count) throws IOException {
-      if (bulkResult == null) {
-        bulkResult = new IntsRef();
-        bulkResult.ints = new int[count];
-      } else {
-        bulkResult.grow(count);
-      }
-      for(int i=0;i<count;i++) {
-        bulkResult.ints[i] = next();
-      }
-      bulkResult.length = count;
-      return bulkResult;
-    }
   }
 }

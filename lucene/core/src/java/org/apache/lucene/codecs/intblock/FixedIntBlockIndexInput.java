@@ -87,14 +87,12 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     private long lastBlockFP;
     private final BlockReader blockReader;
     private final int blockSize;
-    private final IntsRef bulkResult = new IntsRef();
 
     public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader)
     throws IOException {
       this.in = in;
       this.pending = pending;
       this.blockSize = pending.length;
-      bulkResult.ints = pending;
       this.blockReader = blockReader;
       upto = blockSize;
     }
@@ -128,25 +126,6 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
       }
 
       return pending[upto++];
-    }
-
-    @Override
-    public IntsRef read(final int count) throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
-        blockReader.readBlock();
-        upto = 0;
-      }
-      bulkResult.offset = upto;
-      if (upto + count < blockSize) {
-        bulkResult.length = count;
-        upto += count;
-      } else {
-        bulkResult.length = blockSize - upto;
-        upto = blockSize;
-      }
-
-      return bulkResult;
     }
   }
 
