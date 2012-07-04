@@ -67,21 +67,27 @@ public final class ForFactory extends IntStreamFactory {
 
   // wrap input and output with buffer support
   private class ForIndexInput extends FixedIntBlockIndexInput {
+
     ForIndexInput(final IndexInput in) throws IOException {
       super(in);
     }
+
     class ForBlockReader implements FixedIntBlockIndexInput.BlockReader {
-      byte[] encoded;
-      int[] buffer;
-      IndexInput in;
-      IntBuffer encodedBuffer;
+      private final byte[] encoded;
+      private final int[] buffer;
+      private final IndexInput in;
+      private final IntBuffer encodedBuffer;
+
       ForBlockReader(final IndexInput in, final int[] buffer) {
         this.encoded = new byte[blockSize*8+4];
-        this.in=in;
-        this.buffer=buffer;
-        this.encodedBuffer=ByteBuffer.wrap(encoded).asIntBuffer();
+        this.in = in;
+        this.buffer = buffer;
+        this.encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
       }
-      public void seek(long pos) {}
+
+      public void seek(long pos) {
+      }
+
       // TODO: implement public void skipBlock() {} ?
       public void readBlock() throws IOException {
         final int numBytes = in.readInt();
@@ -90,6 +96,7 @@ public final class ForFactory extends IntStreamFactory {
         ForUtil.decompress(encodedBuffer,buffer);
       }
     }
+
     @Override
     protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
       return new ForBlockReader(in,buffer);
