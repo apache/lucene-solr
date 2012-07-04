@@ -253,14 +253,27 @@ public final class SegmentInfo {
   public void setFiles(Set<String> files) {
     setFiles = files;
     sizeInBytes = -1;
+    assert assertSaneFileNames();
   }
 
   public void addFiles(Collection<String> files) {
     setFiles.addAll(files);
+    sizeInBytes = -1;
+    assert assertSaneFileNames();
   }
 
   public void addFile(String file) {
     setFiles.add(file);
+    sizeInBytes = -1;
+    assert assertSaneFileNames();
+  }
+  
+  // used only by assert
+  private boolean assertSaneFileNames() {
+    for (String file : setFiles) {
+      assert file.startsWith("_") : "invalid codec filename: " + file ;
+    }
+    return true;
   }
     
   /**
