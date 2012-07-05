@@ -62,6 +62,11 @@ Build
 * LUCENE-4115: JAR resolution/ cleanup should be done automatically for ant 
   clean/ eclipse/ resolve (Dawid Weiss)
 
+Documentation
+
+* LUCENE-4195: Added package documentation and examples for 
+  org.apache.lucene.codecs (Alan Woodward via Robert Muir)
+
 ======================= Lucene 4.0.0-ALPHA =======================
 
 More information about this release, including any errata related to the 
