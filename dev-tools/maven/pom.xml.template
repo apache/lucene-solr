@@ -383,7 +383,7 @@
       <dependency>
         <groupId>com.carrotsearch.randomizedtesting</groupId>
         <artifactId>randomizedtesting-runner</artifactId>
-        <version>1.5.0</version>
+        <version>1.6.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

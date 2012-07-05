@@ -18,7 +18,8 @@
  -->
 
 <project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant" 
-                       xmlns:ivy="antlib:org.apache.ivy.ant">
+                       xmlns:ivy="antlib:org.apache.ivy.ant"
+                       xmlns:junit4="antlib:com.carrotsearch.junit4">
   <description>
     This file is designed for importing into a main build file, and not intended
     for standalone use.
@@ -107,6 +108,11 @@
   <property name="tests.maxClassNameColumns" value="10000" />
   <!-- Show suite summaries for tests. -->
   <property name="tests.showSuiteSummary" value="true" />
+  <!-- Show timestamps in console test reports. -->
+  <property name="tests.timestamps" value="false" />
+  <!-- Heartbeat in seconds for reporting long running tests or hung forked JVMs. -->
+  <property name="tests.heartbeat" value="60" />
+
   <!-- Configure test emission to console for each type of status -->
   <property name="tests.showError" value="true" />
   <property name="tests.showFailure" value="true" />
@@ -675,7 +681,7 @@
 
   <target name="test-updatecache" description="Overwrite tests' timings cache for balancing." depends="install-junit4-taskdef">
     <touch file="${tests.cachefile}" mkdirs="true" verbose="false" />
-    <mergehints file="${tests.cachefile}" historyLength="${tests.cachefilehistory}">
+    <junit4:mergehints file="${tests.cachefile}" historyLength="${tests.cachefilehistory}">
       <resources>
         <!-- The order is important. Include previous stats first, then append new stats. -->
         <file file="${tests.cachefile}" />
@@ -684,7 +690,7 @@
           <exclude name="lucene/tools/junit4/**" />
         </fileset>
       </resources>
-    </mergehints>
+    </junit4:mergehints>
   </target>
 
   <!-- Aliases for tests filters -->
@@ -739,11 +745,32 @@
         <!-- Defaults. -->
         <property name="tests.class"  value="" />
         <property name="tests.method" value="" />
-        <property name="tests.dynamicAssignmentRatio" value="0.25" /> <!-- 25% of suites -->
+        <property name="tests.dynamicAssignmentRatio" value="0.50" /> <!-- 50% of suites -->
         <property name="tests.haltonfailure" value="true" />
         <property name="tests.iters" value="" />
 
-        <junit4
+        <!-- Pick the random seed now (unless already set). -->
+        <junit4:pickseed property="tests.seed" />
+
+        <!-- Pick file.encoding based on the random seed. -->
+        <junit4:pickfromlist property="tests.file.encoding" allowundefined="false" seed="${tests.seed}">
+            <!-- Guaranteed support on any JVM. -->
+            <value>US-ASCII</value>   <!-- single byte length -->
+            <value>ISO-8859-1</value> <!-- single byte length -->
+            <value>UTF-8</value>      <!-- variable byte length -->
+            <value><!-- empty/ default encoding. --></value>
+
+            <!--
+            Disabled because of Java 1.7 bug on Linux/ Unix:
+            http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7181721
+
+            <value>UTF-16</value>     
+            <value>UTF-16LE</value>   
+            <value>UTF-16BE</value>
+            -->
+        </junit4:pickfromlist>
+        
+        <junit4:junit4
             dir="@{tempDir}"
             tempdir="@{tempDir}"
             maxmemory="${tests.heapsize}" 
@@ -758,6 +785,8 @@
             shuffleOnSlave="true"
             leaveTemporary="false"
             seed="${tests.seed}"
+
+            heartbeat="${tests.heartbeat}"
         >
             <!-- Classpaths. -->
             <classpath refid="@{junit.classpath}"/>
@@ -825,17 +854,23 @@
                 <propertyref prefix="tests.failfast" />
             </syspropertyset>
 
+            <!-- Pass randomized settings to the forked JVM. -->
+            <syspropertyset ignoreEmpty="true">
+                <propertyref prefix="tests.file.encoding" />
+                <mapper type="glob" from="tests.*" to="*" />
+            </syspropertyset>
+
             <!-- Use static cached test balancing statistcs. -->
             <balancers>
-                <execution-times>
+                <junit4:execution-times>
                     <fileset dir="${common.dir}/tools/junit4" includes="**/*.txt" />
-                </execution-times>
+                </junit4:execution-times>
             </balancers>            
 
             <!-- Reporting listeners. -->
             <listeners>
                 <!-- A simplified console output (maven-like). -->
-                <report-text
+                <junit4:report-text
                     showThrowable="true" 
                     showStackTraces="true" 
                     showOutputStream="true" 
@@ -850,10 +885,12 @@
 
                     useSimpleNames="${tests.useSimpleNames}"
                     maxClassNameColumns="${tests.maxClassNameColumns}"
+                    
+                    timestamps="${tests.timestamps}"
                 />
 
                 <!-- Emits full status for all tests, their relative order on slaves. -->
-                <report-text
+                <junit4:report-text
                     file="@{junit.output.dir}/tests-report.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
@@ -866,10 +903,11 @@
                     showStatusIgnored="true"
 
                     showSuiteSummary="true"
+                    timestamps="true"
                 />
 
                 <!-- Emits status on errors and failures only. -->
-                <report-text
+                <junit4:report-text
                     file="@{junit.output.dir}/tests-failures.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
@@ -882,14 +920,15 @@
                     showStatusIgnored="false"
 
                     showSuiteSummary="false"
+                    timestamps="true"
                 />
                 
                 <!-- Emit the information about tests timings (could be used to determine
                      the slowest tests or for reuse in balancing). -->
-                <report-execution-times file="@{junit.output.dir}/tests-timehints.txt" historyLength="5" />
+                <junit4:report-execution-times file="@{junit.output.dir}/tests-timehints.txt" historyLength="5" />
 
-                <report-ant-xml dir="@{junit.output.dir}" />
-                <report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" />
+                <junit4:report-ant-xml dir="@{junit.output.dir}" />
+                <junit4:report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" />
             </listeners>
 
             <!-- Input test classes. -->
@@ -898,29 +937,29 @@
               <include name="**/*Test.class" />
               <exclude name="**/*$*" />
             </fileset>
-        </junit4>
+        </junit4:junit4>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
         <echo>5 slowest tests:</echo>
-        <tophints max="5">
+        <junit4:tophints max="5">
           <file file="@{junit.output.dir}/tests-timehints.txt" />
-        </tophints>
+        </junit4:tophints>
     </sequential>
   </macrodef>
 
   <target name="test-times" description="Show the slowest tests (averages)." depends="install-junit4-taskdef">
     <property name="max" value="10" />
     <echo>Showing ${max} slowest tests according to local stats. (change with -Dmax=...).</echo>
-    <tophints max="${max}">
+    <junit4:tophints max="${max}">
       <fileset dir="${basedir}" includes="**/tests-timehints.txt" />
-    </tophints>
+    </junit4:tophints>
 
     <echo>Showing ${max} slowest tests in cached stats. (change with -Dmax=...).</echo>
-    <tophints max="${max}">
+    <junit4:tophints max="${max}">
         <fileset dir="${common.dir}/tools/junit4">
           <include name="*.txt" />
         </fileset>
-    </tophints>
+    </junit4:tophints>
   </target>
 
   <target name="test-help" description="Help on 'ant test' syntax.">
@@ -1021,6 +1060,12 @@ ant -Dtests.showSuccess=true test
 # Display local averaged stats, if any (30 slowest tests).
 ant test-times -Dmax=30
 
+# Display a timestamp alongside each suite/ test.
+ant -Dtests.timestamps=on ...
+
+# Override forked JVM file.encoding
+ant -Dtests.file.encoding=XXX ...
+
 # Output test files and reports.
 ${tests-output}/tests-report.txt    - full ASCII tests report
 ${tests-output}/tests-failures.txt  - failures only (if any)
@@ -1031,12 +1076,12 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </echo>
   </target>
 
-  <target name="install-junit4-taskdef">
+  <target name="install-junit4-taskdef" depends="ivy-configure">
     <!-- JUnit4 taskdef. -->
     <ivy:resolve   file="${common.dir}/test-framework/ivy.xml" type="jar" log="quiet" />
     <ivy:cachepath file="${common.dir}/test-framework/ivy.xml" conf="junit4-stdalone" type="jar" transitive="false" pathid="path.junit4" />
 
-    <taskdef resource="com/carrotsearch/junit4/antlib.xml">
+    <taskdef uri="antlib:com.carrotsearch.junit4">
       <classpath refid="path.junit4" />
     </taskdef>
   </target>

@@ -588,7 +588,7 @@ public final class UnicodeUtil {
         out[out_offset++] = (char)(((b&0xf)<<12) + ((utf8[offset]&0x3f)<<6) + (utf8[offset+1]&0x3f));
         offset += 2;
       } else {
-        assert b < 0xf8: "b=" + b;
+        assert b < 0xf8: "b = 0x" + Integer.toHexString(b);
         int ch = ((b&0x7)<<18) + ((utf8[offset]&0x3f)<<12) + ((utf8[offset+1]&0x3f)<<6) + (utf8[offset+2]&0x3f);
         offset += 3;
         if (ch < UNI_MAX_BMP) {

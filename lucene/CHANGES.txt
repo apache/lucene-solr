@@ -42,6 +42,16 @@ Bug Fixes
 
 Build
 
+* LUCENE-4094: Support overriding file.encoding on forked test JVMs
+  (force via -Drandomized.file.encoding=XXX). (Dawid Weiss)
+
+* LUCENE-4189: Test output should include timestamps (start/end for each 
+  test/ suite). Added -Dtests.timestamps=[off by default]. (Dawid Weiss)
+
+* LUCENE-4110: Report long periods of forked jvm inactivity (hung tests/ suites).
+  Added -Dtests.heartbeat=[seconds] with the default of 60 seconds.
+  (Dawid Weiss)
+
 * LUCENE-4160: Added a property to quit the tests after a given
   number of failures has occurred. This is useful in combination
   with -Dtests.iters=N (you can start N iterations and wait for M
