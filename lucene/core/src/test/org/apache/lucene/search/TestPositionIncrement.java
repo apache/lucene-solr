@@ -254,7 +254,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       for (byte[] bytes : payloads) {
         count++;
         if (VERBOSE) {
-          System.out.println("  payload: " + new String(bytes));
+          System.out.println("  payload: " + new String(bytes, "UTF-8"));
         }
       }
     }
@@ -281,7 +281,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     Collection<byte[]> pls = psu.getPayloadsForQuery(snq);
     count = pls.size();
     for (byte[] bytes : pls) {
-      String s = new String(bytes);
+      String s = new String(bytes, "UTF-8");
       //System.out.println(s);
       sawZero |= s.equals("pos: 0");
     }
