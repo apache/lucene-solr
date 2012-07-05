@@ -19,9 +19,12 @@ package org.apache.lucene.benchmark.byTask;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 
 import org.apache.lucene.benchmark.byTask.feeds.AbstractQueryMaker;
@@ -113,7 +116,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
       public boolean accept(File pathname) { return pathname.isFile() && pathname.getName().endsWith(".alg"); }
     })) {
       try {
-        Config config = new Config(new FileReader(algFile));
+        Config config = new Config(new InputStreamReader(new FileInputStream(algFile), "UTF-8"));
         String contentSource = config.get("content.source", null);
         if (contentSource != null) { Class.forName(contentSource); }
         config.set("work.dir", new File(TEMP_DIR,"work").getAbsolutePath());

@@ -61,7 +61,8 @@ public class TestParser extends LuceneTestCase {
     //initialize the parser
     builder = new CorePlusExtensionsParser("contents", analyzer);
 
-    BufferedReader d = new BufferedReader(new InputStreamReader(TestParser.class.getResourceAsStream("reuters21578.txt")));
+    BufferedReader d = new BufferedReader(new InputStreamReader(
+        TestParser.class.getResourceAsStream("reuters21578.txt"), "US-ASCII"));
     dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(Version.LUCENE_40, analyzer));
     String line = d.readLine();

@@ -1371,7 +1371,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // now an ugly built of XML parsing to test the snippet is encoded OK
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     DocumentBuilder db = dbf.newDocumentBuilder();
-    org.w3c.dom.Document doc = db.parse(new ByteArrayInputStream(xhtml.getBytes()));
+    org.w3c.dom.Document doc = db.parse(new ByteArrayInputStream(xhtml.getBytes("UTF-8")));
     Element root = doc.getDocumentElement();
     NodeList nodes = root.getElementsByTagName("body");
     Element body = (Element) nodes.item(0);
