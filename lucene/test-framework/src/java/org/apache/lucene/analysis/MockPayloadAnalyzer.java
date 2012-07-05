@@ -67,7 +67,7 @@ final class MockPayloadFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes()));
+      payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes("UTF-8")));
       int posIncr;
       if (pos == 0 || i % 2 == 1) {
         posIncr = 1;
