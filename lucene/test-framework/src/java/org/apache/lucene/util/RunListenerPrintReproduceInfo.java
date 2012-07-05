@@ -161,7 +161,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
       }
     }
 
-    addVmOpt(b, "randomized.file.encoding", System.getProperty("file.encoding"));
+    addVmOpt(b, "tests.file.encoding", System.getProperty("file.encoding"));
 
     System.err.println(b.toString());
   }
