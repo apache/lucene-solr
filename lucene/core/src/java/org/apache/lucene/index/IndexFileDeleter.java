@@ -149,8 +149,7 @@ final class IndexFileDeleter {
 
     for (String fileName : files) {
 
-      if (!fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)
-          && (fileName.startsWith("_") || fileName.startsWith(IndexFileNames.SEGMENTS))) {
+      if (!fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
 
         // Add this file to refCounts with initial count 0:
         getRefCount(fileName);
