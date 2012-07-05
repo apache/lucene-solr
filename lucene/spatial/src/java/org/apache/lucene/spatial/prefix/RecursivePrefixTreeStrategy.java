@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.spatial.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -32,14 +31,15 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
  */
 public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
-  private int prefixGridScanLevel;//TODO how is this customized?
+  private int prefixGridScanLevel;
 
-  public RecursivePrefixTreeStrategy(SpatialPrefixTree grid) {
-    super(grid);
+  public RecursivePrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
+    super(grid, fieldName);
     prefixGridScanLevel = grid.getMaxLevels() - 4;//TODO this default constant is dependent on the prefix grid size
   }
 
   public void setPrefixGridScanLevel(int prefixGridScanLevel) {
+    //TODO if negative then subtract from maxlevels
     this.prefixGridScanLevel = prefixGridScanLevel;
   }
 
@@ -49,7 +49,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   }
 
   @Override
-  public Filter makeFilter(SpatialArgs args, SimpleSpatialFieldInfo fieldInfo) {
+  public Filter makeFilter(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
     if (! SpatialOperation.is(op, SpatialOperation.IsWithin, SpatialOperation.Intersects, SpatialOperation.BBoxWithin, SpatialOperation.BBoxIntersects))
       throw new UnsupportedSpatialOperation(op);
@@ -59,7 +59,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
     int detailLevel = grid.getMaxLevelForPrecision(shape,args.getDistPrecision());
 
     return new RecursivePrefixTreeFilter(
-        fieldInfo.getFieldName(), grid,shape, prefixGridScanLevel, detailLevel);
+        getFieldName(), grid,shape, prefixGridScanLevel, detailLevel);
   }
 }
 

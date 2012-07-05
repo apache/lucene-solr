@@ -21,7 +21,6 @@ import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.spatial.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.prefix.tree.Node;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -38,12 +37,12 @@ import java.util.List;
  */
 public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
 
-  public TermQueryPrefixTreeStrategy(SpatialPrefixTree grid) {
-    super(grid);
+  public TermQueryPrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
+    super(grid, fieldName);
   }
 
   @Override
-  public Filter makeFilter(SpatialArgs args, SimpleSpatialFieldInfo fieldInfo) {
+  public Filter makeFilter(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
     if (! SpatialOperation.is(op, SpatialOperation.IsWithin, SpatialOperation.Intersects, SpatialOperation.BBoxWithin, SpatialOperation.BBoxIntersects))
       throw new UnsupportedSpatialOperation(op);
@@ -53,7 +52,7 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
     List<Node> cells = grid.getNodes(shape, detailLevel, false);
     TermsFilter filter = new TermsFilter();
     for (Node cell : cells) {
-      filter.addTerm(new Term(fieldInfo.getFieldName(), cell.getTokenString()));
+      filter.addTerm(new Term(getFieldName(), cell.getTokenString()));
     }
     return filter;
   }
