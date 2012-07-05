@@ -15,11 +15,6 @@ New features
   create automata from a fixed collection of UTF-8 encoded BytesRef
   (Dawid Weiss, Robert Muir)
 
-Changes in Runtime Behavior
-
-* LUCENE-4190: Don't delete files in the index directory unless they
-  begin with an underscore. (Mike McCandless, Robert Muir)
-
 API Changes
 
 * LUCENE-4138: update of morfologik (Polish morphological analyzer) to 1.5.3.
