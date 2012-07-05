@@ -34,7 +34,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
  * @lucene.experimental */
 
 public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
-  private final Document doc = new Document();
+  private final StoredDocument doc = new StoredDocument();
   private final Set<String> fieldsToAdd;
 
   /** Load only fields named in the provided <code>Set&lt;String&gt;</code>. */
@@ -62,12 +62,15 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
 
   @Override
   public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+    /*
     final FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setStoreTermVectors(fieldInfo.hasVectors());
     ft.setIndexed(fieldInfo.isIndexed());
     ft.setOmitNorms(fieldInfo.omitsNorms());
     ft.setIndexOptions(fieldInfo.getIndexOptions());
-    doc.add(new Field(fieldInfo.name, value, ft));
+    */
+    doc.add(new StoredField(fieldInfo.name, value));
+    //doc.add(new Field(fieldInfo.name, value, ft));
   }
 
   @Override
@@ -95,7 +98,7 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
     return fieldsToAdd == null || fieldsToAdd.contains(fieldInfo.name) ? Status.YES : Status.NO;
   }
 
-  public Document getDocument() {
+  public StoredDocument getDocument() {
     return doc;
   }
 }

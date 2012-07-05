@@ -37,25 +37,10 @@ public interface IndexableField {
 
   /** Field name */
   public String name();
-
+  
   /** {@link IndexableFieldType} describing the properties
    * of this field. */
   public IndexableFieldType fieldType();
-  
-  /** Field boost (you must pre-multiply in any doc boost). */
-  public float boost();
-
-  /** Non-null if this field has a binary value */
-  public BytesRef binaryValue();
-
-  /** Non-null if this field has a string value */
-  public String stringValue();
-
-  /** Non-null if this field has a Reader value */
-  public Reader readerValue();
-
-  /** Non-null if this field has a numeric value */
-  public Number numericValue();
 
   /**
    * Creates the TokenStream used for indexing this field.  If appropriate,
@@ -67,4 +52,7 @@ public interface IndexableField {
    * @throws IOException Can be thrown while creating the TokenStream
    */
   public TokenStream tokenStream(Analyzer analyzer) throws IOException;
+
+  /** Field boost (you must pre-multiply in any doc boost). */
+  public float boost();
 }

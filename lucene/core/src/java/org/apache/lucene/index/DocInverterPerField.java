@@ -75,7 +75,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       // TODO FI: this should be "genericized" to querying
       // consumer if it wants to see this particular field
       // tokenized.
-      if (fieldType.indexed() && doInvert) {
+      if (doInvert) {
         
         // if the field omits norms, the boost cannot be indexed.
         if (fieldType.omitNorms() && field.boost() != 1.0f) {

@@ -1,6 +1,6 @@
-package org.apache.lucene.document;
+package org.apache.lucene.index;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,34 +17,10 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
-
 /**
- * <p>
- * This class provides a {@link Field} that enables storing
- * of a per-document int value for scoring, sorting or value retrieval. Here's an
- * example usage:
- * 
- * <pre>
- *   document.add(new IntDocValuesField(name, 22));
- * </pre>
- * 
- * <p>
- * If you also need to store the value, you should add a
- * separate {@link StoredField} instance.
- * @see DocValues for further information
- * */
-
-public class IntDocValuesField extends StoredField {
-
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setDocValueType(DocValues.Type.FIXED_INTS_32);
-    TYPE.freeze();
-  }
-
-  public IntDocValuesField(String name, int value) {
-    super(name, TYPE);
-    fieldsData = Integer.valueOf(value);
-  }
+ * @lucene.internal
+ */
+public interface IndexDocument {
+  public Iterable<? extends IndexableField> indexableFields();
+  public Iterable<? extends StorableField> storableFields();
 }

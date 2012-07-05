@@ -1,6 +1,11 @@
 package org.apache.lucene.index;
 
-/*
+import java.io.Reader;
+
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.util.BytesRef;
+
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,30 +22,23 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+public interface StorableField {
 
-/** 
- * Describes the properties of a field.
- * @lucene.experimental 
- */
-public interface IndexableFieldType {
+  /** Field name */
+  public String name();
+  
+  /** Field type */
+  public FieldType fieldType();
+  
+  /** Non-null if this field has a binary value */
+  public BytesRef binaryValue();
 
-  /** True if this field's value should be analyzed */
-  public boolean tokenized();
+  /** Non-null if this field has a string value */
+  public String stringValue();
 
-  /** True if term vectors should be indexed */
-  public boolean storeTermVectors();
+  /** Non-null if this field has a Reader value */
+  public Reader readerValue();
 
-  /** True if term vector offsets should be indexed */
-  public boolean storeTermVectorOffsets();
-
-  /** True if term vector positions should be indexed */
-  public boolean storeTermVectorPositions();
-
-  /** True if norms should not be indexed */
-  public boolean omitNorms();
-
-  /** {@link IndexOptions}, describing what should be
-   * recorded into the inverted index */
-  public IndexOptions indexOptions();
+  /** Non-null if this field has a numeric value */
+  public Number numericValue();
 }

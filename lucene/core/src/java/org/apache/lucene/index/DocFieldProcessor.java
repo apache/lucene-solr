@@ -218,7 +218,7 @@ final class DocFieldProcessor extends DocConsumer {
     // seen before (eg suddenly turning on norms or
     // vectors, etc.):
 
-    for(IndexableField field : docState.doc) {
+    for(IndexableField field : docState.doc.indexableFields()) {
       final String fieldName = field.name();
 
       // Make sure we have a PerField allocated
@@ -266,17 +266,24 @@ final class DocFieldProcessor extends DocConsumer {
       }
 
       fp.addField(field);
+    }
+    for (StorableField field: docState.doc.storableFields()) {
+      final String fieldName = field.name();
 
-      if (field.fieldType().stored()) {
-        fieldsWriter.addField(field, fp.fieldInfo);
+      // Make sure we have a PerField allocated
+      final int hashPos = fieldName.hashCode() & hashMask;
+      DocFieldProcessorPerField fp = fieldHash[hashPos];
+      while(fp != null && !fp.fieldInfo.name.equals(fieldName)) {
+        fp = fp.next;
       }
+      
       final DocValues.Type dvType = field.fieldType().docValueType();
       if (dvType != null) {
         DocValuesConsumerHolder docValuesConsumer = docValuesConsumer(dvType,
             docState, fp.fieldInfo);
         DocValuesConsumer consumer = docValuesConsumer.docValuesConsumer;
         if (docValuesConsumer.compatibility == null) {
-          consumer.add(docState.docID, field);
+          consumer.add(docState.docID, (StorableField) field);
           docValuesConsumer.compatibility = new TypeCompatibility(dvType,
               consumer.getValueSize());
         } else if (docValuesConsumer.compatibility.isCompatible(dvType,

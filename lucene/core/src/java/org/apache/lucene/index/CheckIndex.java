@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType; // for javadocs
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -1227,7 +1228,7 @@ public class CheckIndex {
       for (int j = 0; j < info.info.getDocCount(); ++j) {
         // Intentionally pull even deleted documents to
         // make sure they too are not corrupt:
-        Document doc = reader.document(j);
+        StoredDocument doc = reader.document(j);
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
           status.totFields += doc.getFields().size();

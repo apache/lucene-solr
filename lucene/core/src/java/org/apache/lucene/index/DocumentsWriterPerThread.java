@@ -93,7 +93,7 @@ class DocumentsWriterPerThread {
     InfoStream infoStream;
     Similarity similarity;
     int docID;
-    Iterable<? extends IndexableField> doc;
+    IndexDocument doc;
     String maxTermPrefix;
 
     DocState(DocumentsWriterPerThread docWriter, InfoStream infoStream) {
@@ -224,7 +224,7 @@ class DocumentsWriterPerThread {
     return retval;
   }
 
-  public void updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, Term delTerm) throws IOException {
+  public void updateDocument(IndexDocument doc, Analyzer analyzer, Term delTerm) throws IOException {
     assert writer.testPoint("DocumentsWriterPerThread addDocument start");
     assert deleteQueue != null;
     docState.doc = doc;
@@ -277,7 +277,7 @@ class DocumentsWriterPerThread {
     }
   }
   
-  public int updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException {
+  public int updateDocuments(Iterable<? extends IndexDocument> docs, Analyzer analyzer, Term delTerm) throws IOException {
     assert writer.testPoint("DocumentsWriterPerThread addDocuments start");
     assert deleteQueue != null;
     docState.analyzer = analyzer;
@@ -289,7 +289,7 @@ class DocumentsWriterPerThread {
     }
     int docCount = 0;
     try {
-      for(Iterable<? extends IndexableField> doc : docs) {
+      for(IndexDocument doc : docs) {
         docState.doc = doc;
         docState.docID = numDocsInRAM;
         docCount++;

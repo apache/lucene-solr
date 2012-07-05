@@ -20,13 +20,14 @@ package org.apache.lucene.document;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.StorableFieldType;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.util.NumericUtils;
 
 /**
  * Describes the properties of a field.
  */
-public class FieldType implements IndexableFieldType {
+public class FieldType implements IndexableFieldType, StorableFieldType {
 
   /** Data type of the numeric value
    * @since 3.2
@@ -41,10 +42,10 @@ public class FieldType implements IndexableFieldType {
   private boolean storeTermVectorPositions;
   private boolean omitNorms;
   private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-  private DocValues.Type docValueType;
   private NumericType numericType;
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
+  private DocValues.Type docValueType;
 
   public FieldType(FieldType ref) {
     this.indexed = ref.indexed();
@@ -150,16 +151,6 @@ public class FieldType implements IndexableFieldType {
     this.indexOptions = value;
   }
 
-  public void setDocValueType(DocValues.Type type) {
-    checkIfFrozen();
-    docValueType = type;
-  }
-  
-  @Override
-  public DocValues.Type docValueType() {
-    return docValueType;
-  }
-
   public void setNumericType(NumericType type) {
     checkIfFrozen();
     numericType = type;
@@ -237,5 +228,17 @@ public class FieldType implements IndexableFieldType {
     }
     
     return result.toString();
+  }
+  
+  /* from StorableFieldType */
+  
+  @Override
+  public DocValues.Type docValueType() {
+    return docValueType;
+  }
+
+  public void setDocValueType(DocValues.Type type) {
+    checkIfFrozen();
+    docValueType = type;
   }
 }

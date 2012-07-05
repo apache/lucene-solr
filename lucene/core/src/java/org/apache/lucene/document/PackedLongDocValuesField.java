@@ -39,7 +39,7 @@ import org.apache.lucene.index.AtomicReader;      // javadocs
  * @see DocValues for further information
  * */
 
-public class PackedLongDocValuesField extends Field {
+public class PackedLongDocValuesField extends StoredField {
 
   public static final FieldType TYPE = new FieldType();
   static {

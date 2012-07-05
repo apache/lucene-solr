@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,30 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+public interface StorableFieldType {
 
-/** 
- * Describes the properties of a field.
- * @lucene.experimental 
- */
-public interface IndexableFieldType {
-
-  /** True if this field's value should be analyzed */
-  public boolean tokenized();
-
-  /** True if term vectors should be indexed */
-  public boolean storeTermVectors();
-
-  /** True if term vector offsets should be indexed */
-  public boolean storeTermVectorOffsets();
-
-  /** True if term vector positions should be indexed */
-  public boolean storeTermVectorPositions();
-
-  /** True if norms should not be indexed */
-  public boolean omitNorms();
-
-  /** {@link IndexOptions}, describing what should be
-   * recorded into the inverted index */
-  public IndexOptions indexOptions();
+  /** DocValues type; if non-null then the field's value
+   *  will be indexed into docValues */
+  public DocValues.Type docValueType();
 }

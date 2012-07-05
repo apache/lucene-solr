@@ -35,7 +35,7 @@ import org.apache.lucene.index.DocValues;
  * @see DocValues for further information
  * */
 
-public class LongDocValuesField extends Field {
+public class LongDocValuesField extends StoredField {
 
   public static final FieldType TYPE = new FieldType();
   static {

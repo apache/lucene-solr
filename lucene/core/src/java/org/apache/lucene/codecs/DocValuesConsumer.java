@@ -28,21 +28,23 @@ import org.apache.lucene.document.LongDocValuesField;
 import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.ShortDocValuesField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Abstract API that consumes {@link IndexableField}s.
+ * Abstract API that consumes {@link StorableField}s.
  * {@link DocValuesConsumer} are always associated with a specific field and
  * segments. Concrete implementations of this API write the given
- * {@link IndexableField} into a implementation specific format depending on
+ * {@link StorableField} into a implementation specific format depending on
  * the fields meta-data.
  * 
  * @lucene.experimental
@@ -53,7 +55,7 @@ public abstract class DocValuesConsumer {
 
   protected abstract Type getType();
   /**
-   * Adds the given {@link IndexableField} instance to this
+   * Adds the given {@link StorableField} instance to this
    * {@link DocValuesConsumer}
    * 
    * @param docID
@@ -64,7 +66,7 @@ public abstract class DocValuesConsumer {
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  public abstract void add(int docID, IndexableField value)
+  public abstract void add(int docID, StorableField value)
       throws IOException;
 
   /**
@@ -73,7 +75,7 @@ public abstract class DocValuesConsumer {
    * @param docCount
    *          the total number of documents in this {@link DocValuesConsumer}.
    *          Must be greater than or equal the last given docID to
-   *          {@link #add(int, IndexableField)}.
+   *          {@link #add(int, StorableField)}.
    * @throws IOException
    */
   public abstract void finish(int docCount) throws IOException;
@@ -136,7 +138,7 @@ public abstract class DocValuesConsumer {
     assert source != null;
     int docID = docBase;
     final Type type = getType();
-    final Field scratchField;
+    final StoredField scratchField;
     switch(type) {
     case VAR_INTS:
       scratchField = new PackedLongDocValuesField("", (long) 0);
@@ -202,7 +204,7 @@ public abstract class DocValuesConsumer {
    * ID must always be greater than the previous ID or <tt>0</tt> if called the
    * first time.
    */
-  protected void mergeDoc(Field scratchField, Source source, int docID, int sourceDoc)
+  protected void mergeDoc(StoredField scratchField, Source source, int docID, int sourceDoc)
       throws IOException {
     switch(getType()) {
     case BYTES_FIXED_DEREF:

@@ -322,7 +322,7 @@ final class DocumentsWriter {
     return maybeMerge;
   }
 
-  boolean updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
+  boolean updateDocuments(final Iterable<? extends IndexDocument> docs, final Analyzer analyzer,
                           final Term delTerm) throws IOException {
     boolean maybeMerge = preUpdate();
 
@@ -353,7 +353,7 @@ final class DocumentsWriter {
     return postUpdate(flushingDWPT, maybeMerge);
   }
 
-  boolean updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
+  boolean updateDocument(final IndexDocument doc, final Analyzer analyzer,
       final Term delTerm) throws IOException {
 
     boolean maybeMerge = preUpdate();

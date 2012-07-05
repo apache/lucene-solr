@@ -24,7 +24,7 @@ import org.apache.lucene.util.BytesRef;
 /** A field whose value is stored so that {@link
  *  IndexSearcher#doc} and {@link IndexReader#document} will
  *  return the field and its value. */
-public final class StoredField extends Field {
+public class StoredField extends Field {
 
   public final static FieldType TYPE;
   static {
@@ -33,6 +33,16 @@ public final class StoredField extends Field {
     TYPE.freeze();
   }
 
+  protected StoredField(String name, FieldType type) {
+    super(name, type);
+    this.type.setStored(true);
+  }
+  
+  public StoredField(String name, BytesRef bytes, FieldType type) {
+    super(name, bytes, type);
+    this.type.setStored(true);
+  }
+  
   public StoredField(String name, byte[] value) {
     super(name, value, TYPE);
   }

@@ -22,6 +22,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -29,6 +30,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -131,7 +133,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
         IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
   }
 
-  public void writeField(FieldInfo info, IndexableField field) throws IOException {
+  public void writeField(FieldInfo info, StorableField field) throws IOException {
     fieldsStream.writeVInt(info.number);
     int bits = 0;
     final BytesRef bytes;
@@ -297,7 +299,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
         // on the fly?
         // NOTE: it's very important to first assign to doc then pass it to
         // fieldsWriter.addDocument; see LUCENE-1282
-        Document doc = reader.document(j);
+        StoredDocument doc = reader.document(j);
         addDocument(doc, mergeState.fieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);
@@ -324,7 +326,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       for (; docCount < maxDoc; docCount++) {
         // NOTE: it's very important to first assign to doc then pass it to
         // fieldsWriter.addDocument; see LUCENE-1282
-        Document doc = reader.document(docCount);
+        StoredDocument doc = reader.document(docCount);
         addDocument(doc, mergeState.fieldInfos);
         mergeState.checkAbort.work(300);
       }
