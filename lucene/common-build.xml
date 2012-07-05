@@ -285,10 +285,13 @@
     <!-- currently empty -->
   </target>
 
-  <target name="ivy-configure" unless="ivy.settings.uptodate">
+  <target name="ivy-configure">
+     <!-- [DW] ivy loses its configuration for some reason. cannot explain this. if
+          you have an idea, fix it.
+          unless="ivy.settings.uptodate" -->
     <!-- override: just for safety, should be unnecessary -->
     <ivy:configure file="${common.dir}/ivy-settings.xml" override="true"/>
-    <property name="ivy.settings.uptodate" value="true"/>
+    <!-- <property name="ivy.settings.uptodate" value="true"/> -->
   </target>
 
   <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
