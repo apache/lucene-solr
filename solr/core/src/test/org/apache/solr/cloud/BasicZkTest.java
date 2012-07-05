@@ -23,6 +23,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -160,6 +161,13 @@ public class BasicZkTest extends AbstractZkTestCase {
       
     }
     
+    // test stats call
+    NamedList stats = core.getStatistics();
+    assertEquals("collection1", stats.get("coreName"));
+    assertEquals("collection1", stats.get("collection"));
+    assertEquals("shard1", stats.get("shard"));
+    assertTrue(stats.get("refCount") != null);
+
     //zkController.getZkClient().printLayoutToStdOut();
   }
   

@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
@@ -1980,9 +1981,18 @@ public final class SolrCore implements SolrInfoMBean {
     lst.add("startTime", new Date(startTime));
     lst.add("refCount", getOpenCount());
 
-    if (null != getCoreDescriptor() && null != getCoreDescriptor().getCoreContainer()) {
-      lst.add("aliases", getCoreDescriptor().getCoreContainer().getCoreNames(this));
+    CoreDescriptor cd = getCoreDescriptor();
+    if (cd != null) {
+      if (null != cd && cd.getCoreContainer() != null) {
+        lst.add("aliases", getCoreDescriptor().getCoreContainer().getCoreNames(this));
+      }
+      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+      if (cloudDesc != null) {
+        lst.add("collection", cloudDesc.getCollectionName());
+        lst.add("shard", cloudDesc.getShardId());
+      }
     }
+    
     return lst;
   }
   

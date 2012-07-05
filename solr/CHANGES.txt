@@ -59,6 +59,8 @@ Other Changes
 
 * SOLR-1770: Move the default core instance directory into a collection1 folder.
   (Mark Miller)
+  
+* SOLR-3355: Add shard and collection to SolrCore statistics. (Michael Garski, Mark Miller)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
