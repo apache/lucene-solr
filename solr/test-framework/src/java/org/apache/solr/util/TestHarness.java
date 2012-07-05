@@ -399,7 +399,7 @@ public class TestHarness {
     if (container != null) {
       for (SolrCore c : container.getCores()) {
         if (c.getOpenCount() > 1)
-          throw new RuntimeException("SolrCore.getOpenCount()=="+core.getOpenCount());
+          throw new RuntimeException("SolrCore.getOpenCount()=="+c.getOpenCount());
       }      
     }
 
