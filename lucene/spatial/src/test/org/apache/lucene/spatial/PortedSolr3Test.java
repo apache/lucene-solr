@@ -218,4 +218,4 @@ public class PortedSolr3Test extends StrategyTestCase {
 
 }
 
-///CLOVER:OFF
+///CLOVER:ON
