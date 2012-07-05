@@ -44,6 +44,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+///CLOVER:OFF
+
 /**
  * Based off of Solr 3's SpatialFilterTest.
  */
@@ -215,3 +217,5 @@ public class PortedSolr3Test extends StrategyTestCase {
   }
 
 }
+
+///CLOVER:OFF
