@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.bbox;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,11 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.bbox;
 
-import java.io.IOException;
-import java.util.Map;
-
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.simple.RectangleImpl;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -27,8 +27,8 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.simple.RectangleImpl;
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * An implementation of the Lucene ValueSource model to support spatial relevance ranking.
@@ -37,12 +37,12 @@ import com.spatial4j.core.shape.simple.RectangleImpl;
  */
 public class BBoxSimilarityValueSource extends ValueSource {
 
-  private final BBoxFieldInfo field;
+  private final BBoxStrategy strategy;
   private final BBoxSimilarity similarity;
 
-  public BBoxSimilarityValueSource(BBoxSimilarity similarity, BBoxFieldInfo field) {
+  public BBoxSimilarityValueSource(BBoxStrategy strategy, BBoxSimilarity similarity) {
+    this.strategy = strategy;
     this.similarity = similarity;
-    this.field = field;
   }
 
   /**
@@ -65,13 +65,13 @@ public class BBoxSimilarityValueSource extends ValueSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     AtomicReader reader = readerContext.reader();
-    final double[] minX = FieldCache.DEFAULT.getDoubles(reader, field.minX, true);
-    final double[] minY = FieldCache.DEFAULT.getDoubles(reader, field.minY, true);
-    final double[] maxX = FieldCache.DEFAULT.getDoubles(reader, field.maxX, true);
-    final double[] maxY = FieldCache.DEFAULT.getDoubles(reader, field.maxY, true);
+    final double[] minX = FieldCache.DEFAULT.getDoubles(reader, strategy.field_minX, true);
+    final double[] minY = FieldCache.DEFAULT.getDoubles(reader, strategy.field_minY, true);
+    final double[] maxX = FieldCache.DEFAULT.getDoubles(reader, strategy.field_maxX, true);
+    final double[] maxY = FieldCache.DEFAULT.getDoubles(reader, strategy.field_maxY, true);
 
-    final Bits validMinX = FieldCache.DEFAULT.getDocsWithField(reader, field.minX);
-    final Bits validMaxX = FieldCache.DEFAULT.getDocsWithField(reader, field.maxX);
+    final Bits validMinX = FieldCache.DEFAULT.getDocsWithField(reader, strategy.field_minX);
+    final Bits validMaxX = FieldCache.DEFAULT.getDocsWithField(reader, strategy.field_maxX);
 
     return new FunctionValues() {
       @Override

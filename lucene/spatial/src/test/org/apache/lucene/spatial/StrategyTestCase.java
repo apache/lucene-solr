@@ -31,10 +31,15 @@ import org.junit.Assert;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
-public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends SpatialTestCase {
+public abstract class StrategyTestCase extends SpatialTestCase {
 
   public static final String DATA_SIMPLE_BBOX = "simple-bbox.txt";
   public static final String DATA_STATES_POLY = "states-poly.txt";
@@ -52,9 +57,8 @@ public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends Spati
 
   protected final SpatialArgsParser argsParser = new SpatialArgsParser();
 
-  protected SpatialStrategy<T> strategy;
+  protected SpatialStrategy strategy;
   protected SpatialContext ctx;
-  protected T fieldInfo;
   protected boolean storeShape = true;
 
   protected void executeQueries(SpatialMatchConcern concern, String... testQueryFile) throws IOException {
@@ -80,7 +84,7 @@ public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends Spati
       document.add(new StringField("id", data.id, Field.Store.YES));
       document.add(new StringField("name", data.name, Field.Store.YES));
       Shape shape = ctx.readShape(data.shape);
-      for (IndexableField f : strategy.createFields(fieldInfo, shape, true, storeShape)) {
+      for (IndexableField f : strategy.createFields(shape, true, storeShape)) {
         if( f != null ) { // null if incompatibleGeometry && ignore
           document.add(f);
         }
@@ -108,7 +112,7 @@ public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends Spati
       SpatialTestQuery q = queries.next();
 
       String msg = q.line; //"Query: " + q.args.toString(ctx);
-      SearchResults got = executeQuery(strategy.makeQuery(q.args, fieldInfo), 100);
+      SearchResults got = executeQuery(strategy.makeQuery(q.args), 100);
       if (concern.orderIsImportant) {
         Iterator<String> ids = q.ids.iterator();
         for (SearchResult r : got.results) {

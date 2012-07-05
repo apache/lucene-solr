@@ -27,7 +27,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.spatial.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.tree.Node;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -42,14 +41,14 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @lucene.internal
  */
-public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFieldInfo> {
+public abstract class PrefixTreeStrategy extends SpatialStrategy {
   protected final SpatialPrefixTree grid;
   private final Map<String, PointPrefixTreeFieldCacheProvider> provider = new ConcurrentHashMap<String, PointPrefixTreeFieldCacheProvider>();
   protected int defaultFieldValuesArrayLen = 2;
   protected double distErrPct = SpatialArgs.DEFAULT_DIST_PRECISION;
 
-  public PrefixTreeStrategy(SpatialPrefixTree grid) {
-    super(grid.getSpatialContext());
+  public PrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
+    super(grid.getSpatialContext(), fieldName);
     this.grid = grid;
   }
 
@@ -64,7 +63,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
   }
 
   @Override
-  public IndexableField createField(SimpleSpatialFieldInfo fieldInfo, Shape shape, boolean index, boolean store) {
+  public IndexableField createField(Shape shape, boolean index, boolean store) {
     int detailLevel = grid.getMaxLevelForPrecision(shape,distErrPct);
     List<Node> cells = grid.getNodes(shape, detailLevel, true);//true=intermediates cells
     //If shape isn't a point, add a full-resolution center-point so that
@@ -79,7 +78,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
     //TODO is CellTokenStream supposed to be re-used somehow? see Uwe's comments:
     //  http://code.google.com/p/lucene-spatial-playground/issues/detail?id=4
 
-    String fname = fieldInfo.getFieldName();
+    String fname = getFieldName();
     if( store ) {
       //TODO figure out how to re-use original string instead of reconstituting it.
       String wkt = grid.getSpatialContext().toString(shape);
@@ -153,19 +152,19 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
   }
 
   @Override
-  public ValueSource makeValueSource(SpatialArgs args, SimpleSpatialFieldInfo fieldInfo) {
+  public ValueSource makeValueSource(SpatialArgs args) {
     DistanceCalculator calc = grid.getSpatialContext().getDistCalc();
-    return makeValueSource(args, fieldInfo, calc);
+    return makeValueSource(args, calc);
   }
   
-  public ValueSource makeValueSource(SpatialArgs args, SimpleSpatialFieldInfo fieldInfo, DistanceCalculator calc) {
-    PointPrefixTreeFieldCacheProvider p = provider.get( fieldInfo.getFieldName() );
+  public ValueSource makeValueSource(SpatialArgs args, DistanceCalculator calc) {
+    PointPrefixTreeFieldCacheProvider p = provider.get( getFieldName() );
     if( p == null ) {
       synchronized (this) {//double checked locking idiom is okay since provider is threadsafe
-        p = provider.get( fieldInfo.getFieldName() );
+        p = provider.get( getFieldName() );
         if (p == null) {
-          p = new PointPrefixTreeFieldCacheProvider(grid, fieldInfo.getFieldName(), defaultFieldValuesArrayLen);
-          provider.put(fieldInfo.getFieldName(),p);
+          p = new PointPrefixTreeFieldCacheProvider(grid, getFieldName(), defaultFieldValuesArrayLen);
+          provider.put(getFieldName(),p);
         }
       }
     }

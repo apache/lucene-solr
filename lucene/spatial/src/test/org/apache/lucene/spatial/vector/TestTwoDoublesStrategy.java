@@ -23,35 +23,31 @@ import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.simple.CircleImpl;
 import com.spatial4j.core.shape.simple.PointImpl;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
-import org.apache.lucene.spatial.util.NumericFieldInfo;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestTwoDoublesStrategy extends StrategyTestCase<TwoDoublesFieldInfo> {
+public class TestTwoDoublesStrategy extends StrategyTestCase {
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
     this.ctx = SimpleSpatialContext.GEO_KM;
-    this.strategy = new TwoDoublesStrategy(ctx,
-        new NumericFieldInfo(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER);
-    this.fieldInfo = new TwoDoublesFieldInfo(getClass().getSimpleName());
+    this.strategy = new TwoDoublesStrategy(ctx, getClass().getSimpleName());
   }
 
   @Test
   public void testCircleShapeSupport() {
     Circle circle = new CircleImpl(new PointImpl(0, 0), 10, this.ctx);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, circle);
-    Query query = this.strategy.makeQuery(args, this.fieldInfo);
+    Query query = this.strategy.makeQuery(args);
 
     assertNotNull(query);
   }
@@ -60,7 +56,7 @@ public class TestTwoDoublesStrategy extends StrategyTestCase<TwoDoublesFieldInfo
   public void testInvalidQueryShape() {
     Point point = new PointImpl(0, 0);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, point);
-    this.strategy.makeQuery(args, this.fieldInfo);
+    this.strategy.makeQuery(args);
   }
 
   @Test

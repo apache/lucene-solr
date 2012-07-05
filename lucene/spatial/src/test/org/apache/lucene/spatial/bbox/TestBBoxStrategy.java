@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.bbox;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,30 +17,22 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.bbox;
-
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
-import org.apache.lucene.spatial.util.NumericFieldInfo;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestBBoxStrategy extends StrategyTestCase<BBoxFieldInfo> {
+public class TestBBoxStrategy extends StrategyTestCase {
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
     this.ctx = SimpleSpatialContext.GEO_KM;
-    
-    BBoxStrategy s = new BBoxStrategy(ctx);
-    s.finfo = new NumericFieldInfo();
-    
-    this.strategy = s;
-    this.fieldInfo = new BBoxFieldInfo("bbox");
+    this.strategy = new BBoxStrategy(ctx, "bbox");
   }
 
   @Test

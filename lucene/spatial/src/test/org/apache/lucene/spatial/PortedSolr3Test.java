@@ -58,27 +58,25 @@ public class PortedSolr3Test extends StrategyTestCase {
     SpatialStrategy strategy;
 
     grid = new GeohashPrefixTree(ctx,12);
-    strategy = new RecursivePrefixTreeStrategy(grid);
-    ctorArgs.add(new Object[]{"recursive_geohash",strategy});
+    strategy = new RecursivePrefixTreeStrategy(grid, "recursive_geohash");
+    ctorArgs.add(new Object[]{strategy});
 
     grid = new QuadPrefixTree(ctx,25);
-    strategy = new RecursivePrefixTreeStrategy(grid);
-    ctorArgs.add(new Object[]{"recursive_quad",strategy});
+    strategy = new RecursivePrefixTreeStrategy(grid, "recursive_quad");
+    ctorArgs.add(new Object[]{strategy});
 
     grid = new GeohashPrefixTree(ctx,12);
-    strategy = new TermQueryPrefixTreeStrategy(grid);
-    ctorArgs.add(new Object[]{"termquery_geohash",strategy});
+    strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
+    ctorArgs.add(new Object[]{strategy});
 
     return ctorArgs;
   }
 
 //  private String fieldName;
 
-  public PortedSolr3Test(String fieldName, SpatialStrategy strategy) {
-    ctx = strategy.getSpatialContext();
+  public PortedSolr3Test(SpatialStrategy strategy) {
+    this.ctx = strategy.getSpatialContext();
     this.strategy = strategy;
-//    this.fieldName = fieldName;
-    fieldInfo = new SimpleSpatialFieldInfo( fieldName );
   }
 
   private void setupDocs() throws IOException {
@@ -156,7 +154,7 @@ public class PortedSolr3Test extends StrategyTestCase {
 
   private void checkHitsOrdered(String spatialQ, String... ids) {
     SpatialArgs args = this.argsParser.parse(spatialQ,ctx);
-    Query query = strategy.makeQuery(args, fieldInfo);
+    Query query = strategy.makeQuery(args);
     SearchResults results = executeQuery(query, 100);
     String[] resultIds = new String[results.numFound];
     int i = 0;
@@ -177,7 +175,7 @@ public class PortedSolr3Test extends StrategyTestCase {
   private Document newDoc(String id, Shape shape) {
     Document doc = new Document();
     doc.add(new StringField("id", id, Field.Store.YES));
-    for (IndexableField f : strategy.createFields(fieldInfo, shape, true, storeShape)) {
+    for (IndexableField f : strategy.createFields(shape, true, storeShape)) {
       doc.add(f);
     }
     return doc;
@@ -199,9 +197,9 @@ public class PortedSolr3Test extends StrategyTestCase {
     //args.setDistPrecision(0.025);
     Query query;
     if (random().nextBoolean()) {
-      query = strategy.makeQuery(args, fieldInfo);
+      query = strategy.makeQuery(args);
     } else {
-      query = new FilteredQuery(new MatchAllDocsQuery(),strategy.makeFilter(args, fieldInfo));
+      query = new FilteredQuery(new MatchAllDocsQuery(),strategy.makeFilter(args));
     }
     SearchResults results = executeQuery(query, 100);
     assertEquals(""+shape,assertNumFound,results.numFound);
