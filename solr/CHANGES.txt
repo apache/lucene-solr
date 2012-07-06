@@ -70,6 +70,9 @@ Other Changes
 * SOLR-3563: Unloading all cores in a SolrCloud collection will now cause the removal of
   that collection's meta data from ZooKeeper. (Mark Miller, Per Steffensen)
 
+* SOLR-3599: Add zkClientTimeout to solr.xml so that it's obvious how to change it and so 
+  that you can change it with a system property. (Mark Miller)
+
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
