@@ -67,6 +67,9 @@ Other Changes
 
 * SOLR-3475: solr.xml should default to persist=true (Mark Miller)
 
+* SOLR-3563: Unloading all cores in a SolrCloud collection will now cause the removal of
+  that collection's meta data from ZooKeeper. (Mark Miller, Per Steffensen)
+
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
@@ -134,7 +137,7 @@ Upgrading from Solr 3.6-dev
 
 * Due to low level changes to support SolrCloud, the uniqueKey field can no 
   longer be populated via <copyField/> or <field default=...> in the 
-  schema.xml.  Users wishing to have Solr automaticly generate a uniqueKey 
+  schema.xml.  Users wishing to have Solr automatically generate a uniqueKey 
   value when adding documents should instead use an instance of
   solr.UUIDUpdateProcessorFactory in their update processor chain.  See 
   SOLR-2796 for more details.
