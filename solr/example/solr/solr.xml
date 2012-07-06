@@ -32,7 +32,7 @@
   persistent: Save changes made via the API to this file
   sharedLib: path to a lib directory that will be shared across all cores
 -->
-<solr persistent="false">
+<solr persistent="true">
 	<!-- by default, this is 50 @ WARN
   <logging enabled="true">
   	<watcher size="100" threshold="INFO" />

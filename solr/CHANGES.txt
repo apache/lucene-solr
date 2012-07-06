@@ -62,6 +62,8 @@ Other Changes
   
 * SOLR-3355: Add shard and collection to SolrCore statistics. (Michael Garski, Mark Miller)
 
+* SOLR-3475: solr.xml should default to persist=true (Mark Miller)
+
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
