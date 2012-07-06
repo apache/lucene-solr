@@ -123,7 +123,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer, false));
       } 
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
     
     Analyzer b = new Analyzer() {
 
@@ -133,7 +133,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer, true));
       } 
     };
-    checkRandomData(random(), b, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

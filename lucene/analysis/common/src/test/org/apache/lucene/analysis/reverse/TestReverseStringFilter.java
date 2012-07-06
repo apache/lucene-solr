@@ -111,7 +111,7 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ReverseStringFilter(TEST_VERSION_CURRENT, tokenizer));
       }
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

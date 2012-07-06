@@ -119,7 +119,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int num = 10000 * RANDOM_MULTIPLIER;
+    int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random());
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
@@ -157,7 +157,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int num = 10000 * RANDOM_MULTIPLIER;
+    int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random());
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));

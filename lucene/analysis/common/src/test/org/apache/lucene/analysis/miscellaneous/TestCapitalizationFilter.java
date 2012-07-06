@@ -132,7 +132,7 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
       }
     };
     
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

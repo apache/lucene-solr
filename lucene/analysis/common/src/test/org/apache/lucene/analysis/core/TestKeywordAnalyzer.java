@@ -127,6 +127,6 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new KeywordAnalyzer(), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new KeywordAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }
