@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -331,5 +332,24 @@ public final class IOUtils {
     }
   }
 
-
+  /**
+   * Copy one file's contents to another file. The target will be overwritten
+   * if it exists. The source must exist.
+   */
+  public static void copy(File source, File target) throws IOException {
+    FileInputStream fis = null;
+    FileOutputStream fos = null;
+    try {
+      fis = new FileInputStream(source);
+      fos = new FileOutputStream(target);
+      
+      final byte [] buffer = new byte [1024 * 8];
+      int len;
+      while ((len = fis.read(buffer)) > 0) {
+        fos.write(buffer, 0, len);
+      }
+    } finally {
+      close(fis, fos);
+    }
+  }
 }
