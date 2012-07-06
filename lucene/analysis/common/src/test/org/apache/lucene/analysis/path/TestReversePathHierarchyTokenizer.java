@@ -169,7 +169,7 @@ public class TestReversePathHierarchyTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
@@ -182,6 +182,6 @@ public class TestReversePathHierarchyTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 1027);
+    checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 1027);
   }
 }

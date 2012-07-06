@@ -140,7 +140,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     final Analyzer a = new JapaneseAnalyzer(TEST_VERSION_CURRENT, null, Mode.SEARCH,
         JapaneseAnalyzer.getDefaultStopSet(),
         JapaneseAnalyzer.getDefaultStopTags());
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);
   }
 
   // Copied from TestJapaneseTokenizer, to make sure passing

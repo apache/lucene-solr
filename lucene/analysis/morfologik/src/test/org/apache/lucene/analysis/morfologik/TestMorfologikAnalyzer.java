@@ -131,6 +131,6 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandom() throws Exception {
-    checkRandomData(random(), getTestAnalyzer(), 10000 * RANDOM_MULTIPLIER); 
+    checkRandomData(random(), getTestAnalyzer(), 1000 * RANDOM_MULTIPLIER); 
   }
 }

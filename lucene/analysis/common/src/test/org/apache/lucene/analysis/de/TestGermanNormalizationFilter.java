@@ -64,7 +64,7 @@ public class TestGermanNormalizationFilter extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {
