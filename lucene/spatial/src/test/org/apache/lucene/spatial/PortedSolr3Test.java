@@ -17,6 +17,7 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
+import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
@@ -90,7 +91,7 @@ public class PortedSolr3Test extends StrategyTestCase {
 
 //  private String fieldName;
 
-  public PortedSolr3Test(Param param) {
+  public PortedSolr3Test(@Name("strategy") Param param) {
     SpatialStrategy strategy = param.strategy;
     this.ctx = strategy.getSpatialContext();
     this.strategy = strategy;
