@@ -23,6 +23,7 @@ import java.util.Comparator;
 import org.apache.lucene.index.FieldInfo; // javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiDocsEnum;
 import org.apache.lucene.index.MultiDocsAndPositionsEnum;
@@ -72,8 +73,8 @@ public abstract class TermsConsumer {
   private MappingMultiDocsAndPositionsEnum postingsEnum;
 
   /** Default merge impl */
-  public void merge(MergeState mergeState, TermsEnum termsEnum) throws IOException {
-
+  public void merge(MergeState mergeState, Terms terms) throws IOException {
+    TermsEnum termsEnum = terms.iterator(null);
     BytesRef term;
     assert termsEnum != null;
     long sumTotalTermFreq = 0;
