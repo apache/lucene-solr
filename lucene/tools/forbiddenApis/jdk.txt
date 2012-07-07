@@ -1,0 +1,14 @@
+# These methods and classes should not be used by Lucene classes (unsafe, no charset,...):
+
+java.lang.String#<init>(byte[])
+java.lang.String#<init>(byte[],int)
+java.lang.String#<init>(byte[],int,int)
+java.lang.String#<init>(byte[],int,int)
+java.lang.String#getBytes()
+java.lang.String#toLowerCase()
+java.lang.String#toUpperCase()
+
+java.io.FileReader
+java.io.FileWriter
+java.io.InputStreamReader#<init>(java.io.InputStream)
+java.io.OutputStreamWriter#<init>(java.io.OutputStream)

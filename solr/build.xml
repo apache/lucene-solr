@@ -170,8 +170,10 @@
     </ant>
   </target>
     
-  <!-- Validation (license/ notice checks). -->
-  <target name="validate" depends="compile-tools,resolve" description="Validate legal stuff.">
+  <!-- Validation (license/notice/api checks). -->
+  <target name="validate" depends="check-licenses,check-forbidden-apis" description="Validate stuff." />
+
+  <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}">
       <additional-excludes>
         <!-- Exclude start.jar only (it'd be weird to have a license file there?) -->
@@ -186,6 +188,17 @@
         <replaceregex pattern="/(bcmail|bcprov)-([^/]+)$" replace="/\1" flags="gi" />
       </additional-filters>
     </license-check-macro>
+  </target>
+  
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks" description="Check forbidden API calls in compiled class files.">
+    <forbidden-apis>
+      <classpath refid="classpath"/>
+      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
+        <include name="jdk.txt" />
+        <include name="commons-io.txt" />
+      </apiFileSet>
+      <fileset dir="${basedir}" includes="**/build/**/*.class" />
+    </forbidden-apis>
   </target>
 
   <!-- rat sources -->
