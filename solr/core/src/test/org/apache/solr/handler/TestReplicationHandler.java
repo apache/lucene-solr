@@ -81,12 +81,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   // index from previous test method
   static int nDocs = 500;
 
-  // TODO: fix this test to not require FSDirectory.. doesnt even work with MockFSDirectory... wtf?
-  static String savedFactory;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    useFactory(null); // need an FS factory
     master = new SolrInstance("master", null);
     master.setUp();
     masterJetty = createJetty(master);
@@ -116,11 +114,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveJetty.stop();
     master.tearDown();
     slave.tearDown();
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
   }
 
   private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {

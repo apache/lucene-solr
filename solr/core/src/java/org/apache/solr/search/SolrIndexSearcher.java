@@ -37,6 +37,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
@@ -118,6 +119,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     this(core, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, config.lockType), core), true, enableCache, false, directoryFactory);
   }
 
+  private static String getIndexDir(Directory dir) {
+    if (dir instanceof FSDirectory) {
+      return ((FSDirectory)dir).getDirectory().getAbsolutePath();
+    } else if (dir instanceof NRTCachingDirectory) {
+      // recurse on the delegate
+      return getIndexDir(((NRTCachingDirectory) dir).getDelegate());
+    } else {
+      log.warn("WARNING: Directory impl does not support setting indexDir: " + dir.getClass().getName());
+      return null;
+    }
+  }
+
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, DirectoryReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
     super(r);
     this.directoryFactory = directoryFactory;
@@ -134,13 +147,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       // keep the directory from being released while we use it
       directoryFactory.incRef(dir);
     }
-    
-    if (dir instanceof FSDirectory) {
-      FSDirectory fsDirectory = (FSDirectory) dir;
-      indexDir = fsDirectory.getDirectory().getAbsolutePath();
-    } else {
-      log.warn("WARNING: Directory impl does not support setting indexDir: " + dir.getClass().getName());
-    }
+
+    this.indexDir = getIndexDir(dir);
 
     this.closeReader = closeReader;
     setSimilarity(schema.getSimilarity());
