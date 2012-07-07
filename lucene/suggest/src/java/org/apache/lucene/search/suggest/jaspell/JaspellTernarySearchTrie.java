@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Vector;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.lucene.util.IOUtils;
+
 /**
  * Implementation of a Ternary Search Trie, a data structure for storing
  * <code>String</code> objects that combines the compact size of a binary search
@@ -196,10 +198,10 @@ public class JaspellTernarySearchTrie {
     this();
     BufferedReader in;
     if (compression)
-      in = new BufferedReader(new InputStreamReader(new GZIPInputStream(
-              new FileInputStream(file))));
-    else in = new BufferedReader(new InputStreamReader((new FileInputStream(
-            file))));
+      in = new BufferedReader(IOUtils.getDecodingReader(new GZIPInputStream(
+              new FileInputStream(file)), IOUtils.CHARSET_UTF_8));
+    else in = new BufferedReader(IOUtils.getDecodingReader((new FileInputStream(
+            file)), IOUtils.CHARSET_UTF_8));
     String word;
     int pos;
     Float occur, one = new Float(1);
