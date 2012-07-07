@@ -20,6 +20,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.util.Properties;
 
 import org.apache.lucene.benchmark.BenchmarkTestCase;
@@ -50,7 +51,7 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
  
     PrintStream curOut = System.out;
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(baos));
+    System.setOut(new PrintStream(baos, false, Charset.defaultCharset().name()));
     try {
       PerfRunData runData = createPerfRunData("SystemOut");
       CreateIndexTask cit = new CreateIndexTask(runData);
@@ -63,7 +64,7 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
     
     PrintStream curErr = System.err;
     baos.reset();
-    System.setErr(new PrintStream(baos));
+    System.setErr(new PrintStream(baos, false, Charset.defaultCharset().name()));
     try {
       PerfRunData runData = createPerfRunData("SystemErr");
       CreateIndexTask cit = new CreateIndexTask(runData);

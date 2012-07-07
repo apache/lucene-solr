@@ -5,9 +5,13 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 
 import org.junit.Test;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.CharBlockArray;
 
@@ -41,8 +45,12 @@ public class TestCharBlockArray extends LuceneTestCase {
     for (int i = 0; i < n; i++) {
       random().nextBytes(buffer);
       int size = 1 + random().nextInt(50);
-
-      String s = new String(buffer, 0, size);
+      // This test is turning random bytes into a string,
+      // this is asking for trouble.
+      CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+          .onUnmappableCharacter(CodingErrorAction.REPLACE)
+          .onMalformedInput(CodingErrorAction.REPLACE);
+      String s = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
       array.append(s);
       builder.append(s);
     }
@@ -50,8 +58,12 @@ public class TestCharBlockArray extends LuceneTestCase {
     for (int i = 0; i < n; i++) {
       random().nextBytes(buffer);
       int size = 1 + random().nextInt(50);
-
-      String s = new String(buffer, 0, size);
+      // This test is turning random bytes into a string,
+      // this is asking for trouble.
+      CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+          .onUnmappableCharacter(CodingErrorAction.REPLACE)
+          .onMalformedInput(CodingErrorAction.REPLACE);
+      String s = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
       array.append((CharSequence)s);
       builder.append(s);
     }
@@ -59,8 +71,12 @@ public class TestCharBlockArray extends LuceneTestCase {
     for (int i = 0; i < n; i++) {
       random().nextBytes(buffer);
       int size = 1 + random().nextInt(50);
-
-      String s = new String(buffer, 0, size);
+      // This test is turning random bytes into a string,
+      // this is asking for trouble.
+      CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+          .onUnmappableCharacter(CodingErrorAction.REPLACE)
+          .onMalformedInput(CodingErrorAction.REPLACE);
+      String s = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
       for (int j = 0; j < s.length(); j++) {
         array.append(s.charAt(j));
       }

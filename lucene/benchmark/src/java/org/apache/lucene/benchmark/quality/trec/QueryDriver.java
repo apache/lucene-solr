@@ -28,8 +28,9 @@ import org.apache.lucene.util.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -61,7 +62,7 @@ public class QueryDriver {
     int maxResults = 1000;
     String docNameField = "docname";
 
-    PrintWriter logger = new PrintWriter(System.out, true);
+    PrintWriter logger = new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()), true);
 
     // use trec utilities to read trec topics into quality queries
     TrecTopicsReader qReader = new TrecTopicsReader();
