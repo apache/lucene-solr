@@ -122,7 +122,7 @@ public class BBoxStrategy extends SpatialStrategy {
       ff.setIndexOptions(IndexOptions.DOCS_ONLY);
       ff.freeze();
 
-      NumberFormat nf = NumberFormat.getInstance( Locale.US );
+      NumberFormat nf = NumberFormat.getInstance( Locale.ROOT );
       nf.setMaximumFractionDigits( 5 );
       nf.setMinimumFractionDigits( 5 );
       nf.setGroupingUsed(false);

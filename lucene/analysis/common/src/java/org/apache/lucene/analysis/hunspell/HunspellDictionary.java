@@ -376,7 +376,7 @@ public class HunspellDictionary {
         Arrays.sort(wordForm.getFlags());
         entry = line.substring(0, flagSep);
         if(ignoreCase) {
-          entry = entry.toLowerCase(Locale.ENGLISH);
+          entry = entry.toLowerCase(Locale.ROOT);
         }
       }
       

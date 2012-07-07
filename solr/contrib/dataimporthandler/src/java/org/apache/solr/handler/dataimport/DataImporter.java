@@ -128,7 +128,7 @@ public class DataImporter {
   private void loadSchemaFieldMap() {
     Map<String, SchemaField> modLnvsf = new HashMap<String, SchemaField>();
     for (Map.Entry<String, SchemaField> entry : schema.getFields().entrySet()) {
-      modLnvsf.put(entry.getKey().toLowerCase(Locale.ENGLISH), entry.getValue());
+      modLnvsf.put(entry.getKey().toLowerCase(Locale.ROOT), entry.getValue());
     }
     lowerNameVsSchemaField = Collections.unmodifiableMap(modLnvsf);
   }
@@ -139,7 +139,7 @@ public class DataImporter {
       schemaField = schema.getFieldOrNull(caseInsensitiveName);
     }
     if (schemaField == null) {
-      schemaField = lowerNameVsSchemaField.get(caseInsensitiveName.toLowerCase(Locale.ENGLISH));
+      schemaField = lowerNameVsSchemaField.get(caseInsensitiveName.toLowerCase(Locale.ROOT));
     }
     return schemaField;
   }

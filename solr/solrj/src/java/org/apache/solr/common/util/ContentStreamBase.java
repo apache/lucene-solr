@@ -52,7 +52,7 @@ public abstract class ContentStreamBase implements ContentStream
   public static String getCharsetFromContentType( String contentType )
   {
     if( contentType != null ) {
-      int idx = contentType.toLowerCase(Locale.ENGLISH).indexOf( "charset=" );
+      int idx = contentType.toLowerCase(Locale.ROOT).indexOf( "charset=" );
       if( idx > 0 ) {
         return contentType.substring( idx + "charset=".length() ).trim();
       }

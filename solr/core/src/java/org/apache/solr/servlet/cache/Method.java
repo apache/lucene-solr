@@ -24,7 +24,7 @@ public enum Method {
 
   public static Method getMethod(String method) {
     try {
-      return Method.valueOf(method.toUpperCase(Locale.ENGLISH));
+      return Method.valueOf(method.toUpperCase(Locale.ROOT));
     } catch (Exception e) {
       return OTHER;
     }

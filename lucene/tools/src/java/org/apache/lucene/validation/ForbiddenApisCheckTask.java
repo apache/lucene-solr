@@ -168,7 +168,7 @@ public class ForbiddenApisCheckTask extends Task {
                 violations[0]++;
                 final StringBuilder sb = new StringBuilder("  in ").append(className);
                 if (source != null && lineNo >= 0) {
-                  new Formatter(sb, Locale.ENGLISH).format(" (%s:%d)", source, lineNo).flush();
+                  new Formatter(sb, Locale.ROOT).format(" (%s:%d)", source, lineNo).flush();
                 }
                 log(sb.toString(), Project.MSG_ERR);
               }
@@ -251,7 +251,7 @@ public class ForbiddenApisCheckTask extends Task {
         checked++;
       }
 
-      log(String.format(Locale.ENGLISH, 
+      log(String.format(Locale.ROOT, 
           "Scanned %d class file(s) for forbidden method invocations (in %.2fs), %d error(s).",
           checked, (System.currentTimeMillis() - start) / 1000.0, errors),
           errors > 0 ? Project.MSG_ERR : Project.MSG_INFO);

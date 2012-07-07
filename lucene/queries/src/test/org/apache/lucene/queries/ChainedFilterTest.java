@@ -183,7 +183,7 @@ public class ChainedFilterTest extends LuceneTestCase {
 
   /*
   private Date parseDate(String s) throws ParseException {
-    return new SimpleDateFormat("yyyy MMM dd", Locale.US).parse(s);
+    return new SimpleDateFormat("yyyy MMM dd", Locale.ROOT).parse(s);
   }
   */
   

@@ -357,7 +357,7 @@ public class CheckHits {
         // - end with one of: "product of:", "sum of:", "max of:", or
         // - have "max plus <x> times others" (where <x> is float).
         float x = 0;
-        String descr = expl.getDescription().toLowerCase(Locale.ENGLISH);
+        String descr = expl.getDescription().toLowerCase(Locale.ROOT);
         boolean productOf = descr.endsWith("product of:");
         boolean sumOf = descr.endsWith("sum of:");
         boolean maxOf = descr.endsWith("max of:");

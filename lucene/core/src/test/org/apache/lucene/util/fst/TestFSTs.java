@@ -1298,7 +1298,7 @@ public class TestFSTs extends LuceneTestCase {
           ord++;
           if (ord % 500000 == 0) {
             System.out.println(
-                String.format(Locale.ENGLISH, 
+                String.format(Locale.ROOT, 
                     "%6.2fs: %9d...", ((System.currentTimeMillis() - tStart) / 1000.0), ord));
           }
           if (ord >= limit) {

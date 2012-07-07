@@ -127,7 +127,7 @@ public class DateField extends PrimitiveFieldType {
    * Fixed Locale needed for parsing/formating Milliseconds in the 
    * canonical representation.
    */
-  protected static final Locale CANONICAL_LOCALE = Locale.US;
+  protected static final Locale CANONICAL_LOCALE = Locale.ROOT;
   
   // The XML (external) date format will sort correctly, except if
   // fractions of seconds are present (because '.' is lower than 'Z').

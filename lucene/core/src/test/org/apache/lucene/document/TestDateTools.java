@@ -180,7 +180,7 @@ public class TestDateTools extends LuceneTestCase {
   }
 
   private String isoFormat(Date date) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS", Locale.US);
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS", Locale.ROOT);
     sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
     return sdf.format(date);
   }

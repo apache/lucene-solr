@@ -44,7 +44,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
     
-    DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));
+    DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.ROOT));
     
     int num = atLeast(500);
     for (int l = 0; l < num; l++) {

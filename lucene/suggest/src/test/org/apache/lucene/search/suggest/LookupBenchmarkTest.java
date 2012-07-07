@@ -119,7 +119,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       });
 
       System.err.println(
-          String.format(Locale.ENGLISH, "%-15s input: %d, time[ms]: %s",
+          String.format(Locale.ROOT, "%-15s input: %d, time[ms]: %s",
               cls.getSimpleName(),
               dictionaryInput.length,
               result.average.toString()));
@@ -134,7 +134,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     for (Class<? extends Lookup> cls : benchmarkClasses) {
       Lookup lookup = buildLookup(cls, dictionaryInput);
       System.err.println(
-          String.format(Locale.ENGLISH, "%-15s size[B]:%,13d",
+          String.format(Locale.ROOT, "%-15s size[B]:%,13d",
               lookup.getClass().getSimpleName(), 
               RamUsageEstimator.sizeOf(lookup)));
     }
@@ -181,7 +181,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
    */
   public void runPerformanceTest(final int minPrefixLen, final int maxPrefixLen, 
       final int num, final boolean onlyMorePopular) throws Exception {
-    System.err.println(String.format(Locale.ENGLISH,
+    System.err.println(String.format(Locale.ROOT,
         "-- prefixes: %d-%d, num: %d, onlyMorePopular: %s",
         minPrefixLen, maxPrefixLen, num, onlyMorePopular));
 
@@ -206,7 +206,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       });
 
       System.err.println(
-          String.format(Locale.ENGLISH, "%-15s queries: %d, time[ms]: %s, ~kQPS: %.0f",
+          String.format(Locale.ROOT, "%-15s queries: %d, time[ms]: %s, ~kQPS: %.0f",
               lookup.getClass().getSimpleName(),
               input.size(),
               result.average.toString(),

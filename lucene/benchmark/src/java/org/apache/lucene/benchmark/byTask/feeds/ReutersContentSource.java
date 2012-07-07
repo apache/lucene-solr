@@ -76,7 +76,7 @@ public class ReutersContentSource extends ContentSource {
     if (dfi == null) {
       dfi = new DateFormatInfo();
       // date format: 30-MAR-1987 14:22:36.87
-      dfi.df = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss.SSS",Locale.US);
+      dfi.df = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss.SSS",Locale.ROOT);
       dfi.df.setLenient(true);
       dfi.pos = new ParsePosition(0);
       dateFormat.set(dfi);

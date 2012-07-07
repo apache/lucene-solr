@@ -36,7 +36,7 @@ public class TestCharArrayMap extends LuceneTestCase {
         key[j] = (char)random().nextInt(127);
       }
       String keyStr = new String(key);
-      String hmapKey = ignoreCase ? keyStr.toLowerCase(Locale.ENGLISH) : keyStr; 
+      String hmapKey = ignoreCase ? keyStr.toLowerCase(Locale.ROOT) : keyStr; 
 
       int val = random().nextInt();
 

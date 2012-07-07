@@ -227,7 +227,7 @@ void Tag() throws IOException :
 }
 {
   t1=<TagName> {
-   String tagName = t1.image.toLowerCase(Locale.ENGLISH);
+   String tagName = t1.image.toLowerCase(Locale.ROOT);
    if(Tags.WS_ELEMS.contains(tagName) ) {
       addSpace();
     }
@@ -249,7 +249,7 @@ void Tag() throws IOException :
 			)
 	   && t2 != null)
 	{
-		currentMetaTag=t2.image.toLowerCase(Locale.ENGLISH);
+		currentMetaTag=t2.image.toLowerCase(Locale.ROOT);
 		if(currentMetaTag != null && currentMetaContent != null) {
         	addMetaTag();
 		}
@@ -257,7 +257,7 @@ void Tag() throws IOException :
     	if(inMetaTag && t1.image.equalsIgnoreCase("content") && t2 !=
 null)
 	{
-		currentMetaContent=t2.image.toLowerCase(Locale.ENGLISH);
+		currentMetaContent=t2.image.toLowerCase(Locale.ROOT);
 		if(currentMetaTag != null && currentMetaContent != null) {
         	addMetaTag();
 		}

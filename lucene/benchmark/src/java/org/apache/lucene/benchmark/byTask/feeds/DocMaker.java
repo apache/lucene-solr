@@ -182,7 +182,7 @@ public class DocMaker implements Closeable {
   private boolean storeBytes = false;
 
   private static class DateUtil {
-    public SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss", Locale.US);
+    public SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss", Locale.ROOT);
     public Calendar cal = Calendar.getInstance();
     public ParsePosition pos = new ParsePosition(0);
     public DateUtil() {

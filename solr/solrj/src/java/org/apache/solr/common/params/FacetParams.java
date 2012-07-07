@@ -317,10 +317,10 @@ public interface FacetParams {
   public enum FacetRangeInclude {
     ALL, LOWER, UPPER, EDGE, OUTER;
     @Override
-    public String toString() { return super.toString().toLowerCase(Locale.ENGLISH); }
+    public String toString() { return super.toString().toLowerCase(Locale.ROOT); }
     public static FacetRangeInclude get(String label) {
       try {
-        return valueOf(label.toUpperCase(Locale.ENGLISH));
+        return valueOf(label.toUpperCase(Locale.ROOT));
       } catch (IllegalArgumentException e) {
         throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,

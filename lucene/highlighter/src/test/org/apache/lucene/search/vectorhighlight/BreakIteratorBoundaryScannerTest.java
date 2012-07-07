@@ -30,7 +30,7 @@ public class BreakIteratorBoundaryScannerTest extends LuceneTestCase {
 
   public void testOutOfRange() throws Exception {
     StringBuilder text = new StringBuilder(TEXT);
-    BreakIterator bi = BreakIterator.getWordInstance(Locale.ENGLISH);
+    BreakIterator bi = BreakIterator.getWordInstance(Locale.ROOT);
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
     
     int start = TEXT.length() + 1;
@@ -44,7 +44,7 @@ public class BreakIteratorBoundaryScannerTest extends LuceneTestCase {
 
   public void testWordBoundary() throws Exception {
     StringBuilder text = new StringBuilder(TEXT);
-    BreakIterator bi = BreakIterator.getWordInstance(Locale.ENGLISH);
+    BreakIterator bi = BreakIterator.getWordInstance(Locale.ROOT);
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
     
     int start = TEXT.indexOf("formance");

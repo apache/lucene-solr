@@ -70,7 +70,7 @@ public class UUIDField extends StrField {
   @Override
   public String toInternal(String val) {
     if (val == null || 0==val.length() || NEW.equals(val)) {
-      return UUID.randomUUID().toString().toLowerCase(Locale.ENGLISH);
+      return UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
     } else {
       // we do some basic validation if 'val' looks like an UUID
       if (val.length() != 36 || val.charAt(8) != DASH || val.charAt(13) != DASH
@@ -79,12 +79,12 @@ public class UUIDField extends StrField {
             "Invalid UUID String: '" + val + "'");
       }
 
-      return val.toLowerCase(Locale.ENGLISH);
+      return val.toLowerCase(Locale.ROOT);
     }
   }
 
   public String toInternal(UUID uuid) {
-    return uuid.toString().toLowerCase(Locale.ENGLISH);
+    return uuid.toString().toLowerCase(Locale.ROOT);
   }
 
   @Override

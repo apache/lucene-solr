@@ -131,7 +131,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     addGetterIfAvaliable( os, "maxFileDescriptorCount", info );
 
     try { 
-      if( !os.getName().toLowerCase(Locale.ENGLISH).startsWith( "windows" ) ) {
+      if( !os.getName().toLowerCase(Locale.ROOT).startsWith( "windows" ) ) {
         // Try some command line things
         info.add( "uname",  execute( "uname -a" ) );
         info.add( "uptime", execute( "uptime" ) );

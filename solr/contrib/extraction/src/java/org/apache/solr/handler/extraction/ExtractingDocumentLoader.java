@@ -138,7 +138,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     String streamType = req.getParams().get(ExtractingParams.STREAM_TYPE, null);
     if (streamType != null) {
       //Cache?  Parsers are lightweight to construct and thread-safe, so I'm told
-      MediaType mt = MediaType.parse(streamType.trim().toLowerCase(Locale.ENGLISH));
+      MediaType mt = MediaType.parse(streamType.trim().toLowerCase(Locale.ROOT));
       parser = new DefaultParser(config.getMediaTypeRegistry()).getParsers().get(mt);
     } else {
       parser = autoDetectParser;

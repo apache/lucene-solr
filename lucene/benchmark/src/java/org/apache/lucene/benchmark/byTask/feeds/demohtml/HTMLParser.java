@@ -227,7 +227,7 @@ InterruptedException {
   Token t1, t2;
   boolean inImg = false;
     t1 = jj_consume_token(TagName);
-   String tagName = t1.image.toLowerCase(Locale.ENGLISH);
+   String tagName = t1.image.toLowerCase(Locale.ROOT);
    if(Tags.WS_ELEMS.contains(tagName) ) {
       addSpace();
     }
@@ -264,7 +264,7 @@ InterruptedException {
                         )
            && t2 != null)
         {
-                currentMetaTag=t2.image.toLowerCase(Locale.ENGLISH);
+                currentMetaTag=t2.image.toLowerCase(Locale.ROOT);
                 if(currentMetaTag != null && currentMetaContent != null) {
                 addMetaTag();
                 }
@@ -272,7 +272,7 @@ InterruptedException {
         if(inMetaTag && t1.image.equalsIgnoreCase("content") && t2 !=
 null)
         {
-                currentMetaContent=t2.image.toLowerCase(Locale.ENGLISH);
+                currentMetaContent=t2.image.toLowerCase(Locale.ROOT);
                 if(currentMetaTag != null && currentMetaContent != null) {
                 addMetaTag();
                 }

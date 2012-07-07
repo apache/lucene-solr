@@ -93,7 +93,7 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   private Mode getMode(Map<String, String> args) {
     String mode = args.get(MODE);
     if (mode != null) {
-      return Mode.valueOf(mode.toUpperCase(Locale.ENGLISH));
+      return Mode.valueOf(mode.toUpperCase(Locale.ROOT));
     } else {
       return JapaneseTokenizer.DEFAULT_MODE;
     }

@@ -91,7 +91,7 @@ public class NumericQueryNode extends QueryNodeImpl implements
    */
   protected CharSequence getTermEscaped(EscapeQuerySyntax escaper) {
     return escaper.escape(NumberFormat.getNumberInstance().format(this.value),
-        Locale.ENGLISH, Type.NORMAL);
+        Locale.ROOT, Type.NORMAL);
   }
   
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {

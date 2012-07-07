@@ -54,7 +54,7 @@ public class TestWildcardRandom extends LuceneTestCase {
     Field field = newStringField("field", "", Field.Store.NO);
     doc.add(field);
     
-    NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ENGLISH));
+    NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ROOT));
     for (int i = 0; i < 1000; i++) {
       field.setStringValue(df.format(i));
       writer.addDocument(doc);

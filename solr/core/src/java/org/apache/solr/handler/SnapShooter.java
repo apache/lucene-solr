@@ -91,7 +91,7 @@ public class SnapShooter {
       if(numberToKeep<Integer.MAX_VALUE) {
         deleteOldBackups(numberToKeep);
       }
-      SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.US);
+      SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.ROOT);
       directoryName = "snapshot." + fmt.format(new Date());
       lock = lockFactory.makeLock(directoryName + ".lock");
       if (lock.isLocked()) return;
