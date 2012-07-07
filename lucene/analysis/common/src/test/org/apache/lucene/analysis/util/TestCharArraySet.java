@@ -258,7 +258,7 @@ public class TestCharArraySet extends LuceneTestCase {
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
     List<String> stopwordsUpper = new ArrayList<String>();
     for (String string : stopwords) {
-      stopwordsUpper.add(string.toUpperCase());
+      stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
     setIngoreCase.addAll(Arrays.asList(TEST_STOP_WORDS));
     setIngoreCase.add(Integer.valueOf(1));
@@ -305,7 +305,7 @@ public class TestCharArraySet extends LuceneTestCase {
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
     List<String> stopwordsUpper = new ArrayList<String>();
     for (String string : stopwords) {
-      stopwordsUpper.add(string.toUpperCase());
+      stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
     setIngoreCase.addAll(Arrays.asList(TEST_STOP_WORDS));
     setIngoreCase.add(Integer.valueOf(1));
@@ -351,7 +351,7 @@ public class TestCharArraySet extends LuceneTestCase {
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
     List<String> stopwordsUpper = new ArrayList<String>();
     for (String string : stopwords) {
-      stopwordsUpper.add(string.toUpperCase());
+      stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
 
