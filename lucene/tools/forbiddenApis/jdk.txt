@@ -8,6 +8,7 @@ java.lang.String#getBytes()
 java.lang.String#getBytes(int,int,byte[],int) 
 java.lang.String#toLowerCase()
 java.lang.String#toUpperCase()
+java.lang.String#format(java.lang.String,java.lang.Object[])
 
 java.io.FileReader
 java.io.FileWriter
