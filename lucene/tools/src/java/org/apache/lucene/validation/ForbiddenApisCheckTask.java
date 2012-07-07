@@ -57,8 +57,8 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Task to check if a set of class files contains calls to forbidden methods
- * from a given classpath and list of methods (either inline or as pointer to files).
+ * Task to check if a set of class files contains calls to forbidden APIs
+ * from a given classpath and list of API signatures (either inline or as pointer to files).
  */
 public class ForbiddenApisCheckTask extends Task {
 
@@ -187,7 +187,7 @@ public class ForbiddenApisCheckTask extends Task {
     }
   }
 
-  /** Reads a list of method signatures. Closes the Reader when done (on Exception, too)! */
+  /** Reads a list of API signatures. Closes the Reader when done (on Exception, too)! */
   private void parseApiFile(ClassLoader loader, Reader reader) throws IOException {
     final BufferedReader r = new BufferedReader(reader);
     try {
@@ -252,12 +252,12 @@ public class ForbiddenApisCheckTask extends Task {
       }
 
       log(String.format(Locale.ROOT, 
-          "Scanned %d class file(s) for forbidden method invocations (in %.2fs), %d error(s).",
+          "Scanned %d class file(s) for forbidden API invocations (in %.2fs), %d error(s).",
           checked, (System.currentTimeMillis() - start) / 1000.0, errors),
           errors > 0 ? Project.MSG_ERR : Project.MSG_INFO);
 
       if (errors > 0) {
-        throw new BuildException("Check for forbidden method calls failed, see log.");
+        throw new BuildException("Check for forbidden API calls failed, see log.");
       }
     } finally {
       if (loader != null) loader.cleanup();
@@ -269,12 +269,12 @@ public class ForbiddenApisCheckTask extends Task {
     classFiles.add(rc);
   }
   
-  /** A file with method signatures apiFile= attribute */
+  /** A file with API signatures apiFile= attribute */
   public void setApiFile(File file) {
     apiSignatures.add(new FileResource(getProject(), file));
   }
   
-  /** Set of files with method signatures as <apiFileSet/> nested element */
+  /** Set of files with API signatures as <apiFileSet/> nested element */
   public FileSet createApiFileSet() {
     final FileSet fs = new FileSet();
     fs.setProject(getProject());
