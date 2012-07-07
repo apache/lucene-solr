@@ -252,7 +252,7 @@ public class HunspellDictionary {
       }
 
       String condition = ruleArgs[4];
-      affix.setCondition(condition, String.format(conditionPattern, condition));
+      affix.setCondition(condition, String.format(Locale.ROOT, conditionPattern, condition));
       affix.setCrossProduct(crossProduct);
       
       List<HunspellAffix> list = affixes.get(affix.getAppend());

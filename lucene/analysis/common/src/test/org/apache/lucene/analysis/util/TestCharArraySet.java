@@ -208,16 +208,16 @@ public class TestCharArraySet extends LuceneTestCase {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertTrue(String.format(missing, lowerArr[i]), set.contains(lowerArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, lowerArr[i]), set.contains(lowerArr[i]));
     }
     set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList(TEST_STOP_WORDS), false);
     for (String upper : upperArr) {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(falsePos, lowerArr[i]), set.contains(lowerArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set.contains(lowerArr[i]));
     }
   }
   
@@ -235,8 +235,8 @@ public class TestCharArraySet extends LuceneTestCase {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertTrue(String.format(missing, lowerArr[i]), set.contains(lowerArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, lowerArr[i]), set.contains(lowerArr[i]));
     }
     set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList(TEST_STOP_WORDS),
         false);
@@ -244,8 +244,8 @@ public class TestCharArraySet extends LuceneTestCase {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(falsePos, upperArr[i]), set
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(Locale.ROOT, falsePos, upperArr[i]), set
           .contains(lowerArr[i]));
     }
   }
