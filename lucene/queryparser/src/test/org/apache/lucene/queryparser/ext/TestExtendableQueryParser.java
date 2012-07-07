@@ -17,6 +17,8 @@ package org.apache.lucene.queryparser.ext;
  * limitations under the License.
  */
 
+import java.util.Locale;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -70,7 +72,7 @@ public class TestExtendableQueryParser extends QueryParserTestBase {
       ExtendableQueryParser parser = (ExtendableQueryParser) getParser(null,
           ext);
       String field = ext.buildExtensionField("testExt", "aField");
-      Query query = parser.parse(String.format("%s:foo bar", field));
+      Query query = parser.parse(String.format(Locale.ROOT, "%s:foo bar", field));
       assertTrue("expected instance of BooleanQuery but was "
           + query.getClass(), query instanceof BooleanQuery);
       BooleanQuery bquery = (BooleanQuery) query;
@@ -102,7 +104,7 @@ public class TestExtendableQueryParser extends QueryParserTestBase {
       ExtendableQueryParser parser = (ExtendableQueryParser) getParser(null,
           ext);
       String field = ext.buildExtensionField("testExt");
-      Query parse = parser.parse(String.format("%s:\"foo \\& bar\"", field));
+      Query parse = parser.parse(String.format(Locale.ROOT, "%s:\"foo \\& bar\"", field));
       assertTrue("expected instance of TermQuery but was " + parse.getClass(),
           parse instanceof TermQuery);
       TermQuery tquery = (TermQuery) parse;
@@ -122,7 +124,7 @@ public class TestExtendableQueryParser extends QueryParserTestBase {
       ExtendableQueryParser parser = (ExtendableQueryParser) getParser(null,
           ext);
       String field = ext.buildExtensionField("testExt", "afield");
-      Query parse = parser.parse(String.format("%s:\"foo \\& bar\"", field));
+      Query parse = parser.parse(String.format(Locale.ROOT, "%s:\"foo \\& bar\"", field));
       assertTrue("expected instance of TermQuery but was " + parse.getClass(),
           parse instanceof TermQuery);
       TermQuery tquery = (TermQuery) parse;

@@ -595,7 +595,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       } else {
         // TODO: we can make ascii easier to read if we
         // don't escape...
-        sb.append(String.format("\\u%04x", c));
+        sb.append(String.format(Locale.ROOT, "\\u%04x", c));
       }
       charUpto += Character.charCount(c);
     }

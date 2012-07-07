@@ -17,6 +17,8 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import java.util.Locale;
+
 import org.apache.lucene.search.Explanation;
 
 /**
@@ -92,6 +94,6 @@ public class LMDirichletSimilarity extends LMSimilarity {
   
   @Override
   public String getName() {
-    return String.format("Dirichlet(%f)", getMu());
+    return String.format(Locale.ROOT, "Dirichlet(%f)", getMu());
   }
 }

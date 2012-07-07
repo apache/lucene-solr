@@ -25,6 +25,7 @@ import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
+import java.util.Locale;
 
 /**
  * IDV based Implementations of {@link AbstractFirstPassGroupingCollector}.
@@ -74,7 +75,7 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
         // Type erasure b/c otherwise we have inconvertible types...
         return (DVFirstPassGroupingCollector) new SortedBR(groupSort, topNGroups, groupField, diskResident, type);
       default:
-        throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "ValueType %s not supported", type));
     }
   }
 
