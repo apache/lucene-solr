@@ -57,6 +57,8 @@ Bug Fixes
   
 * SOLR-3587: After reloading a SolrCore, the original Analyzer is still used rather than a new 
   one. (Alexey Serba, yonik, rmuir, Mark Miller)
+  
+* LUCENE-4185: Fix a bug where CharFilters were wrongly being applied twice. (Michael Froh, rmuir)
 
 Other Changes
 
