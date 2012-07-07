@@ -52,12 +52,12 @@ public class TestCheckIndex extends LuceneTestCase {
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
-    checker.setInfoStream(new PrintStream(bos));
+    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"));
     if (VERBOSE) checker.setInfoStream(System.out);
     CheckIndex.Status indexStatus = checker.checkIndex();
     if (indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
-      System.out.println(bos.toString());
+      System.out.println(bos.toString("UTF-8"));
       fail();
     }
     
