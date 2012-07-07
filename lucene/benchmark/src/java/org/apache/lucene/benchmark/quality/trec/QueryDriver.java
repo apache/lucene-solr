@@ -24,6 +24,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -51,7 +52,7 @@ public class QueryDriver {
     
     File topicsFile = new File(args[0]);
     File qrelsFile = new File(args[1]);
-    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2]), "lucene");
+    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2], "UTF-8"), "lucene");
     FSDirectory dir = FSDirectory.open(new File(args[3]));
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
     IndexReader reader = DirectoryReader.open(dir);
@@ -64,10 +65,10 @@ public class QueryDriver {
 
     // use trec utilities to read trec topics into quality queries
     TrecTopicsReader qReader = new TrecTopicsReader();
-    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(new FileReader(topicsFile)));
+    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(IOUtils.getDecodingReader(topicsFile, IOUtils.CHARSET_UTF_8)));
 
     // prepare judge, with trec utilities that read from a QRels file
-    Judge judge = new TrecJudge(new BufferedReader(new FileReader(qrelsFile)));
+    Judge judge = new TrecJudge(new BufferedReader(IOUtils.getDecodingReader(qrelsFile, IOUtils.CHARSET_UTF_8)));
 
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);

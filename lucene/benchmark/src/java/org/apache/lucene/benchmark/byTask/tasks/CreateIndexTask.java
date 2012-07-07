@@ -40,6 +40,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 
 /**
  * Create an index. <br>
@@ -182,7 +183,7 @@ public class CreateIndexTask extends PerfTask {
         iwc.setInfoStream(System.err);
       } else {
         File f = new File(infoStreamVal).getAbsoluteFile();
-        iwc.setInfoStream(new PrintStream(new BufferedOutputStream(new FileOutputStream(f))));
+        iwc.setInfoStream(new PrintStream(new BufferedOutputStream(new FileOutputStream(f)), false, Charset.defaultCharset().name()));
       }
     }
     IndexWriter writer = new IndexWriter(runData.getDirectory(), iwc);

@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
@@ -146,7 +147,7 @@ public class EnwikiContentSource extends ContentSource {
         case BODY:
           body = contents.toString();
           //workaround that startswith doesn't have an ignore case option, get at least 20 chars.
-          String startsWith = body.substring(0, Math.min(10, contents.length())).toLowerCase();
+          String startsWith = body.substring(0, Math.min(10, contents.length())).toLowerCase(Locale.ROOT);
           if (startsWith.startsWith("#redirect")) {
             body = null;
           }
