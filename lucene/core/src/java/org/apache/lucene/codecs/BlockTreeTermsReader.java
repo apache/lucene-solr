@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Locale;
@@ -346,7 +347,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
     @Override
     public String toString() {
       final ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-      final PrintStream out = new PrintStream(bos);
+      PrintStream out;
+      try {
+        out = new PrintStream(bos, false, "UTF-8");
+      } catch (UnsupportedEncodingException bogus) {
+        throw new RuntimeException(bogus);
+      }
       
       out.println("  index FST:");
       out.println("    " + indexNodeCount + " nodes");
@@ -379,7 +385,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
         assert totalBlockCount == total;
       }
 
-      return bos.toString();
+      try {
+        return bos.toString("UTF-8");
+      } catch (UnsupportedEncodingException bogus) {
+        throw new RuntimeException(bogus);
+      }
     }
   }
 
