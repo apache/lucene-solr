@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IndexOutput;
 
 import java.io.IOException;
@@ -63,7 +64,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   }
 
   @Override
-  public TermsConsumer addField(FieldInfo field) throws IOException {
+  public TermsConsumer addField(FieldInfo field, Similarity sim) throws IOException {
     write(FIELD);
     write(field.name);
     newline();

@@ -27,6 +27,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
@@ -196,7 +197,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   }
   
   @Override
-  public TermsConsumer addField(FieldInfo field) throws IOException {
+  public TermsConsumer addField(FieldInfo field, Similarity sim) throws IOException {
     //DEBUG = field.name.equals("id");
     //if (DEBUG) System.out.println("\nBTTW.addField seg=" + segment + " field=" + field.name);
     assert currentField == null || currentField.name.compareTo(field.name) < 0;

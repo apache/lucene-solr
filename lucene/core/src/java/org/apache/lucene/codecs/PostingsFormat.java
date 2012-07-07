@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.NamedSPILoader;
 
 /** 

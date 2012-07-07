@@ -362,7 +362,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       return; // nothing to flush, don't bother the codec with the unindexed field
     }
     
-    final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
+    final TermsConsumer termsConsumer = consumer.addField(fieldInfo, docState.similarity);
     final Comparator<BytesRef> termComp = termsConsumer.getComparator();
 
     // CONFUSING: this.indexOptions holds the index options

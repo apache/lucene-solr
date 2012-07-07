@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentWriteState; // javadocs
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.similarities.Similarity;
 
 /** 
  * Abstract API that consumes terms, doc, freq, prox, offset and
@@ -47,7 +48,8 @@ import org.apache.lucene.index.Terms;
 public abstract class FieldsConsumer implements Closeable {
 
   /** Add a new field */
-  public abstract TermsConsumer addField(FieldInfo field) throws IOException;
+  // nocommit: how to fix this api? really we need sim + norms.
+  public abstract TermsConsumer addField(FieldInfo field, Similarity similarity) throws IOException;
   
   /** Called when we are done adding everything. */
   public abstract void close() throws IOException;
@@ -61,7 +63,7 @@ public abstract class FieldsConsumer implements Closeable {
       assert mergeState.fieldInfo != null : "FieldInfo for field is null: "+ field;
       Terms terms = fieldsEnum.terms();
       if (terms != null) {
-        final TermsConsumer termsConsumer = addField(mergeState.fieldInfo);
+        final TermsConsumer termsConsumer = addField(mergeState.fieldInfo, mergeState.similarity);
         termsConsumer.merge(mergeState, terms);
       }
     }

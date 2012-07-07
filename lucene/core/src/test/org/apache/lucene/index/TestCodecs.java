@@ -38,6 +38,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
@@ -105,7 +106,8 @@ public class TestCodecs extends LuceneTestCase {
 
     public void write(final FieldsConsumer consumer) throws Throwable {
       Arrays.sort(terms);
-      final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
+      // warning: bogus
+      final TermsConsumer termsConsumer = consumer.addField(fieldInfo, new DefaultSimilarity());
       long sumTotalTermCount = 0;
       long sumDF = 0;
       OpenBitSet visitedDocs = new OpenBitSet();

@@ -29,6 +29,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
@@ -57,12 +58,13 @@ final class SegmentMerger {
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
   SegmentMerger(SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval,
                 MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider,
-                FieldInfos.FieldNumbers fieldNumbers, IOContext context) {
+                FieldInfos.FieldNumbers fieldNumbers, Similarity similarity, IOContext context) {
     mergeState.segmentInfo = segmentInfo;
     mergeState.infoStream = infoStream;
     mergeState.readers = new ArrayList<AtomicReader>();
     mergeState.checkAbort = checkAbort;
     mergeState.payloadProcessorProvider = payloadProcessorProvider;
+    mergeState.similarity = similarity;
     directory = dir;
     this.termIndexInterval = termIndexInterval;
     this.codec = segmentInfo.getCodec();

@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
@@ -205,6 +206,8 @@ public class MergeState {
   // but is this really so expensive to compute again in different components, versus once in SM?
   public SegmentReader[] matchingSegmentReaders;
   public int matchedCount;
+  
+  public Similarity similarity;
   
   public static class CheckAbort {
     private double workCount;

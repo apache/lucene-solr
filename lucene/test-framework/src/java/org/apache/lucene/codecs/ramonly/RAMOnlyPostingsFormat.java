@@ -45,6 +45,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
@@ -194,7 +195,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsConsumer addField(FieldInfo field) {
+    public TermsConsumer addField(FieldInfo field, Similarity sim) {
       if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
         throw new UnsupportedOperationException("this codec cannot index offsets");
       }

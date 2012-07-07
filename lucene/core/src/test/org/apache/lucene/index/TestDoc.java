@@ -33,6 +33,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
@@ -200,7 +201,7 @@ public class TestDoc extends LuceneTestCase {
       final SegmentInfo si = new SegmentInfo(si1.info.dir, Constants.LUCENE_MAIN_VERSION, merged, -1, false, codec, null, null);
 
       SegmentMerger merger = new SegmentMerger(si, InfoStream.getDefault(), trackingDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL,
-                                               MergeState.CheckAbort.NONE, null, new FieldInfos.FieldNumbers(), context);
+                                               MergeState.CheckAbort.NONE, null, new FieldInfos.FieldNumbers(), new DefaultSimilarity(), context);
 
       merger.add(r1);
       merger.add(r2);

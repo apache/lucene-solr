@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
@@ -82,7 +83,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     final SegmentInfo si = new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, -1, false, codec, null, null);
 
     SegmentMerger merger = new SegmentMerger(si, InfoStream.getDefault(), mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL,
-                                             MergeState.CheckAbort.NONE, null, new FieldInfos.FieldNumbers(), newIOContext(random()));
+                                             MergeState.CheckAbort.NONE, null, new FieldInfos.FieldNumbers(), new DefaultSimilarity(), newIOContext(random()));
     merger.add(reader1);
     merger.add(reader2);
     MergeState mergeState = merger.merge();

@@ -40,6 +40,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -293,7 +294,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
     
     return new FieldsConsumer() {
       @Override
-      public TermsConsumer addField(FieldInfo field) {
+      public TermsConsumer addField(FieldInfo field, Similarity sim) {
         //System.out.println("\naddField field=" + field.name);
         return new TermsWriter(out, field, doPackFST, acceptableOverheadRatio);
       }

@@ -34,6 +34,7 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -90,7 +91,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsConsumer addField(FieldInfo field) throws IOException {
+    public TermsConsumer addField(FieldInfo field, Similarity sim) throws IOException {
       final PostingsFormat format = getPostingsFormatForField(field.name);
       if (format == null) {
         throw new IllegalStateException("invalid null PostingsFormat for field=\"" + field.name + "\"");
@@ -136,7 +137,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       // .hasProx could work correctly?
       // NOTE: .hasProx is already broken in the same way for the non-perfield case,
       // if there is a fieldinfo with prox that has no postings, you get a 0 byte file.
-      return consumer.consumer.addField(field);
+      return consumer.consumer.addField(field, sim);
     }
 
     @Override
