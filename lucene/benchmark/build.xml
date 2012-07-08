@@ -262,9 +262,11 @@
     <target name="init" depends="module-build.init,resolve-icu,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
   
     <target name="clean-javacc">
-      <fileset dir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml" includes="*.java">
-	<containsregexp expression="Generated.*By.*JavaCC"/>
-      </fileset>
+      <delete>
+        <fileset dir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml" includes="*.java">
+    <containsregexp expression="Generated.*By.*JavaCC"/>
+        </fileset>
+      </delete>
     </target>
     
     <target name="javacc" depends="init,javacc-check" if="javacc.present">

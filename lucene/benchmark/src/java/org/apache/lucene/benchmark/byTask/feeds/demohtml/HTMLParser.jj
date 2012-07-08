@@ -22,6 +22,7 @@ options {
   //DEBUG_LOOKAHEAD = true;
   //DEBUG_TOKEN_MANAGER = true;
   UNICODE_INPUT = true;
+  USER_CHAR_STREAM=true;
 }
 
 PARSER_BEGIN(HTMLParser)
@@ -56,6 +57,10 @@ public class HTMLParser {
   private MyPipedInputStream pipeInStream = null;
   private PipedOutputStream pipeOutStream = null;
   
+  public HTMLParser(Reader reader) {
+    this(new FastCharStream(reader));
+  }
+
   private class MyPipedInputStream extends PipedInputStream{
     
     public MyPipedInputStream(){
