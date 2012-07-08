@@ -99,7 +99,6 @@ public final class FastCharStream implements CharStream {
     try {
       input.close();
     } catch (IOException e) {
-      System.err.println("Caught: " + e + "; ignoring.");
     }
   }
 
