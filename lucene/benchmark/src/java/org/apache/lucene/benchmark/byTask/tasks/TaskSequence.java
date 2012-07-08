@@ -429,7 +429,7 @@ public class TaskSequence extends PerfTask {
     sb.append(padd);
     sb.append(!letChildReport ? ">" : (parallel ? "]" : "}"));
     if (fixedTime) {
-      sb.append(" " + NumberFormat.getNumberInstance().format(runTimeSec) + "s");
+      sb.append(" " + NumberFormat.getNumberInstance(Locale.ROOT).format(runTimeSec) + "s");
     } else if (repetitions>1) {
       sb.append(" * " + repetitions);
     } else if (repetitions==REPEAT_EXHAUST) {

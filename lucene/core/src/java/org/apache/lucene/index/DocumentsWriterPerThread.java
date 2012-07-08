@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.HashSet;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -181,7 +182,7 @@ class DocumentsWriterPerThread {
   private int flushedDocCount;
   DocumentsWriterDeleteQueue deleteQueue;
   DeleteSlice deleteSlice;
-  private final NumberFormat nf = NumberFormat.getInstance();
+  private final NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
   final Allocator byteBlockAllocator;
 
   

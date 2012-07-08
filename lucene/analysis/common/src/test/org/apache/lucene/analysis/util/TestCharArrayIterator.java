@@ -32,7 +32,8 @@ public class TestCharArrayIterator extends LuceneTestCase {
   }
   
   public void testConsumeWordInstance() {
-    BreakIterator bi = BreakIterator.getWordInstance();
+    // we use the default locale, as its randomized by LuceneTestCase
+    BreakIterator bi = BreakIterator.getWordInstance(Locale.getDefault());
     CharArrayIterator ci = CharArrayIterator.newWordInstance();
     for (int i = 0; i < 10000; i++) {
       char text[] = _TestUtil.randomUnicodeString(random()).toCharArray();
@@ -43,7 +44,8 @@ public class TestCharArrayIterator extends LuceneTestCase {
   
   /* run this to test if your JRE is buggy
   public void testWordInstanceJREBUG() {
-    BreakIterator bi = BreakIterator.getWordInstance();
+    // we use the default locale, as its randomized by LuceneTestCase
+    BreakIterator bi = BreakIterator.getWordInstance(Locale.getDefault());
     Segment ci = new Segment();
     for (int i = 0; i < 10000; i++) {
       char text[] = _TestUtil.randomUnicodeString(random).toCharArray();
@@ -60,7 +62,8 @@ public class TestCharArrayIterator extends LuceneTestCase {
   }
   
   public void testConsumeSentenceInstance() {
-    BreakIterator bi = BreakIterator.getSentenceInstance();
+    // we use the default locale, as its randomized by LuceneTestCase
+    BreakIterator bi = BreakIterator.getSentenceInstance(Locale.getDefault());
     CharArrayIterator ci = CharArrayIterator.newSentenceInstance();
     for (int i = 0; i < 10000; i++) {
       char text[] = _TestUtil.randomUnicodeString(random()).toCharArray();
@@ -71,7 +74,8 @@ public class TestCharArrayIterator extends LuceneTestCase {
   
   /* run this to test if your JRE is buggy
   public void testSentenceInstanceJREBUG() {
-    BreakIterator bi = BreakIterator.getSentenceInstance();
+    // we use the default locale, as its randomized by LuceneTestCase
+    BreakIterator bi = BreakIterator.getSentenceInstance(Locale.getDefault());
     Segment ci = new Segment();
     for (int i = 0; i < 10000; i++) {
       char text[] = _TestUtil.randomUnicodeString(random).toCharArray();

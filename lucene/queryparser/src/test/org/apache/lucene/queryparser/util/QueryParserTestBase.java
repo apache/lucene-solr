@@ -581,7 +581,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   
   /** for testing DateTools support */
   private String getDate(String s, DateTools.Resolution resolution) throws Exception {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+    // we use the default Locale since LuceneTestCase randomizes it
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
     return getDate(df.parse(s), resolution);      
   }
   
@@ -591,7 +592,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
   
   private String getLocalizedDate(int year, int month, int day) {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+    // we use the default Locale since LuceneTestCase randomizes it
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
     Calendar calendar = new GregorianCalendar();
     calendar.clear();
     calendar.set(year, month, day);

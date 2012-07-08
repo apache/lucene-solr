@@ -157,7 +157,7 @@ public class EncodingSpeed {
   }
 
   static {
-    nf = NumberFormat.getInstance();
+    nf = NumberFormat.getInstance(Locale.ROOT);
     nf.setMaximumFractionDigits(4);
     nf.setMinimumFractionDigits(4);
 
