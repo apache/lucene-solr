@@ -35,6 +35,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Locale;
 import java.util.Vector;
 import java.util.zip.GZIPInputStream;
 
@@ -149,11 +150,18 @@ public class JaspellTernarySearchTrie {
 
   /** The base node in the trie. */
   private TSTNode rootNode;
+  
+  private final Locale locale;
 
   /**
    * Constructs an empty Ternary Search Trie.
    */
   public JaspellTernarySearchTrie() {
+    this(Locale.ROOT);
+  }
+  
+  public JaspellTernarySearchTrie(Locale locale) {
+    this.locale = locale;
   }
   
   // for loading
@@ -214,7 +222,7 @@ public class JaspellTernarySearchTrie {
         occur = Float.parseFloat(word.substring(pos + 1).trim());
         word = word.substring(0, pos);
       }
-      String key = word.toLowerCase();
+      String key = word.toLowerCase(locale);
       if (rootNode == null) {
         rootNode = new TSTNode(key.charAt(0), null);
       }
@@ -244,7 +252,7 @@ public class JaspellTernarySearchTrie {
         if (occur2 != null) {
           occur += occur2.floatValue();
         }
-        currentNode = getOrCreateNode(word.trim().toLowerCase());
+        currentNode = getOrCreateNode(word.trim().toLowerCase(locale));
         currentNode.data = occur;
       }
     }
@@ -384,7 +392,7 @@ public class JaspellTernarySearchTrie {
    *@return The <code>Float</code> retrieved from the Ternary Search Trie.
    */
   public Float getAndIncrement(String key) {
-    String key2 = key.trim().toLowerCase();
+    String key2 = key.trim().toLowerCase(locale);
     TSTNode node = getNode(key2);
     if (node == null) {
       return null;
@@ -765,7 +773,7 @@ public class JaspellTernarySearchTrie {
    *          the Trie.
    */
   public void remove(String key) {
-    deleteNode(getNode(key.trim().toLowerCase()));
+    deleteNode(getNode(key.trim().toLowerCase(locale)));
   }
 
   /**

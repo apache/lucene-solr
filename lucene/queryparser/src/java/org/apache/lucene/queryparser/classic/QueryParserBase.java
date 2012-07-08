@@ -316,7 +316,8 @@ public abstract class QueryParserBase {
   }
 
   /**
-   * Set locale used by date range parsing.
+   * Set locale used by date range parsing, lowercasing, and other
+   * locale-sensitive operations.
    */
   public void setLocale(Locale locale) {
     this.locale = locale;
@@ -658,8 +659,8 @@ public abstract class QueryParserBase {
                                 boolean endInclusive) throws ParseException
   {
     if (lowercaseExpandedTerms) {
-      part1 = part1==null ? null : part1.toLowerCase();
-      part2 = part2==null ? null : part2.toLowerCase();
+      part1 = part1==null ? null : part1.toLowerCase(locale);
+      part2 = part2==null ? null : part2.toLowerCase(locale);
     }
 
 
@@ -935,7 +936,7 @@ public abstract class QueryParserBase {
     if (!allowLeadingWildcard && (termStr.startsWith("*") || termStr.startsWith("?")))
       throw new ParseException("'*' or '?' not allowed as first character in WildcardQuery");
     if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase();
+      termStr = termStr.toLowerCase(locale);
     }
     Term t = new Term(field, termStr);
     return newWildcardQuery(t);
@@ -964,7 +965,7 @@ public abstract class QueryParserBase {
   protected Query getRegexpQuery(String field, String termStr) throws ParseException
   {
     if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase();
+      termStr = termStr.toLowerCase(locale);
     }
     Term t = new Term(field, termStr);
     return newRegexpQuery(t);
@@ -998,7 +999,7 @@ public abstract class QueryParserBase {
     if (!allowLeadingWildcard && termStr.startsWith("*"))
       throw new ParseException("'*' not allowed as first character in PrefixQuery");
     if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase();
+      termStr = termStr.toLowerCase(locale);
     }
     Term t = new Term(field, termStr);
     return newPrefixQuery(t);
@@ -1018,7 +1019,7 @@ public abstract class QueryParserBase {
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase();
+      termStr = termStr.toLowerCase(locale);
     }
     Term t = new Term(field, termStr);
     return newFuzzyQuery(t, minSimilarity, fuzzyPrefixLength);
