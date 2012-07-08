@@ -151,7 +151,9 @@ public class MockTokenizer extends Tokenizer {
           off++;
           assert Character.isLowSurrogate((char) ch2) : "unpaired high surrogate: " + Integer.toHexString(ch) + ", followed by: " + Integer.toHexString(ch2);
           return Character.toCodePoint((char) ch, (char) ch2);
-        }
+        } else {
+          assert false : "stream ends with unpaired high surrogate: " + Integer.toHexString(ch);
+	}
       }
       return ch;
     }
