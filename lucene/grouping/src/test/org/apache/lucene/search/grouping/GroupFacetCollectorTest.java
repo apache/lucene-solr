@@ -284,7 +284,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
           int counter = 1;
           for (TermGroupFacetCollector.FacetEntry expectedFacetEntry : expectedFacetEntries) {
             System.out.println(
-                String.format(
+                String.format(Locale.ROOT,
                     "%d. Expected facet value %s with count %d",
                     counter++, expectedFacetEntry.getValue().utf8ToString(), expectedFacetEntry.getCount()
                 )
@@ -297,7 +297,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
           counter = 1;
           for (TermGroupFacetCollector.FacetEntry actualFacetEntry : actualFacetEntries) {
             System.out.println(
-                String.format(
+                String.format(Locale.ROOT,
                     "%d. Actual facet value %s with count %d",
                     counter++, actualFacetEntry.getValue().utf8ToString(), actualFacetEntry.getCount()
                 )

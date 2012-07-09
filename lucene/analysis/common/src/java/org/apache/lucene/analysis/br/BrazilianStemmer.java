@@ -1,5 +1,7 @@
 package org.apache.lucene.analysis.br;
 
+import java.util.Locale;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +23,7 @@ package org.apache.lucene.analysis.br;
  * A stemmer for Brazilian Portuguese words.
  */
 public class BrazilianStemmer {
+  private static final Locale locale = new Locale("pt", "BR");
 
 	/**
 	 * Changed term
@@ -243,7 +246,7 @@ public class BrazilianStemmer {
       return null ;
     }
 
-    value = value.toLowerCase() ;
+    value = value.toLowerCase(locale) ;
     for (j=0 ; j < value.length() ; j++) {
       if ((value.charAt(j) == 'á') ||
           (value.charAt(j) == 'â') ||

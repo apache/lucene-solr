@@ -59,7 +59,7 @@ public interface MoreLikeThisParams
     public static TermStyle get( String p )
     {
       if( p != null ) {
-        p = p.toUpperCase(Locale.ENGLISH);
+        p = p.toUpperCase(Locale.ROOT);
         if( p.equals( "DETAILS" ) ) {
           return DETAILS;
         }

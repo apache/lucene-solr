@@ -38,12 +38,12 @@ public class PlainTextDictionary implements Dictionary {
 
   private BufferedReader in;
 
-  public PlainTextDictionary(File file) throws FileNotFoundException {
-    in = new BufferedReader(new FileReader(file));
+  public PlainTextDictionary(File file) throws IOException {
+    in = new BufferedReader(IOUtils.getDecodingReader(file, IOUtils.CHARSET_UTF_8));
   }
 
   public PlainTextDictionary(InputStream dictFile) {
-    in = new BufferedReader(new InputStreamReader(dictFile));
+    in = new BufferedReader(IOUtils.getDecodingReader(dictFile, IOUtils.CHARSET_UTF_8));
   }
 
   /**

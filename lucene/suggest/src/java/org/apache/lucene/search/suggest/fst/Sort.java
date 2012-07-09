@@ -132,7 +132,7 @@ public final class Sort {
     
     @Override
     public String toString() {
-      return String.format(Locale.ENGLISH,
+      return String.format(Locale.ROOT,
           "time=%.2f sec. total (%.2f reading, %.2f sorting, %.2f merging), lines=%d, temp files=%d, merges=%d, soft ram limit=%.2f MB",
           totalTime / 1000.0d, readTime / 1000.0d, sortTime / 1000.0d, mergeTime / 1000.0d,
           lines, tempMergeFiles, mergeRounds,

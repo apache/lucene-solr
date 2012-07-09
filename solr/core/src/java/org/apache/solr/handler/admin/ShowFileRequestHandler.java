@@ -101,7 +101,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       String[] hidden = invariants.getParams( HIDDEN );
       if( hidden != null ) {
         for( String s : hidden ) {
-          hiddenFiles.add( s.toUpperCase(Locale.ENGLISH) );
+          hiddenFiles.add( s.toUpperCase(Locale.ROOT) );
         }
       }
     }
@@ -138,7 +138,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       adminFile = confPath;
     } else {
       fname = fname.replace('\\', '/'); // normalize slashes
-      if (hiddenFiles.contains(fname.toUpperCase(Locale.ENGLISH))) {
+      if (hiddenFiles.contains(fname.toUpperCase(Locale.ROOT))) {
         throw new SolrException(ErrorCode.FORBIDDEN, "Can not access: " + fname);
       }
       if (fname.indexOf("..") >= 0) {
@@ -159,7 +159,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       
       NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<SimpleOrderedMap<Object>>();
       for (String f : children) {
-        if (hiddenFiles.contains(f.toUpperCase(Locale.ENGLISH))) {
+        if (hiddenFiles.contains(f.toUpperCase(Locale.ROOT))) {
           continue; // don't show 'hidden' files
         }
         if (f.startsWith(".")) {
@@ -214,7 +214,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     }
     else {
       fname = fname.replace( '\\', '/' ); // normalize slashes
-      if( hiddenFiles.contains( fname.toUpperCase(Locale.ENGLISH) ) ) {
+      if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
         throw new SolrException( ErrorCode.FORBIDDEN, "Can not access: "+fname );
       }
       if( fname.indexOf( ".." ) >= 0 ) {
@@ -241,7 +241,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       for( File f : adminFile.listFiles() ) {
         String path = f.getAbsolutePath().substring( basePath );
         path = path.replace( '\\', '/' ); // normalize slashes
-        if( hiddenFiles.contains( path.toUpperCase(Locale.ENGLISH) ) ) {
+        if( hiddenFiles.contains( path.toUpperCase(Locale.ROOT) ) ) {
           continue; // don't show 'hidden' files
         }
         if( f.isHidden() || f.getName().startsWith( "." ) ) {

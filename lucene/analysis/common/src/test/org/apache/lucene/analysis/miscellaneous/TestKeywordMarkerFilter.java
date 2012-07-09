@@ -79,7 +79,7 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
         if (!keywordAttr.isKeyword()) {
-          final String term = termAtt.toString().toLowerCase(Locale.ENGLISH);
+          final String term = termAtt.toString().toLowerCase(Locale.ROOT);
           termAtt.setEmpty().append(term);
         }
         return true;

@@ -1,11 +1,15 @@
 package org.apache.lucene.facet.taxonomy.writercache.cl2o;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.CompactLabelToOrdinal;
@@ -46,7 +50,12 @@ public class TestCompactLabelToOrdinal extends LuceneTestCase {
       random().nextBytes(buffer);
       int size = 1 + random().nextInt(50);
 
-      uniqueValues[i] = new String(buffer, 0, size);
+      // This test is turning random bytes into a string,
+      // this is asking for trouble.
+      CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+          .onUnmappableCharacter(CodingErrorAction.REPLACE)
+          .onMalformedInput(CodingErrorAction.REPLACE);
+      uniqueValues[i] = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
       if (uniqueValues[i].indexOf(CompactLabelToOrdinal.TerminatorChar) == -1) {
         i++;
       }

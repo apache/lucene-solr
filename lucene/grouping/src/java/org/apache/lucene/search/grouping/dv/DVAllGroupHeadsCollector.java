@@ -30,6 +30,7 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -88,7 +89,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       case BYTES_FIXED_SORTED:
         return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.SortedBR(groupField, type, sortWithinGroup, diskResident);
       default:
-        throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "ValueType %s not supported", type));
     }
   }
 

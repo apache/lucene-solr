@@ -319,12 +319,12 @@ public class TestJoinUtil extends LuceneTestCase {
           System.out.println("expected cardinality:" + expectedResult.cardinality());
           DocIdSetIterator iterator = expectedResult.iterator();
           for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
-            System.out.println(String.format("Expected doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
+            System.out.println(String.format(Locale.ROOT, "Expected doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
           }
           System.out.println("actual cardinality:" + actualResult.cardinality());
           iterator = actualResult.iterator();
           for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
-            System.out.println(String.format("Actual doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
+            System.out.println(String.format(Locale.ROOT, "Actual doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
           }
         }
         assertEquals(expectedResult, actualResult);

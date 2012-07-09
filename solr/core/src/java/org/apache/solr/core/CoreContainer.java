@@ -781,7 +781,7 @@ public class CoreContainer
         if (schemaFile.exists()) {
           String key = schemaFile.getAbsolutePath()
               + ":"
-              + new SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(new Date(
+              + new SimpleDateFormat("yyyyMMddHHmmss", Locale.ROOT).format(new Date(
                   schemaFile.lastModified()));
           schema = indexSchemaCache.get(key);
           if (schema == null) {

@@ -190,7 +190,7 @@ public class XMLResponseParser extends ResponseParser
     {
       if( v != null ) {
         try {
-          return KnownType.valueOf( v.toUpperCase(Locale.ENGLISH) );
+          return KnownType.valueOf( v.toUpperCase(Locale.ROOT) );
         }
         catch( Exception ex ) {}
       }
@@ -270,7 +270,7 @@ public class XMLResponseParser extends ResponseParser
     if( XMLStreamConstants.START_ELEMENT != parser.getEventType() ) {
       throw new RuntimeException( "must be start element, not: "+parser.getEventType() );
     }
-    if( !"arr".equals( parser.getLocalName().toLowerCase(Locale.ENGLISH) ) ) {
+    if( !"arr".equals( parser.getLocalName().toLowerCase(Locale.ROOT) ) ) {
       throw new RuntimeException( "must be 'arr', not: "+parser.getLocalName() );
     }
     
@@ -373,7 +373,7 @@ public class XMLResponseParser extends ResponseParser
     if( XMLStreamConstants.START_ELEMENT != parser.getEventType() ) {
       throw new RuntimeException( "must be start element, not: "+parser.getEventType() );
     }
-    if( !"doc".equals( parser.getLocalName().toLowerCase(Locale.ENGLISH) ) ) {
+    if( !"doc".equals( parser.getLocalName().toLowerCase(Locale.ROOT) ) ) {
       throw new RuntimeException( "must be 'lst', not: "+parser.getLocalName() );
     }
 

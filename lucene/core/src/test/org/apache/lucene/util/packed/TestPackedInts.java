@@ -20,6 +20,7 @@ package org.apache.lucene.util.packed;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -267,7 +268,7 @@ public class TestPackedInts extends LuceneTestCase {
         fill(packedInt, PackedInts.maxValue(bitsPerValue), randomSeed);
       } catch (Exception e) {
         e.printStackTrace(System.err);
-        fail(String.format(
+        fail(String.format(Locale.ROOT,
                 "Exception while filling %s: valueCount=%d, bitsPerValue=%s",
                 packedInt.getClass().getSimpleName(),
                 valueCount, bitsPerValue));
@@ -311,7 +312,7 @@ public class TestPackedInts extends LuceneTestCase {
     for (int i = 0 ; i < packedInt.size() ; i++) {
       long value = _TestUtil.nextLong(rnd2, 0, maxValue);
       packedInt.set(i, value);
-      assertEquals(String.format(
+      assertEquals(String.format(Locale.ROOT,
               "The set/get of the value at index %d should match for %s",
               i, packedInt.getClass().getSimpleName()),
               value, packedInt.get(i));
@@ -336,7 +337,7 @@ public class TestPackedInts extends LuceneTestCase {
     }
     for (int i = 0 ; i < valueCount ; i++) {
       for (int j = 1 ; j < packedInts.size() ; j++) {
-        assertEquals(String.format(
+        assertEquals(String.format(Locale.ROOT,
                 "%s. The value at index %d should be the same for %s and %s",
                 message, i, base.getClass().getSimpleName(),
                 packedInts.get(j).getClass().getSimpleName()),

@@ -255,9 +255,9 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
      .append(ref).append(", Now: ").append(now);
     
     if(ref instanceof Number) {
-      NumberFormat nf = NumberFormat.getIntegerInstance(Locale.ENGLISH);
+      NumberFormat nf = NumberFormat.getIntegerInstance(Locale.ROOT);
       if((ref instanceof Double) || (ref instanceof Float)) {
-        nf = NumberFormat.getInstance(Locale.ENGLISH);
+        nf = NumberFormat.getInstance(Locale.ROOT);
       }
       double dref = ((Number)ref).doubleValue();
       double dnow = ((Number)now).doubleValue();

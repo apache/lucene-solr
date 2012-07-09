@@ -71,7 +71,7 @@ public class RandomCodec extends Lucene40Codec {
       codec = formats.get(Math.abs(perFieldSeed ^ name.hashCode()) % formats.size());
       if (codec instanceof SimpleTextPostingsFormat && perFieldSeed % 5 != 0) {
         // make simpletext rarer, choose again
-        codec = formats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % formats.size());
+        codec = formats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ROOT).hashCode()) % formats.size());
       }
       previousMappings.put(name, codec);
       // Safety:

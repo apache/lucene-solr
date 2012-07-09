@@ -169,9 +169,17 @@
     </clover-report>
   </target>
 
-  <!-- Validate once from top-level. -->
-  <target name="validate" depends="compile-tools,resolve" description="Validate legal stuff.">
+  <!-- Validation (license/notice/api checks). -->
+  <target name="validate" depends="check-licenses,check-forbidden-apis" description="Validate stuff." />
+
+  <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" />
+  </target>
+
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks" description="Check forbidden API calls in compiled class files.">
+    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/jdk.txt">
+      <fileset dir="${basedir}/build" includes="**/*.class" />
+    </forbidden-apis>
   </target>
 
   <target name="resolve">

@@ -77,7 +77,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
         // Type erasure b/c otherwise we have inconvertible types...
         return (DVAllGroupsCollector) new SortedBR(groupField, type, diskResident, initialSize);
       default:
-        throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "ValueType %s not supported", type));
     }
   }
 

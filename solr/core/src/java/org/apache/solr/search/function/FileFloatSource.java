@@ -39,6 +39,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -224,7 +225,7 @@ public class FileFloatSource extends ValueSource {
       return vals;
     }
 
-    BufferedReader r = new BufferedReader(new InputStreamReader(is));
+    BufferedReader r = new BufferedReader(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
 
     String idName = ffs.keyField.getName();
     FieldType idType = ffs.keyField.getType();

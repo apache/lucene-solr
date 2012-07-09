@@ -242,7 +242,7 @@ public class TermsComponent extends SearchComponent {
       int flags = 0;
       for (String flagParam : flagParams) {
           try {
-            flags |= TermsParams.TermsRegexpFlag.valueOf(flagParam.toUpperCase(Locale.ENGLISH)).getValue();
+            flags |= TermsParams.TermsRegexpFlag.valueOf(flagParam.toUpperCase(Locale.ROOT)).getValue();
           } catch (IllegalArgumentException iae) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown terms regex flag '" + flagParam + "'");
           }

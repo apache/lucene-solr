@@ -120,10 +120,10 @@ public class TimeZoneUtilsTest extends LuceneTestCase {
       int hour = _TestUtil.nextInt(r, 0, 23);
       int min = _TestUtil.nextInt(r, 0, 59);
 
-      String hours = String.format(Locale.US, 
+      String hours = String.format(Locale.ROOT, 
                                    (r.nextBoolean() ? ONE_DIGIT : TWO_DIGIT),
                                    hour);
-      String mins = String.format(Locale.US, TWO_DIGIT, min);
+      String mins = String.format(Locale.ROOT, TWO_DIGIT, min);
       String input = "GMT" + (r.nextBoolean()?"+":"-") 
         + hours + (r.nextBoolean() ? "" : ((r.nextBoolean()?":":"") + mins));
       assertSameRules(input,  

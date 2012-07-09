@@ -34,7 +34,7 @@ public interface CollectionParams
     {
       if( p != null ) {
         try {
-          return CollectionAction.valueOf( p.toUpperCase(Locale.ENGLISH) );
+          return CollectionAction.valueOf( p.toUpperCase(Locale.ROOT) );
         }
         catch( Exception ex ) {}
       }

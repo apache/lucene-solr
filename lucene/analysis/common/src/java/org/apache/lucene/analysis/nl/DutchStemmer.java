@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.nl;
  */
 
 import java.util.Map;
+import java.util.Locale;
 
 /**
  * A stemmer for Dutch words. 
@@ -31,6 +32,8 @@ import java.util.Map;
  */
 @Deprecated
 public class DutchStemmer {
+  private static final Locale locale = new Locale("nl", "NL");
+
   /**
    * Buffer for the terms while stemming them.
    */
@@ -49,7 +52,7 @@ public class DutchStemmer {
    * @return Discriminator for <tt>term</tt>
    */
   public String stem(String term) {
-    term = term.toLowerCase();
+    term = term.toLowerCase(locale);
     if (!isStemmable(term))
       return term;
     if (_stemDict != null && _stemDict.containsKey(term))

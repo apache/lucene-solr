@@ -42,7 +42,7 @@ public class FileDictionary implements Dictionary {
   private boolean done = false;
 
   public FileDictionary(InputStream dictFile) {
-    in = new BufferedReader(new InputStreamReader(dictFile));
+    in = new BufferedReader(IOUtils.getDecodingReader(dictFile, IOUtils.CHARSET_UTF_8));
   }
 
   /**

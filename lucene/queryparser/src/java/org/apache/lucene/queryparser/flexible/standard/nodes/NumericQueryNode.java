@@ -90,8 +90,8 @@ public class NumericQueryNode extends QueryNodeImpl implements
    * @return the value converte to {@link String} and escaped
    */
   protected CharSequence getTermEscaped(EscapeQuerySyntax escaper) {
-    return escaper.escape(NumberFormat.getNumberInstance().format(this.value),
-        Locale.ENGLISH, Type.NORMAL);
+    return escaper.escape(numberFormat.format(this.value),
+        Locale.ROOT, Type.NORMAL);
   }
   
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {

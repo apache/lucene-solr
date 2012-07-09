@@ -55,17 +55,17 @@ public class DateMathParserTest extends LuceneTestCase {
   public DateMathParserTest() {
     super();
     fmt = new SimpleDateFormat
-      ("G yyyyy MM ww WW DD dd F E aa HH hh mm ss SSS z Z",Locale.US);
+      ("G yyyyy MM ww WW DD dd F E aa HH hh mm ss SSS z Z",Locale.ROOT);
     fmt.setTimeZone(UTC);
 
-    parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS",Locale.US);
+    parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS",Locale.ROOT);
     parser.setTimeZone(UTC);
   }
 
   /** MACRO: Round: parses s, rounds with u, fmts */
   protected String r(String s, String u) throws Exception {
     Date d = parser.parse(s);
-    Calendar c = Calendar.getInstance(UTC, Locale.US);
+    Calendar c = Calendar.getInstance(UTC, Locale.ROOT);
     c.setTime(d);
     DateMathParser.round(c, u);
     return fmt.format(c.getTime());
@@ -74,7 +74,7 @@ public class DateMathParserTest extends LuceneTestCase {
   /** MACRO: Add: parses s, adds v u, fmts */
   protected String a(String s, int v, String u) throws Exception {
     Date d = parser.parse(s);
-    Calendar c = Calendar.getInstance(UTC, Locale.US);
+    Calendar c = Calendar.getInstance(UTC, Locale.ROOT);
     c.setTime(d);
     DateMathParser.add(c, v, u);
     return fmt.format(c.getTime());
@@ -162,7 +162,7 @@ public class DateMathParserTest extends LuceneTestCase {
   
   public void testParseStatelessness() throws Exception {
 
-    DateMathParser p = new DateMathParser(UTC, Locale.US);
+    DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
     p.setNow(parser.parse("2001-07-04T12:08:56.235"));
 
     String e = fmt.format(p.parseMath(""));
@@ -179,7 +179,7 @@ public class DateMathParserTest extends LuceneTestCase {
     
   public void testParseMath() throws Exception {
 
-    DateMathParser p = new DateMathParser(UTC, Locale.US);
+    DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
     p.setNow(parser.parse("2001-07-04T12:08:56.235"));
 
     // No-Op
@@ -272,7 +272,7 @@ public class DateMathParserTest extends LuceneTestCase {
     // US, Positive Offset with DST
 
     TimeZone tz = TimeZone.getTimeZone(PLUS_TZS);
-    DateMathParser p = new DateMathParser(tz, Locale.US);
+    DateMathParser p = new DateMathParser(tz, Locale.ROOT);
 
     p.setNow(parser.parse("2001-07-04T12:08:56.235"));
 
@@ -294,7 +294,7 @@ public class DateMathParserTest extends LuceneTestCase {
     // France, Negative Offset with DST
 
     tz = TimeZone.getTimeZone(NEG_TZS);
-    p = new DateMathParser(tz, Locale.US);
+    p = new DateMathParser(tz, Locale.ROOT);
     p.setNow(parser.parse("2001-07-04T12:08:56.235"));
 
     assertMath("2001-07-04T12:08:56.000", p, "/SECOND");
@@ -311,7 +311,7 @@ public class DateMathParserTest extends LuceneTestCase {
  
   public void testParseMathExceptions() throws Exception {
     
-    DateMathParser p = new DateMathParser(UTC, Locale.US);
+    DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
     p.setNow(parser.parse("2001-07-04T12:08:56.235"));
     
     Map<String,Integer> badCommands = new HashMap<String,Integer>();

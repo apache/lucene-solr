@@ -47,7 +47,7 @@ final class Average
 
     public String toString()
     {
-        return String.format(Locale.ENGLISH, "%.0f [+- %.2f]", 
+        return String.format(Locale.ROOT, "%.0f [+- %.2f]", 
             avg, stddev);
     }
 

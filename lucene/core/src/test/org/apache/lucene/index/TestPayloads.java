@@ -43,9 +43,8 @@ public class TestPayloads extends LuceneTestCase {
     
     // Simple tests to test the payloads
     public void testPayload() throws Exception {
-        byte[] testData = "This is a test!".getBytes();
-        BytesRef payload = new BytesRef(testData);
-        assertEquals("Wrong payload length.", testData.length, payload.length);
+        BytesRef payload = new BytesRef("This is a test!");
+        assertEquals("Wrong payload length.", "This is a test!".length(), payload.length);
         
         BytesRef clone = payload.clone();
         assertEquals(payload.length, clone.length);
@@ -73,7 +72,7 @@ public class TestPayloads extends LuceneTestCase {
         // enabled in only some documents
         d.add(newTextField("f3", "This field has payloads in some docs", Field.Store.NO));
         // only add payload data for field f2
-        analyzer.setPayloadData("f2", "somedata".getBytes(), 0, 1);
+        analyzer.setPayloadData("f2", "somedata".getBytes("UTF-8"), 0, 1);
         writer.addDocument(d);
         // flush
         writer.close();
@@ -96,8 +95,8 @@ public class TestPayloads extends LuceneTestCase {
         d.add(newTextField("f2", "This field has payloads in all docs", Field.Store.NO));
         d.add(newTextField("f3", "This field has payloads in some docs", Field.Store.NO));
         // add payload data for field f2 and f3
-        analyzer.setPayloadData("f2", "somedata".getBytes(), 0, 1);
-        analyzer.setPayloadData("f3", "somedata".getBytes(), 0, 3);
+        analyzer.setPayloadData("f2", "somedata".getBytes("UTF-8"), 0, 1);
+        analyzer.setPayloadData("f3", "somedata".getBytes("UTF-8"), 0, 3);
         writer.addDocument(d);
 
         // force merge

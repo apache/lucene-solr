@@ -17,6 +17,8 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import java.util.Locale;
+
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.stats.Points;
 import org.apache.lucene.benchmark.byTask.stats.TaskStats;
@@ -266,7 +268,7 @@ public abstract class PerfTask implements Cloneable {
   public void tearDown() throws Exception {
     if (++logStepCount % logStep == 0) {
       double time = (System.currentTimeMillis() - runData.getStartTimeMillis()) / 1000.0;
-      System.out.println(String.format("%7.2f",time) + " sec --> "
+      System.out.println(String.format(Locale.ROOT, "%7.2f",time) + " sec --> "
           + Thread.currentThread().getName() + " " + getLogMessage(logStepCount));
     }
   }

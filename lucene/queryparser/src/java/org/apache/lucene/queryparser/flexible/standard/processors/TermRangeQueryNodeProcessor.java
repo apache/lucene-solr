@@ -22,6 +22,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
@@ -76,6 +77,12 @@ public class TermRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
         locale = Locale.getDefault();
       }
       
+      TimeZone timeZone = getQueryConfigHandler().get(ConfigurationKeys.TIMEZONE);
+      
+      if (timeZone == null) {
+        timeZone = TimeZone.getDefault();
+      }
+      
       CharSequence field = termRangeNode.getField();
       String fieldStr = null;
       
@@ -114,7 +121,7 @@ public class TermRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
             // the time is set to the latest possible time of that date to
             // really
             // include all documents:
-            Calendar cal = Calendar.getInstance(locale);
+            Calendar cal = Calendar.getInstance(timeZone, locale);
             cal.setTime(d2);
             cal.set(Calendar.HOUR_OF_DAY, 23);
             cal.set(Calendar.MINUTE, 59);

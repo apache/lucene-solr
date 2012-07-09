@@ -208,16 +208,16 @@ public class TestCharArraySet extends LuceneTestCase {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertTrue(String.format(missing, lowerArr[i]), set.contains(lowerArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, lowerArr[i]), set.contains(lowerArr[i]));
     }
     set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList(TEST_STOP_WORDS), false);
     for (String upper : upperArr) {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(falsePos, lowerArr[i]), set.contains(lowerArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set.contains(lowerArr[i]));
     }
   }
   
@@ -235,8 +235,8 @@ public class TestCharArraySet extends LuceneTestCase {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertTrue(String.format(missing, lowerArr[i]), set.contains(lowerArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, lowerArr[i]), set.contains(lowerArr[i]));
     }
     set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList(TEST_STOP_WORDS),
         false);
@@ -244,8 +244,8 @@ public class TestCharArraySet extends LuceneTestCase {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(falsePos, upperArr[i]), set
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(Locale.ROOT, falsePos, upperArr[i]), set
           .contains(lowerArr[i]));
     }
   }
@@ -269,16 +269,16 @@ public class TestCharArraySet extends LuceneTestCase {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(falsePos, lowerArr[i]), set.contains(lowerArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set.contains(lowerArr[i]));
     }
     set = new CharArraySet(Version.LUCENE_30, Arrays.asList(TEST_STOP_WORDS), false);
     for (String upper : upperArr) {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(falsePos, lowerArr[i]), set.contains(lowerArr[i]));
+      assertTrue(String.format(Locale.ROOT,missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set.contains(lowerArr[i]));
     }
   }
 
@@ -301,12 +301,12 @@ public class TestCharArraySet extends LuceneTestCase {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
       if (i == lowerArr.length - 1)
-        assertFalse(String.format(falsePos, lowerArr[i]), set
+        assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set
             .contains(lowerArr[i]));
       else
-        assertTrue(String.format(missing, lowerArr[i]), set
+        assertTrue(String.format(Locale.ROOT, missing, lowerArr[i]), set
             .contains(lowerArr[i]));
     }
     set = new CharArraySet(Version.LUCENE_30, Arrays.asList(TEST_STOP_WORDS),
@@ -315,8 +315,8 @@ public class TestCharArraySet extends LuceneTestCase {
       set.add(upper);
     }
     for (int i = 0; i < upperArr.length; i++) {
-      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
-      assertFalse(String.format(falsePos, lowerArr[i]), set
+      assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set
           .contains(lowerArr[i]));
     }
   }
@@ -329,7 +329,7 @@ public class TestCharArraySet extends LuceneTestCase {
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
     List<String> stopwordsUpper = new ArrayList<String>();
     for (String string : stopwords) {
-      stopwordsUpper.add(string.toUpperCase());
+      stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
     setIngoreCase.addAll(Arrays.asList(TEST_STOP_WORDS));
     setIngoreCase.add(Integer.valueOf(1));
@@ -376,7 +376,7 @@ public class TestCharArraySet extends LuceneTestCase {
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
     List<String> stopwordsUpper = new ArrayList<String>();
     for (String string : stopwords) {
-      stopwordsUpper.add(string.toUpperCase());
+      stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
     setIngoreCase.addAll(Arrays.asList(TEST_STOP_WORDS));
     setIngoreCase.add(Integer.valueOf(1));
@@ -422,7 +422,7 @@ public class TestCharArraySet extends LuceneTestCase {
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
     List<String> stopwordsUpper = new ArrayList<String>();
     for (String string : stopwords) {
-      stopwordsUpper.add(string.toUpperCase());
+      stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
 

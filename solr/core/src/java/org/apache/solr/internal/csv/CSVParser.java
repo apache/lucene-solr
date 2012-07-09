@@ -106,16 +106,6 @@ public class CSVParser {
   // ======================================================
   
   /**
-   * Default strategy for the parser follows the default {@link CSVStrategy}.
-   * 
-   * @param input an InputStream containing "csv-formatted" stream
-   * @deprecated use {@link #CSVParser(Reader)}.
-   */
-  public CSVParser(InputStream input) {
-    this(new InputStreamReader(input));
-  }
-  
-  /**
    * CSV parser using the default {@link CSVStrategy}.
    * 
    * @param input a Reader containing "csv-formatted" input

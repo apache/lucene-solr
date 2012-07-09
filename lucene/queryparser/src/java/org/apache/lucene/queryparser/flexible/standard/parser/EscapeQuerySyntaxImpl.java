@@ -50,7 +50,7 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
 
     // regular escapable Char for terms
     for (int i = 0; i < escapableTermChars.length; i++) {
-      buffer = replaceIgnoreCase(buffer, escapableTermChars[i].toLowerCase(),
+      buffer = replaceIgnoreCase(buffer, escapableTermChars[i].toLowerCase(locale),
           "\\", locale);
     }
 
@@ -73,7 +73,7 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
     CharSequence buffer = str;
 
     for (int i = 0; i < escapableQuotedChars.length; i++) {
-      buffer = replaceIgnoreCase(buffer, escapableTermChars[i].toLowerCase(),
+      buffer = replaceIgnoreCase(buffer, escapableTermChars[i].toLowerCase(locale),
           "\\", locale);
     }
     return buffer;
@@ -178,7 +178,7 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
     CharSequence buffer = str;
 
     for (int i = 0; i < escapableWhiteChars.length; i++) {
-      buffer = replaceIgnoreCase(buffer, escapableWhiteChars[i].toLowerCase(),
+      buffer = replaceIgnoreCase(buffer, escapableWhiteChars[i].toLowerCase(locale),
           "\\", locale);
     }
     return buffer;

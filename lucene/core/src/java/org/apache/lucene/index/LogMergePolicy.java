@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 
@@ -536,7 +537,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         if (size >= maxMergeSize) {
           extra += " [skip: too large]";
         }
-        message("seg=" + writer.get().segString(info) + " level=" + infoLevel.level + " size=" + String.format("%.3f MB", segBytes/1024/1024.) + extra);
+        message("seg=" + writer.get().segString(info) + " level=" + infoLevel.level + " size=" + String.format(Locale.ROOT, "%.3f MB", segBytes/1024/1024.) + extra);
       }
     }
 

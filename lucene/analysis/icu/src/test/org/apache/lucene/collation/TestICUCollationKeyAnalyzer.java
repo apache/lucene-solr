@@ -67,7 +67,7 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
   //  
   public void testCollationKeySort() throws Exception {
     Analyzer usAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.US));
+      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.ROOT));
     Analyzer franceAnalyzer = new ICUCollationKeyAnalyzer
       (TEST_VERSION_CURRENT, Collator.getInstance(Locale.FRANCE));
     Analyzer swedenAnalyzer = new ICUCollationKeyAnalyzer
@@ -76,7 +76,7 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
       (TEST_VERSION_CURRENT, Collator.getInstance(new Locale("da", "dk")));
 
     // The ICU Collator and java.text.Collator implementations differ in their
-    // orderings - "BFJHD" is the ordering for the ICU Collator for Locale.US.
+    // orderings - "BFJHD" is the ordering for the ICU Collator for Locale.ROOT.
     testCollationKeySort
     (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, 
      "BFJHD", "ECAGI", "BJDFH", "BJDHF");

@@ -159,7 +159,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     int numberOfRuns = _TestUtil.nextInt(random(), 3, 6);
     for (int iter = 0; iter < numberOfRuns; iter++) {
       if (VERBOSE) {
-        System.out.println(String.format("TEST: iter=%d total=%d", iter, numberOfRuns));
+        System.out.println(String.format(Locale.ROOT, "TEST: iter=%d total=%d", iter, numberOfRuns));
       }
 
       final int numDocs = _TestUtil.nextInt(random(), 100, 1000) * RANDOM_MULTIPLIER;
@@ -258,7 +258,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
             groupValue,
             groups.get(random().nextInt(groups.size())),
             groups.get(random().nextInt(groups.size())),
-            new BytesRef(String.format("%05d", i)),
+            new BytesRef(String.format(Locale.ROOT, "%05d", i)),
             contentStrings[random().nextInt(contentStrings.length)]
         );
 
@@ -350,7 +350,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
               GroupDoc expectedGroupDoc = groupDocs[expectedDocId];
               String expectedGroup = expectedGroupDoc.group == null ? null : expectedGroupDoc.group.utf8ToString();
               System.out.println(
-                  String.format(
+                  String.format(Locale.ROOT,
                       "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
                       expectedGroup, expectedGroupDoc.score, expectedGroupDoc.sort1.utf8ToString(),
                       expectedGroupDoc.sort2.utf8ToString(), expectedGroupDoc.sort3.utf8ToString(), expectedDocId
@@ -362,7 +362,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
               GroupDoc actualGroupDoc = groupDocs[actualDocId];
               String actualGroup = actualGroupDoc.group == null ? null : actualGroupDoc.group.utf8ToString();
               System.out.println(
-                  String.format(
+                  String.format(Locale.ROOT,
                       "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
                       actualGroup, actualGroupDoc.score, actualGroupDoc.sort1.utf8ToString(),
                       actualGroupDoc.sort2.utf8ToString(), actualGroupDoc.sort3.utf8ToString(), actualDocId

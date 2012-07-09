@@ -216,10 +216,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
       CheckIndex checker = new CheckIndex(dir);
-      checker.setInfoStream(new PrintStream(bos));
+      checker.setInfoStream(new PrintStream(bos, false, "UTF-8"));
       CheckIndex.Status indexStatus = checker.checkIndex();
       assertFalse(indexStatus.clean);
-      assertTrue(bos.toString().contains(IndexFormatTooOldException.class.getName()));
+      assertTrue(bos.toString("UTF-8").contains(IndexFormatTooOldException.class.getName()));
 
       dir.close();
       _TestUtil.rmDir(oldIndxeDir);

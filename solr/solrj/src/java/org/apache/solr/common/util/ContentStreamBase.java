@@ -20,7 +20,6 @@ package org.apache.solr.common.util;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,6 +28,8 @@ import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Locale;
+
+import org.apache.lucene.util.IOUtils;
 
 
 /**
@@ -52,7 +53,7 @@ public abstract class ContentStreamBase implements ContentStream
   public static String getCharsetFromContentType( String contentType )
   {
     if( contentType != null ) {
-      int idx = contentType.toLowerCase(Locale.ENGLISH).indexOf( "charset=" );
+      int idx = contentType.toLowerCase(Locale.ROOT).indexOf( "charset=" );
       if( idx > 0 ) {
         return contentType.substring( idx + "charset=".length() ).trim();
       }
@@ -126,13 +127,13 @@ public abstract class ContentStreamBase implements ContentStream
 
     /**
      * If an charset is defined (by the contentType) use that, otherwise 
-     * use a file reader
+     * use a UTF-8 reader
      */
     @Override
     public Reader getReader() throws IOException {
       String charset = getCharsetFromContentType( contentType );
       return charset == null 
-        ? new FileReader( file )
+        ? new InputStreamReader(getStream(), IOUtils.CHARSET_UTF_8)
         : new InputStreamReader( getStream(), charset );
     }
   }

@@ -71,6 +71,7 @@ public abstract class QueryParserBase {
   float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
   Locale locale = Locale.getDefault();
+  TimeZone timeZone = TimeZone.getDefault();
 
   // the default date resolution
   DateTools.Resolution dateResolution = null;
@@ -320,7 +321,8 @@ public abstract class QueryParserBase {
   }
 
   /**
-   * Set locale used by date range parsing.
+   * Set locale used by date range parsing, lowercasing, and other
+   * locale-sensitive operations.
    */
   public void setLocale(Locale locale) {
     this.locale = locale;
@@ -331,6 +333,14 @@ public abstract class QueryParserBase {
    */
   public Locale getLocale() {
     return locale;
+  }
+  
+  public void setTimeZone(TimeZone timeZone) {
+    this.timeZone = timeZone;
+  }
+  
+  public TimeZone getTimeZone() {
+    return timeZone;
   }
 
   /**
@@ -662,8 +672,8 @@ public abstract class QueryParserBase {
                                 boolean endInclusive) throws ParseException
   {
     if (lowercaseExpandedTerms) {
-      part1 = part1==null ? null : part1.toLowerCase();
-      part2 = part2==null ? null : part2.toLowerCase();
+      part1 = part1==null ? null : part1.toLowerCase(locale);
+      part2 = part2==null ? null : part2.toLowerCase(locale);
     }
 
 
@@ -681,7 +691,7 @@ public abstract class QueryParserBase {
         // The user can only specify the date, not the time, so make sure
         // the time is set to the latest possible time of that date to really
         // include all documents:
-        Calendar cal = Calendar.getInstance(locale);
+        Calendar cal = Calendar.getInstance(timeZone, locale);
         cal.setTime(d2);
         cal.set(Calendar.HOUR_OF_DAY, 23);
         cal.set(Calendar.MINUTE, 59);
@@ -939,7 +949,7 @@ public abstract class QueryParserBase {
     if (!allowLeadingWildcard && (termStr.startsWith("*") || termStr.startsWith("?")))
       throw new ParseException("'*' or '?' not allowed as first character in WildcardQuery");
     if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase();
+      termStr = termStr.toLowerCase(locale);
     }
     Term t = new Term(field, termStr);
     return newWildcardQuery(t);
@@ -968,7 +978,7 @@ public abstract class QueryParserBase {
   protected Query getRegexpQuery(String field, String termStr) throws ParseException
   {
     if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase();
+      termStr = termStr.toLowerCase(locale);
     }
     Term t = new Term(field, termStr);
     return newRegexpQuery(t);
@@ -1002,7 +1012,7 @@ public abstract class QueryParserBase {
     if (!allowLeadingWildcard && termStr.startsWith("*"))
       throw new ParseException("'*' not allowed as first character in PrefixQuery");
     if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase();
+      termStr = termStr.toLowerCase(locale);
     }
     Term t = new Term(field, termStr);
     return newPrefixQuery(t);
@@ -1022,7 +1032,7 @@ public abstract class QueryParserBase {
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase();
+      termStr = termStr.toLowerCase(locale);
     }
     Term t = new Term(field, termStr);
     return newFuzzyQuery(t, minSimilarity, fuzzyPrefixLength);

@@ -29,6 +29,10 @@ public class HTMLParser implements HTMLParserConstants {
   private MyPipedInputStream pipeInStream = null;
   private PipedOutputStream pipeOutStream = null;
 
+  public HTMLParser(Reader reader) {
+    this(new FastCharStream(reader));
+  }
+
   private class MyPipedInputStream extends PipedInputStream{
 
     public MyPipedInputStream(){
@@ -227,7 +231,7 @@ InterruptedException {
   Token t1, t2;
   boolean inImg = false;
     t1 = jj_consume_token(TagName);
-   String tagName = t1.image.toLowerCase(Locale.ENGLISH);
+   String tagName = t1.image.toLowerCase(Locale.ROOT);
    if(Tags.WS_ELEMS.contains(tagName) ) {
       addSpace();
     }
@@ -264,7 +268,7 @@ InterruptedException {
                         )
            && t2 != null)
         {
-                currentMetaTag=t2.image.toLowerCase(Locale.ENGLISH);
+                currentMetaTag=t2.image.toLowerCase(Locale.ROOT);
                 if(currentMetaTag != null && currentMetaContent != null) {
                 addMetaTag();
                 }
@@ -272,7 +276,7 @@ InterruptedException {
         if(inMetaTag && t1.image.equalsIgnoreCase("content") && t2 !=
 null)
         {
-                currentMetaContent=t2.image.toLowerCase(Locale.ENGLISH);
+                currentMetaContent=t2.image.toLowerCase(Locale.ROOT);
                 if(currentMetaTag != null && currentMetaContent != null) {
                 addMetaTag();
                 }
@@ -464,7 +468,6 @@ null)
 
   /** Generated Token Manager. */
   public HTMLParserTokenManager token_source;
-  SimpleCharStream jj_input_stream;
   /** Current token. */
   public Token token;
   /** Next token. */
@@ -485,14 +488,9 @@ null)
   private boolean jj_rescan = false;
   private int jj_gc = 0;
 
-  /** Constructor with InputStream. */
-  public HTMLParser(java.io.InputStream stream) {
-     this(stream, null);
-  }
-  /** Constructor with InputStream and supplied encoding */
-  public HTMLParser(java.io.InputStream stream, String encoding) {
-    try { jj_input_stream = new SimpleCharStream(stream, encoding, 1, 1); } catch(java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
-    token_source = new HTMLParserTokenManager(jj_input_stream);
+  /** Constructor with user supplied CharStream. */
+  public HTMLParser(CharStream stream) {
+    token_source = new HTMLParserTokenManager(stream);
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
@@ -501,35 +499,8 @@ null)
   }
 
   /** Reinitialise. */
-  public void ReInit(java.io.InputStream stream) {
-     ReInit(stream, null);
-  }
-  /** Reinitialise. */
-  public void ReInit(java.io.InputStream stream, String encoding) {
-    try { jj_input_stream.ReInit(stream, encoding, 1, 1); } catch(java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
-    token_source.ReInit(jj_input_stream);
-    token = new Token();
-    jj_ntk = -1;
-    jj_gen = 0;
-    for (int i = 0; i < 14; i++) jj_la1[i] = -1;
-    for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
-  }
-
-  /** Constructor. */
-  public HTMLParser(java.io.Reader stream) {
-    jj_input_stream = new SimpleCharStream(stream, 1, 1);
-    token_source = new HTMLParserTokenManager(jj_input_stream);
-    token = new Token();
-    jj_ntk = -1;
-    jj_gen = 0;
-    for (int i = 0; i < 14; i++) jj_la1[i] = -1;
-    for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
-  }
-
-  /** Reinitialise. */
-  public void ReInit(java.io.Reader stream) {
-    jj_input_stream.ReInit(stream, 1, 1);
-    token_source.ReInit(jj_input_stream);
+  public void ReInit(CharStream stream) {
+    token_source.ReInit(stream);
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
@@ -631,7 +602,7 @@ null)
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
+  private java.util.List jj_expentries = new java.util.ArrayList();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];
@@ -691,7 +662,7 @@ null)
     jj_add_error_token(0, 0);
     int[][] exptokseq = new int[jj_expentries.size()][];
     for (int i = 0; i < jj_expentries.size(); i++) {
-      exptokseq[i] = jj_expentries.get(i);
+      exptokseq[i] = (int[])jj_expentries.get(i);
     }
     return new ParseException(token, exptokseq, tokenImage);
   }

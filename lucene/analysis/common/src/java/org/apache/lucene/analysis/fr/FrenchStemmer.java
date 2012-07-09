@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.fr;
  * limitations under the License.
  */
 
+import java.util.Locale;
+
 /**
  * A stemmer for French words. 
  * <p>
@@ -30,16 +32,18 @@ package org.apache.lucene.analysis.fr;
  */
 @Deprecated
 public class FrenchStemmer {
+  private static final Locale locale = new Locale("fr", "FR");
 
-    /**
-     * Buffer for the terms while stemming them.
-     */
-    private StringBuilder sb = new StringBuilder();
 
-    /**
-     * A temporary buffer, used to reconstruct R2
-     */
-     private StringBuilder tb = new StringBuilder();
+  /**
+   * Buffer for the terms while stemming them.
+   */
+  private StringBuilder sb = new StringBuilder();
+
+  /**
+   * A temporary buffer, used to reconstruct R2
+   */
+   private StringBuilder tb = new StringBuilder();
 
 	/**
 	 * Region R0 is equal to the whole buffer
@@ -92,7 +96,7 @@ public class FrenchStemmer {
 		}
 
 		// Use lowercase for medium stemming.
-		term = term.toLowerCase();
+		term = term.toLowerCase(locale);
 
 		// Reset the StringBuilder.
 		sb.delete( 0, sb.length() );

@@ -20,6 +20,7 @@ package org.apache.lucene.demo;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -30,11 +31,11 @@ public class TestDemo extends LuceneTestCase {
     PrintStream outSave = System.out;
     try {
       ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-      PrintStream fakeSystemOut = new PrintStream(bytes);
+      PrintStream fakeSystemOut = new PrintStream(bytes, false, Charset.defaultCharset().name());
       System.setOut(fakeSystemOut);
       SearchFiles.main(new String[] {"-query", query, "-index", indexPath.getPath()});
       fakeSystemOut.flush();
-      String output = bytes.toString(); // intentionally use default encoding
+      String output = bytes.toString(Charset.defaultCharset().name()); // intentionally use default encoding
       assertTrue("output=" + output, output.contains(expectedHitCount + " total matching documents"));
     } finally {
       System.setOut(outSave);

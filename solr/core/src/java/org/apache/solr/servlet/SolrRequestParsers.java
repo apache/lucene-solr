@@ -379,7 +379,7 @@ class StandardRequestParser implements SolrRequestParser
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
-    String method = req.getMethod().toUpperCase(Locale.ENGLISH);
+    String method = req.getMethod().toUpperCase(Locale.ROOT);
     if( "GET".equals( method ) || "HEAD".equals( method )) {
       return new ServletSolrParams(req);
     }
@@ -390,7 +390,7 @@ class StandardRequestParser implements SolrRequestParser
         if( idx > 0 ) { // remove the charset definition "; charset=utf-8"
           contentType = contentType.substring( 0, idx );
         }
-        if( "application/x-www-form-urlencoded".equals( contentType.toLowerCase(Locale.ENGLISH) ) ) {
+        if( "application/x-www-form-urlencoded".equals( contentType.toLowerCase(Locale.ROOT) ) ) {
           return new ServletSolrParams(req); // just get the params from parameterMap
         }
         if( ServletFileUpload.isMultipartContent(req) ) {

@@ -11,7 +11,7 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayOutputStream;
+import java.io.StringWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
@@ -98,10 +98,11 @@ public class QueryTemplateManager {
    */
   public static String getQueryAsXmlString(Properties formProperties, Templates template)
       throws ParserConfigurationException, TransformerException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    StreamResult result = new StreamResult(baos);
+    // TODO: Suppress XML header with encoding (as Strings have no encoding)
+    StringWriter writer = new StringWriter();
+    StreamResult result = new StreamResult(writer);
     transformCriteria(formProperties, template, result);
-    return baos.toString();
+    return writer.toString();
   }
 
   /**
@@ -109,10 +110,11 @@ public class QueryTemplateManager {
    */
   public static String getQueryAsXmlString(Properties formProperties, InputStream xslIs)
       throws SAXException, IOException, ParserConfigurationException, TransformerException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    StreamResult result = new StreamResult(baos);
+    // TODO: Suppress XML header with encoding (as Strings have no encoding)
+    StringWriter writer = new StringWriter();
+    StreamResult result = new StreamResult(writer);
     transformCriteria(formProperties, xslIs, result);
-    return baos.toString();
+    return writer.toString();
   }
 
 

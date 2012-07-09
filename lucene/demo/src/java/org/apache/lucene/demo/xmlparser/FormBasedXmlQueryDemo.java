@@ -48,6 +48,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
@@ -131,7 +132,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
     IndexWriterConfig iwConfig = new IndexWriterConfig(Version.LUCENE_40, analyzer);
     IndexWriter writer = new IndexWriter(rd, iwConfig);
     InputStream dataIn = getServletContext().getResourceAsStream("/WEB-INF/data.tsv");
-    BufferedReader br = new BufferedReader(new InputStreamReader(dataIn));
+    BufferedReader br = new BufferedReader(new InputStreamReader(dataIn, IOUtils.CHARSET_UTF_8));
     String line = br.readLine();
     final FieldType textNoNorms = new FieldType(TextField.TYPE_STORED);
     textNoNorms.setOmitNorms(true);

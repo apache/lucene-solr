@@ -159,7 +159,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
 
   public void testAppendableInterface() {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
-    Formatter formatter = new Formatter(t, Locale.US);
+    Formatter formatter = new Formatter(t, Locale.ROOT);
     formatter.format("%d", 1234);
     assertEquals("1234", t.toString());
     formatter.format("%d", 5678);

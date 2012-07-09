@@ -450,7 +450,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       countsVals.add(countValue);
 
       Document doc = new Document();
-      doc.add(new StringField("id", String.format("%09d", i), Field.Store.NO));
+      doc.add(new StringField("id", String.format(Locale.ROOT, "%09d", i), Field.Store.NO));
       if (groupValue != null) {
         addField(doc, groupField, groupValue, dvType);
       }
