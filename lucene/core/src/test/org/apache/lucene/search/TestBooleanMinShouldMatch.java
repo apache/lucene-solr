@@ -28,6 +28,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 import java.util.Random;
 
 /** Test that BooleanQuery.setMinimumNumberShouldMatch works.
@@ -377,7 +379,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
         System.err.println("------- " + test + " -------");
 
-        DecimalFormat f = new DecimalFormat("0.000000");
+        DecimalFormat f = new DecimalFormat("0.000000", DecimalFormatSymbols.getInstance(Locale.ROOT));
 
         for (int i = 0; i < h.length; i++) {
             Document d = searcher.doc(h[i].doc);
