@@ -15,7 +15,7 @@ cp -r -f example example2
 
 
 cd example
-java -DzkRun -DnumShards=2 -DSTOP.PORT=7983 -DSTOP.KEY=key -Dbootstrap_confdir=solr/conf -jar start.jar 1>example.log 2>&1 &
+java -DzkRun -DnumShards=2 -DSTOP.PORT=7983 -DSTOP.KEY=key -Dbootstrap_conf=true -jar start.jar 1>example.log 2>&1 &
 
 sleep 10
 
