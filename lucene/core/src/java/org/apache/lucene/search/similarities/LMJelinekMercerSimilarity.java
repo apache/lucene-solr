@@ -17,6 +17,8 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import java.util.Locale;
+
 import org.apache.lucene.search.Explanation;
 
 /**
@@ -72,6 +74,6 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
 
   @Override
   public String getName() {
-    return String.format("Jelinek-Mercer(%f)", getLambda());
+    return String.format(Locale.ROOT, "Jelinek-Mercer(%f)", getLambda());
   }
 }

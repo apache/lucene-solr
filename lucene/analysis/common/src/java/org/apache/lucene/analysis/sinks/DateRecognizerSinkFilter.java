@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.sinks;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.AttributeSource;
@@ -37,10 +38,12 @@ public class DateRecognizerSinkFilter extends TeeSinkTokenFilter.SinkFilter {
   protected CharTermAttribute termAtt;
   
   /**
-   * Uses {@link java.text.SimpleDateFormat#getDateInstance()} as the {@link java.text.DateFormat} object.
+   * Uses {@link java.text.DateFormat#getDateInstance(int, Locale)
+   * DateFormat#getDateInstance(DateFormat.DEFAULT, Locale.ROOT)} as 
+   * the {@link java.text.DateFormat} object.
    */
   public DateRecognizerSinkFilter() {
-    this(DateFormat.getDateInstance());
+    this(DateFormat.getDateInstance(DateFormat.DEFAULT, Locale.ROOT));
   }
   
   public DateRecognizerSinkFilter(DateFormat dateFormat) {

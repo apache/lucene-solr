@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Collection;
 import java.util.Collections;
@@ -289,7 +290,7 @@ public class TieredMergePolicy extends MergePolicy {
         } else if (segBytes < floorSegmentBytes) {
           extra += " [floored]";
         }
-        message("  seg=" + writer.get().segString(info) + " size=" + String.format("%.3f", segBytes/1024/1024.) + " MB" + extra);
+        message("  seg=" + writer.get().segString(info) + " size=" + String.format(Locale.ROOT, "%.3f", segBytes/1024/1024.) + " MB" + extra);
       }
 
       minSegmentBytes = Math.min(segBytes, minSegmentBytes);
@@ -388,7 +389,7 @@ public class TieredMergePolicy extends MergePolicy {
 
           final MergeScore score = score(candidate, hitTooLarge, mergingBytes);
           if (verbose()) {
-            message("  maybe=" + writer.get().segString(candidate) + " score=" + score.getScore() + " " + score.getExplanation() + " tooLarge=" + hitTooLarge + " size=" + String.format("%.3f MB", totAfterMergeBytes/1024./1024.));
+            message("  maybe=" + writer.get().segString(candidate) + " score=" + score.getScore() + " " + score.getExplanation() + " tooLarge=" + hitTooLarge + " size=" + String.format(Locale.ROOT, "%.3f MB", totAfterMergeBytes/1024./1024.));
           }
 
           // If we are already running a max sized merge
@@ -413,7 +414,7 @@ public class TieredMergePolicy extends MergePolicy {
           }
 
           if (verbose()) {
-            message("  add merge=" + writer.get().segString(merge.segments) + " size=" + String.format("%.3f MB", bestMergeBytes/1024./1024.) + " score=" + String.format("%.3f", bestScore.getScore()) + " " + bestScore.getExplanation() + (bestTooLarge ? " [max merge]" : ""));
+            message("  add merge=" + writer.get().segString(merge.segments) + " size=" + String.format(Locale.ROOT, "%.3f MB", bestMergeBytes/1024./1024.) + " score=" + String.format(Locale.ROOT, "%.3f", bestScore.getScore()) + " " + bestScore.getExplanation() + (bestTooLarge ? " [max merge]" : ""));
           }
         } else {
           return spec;
@@ -475,7 +476,7 @@ public class TieredMergePolicy extends MergePolicy {
 
       @Override
       public String getExplanation() {
-        return "skew=" + String.format("%.3f", skew) + " nonDelRatio=" + String.format("%.3f", nonDelRatio);
+        return "skew=" + String.format(Locale.ROOT, "%.3f", skew) + " nonDelRatio=" + String.format(Locale.ROOT, "%.3f", nonDelRatio);
       }
     };
   }

@@ -36,6 +36,8 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 import java.io.IOException;
 
 /**
@@ -486,7 +488,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     System.err.println("------- " + test + " -------");
     
-    DecimalFormat f = new DecimalFormat("0.000000000");
+    DecimalFormat f = new DecimalFormat("0.000000000", DecimalFormatSymbols.getInstance(Locale.ROOT));
     
     for (int i = 0; i < h.length; i++) {
       StoredDocument d = searcher.doc(h[i].doc);

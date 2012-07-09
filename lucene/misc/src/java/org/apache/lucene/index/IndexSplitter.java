@@ -23,9 +23,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.lucene.store.FSDirectory;
 
@@ -97,7 +99,7 @@ public class IndexSplitter {
   }
 
   public void listSegments() throws IOException {
-    DecimalFormat formatter = new DecimalFormat("###,###.###");
+    DecimalFormat formatter = new DecimalFormat("###,###.###", DecimalFormatSymbols.getInstance(Locale.ROOT));
     for (int x = 0; x < infos.size(); x++) {
       SegmentInfoPerCommit info = infos.info(x);
       String sizeStr = formatter.format(info.sizeInBytes());

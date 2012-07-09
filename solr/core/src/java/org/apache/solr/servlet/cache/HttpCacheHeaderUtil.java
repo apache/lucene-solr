@@ -77,7 +77,7 @@ public final class HttpCacheHeaderUtil {
           etagCache = "\""
            + new String(Base64.encodeBase64((Long.toHexString
                                              (Long.reverse(indexVersionCache))
-                                             + etagSeed).getBytes()), "US-ASCII")
+                                             + etagSeed).getBytes("US-ASCII")), "US-ASCII")
            + "\"";
         } catch (UnsupportedEncodingException e) {
           throw new RuntimeException(e); // may not happen

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -435,8 +436,8 @@ public class TestSpellChecker extends LuceneTestCase {
     executor.awaitTermination(60L, TimeUnit.SECONDS);
     
     for (int i = 0; i < workers.length; i++) {
-      assertFalse(String.format("worker thread %d failed", i), workers[i].failed);
-      assertTrue(String.format("worker thread %d is still running but should be terminated", i), workers[i].terminated);
+      assertFalse(String.format(Locale.ROOT, "worker thread %d failed", i), workers[i].failed);
+      assertTrue(String.format(Locale.ROOT, "worker thread %d is still running but should be terminated", i), workers[i].terminated);
     }
     // 4 searchers more than iterations
     // 1. at creation

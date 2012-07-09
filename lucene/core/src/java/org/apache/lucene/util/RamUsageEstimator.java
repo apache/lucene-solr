@@ -559,7 +559,7 @@ public final class RamUsageEstimator {
    */
   public static String humanReadableUnits(long bytes) {
     return humanReadableUnits(bytes, 
-        new DecimalFormat("0.#", DecimalFormatSymbols.getInstance(Locale.ENGLISH)));
+        new DecimalFormat("0.#", DecimalFormatSymbols.getInstance(Locale.ROOT)));
   }
 
   /**

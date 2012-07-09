@@ -65,7 +65,7 @@ public class StempelStemmer {
     DataInputStream in = null;
     try {
       in = new DataInputStream(new BufferedInputStream(stemmerTable));
-      String method = in.readUTF().toUpperCase(Locale.ENGLISH);
+      String method = in.readUTF().toUpperCase(Locale.ROOT);
       if (method.indexOf('M') < 0) {
         return new org.egothor.stemmer.Trie(in);
       } else {

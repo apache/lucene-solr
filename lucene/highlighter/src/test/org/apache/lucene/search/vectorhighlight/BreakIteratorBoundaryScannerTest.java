@@ -30,7 +30,7 @@ public class BreakIteratorBoundaryScannerTest extends LuceneTestCase {
 
   public void testOutOfRange() throws Exception {
     StringBuilder text = new StringBuilder(TEXT);
-    BreakIterator bi = BreakIterator.getWordInstance(Locale.ENGLISH);
+    BreakIterator bi = BreakIterator.getWordInstance(Locale.ROOT);
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
     
     int start = TEXT.length() + 1;
@@ -44,7 +44,7 @@ public class BreakIteratorBoundaryScannerTest extends LuceneTestCase {
 
   public void testWordBoundary() throws Exception {
     StringBuilder text = new StringBuilder(TEXT);
-    BreakIterator bi = BreakIterator.getWordInstance(Locale.ENGLISH);
+    BreakIterator bi = BreakIterator.getWordInstance(Locale.ROOT);
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
     
     int start = TEXT.indexOf("formance");
@@ -57,7 +57,8 @@ public class BreakIteratorBoundaryScannerTest extends LuceneTestCase {
 
   public void testSentenceBoundary() throws Exception {
     StringBuilder text = new StringBuilder(TEXT);
-    BreakIterator bi = BreakIterator.getSentenceInstance();
+    // we test this with default locale, its randomized by LuceneTestCase
+    BreakIterator bi = BreakIterator.getSentenceInstance(Locale.getDefault());
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
     
     int start = TEXT.indexOf("any application");
@@ -70,7 +71,8 @@ public class BreakIteratorBoundaryScannerTest extends LuceneTestCase {
 
   public void testLineBoundary() throws Exception {
     StringBuilder text = new StringBuilder(TEXT);
-    BreakIterator bi = BreakIterator.getLineInstance();
+    // we test this with default locale, its randomized by LuceneTestCase
+    BreakIterator bi = BreakIterator.getLineInstance(Locale.getDefault());
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
     
     int start = TEXT.indexOf("any application");

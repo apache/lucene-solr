@@ -19,6 +19,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.text.NumberFormat;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -428,7 +429,7 @@ public class TaskSequence extends PerfTask {
     sb.append(padd);
     sb.append(!letChildReport ? ">" : (parallel ? "]" : "}"));
     if (fixedTime) {
-      sb.append(" " + NumberFormat.getNumberInstance().format(runTimeSec) + "s");
+      sb.append(" " + NumberFormat.getNumberInstance(Locale.ROOT).format(runTimeSec) + "s");
     } else if (repetitions>1) {
       sb.append(" * " + repetitions);
     } else if (repetitions==REPEAT_EXHAUST) {
@@ -487,7 +488,7 @@ public class TaskSequence extends PerfTask {
     if (rate>0) {
       seqName += "_" + rate + (perMin?"/min":"/sec"); 
     }
-    if (parallel && seqName.toLowerCase().indexOf("par")<0) {
+    if (parallel && seqName.toLowerCase(Locale.ROOT).indexOf("par")<0) {
       seqName += "_Par";
     }
   }

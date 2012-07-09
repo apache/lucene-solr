@@ -5,6 +5,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.*;
@@ -59,13 +60,14 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
     {
       File file = new File(fileName);
       Reader reader = null;
+      // note: we use a decoding reader, so if your queries are screwed up you know
       if (file.exists()) {
-        reader = new FileReader(file);
+        reader = IOUtils.getDecodingReader(file, IOUtils.CHARSET_UTF_8);
       } else {
         //see if we can find it as a resource
         InputStream asStream = FileBasedQueryMaker.class.getClassLoader().getResourceAsStream(fileName);
         if (asStream != null) {
-          reader = new InputStreamReader(asStream);
+          reader = IOUtils.getDecodingReader(asStream, IOUtils.CHARSET_UTF_8);
         }
       }
       if (reader != null) {

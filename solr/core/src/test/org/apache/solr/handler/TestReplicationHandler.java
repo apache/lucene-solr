@@ -18,11 +18,13 @@ package org.apache.solr.handler;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.util.regex.Matcher;
@@ -929,8 +931,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
   private static void copyFile(File src, File dst, Integer port) throws IOException {
-    BufferedReader in = new BufferedReader(new FileReader(src));
-    Writer out = new FileWriter(dst);
+    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), "UTF-8"));
+    Writer out = new OutputStreamWriter(new FileOutputStream(dst), "UTF-8");
 
     for (String line = in.readLine(); null != line; line = in.readLine()) {
 

@@ -26,6 +26,7 @@ import org.apache.solr.common.util.DateUtil;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * 
@@ -139,7 +140,7 @@ public class SolrQueryTest extends LuceneTestCase {
 
   public void testFacetDateRange() {
     SolrQuery q = new SolrQuery("dog");
-    Calendar calendar = Calendar.getInstance(Locale.UK);
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"), Locale.UK);
     calendar.set(2010, 1, 1);
     Date start = calendar.getTime();
     calendar.set(2011, 1, 1);

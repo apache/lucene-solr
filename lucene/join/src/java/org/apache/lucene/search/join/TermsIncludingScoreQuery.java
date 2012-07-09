@@ -36,6 +36,7 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Set;
 
 class TermsIncludingScoreQuery extends Query {
@@ -69,7 +70,7 @@ class TermsIncludingScoreQuery extends Query {
   }
 
   public String toString(String string) {
-    return String.format("TermsIncludingScoreQuery{field=%s;originalQuery=%s}", field, unwrittenOriginalQuery);
+    return String.format(Locale.ROOT, "TermsIncludingScoreQuery{field=%s;originalQuery=%s}", field, unwrittenOriginalQuery);
   }
 
   @Override

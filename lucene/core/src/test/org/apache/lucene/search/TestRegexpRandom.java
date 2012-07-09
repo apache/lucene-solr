@@ -58,7 +58,7 @@ public class TestRegexpRandom extends LuceneTestCase {
     Field field = newField("field", "", customType);
     doc.add(field);
     
-    NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ENGLISH));
+    NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ROOT));
     for (int i = 0; i < 1000; i++) {
       field.setStringValue(df.format(i));
       writer.addDocument(doc);

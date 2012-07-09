@@ -145,7 +145,7 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
         try {
           if (maxCommitAge != null) {
             if (maxCommitAgeTimeStamp==-1) {
-              DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
+              DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.ROOT);
               maxCommitAgeTimeStamp = dmp.parseMath(maxCommitAge).getTime();
             }
             if (IndexDeletionPolicyWrapper.getCommitTimestamp(commit) < maxCommitAgeTimeStamp) {

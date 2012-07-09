@@ -68,6 +68,7 @@
             executable="${python.exe}" failonerror="true">
         <arg line="createLevAutomata.py @{n} False"/>
       </exec>
+      <fixcrlf srcdir="src/java/org/apache/lucene/util/automaton" includes="*ParametricDescription.java" encoding="UTF-8"/>
     </sequential>
   </macrodef>
 

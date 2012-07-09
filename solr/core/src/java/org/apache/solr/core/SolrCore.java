@@ -1913,13 +1913,13 @@ public final class SolrCore implements SolrInfoMBean {
         Set<String> hide = new HashSet<String>();
 
         for (String file : solrConfig.getResourceLoader().listConfigDir()) {
-          hide.add(file.toUpperCase(Locale.ENGLISH));
+          hide.add(file.toUpperCase(Locale.ROOT));
         }    
         
         // except the "gettable" list
         StringTokenizer st = new StringTokenizer( gettable );
         while( st.hasMoreTokens() ) {
-          hide.remove( st.nextToken().toUpperCase(Locale.ENGLISH) );
+          hide.remove( st.nextToken().toUpperCase(Locale.ROOT) );
         }
         for( String s : hide ) {
           invariants.add( ShowFileRequestHandler.HIDDEN, s );

@@ -1,0 +1,2 @@
+ASM - Lightweight Java Bytecode Manipulation Framework
+Copyright © 1999-2012, OW2 Consortium

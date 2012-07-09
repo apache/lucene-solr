@@ -40,22 +40,24 @@ public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
     Locale locale = null;
     if(language != null){
       locale = country == null ? new Locale(language) : new Locale(language, country);
+    } else {
+      locale = Locale.ROOT;
     }
 
     // construct BreakIterator
-    String type = params.getFieldParam(fieldName, HighlightParams.BS_TYPE, "WORD").toLowerCase();
+    String type = params.getFieldParam(fieldName, HighlightParams.BS_TYPE, "WORD").toLowerCase(Locale.ROOT);
     BreakIterator bi = null;
     if(type.equals("character")){
-      bi = locale == null ? BreakIterator.getCharacterInstance() : BreakIterator.getCharacterInstance(locale);
+      bi = BreakIterator.getCharacterInstance(locale);
     }
     else if(type.equals("word")){
-      bi = locale == null ? BreakIterator.getWordInstance() : BreakIterator.getWordInstance(locale);
+      bi = BreakIterator.getWordInstance(locale);
     }
     else if(type.equals("line")){
-      bi = locale == null ? BreakIterator.getLineInstance() : BreakIterator.getLineInstance(locale);
+      bi = BreakIterator.getLineInstance(locale);
     }
     else if(type.equals("sentence")){
-      bi = locale == null ? BreakIterator.getSentenceInstance() : BreakIterator.getSentenceInstance(locale);
+      bi = BreakIterator.getSentenceInstance(locale);
     }
     else
       throw new SolrException(ErrorCode.BAD_REQUEST, type + " is invalid for parameter " + HighlightParams.BS_TYPE);

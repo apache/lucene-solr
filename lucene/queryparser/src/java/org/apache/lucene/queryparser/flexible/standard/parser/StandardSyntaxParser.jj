@@ -5,7 +5,7 @@
 options {
   STATIC=false;
   JAVA_UNICODE_ESCAPE=true;
-  USER_CHAR_STREAM=false;
+  USER_CHAR_STREAM=true;
   IGNORE_CASE=false;
   JDK_VERSION="1.5";
 }
@@ -61,14 +61,14 @@ public class StandardSyntaxParser implements SyntaxParser {
  
    // syntax parser constructor
    public StandardSyntaxParser() {
-   	this(new StringReader(""));
+   	this(new FastCharStream(new StringReader("")));
   }
      /** Parses a query string, returning a {@link org.apache.lucene.queryparser.flexible.core.nodes.QueryNode}.
      *  @param query  the query string to be parsed.
      *  @throws ParseException if the parsing fails
      */
     public QueryNode parse(CharSequence query, CharSequence field) throws QueryNodeParseException {
-      ReInit(new StringReader(query.toString()));
+      ReInit(new FastCharStream(new StringReader(query.toString())));
       try {
         // TopLevelQuery is a Query followed by the end-of-input (EOF)
         QueryNode querynode = TopLevelQuery(field);

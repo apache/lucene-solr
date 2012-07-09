@@ -28,6 +28,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * @lucene.experimental
@@ -107,7 +108,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
   }
 
   public void printInfo() {
-    NumberFormat nf = NumberFormat.getNumberInstance();
+    NumberFormat nf = NumberFormat.getNumberInstance(Locale.ROOT);
     nf.setMaximumFractionDigits(5);
     nf.setMinimumFractionDigits(5);
     nf.setMinimumIntegerDigits(3);

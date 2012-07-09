@@ -61,14 +61,14 @@ public class SpatialOperation implements Serializable {
     this.sourceNeedsArea = sourceNeedsArea;
     this.targetNeedsArea = targetNeedsArea;
     registry.put(name, this);
-    registry.put(name.toUpperCase(Locale.US), this);
+    registry.put(name.toUpperCase(Locale.ROOT), this);
     list.add( this );
   }
 
   public static SpatialOperation get( String v ) {
     SpatialOperation op = registry.get( v );
     if( op == null ) {
-      op = registry.get(v.toUpperCase(Locale.US));
+      op = registry.get(v.toUpperCase(Locale.ROOT));
     }
     if( op == null ) {
       throw new InvalidSpatialArgument("Unknown Operation: " + v );

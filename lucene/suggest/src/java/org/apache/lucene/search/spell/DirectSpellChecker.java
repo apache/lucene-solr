@@ -320,7 +320,7 @@ public class DirectSpellChecker {
       return new SuggestWord[0];
     
     if (lowerCaseTerms) {
-      term = new Term(term.field(), text.toLowerCase(Locale.ENGLISH));
+      term = new Term(term.field(), text.toLowerCase(Locale.ROOT));
     }
     
     int docfreq = ir.docFreq(term);

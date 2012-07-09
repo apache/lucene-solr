@@ -20,8 +20,10 @@ package org.apache.lucene.codecs;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -345,7 +347,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
     @Override
     public String toString() {
       final ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-      final PrintStream out = new PrintStream(bos);
+      PrintStream out;
+      try {
+        out = new PrintStream(bos, false, "UTF-8");
+      } catch (UnsupportedEncodingException bogus) {
+        throw new RuntimeException(bogus);
+      }
       
       out.println("  index FST:");
       out.println("    " + indexNodeCount + " nodes");
@@ -353,7 +360,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       out.println("    " + indexNumBytes + " bytes");
       out.println("  terms:");
       out.println("    " + totalTermCount + " terms");
-      out.println("    " + totalTermBytes + " bytes" + (totalTermCount != 0 ? " (" + String.format("%.1f", ((double) totalTermBytes)/totalTermCount) + " bytes/term)" : ""));
+      out.println("    " + totalTermBytes + " bytes" + (totalTermCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalTermBytes)/totalTermCount) + " bytes/term)" : ""));
       out.println("  blocks:");
       out.println("    " + totalBlockCount + " blocks");
       out.println("    " + termsOnlyBlockCount + " terms-only blocks");
@@ -362,9 +369,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
       out.println("    " + floorBlockCount + " floor blocks");
       out.println("    " + (totalBlockCount-floorSubBlockCount) + " non-floor blocks");
       out.println("    " + floorSubBlockCount + " floor sub-blocks");
-      out.println("    " + totalBlockSuffixBytes + " term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format("%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
-      out.println("    " + totalBlockStatsBytes + " term stats bytes" + (totalBlockCount != 0 ? " (" + String.format("%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
-      out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format("%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
+      out.println("    " + totalBlockSuffixBytes + " term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
+      out.println("    " + totalBlockStatsBytes + " term stats bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
+      out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
       if (totalBlockCount != 0) {
         out.println("    by prefix length:");
         int total = 0;
@@ -372,13 +379,17 @@ public class BlockTreeTermsReader extends FieldsProducer {
           final int blockCount = blockCountByPrefixLen[prefix];
           total += blockCount;
           if (blockCount != 0) {
-            out.println("      " + String.format("%2d", prefix) + ": " + blockCount);
+            out.println("      " + String.format(Locale.ROOT, "%2d", prefix) + ": " + blockCount);
           }
         }
         assert totalBlockCount == total;
       }
 
-      return bos.toString();
+      try {
+        return bos.toString("UTF-8");
+      } catch (UnsupportedEncodingException bogus) {
+        throw new RuntimeException(bogus);
+      }
     }
   }
 

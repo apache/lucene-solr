@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.util.Locale;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -119,7 +120,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
   }
   
   private static String formatNanos(long ns) {
-    return String.format("%.4fms", ns / (double) 1000000);
+    return String.format(Locale.ROOT, "%.4fms", ns / (double) 1000000);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

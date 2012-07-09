@@ -60,12 +60,14 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.URI;
+import java.util.Locale;
 import java.util.StringTokenizer;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCompile extends LuceneTestCase {
@@ -107,7 +109,7 @@ public class TestCompile extends LuceneTestCase {
     Trie trie;
     DataInputStream is = new DataInputStream(new BufferedInputStream(
         new FileInputStream(path)));
-    String method = is.readUTF().toUpperCase();
+    String method = is.readUTF().toUpperCase(Locale.ROOT);
     if (method.indexOf('M') < 0) {
       trie = new Trie(is);
     } else {
@@ -120,11 +122,11 @@ public class TestCompile extends LuceneTestCase {
   private static void assertTrie(Trie trie, String file, boolean usefull,
       boolean storeorig) throws Exception {
     LineNumberReader in = new LineNumberReader(new BufferedReader(
-        new FileReader(file)));
+        new InputStreamReader(new FileInputStream(file), IOUtils.CHARSET_UTF_8)));
     
     for (String line = in.readLine(); line != null; line = in.readLine()) {
       try {
-        line = line.toLowerCase();
+        line = line.toLowerCase(Locale.ROOT);
         StringTokenizer st = new StringTokenizer(line);
         String stem = st.nextToken();
         if (storeorig) {
@@ -132,7 +134,7 @@ public class TestCompile extends LuceneTestCase {
               .getLastOnPath(stem);
           StringBuilder stm = new StringBuilder(stem);
           Diff.apply(stm, cmd);
-          assertEquals(stem.toLowerCase(), stm.toString().toLowerCase());
+          assertEquals(stem.toLowerCase(Locale.ROOT), stm.toString().toLowerCase(Locale.ROOT));
         }
         while (st.hasMoreTokens()) {
           String token = st.nextToken();
@@ -143,7 +145,7 @@ public class TestCompile extends LuceneTestCase {
               .getLastOnPath(token);
           StringBuilder stm = new StringBuilder(token);
           Diff.apply(stm, cmd);
-          assertEquals(stem.toLowerCase(), stm.toString().toLowerCase());
+          assertEquals(stem.toLowerCase(Locale.ROOT), stm.toString().toLowerCase(Locale.ROOT));
         }
       } catch (java.util.NoSuchElementException x) {
         // no base token (stem) on a line

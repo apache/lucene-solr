@@ -61,12 +61,12 @@ public class TestDateTools extends LuceneTestCase {
   
   public void testStringtoTime() throws ParseException {
     long time = DateTools.stringToTime("197001010000");
-    Calendar cal = new GregorianCalendar();
+    // we use default locale since LuceneTestCase randomizes it
+    Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"), Locale.getDefault());
     cal.clear();
     cal.set(1970, 0, 1,    // year=1970, month=january, day=1
         0, 0, 0);          // hour, minute, second
     cal.set(Calendar.MILLISECOND, 0);
-    cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     assertEquals(cal.getTime().getTime(), time);
     cal.set(1980, 1, 2,    // year=1980, month=february, day=2
         11, 5, 0);          // hour, minute, second
@@ -76,9 +76,9 @@ public class TestDateTools extends LuceneTestCase {
   }
   
   public void testDateAndTimetoString() throws ParseException {
-    Calendar cal = new GregorianCalendar();
+    // we use default locale since LuceneTestCase randomizes it
+    Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"), Locale.getDefault());
     cal.clear();
-    cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     cal.set(2004, 1, 3,   // year=2004, month=february(!), day=3
         22, 8, 56);       // hour, minute, second
     cal.set(Calendar.MILLISECOND, 333);
@@ -141,9 +141,9 @@ public class TestDateTools extends LuceneTestCase {
   }
   
   public void testRound() {
-    Calendar cal = new GregorianCalendar();
+    // we use default locale since LuceneTestCase randomizes it
+    Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"), Locale.getDefault());
     cal.clear();
-    cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     cal.set(2004, 1, 3,   // year=2004, month=february(!), day=3
         22, 8, 56);       // hour, minute, second
     cal.set(Calendar.MILLISECOND, 333);
@@ -180,7 +180,7 @@ public class TestDateTools extends LuceneTestCase {
   }
 
   private String isoFormat(Date date) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS", Locale.US);
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS", Locale.ROOT);
     sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
     return sdf.format(date);
   }

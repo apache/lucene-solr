@@ -61,50 +61,50 @@
           executable="${python.exe}" failonerror="true" logerror="true">
       <arg value="htmlentity.py"/>
     </exec>
+    <fixcrlf file="src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex" encoding="UTF-8"/>
   </target>
 
   <target name="jflex-wiki-tokenizer" depends="init,jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
       <classpath refid="jflex.classpath"/>
     </taskdef>
-    <jflex file="src/java/org/apache/lucene/analysis/wikipedia/WikipediaTokenizerImpl.jflex"
-           outdir="src/java/org/apache/lucene/analysis/wikipedia"
-           nobak="on"/>
+    <run-jflex dir="src/java/org/apache/lucene/analysis/wikipedia" name="WikipediaTokenizerImpl"/>
   </target>
 
   <target name="jflex-StandardAnalyzer" depends="init,jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
 			<classpath refid="jflex.classpath"/>
     </taskdef>
-
-    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex"
-           outdir="src/java/org/apache/lucene/analysis/standard"
-           nobak="on" />
-    <jflex file="src/java/org/apache/lucene/analysis/standard/ClassicTokenizerImpl.jflex"
-           outdir="src/java/org/apache/lucene/analysis/standard"
-           nobak="on" />
-    <jflex file="src/java/org/apache/lucene/analysis/standard/std31/StandardTokenizerImpl31.jflex"
-           outdir="src/java/org/apache/lucene/analysis/standard/std31"
-           nobak="on" />
+    <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="StandardTokenizerImpl"/>
+    <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="ClassicTokenizerImpl"/>
   </target>
 
   <target name="jflex-UAX29URLEmailTokenizer" depends="jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
 			<classpath refid="jflex.classpath"/>
     </taskdef>
-    <jflex file="src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizerImpl.jflex"
-           outdir="src/java/org/apache/lucene/analysis/standard"
-           nobak="on" />
-    <jflex file="src/java/org/apache/lucene/analysis/standard/std31/UAX29URLEmailTokenizerImpl31.jflex"
-           outdir="src/java/org/apache/lucene/analysis/standard/std31"
-           nobak="on" />
-    <jflex file="src/java/org/apache/lucene/analysis/standard/std34/UAX29URLEmailTokenizerImpl34.jflex"
-           outdir="src/java/org/apache/lucene/analysis/standard/std34"
-           nobak="on" />
+    <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="UAX29URLEmailTokenizerImpl"/>
   </target>
   
+  <!-- Remove the inappropriate JFlex-generated constructor -->
+  <macrodef name="run-jflex">
+    <attribute name="dir"/>
+    <attribute name="name"/>
+    <sequential>
+      <jflex file="@{dir}/@{name}.jflex"
+             outdir="@{dir}"
+             nobak="on" />
+      <replaceregexp file="@{dir}/@{name}.java"
+                     match="/\*\*\s*\*\s*Creates a new scanner\..*this\(new java\.io\.InputStreamReader\(in\)\);\s*\}"
+                     replace="" flags="sg"/>
+    </sequential>
+  </macrodef>
+
   <target name="clean-jflex">
     <delete>
+      <fileset dir="src/java/org/apache/lucene/analysis/charfilter" includes="*.java">
+        <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
       <fileset dir="src/java/org/apache/lucene/analysis/wikipedia" includes="*.java">
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>

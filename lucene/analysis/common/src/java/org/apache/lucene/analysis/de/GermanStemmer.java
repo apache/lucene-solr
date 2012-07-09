@@ -1,4 +1,7 @@
 package org.apache.lucene.analysis.de;
+
+import java.util.Locale;
+
 // This file is encoded in UTF-8
 
 /*
@@ -37,6 +40,8 @@ public class GermanStemmer
      * Amount of characters that are removed with <tt>substitute()</tt> while stemming.
      */
     private int substCount = 0;
+    
+    private static final Locale locale = new Locale("de", "DE");
 
     /**
      * Stemms the given term to an unique <tt>discriminator</tt>.
@@ -47,7 +52,7 @@ public class GermanStemmer
     protected String stem( String term )
     {
       // Use lowercase for medium stemming.
-      term = term.toLowerCase();
+      term = term.toLowerCase(locale);
       if ( !isStemmable( term ) )
         return term;
       // Reset the StringBuilder.

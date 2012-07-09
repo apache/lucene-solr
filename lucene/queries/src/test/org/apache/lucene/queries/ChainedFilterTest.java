@@ -19,6 +19,8 @@ package org.apache.lucene.queries;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -56,7 +58,8 @@ public class ChainedFilterTest extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
-    Calendar cal = new GregorianCalendar();
+    // we use the default Locale/TZ since LuceneTestCase randomizes it
+    Calendar cal = new GregorianCalendar(TimeZone.getDefault(), Locale.getDefault());
     cal.clear();
     cal.setTimeInMillis(1041397200000L); // 2003 January 01
 
@@ -183,7 +186,7 @@ public class ChainedFilterTest extends LuceneTestCase {
 
   /*
   private Date parseDate(String s) throws ParseException {
-    return new SimpleDateFormat("yyyy MMM dd", Locale.US).parse(s);
+    return new SimpleDateFormat("yyyy MMM dd", Locale.ROOT).parse(s);
   }
   */
   

@@ -24,7 +24,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -385,14 +387,16 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   }
 
   public String getDate(String s) throws Exception {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+    // we use the default Locale since LuceneTestCase randomizes it
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
     return DateTools.dateToString(df.parse(s), DateTools.Resolution.DAY);
   }
 
   private String getLocalizedDate(int year, int month, int day,
       boolean extendLastDate) {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    Calendar calendar = new GregorianCalendar();
+    // we use the default Locale/TZ since LuceneTestCase randomizes it
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
+    Calendar calendar = new GregorianCalendar(TimeZone.getDefault(), Locale.getDefault());
     calendar.set(year, month, day);
     if (extendLastDate) {
       calendar.set(Calendar.HOUR_OF_DAY, 23);
@@ -406,7 +410,8 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   public void testDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1, false);
     String endDate = getLocalizedDate(2002, 1, 4, false);
-    Calendar endDateExpected = new GregorianCalendar();
+    // we use the default Locale/TZ since LuceneTestCase randomizes it
+    Calendar endDateExpected = new GregorianCalendar(TimeZone.getDefault(), Locale.getDefault());
     endDateExpected.set(2002, 1, 4, 23, 59, 59);
     endDateExpected.set(Calendar.MILLISECOND, 999);
     final String defaultField = "default";
@@ -441,7 +446,8 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   /** for testing DateTools support */
   private String getDate(String s, DateTools.Resolution resolution) throws Exception {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+    // we use the default Locale since LuceneTestCase randomizes it
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
     return getDate(df.parse(s), resolution);
   }
 

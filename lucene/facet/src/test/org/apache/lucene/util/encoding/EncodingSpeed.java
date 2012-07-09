@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.Arrays;
+import java.util.Locale;
 
 import org.apache.lucene.util.encoding.DGapIntEncoder;
 import org.apache.lucene.util.encoding.EightFlagsIntEncoder;
@@ -67,11 +68,11 @@ public class EncodingSpeed {
             + ") " + loopFactor + " times.");
 
     System.out.println();
-    String header = String.format(headerFormat, "Encoder", "Bits/Int",
+    String header = String.format(Locale.ROOT, headerFormat, "Encoder", "Bits/Int",
         "Encode Time", "Encode Time", "Decode Time", "Decode Time");
 
     System.out.println(header);
-    String header2 = String.format(headerFormat, "", "", "[milliseconds]",
+    String header2 = String.format(Locale.ROOT, headerFormat, "", "", "[milliseconds]",
         "[microsecond / int]", "[milliseconds]", "[microsecond / int]");
 
     System.out.println(header2);
@@ -148,7 +149,7 @@ public class EncodingSpeed {
     endTime = System.currentTimeMillis();
     long decodeTime = endTime - startTime;
 
-    System.out.println(String.format(resultsFormat, encoder, nf.format(baos
+    System.out.println(String.format(Locale.ROOT, resultsFormat, encoder, nf.format(baos
         .size()
         * 8.0 / data.length), encodeTime, nf.format(encodeTime
         * 1000000.0 / (loopFactor * data.length)), decodeTime, nf
@@ -156,7 +157,7 @@ public class EncodingSpeed {
   }
 
   static {
-    nf = NumberFormat.getInstance();
+    nf = NumberFormat.getInstance(Locale.ROOT);
     nf.setMaximumFractionDigits(4);
     nf.setMinimumFractionDigits(4);
 

@@ -28,6 +28,7 @@ import org.apache.lucene.util.SentinelIntSet;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Locale;
 
 /**
  * IDV based implementation of {@link AbstractSecondPassGroupingCollector}.
@@ -87,7 +88,7 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
         // Type erasure b/c otherwise we have inconvertible types...
         return (DVSecondPassGroupingCollector) new SortedBR(groupField, type, diskResident, (Collection) searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
       default:
-        throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "ValueType %s not supported", type));
     }
   }
 

@@ -23,6 +23,7 @@ import java.io.Reader;
 
 import org.apache.lucene.benchmark.byTask.utils.Algorithm;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.util.IOUtils;
 
 
 /**
@@ -106,7 +107,7 @@ public class Benchmark {
     
     Benchmark benchmark = null;
     try {
-      benchmark = new Benchmark(new FileReader(algFile));
+      benchmark = new Benchmark(IOUtils.getDecodingReader(algFile, IOUtils.CHARSET_UTF_8));
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(1);
