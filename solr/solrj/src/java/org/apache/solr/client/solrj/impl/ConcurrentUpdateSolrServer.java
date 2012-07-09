@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -158,7 +159,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                           fmt = "<commit waitSearcher=\"%s\" waitFlush=\"%s\" />";
                         }
                         if (fmt != null) {
-                          byte[] content = String.format(
+                          byte[] content = String.format(Locale.ROOT,
                               fmt,
                               params.getBool(UpdateParams.WAIT_SEARCHER, false)
                                   + "").getBytes("UTF-8");

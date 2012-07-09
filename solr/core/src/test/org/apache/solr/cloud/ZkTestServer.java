@@ -304,7 +304,7 @@ public class ZkTestServer {
 
           reader =
               new BufferedReader(
-                      new InputStreamReader(sock.getInputStream()));
+                      new InputStreamReader(sock.getInputStream(), "US-ASCII"));
           StringBuilder sb = new StringBuilder();
           String line;
           while((line = reader.readLine()) != null) {
