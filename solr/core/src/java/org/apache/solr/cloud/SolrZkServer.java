@@ -20,8 +20,8 @@ package org.apache.solr.cloud;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Map.Entry;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
@@ -462,7 +463,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
             + " file is missing");
       }
 
-      BufferedReader br = new BufferedReader(new FileReader(myIdFile));
+      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(myIdFile), IOUtils.CHARSET_UTF_8));
       String myIdString;
       try {
         myIdString = br.readLine();

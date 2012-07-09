@@ -607,7 +607,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
   
   private void doTestBocchan(int numIterations) throws Exception {
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(
-        this.getClass().getResourceAsStream("bocchan.utf-8")));
+        this.getClass().getResourceAsStream("bocchan.utf-8"), "UTF-8"));
     String line = reader.readLine();
     reader.close();
     

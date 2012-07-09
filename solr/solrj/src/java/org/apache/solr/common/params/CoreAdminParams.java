@@ -99,7 +99,7 @@ public interface CoreAdminParams
     {
       if( p != null ) {
         try {
-          return CoreAdminAction.valueOf( p.toUpperCase(Locale.ENGLISH) );
+          return CoreAdminAction.valueOf( p.toUpperCase(Locale.ROOT) );
         }
         catch( Exception ex ) {}
       }

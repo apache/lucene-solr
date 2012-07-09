@@ -18,4 +18,12 @@
 -->
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="core-tools"/>
+    <dependencies>
+      <!-- 
+       We use the asm-debug-all library, as the as-all has no generics.
+       It's not really debug, just not "stripped":
+      -->
+      <dependency org="org.ow2.asm" name="asm-debug-all" rev="4.0" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+    </dependencies>
 </ivy-module>

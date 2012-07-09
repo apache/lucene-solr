@@ -756,7 +756,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   private void ensureLog() {
     if (tlog == null) {
-      String newLogName = String.format(Locale.ENGLISH, LOG_FILENAME_PATTERN, TLOG_NAME, id);
+      String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
       tlog = new TransactionLog(new File(tlogDir, newLogName), globalStrings);
     }
   }

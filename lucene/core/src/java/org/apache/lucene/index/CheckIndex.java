@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
@@ -340,7 +341,7 @@ public class CheckIndex {
    *  you only call this when the index is not opened by any
    *  writer. */
   public Status checkIndex(List<String> onlySegments) throws IOException {
-    NumberFormat nf = NumberFormat.getInstance();
+    NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
     SegmentInfos sis = new SegmentInfos();
     Status result = new Status();
     result.dir = dir;

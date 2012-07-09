@@ -17,6 +17,8 @@ package org.apache.lucene.spatial.query;
  * limitations under the License.
  */
 
+import java.util.Locale;
+
 import com.spatial4j.core.exception.InvalidSpatialArgument;
 import com.spatial4j.core.shape.Shape;
 
@@ -64,7 +66,7 @@ public class SpatialArgs {
     if (max != null) {
       str.append(" max=").append(max);
     }
-    str.append(" distPrec=").append(String.format("%.2f%%", distPrecision / 100d));
+    str.append(" distPrec=").append(String.format(Locale.ROOT, "%.2f%%", distPrecision / 100d));
     str.append(')');
     return str.toString();
   }

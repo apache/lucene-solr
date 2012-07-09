@@ -108,7 +108,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
       if (r == null)
         break;
       rows.add(r);
-      assertEquals(r.get("desc").toString().toUpperCase(Locale.ENGLISH), r.get("desc"));
+      assertEquals(r.get("desc").toString().toUpperCase(Locale.ROOT), r.get("desc"));
     }
     assertEquals(2, rows.size());
     assertEquals(2, rows.get(0).size());
@@ -176,7 +176,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
         Object val = entry.getValue();
         if (val instanceof String) {
           String s = (String) val;
-          entry.setValue(s.toUpperCase(Locale.ENGLISH));
+          entry.setValue(s.toUpperCase(Locale.ROOT));
         }
       }
       return row;

@@ -71,7 +71,7 @@ public class Test10KPulsings extends LuceneTestCase {
     Field field = newField("field", "", ft);
     document.add(field);
     
-    NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ENGLISH));
+    NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ROOT));
 
     for (int i = 0; i < 10050; i++) {
       field.setStringValue(df.format(i));
@@ -122,7 +122,7 @@ public class Test10KPulsings extends LuceneTestCase {
     Field field = newField("field", "", ft);
     document.add(field);
     
-    NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ENGLISH));
+    NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ROOT));
 
     final int freq = freqCutoff + 1;
     

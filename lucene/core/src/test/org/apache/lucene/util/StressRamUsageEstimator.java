@@ -59,7 +59,7 @@ public class StressRamUsageEstimator extends LuceneTestCase {
         // Check the current memory consumption and provide the estimate.
         long jvmUsed = memoryMXBean.getHeapMemoryUsage().getUsed(); 
         long estimated = RamUsageEstimator.sizeOf(first);
-        System.out.println(String.format(Locale.ENGLISH, "%10d, %10d",
+        System.out.println(String.format(Locale.ROOT, "%10d, %10d",
             jvmUsed, estimated));
 
         // Make a batch of objects.
@@ -125,7 +125,7 @@ public class StressRamUsageEstimator extends LuceneTestCase {
           break;
         }
 
-        System.out.println(String.format(Locale.ENGLISH, "%10s\t%10s\t%10s", 
+        System.out.println(String.format(Locale.ROOT, "%10s\t%10s\t%10s", 
             RamUsageEstimator.humanReadableUnits(mu.getUsed()),
             RamUsageEstimator.humanReadableUnits(mu.getMax()), 
             RamUsageEstimator.humanReadableUnits(estimated)));

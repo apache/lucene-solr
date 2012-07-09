@@ -21,6 +21,8 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Locale;
+
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -213,7 +215,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
   }
   
   private String landingPageSuffix(URL url) {
-    String path = url.getPath().toLowerCase();
+    String path = url.getPath().toLowerCase(Locale.ROOT);
     for(String suffix : landingPageSuffixes) {
       if(path.endsWith(suffix)) {
         return suffix;
@@ -223,6 +225,6 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
   }
   
   private String getPathWithoutSuffix(URL url) {
-    return url.getPath().toLowerCase().replaceFirst(landingPageSuffix(url)+"$", "");
+    return url.getPath().toLowerCase(Locale.ROOT).replaceFirst(landingPageSuffix(url)+"$", "");
   }
 }

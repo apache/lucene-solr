@@ -32,7 +32,7 @@ public class GenerateJFlexSupplementaryMacros {
   private static final UnicodeSet BMP = new UnicodeSet("[\u0000-\uFFFF]");
   private static final String NL = System.getProperty("line.separator");
   private static final DateFormat DATE_FORMAT = DateFormat.getDateTimeInstance
-    (DateFormat.FULL, DateFormat.FULL, Locale.US);
+    (DateFormat.FULL, DateFormat.FULL, Locale.ROOT);
   static {
     DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
   }

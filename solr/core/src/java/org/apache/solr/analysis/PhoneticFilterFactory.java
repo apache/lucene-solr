@@ -68,12 +68,12 @@ public class PhoneticFilterFactory extends TokenFilterFactory
   private static final Map<String, Class<? extends Encoder>> registry = new HashMap<String, Class<? extends Encoder>>(6);
 
   static {
-    registry.put("DoubleMetaphone".toUpperCase(Locale.ENGLISH), DoubleMetaphone.class);
-    registry.put("Metaphone".toUpperCase(Locale.ENGLISH), Metaphone.class);
-    registry.put("Soundex".toUpperCase(Locale.ENGLISH), Soundex.class);
-    registry.put("RefinedSoundex".toUpperCase(Locale.ENGLISH), RefinedSoundex.class);
-    registry.put("Caverphone".toUpperCase(Locale.ENGLISH), Caverphone2.class);
-    registry.put("ColognePhonetic".toUpperCase(Locale.ENGLISH), ColognePhonetic.class);
+    registry.put("DoubleMetaphone".toUpperCase(Locale.ROOT), DoubleMetaphone.class);
+    registry.put("Metaphone".toUpperCase(Locale.ROOT), Metaphone.class);
+    registry.put("Soundex".toUpperCase(Locale.ROOT), Soundex.class);
+    registry.put("RefinedSoundex".toUpperCase(Locale.ROOT), RefinedSoundex.class);
+    registry.put("Caverphone".toUpperCase(Locale.ROOT), Caverphone2.class);
+    registry.put("ColognePhonetic".toUpperCase(Locale.ROOT), ColognePhonetic.class);
   }
 
   protected boolean inject = true;
@@ -93,7 +93,7 @@ public class PhoneticFilterFactory extends TokenFilterFactory
       throw new InitializationException("Missing required parameter: " + ENCODER
           + " [" + registry.keySet() + "]");
     }
-    clazz = registry.get(name.toUpperCase(Locale.ENGLISH));
+    clazz = registry.get(name.toUpperCase(Locale.ROOT));
     if( clazz == null ) {
       clazz = resolveEncoder(name);
     }

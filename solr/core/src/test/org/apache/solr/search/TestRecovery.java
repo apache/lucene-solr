@@ -906,7 +906,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       // WARNING... assumes format of .00000n where n is less than 9
       long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf(".") + 1));
-      String fname2 = String.format(Locale.ENGLISH,
+      String fname2 = String.format(Locale.ROOT,
           UpdateLog.LOG_FILENAME_PATTERN,
           UpdateLog.TLOG_NAME,
           logNumber + 1);

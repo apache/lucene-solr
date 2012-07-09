@@ -75,7 +75,7 @@ public class SolrIndexWriter extends IndexWriter {
       File parent = f.getParentFile();
       if (parent != null) parent.mkdirs();
       FileOutputStream fos = new FileOutputStream(f, true);
-      return new PrintStreamInfoStream(new PrintStream(fos, true));
+      return new PrintStreamInfoStream(new PrintStream(fos, true, "UTF-8"));
     } else {
       return InfoStream.NO_OUTPUT;
     }

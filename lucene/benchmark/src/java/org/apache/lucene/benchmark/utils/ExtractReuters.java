@@ -19,11 +19,17 @@ package org.apache.lucene.benchmark.utils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.lucene.util.IOUtils;
 
 
 /**
@@ -73,7 +79,7 @@ public class ExtractReuters {
    */
   protected void extractFile(File sgmFile) {
     try {
-      BufferedReader reader = new BufferedReader(new FileReader(sgmFile));
+      BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(sgmFile), IOUtils.CHARSET_UTF_8));
 
       StringBuilder buffer = new StringBuilder(1024);
       StringBuilder outBuffer = new StringBuilder(1024);
@@ -107,7 +113,7 @@ public class ExtractReuters {
           File outFile = new File(outputDir, sgmFile.getName() + "-"
               + (docNumber++) + ".txt");
           // System.out.println("Writing " + outFile);
-          FileWriter writer = new FileWriter(outFile);
+          OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(outFile), IOUtils.CHARSET_UTF_8);
           writer.write(out);
           writer.close();
           outBuffer.setLength(0);

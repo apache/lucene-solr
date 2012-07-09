@@ -47,7 +47,7 @@ public abstract class TrecDocParser {
   static final Map<String,ParsePathType> pathName2Type = new HashMap<String,ParsePathType>();
   static {
     for (ParsePathType ppt : ParsePathType.values()) {
-      pathName2Type.put(ppt.name().toUpperCase(Locale.ENGLISH),ppt);
+      pathName2Type.put(ppt.name().toUpperCase(Locale.ROOT),ppt);
     }
   }
   
@@ -60,7 +60,7 @@ public abstract class TrecDocParser {
   public static ParsePathType pathType(File f) {
     int pathLength = 0;
     while (f != null && ++pathLength < MAX_PATH_LENGTH) {
-      ParsePathType ppt = pathName2Type.get(f.getName().toUpperCase(Locale.ENGLISH));
+      ParsePathType ppt = pathName2Type.get(f.getName().toUpperCase(Locale.ROOT));
       if (ppt!=null) {
         return ppt;
       }

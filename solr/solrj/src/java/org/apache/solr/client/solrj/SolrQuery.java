@@ -26,6 +26,7 @@ import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.DateUtil;
 
 import java.util.Date;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 
@@ -240,9 +241,9 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery addNumericRangeFacet(String field, Number start, Number end, Number gap) {
     add(FacetParams.FACET_RANGE, field);
-    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_START), start.toString());
-    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_END), end.toString());
-    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap.toString());
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START), start.toString());
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_END), end.toString());
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap.toString());
     this.set(FacetParams.FACET, true);
     return this;
   }
@@ -258,9 +259,9 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery addDateRangeFacet(String field, Date start, Date end, String gap) {
     add(FacetParams.FACET_RANGE, field);
-    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_START), DateUtil.getThreadLocalDateFormat().format(start));
-    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_END), DateUtil.getThreadLocalDateFormat().format(end));
-    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap);
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START), DateUtil.getThreadLocalDateFormat().format(start));
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_END), DateUtil.getThreadLocalDateFormat().format(end));
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap);
     this.set(FacetParams.FACET, true);
     return this;
   }

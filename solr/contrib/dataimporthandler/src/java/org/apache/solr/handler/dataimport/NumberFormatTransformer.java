@@ -72,7 +72,7 @@ public class NumberFormatTransformer extends Transformer {
         }
 
         Object val = row.get(srcCol);
-        String styleSmall = style.toLowerCase(Locale.ENGLISH);
+        String styleSmall = style.toLowerCase(Locale.ROOT);
 
         if (val instanceof List) {
           List<String> inputs = (List) val;

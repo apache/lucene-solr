@@ -83,8 +83,8 @@ public class DateMathParser  {
 
   /** Default TimeZone for DateMath rounding (UTC) */
   public static final TimeZone DEFAULT_MATH_TZ = UTC;
-  /** Default Locale for DateMath rounding (Locale.US) */
-  public static final Locale DEFAULT_MATH_LOCALE = Locale.US;
+  /** Default Locale for DateMath rounding (Locale.ROOT) */
+  public static final Locale DEFAULT_MATH_LOCALE = Locale.ROOT;
 
   /**
    * A mapping from (uppercased) String labels idenyifying time units,

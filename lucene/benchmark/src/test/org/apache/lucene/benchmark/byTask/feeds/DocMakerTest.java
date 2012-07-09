@@ -166,7 +166,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     // DocMaker did not close its ContentSource if resetInputs was called twice,
     // leading to a file handle leak.
     File f = new File(getWorkDir(), "docMakerLeak.txt");
-    PrintStream ps = new PrintStream(f);
+    PrintStream ps = new PrintStream(f, "UTF-8");
     ps.println("one title\t" + System.currentTimeMillis() + "\tsome content");
     ps.close();
     

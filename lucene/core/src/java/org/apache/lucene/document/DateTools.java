@@ -53,7 +53,7 @@ public class DateTools {
   private static final ThreadLocal<Calendar> TL_CAL = new ThreadLocal<Calendar>() {
     @Override
     protected Calendar initialValue() {
-      return Calendar.getInstance(GMT, Locale.US);
+      return Calendar.getInstance(GMT, Locale.ROOT);
     }
   };
 
@@ -194,7 +194,7 @@ public class DateTools {
       this.formatLen = formatLen;
       // formatLen 10's place:                     11111111
       // formatLen  1's place:            12345678901234567
-      this.format = new SimpleDateFormat("yyyyMMddHHmmssSSS".substring(0,formatLen),Locale.US);
+      this.format = new SimpleDateFormat("yyyyMMddHHmmssSSS".substring(0,formatLen),Locale.ROOT);
       this.format.setTimeZone(GMT);
     }
 
@@ -202,7 +202,7 @@ public class DateTools {
      * in lowercase (for backwards compatibility) */
     @Override
     public String toString() {
-      return super.toString().toLowerCase(Locale.ENGLISH);
+      return super.toString().toLowerCase(Locale.ROOT);
     }
 
   }

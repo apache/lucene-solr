@@ -140,7 +140,7 @@ public class LicenseCheckTask extends Task {
       checked++;
     }
 
-    log(String.format(Locale.ENGLISH, 
+    log(String.format(Locale.ROOT, 
         "Scanned %d JAR file(s) for licenses (in %.2fs.), %d error(s).",
         checked, (System.currentTimeMillis() - start) / 1000.0, errors),
         errors > 0 ? Project.MSG_ERR : Project.MSG_INFO);
@@ -255,7 +255,7 @@ outer:
   private static final String createChecksumString(byte[] digest) {
     StringBuilder checksum = new StringBuilder();
     for (int i = 0; i < digest.length; i++) {
-      checksum.append(String.format(Locale.ENGLISH, "%02x", 
+      checksum.append(String.format(Locale.ROOT, "%02x", 
                                     CHECKSUM_BYTE_MASK & digest[i]));
     }
     return checksum.toString();

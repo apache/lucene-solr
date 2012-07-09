@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.hunspell;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -330,7 +331,7 @@ public class HunspellStemmer {
     
     HunspellStemmer stemmer = new HunspellStemmer(dictionary);
 
-    Scanner scanner = new Scanner(System.in);
+    Scanner scanner = new Scanner(System.in, Charset.defaultCharset().name());
     
     System.out.print("> ");
     while (scanner.hasNextLine()) {

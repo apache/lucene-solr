@@ -22,6 +22,8 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import org.apache.lucene.util.IOUtils;
+
 /**
  * Tries to guess a config based on an InputStream.
  *
@@ -74,7 +76,7 @@ public class CSVConfigGuesser {
     public CSVConfig guess() {
         try {
             // tralalal
-            BufferedReader bIn = new BufferedReader(new InputStreamReader((getInputStream())));
+            BufferedReader bIn = new BufferedReader(new InputStreamReader(getInputStream(), IOUtils.CHARSET_UTF_8));
             String[] lines = new String[10];
             String line = null;
             int counter = 0;

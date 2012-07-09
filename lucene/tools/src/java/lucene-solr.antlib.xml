@@ -18,4 +18,7 @@
     <taskdef 
         name="licenses" 
         classname="org.apache.lucene.validation.LicenseCheckTask" />
+    <taskdef 
+        name="forbidden-apis" 
+        classname="org.apache.lucene.validation.ForbiddenApisCheckTask" />
 </antlib> 

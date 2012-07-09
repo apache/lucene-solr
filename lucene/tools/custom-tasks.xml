@@ -5,19 +5,23 @@
     for standalone use.
   </description>
 
+  <target name="load-custom-tasks" unless="custom-tasks.loaded">
+    <dirname file="${ant.file.custom-tasks}" property="custom-tasks.dir"/>
+    <taskdef resource="lucene-solr.antlib.xml">
+      <classpath>
+        <pathelement location="${custom-tasks.dir}/../build/tools/classes/java" />
+        <fileset dir="${custom-tasks.dir}/lib" includes="asm-debug-all-4.0.jar" />
+      </classpath>
+    </taskdef>
+    <property name="custom-tasks.loaded" value="true"/>
+  </target>
+
   <macrodef name="license-check-macro">
     <attribute name="dir" />
     <element name="additional-excludes" optional="true" />
     <element name="additional-filters"  optional="true" />
     <sequential>
       <!-- LICENSE and NOTICE verification macro. -->
-      <dirname file="${ant.file.custom-tasks}" property="custom-tasks.dir"/>
-      <taskdef resource="lucene-solr.antlib.xml">
-        <classpath>
-          <pathelement location="${custom-tasks.dir}/../build/tools/classes/java" />
-        </classpath>
-      </taskdef>
-
       <echo>License check under: @{dir}</echo>
       <licenses>
         <fileset dir="@{dir}">

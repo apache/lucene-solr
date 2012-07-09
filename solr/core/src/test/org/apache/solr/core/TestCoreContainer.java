@@ -19,14 +19,16 @@ package org.apache.solr.core;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -172,7 +174,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
     try {
       File solrXmlFile = new File(solrHomeDirectory, "solr.xml");
-      BufferedWriter out = new BufferedWriter(new FileWriter(solrXmlFile));
+      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(solrXmlFile), IOUtils.CHARSET_UTF_8));
       out.write(EMPTY_SOLR_XML);
       out.close();
     } catch (IOException e) {

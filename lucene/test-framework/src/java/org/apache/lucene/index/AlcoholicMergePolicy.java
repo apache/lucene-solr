@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Locale;
 import java.util.Random;
 import java.util.TimeZone;
 
@@ -45,7 +46,7 @@ public class AlcoholicMergePolicy extends LogMergePolicy {
   private final Calendar calendar;
   
   public AlcoholicMergePolicy(TimeZone tz, Random random) {
-    this.calendar = new GregorianCalendar(tz);
+    this.calendar = new GregorianCalendar(tz, Locale.ROOT);
     this.random = random;
     maxMergeSize = _TestUtil.nextInt(random, 1024*1024, Integer.MAX_VALUE);
   }

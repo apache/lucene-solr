@@ -108,7 +108,7 @@ public class TrecContentSource extends ContentSource {
       dfi = new DateFormatInfo();
       dfi.dfs = new SimpleDateFormat[DATE_FORMATS.length];
       for (int i = 0; i < dfi.dfs.length; i++) {
-        dfi.dfs[i] = new SimpleDateFormat(DATE_FORMATS[i], Locale.US);
+        dfi.dfs[i] = new SimpleDateFormat(DATE_FORMATS[i], Locale.ROOT);
         dfi.dfs[i].setLenient(true);
       }
       dfi.pos = new ParsePosition(0);

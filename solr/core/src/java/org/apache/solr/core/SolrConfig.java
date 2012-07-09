@@ -344,7 +344,7 @@ public class SolrConfig extends Config {
       /** Input must not be null */
       public static LastModFrom parse(final String s) {
         try {
-          return valueOf(s.toUpperCase(Locale.ENGLISH));
+          return valueOf(s.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
           log.warn( "Unrecognized value for lastModFrom: " + s, e);
           return BOGUS;

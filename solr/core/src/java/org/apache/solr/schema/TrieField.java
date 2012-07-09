@@ -96,7 +96,7 @@ public class TrieField extends PrimitiveFieldType {
 
     if (t != null) {
       try {
-        type = TrieTypes.valueOf(t.toUpperCase(Locale.ENGLISH));
+        type = TrieTypes.valueOf(t.toUpperCase(Locale.ROOT));
       } catch (IllegalArgumentException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Invalid type specified in schema.xml for field: " + args.get("name"), e);

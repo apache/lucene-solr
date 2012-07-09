@@ -264,10 +264,10 @@ public interface FacetParams {
   public enum FacetRangeOther {
     BEFORE, AFTER, BETWEEN, ALL, NONE;
     @Override
-    public String toString() { return super.toString().toLowerCase(); }
+    public String toString() { return super.toString().toLowerCase(Locale.ROOT); }
     public static FacetRangeOther get(String label) {
       try {
-        return valueOf(label.toUpperCase());
+        return valueOf(label.toUpperCase(Locale.ROOT));
       } catch (IllegalArgumentException e) {
         throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -283,10 +283,10 @@ public interface FacetParams {
   public enum FacetDateOther {
     BEFORE, AFTER, BETWEEN, ALL, NONE;
     @Override
-    public String toString() { return super.toString().toLowerCase(); }
+    public String toString() { return super.toString().toLowerCase(Locale.ROOT); }
     public static FacetDateOther get(String label) {
       try {
-        return valueOf(label.toUpperCase());
+        return valueOf(label.toUpperCase(Locale.ROOT));
       } catch (IllegalArgumentException e) {
         throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -317,10 +317,10 @@ public interface FacetParams {
   public enum FacetRangeInclude {
     ALL, LOWER, UPPER, EDGE, OUTER;
     @Override
-    public String toString() { return super.toString().toLowerCase(Locale.ENGLISH); }
+    public String toString() { return super.toString().toLowerCase(Locale.ROOT); }
     public static FacetRangeInclude get(String label) {
       try {
-        return valueOf(label.toUpperCase(Locale.ENGLISH));
+        return valueOf(label.toUpperCase(Locale.ROOT));
       } catch (IllegalArgumentException e) {
         throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,

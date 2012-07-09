@@ -19,6 +19,7 @@ package org.apache.lucene.benchmark.quality;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * Results of quality benchmark run for a single query or for a set of queries.
@@ -141,7 +142,7 @@ public class QualityStats {
       logger.println(title);
     }
     prefix = prefix==null ? "" : prefix;
-    NumberFormat nf = NumberFormat.getInstance();
+    NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
     nf.setMaximumFractionDigits(3);
     nf.setMinimumFractionDigits(3);
     nf.setGroupingUsed(true);

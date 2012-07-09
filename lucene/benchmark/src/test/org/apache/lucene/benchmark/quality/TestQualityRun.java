@@ -31,7 +31,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 
 /**
  * Test that quality run does its job.
@@ -55,7 +57,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     int maxResults = 1000;
     String docNameField = "doctitle"; // orig docID is in the linedoc format title 
     
-    PrintWriter logger = VERBOSE ? new PrintWriter(System.out,true) : null;
+    PrintWriter logger = VERBOSE ? new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()),true) : null;
    
     // prepare topics
     InputStream topics = getClass().getResourceAsStream("trecTopics.txt");
