@@ -180,7 +180,7 @@ public class QueryComponent extends SearchComponent
     try {
        responseFormat = Grouping.Format.valueOf(formatStr);
     } catch (IllegalArgumentException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format("Illegal %s parameter", GroupParams.GROUP_FORMAT));
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Illegal %s parameter", GroupParams.GROUP_FORMAT));
     }
     groupingSpec.setResponseFormat(responseFormat);
 
@@ -386,7 +386,7 @@ public class QueryComponent extends SearchComponent
         if (grouping.isSignalCacheWarning()) {
           rsp.add(
               "cacheWarning",
-              String.format("Cache limit of %d percent relative to maxdoc has exceeded. Please increase cache size or disable caching.", maxDocsPercentageToCache)
+              String.format(Locale.ROOT, "Cache limit of %d percent relative to maxdoc has exceeded. Please increase cache size or disable caching.", maxDocsPercentageToCache)
           );
         }
         rb.setResult(result);

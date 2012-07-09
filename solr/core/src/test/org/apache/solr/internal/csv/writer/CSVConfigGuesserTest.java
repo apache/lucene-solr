@@ -43,7 +43,7 @@ public class CSVConfigGuesserTest extends TestCase {
      *  1234 ; abcd ; 1234 ;
      *
      */
-    public void testConfigGuess1() {
+    public void testConfigGuess1() throws Exception {
         CSVConfig expected = new CSVConfig();
         expected.setDelimiter(';');
         expected.setValueDelimiter(' ');
@@ -57,7 +57,7 @@ public class CSVConfigGuesserTest extends TestCase {
         StringBuffer sb = new StringBuffer();
         sb.append("1234;abcd;1234\n");
         sb.append("abcd;1234;abcd");
-        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes());
+        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
         CSVConfigGuesser guesser = new CSVConfigGuesser(in);
         CSVConfig guessed = guesser.guess();
         assertEquals(expected.isFixedWidth(), guessed.isFixedWidth());
@@ -70,7 +70,7 @@ public class CSVConfigGuesserTest extends TestCase {
      *  1,2,3,4
      *
      */
-    public void testConfigGuess2() {
+    public void testConfigGuess2() throws Exception {
         CSVConfig expected = new CSVConfig();
         expected.setDelimiter(';');
         expected.setValueDelimiter(' ');
@@ -80,7 +80,7 @@ public class CSVConfigGuesserTest extends TestCase {
         StringBuffer sb = new StringBuffer();
         sb.append("1,2,3,4\n");
         sb.append("abcd,1234,abcd,1234");
-        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes());
+        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
         CSVConfigGuesser guesser = new CSVConfigGuesser(in);
         CSVConfig guessed = guesser.guess();
         assertEquals(expected.isFixedWidth(), guessed.isFixedWidth());

@@ -151,7 +151,7 @@ public class SnapShooter {
         if(m.find()) {
           try {
             this.dir = dir;
-            this.timestamp = new SimpleDateFormat(DATE_FMT).parse(m.group(1));
+            this.timestamp = new SimpleDateFormat(DATE_FMT, Locale.ROOT).parse(m.group(1));
           } catch(Exception e) {
             this.dir = null;
             this.timestamp = null;
