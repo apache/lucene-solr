@@ -71,6 +71,7 @@ public abstract class QueryParserBase {
   float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
   Locale locale = Locale.getDefault();
+  TimeZone timeZone = TimeZone.getDefault();
 
   // the default date resolution
   DateTools.Resolution dateResolution = null;
@@ -328,6 +329,14 @@ public abstract class QueryParserBase {
    */
   public Locale getLocale() {
     return locale;
+  }
+  
+  public void setTimeZone(TimeZone timeZone) {
+    this.timeZone = timeZone;
+  }
+  
+  public TimeZone getTimeZone() {
+    return timeZone;
   }
 
   /**
@@ -678,7 +687,7 @@ public abstract class QueryParserBase {
         // The user can only specify the date, not the time, so make sure
         // the time is set to the latest possible time of that date to really
         // include all documents:
-        Calendar cal = Calendar.getInstance(locale);
+        Calendar cal = Calendar.getInstance(timeZone, locale);
         cal.setTime(d2);
         cal.set(Calendar.HOUR_OF_DAY, 23);
         cal.set(Calendar.MINUTE, 59);
