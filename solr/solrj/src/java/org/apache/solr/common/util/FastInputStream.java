@@ -229,7 +229,7 @@ public class FastInputStream extends InputStream implements DataInput {
   }
 
   public String readLine() throws IOException {
-    return new DataInputStream(this).readLine();
+    throw new UnsupportedOperationException();
   }
 
   public String readUTF() throws IOException {
