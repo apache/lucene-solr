@@ -145,7 +145,7 @@ enumeration APIs.  Here are the major changes:
     oal.util.ReaderUtil) and then step through those readers yourself,
     if you can (this is how Lucene drives searches).
 
-    If you pass a SegmentReader to MultiFields.fiels it will simply
+    If you pass a SegmentReader to MultiFields.fields it will simply
     return reader.fields(), so there is no performance hit in that
     case.
 
@@ -334,7 +334,7 @@ based on document IDs, albeit the per-segment orientation.
 
 There are still valid use-cases where top-level readers ie. "atomic 
 views" on the index are desirable. Let say you want to iterate all terms 
-of a complete index for auto-completion or facetting, Lucene provides 
+of a complete index for auto-completion or faceting, Lucene provides
 utility wrappers like SlowCompositeReaderWrapper (LUCENE-2597) emulating 
 an AtomicReader. Note: using "atomicity emulators" can cause serious 
 slowdowns due to the need to merge terms, postings, DocValues, and 
@@ -574,7 +574,7 @@ you can now do this:
   Also MultiTermQuery.getTermsEnum() now takes an AttributeSource. FuzzyTermsEnum
   is both consumer and producer of attributes: MTQ.BoostAttribute is
   added to the FuzzyTermsEnum and MTQ's rewrite mode consumes it.
-  The other way round MTQ.TopTermsBooleanQueryRewrite supplys a
+  The other way round MTQ.TopTermsBooleanQueryRewrite supplies a
   global AttributeSource to each segments TermsEnum. The TermsEnum is consumer
   and gets the current minimum competitive boosts (MTQ.MaxNonCompetitiveBoostAttribute).
 
@@ -594,7 +594,7 @@ you can now do this:
 * LUCENE-1076: TieredMergePolicy is now the default merge policy.
   It's able to merge non-contiguous segments; this may cause problems
   for applications that rely on Lucene's internal document ID
-  assigment.  If so, you should instead use LogByteSize/DocMergePolicy
+  assignment.  If so, you should instead use LogByteSize/DocMergePolicy
   during indexing.
 
 * LUCENE-3722: Similarity methods and collection/term statistics now take
