@@ -195,6 +195,7 @@
       <classpath refid="classpath"/>
       <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
         <include name="jdk.txt" />
+        <include name="jdk-deprecated.txt" />
         <include name="commons-io.txt" />
       </apiFileSet>
       <fileset dir="${basedir}/build">

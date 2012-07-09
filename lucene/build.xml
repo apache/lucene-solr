@@ -177,7 +177,11 @@
   </target>
 
   <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks" description="Check forbidden API calls in compiled class files.">
-    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/jdk.txt">
+    <forbidden-apis> 
+      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
+        <include name="jdk.txt" />
+        <include name="jdk-deprecated.txt" />
+      </apiFileSet>
       <fileset dir="${basedir}/build" includes="**/*.class" />
     </forbidden-apis>
   </target>
