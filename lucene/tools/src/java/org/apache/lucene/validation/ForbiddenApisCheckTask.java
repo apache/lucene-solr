@@ -212,14 +212,18 @@ public class ForbiddenApisCheckTask extends Task {
           loader = getProject().createClassLoader(classpath);
       }
       classFiles.setProject(getProject());
+      apiSignatures.setProject(getProject());
       
       try {
         @SuppressWarnings("unchecked")
         Iterator<Resource> iter = (Iterator<Resource>) apiSignatures.iterator();
+        if (!iter.hasNext()) {
+          throw new BuildException("You need to supply at least one API signature definition through apiFile=, <apiFileSet/>, or inner text.");
+        }
         while (iter.hasNext()) {
           final Resource r = iter.next();
           if (!r.isExists()) { 
-            throw new BuildException("Resource does not exist: " + r.getName());
+            throw new BuildException("Resource does not exist: " + r);
           }
           if (r instanceof StringResource) {
             parseApiFile(loader, new StringReader(((StringResource) r).getValue()));
@@ -230,6 +234,9 @@ public class ForbiddenApisCheckTask extends Task {
       } catch (IOException ioe) {
         throw new BuildException("IO problem while reading files with API signatures.", ioe);
       }
+      if (forbiddenMethods.isEmpty() && forbiddenClasses.isEmpty()) {
+        throw new BuildException("No API signatures found; use apiFile=, <apiFileSet/>, or inner text to define those!");
+      }
 
       long start = System.currentTimeMillis();
       
@@ -237,16 +244,19 @@ public class ForbiddenApisCheckTask extends Task {
       int errors = 0;
       @SuppressWarnings("unchecked")
       Iterator<Resource> iter = (Iterator<Resource>) classFiles.iterator();
+      if (!iter.hasNext()) {
+        throw new BuildException("There is no <fileset/> given or the fileset does not contain any class files to check.");
+      }
       while (iter.hasNext()) {
         final Resource r = iter.next();
         if (!r.isExists()) { 
-          throw new BuildException("Class file does not exist: " + r.getName());
+          throw new BuildException("Class file does not exist: " + r);
         }
 
         try {
           errors += checkClass(r);
         } catch (IOException ioe) {
-          throw new BuildException("IO problem while reading class file " + r.getName(), ioe);
+          throw new BuildException("IO problem while reading class file " + r, ioe);
         }
         checked++;
       }
