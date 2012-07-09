@@ -76,9 +76,6 @@
     </taskdef>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="StandardTokenizerImpl"/>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="ClassicTokenizerImpl"/>
-    <!--
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std31" name="StandardTokenizerImpl31"/>
-    -->
   </target>
 
   <target name="jflex-UAX29URLEmailTokenizer" depends="jflex-check" if="jflex.present">
@@ -86,10 +83,6 @@
 			<classpath refid="jflex.classpath"/>
     </taskdef>
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="UAX29URLEmailTokenizerImpl"/>
-    <!--
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="UAX29URLEmailTokenizerImpl31"/>
-    <run-jflex dir="src/java/org/apache/lucene/analysis/standard/std31" name="UAX29URLEmailTokenizerImpl34"/>
-    -->
   </target>
   
   <!-- Remove the inappropriate JFlex-generated constructor -->
