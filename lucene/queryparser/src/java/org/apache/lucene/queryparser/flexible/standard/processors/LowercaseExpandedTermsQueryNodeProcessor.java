@@ -45,10 +45,8 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
  */
 public class LowercaseExpandedTermsQueryNodeProcessor extends
     QueryNodeProcessorImpl {
-  private final Locale locale;
 
-  public LowercaseExpandedTermsQueryNodeProcessor(Locale locale) {
-    this.locale = locale;
+  public LowercaseExpandedTermsQueryNodeProcessor() {
   }
 
   @Override
@@ -65,6 +63,11 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
 
   @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
+    
+    Locale locale = getQueryConfigHandler().get(ConfigurationKeys.LOCALE);
+    if (locale == null) {
+      locale = Locale.getDefault();
+    }
 
     if (node instanceof WildcardQueryNode
         || node instanceof FuzzyQueryNode

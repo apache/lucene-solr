@@ -58,8 +58,7 @@ public class StandardQueryNodeProcessorPipeline extends
     add(new OpenRangeQueryNodeProcessor());
     add(new NumericQueryNodeProcessor());
     add(new NumericRangeQueryNodeProcessor());
-    // TODO: queryConfig is null here!
-    add(new LowercaseExpandedTermsQueryNodeProcessor(Locale.getDefault()));
+    add(new LowercaseExpandedTermsQueryNodeProcessor());
     add(new TermRangeQueryNodeProcessor());
     add(new AllowLeadingWildcardProcessor());    
     add(new AnalyzerQueryNodeProcessor());
