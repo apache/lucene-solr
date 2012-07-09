@@ -197,7 +197,11 @@
         <include name="jdk.txt" />
         <include name="commons-io.txt" />
       </apiFileSet>
-      <fileset dir="${basedir}" includes="**/build/**/*.class" />
+      <fileset dir="${basedir}/build">
+        <include name="**/*.class" />
+        <!-- exclude DIH for now as it is broken with Locales and Encodings: SOLR-1916 -->
+        <exclude name="contrib/solr-dataimporthandler*/**" />
+      </fileset>
     </forbidden-apis>
   </target>
 
