@@ -260,7 +260,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       // rather, each component in the chain should update
       // what it "owns".  EG fieldType.indexOptions() should
       // be updated by maybe FreqProxTermsWriterPerField:
-      return addOrUpdateInternal(name, -1, true, false,
+      return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
                                  fieldType.omitNorms(), false,
                                  fieldType.indexOptions(), null, null);
     }

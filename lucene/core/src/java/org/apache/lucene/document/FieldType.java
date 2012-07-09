@@ -20,14 +20,13 @@ package org.apache.lucene.document;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.StorableFieldType;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.util.NumericUtils;
 
 /**
  * Describes the properties of a field.
  */
-public class FieldType implements IndexableFieldType, StorableFieldType {
+public class FieldType implements IndexableFieldType  {
 
   /** Data type of the numeric value
    * @since 3.2
@@ -240,5 +239,6 @@ public class FieldType implements IndexableFieldType, StorableFieldType {
   public void setDocValueType(DocValues.Type type) {
     checkIfFrozen();
     docValueType = type;
+    this.stored = true;
   }
 }

@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -75,7 +76,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   }
 
   @Override
-  protected void updateDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
+  protected void updateDocuments(Term id, List<? extends IndexDocument> docs) throws Exception {
     final long gen = genWriter.updateDocuments(id, docs);
 
     // Randomly verify the update "took":
@@ -99,7 +100,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   }
 
   @Override
-  protected void addDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
+  protected void addDocuments(Term id, List<? extends IndexDocument> docs) throws Exception {
     final long gen = genWriter.addDocuments(docs);
     // Randomly verify the add "took":
     if (random().nextInt(20) == 2) {
@@ -121,7 +122,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   }
 
   @Override
-  protected void addDocument(Term id, Iterable<? extends IndexableField> doc) throws Exception {
+  protected void addDocument(Term id, IndexDocument doc) throws Exception {
     final long gen = genWriter.addDocument(doc);
 
     // Randomly verify the add "took":
@@ -144,7 +145,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   }
 
   @Override
-  protected void updateDocument(Term id, Iterable<? extends IndexableField> doc) throws Exception {
+  protected void updateDocument(Term id, IndexDocument doc) throws Exception {
     final long gen = genWriter.updateDocument(id, doc);
     // Randomly verify the udpate "took":
     if (random().nextInt(20) == 2) {
@@ -373,7 +374,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     }
 
     public void updateDocument(Term term,
-        Iterable<? extends IndexableField> doc, Analyzer analyzer)
+        IndexDocument doc, Analyzer analyzer)
         throws IOException {
       super.updateDocument(term, doc, analyzer);
       try {

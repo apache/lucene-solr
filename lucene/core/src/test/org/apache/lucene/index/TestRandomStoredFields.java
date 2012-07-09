@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -121,7 +122,7 @@ public class TestRandomStoredFields extends LuceneTestCase {
           }
           TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
           assertEquals(1, hits.totalHits);
-          Document doc = r.document(hits.scoreDocs[0].doc);
+          StoredDocument doc = r.document(hits.scoreDocs[0].doc);
           Document docExp = docs.get(testID);
           for(int i=0;i<fieldCount;i++) {
             assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));

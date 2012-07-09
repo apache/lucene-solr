@@ -240,7 +240,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     for(int docCount=0;docCount<numDocs;docCount++) {
       Document doc = new Document();
-      doc.add(new IntField("id", docCount, Field.Store.NO));
+      doc.add(new IntField("id", docCount, Field.Store.YES));
       List<Token> tokens = new ArrayList<Token>();
       final int numTokens = atLeast(100);
       //final int numTokens = atLeast(20);

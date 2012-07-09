@@ -45,6 +45,7 @@ import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -1245,7 +1246,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w.close();
     assertEquals(2, r3.numDocs());
     for(int docID=0;docID<2;docID++) {
-      Document d = r3.document(docID);
+      StoredDocument d = r3.document(docID);
       if (d.get("id").equals("1")) {
         assertEquals("doc1 field1", d.get("f1"));
       } else {

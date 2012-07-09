@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -122,7 +123,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
           if (i>0) {
             int k = i-1;
             int n = j + k*M;
-            Document prevItereationDoc = reader.document(n);
+            StoredDocument prevItereationDoc = reader.document(n);
             assertNotNull(prevItereationDoc);
             String id = prevItereationDoc.get("id");
             assertEquals(k+"_"+j, id);

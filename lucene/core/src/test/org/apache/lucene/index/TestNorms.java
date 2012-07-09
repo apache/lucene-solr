@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -105,7 +106,7 @@ public class TestNorms extends LuceneTestCase {
     assertEquals(Type.FIXED_INTS_8, normValues.getType());
     byte[] norms = (byte[]) source.getArray();
     for (int i = 0; i < open.maxDoc(); i++) {
-      Document document = open.document(i);
+      StoredDocument document = open.document(i);
       int expected = Integer.parseInt(document.get(byteTestField));
       assertEquals((byte)expected, norms[i]);
     }
@@ -164,7 +165,7 @@ public class TestNorms extends LuceneTestCase {
       assertEquals(Type.FIXED_INTS_8, normValues.getType());
       byte[] norms = (byte[]) source.getArray();
       for (int i = 0; i < mergedReader.maxDoc(); i++) {
-        Document document = mergedReader.document(i);
+        StoredDocument document = mergedReader.document(i);
         int expected = Integer.parseInt(document.get(byteTestField));
         assertEquals((byte) expected, norms[i]);
       }

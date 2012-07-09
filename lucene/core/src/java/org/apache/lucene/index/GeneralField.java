@@ -2,10 +2,9 @@ package org.apache.lucene.index;
 
 import java.io.Reader;
 
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.util.BytesRef;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,6 +21,24 @@ import org.apache.lucene.util.BytesRef;
  * limitations under the License.
  */
 
-public interface StorableField extends GeneralField {
-  
+public interface GeneralField {
+
+  /** Field name */
+  public String name();
+
+  /** {@link IndexableFieldType} describing the properties
+   * of this field. */
+  public IndexableFieldType fieldType();
+
+  /** Non-null if this field has a binary value */
+  public BytesRef binaryValue();
+
+  /** Non-null if this field has a string value */
+  public String stringValue();
+
+  /** Non-null if this field has a Reader value */
+  public Reader readerValue();
+
+  /** Non-null if this field has a numeric value */
+  public Number numericValue();
 }

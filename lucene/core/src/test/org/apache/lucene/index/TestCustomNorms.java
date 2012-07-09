@@ -22,6 +22,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -75,7 +76,7 @@ public class TestCustomNorms extends LuceneTestCase {
     assertEquals(Type.FLOAT_32, normValues.getType());
     float[] norms = (float[]) source.getArray();
     for (int i = 0; i < open.maxDoc(); i++) {
-      Document document = open.document(i);
+      StoredDocument document = open.document(i);
       float expected = Float.parseFloat(document.get(floatTestField));
       assertEquals(expected, norms[i], 0.0f);
     }

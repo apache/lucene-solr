@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -548,25 +549,25 @@ public class TestDuelingCodecs extends LuceneTestCase {
   public void assertStoredFields(IndexReader leftReader, IndexReader rightReader) throws Exception {
     assert leftReader.maxDoc() == rightReader.maxDoc();
     for (int i = 0; i < leftReader.maxDoc(); i++) {
-      Document leftDoc = leftReader.document(i);
-      Document rightDoc = rightReader.document(i);
+      StoredDocument leftDoc = leftReader.document(i);
+      StoredDocument rightDoc = rightReader.document(i);
       
       // TODO: I think this is bogus because we don't document what the order should be
       // from these iterators, etc. I think the codec/IndexReader should be free to order this stuff
       // in whatever way it wants (e.g. maybe it packs related fields together or something)
       // To fix this, we sort the fields in both documents by name, but
       // we still assume that all instances with same name are in order:
-      Comparator<IndexableField> comp = new Comparator<IndexableField>() {
+      Comparator<StorableField> comp = new Comparator<StorableField>() {
         @Override
-        public int compare(IndexableField arg0, IndexableField arg1) {
+        public int compare(StorableField arg0, StorableField arg1) {
           return arg0.name().compareTo(arg1.name());
         }        
       };
       Collections.sort(leftDoc.getFields(), comp);
       Collections.sort(rightDoc.getFields(), comp);
 
-      Iterator<IndexableField> leftIterator = leftDoc.iterator();
-      Iterator<IndexableField> rightIterator = rightDoc.iterator();
+      Iterator<StorableField> leftIterator = leftDoc.iterator();
+      Iterator<StorableField> rightIterator = rightDoc.iterator();
       while (leftIterator.hasNext()) {
         assertTrue(info, rightIterator.hasNext());
         assertStoredField(leftIterator.next(), rightIterator.next());
@@ -578,7 +579,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   /** 
    * checks that two stored fields are equivalent 
    */
-  public void assertStoredField(IndexableField leftField, IndexableField rightField) {
+  public void assertStoredField(StorableField leftField, StorableField rightField) {
     assertEquals(info, leftField.name(), rightField.name());
     assertEquals(info, leftField.binaryValue(), rightField.binaryValue());
     assertEquals(info, leftField.stringValue(), rightField.stringValue());

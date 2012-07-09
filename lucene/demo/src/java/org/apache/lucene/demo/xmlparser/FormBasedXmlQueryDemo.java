@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -111,7 +112,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
       //and package the results and forward to JSP
       if (topDocs != null) {
         ScoreDoc[] sd = topDocs.scoreDocs;
-        Document[] results = new Document[sd.length];
+        StoredDocument[] results = new StoredDocument[sd.length];
         for (int i = 0; i < results.length; i++) {
           results[i] = searcher.doc(sd[i].doc);
           request.setAttribute("results", results);

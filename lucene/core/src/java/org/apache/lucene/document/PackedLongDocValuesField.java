@@ -44,6 +44,7 @@ public class PackedLongDocValuesField extends StoredField {
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValueType(DocValues.Type.VAR_INTS);
+    TYPE.setStored(true);
     TYPE.freeze();
   }
 

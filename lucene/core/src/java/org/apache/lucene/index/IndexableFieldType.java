@@ -25,6 +25,12 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  */
 public interface IndexableFieldType {
 
+  /** True if this field should be indexed (inverted) */
+  public boolean indexed();
+
+  /** True if the field's value should be stored */
+  public boolean stored();
+  
   /** True if this field's value should be analyzed */
   public boolean tokenized();
 
@@ -43,4 +49,8 @@ public interface IndexableFieldType {
   /** {@link IndexOptions}, describing what should be
    * recorded into the inverted index */
   public IndexOptions indexOptions();
+
+  /** DocValues type; if non-null then the field's value
+   *  will be indexed into docValues */
+  public DocValues.Type docValueType();  
 }

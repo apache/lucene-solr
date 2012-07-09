@@ -35,12 +35,10 @@ public class StoredField extends Field {
 
   protected StoredField(String name, FieldType type) {
     super(name, type);
-    this.type.setStored(true);
   }
   
   public StoredField(String name, BytesRef bytes, FieldType type) {
     super(name, bytes, type);
-    this.type.setStored(true);
   }
   
   public StoredField(String name, byte[] value) {
@@ -57,6 +55,10 @@ public class StoredField extends Field {
 
   public StoredField(String name, String value) {
     super(name, value, TYPE);
+  }
+  
+  public StoredField(String name, String value, FieldType type) {
+    super(name, value, type);
   }
 
   public StoredField(String name, int value) {

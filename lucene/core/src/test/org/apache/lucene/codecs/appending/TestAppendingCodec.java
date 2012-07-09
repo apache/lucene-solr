@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.appending.AppendingCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
@@ -128,7 +129,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     writer.close();
     IndexReader reader = DirectoryReader.open(dir, 1);
     assertEquals(2, reader.numDocs());
-    Document doc2 = reader.document(0);
+    StoredDocument doc2 = reader.document(0);
     assertEquals(text, doc2.get("f"));
     Fields fields = MultiFields.getFields(reader);
     Terms terms = fields.terms("f");

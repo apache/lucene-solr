@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -141,10 +142,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     String id10 = r1.document(10).getField("id").stringValue();
     
-    Document newDoc = r1.document(10);
+    StoredDocument newDoc = r1.document(10);
     newDoc.removeField("id");
     newDoc.add(newStringField("id", Integer.toString(8000), Field.Store.YES));
-    writer.updateDocument(new Term("id", id10), newDoc);
+    writer.updateDocument(new Term("id", id10), newDoc.asIndexable());
     assertFalse(r1.isCurrent());
 
     DirectoryReader r2 = writer.getReader();
@@ -271,9 +272,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(100, index2df);
 
     // verify the docs are from different indexes
-    Document doc5 = r1.document(5);
+    StoredDocument doc5 = r1.document(5);
     assertEquals("index1", doc5.get("indexname"));
-    Document doc150 = r1.document(150);
+    StoredDocument doc150 = r1.document(150);
     assertEquals("index2", doc150.get("indexname"));
     r1.close();
     writer.close();

@@ -28,8 +28,6 @@ import org.apache.lucene.search.ScoreDoc; // for javadoc
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FilterIterator;
 
-import com.google.common.collect.AbstractIterator;
-
 /** Documents are the unit of indexing and search.
  *
  * A Document is a set of fields.  Each field has a name and a textual value.
@@ -64,6 +62,14 @@ public final class Document implements IndexDocument{
    */
   public final void add(Field field) {
     fields.add(field);
+  }
+  
+  public final void add(IndexableField field) {
+    fields.add((Field) field);
+  }
+  
+  public final void add(StorableField field) {
+    fields.add((Field) field);
   }
   
   /**

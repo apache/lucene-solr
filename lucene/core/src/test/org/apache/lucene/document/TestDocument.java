@@ -50,9 +50,9 @@ public class TestDocument extends LuceneTestCase {
     
     FieldType ft = new FieldType();
     ft.setStored(true);
-    IndexableField stringFld = new Field("string", binaryVal, ft);
-    IndexableField binaryFld = new StoredField("binary", binaryVal.getBytes("UTF-8"));
-    IndexableField binaryFld2 = new StoredField("binary", binaryVal2.getBytes("UTF-8"));
+    Field stringFld = new Field("string", binaryVal, ft);
+    StoredField binaryFld = new StoredField("binary", binaryVal.getBytes("UTF-8"));
+    StoredField binaryFld2 = new StoredField("binary", binaryVal2.getBytes("UTF-8"));
     
     doc.add(stringFld);
     doc.add(binaryFld);
@@ -179,7 +179,7 @@ public class TestDocument extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
-    doAssert(searcher.doc(hits[0].doc), true);
+    doAssert(searcher.doc(hits[0].doc));
     writer.close();
     reader.close();
     dir.close();
@@ -214,6 +214,9 @@ public class TestDocument extends LuceneTestCase {
     return doc;
   }
   
+  private void doAssert(StoredDocument doc) {
+    doAssert(doc.asIndexable(), true);
+  }
   private void doAssert(Document doc, boolean fromIndex) {
     IndexableField[] keywordFieldValues = doc.getFields("keyword");
     IndexableField[] textFieldValues = doc.getFields("text");
@@ -268,7 +271,7 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(3, hits.length);
     int result = 0;
     for (int i = 0; i < 3; i++) {
-      Document doc2 = searcher.doc(hits[i].doc);
+      StoredDocument doc2 = searcher.doc(hits[i].doc);
       Field f = (Field) doc2.getField("id");
       if (f.stringValue().equals("id1")) result |= 1;
       else if (f.stringValue().equals("id2")) result |= 2;

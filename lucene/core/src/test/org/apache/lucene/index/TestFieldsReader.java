@@ -31,6 +31,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -55,7 +56,7 @@ public class TestFieldsReader extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     fieldInfos = new FieldInfos.Builder();
     DocHelper.setupDoc(testDoc);
-    for (IndexableField field : testDoc) {
+    for (IndexableField field : testDoc.getFields()) {
       fieldInfos.addOrUpdate(field.name(), field.fieldType());
     }
     dir = newDirectory();
@@ -79,7 +80,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     IndexReader reader = DirectoryReader.open(dir);
-    Document doc = reader.document(0);
+    StoredDocument doc = reader.document(0);
     assertTrue(doc != null);
     assertTrue(doc.getField(DocHelper.TEXT_FIELD_1_KEY) != null);
 
@@ -104,7 +105,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
     DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
     reader.document(0, visitor);
-    final List<IndexableField> fields = visitor.getDocument().getFields();
+    final List<StorableField> fields = visitor.getDocument().getFields();
     assertEquals(1, fields.size());
     assertEquals(DocHelper.TEXT_FIELD_3_KEY, fields.get(0).name());
     reader.close();
@@ -279,7 +280,7 @@ public class TestFieldsReader extends LuceneTestCase {
       doc.add(sf);
       answers[id] = answer;
       typeAnswers[id] = typeAnswer;
-      FieldType ft = new FieldType(IntField.TYPE_NOT_STORED);
+      FieldType ft = new FieldType(IntField.TYPE_STORED);
       ft.setNumericPrecisionStep(Integer.MAX_VALUE);
       doc.add(new IntField("id", id, ft));
       w.addDocument(doc);
@@ -292,7 +293,7 @@ public class TestFieldsReader extends LuceneTestCase {
     for(IndexReader sub : r.getSequentialSubReaders()) {
       final int[] ids = FieldCache.DEFAULT.getInts((AtomicReader) sub, "id", false);
       for(int docID=0;docID<sub.numDocs();docID++) {
-        final Document doc = sub.document(docID);
+        final StoredDocument doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");
         assertTrue("got f=" + f, f instanceof StoredField);
         assertEquals(answers[ids[docID]], f.numericValue());

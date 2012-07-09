@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.BytesRef;
 
@@ -183,7 +184,7 @@ public class StoredDocument implements Iterable<StorableField>{
     Document doc = new Document();
     
     for (StorableField field : fields) {
-      Field newField = new Field(field.name(), field.fieldType());
+      Field newField = new Field(field.name(), (FieldType) field.fieldType());
       
       newField.fieldsData = field.stringValue();
       if (newField.fieldsData == null) 
@@ -197,5 +198,20 @@ public class StoredDocument implements Iterable<StorableField>{
     }
     
     return doc;
+  }
+
+  /** Prints the fields of a document for human consumption. */
+  @Override
+  public final String toString() {
+    StringBuilder buffer = new StringBuilder();
+    buffer.append("StoredDocument<");
+    for (int i = 0; i < fields.size(); i++) {
+      StorableField field = fields.get(i);
+      buffer.append(field.toString());
+      if (i != fields.size()-1)
+        buffer.append(" ");
+    }
+    buffer.append(">");
+    return buffer.toString();
   }
 }

@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.LuceneTestCase;
@@ -84,7 +85,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     int max = reader.maxDoc();
     for (int i = 0; i < max; i++)
     {
-      Document temp = reader.document(i);
+      StoredDocument temp = reader.document(i);
       //System.out.println("doc "+i+"="+temp.getField("count").stringValue());
       //compare the index doc number to the value that it should be
       if (!temp.getField("count").stringValue().equals((i + startAt) + ""))

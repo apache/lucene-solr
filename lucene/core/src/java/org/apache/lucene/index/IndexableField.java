@@ -33,14 +33,7 @@ import org.apache.lucene.util.BytesRef;
  *
  *  @lucene.experimental */
 
-public interface IndexableField {
-
-  /** Field name */
-  public String name();
-  
-  /** {@link IndexableFieldType} describing the properties
-   * of this field. */
-  public IndexableFieldType fieldType();
+public interface IndexableField extends GeneralField {
 
   /**
    * Creates the TokenStream used for indexing this field.  If appropriate,

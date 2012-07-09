@@ -34,6 +34,7 @@ import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -906,8 +907,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Document doc2 = ir.document(0);
-    IndexableField f2 = doc2.getField("binary");
+    StoredDocument doc2 = ir.document(0);
+    StorableField f2 = doc2.getField("binary");
     b = f2.binaryValue().bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
@@ -1163,8 +1164,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Document doc2 = ir.document(0);
-    IndexableField f3 = doc2.getField("binary");
+    StoredDocument doc2 = ir.document(0);
+    StorableField f3 = doc2.getField("binary");
     b = f3.binaryValue().bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
@@ -1205,8 +1206,8 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("zzz", "1 2 3", customType));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    Document doc2 = r.document(0);
-    Iterator<IndexableField> it = doc2.getFields().iterator();
+    StoredDocument doc2 = r.document(0);
+    Iterator<StorableField> it = doc2.getFields().iterator();
     assertTrue(it.hasNext());
     Field f = (Field) it.next();
     assertEquals(f.name(), "zzz");

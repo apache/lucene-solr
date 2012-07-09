@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -85,7 +86,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     
     // search for all documents
     for (int i = 0; i < docsToAdd; i++) {
-      Document doc = searcher.doc(i);
+      StoredDocument doc = searcher.doc(i);
       assertTrue(doc.getField("content") != null);
     }
 

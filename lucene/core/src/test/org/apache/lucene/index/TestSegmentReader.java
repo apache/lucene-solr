@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -62,13 +63,13 @@ public class TestSegmentReader extends LuceneTestCase {
   public void testDocument() throws IOException {
     assertTrue(reader.numDocs() == 1);
     assertTrue(reader.maxDoc() >= 1);
-    Document result = reader.document(0);
+    StoredDocument result = reader.document(0);
     assertTrue(result != null);
     //There are 2 unstored fields on the document that are not preserved across writing
     assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - DocHelper.unstored.size());
     
-    List<IndexableField> fields = result.getFields();
-    for (final IndexableField field : fields ) { 
+    List<StorableField> fields = result.getFields();
+    for (final StorableField field : fields ) { 
       assertTrue(field != null);
       assertTrue(DocHelper.nameValues.containsKey(field.name()));
     }

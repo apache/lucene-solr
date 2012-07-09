@@ -38,6 +38,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -50,6 +51,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
@@ -522,9 +524,9 @@ public class TestSort extends LuceneTestCase {
     boolean fail = false;
     final String fieldSuffix = sort.getSort()[0].getField().endsWith("_fixed") ? "_fixed" : "";
     for (int x = 0; x < n; ++x) {
-      Document doc2 = searcher.doc(result[x].doc);
-      IndexableField[] v = doc2.getFields("tracer" + fieldSuffix);
-      IndexableField[] v2 = doc2.getFields("tracer2" + fieldSuffix);
+      StoredDocument doc2 = searcher.doc(result[x].doc);
+      StorableField[] v = doc2.getFields("tracer" + fieldSuffix);
+      StorableField[] v2 = doc2.getFields("tracer2" + fieldSuffix);
       for (int j = 0; j < v.length; ++j) {
         buff.append(v[j] + "(" + v2[j] + ")(" + result[x].doc+")\n");
         if (last != null) {
@@ -1229,8 +1231,8 @@ public class TestSort extends LuceneTestCase {
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i=0; i<n; ++i) {
-      Document doc = searcher.doc(result[i].doc);
-      IndexableField[] v = doc.getFields("tracer");
+      StoredDocument doc = searcher.doc(result[i].doc);
+      StorableField[] v = doc.getFields("tracer");
       for (int j=0; j<v.length; ++j) {
         buff.append (v[j].stringValue());
       }

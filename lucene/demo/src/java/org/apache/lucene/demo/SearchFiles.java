@@ -27,6 +27,7 @@ import java.util.Date;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -178,7 +179,7 @@ public class SearchFiles {
           continue;
         }
 
-        Document doc = searcher.doc(hits[i].doc);
+        StoredDocument doc = searcher.doc(hits[i].doc);
         String path = doc.get("path");
         if (path != null) {
           System.out.println((i+1) + ". " + path);

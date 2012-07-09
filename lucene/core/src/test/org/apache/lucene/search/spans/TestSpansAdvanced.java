@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -160,7 +161,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
       
       int id = topdocs.scoreDocs[i].doc;
       float score = topdocs.scoreDocs[i].score;
-      Document doc = s.doc(id);
+      StoredDocument doc = s.doc(id);
       assertEquals(expectedIds[i], doc.get(FIELD_ID));
       boolean scoreEq = Math.abs(expectedScores[i] - score) < tolerance;
       if (!scoreEq) {

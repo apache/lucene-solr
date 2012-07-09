@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -343,12 +344,12 @@ public class TestStressNRT extends LuceneTestCase {
                 if (results.totalHits != 1) {
                   System.out.println("FAIL: hits id:" + id + " val=" + val);
                   for(ScoreDoc sd : results.scoreDocs) {
-                    final Document doc = r.document(sd.doc);
+                    final StoredDocument doc = r.document(sd.doc);
                     System.out.println("  docID=" + sd.doc + " id:" + doc.get("id") + " foundVal=" + doc.get(field));
                   }
                   fail("id=" + id + " reader=" + r + " totalHits=" + results.totalHits);
                 }
-                Document doc = searcher.doc(results.scoreDocs[0].doc);
+                StoredDocument doc = searcher.doc(results.scoreDocs[0].doc);
                 long foundVal = Long.parseLong(doc.get(field));
                 if (foundVal < Math.abs(val)) {
                   fail("foundVal=" + foundVal + " val=" + val + " id=" + id + " reader=" + r);

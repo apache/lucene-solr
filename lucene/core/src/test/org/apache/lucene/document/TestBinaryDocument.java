@@ -37,8 +37,8 @@ public class TestBinaryDocument extends LuceneTestCase {
   {
     FieldType ft = new FieldType();
     ft.setStored(true);
-    IndexableField binaryFldStored = new StoredField("binaryStored", binaryValStored.getBytes());
-    IndexableField stringFldStored = new Field("stringStored", binaryValStored, ft);
+    StoredField binaryFldStored = new StoredField("binaryStored", binaryValStored.getBytes());
+    Field stringFldStored = new Field("stringStored", binaryValStored, ft);
 
     Document doc = new Document();
     
@@ -56,7 +56,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** open a reader and fetch the document */ 
     IndexReader reader = writer.getReader();
-    Document docFromReader = reader.document(0);
+    StoredDocument docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
     /** fetch the binary stored field and compare it's content with the original one */
@@ -75,8 +75,8 @@ public class TestBinaryDocument extends LuceneTestCase {
   }
   
   public void testCompressionTools() throws Exception {
-    IndexableField binaryFldCompressed = new StoredField("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes()));
-    IndexableField stringFldCompressed = new StoredField("stringCompressed", CompressionTools.compressString(binaryValCompressed));
+    StoredField binaryFldCompressed = new StoredField("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes()));
+    StoredField stringFldCompressed = new StoredField("stringCompressed", CompressionTools.compressString(binaryValCompressed));
     
     Document doc = new Document();
     
@@ -90,7 +90,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** open a reader and fetch the document */ 
     IndexReader reader = writer.getReader();
-    Document docFromReader = reader.document(0);
+    StoredDocument docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
     /** fetch the binary compressed field and compare it's content with the original one */
