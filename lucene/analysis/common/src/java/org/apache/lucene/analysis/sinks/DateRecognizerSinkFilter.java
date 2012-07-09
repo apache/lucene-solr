@@ -38,7 +38,8 @@ public class DateRecognizerSinkFilter extends TeeSinkTokenFilter.SinkFilter {
   protected CharTermAttribute termAtt;
   
   /**
-   * Uses {@link java.text.SimpleDateFormat#getDateInstance(DateFormat.DEFAULT, Locale.ROOT)} as 
+   * Uses {@link java.text.DateFormat#getDateInstance(int, Locale)
+   * DateFormat#getDateInstance(DateFormat.DEFAULT, Locale.ROOT)} as 
    * the {@link java.text.DateFormat} object.
    */
   public DateRecognizerSinkFilter() {
