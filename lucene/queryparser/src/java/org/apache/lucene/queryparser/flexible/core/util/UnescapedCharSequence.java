@@ -1,5 +1,7 @@
 package org.apache.lucene.queryparser.flexible.core.util;
 
+import java.util.Locale;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -146,12 +148,12 @@ public final class UnescapedCharSequence implements CharSequence {
     else return false;
   }
   
-  public static CharSequence toLowerCase(CharSequence text) {
+  public static CharSequence toLowerCase(CharSequence text, Locale locale) {
     if (text instanceof UnescapedCharSequence) {
-      char[] chars = text.toString().toLowerCase().toCharArray();
+      char[] chars = text.toString().toLowerCase(locale).toCharArray();
       boolean[] wasEscaped = ((UnescapedCharSequence)text).wasEscaped;
       return new UnescapedCharSequence(chars, wasEscaped, 0, chars.length);
     } else 
-      return new UnescapedCharSequence(text.toString().toLowerCase());
+      return new UnescapedCharSequence(text.toString().toLowerCase(locale));
   }
 }

@@ -376,7 +376,7 @@ public class Grouping {
             cachedCollector.replay(secondPhaseCollectors);
           } else {
             signalCacheWarning = true;
-            logger.warn(String.format("The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
+            logger.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
             logger.warn("Please increase cache size or disable group caching.");
             searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
           }

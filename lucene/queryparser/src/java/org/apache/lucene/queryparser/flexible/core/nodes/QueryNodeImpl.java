@@ -20,6 +20,7 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -151,20 +152,20 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   }
 
   public void setTag(String tagName, Object value) {
-    this.tags.put(tagName.toLowerCase(), value);
+    this.tags.put(tagName.toLowerCase(Locale.ROOT), value);
   }
 
   public void unsetTag(String tagName) {
-    this.tags.remove(tagName.toLowerCase());
+    this.tags.remove(tagName.toLowerCase(Locale.ROOT));
   }
 
   /** verify if a node contains a tag */
   public boolean containsTag(String tagName) {
-    return this.tags.containsKey(tagName.toLowerCase());
+    return this.tags.containsKey(tagName.toLowerCase(Locale.ROOT));
   }
 
   public Object getTag(String tagName) {
-    return this.tags.get(tagName.toString().toLowerCase());
+    return this.tags.get(tagName.toLowerCase(Locale.ROOT));
   }
 
   private QueryNode parent = null;

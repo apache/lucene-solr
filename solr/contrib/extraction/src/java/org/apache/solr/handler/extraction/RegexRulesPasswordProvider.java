@@ -20,12 +20,12 @@ package org.apache.solr.handler.extraction;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaMetadataKeys;
 import org.apache.tika.parser.PasswordProvider;
@@ -73,7 +73,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
    */
   public static LinkedHashMap<Pattern,String> parseRulesFile(InputStream is) {
     LinkedHashMap<Pattern,String> rules = new LinkedHashMap<Pattern,String>();
-    BufferedReader br = new BufferedReader(new InputStreamReader(is));
+    BufferedReader br = new BufferedReader(IOUtils.getDecodingReader(is, IOUtils.CHARSET_UTF_8));
     String line;
     try {
       int linenum = 0;

@@ -50,7 +50,7 @@ public class TestSearchPerf extends AbstractSolrTestCase {
   }
 
   String t(int tnum) {
-    return String.format("%08d", tnum);
+    return String.format(Locale.ROOT, "%08d", tnum);
   }
 
   Random r = new Random(0);  // specific seed for reproducible perf testing
