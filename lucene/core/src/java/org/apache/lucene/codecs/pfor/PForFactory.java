@@ -45,7 +45,17 @@ public final class PForFactory extends IntStreamFactory {
 
   @Override
   public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context)  throws IOException {
-    return new PForIndexOutput(dir.createOutput(fileName, context), blockSize);
+    boolean success = false;
+    IndexOutput out = dir.createOutput(fileName, context);
+    try {
+      IntIndexOutput ret = new PForIndexOutput(out, blockSize);
+      success = true;
+      return ret;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(out);
+      }
+    }
   }
 
   @Override
