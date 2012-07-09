@@ -28,6 +28,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Date;
 import java.util.Locale;
 
@@ -210,7 +211,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     jvm.add( "processors", runtime.availableProcessors() );
     
     // not thread safe, but could be thread local
-    DecimalFormat df = new DecimalFormat("#.#");
+    DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ROOT));
 
     SimpleOrderedMap<Object> mem = new SimpleOrderedMap<Object>();
     SimpleOrderedMap<Object> raw = new SimpleOrderedMap<Object>();

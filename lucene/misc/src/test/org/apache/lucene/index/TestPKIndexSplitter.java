@@ -18,7 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -32,7 +34,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestPKIndexSplitter extends LuceneTestCase {
 
   public void testSplit() throws Exception {    
-    NumberFormat format = new DecimalFormat("000000000");
+    NumberFormat format = new DecimalFormat("000000000", DecimalFormatSymbols.getInstance(Locale.ROOT));
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
