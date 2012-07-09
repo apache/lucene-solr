@@ -96,13 +96,13 @@ java.security.Identity
 java.security.IdentityScope
 java.io.LineNumberInputStream
 java.rmi.server.LogStream
-# cant load class: javax.swing.plaf.metal.MetalComboBoxUI.MetalComboPopup
+javax.swing.plaf.metal.MetalComboBoxUI$MetalComboPopup
 java.rmi.server.Operation
 javax.security.auth.Policy
 java.security.Signer
 javax.xml.soap.SOAPElementFactory
 java.io.StringBufferInputStream
-# cant load class: javax.swing.text.TableView.TableCell
+javax.swing.text.TableView$TableCell
 
 java.rmi.RMISecurityException
 java.rmi.ServerRuntimeException
@@ -272,7 +272,7 @@ java.awt.Window#hide()
 java.awt.Component#hide()
 java.lang.SecurityManager#inClass(java.lang.String)
 java.lang.SecurityManager#inClassLoader()
-# cant load class: javax.swing.text.html.HTMLEditorKit.InsertHTMLTextAction#insertAtBoundry(javax.swing.JEditorPane,javax.swing.text.html.HTMLDocument,int,javax.swing.text.Element,java.lang.String,javax.swing.text.html.HTML.Tag,javax.swing.text.html.HTML.Tag) 
+javax.swing.text.html.HTMLEditorKit$InsertHTMLTextAction#insertAtBoundry(javax.swing.JEditorPane,javax.swing.text.html.HTMLDocument,int,javax.swing.text.Element,java.lang.String,javax.swing.text.html.HTML$Tag,javax.swing.text.html.HTML$Tag) 
 java.awt.TextArea#insertText(java.lang.String,int)
 java.awt.Container#insets() 
 java.awt.Rectangle#inside(int,int) 
@@ -430,7 +430,7 @@ javax.xml.bind.Validator#validateRoot(java.lang.Object)
 javax.swing.text.View#viewToModel(float,float,java.awt.Shape)
 java.rmi.server.LogStream#write(byte[],int,int)
 java.rmi.server.LogStream#write(int)
-# cant load class: java.io.ObjectOutputStream.PutField#write(java.io.ObjectOutput)
+java.io.ObjectOutputStream$PutField#write(java.io.ObjectOutput)
 
 javax.management.AttributeValueExp#<init>()
 java.sql.Date#<init>(int,int,int)
