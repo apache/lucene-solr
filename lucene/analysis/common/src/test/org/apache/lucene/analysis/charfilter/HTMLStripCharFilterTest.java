@@ -508,12 +508,12 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numRounds = RANDOM_MULTIPLIER * 10000;
+    int numRounds = RANDOM_MULTIPLIER * 1000;
     checkRandomData(random(), newTestAnalyzer(), numRounds);
   }
   
   public void testRandomHugeStrings() throws Exception {
-    int numRounds = RANDOM_MULTIPLIER * 200;
+    int numRounds = RANDOM_MULTIPLIER * 100;
     checkRandomData(random(), newTestAnalyzer(), numRounds, 8192);
   }
 

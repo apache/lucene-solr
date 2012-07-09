@@ -27,9 +27,12 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.concurrent.*;
 import java.util.*;
 public class SolrCoreTest extends SolrTestCaseJ4 {
+  private static final String COLLECTION1 = "collection1";
+  
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -40,6 +43,37 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     deleteCore();
     super.tearDown();
+  }
+  
+  @Test
+  public void testRemoveThenAddDefaultCore() throws Exception {
+    final CoreContainer cores = h.getCoreContainer();
+    SolrCore core = cores.getCore("");
+    assertEquals(COLLECTION1, cores.getDefaultCoreName());
+    
+    cores.remove("");
+    core.close();
+    core.close();
+    
+    
+    SolrCore newCore = new SolrCore(COLLECTION1, dataDir + File.separator
+        + "datadir2", new SolrConfig("solr/collection1", "solrconfig.xml", null), h.getCore().getSchema(),
+        new CoreDescriptor(cores, COLLECTION1, "solr/collection1"));
+    
+    cores.register(newCore, false);
+    
+    assertEquals(COLLECTION1, cores.getDefaultCoreName());
+    
+    // so we should be able to get a core with collection1
+    core = cores.getCore(COLLECTION1);
+    assertNotNull(core);
+    core.close();
+    
+    // and with ""
+    core = cores.getCore("");
+    assertNotNull(core);
+    
+    core.close();
   }
 
   @Test

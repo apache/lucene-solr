@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -45,7 +44,6 @@ import org.apache.lucene.util.automaton.Transition;
  * Any tests here need to probably consider unicode version of the JRE (it could
  * cause false fails).
  */
-@Slow
 public class TestDuelingAnalyzers extends LuceneTestCase {
   private CharacterRunAutomaton jvmLetter;
   
@@ -76,7 +74,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1000; i++) {
       String s = _TestUtil.randomSimpleString(random);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
@@ -96,7 +94,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int numIterations = atLeast(100);
+    int numIterations = atLeast(50);
     for (int i = 0; i < numIterations; i++) {
       String s = _TestUtil.randomSimpleString(random, maxLength);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
@@ -114,7 +112,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1000; i++) {
       String s = _TestUtil.randomHtmlishString(random, 20);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
@@ -123,7 +121,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
   
   public void testLetterHtmlishHuge() throws Exception {
     Random random = random();
-    int maxLength = 2048; // this is number of elements, not chars!
+    int maxLength = 1024; // this is number of elements, not chars!
     MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
@@ -133,7 +131,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int numIterations = atLeast(100);
+    int numIterations = atLeast(50);
     for (int i = 0; i < numIterations; i++) {
       String s = _TestUtil.randomHtmlishString(random, maxLength);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
@@ -151,7 +149,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1000; i++) {
       String s = _TestUtil.randomUnicodeString(random);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
@@ -160,7 +158,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
   
   public void testLetterUnicodeHuge() throws Exception {
     Random random = random();
-    int maxLength = 8192; // CharTokenizer.IO_BUFFER_SIZE*2
+    int maxLength = 4300; // CharTokenizer.IO_BUFFER_SIZE + fudge
     MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
@@ -170,7 +168,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int numIterations = atLeast(100);
+    int numIterations = atLeast(50);
     for (int i = 0; i < numIterations; i++) {
       String s = _TestUtil.randomUnicodeString(random, maxLength);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 

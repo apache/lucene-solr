@@ -17,6 +17,7 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
+import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
@@ -44,8 +45,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-///CLOVER:OFF
-
 /**
  * Based off of Solr 3's SpatialFilterTest.
  */
@@ -61,22 +60,39 @@ public class PortedSolr3Test extends StrategyTestCase {
 
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_geohash");
-    ctorArgs.add(new Object[]{strategy});
+    ctorArgs.add(new Object[]{new Param(strategy, "recursive_geohash")});
 
     grid = new QuadPrefixTree(ctx,25);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_quad");
-    ctorArgs.add(new Object[]{strategy});
+    ctorArgs.add(new Object[]{new Param(strategy, "recursive_quad")});
 
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
-    ctorArgs.add(new Object[]{strategy});
+    ctorArgs.add(new Object[]{new Param(strategy, "termquery_geohash")});
 
     return ctorArgs;
+  }
+  
+  // this is a hack for clover!
+  static class Param {
+    SpatialStrategy strategy;
+    String description;
+    
+    Param(SpatialStrategy strategy, String description) {
+      this.strategy = strategy;
+      this.description = description;
+    }
+    
+    @Override
+    public String toString() {
+      return description;
+    }
   }
 
 //  private String fieldName;
 
-  public PortedSolr3Test(SpatialStrategy strategy) {
+  public PortedSolr3Test(@Name("strategy") Param param) {
+    SpatialStrategy strategy = param.strategy;
     this.ctx = strategy.getSpatialContext();
     this.strategy = strategy;
   }
@@ -217,5 +233,3 @@ public class PortedSolr3Test extends StrategyTestCase {
   }
 
 }
-
-///CLOVER:ON

@@ -84,6 +84,10 @@ public class NRTCachingDirectory extends Directory {
     maxCachedBytes = (long) (maxCachedMB*1024*1024);
   }
 
+  public Directory getDelegate() {
+    return delegate;
+  }
+
   @Override
   public LockFactory getLockFactory() {
     return delegate.getLockFactory();

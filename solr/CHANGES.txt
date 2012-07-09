@@ -44,6 +44,14 @@ New Features
   expressions matching file names, Solr will decrypt and index PDFs and DOCX formats.
   (janhoy, Yiannis Pericleous)
 
+* SOLR-3562: Add options to remove instance dir or data dir on core unload.
+  (Mark Miller, Per Steffensen)
+
+* SOLR-2702: The default directory factory was changed to NRTCachingDirectoryFactory 
+  which wraps the StandardDirectoryFactory and caches small files for improved
+  Near Real-time (NRT) performance. (Mark Miller, yonik)
+
+
 Bug Fixes
 
 * SOLR-3582: Our ZooKeeper watchers respond to session events as if they are change events, 
@@ -54,6 +62,8 @@ Bug Fixes
   
 * SOLR-3587: After reloading a SolrCore, the original Analyzer is still used rather than a new 
   one. (Alexey Serba, yonik, rmuir, Mark Miller)
+  
+* LUCENE-4185: Fix a bug where CharFilters were wrongly being applied twice. (Michael Froh, rmuir)
 
 Other Changes
 
@@ -61,6 +71,15 @@ Other Changes
   (Mark Miller)
   
 * SOLR-3355: Add shard and collection to SolrCore statistics. (Michael Garski, Mark Miller)
+
+* SOLR-3475: solr.xml should default to persist=true (Mark Miller)
+
+* SOLR-3563: Unloading all cores in a SolrCloud collection will now cause the removal of
+  that collection's meta data from ZooKeeper. (Mark Miller, Per Steffensen)
+
+* SOLR-3599: Add zkClientTimeout to solr.xml so that it's obvious how to change it and so 
+  that you can change it with a system property. (Mark Miller)
+
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
@@ -129,7 +148,7 @@ Upgrading from Solr 3.6-dev
 
 * Due to low level changes to support SolrCloud, the uniqueKey field can no 
   longer be populated via <copyField/> or <field default=...> in the 
-  schema.xml.  Users wishing to have Solr automaticly generate a uniqueKey 
+  schema.xml.  Users wishing to have Solr automatically generate a uniqueKey 
   value when adding documents should instead use an instance of
   solr.UUIDUpdateProcessorFactory in their update processor chain.  See 
   SOLR-2796 for more details.

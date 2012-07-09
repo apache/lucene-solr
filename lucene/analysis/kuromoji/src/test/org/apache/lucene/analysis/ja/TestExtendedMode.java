@@ -51,7 +51,7 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
   
   /** random test ensuring we don't ever split supplementaries */
   public void testSurrogates2() throws IOException {
-    int numIterations = atLeast(10000);
+    int numIterations = atLeast(1000);
     for (int i = 0; i < numIterations; i++) {
       String s = _TestUtil.randomUnicodeString(random(), 100);
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
@@ -66,12 +66,12 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER, 8192);
   }
 }

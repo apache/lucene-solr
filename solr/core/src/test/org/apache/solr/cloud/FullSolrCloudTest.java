@@ -153,14 +153,11 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   @BeforeClass
   public static void beforeClass() {
-    System
-        .setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solrcloud.update.delay", "0");
   }
   
   @AfterClass
   public static void afterClass() {
-    System.clearProperty("solr.directoryFactory");
     System.clearProperty("solrcloud.update.delay");
   }
   

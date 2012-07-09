@@ -81,7 +81,33 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     resetExceptionIgnores();
     endTrackingSearchers();
     endTrackingZkClients();
+    resetFactory();
+    resetFactory();
   }
+
+  private static boolean changedFactory = false;
+  private static String savedFactory;
+  /** Use a different directory factory.  Passing "null" sets to an FS-based factory */
+  public static void useFactory(String factory) throws Exception {
+    assert !changedFactory;
+    changedFactory = true;
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    if (factory == null) {
+      factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
+    }
+    System.setProperty("solr.directoryFactory", factory);
+  }
+
+  private static void resetFactory() throws Exception {
+    if (!changedFactory) return;
+    changedFactory = false;
+    if (savedFactory != null) {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    } else {
+      System.clearProperty("solr.directoryFactory");
+    }
+  }
+
 
   @Override
   public void setUp() throws Exception {

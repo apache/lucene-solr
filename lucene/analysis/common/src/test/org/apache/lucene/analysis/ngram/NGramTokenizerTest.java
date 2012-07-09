@@ -29,7 +29,6 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 /**
  * Tests {@link NGramTokenizer} for correctness.
  */
-@Slow
 public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   private StringReader input;
   
@@ -100,11 +99,11 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new NGramTokenizer(reader, 2, 15);
+        Tokenizer tokenizer = new NGramTokenizer(reader, 2, 4);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
-    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192, false, false);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), a, 50*RANDOM_MULTIPLIER, 1027, false, false);
   }
 }

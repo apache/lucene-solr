@@ -129,10 +129,10 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, 
-            new NGramTokenFilter(tokenizer, 2, 15));
+            new NGramTokenFilter(tokenizer, 2, 4));
       }    
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
   }
   
   public void testEmptyTerm() throws Exception {
