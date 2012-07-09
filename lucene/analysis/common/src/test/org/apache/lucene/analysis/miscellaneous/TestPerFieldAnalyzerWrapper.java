@@ -9,7 +9,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /*
@@ -29,7 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * limitations under the License.
  */
 
-public class TestPerFieldAnalzyerWrapper extends BaseTokenStreamTestCase {
+public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
   public void testPerField() throws Exception {
     String text = "Qwerty";
 

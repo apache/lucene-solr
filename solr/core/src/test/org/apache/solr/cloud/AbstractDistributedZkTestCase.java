@@ -33,6 +33,7 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 
 public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearchTestCase {
   
@@ -40,6 +41,12 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
   private static final boolean DEBUG = false;
   protected ZkTestServer zkServer;
   private AtomicInteger homeCount = new AtomicInteger();
+
+  @BeforeClass
+  public static void beforeThisClass() throws Exception {
+    useFactory(null);
+  }
+
 
   @Before
   @Override
@@ -55,9 +62,8 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("enable.update.log", "true");
     System.setProperty("remove.version.field", "true");
-    System
-    .setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
-    
+
+
     AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), "solrconfig.xml", "schema.xml");
 
     // set some system properties for use by tests

@@ -47,6 +47,11 @@ New Features
 * SOLR-3562: Add options to remove instance dir or data dir on core unload.
   (Mark Miller, Per Steffensen)
 
+* SOLR-2702: The default directory factory was changed to NRTCachingDirectoryFactory 
+  which wraps the StandardDirectoryFactory and caches small files for improved
+  Near Real-time (NRT) performance. (Mark Miller, yonik)
+
+
 Bug Fixes
 
 * SOLR-3582: Our ZooKeeper watchers respond to session events as if they are change events, 
@@ -74,6 +79,7 @@ Other Changes
 
 * SOLR-3599: Add zkClientTimeout to solr.xml so that it's obvious how to change it and so 
   that you can change it with a system property. (Mark Miller)
+
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 

@@ -385,7 +385,7 @@ public final class SolrCore implements SolrInfoMBean {
       dirFactory = getResourceLoader().newInstance(info.className, DirectoryFactory.class);
       dirFactory.init(info.initArgs);
     } else {
-      dirFactory = new StandardDirectoryFactory();
+      dirFactory = new NRTCachingDirectoryFactory();
     }
     // And set it
     directoryFactory = dirFactory;

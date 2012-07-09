@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
+import org.junit.BeforeClass;
 
 /**
  * Test for SpellCheckComponent's distributed querying
@@ -47,14 +48,14 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
 		//shardCount=2;
 		//stress=0;
 	}
-	
-  private String saveProp;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    useFactory(null); // need an FS factory
+  }
 
   @Override
   public void setUp() throws Exception {
-    // this test requires FSDir
-    saveProp = System.getProperty("solr.directoryFactory");
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");    
     if(random().nextBoolean()) {
       requestHandlerName = "spellCheckCompRH";
       reqHandlerWithWordbreak = "spellCheckWithWordbreak";      
@@ -68,10 +69,6 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    if (saveProp == null)
-      System.clearProperty("solr.directoryFactory");
-    else
-      System.setProperty("solr.directoryFactory", saveProp);
   }
   
   private void q(Object... q) throws Exception {

@@ -101,17 +101,20 @@
 
   <!-- The DirectoryFactory to use for indexes.
        
-       solr.StandardDirectoryFactory, the default, is filesystem
+       solr.StandardDirectoryFactory is filesystem
        based and tries to pick the best implementation for the current
-       JVM and platform.  One can force a particular implementation
-       via solr.MMapDirectoryFactory, solr.NIOFSDirectoryFactory, or
-       solr.SimpleFSDirectoryFactory.
+       JVM and platform.  solr.NRTCachingDirectoryFactory, the default,
+       wraps solr.StandardDirectoryFactory and caches small files in memory
+       for better NRT performance.
+
+       One can force a particular implementation via solr.MMapDirectoryFactory,
+       solr.NIOFSDirectoryFactory, or solr.SimpleFSDirectoryFactory.
 
        solr.RAMDirectoryFactory is memory based, not
        persistent, and doesn't work with replication.
     -->
   <directoryFactory name="DirectoryFactory" 
-                    class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/> 
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
