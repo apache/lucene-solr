@@ -55,7 +55,9 @@ import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaAware;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -690,9 +692,25 @@ public final class SolrCore implements SolrInfoMBean {
       factory = schema.getResourceLoader().newInstance(info.className, CodecFactory.class);
       factory.init(info.initArgs);
     } else {
-      factory = new DefaultCodecFactory();
+      factory = new CodecFactory() {
+        @Override
+        public Codec getCodec() {
+          return Codec.getDefault();
+        }
+      };
     }
-    return factory.create(schema);
+    if (factory instanceof SchemaAware) {
+      ((SchemaAware)factory).inform(schema);
+    } else {
+      for (FieldType ft : schema.getFieldTypes().values()) {
+        if (null != ft.getPostingsFormat()) {
+          String msg = "FieldType '" + ft.getTypeName() + "' is configured with a postings format, but the codec does not support it: " + factory.getClass();
+          log.error(msg);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+        }
+      }
+    }
+    return factory.getCodec();
   }
 
   /**

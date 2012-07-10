@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" ?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -16,9 +16,21 @@
  limitations under the License.
 -->
 
-<config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
-  <codecFactory class="solr.SchemaCodecFactory"/>
-</config>
+<schema name="bad-schema-codec-global-vs-ft-mismatch" version="1.0">
+  <types>
+    <!-- BAD: postingsFormat here but no codec that allows it -->
+    <fieldType name="pulsing1" class="solr.TextField" postingsFormat="Pulsing">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+      </analyzer>
+    </fieldType>
+ </types>
+
+ <fields>
+   <field name="pulsing1text" type="pulsing1" indexed="true" stored="true"/>
+   <dynamicField name="*" type="pulsing1" />
+ </fields>
+
+ <defaultSearchField>pulsing1text</defaultSearchField>
+
+</schema>

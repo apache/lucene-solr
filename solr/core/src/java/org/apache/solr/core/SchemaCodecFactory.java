@@ -1,5 +1,12 @@
 package org.apache.solr.core;
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaAware;
+import org.apache.solr.schema.SchemaField;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,20 +24,14 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
-
 /**
- * Default CodecFactory implementation, extends Lucene's 
+ * Per-field CodecFactory implementation, extends Lucene's 
  * and returns postings format implementations according to the 
  * schema configuration.
  * @lucene.experimental
  */
-public class DefaultCodecFactory extends CodecFactory {
-
+public class SchemaCodecFactory extends CodecFactory implements SchemaAware {
+  private Codec codec;
   // TODO: we need to change how solr does this?
   // rather than a string like "Pulsing" you need to be able to pass parameters
   // and everything to a field in the schema, e.g. we should provide factories for 
@@ -40,8 +41,8 @@ public class DefaultCodecFactory extends CodecFactory {
   // how it constructs this from the XML... i don't care.
 
   @Override
-  public Codec create(final IndexSchema schema) {
-    return new Lucene40Codec() {
+  public void inform(final IndexSchema schema) {
+    codec = new Lucene40Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         final SchemaField fieldOrNull = schema.getFieldOrNull(field);
@@ -55,5 +56,11 @@ public class DefaultCodecFactory extends CodecFactory {
         return super.getPostingsFormatForField(field);
       }
     };
+  }
+
+  @Override
+  public Codec getCodec() {
+    assert codec != null : "inform must be called first";
+    return codec;
   }
 }
