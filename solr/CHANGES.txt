@@ -53,6 +53,9 @@ New Features
 * SOLR-2702: The default directory factory was changed to NRTCachingDirectoryFactory 
   which wraps the StandardDirectoryFactory and caches small files for improved
   Near Real-time (NRT) performance. (Mark Miller, yonik)
+  
+* SOLR-2616: Include a sample java util logging configuration file. 
+  (David Smiley, Mark Miller)
 
 
 Bug Fixes
