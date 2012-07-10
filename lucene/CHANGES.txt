@@ -10,6 +10,9 @@ http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib
 
 New features
 
+* LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
+  iteration marks. (Robert Muir, Christian Moen)
+
 * LUCENE-3832: Added BasicAutomata.makeStringUnion method to efficiently
   create automata from a fixed collection of UTF-8 encoded BytesRef
   (Dawid Weiss, Robert Muir)
