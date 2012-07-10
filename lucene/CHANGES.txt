@@ -43,6 +43,10 @@ Bug Fixes
   so that it works correctly with Analyzers that produce binary non-UTF-8 terms
   such as CollationAnalyzer. (Nattapong Sirilappanich via Robert Muir) 
 
+* LUCENE-4209: Fix FSTCompletionLookup to close its sorter, so that it won't
+  leave temp files behind in /tmp. Fix SortedTermFreqIteratorWrapper to not
+  leave temp files behind in /tmp on Windows.  (Uwe Schindler, Robert Muir)
+
 Build
 
 * LUCENE-4094: Support overriding file.encoding on forked test JVMs
