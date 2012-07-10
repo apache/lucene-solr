@@ -56,5 +56,6 @@ public class LargeInputFST {
     File fstFile = new File("completion.fst");
     System.out.println("Done. Writing automaton: " + fstFile.getAbsolutePath());
     completion.getFST().save(fstFile);
+    sorter.close();
   }
 }

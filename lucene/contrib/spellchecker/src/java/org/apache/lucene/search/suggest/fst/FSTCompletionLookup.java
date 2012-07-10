@@ -150,6 +150,7 @@ public class FSTCompletionLookup extends Lookup {
 
     Sort.ByteSequencesWriter writer = new Sort.ByteSequencesWriter(tempInput);
     Sort.ByteSequencesReader reader = null;
+    ExternalRefSorter sorter = null;
 
     // Push floats up front before sequences to sort them. For now, assume they are non-negative.
     // If negative floats are allowed some trickery needs to be done to find their byte order.
@@ -175,7 +176,7 @@ public class FSTCompletionLookup extends Lookup {
       SortInfo info = new Sort().sort(tempInput, tempSorted);
       tempInput.delete();
       FSTCompletionBuilder builder = new FSTCompletionBuilder(
-          buckets, new ExternalRefSorter(new Sort()), sharedTailLength);
+          buckets, sorter = new ExternalRefSorter(new Sort()), sharedTailLength);
 
       final int inputLines = info.lines;
       reader = new Sort.ByteSequencesReader(tempSorted);
@@ -215,9 +216,9 @@ public class FSTCompletionLookup extends Lookup {
       success = true;
     } finally {
       if (success) 
-        IOUtils.close(reader, writer);
+        IOUtils.close(reader, writer, sorter);
       else 
-        IOUtils.closeWhileHandlingException(reader, writer);
+        IOUtils.closeWhileHandlingException(reader, writer, sorter);
 
       tempInput.delete();
       tempSorted.delete();

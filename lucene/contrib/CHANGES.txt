@@ -37,6 +37,10 @@ Bug Fixes
  * LUCENE-4079: Fixed loading of Hunspell dictionaries that use aliasing (AF rules)
   (Ludovic Boutros via Chris Male)
 
+ * LUCENE-4209: Fix FSTCompletionLookup to close its sorter, so that it won't
+   leave temp files behind in /tmp. Fix SortedTermFreqIteratorWrapper to not
+   leave temp files behind in /tmp on Windows.  (Uwe Schindler, Robert Muir)
+
 Tests
  
  * LUCENE-3919, LUCENE-3969, LUCENE-3990: more thorough testing of analysis 
