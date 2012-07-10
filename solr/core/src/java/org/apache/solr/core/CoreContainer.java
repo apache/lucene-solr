@@ -221,9 +221,17 @@ public class CoreContainer
             }
             return descriptors;
           }
-        });
-        
+        });        
+
         String confDir = System.getProperty("bootstrap_confdir");
+        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+        
+        if (zkRun != null && zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
+          // we are part of an ensemble and we are not uploading the config - pause to give the config time
+          // to get up
+          Thread.sleep(10000);
+        }
+        
         if(confDir != null) {
           File dir = new File(confDir);
           if(!dir.isDirectory()) {
@@ -232,8 +240,9 @@ public class CoreContainer
           String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
           zkController.uploadConfigDir(dir, confName);
         }
+
+
         
-        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
         if(boostrapConf) {
           ZkController.bootstrapConf(zkController.getZkClient(), cfg, solrHome);
         }
