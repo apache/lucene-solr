@@ -45,7 +45,8 @@ Bug Fixes
 
 * LUCENE-4209: Fix FSTCompletionLookup to close its sorter, so that it won't
   leave temp files behind in /tmp. Fix SortedTermFreqIteratorWrapper to not
-  leave temp files behind in /tmp on Windows.  (Uwe Schindler, Robert Muir)
+  leave temp files behind in /tmp on Windows. Fix Sort to not leave
+  temp files behind when /tmp is a separate volume. (Uwe Schindler, Robert Muir)
 
 Build
 
