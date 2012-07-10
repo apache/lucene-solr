@@ -224,10 +224,12 @@ public final class Sort {
 
     // One partition, try to rename or copy if unsuccessful.
     if (merges.size() == 1) {     
+      File single = merges.get(0);
       // If simple rename doesn't work this means the output is
       // on a different volume or something. Copy the input then.
-      if (!merges.get(0).renameTo(output)) {
-        copy(merges.get(0), output);
+      if (!single.renameTo(output)) {
+        copy(single, output);
+        single.delete();
       }
     } else { 
       // otherwise merge the partitions with a priority queue.                  
