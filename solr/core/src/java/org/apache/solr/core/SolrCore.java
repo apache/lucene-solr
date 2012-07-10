@@ -2006,8 +2006,16 @@ public final class SolrCore implements SolrInfoMBean {
       }
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       if (cloudDesc != null) {
-        lst.add("collection", cloudDesc.getCollectionName());
-        lst.add("shard", cloudDesc.getShardId());
+        String collection = cloudDesc.getCollectionName();
+        if (collection == null) {
+          collection = "_notset_";
+        }
+        lst.add("collection", collection);
+        String shard = cloudDesc.getShardId();
+        if (shard == null) {
+          shard = "_auto_";
+        }
+        lst.add("shard", shard);
       }
     }
     
