@@ -25,6 +25,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import org.apache.tools.ant.AntClassLoader;
@@ -59,6 +60,9 @@ import java.util.Map;
 /**
  * Task to check if a set of class files contains calls to forbidden APIs
  * from a given classpath and list of API signatures (either inline or as pointer to files).
+ * In contrast to other ANT tasks, this tool does only visit the given classpath
+ * and the system classloader. It uses the local classpath in preference to the system classpath
+ * (which violates the spec).
  */
 public class ForbiddenApisCheckTask extends Task {
 
@@ -67,62 +71,111 @@ public class ForbiddenApisCheckTask extends Task {
   private Path classpath = null;
 
   private final Map<String,ClassNode> classCache = new HashMap<String,ClassNode>();
+  private final Map<String,String> forbiddenFields = new HashMap<String,String>();
   private final Map<String,String> forbiddenMethods = new HashMap<String,String>();
   private final Map<String,String> forbiddenClasses = new HashMap<String,String>();
+  
+  /** Reads a class (binary name) from the given {@link ClassLoader}.
+   */
+  private ClassReader readClass(final ClassLoader loader, final String clazz) throws BuildException {
+    try {
+      final InputStream in = loader.getResourceAsStream(clazz.replace('.', '/') + ".class");
+      if (in == null) {
+        throw new BuildException("Loading of class " + clazz + " failed: Not found");
+      }
+      try {
+        return new ClassReader(in);
+      } finally {
+        in.close();
+      }
+    } catch (IOException ioe) {
+      throw new BuildException("Loading of class " + clazz + " failed.", ioe);
+    }
+  }
  
   /** Adds the method signature to the list of disallowed methods. The Signature is checked against the given ClassLoader. */
-  private void addSignature(ClassLoader loader, String signature) throws BuildException {
-    final int p = signature.indexOf('#');
-    final String clazz;
-    final Method dummy;
+  private void addSignature(final ClassLoader loader, final String signature) throws BuildException {
+    final String clazz, field;
+    final Method method;
+    int p = signature.indexOf('#');
     if (p >= 0) {
       clazz = signature.substring(0, p);
-      // we ignore the return type, its just to match easier (so return type is void):
-      dummy = Method.getMethod("void " + signature.substring(p+1), true);
+      final String s = signature.substring(p + 1);
+      p = s.indexOf('(');
+      if (p >= 0) {
+        if (p == 0) {
+          throw new BuildException("Invalid method signature (method name missing): " + signature);
+        }
+        // we ignore the return type, its just to match easier (so return type is void):
+        try {
+          method = Method.getMethod("void " + s, true);
+        } catch (IllegalArgumentException iae) {
+          throw new BuildException("Invalid method signature: " + signature);
+        }
+        field = null;
+      } else {
+        field = s;
+        method = null;
+      }
     } else {
       clazz = signature;
-      dummy = null;
+      method = null;
+      field = null;
     }
-    // check class & method signature, if it is really existent (in classpath), but we don't really load the class into JVM:
+    // check class & method/field signature, if it is really existent (in classpath), but we don't really load the class into JVM:
+    ClassNode c = classCache.get(clazz);
+    if (c == null) {
+      readClass(loader, clazz).accept(c = new ClassNode(Opcodes.ASM4), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+      classCache.put(clazz, c);
+    }
+    if (method != null) {
+      assert field == null;
+      // list all methods with this signature:
+      boolean found = false;
+      for (final MethodNode mn : c.methods) {
+        if (mn.name.equals(method.getName()) && Arrays.equals(Type.getArgumentTypes(mn.desc), method.getArgumentTypes())) {
+          found = true;
+          forbiddenMethods.put(c.name + '\000' + new Method(mn.name, mn.desc), signature);
+          // don't break when found, as there may be more covariant overrides!
+        }
+      }
+      if (!found) {
+        throw new BuildException("No method found with following signature: " + signature);
+      }
+    } else if (field != null) {
+      assert method == null;
+      // list all fields to find the right one:
+      boolean found = false;
+      for (final FieldNode fld : c.fields) {
+        if (fld.name.equals(field)) {
+          found = true;
+          forbiddenFields.put(c.name + '\000' + fld.name, signature);
+          break;
+        }
+      }
+      if (!found) {
+        throw new BuildException("No field found with following name: " + signature);
+      }
+    } else {
+      assert field == null && method == null;
+      // only add the signature as class name
+      forbiddenClasses.put(c.name, signature);
+    }
+  }
+
+  /** Reads a list of API signatures. Closes the Reader when done (on Exception, too)! */
+  private void parseApiFile(ClassLoader loader, Reader reader) throws IOException {
+    final BufferedReader r = new BufferedReader(reader);
     try {
-      ClassNode c = classCache.get(clazz);
-      if (c == null) {
-        final ClassReader reader;
-        if (loader != null) {
-          final InputStream in = loader.getResourceAsStream(clazz.replace('.', '/') + ".class");
-          if (in == null) {
-            throw new BuildException("Loading of class " + clazz + " failed: Not found");
-          }
-          try {
-            reader = new ClassReader(in);
-          } finally {
-            in.close();
-          }
-        } else {
-          // load from build classpath
-          reader = new ClassReader(clazz);
-        }
-        reader.accept(c = new ClassNode(Opcodes.ASM4), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-        classCache.put(clazz, c);
+      String line;
+      while ((line = r.readLine()) != null) {
+        line = line.trim();
+        if (line.length() == 0 || line.startsWith("#"))
+          continue;
+        addSignature(loader, line);
       }
-      if (dummy != null) {
-        // list all methods with this signature:
-        boolean found = false;
-        for (final MethodNode mn : c.methods) {
-          if (mn.name.equals(dummy.getName()) && Arrays.equals(Type.getArgumentTypes(mn.desc), dummy.getArgumentTypes())) {
-            found = true;
-            forbiddenMethods.put(c.name + '\000' + new Method(mn.name, mn.desc), signature);
-            // don't break when found, as there may be more covariant overrides!
-          }
-        }
-        if (!found)
-          throw new BuildException("No method found with following signature: " + signature);
-      } else {
-        // only add the signature as class name
-        forbiddenClasses.put(c.name, signature);
-      }
-    } catch (IOException e) {
-      throw new BuildException("Loading of class " + clazz + " failed.", e);
+    } finally {
+      r.close();
     }
   }
   
@@ -149,16 +202,29 @@ public class ForbiddenApisCheckTask extends Task {
         public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
           return new MethodVisitor(Opcodes.ASM4) {
             private int lineNo = -1;
+            
+            private boolean checkClassUse(String owner) {
+              final String printout = forbiddenClasses.get(owner);
+              if (printout != null) {
+                log("Forbidden class use: " + printout, Project.MSG_ERR);
+                return true;
+              }
+              return false;
+            }
+            
+            private void reportSourceAndLine() {
+              final StringBuilder sb = new StringBuilder("  in ").append(className);
+              if (source != null && lineNo >= 0) {
+                new Formatter(sb, Locale.ROOT).format(" (%s:%d)", source, lineNo).flush();
+              }
+              log(sb.toString(), Project.MSG_ERR);
+            }
 
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-              boolean found = false;
-              String printout = forbiddenClasses.get(owner);
-              if (printout != null) {
-                found = true;
-                log("Forbidden class use: " + printout, Project.MSG_ERR);
-              } else {
-                printout = forbiddenMethods.get(owner + '\000' + new Method(name, desc));
+              boolean found = checkClassUse(owner);
+              if (!found) {
+                final String printout = forbiddenMethods.get(owner + '\000' + new Method(name, desc));
                 if (printout != null) {
                   found = true;
                   log("Forbidden method invocation: " + printout, Project.MSG_ERR);
@@ -166,11 +232,23 @@ public class ForbiddenApisCheckTask extends Task {
               }
               if (found) {
                 violations[0]++;
-                final StringBuilder sb = new StringBuilder("  in ").append(className);
-                if (source != null && lineNo >= 0) {
-                  new Formatter(sb, Locale.ROOT).format(" (%s:%d)", source, lineNo).flush();
+                reportSourceAndLine();
+              }
+            }
+            
+            @Override
+            public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+              boolean found = checkClassUse(owner);
+              if (!found) {
+                final String printout = forbiddenFields.get(owner + '\000' + name);
+                if (printout != null) {
+                  found = true;
+                  log("Forbidden field access: " + printout, Project.MSG_ERR);
                 }
-                log(sb.toString(), Project.MSG_ERR);
+              }
+              if (found) {
+               violations[0]++;
+               reportSourceAndLine();
               }
             }
 
@@ -186,30 +264,20 @@ public class ForbiddenApisCheckTask extends Task {
       stream.close();
     }
   }
-
-  /** Reads a list of API signatures. Closes the Reader when done (on Exception, too)! */
-  private void parseApiFile(ClassLoader loader, Reader reader) throws IOException {
-    final BufferedReader r = new BufferedReader(reader);
-    try {
-      String line;
-      while ((line = r.readLine()) != null) {
-        line = line.trim();
-        if (line.length() == 0 || line.startsWith("#"))
-          continue;
-        addSignature(loader, line);
-      }
-    } finally {
-      r.close();
-    }
-  }
   
   @Override
   public void execute() throws BuildException {
-    AntClassLoader loader = null;
+    AntClassLoader antLoader = null;
     try {
+      final ClassLoader loader;
       if (classpath != null) {
-          classpath.setProject(getProject());
-          loader = getProject().createClassLoader(classpath);
+        classpath.setProject(getProject());
+        loader = antLoader = getProject().createClassLoader(ClassLoader.getSystemClassLoader(), classpath);
+        // force that loading from this class loader is done first, then parent is asked.
+        // This violates spec, but prevents classes in any system classpath to be used if a local one is available:
+        antLoader.setParentFirst(false);
+      } else {
+        loader = ClassLoader.getSystemClassLoader();
       }
       classFiles.setProject(getProject());
       apiSignatures.setProject(getProject());
@@ -226,8 +294,10 @@ public class ForbiddenApisCheckTask extends Task {
             throw new BuildException("Resource does not exist: " + r);
           }
           if (r instanceof StringResource) {
+            log("Reading inline API signatures...", Project.MSG_INFO);
             parseApiFile(loader, new StringReader(((StringResource) r).getValue()));
           } else {
+            log("Reading API signatures: " + r, Project.MSG_INFO);
             parseApiFile(loader, new InputStreamReader(r.getInputStream(), "UTF-8"));
           }
         }
@@ -237,40 +307,41 @@ public class ForbiddenApisCheckTask extends Task {
       if (forbiddenMethods.isEmpty() && forbiddenClasses.isEmpty()) {
         throw new BuildException("No API signatures found; use apiFile=, <apiFileSet/>, or inner text to define those!");
       }
-
-      long start = System.currentTimeMillis();
-      
-      int checked = 0;
-      int errors = 0;
-      @SuppressWarnings("unchecked")
-      Iterator<Resource> iter = (Iterator<Resource>) classFiles.iterator();
-      if (!iter.hasNext()) {
-        throw new BuildException("There is no <fileset/> given or the fileset does not contain any class files to check.");
-      }
-      while (iter.hasNext()) {
-        final Resource r = iter.next();
-        if (!r.isExists()) { 
-          throw new BuildException("Class file does not exist: " + r);
-        }
-
-        try {
-          errors += checkClass(r);
-        } catch (IOException ioe) {
-          throw new BuildException("IO problem while reading class file " + r, ioe);
-        }
-        checked++;
-      }
-
-      log(String.format(Locale.ROOT, 
-          "Scanned %d class file(s) for forbidden API invocations (in %.2fs), %d error(s).",
-          checked, (System.currentTimeMillis() - start) / 1000.0, errors),
-          errors > 0 ? Project.MSG_ERR : Project.MSG_INFO);
-
-      if (errors > 0) {
-        throw new BuildException("Check for forbidden API calls failed, see log.");
-      }
     } finally {
-      if (loader != null) loader.cleanup();
+      if (antLoader != null) antLoader.cleanup();
+      antLoader = null;
+    }
+
+    long start = System.currentTimeMillis();
+    
+    int checked = 0;
+    int errors = 0;
+    @SuppressWarnings("unchecked")
+    Iterator<Resource> iter = (Iterator<Resource>) classFiles.iterator();
+    if (!iter.hasNext()) {
+      throw new BuildException("There is no <fileset/> given or the fileset does not contain any class files to check.");
+    }
+    while (iter.hasNext()) {
+      final Resource r = iter.next();
+      if (!r.isExists()) { 
+        throw new BuildException("Class file does not exist: " + r);
+      }
+
+      try {
+        errors += checkClass(r);
+      } catch (IOException ioe) {
+        throw new BuildException("IO problem while reading class file " + r, ioe);
+      }
+      checked++;
+    }
+
+    log(String.format(Locale.ROOT, 
+        "Scanned %d class file(s) for forbidden API invocations (in %.2fs), %d error(s).",
+        checked, (System.currentTimeMillis() - start) / 1000.0, errors),
+        errors > 0 ? Project.MSG_ERR : Project.MSG_INFO);
+
+    if (errors > 0) {
+      throw new BuildException("Check for forbidden API calls failed, see log.");
     }
   }
   

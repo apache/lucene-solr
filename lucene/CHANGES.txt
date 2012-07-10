@@ -62,9 +62,9 @@ Build
 * LUCENE-4115: JAR resolution/ cleanup should be done automatically for ant 
   clean/ eclipse/ resolve (Dawid Weiss)
 
-* LUCENE-4199: Add a new target "check-forbidden-apis", that parses all
-  generated .class files for use of APIs that use default charset, default
-  locale, or default timezone and fail build if violations found. This
+* LUCENE-4199, LUCENE-4202: Add a new target "check-forbidden-apis", that
+  parses all generated .class files for use of APIs that use default charset,
+  default locale, or default timezone and fail build if violations found. This
   ensures, that Lucene / Solr is independent on local configuration options.
   (Uwe Schindler, Robert Muir, Dawid Weiss)
 
