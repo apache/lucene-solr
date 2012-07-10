@@ -65,6 +65,8 @@ Bug Fixes
   
 * LUCENE-4185: Fix a bug where CharFilters were wrongly being applied twice. (Michael Froh, rmuir)
 
+* SOLR-3610: After reloading a core, indexing would fail on any newly added fields to the schema. (Brent Mills, rmuir)
+
 Other Changes
 
 * SOLR-1770: Move the default core instance directory into a collection1 folder.

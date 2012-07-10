@@ -34,7 +34,7 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
     ignoreException(Pattern.quote(errString));
     try {
       initCore( "solrconfig.xml", schema );
-    } catch (SolrException e) {
+    } catch (Exception e) {
       // short circuit out if we found what we expected
       if (-1 != e.getMessage().indexOf(errString)) return;
       // Test the cause too in case the expected error is wrapped
@@ -88,6 +88,10 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
 
   public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {
     doTest("bad-schema-sim-global-vs-ft-mismatch.xml", "global similarity does not support it");
+  }
+  
+  public void testPerFieldtypePostingsFormatButNoSchemaCodecFactory() throws Exception {
+    doTest("bad-schema-codec-global-vs-ft-mismatch.xml", "codec does not support");
   }
 
 
