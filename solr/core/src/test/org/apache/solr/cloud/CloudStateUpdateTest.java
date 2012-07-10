@@ -75,8 +75,6 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   @AfterClass
   public static void afterClass() throws InterruptedException {
     System.clearProperty("solrcloud.skip.autorecovery");
-    // wait just a bit for any zk client threads to outlast timeout
-    Thread.sleep(2000);
   }
 
   @Override
