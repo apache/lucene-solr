@@ -28,6 +28,9 @@ $Id$
 
 New Features
 
+* LUCENE-4201: Added JapaneseIterationMarkCharFilterFactory to normalize Japanese
+  iteration marks. (Robert Muir, Christian Moen)
+
 * SOLR-1856: In Solr Cell, literals should override Tika-parsed values.
   Patch adds a param "literalsOverride" which defaults to true, but can be set 
   to "false" to let Tika-parsed values be appended to literal values (Chris Harris, janhoy)

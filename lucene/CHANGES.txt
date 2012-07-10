@@ -11,6 +11,9 @@ http://s.apache.org/luceneversions
 
 New features
 
+* LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
+  iteration marks. (Robert Muir, Christian Moen)
+
 * LUCENE-3832: Added BasicAutomata.makeStringUnion method to efficiently
   create automata from a fixed collection of UTF-8 encoded BytesRef
   (Dawid Weiss, Robert Muir)
