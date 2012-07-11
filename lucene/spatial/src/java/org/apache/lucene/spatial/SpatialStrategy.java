@@ -19,7 +19,6 @@ package org.apache.lucene.spatial;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -94,16 +93,6 @@ public abstract class SpatialStrategy {
    */
   public IndexableField[] createFields(Shape shape) {
     return new IndexableField[]{createField(shape)};
-  }
-
-  /**
-   * A convenience method for storing the shape in Lucene for retrieval in search results.
-   * After calling this, add it to the document: {@link org.apache.lucene.document.Document#add(org.apache.lucene.index.IndexableField)}.
-   * All this does is:
-   * <pre>return new StoredField(getFieldName(),ctx.toString(shape));</pre>
-   */
-  public StoredField createStoredField(Shape shape) {
-    return new StoredField(getFieldName(), ctx.toString(shape));
   }
 
   /**

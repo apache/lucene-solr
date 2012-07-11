@@ -23,6 +23,7 @@ import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.simple.PointImpl;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.spatial.SpatialTestCase;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
@@ -45,7 +46,7 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
     Document losAngeles = new Document();
     losAngeles.add(new StringField("name", "Los Angeles", Field.Store.YES));
     losAngeles.add(prefixGridStrategy.createField(point));
-    losAngeles.add(prefixGridStrategy.createStoredField(point));
+    losAngeles.add(new StoredField(prefixGridStrategy.getFieldName(), ctx.toString(point)));
 
     addDocumentsAndCommit(Arrays.asList(losAngeles));
 
