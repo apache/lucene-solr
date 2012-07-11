@@ -103,6 +103,7 @@
 	<classpathentry kind="lib" path="lucene/benchmark/lib/commons-compress-1.2.jar"/>
 	<classpathentry kind="lib" path="lucene/benchmark/lib/xercesImpl-2.9.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
+	<classpathentry kind="lib" path="solr/lib/commons-cli-1.2.jar"/>
 	<classpathentry kind="lib" path="solr/lib/httpclient-4.1.3.jar"/>
 	<classpathentry kind="lib" path="solr/lib/httpcore-4.1.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/httpmime-4.1.3.jar"/>

@@ -689,10 +689,16 @@ public class SolrZkClient {
       return;
     }
     for (String string : children) {
-      clean(path + "/" + string);
+      if (path.equals("/")) {
+        clean(path + string);
+      } else {
+        clean(path + "/" + string);
+      }
     }
     try {
-      delete(path, -1, true);
+      if (!path.equals("/")) {
+        delete(path, -1, true);
+      }
     } catch (NoNodeException r) {
       return;
     }
