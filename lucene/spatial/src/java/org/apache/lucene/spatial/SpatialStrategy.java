@@ -19,6 +19,7 @@ package org.apache.lucene.spatial;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -28,7 +29,12 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.query.SpatialArgs;
 
 /**
- * must be thread safe
+ * The SpatialStrategy encapsulates an approach to indexing and searching based on shapes.
+ * <p/>
+ * Note that a SpatialStrategy is not involved with the Lucene stored field values of shapes, which is
+ * immaterial to indexing & search.
+ * <p/>
+ * Thread-safe.
  *
  * @lucene.experimental
  */
@@ -75,11 +81,29 @@ public abstract class SpatialStrategy {
    * This is reasonable behavior if 'ignoreIncompatibleGeometry=true' and the
    * geometry is incompatible
    */
-  public abstract IndexableField createField(Shape shape, boolean index, boolean store);
+  public abstract IndexableField createField(Shape shape);
 
-  /** Corresponds with Solr's FieldType.createFields(). */
-  public IndexableField[] createFields(Shape shape, boolean index, boolean store) {
-    return new IndexableField[] { createField(shape, index, store) };
+  /**
+   * Corresponds with Solr's FieldType.createFields().
+   * <p/>
+   * Note: If you want to <i>store</i> the shape as a string for retrieval in search
+   * results, you could add it like this:
+   * <pre>document.add(new StoredField(fieldName,ctx.toString(shape)));</pre>
+   * The particular string representation used doesn't matter to the Strategy since it
+   * doesn't use it.
+   */
+  public IndexableField[] createFields(Shape shape) {
+    return new IndexableField[]{createField(shape)};
+  }
+
+  /**
+   * A convenience method for storing the shape in Lucene for retrieval in search results.
+   * After calling this, add it to the document: {@link org.apache.lucene.document.Document#add(org.apache.lucene.index.IndexableField)}.
+   * All this does is:
+   * <pre>return new StoredField(getFieldName(),ctx.toString(shape));</pre>
+   */
+  public StoredField createStoredField(Shape shape) {
+    return new StoredField(getFieldName(), ctx.toString(shape));
   }
 
   /**

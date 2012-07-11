@@ -44,7 +44,8 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
 
     Document losAngeles = new Document();
     losAngeles.add(new StringField("name", "Los Angeles", Field.Store.YES));
-    losAngeles.add(prefixGridStrategy.createField(point, true, true));
+    losAngeles.add(prefixGridStrategy.createField(point));
+    losAngeles.add(prefixGridStrategy.createStoredField(point));
 
     addDocumentsAndCommit(Arrays.asList(losAngeles));
 

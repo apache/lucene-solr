@@ -77,7 +77,7 @@ public class PortedSolr3Test extends StrategyTestCase {
   static class Param {
     SpatialStrategy strategy;
     String description;
-    
+
     Param(SpatialStrategy strategy, String description) {
       this.strategy = strategy;
       this.description = description;
@@ -193,9 +193,11 @@ public class PortedSolr3Test extends StrategyTestCase {
   private Document newDoc(String id, Shape shape) {
     Document doc = new Document();
     doc.add(new StringField("id", id, Field.Store.YES));
-    for (IndexableField f : strategy.createFields(shape, true, storeShape)) {
+    for (IndexableField f : strategy.createFields(shape)) {
       doc.add(f);
     }
+    if (storeShape)
+      doc.add(strategy.createStoredField(shape));
     return doc;
   }
 
