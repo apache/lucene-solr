@@ -91,15 +91,15 @@
 	<classpathentry kind="src" path="solr/contrib/velocity/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/velocity/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/velocity/src/test-files"/>
-	<classpathentry kind="lib" path="lucene/test-framework/lib/ant-1.7.1.jar"/>
-	<classpathentry kind="lib" path="lucene/test-framework/lib/ant-junit-1.7.1.jar"/>
+	<classpathentry kind="lib" path="lucene/test-framework/lib/ant-1.8.2.jar"/>
+	<classpathentry kind="lib" path="lucene/test-framework/lib/ant-junit-1.8.2.jar"/>
 	<classpathentry kind="lib" path="lucene/test-framework/lib/junit-4.10.jar"/>
 	<classpathentry kind="lib" path="lucene/sandbox/lib/jakarta-regexp-1.4.jar"/>
 	<classpathentry kind="lib" path="lucene/analysis/icu/lib/icu4j-4.8.1.1.jar"/>
 	<classpathentry kind="lib" path="lucene/analysis/phonetic/lib/commons-codec-1.6.jar"/>
-	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-fsa-1.5.2.jar"/>
-	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-polish-1.5.2.jar"/>
-	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-stemming-1.5.2.jar"/>
+	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-fsa-1.5.3.jar"/>
+	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-polish-1.5.3.jar"/>
+	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-stemming-1.5.3.jar"/>
 	<classpathentry kind="lib" path="lucene/benchmark/lib/commons-compress-1.2.jar"/>
 	<classpathentry kind="lib" path="lucene/benchmark/lib/xercesImpl-2.9.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
@@ -170,6 +170,6 @@
   <classpathentry kind="lib" path="solr/contrib/velocity/lib/commons-beanutils-1.7.0.jar"/>
   <classpathentry kind="lib" path="solr/contrib/velocity/lib/commons-collections-3.2.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lucene/test-framework/lib/randomizedtesting-runner-1.5.0.jar"/>
+	<classpathentry kind="lib" path="lucene/test-framework/lib/randomizedtesting-runner-1.6.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

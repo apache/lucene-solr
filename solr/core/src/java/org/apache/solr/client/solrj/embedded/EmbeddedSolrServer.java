@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,9 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Set;
 
-import org.apache.lucene.document.Document;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -45,9 +43,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.transform.DocTransformer;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
 import org.apache.solr.servlet.SolrRequestParsers;
 
 /**
@@ -187,7 +182,7 @@ public class EmbeddedSolrServer extends SolrServer
           new JavaBinCodec(resolver) {
 
             @Override
-            public void writeSolrDocument(SolrDocument doc) throws IOException {
+            public void writeSolrDocument(SolrDocument doc) {
               callback.streamSolrDocument( doc );
               //super.writeSolrDocument( doc, fields );
             }
@@ -252,6 +247,7 @@ public class EmbeddedSolrServer extends SolrServer
   /**
    * Shutdown all cores within the EmbeddedSolrServer instance
    */
+  @Override
   public void shutdown() {
     coreContainer.shutdown();
   }

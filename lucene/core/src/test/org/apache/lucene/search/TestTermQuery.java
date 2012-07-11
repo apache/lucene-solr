@@ -32,6 +32,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * This class contains tests related to {@link TermQuery}
@@ -73,7 +74,7 @@ public class TestTermQuery extends LuceneTestCase {
     for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
       TermQuery one = new TermQuery(new Term(fieldName, "1"));
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
+      List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       for (AtomicReaderContext atomicReaderContext : leaves) {
         Scorer scorer = weight.scorer(atomicReaderContext, true, true, null);
@@ -177,7 +178,7 @@ public class TestTermQuery extends LuceneTestCase {
     for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
       TermQuery one = new TermQuery(new Term(fieldName, "" + term));
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
+      List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       for (AtomicReaderContext atomicReaderContext : leaves) {
         Scorer scorer = weight.scorer(atomicReaderContext, true, true, null);
@@ -262,7 +263,7 @@ public class TestTermQuery extends LuceneTestCase {
     for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
       TermQuery one = new TermQuery(new Term(fieldName, "even"));
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
+      List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       PositionInterval interval = null;
       for (AtomicReaderContext atomicReaderContext : leaves) {

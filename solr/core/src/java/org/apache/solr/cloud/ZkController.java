@@ -1,6 +1,6 @@
 package org.apache.solr.cloud;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
@@ -39,7 +38,6 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
-import org.apache.solr.common.cloud.CoreState;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -53,6 +51,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.DOMUtil;
 import org.apache.zookeeper.CreateMode;
@@ -86,17 +86,15 @@ public final class ZkController {
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
+  private final DistributedQueue overseerJobQueue;
+  private final DistributedQueue overseerCollectionQueue;
+  
   // package private for tests
 
   static final String CONFIGS_ZKNODE = "/configs";
 
   public final static String COLLECTION_PARAM_PREFIX="collection.";
   public final static String CONFIGNAME_PROP="configName";
-
-  private Map<String, CoreState> coreStates = new HashMap<String, CoreState>();   // key is the local core name
-  private long coreStatesVersion; // bumped by 1 each time we serialize coreStates... sync on  coreStates
-  private long coreStatesPublishedVersion; // last version published to ZK... sync on coreStatesPublishLock
-  private Object coreStatesPublishLock = new Object(); // only publish one at a time
 
   private final Map<String, ElectionContext> electionContexts = Collections.synchronizedMap(new HashMap<String, ElectionContext>());
   
@@ -119,7 +117,8 @@ public final class ZkController {
   private LeaderElector overseerElector;
   
 
-  // this can be null in which case recovery will be inactive
+  // for now, this can be null in tests, in which case recovery will be inactive, and other features
+  // may accept defaults or use mocks rather than pulling things from a CoreContainer
   private CoreContainer cc;
 
   /**
@@ -182,7 +181,7 @@ public final class ZkController {
    * @throws TimeoutException
    * @throws IOException
    */
-  public ZkController(CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
+  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
     this.cc = cc;
@@ -209,8 +208,19 @@ public final class ZkController {
               
               // seems we dont need to do this again...
               //Overseer.createClientNodes(zkClient, getNodeName());
-
-              ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
+              ShardHandler shardHandler;
+              String adminPath;
+              if (cc == null) {
+                shardHandler = new HttpShardHandlerFactory().getShardHandler();
+                adminPath = "/admin/cores";
+              } else {
+                shardHandler = cc.getShardHandlerFactory().getShardHandler();
+                adminPath = cc.getAdminPath();
+              }
+              
+              ElectionContext context = new OverseerElectionContext(
+                  shardHandler, adminPath,
+                  getNodeName(), zkStateReader);
               overseerElector.joinElection(context);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
@@ -223,8 +233,7 @@ public final class ZkController {
                   final String coreZkNodeName = getNodeName() + "_"
                       + descriptor.getName();
                   try {
-                    publishAsDown(getBaseUrl(), descriptor, coreZkNodeName,
-                        descriptor.getName());
+                    publish(descriptor, ZkStateReader.DOWN);
                     waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
                   } catch (Exception e) {
                     SolrException.log(log, "", e);
@@ -261,6 +270,8 @@ public final class ZkController {
 
  
         });
+    this.overseerJobQueue = Overseer.getInQueue(zkClient);
+    this.overseerCollectionQueue = Overseer.getCollectionQueue(zkClient);
     cmdExecutor = new ZkCmdExecutor();
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
@@ -300,13 +311,6 @@ public final class ZkController {
    */
   public CloudState getCloudState() {
     return zkStateReader.getCloudState();
-  }
-
-  /** @return the CoreState for the core, which may not yet be visible to ZooKeeper or other nodes in the cluster */
-  public CoreState getCoreState(String coreName) {
-    synchronized (coreStates) {
-      return coreStates.get(coreName);
-    }
   }
 
   /**
@@ -387,14 +391,22 @@ public final class ZkController {
       // makes nodes zkNode
       cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
       
-      Overseer.createClientNodes(zkClient, getNodeName());
       createEphemeralLiveNode();
       cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
 
-      syncNodeState();
-
+      ShardHandler shardHandler;
+      String adminPath;
+      if (cc == null) {
+        shardHandler = new HttpShardHandlerFactory().getShardHandler();
+        adminPath = "/admin/cores";
+      } else {
+        shardHandler = cc.getShardHandlerFactory().getShardHandler();
+        adminPath = cc.getAdminPath();
+      }
+      
       overseerElector = new LeaderElector(zkClient);
-      ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
+      ElectionContext context = new OverseerElectionContext(shardHandler,
+          adminPath, getNodeName(), zkStateReader);
       overseerElector.setup(context);
       overseerElector.joinElection(context);
       zkStateReader.createClusterStateWatchersAndUpdate();
@@ -415,27 +427,6 @@ public final class ZkController {
           "", e);
     }
 
-  }
-  
-  /*
-   * sync internal state with zk on startup
-   */
-  private void syncNodeState() throws KeeperException, InterruptedException {
-    log.debug("Syncing internal state with zk. Current: " + coreStates);
-    final String path = Overseer.STATES_NODE + "/" + getNodeName();
-
-    final byte[] data = zkClient.getData(path, null, null, true);
-
-    if (data != null) {
-      CoreState[] states = CoreState.load(data);
-      synchronized (coreStates) {
-        coreStates.clear();    // TODO: should we do this?
-        for(CoreState coreState: states) {
-          coreStates.put(coreState.getCoreName(), coreState);
-        }
-      }
-    }
-    log.debug("after sync: " + coreStates);
   }
 
   public boolean isConnected() {
@@ -496,10 +487,9 @@ public final class ZkController {
    * @return config value
    * @throws KeeperException
    * @throws InterruptedException
-   * @throws IOException 
    */
   public String readConfigName(String collection) throws KeeperException,
-      InterruptedException, IOException {
+      InterruptedException {
 
     String configName = null;
 
@@ -640,7 +630,7 @@ public final class ZkController {
         boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
             collection, coreZkNodeName, shardId, leaderProps, core, cc);
         if (!didRecovery) {
-          publishAsActive(baseUrl, desc, coreZkNodeName, coreName);
+          publish(desc, ZkStateReader.ACTIVE);
         }
       } finally {
         if (core != null) {
@@ -648,7 +638,7 @@ public final class ZkController {
         }
       }
     } else {
-      publishAsActive(baseUrl, desc, coreZkNodeName, coreName);
+      publish(desc, ZkStateReader.ACTIVE);
     }
     
     // make sure we have an update cluster state right away
@@ -721,17 +711,12 @@ public final class ZkController {
    * @param core
    * @param cc
    * @return whether or not a recovery was started
-   * @throws InterruptedException
-   * @throws KeeperException
-   * @throws IOException
-   * @throws ExecutionException
    */
   private boolean checkRecovery(String coreName, final CoreDescriptor desc,
       boolean recoverReloadedCores, final boolean isLeader,
       final CloudDescriptor cloudDesc, final String collection,
       final String shardZkNodeName, String shardId, ZkNodeProps leaderProps,
-      SolrCore core, CoreContainer cc) throws InterruptedException,
-      KeeperException, IOException, ExecutionException {
+      SolrCore core, CoreContainer cc) {
     if (SKIP_AUTO_RECOVERY) {
       log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
       return false;
@@ -760,49 +745,33 @@ public final class ZkController {
     return baseURL;
   }
 
-
-  void publishAsActive(String shardUrl,
-      final CoreDescriptor cd, String shardZkNodeName, String coreName) {
-    Map<String,String> finalProps = new HashMap<String,String>();
-    finalProps.put(ZkStateReader.BASE_URL_PROP, shardUrl);
-    finalProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
-    finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
-
-    publishState(cd, shardZkNodeName, coreName, finalProps);
+  /**
+   * Publish core state to overseer.
+   * @param cd
+   * @param state
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
+  public void publish(final CoreDescriptor cd, final String state) throws KeeperException, InterruptedException {
+    //System.out.println(Thread.currentThread().getStackTrace()[3]);
+    Integer numShards = cd.getCloudDescriptor().getNumShards();
+    if (numShards == null) { //XXX sys prop hack
+      numShards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP);
+    }
+    
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state", 
+        ZkStateReader.STATE_PROP, state, 
+        ZkStateReader.BASE_URL_PROP, getBaseUrl(), 
+        ZkStateReader.CORE_NAME_PROP, cd.getName(),
+        ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles(),
+        ZkStateReader.NODE_NAME_PROP, getNodeName(),
+        ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId(),
+        ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor()
+            .getCollectionName(), ZkStateReader.STATE_PROP, state,
+        ZkStateReader.NUM_SHARDS_PROP, numShards != null ? numShards.toString()
+            : null);
+    overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
-
-  public void publish(CoreDescriptor cd, String state) {
-    Map<String,String> finalProps = new HashMap<String,String>();
-    finalProps.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
-    finalProps.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
-    finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    finalProps.put(ZkStateReader.STATE_PROP, state);
-    publishState(cd, getNodeName() + "_" + cd.getName(),
-        cd.getName(), finalProps);
-  }
-  
-  void publishAsDown(String baseUrl,
-      final CoreDescriptor cd, String shardZkNodeName, String coreName) {
-    Map<String,String> finalProps = new HashMap<String,String>();
-    finalProps.put(ZkStateReader.BASE_URL_PROP, baseUrl);
-    finalProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
-    finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.DOWN);
- 
-    publishState(cd, shardZkNodeName, coreName, finalProps);
-  }
-  
-  void publishAsRecoveryFailed(String baseUrl,
-      final CoreDescriptor cd, String shardZkNodeName, String coreName) {
-    Map<String,String> finalProps = new HashMap<String,String>();
-    finalProps.put(ZkStateReader.BASE_URL_PROP, baseUrl);
-    finalProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
-    finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERY_FAILED);
-    publishState(cd, shardZkNodeName, coreName, finalProps);
-  }
-
 
   private boolean needsToBeAssignedShardId(final CoreDescriptor desc,
       final CloudState state, final String shardZkNodeName) {
@@ -826,15 +795,25 @@ public final class ZkController {
    */
   public void unregister(String coreName, CloudDescriptor cloudDesc)
       throws InterruptedException, KeeperException {
-    synchronized (coreStates) {
-      coreStates.remove(coreName);
-    }
-    publishState();
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        "deletecore", ZkStateReader.CORE_NAME_PROP, coreName,
+        ZkStateReader.NODE_NAME_PROP, getNodeName(),
+        ZkStateReader.COLLECTION_PROP, cloudDesc.getCollectionName());
+    overseerJobQueue.offer(ZkStateReader.toJSON(m));
+
     final String zkNodeName = getNodeName() + "_" + coreName;
     ElectionContext context = electionContexts.remove(zkNodeName);
     if (context != null) {
       context.cancelElection();
     }
+  }
+  
+  public void createCollection(String collection) throws KeeperException,
+      InterruptedException {
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        "createcollection", ZkStateReader.NODE_NAME_PROP, getNodeName(),
+        ZkStateReader.COLLECTION_PROP, collection);
+    overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
 
   /**
@@ -864,7 +843,7 @@ public final class ZkController {
     zkClient.printLayoutToStdOut();
   }
 
-  public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException, IOException {
+  public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException {
     String collection = cd.getCollectionName();
     
     log.info("Check for collection zkNode:" + collection);
@@ -993,85 +972,7 @@ public final class ZkController {
     return zkStateReader;
   }
 
-  
-  private void publishState(CoreDescriptor cd, String shardZkNodeName, String coreName,
-      Map<String,String> props) {
-    CloudDescriptor cloudDesc = cd.getCloudDescriptor();
-    if (cloudDesc.getRoles() != null) {
-      props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
-    }
-    
-    if (cloudDesc.getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getCloudState(), shardZkNodeName)) {
-      // publish with no shard id so we are assigned one, and then look for it
-      doPublish(shardZkNodeName, coreName, props, cloudDesc);
-      String shardId;
-      try {
-        shardId = doGetShardIdProcess(coreName, cloudDesc);
-      } catch (InterruptedException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
-      }
-      cloudDesc.setShardId(shardId);
-    }
-   
-    
-    if (!props.containsKey(ZkStateReader.SHARD_ID_PROP) && cloudDesc.getShardId() != null) {
-      props.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
-    }
-    
-    doPublish(shardZkNodeName, coreName, props, cloudDesc);
-  }
-
-
-  private void doPublish(String shardZkNodeName, String coreName,
-      Map<String,String> props, CloudDescriptor cloudDesc) {
-    Integer numShards = cloudDesc.getNumShards();
-    if (numShards == null) {
-      numShards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP);
-    }
-    CoreState coreState = new CoreState(coreName,
-        cloudDesc.getCollectionName(), props, numShards);
-    
-    synchronized (coreStates) {
-      coreStates.put(coreName, coreState);
-    }
-    
-    publishState();
-  }
-  
-  private void publishState() {
-    final String nodePath = "/node_states/" + getNodeName();
-
-    long version;
-    byte[] coreStatesData;
-    synchronized (coreStates) {
-      version = ++coreStatesVersion;
-      coreStatesData = ZkStateReader.toJSON(coreStates.values());
-    }
-
-    // if multiple threads are trying to publish state, make sure that we never write
-    // an older version after a newer version.
-    synchronized (coreStatesPublishLock) {
-      try {
-        if (version < coreStatesPublishedVersion) {
-          log.info("Another thread already published a newer coreStates: ours="+version + " lastPublished=" + coreStatesPublishedVersion);
-        } else {
-          zkClient.setData(nodePath, coreStatesData, true);
-          coreStatesPublishedVersion = version;  // put it after so it won't be set if there's an exception
-        }
-      } catch (KeeperException e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "could not publish node state", e);
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "could not publish node state", e);
-      }
-    }
-  }
-
-  private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor)
-      throws InterruptedException {
+  private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor) {
     final String shardZkNodeName = getNodeName() + "_" + coreName;
     int retryCount = 120;
     while (retryCount-- > 0) {
@@ -1086,6 +987,7 @@ public final class ZkController {
         Thread.currentThread().interrupt();
       }
     }
+    
     throw new SolrException(ErrorCode.SERVER_ERROR,
         "Could not get shard_id for core: " + coreName);
   }
@@ -1106,14 +1008,26 @@ public final class ZkController {
     }
   }
   
+  private String getCoreNodeName(CoreDescriptor descriptor){
+    return getNodeName() + "_"
+        + descriptor.getName();
+  }
+  
   public static void uploadConfigDir(SolrZkClient zkClient, File dir, String configName) throws IOException, KeeperException, InterruptedException {
     uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
   }
 
-  public void preRegister(CoreDescriptor cd) {
+  public void preRegister(CoreDescriptor cd) throws KeeperException, InterruptedException {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     publish(cd, ZkStateReader.DOWN); 
+    String shardZkNodeName = getCoreNodeName(cd);
+    if (cd.getCloudDescriptor().getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getCloudState(), shardZkNodeName)) {
+      String shardId;
+      shardId = doGetShardIdProcess(cd.getName(), cd.getCloudDescriptor());
+      cd.getCloudDescriptor().setShardId(shardId);
+    }
+
   }
 
   private ZkCoreNodeProps waitForLeaderToSeeDownState(
@@ -1213,6 +1127,14 @@ public final class ZkController {
 
       ZkController.uploadConfigDir(zkClient, new File(idir, "conf"), confName);
     }
+  }
+
+  public DistributedQueue getOverseerJobQueue() {
+    return overseerJobQueue;
+  }
+
+  public DistributedQueue getOverseerCollectionQueue() {
+    return overseerCollectionQueue;
   }
 
 }

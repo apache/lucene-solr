@@ -1,6 +1,6 @@
 package org.apache.lucene.queryparser.flexible.standard.processors;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,12 +17,15 @@ package org.apache.lucene.queryparser.flexible.standard.processors;
  * limitations under the License.
  */
 
+import java.util.Locale;
+
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.processors.NoChildOptimizationQueryNodeProcessor;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorPipeline;
 import org.apache.lucene.queryparser.flexible.core.processors.RemoveDeletedQueryNodesProcessor;
 import org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryTreeBuilder;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.search.Query;
 

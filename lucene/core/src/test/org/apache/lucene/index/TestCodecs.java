@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,7 +28,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
@@ -45,7 +44,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.junit.BeforeClass;
 
@@ -78,7 +76,7 @@ public class TestCodecs extends LuceneTestCase {
   private final static int TERM_DOC_FREQ_RAND = 20;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     NUM_TEST_ITER = atLeast(20);
   }
 
@@ -254,7 +252,7 @@ public class TestCodecs extends LuceneTestCase {
     final FieldData[] fields = new FieldData[] {field};
     final FieldInfos fieldInfos = builder.finish();
     final Directory dir = newDirectory();
-    this.write(fieldInfos, dir, fields, true);
+    this.write(fieldInfos, dir, fields);
     Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000, false, codec, null, null);
 
@@ -310,7 +308,7 @@ public class TestCodecs extends LuceneTestCase {
       System.out.println("TEST: now write postings");
     }
 
-    this.write(fieldInfos, dir, fields, false);
+    this.write(fieldInfos, dir, fields);
     Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000,
                                            false, codec, null, null);
@@ -340,8 +338,9 @@ public class TestCodecs extends LuceneTestCase {
 
   public void testSepPositionAfterMerge() throws IOException {
     final Directory dir = newDirectory();
-    final IndexWriterConfig config = newIndexWriterConfig(Version.LUCENE_31,
+    final IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
       new MockAnalyzer(random()));
+    config.setMergePolicy(newLogMergePolicy());
     config.setCodec(_TestUtil.alwaysPostingsFormat(new MockSepPostingsFormat()));
     final IndexWriter writer = new IndexWriter(dir, config);
 
@@ -351,7 +350,7 @@ public class TestCodecs extends LuceneTestCase {
       pq.add(new Term("content", "ccc"));
 
       final Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setOmitNorms(true);
       doc.add(newField("content", "aaa bbb ccc ddd", customType));
 
@@ -454,10 +453,6 @@ public class TestCodecs extends LuceneTestCase {
       for(int iter=0;iter<NUM_TEST_ITER;iter++) {
         final FieldData field = fields[random().nextInt(fields.length)];
         final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator(null);
-        if (si.getCodec() instanceof Lucene3xCodec) {
-          // code below expects unicode sort order
-          continue;
-        }
 
         int upto = 0;
         // Test straight enum of the terms:
@@ -613,7 +608,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  private void write(final FieldInfos fieldInfos, final Directory dir, final FieldData[] fields, boolean allowPreFlex) throws Throwable {
+  private void write(final FieldInfos fieldInfos, final Directory dir, final FieldData[] fields) throws Throwable {
 
     final int termIndexInterval = _TestUtil.nextInt(random(), 13, 27);
     final Codec codec = Codec.getDefault();
@@ -623,10 +618,6 @@ public class TestCodecs extends LuceneTestCase {
     final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(state);
     Arrays.sort(fields);
     for (final FieldData field : fields) {
-      if (!allowPreFlex && codec instanceof Lucene3xCodec) {
-        // code below expects unicode sort order
-        continue;
-      }
       field.write(consumer);
     }
     consumer.close();

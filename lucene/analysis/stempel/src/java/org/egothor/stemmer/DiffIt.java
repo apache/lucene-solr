@@ -55,9 +55,11 @@
 package org.egothor.stemmer;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.util.Locale;
 import java.util.StringTokenizer;
 
 /**
@@ -95,10 +97,11 @@ public class DiffIt {
       // System.out.println("[" + args[i] + "]");
       Diff diff = new Diff(ins, del, rep, nop);
       try {
-        in = new LineNumberReader(new BufferedReader(new FileReader(args[i])));
+        String charset = System.getProperty("egothor.stemmer.charset", "UTF-8");
+        in = new LineNumberReader(new BufferedReader(new InputStreamReader(new FileInputStream(args[i]), charset)));
         for (String line = in.readLine(); line != null; line = in.readLine()) {
           try {
-            line = line.toLowerCase();
+            line = line.toLowerCase(Locale.ROOT);
             StringTokenizer st = new StringTokenizer(line);
             String stem = st.nextToken();
             System.out.println(stem + " -a");

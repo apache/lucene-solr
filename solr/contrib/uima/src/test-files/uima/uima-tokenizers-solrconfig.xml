@@ -363,7 +363,7 @@
 
   <!--
     requestHandler plugins... incoming queries will be dispatched to the
-    correct handler based on the path or the qt (query type) param.
+    correct handler based on the path or the 'qt' param.
     Names starting with a '/' are accessed with the a path equal to the
     registered name. Names without a leading '/' are accessed with:
     http://host/app/select?qt=name If no qt is defined, the
@@ -400,7 +400,7 @@
   <!--
     DisMaxRequestHandler allows easy searching across multiple fields
     for simple user-entered phrases. It's implementation is now just the
-    standard SearchHandler with a default query type of "dismax". see
+    standard SearchHandler with a default query parser of "dismax". see
     http://wiki.apache.org/solr/DisMaxRequestHandler
   -->
   <requestHandler name="dismax" class="solr.SearchHandler">

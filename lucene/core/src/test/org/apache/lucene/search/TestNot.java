@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -24,7 +25,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 
 /** Similarity unit test.
  *
@@ -37,7 +37,7 @@ public class TestNot extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), store);
 
     Document d1 = new Document();
-    d1.add(newField("field", "a b", TextField.TYPE_STORED));
+    d1.add(newTextField("field", "a b", Field.Store.YES));
 
     writer.addDocument(d1);
     IndexReader reader = writer.getReader();

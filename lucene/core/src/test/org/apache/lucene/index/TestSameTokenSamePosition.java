@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -72,7 +72,7 @@ final class BugReproTokenStream extends TokenStream {
   private final int incs[] = new int[]{1, 0, 1, 0};
 
   @Override
-  public boolean incrementToken() throws IOException {
+  public boolean incrementToken() {
     if (nextTokenIndex < tokenCount) {
       termAtt.setEmpty().append(terms[nextTokenIndex]);
       offsetAtt.setOffset(starts[nextTokenIndex], ends[nextTokenIndex]);

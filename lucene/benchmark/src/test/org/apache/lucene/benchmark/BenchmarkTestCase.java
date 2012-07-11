@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -35,14 +35,14 @@ public abstract class BenchmarkTestCase extends LuceneTestCase {
   private static File WORKDIR;
   
   @BeforeClass
-  public static void beforeClassBenchmarkTestCase() throws Exception {
+  public static void beforeClassBenchmarkTestCase() {
     WORKDIR = _TestUtil.getTempDir("benchmark");
     WORKDIR.delete();
     WORKDIR.mkdirs();
   }
   
   @AfterClass
-  public static void afterClassBenchmarkTestCase() throws Exception {
+  public static void afterClassBenchmarkTestCase() {
     WORKDIR = null;
   }
   

@@ -12,12 +12,13 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnsafeByteArrayOutputStream;
 import org.apache.lucene.util.encoding.DGapIntEncoder;
@@ -27,7 +28,7 @@ import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
 import org.apache.lucene.util.encoding.VInt8IntEncoder;
 import org.junit.Test;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -56,7 +57,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     private boolean exhausted = false;
     private CharTermAttribute term = addAttribute(CharTermAttribute.class);
 
-    public DataTokenStream(String text, IntEncoder encoder) throws IOException {
+    public DataTokenStream(String text, IntEncoder encoder) {
       this.encoder = encoder;
       term.setEmpty().append(text);
     }
@@ -79,7 +80,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
         encoder.encode(val);
       }
       encoder.close();
-      payload.setPayload(new Payload(buf, 0, ubaos.length()));
+      payload.setPayload(new BytesRef(buf, 0, ubaos.length()));
 
       exhausted = true;
       return true;
@@ -152,7 +153,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
         dts.setIdx(i);
         doc.add(new TextField("f", dts)); // only doc 0 has payloads!
       } else {
-        doc.add(new TextField("f", "1"));
+        doc.add(new TextField("f", "1", Field.Store.NO));
       }
       writer.addDocument(doc);
       writer.commit();

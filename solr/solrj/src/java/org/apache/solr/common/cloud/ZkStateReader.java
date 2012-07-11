@@ -1,6 +1,6 @@
 package org.apache.solr.common.cloud;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,7 +31,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONParser;
 import org.apache.noggit.JSONWriter;
@@ -42,6 +41,7 @@ import org.apache.solr.common.util.ByteUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,6 +180,11 @@ public class ZkStateReader {
         
         @Override
         public void process(WatchedEvent event) {
+          // session events are not change events,
+          // and do not remove the watcher
+          if (EventType.None.equals(event.getType())) {
+            return;
+          }
           log.info("A cluster state change has occurred");
           try {
             
@@ -223,6 +228,11 @@ public class ZkStateReader {
             
             @Override
             public void process(WatchedEvent event) {
+              // session events are not change events,
+              // and do not remove the watcher
+              if (EventType.None.equals(event.getType())) {
+                return;
+              }
               log.info("Updating live nodes");
               try {
                 // delayed approach
@@ -378,6 +388,9 @@ public class ZkStateReader {
 
 	}
   
+  /**
+   * Get shard leader url.
+   */
   public String getLeaderUrl(String collection, String shard) throws InterruptedException, KeeperException {
     return getLeaderUrl(collection, shard, 1000);
   }
@@ -389,6 +402,9 @@ public class ZkStateReader {
     return props.getCoreUrl();
   }
   
+  /**
+   * Get shard leader properties.
+   */
   public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException {
     return getLeaderProps(collection, shard, 1000);
   }
@@ -408,12 +424,23 @@ public class ZkStateReader {
     throw new RuntimeException("No registered leader was found, collection:" + collection + " slice:" + shard);
   }
 
+  /**
+   * Get path where shard leader properties live in zookeeper.
+   */
   public static String getShardLeadersPath(String collection, String shardId) {
     return COLLECTIONS_ZKNODE + "/" + collection + "/"
         + SHARD_LEADERS_ZKNODE + (shardId != null ? ("/" + shardId)
         : "");
   }
-  
+
+  /**
+   * Get CoreNodeName for a core. This name is unique across the collection.  
+   * @param nodeName in form: 127.0.0.1:54065_solr
+   */
+  public static String getCoreNodeName(String nodeName, String coreName) {
+    return nodeName + "_" + coreName;
+  }
+
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
       String shardId, String thisNodeName, String coreName) {
     return getReplicaProps(collection, shardId, thisNodeName, coreName, null);

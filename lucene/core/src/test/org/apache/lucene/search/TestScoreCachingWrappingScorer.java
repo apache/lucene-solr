@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,7 +37,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       super(weight);
     }
     
-    @Override public float score() throws IOException {
+    @Override public float score() {
       // advance idx on purpose, so that consecutive calls to score will get
       // different results. This is to emulate computation of a score. If
       // ScoreCachingWrappingScorer is used, this should not be called more than
@@ -47,11 +47,11 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
 
     @Override public int docID() { return doc; }
 
-    @Override public int nextDoc() throws IOException {
+    @Override public int nextDoc() {
       return ++doc < scores.length ? doc : NO_MORE_DOCS;
     }
     
-    @Override public int advance(int target) throws IOException {
+    @Override public int advance(int target) {
       doc = target;
       return doc < scores.length ? doc : NO_MORE_DOCS;
     }
@@ -85,11 +85,10 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       ++idx;
     }
 
-    @Override public void setNextReader(AtomicReaderContext context)
-        throws IOException {
+    @Override public void setNextReader(AtomicReaderContext context) {
     }
 
-    @Override public void setScorer(Scorer scorer) throws IOException {
+    @Override public void setScorer(Scorer scorer) {
       this.scorer = new ScoreCachingWrappingScorer(scorer);
     }
     

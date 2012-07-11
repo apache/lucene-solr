@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -101,7 +101,7 @@ final class BooleanScorer extends Scorer {
     }
     
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorer scorer) {
       this.scorer = scorer;
     }
     
@@ -125,7 +125,7 @@ final class BooleanScorer extends Scorer {
     public BucketScorer(Weight weight) { super(weight); }
     
     @Override
-    public int advance(int target) throws IOException { return NO_MORE_DOCS; }
+    public int advance(int target) { return NO_MORE_DOCS; }
 
     @Override
     public int docID() { return doc; }
@@ -134,10 +134,10 @@ final class BooleanScorer extends Scorer {
     public float freq() { return freq; }
 
     @Override
-    public int nextDoc() throws IOException { return NO_MORE_DOCS; }
+    public int nextDoc() { return NO_MORE_DOCS; }
     
     @Override
-    public float score() throws IOException { return score; }
+    public float score() { return score; }
 
     @Override
     public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
@@ -189,8 +189,7 @@ final class BooleanScorer extends Scorer {
     public SubScorer next;
 
     public SubScorer(Scorer scorer, boolean required, boolean prohibited,
-        Collector collector, SubScorer next)
-      throws IOException {
+        Collector collector, SubScorer next) {
       if (required) {
         throw new IllegalArgumentException("this scorer cannot handle required=true");
       }
@@ -307,7 +306,7 @@ final class BooleanScorer extends Scorer {
   }
   
   @Override
-  public int advance(int target) throws IOException {
+  public int advance(int target) {
     throw new UnsupportedOperationException();
   }
 
@@ -317,7 +316,7 @@ final class BooleanScorer extends Scorer {
   }
 
   @Override
-  public int nextDoc() throws IOException {
+  public int nextDoc() {
     throw new UnsupportedOperationException();
   }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -74,7 +74,7 @@ public class TestHyphenatedWordsFilter extends BaseTokenStreamTestCase {
       }
     };
     
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

@@ -30,6 +30,7 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -65,10 +66,9 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
    * @param type The {@link Type} which is used to select a concrete implementation.
    * @param diskResident Whether the values to group by should be disk resident
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
-   * @throws IOException If I/O related errors occur
    */
   @SuppressWarnings("unchecked")
-  public static <T extends AbstractAllGroupHeadsCollector.GroupHead<?>> DVAllGroupHeadsCollector<T> create(String groupField, Sort sortWithinGroup, DocValues.Type type, boolean diskResident) throws IOException {
+  public static <T extends AbstractAllGroupHeadsCollector.GroupHead<?>> DVAllGroupHeadsCollector<T> create(String groupField, Sort sortWithinGroup, DocValues.Type type, boolean diskResident) {
     switch (type) {
       case VAR_INTS:
       case FIXED_INTS_8:
@@ -89,7 +89,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       case BYTES_FIXED_SORTED:
         return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.SortedBR(groupField, type, sortWithinGroup, diskResident);
       default:
-        throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "ValueType %s not supported", type));
     }
   }
 
@@ -162,7 +162,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
     private final Sort sortWithinGroup;
     private final Map<Comparable<?>, GroupHead> groups;
 
-    GeneralAllGroupHeadsCollector(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+    GeneralAllGroupHeadsCollector(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) {
       super(groupField, valueType, sortWithinGroup.getSort().length, diskResident);
       this.sortWithinGroup = sortWithinGroup;
       groups = new HashMap<Comparable<?>, GroupHead>();
@@ -218,7 +218,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
 
       private DocValues.SortedSource source;
 
-      SortedBR(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+      SortedBR(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) {
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
@@ -244,7 +244,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
 
       private DocValues.Source source;
 
-      BR(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+      BR(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) {
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
@@ -266,7 +266,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
 
       private DocValues.Source source;
 
-      Lng(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+      Lng(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) {
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
@@ -287,7 +287,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
 
       private DocValues.Source source;
 
-      Dbl(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+      Dbl(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) {
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 

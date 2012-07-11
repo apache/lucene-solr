@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -82,7 +82,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
    * <P>You can only use this method, if you keep the default
    * implementation of {@link #nextSeekTerm}.
    */
-  protected final void setInitialSeekTerm(BytesRef term) throws IOException {
+  protected final void setInitialSeekTerm(BytesRef term) {
     this.initialSeekTerm = term;
   }
   

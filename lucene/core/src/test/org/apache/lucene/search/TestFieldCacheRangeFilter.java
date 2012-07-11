@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,12 +20,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
@@ -528,8 +529,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     for (int d = -20; d <= 20; d++) {
       Document doc = new Document();
-      doc.add(newField("id",Integer.toString(d), StringField.TYPE_UNSTORED));
-      doc.add(newField("body","body", StringField.TYPE_UNSTORED));
+      doc.add(newStringField("id", Integer.toString(d), Field.Store.NO));
+      doc.add(newStringField("body", "body", Field.Store.NO));
       writer.addDocument(doc);
     }
     
@@ -537,7 +538,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     writer.deleteDocuments(new Term("id","0"));
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher search = newSearcher(reader);
     assertTrue(reader.hasDeletions());
 

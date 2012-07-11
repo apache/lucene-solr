@@ -1,6 +1,8 @@
 package org.apache.lucene.analysis.payloads;
 
-/**
+import org.apache.lucene.util.BytesRef;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,15 +19,14 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Payload;
 
 
 /**
  * Base class for payload encoders.
  *
  **/
-public abstract class AbstractEncoder implements PayloadEncoder{
-  public Payload encode(char[] buffer) {
+public abstract class AbstractEncoder implements PayloadEncoder {
+  public BytesRef encode(char[] buffer) {
     return encode(buffer, 0, buffer.length);
   }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,9 +17,6 @@
 
 package org.apache.lucene.analysis.miscellaneous;
 
-import java.io.IOException;
-
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -43,7 +40,7 @@ public final class KeepWordFilter extends FilteringTokenFilter {
   }
 
   @Override
-  public boolean accept() throws IOException {
+  public boolean accept() {
     return words.contains(termAtt.buffer(), 0, termAtt.length());
   }
 }

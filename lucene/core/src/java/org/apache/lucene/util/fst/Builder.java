@@ -1,6 +1,6 @@
 package org.apache.lucene.util.fst;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,6 +23,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Builds a minimal FST (maps an IntsRef term to an arbitrary
@@ -83,7 +84,18 @@ public class Builder<T> {
    * pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
-    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, false);
+    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, false, PackedInts.COMPACT);
+  }
+
+  /**
+   * Instantiates an FST/FSA builder with {@link PackedInts#DEFAULT}
+   * <code>acceptableOverheadRatio</code>.
+   */
+  public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
+      boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
+      FreezeTail<T> freezeTail, boolean willPackFST) {
+    this(inputType, minSuffixCount1, minSuffixCount2, doShareSuffix, doShareNonSingletonNodes,
+        shareMaxTailLength, outputs, freezeTail, willPackFST, PackedInts.DEFAULT);
   }
 
   /**
@@ -126,17 +138,20 @@ public class Builder<T> {
    * @param willPackFST Pass true if you will pack the FST before saving.  This
    *    causes the FST to create additional data structures internally to facilitate packing, but
    *    it means the resulting FST cannot be saved: it must
-   *    first be packed using {@link FST#pack(int, int)}}.
+   *    first be packed using {@link FST#pack(int, int, float)}
+   *
+   * @param acceptableOverheadRatio How to trade speed for space when building the FST. This option
+   *    is only relevant when willPackFST is true. @see PackedInts#getMutable(int, int, float)
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 FreezeTail<T> freezeTail, boolean willPackFST) {
+                 FreezeTail<T> freezeTail, boolean willPackFST, float acceptableOverheadRatio) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
     this.freezeTail = freezeTail;
     this.doShareNonSingletonNodes = doShareNonSingletonNodes;
     this.shareMaxTailLength = shareMaxTailLength;
-    fst = new FST<T>(inputType, outputs, willPackFST);
+    fst = new FST<T>(inputType, outputs, willPackFST, acceptableOverheadRatio);
     if (doShareSuffix) {
       dedupHash = new NodeHash<T>(fst);
     } else {

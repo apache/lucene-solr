@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -91,7 +91,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
       }
 
       @Override
-      public float getValueForNormalization() throws IOException {
+      public float getValueForNormalization() {
         throw new IllegalStateException("Weight already normalized.");
       }
 

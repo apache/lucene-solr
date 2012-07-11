@@ -1,6 +1,6 @@
 package org.apache.lucene.search.join;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,23 +32,24 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class TestBlockJoin extends LuceneTestCase {
 
   // One resume...
   private Document makeResume(String name, String country) {
     Document resume = new Document();
-    resume.add(newField("docType", "resume", StringField.TYPE_UNSTORED));
-    resume.add(newField("name", name, StringField.TYPE_STORED));
-    resume.add(newField("country", country, StringField.TYPE_UNSTORED));
+    resume.add(newStringField("docType", "resume", Field.Store.NO));
+    resume.add(newStringField("name", name, Field.Store.YES));
+    resume.add(newStringField("country", country, Field.Store.NO));
     return resume;
   }
 
   // ... has multiple jobs
   private Document makeJob(String skill, int year) {
     Document job = new Document();
-    job.add(newField("skill", skill, StringField.TYPE_STORED));
-    job.add(new IntField("year", year));
+    job.add(newStringField("skill", skill, Field.Store.YES));
+    job.add(new IntField("year", year, Field.Store.NO));
     job.add(new StoredField("year", year));
     return job;
   }
@@ -56,8 +57,8 @@ public class TestBlockJoin extends LuceneTestCase {
   // ... has multiple qualifications
   private Document makeQualification(String qualification, int year) {
     Document job = new Document();
-    job.add(newField("qualification", qualification, StringField.TYPE_STORED));
-    job.add(new IntField("year", year));
+    job.add(newStringField("qualification", qualification, Field.Store.YES));
+    job.add(new IntField("year", year, Field.Store.NO));
     return job;
   }
 
@@ -96,18 +97,19 @@ public class TestBlockJoin extends LuceneTestCase {
 
     // Wrap the child document query to 'join' any matches
     // up to corresponding parent:
-    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
     // Combine the parent and nested child queries into a single query for a candidate
     BooleanQuery fullQuery = new BooleanQuery();
     fullQuery.add(new BooleanClause(parentQuery, Occur.MUST));
     fullQuery.add(new BooleanClause(childJoinQuery, Occur.MUST));
 
-    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 1, true, false);
+    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 1, true, true);
 
     s.search(fullQuery, c);
     
     TopGroups<Integer> results = c.getTopGroups(childJoinQuery, null, 0, 10, 0, true);
+    assertFalse(Float.isNaN(results.maxScore));
 
     //assertEquals(1, results.totalHitCount);
     assertEquals(1, results.totalGroupedHitCount);
@@ -115,6 +117,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     final GroupDocs<Integer> group = results.groups[0];
     assertEquals(1, group.totalHits);
+    assertFalse(Float.isNaN(group.score));
 
     Document childDoc = s.doc(group.scoreDocs[0].doc);
     //System.out.println("  doc=" + group.scoreDocs[0].doc);
@@ -198,7 +201,7 @@ public class TestBlockJoin extends LuceneTestCase {
       
     // Wrap the child document query to 'join' any matches
     // up to corresponding parent:
-    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
       
     assertEquals("no filter - both passed", 2, s.search(childJoinQuery, 10).totalHits);
 
@@ -245,9 +248,9 @@ public class TestBlockJoin extends LuceneTestCase {
   }
   
   private Document getParentDoc(IndexReader reader, Filter parents, int childDocID) throws IOException {
-    final AtomicReaderContext[] leaves = reader.getTopReaderContext().leaves();
+    final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
     final int subIndex = ReaderUtil.subIndex(childDocID, leaves);
-    final AtomicReaderContext leaf = leaves[subIndex];
+    final AtomicReaderContext leaf = leaves.get(subIndex);
     final FixedBitSet bits = (FixedBitSet) parents.getDocIdSet(leaf, null);
     return leaf.reader().document(bits.nextSetBit(childDocID - leaf.docBase));
   }
@@ -259,7 +262,7 @@ public class TestBlockJoin extends LuceneTestCase {
     w.close();
     IndexSearcher s = newSearcher(r);
     
-    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(new MatchAllDocsQuery(), new QueryWrapperFilter(new MatchAllDocsQuery()), ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(new MatchAllDocsQuery(), new QueryWrapperFilter(new MatchAllDocsQuery()), ScoreMode.Avg);
     s.search(q, 10);
     BooleanQuery bq = new BooleanQuery();
     bq.setBoost(2f); // we boost the BQ
@@ -339,23 +342,21 @@ public class TestBlockJoin extends LuceneTestCase {
     for(int parentDocID=0;parentDocID<numParentDocs;parentDocID++) {
       Document parentDoc = new Document();
       Document parentJoinDoc = new Document();
-      Field id = newField("parentID", ""+parentDocID, StringField.TYPE_STORED);
+      Field id = newStringField("parentID", ""+parentDocID, Field.Store.YES);
       parentDoc.add(id);
       parentJoinDoc.add(id);
-      parentJoinDoc.add(newField("isParent", "x", StringField.TYPE_UNSTORED));
+      parentJoinDoc.add(newStringField("isParent", "x", Field.Store.NO));
       for(int field=0;field<parentFields.length;field++) {
         if (random().nextDouble() < 0.9) {
-          Field f = newField("parent" + field,
-                             parentFields[field][random().nextInt(parentFields[field].length)],
-                             StringField.TYPE_UNSTORED);
+          Field f = newStringField("parent" + field, parentFields[field][random().nextInt(parentFields[field].length)], Field.Store.NO);
           parentDoc.add(f);
           parentJoinDoc.add(f);
         }
       }
 
       if (doDeletes) {
-        parentDoc.add(newField("blockID", ""+parentDocID, StringField.TYPE_UNSTORED));
-        parentJoinDoc.add(newField("blockID", ""+parentDocID, StringField.TYPE_UNSTORED));
+        parentDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
+        parentJoinDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
       }
 
       final List<Document> joinDocs = new ArrayList<Document>();
@@ -379,15 +380,13 @@ public class TestBlockJoin extends LuceneTestCase {
         Document joinChildDoc = new Document();
         joinDocs.add(joinChildDoc);
 
-        Field childID = newField("childID", ""+childDocID, StringField.TYPE_STORED);
+        Field childID = newStringField("childID", ""+childDocID, Field.Store.YES);
         childDoc.add(childID);
         joinChildDoc.add(childID);
 
         for(int childFieldID=0;childFieldID<childFields.length;childFieldID++) {
           if (random().nextDouble() < 0.9) {
-            Field f = newField("child" + childFieldID,
-                               childFields[childFieldID][random().nextInt(childFields[childFieldID].length)],
-                               StringField.TYPE_UNSTORED);
+            Field f = newStringField("child" + childFieldID, childFields[childFieldID][random().nextInt(childFields[childFieldID].length)], Field.Store.NO);
             childDoc.add(f);
             joinChildDoc.add(f);
           }
@@ -406,7 +405,7 @@ public class TestBlockJoin extends LuceneTestCase {
         }
 
         if (doDeletes) {
-          joinChildDoc.add(newField("blockID", ""+parentDocID, StringField.TYPE_UNSTORED));
+          joinChildDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
         }
 
         w.addDocument(childDoc);
@@ -493,15 +492,15 @@ public class TestBlockJoin extends LuceneTestCase {
       }
 
       final int x = random().nextInt(4);
-      final ToParentBlockJoinQuery.ScoreMode agg;
+      final ScoreMode agg;
       if (x == 0) {
-        agg = ToParentBlockJoinQuery.ScoreMode.None;
+        agg = ScoreMode.None;
       } else if (x == 1) {
-        agg = ToParentBlockJoinQuery.ScoreMode.Max;
+        agg = ScoreMode.Max;
       } else if (x == 2) {
-        agg = ToParentBlockJoinQuery.ScoreMode.Total;
+        agg = ScoreMode.Total;
       } else {
-        agg = ToParentBlockJoinQuery.ScoreMode.Avg;
+        agg = ScoreMode.Avg;
       }
 
       final ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, agg);
@@ -584,7 +583,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
       final boolean trackScores;
       final boolean trackMaxScore;
-      if (agg == ToParentBlockJoinQuery.ScoreMode.None) {
+      if (agg == ScoreMode.None) {
         trackScores = false;
         trackMaxScore = false;
       } else {
@@ -633,6 +632,15 @@ public class TestBlockJoin extends LuceneTestCase {
         assertNull(joinResults);
       } else {
         compareHits(r, joinR, results, joinResults);
+        TopDocs b = joinS.search(childJoinQuery, 10);
+        for (ScoreDoc hit : b.scoreDocs) {
+          Explanation explanation = joinS.explain(childJoinQuery, hit.doc);
+          Document document = joinS.doc(hit.doc - 1);
+          int childId = Integer.parseInt(document.get("childID"));
+          assertTrue(explanation.isMatch());
+          assertEquals(hit.score, explanation.getValue(), 0.0f);
+          assertEquals(String.format(Locale.ROOT, "Score based on child doc range from %d to %d", hit.doc - 1 - childId, hit.doc - 1), explanation.getDescription());
+        }
       }
 
       // Test joining in the opposite direction (parent to
@@ -881,8 +889,8 @@ public class TestBlockJoin extends LuceneTestCase {
 
     // Wrap the child document query to 'join' any matches
     // up to corresponding parent:
-    ToParentBlockJoinQuery childJobJoinQuery = new ToParentBlockJoinQuery(childJobQuery, parentsFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
-    ToParentBlockJoinQuery childQualificationJoinQuery = new ToParentBlockJoinQuery(childQualificationQuery, parentsFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery childJobJoinQuery = new ToParentBlockJoinQuery(childJobQuery, parentsFilter, ScoreMode.Avg);
+    ToParentBlockJoinQuery childQualificationJoinQuery = new ToParentBlockJoinQuery(childQualificationQuery, parentsFilter, ScoreMode.Avg);
 
     // Combine the parent and nested child queries into a single query for a candidate
     BooleanQuery fullQuery = new BooleanQuery();
@@ -940,9 +948,9 @@ public class TestBlockJoin extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document childDoc = new Document();
-    childDoc.add(newField("child", "1", StringField.TYPE_UNSTORED));
+    childDoc.add(newStringField("child", "1", Field.Store.NO));
     Document parentDoc = new Document();
-    parentDoc.add(newField("parent", "1", StringField.TYPE_UNSTORED));
+    parentDoc.add(newStringField("parent", "1", Field.Store.NO));
     w.addDocuments(Arrays.asList(childDoc, parentDoc));
     IndexReader r = w.getReader();
     w.close();
@@ -952,9 +960,9 @@ public class TestBlockJoin extends LuceneTestCase {
                             new QueryWrapperFilter(
                               new TermQuery(new Term("parent", "1"))));
 
-    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves()[0], true, true, null);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves().get(0), true, true, null);
     assertEquals(1, disi.advance(1));
     r.close();
     dir.close();
@@ -964,16 +972,16 @@ public class TestBlockJoin extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(new LogDocMergePolicy()));
     Document parentDoc = new Document();
-    parentDoc.add(newField("parent", "1", StringField.TYPE_UNSTORED));
-    parentDoc.add(newField("isparent", "yes", StringField.TYPE_UNSTORED));
+    parentDoc.add(newStringField("parent", "1", Field.Store.NO));
+    parentDoc.add(newStringField("isparent", "yes", Field.Store.NO));
     w.addDocuments(Arrays.asList(parentDoc));
 
     // Add another doc so scorer is not null
     parentDoc = new Document();
-    parentDoc.add(newField("parent", "2", StringField.TYPE_UNSTORED));
-    parentDoc.add(newField("isparent", "yes", StringField.TYPE_UNSTORED));
+    parentDoc.add(newStringField("parent", "2", Field.Store.NO));
+    parentDoc.add(newStringField("isparent", "yes", Field.Store.NO));
     Document childDoc = new Document();
-    childDoc.add(newField("child", "2", StringField.TYPE_UNSTORED));
+    childDoc.add(newStringField("child", "2", Field.Store.NO));
     w.addDocuments(Arrays.asList(childDoc, parentDoc));
 
     // Need single seg:
@@ -986,9 +994,9 @@ public class TestBlockJoin extends LuceneTestCase {
                             new QueryWrapperFilter(
                               new TermQuery(new Term("isparent", "yes"))));
 
-    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
+    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves()[0], true, true, null);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves().get(0), true, true, null);
     assertEquals(2, disi.advance(0));
     r.close();
     dir.close();

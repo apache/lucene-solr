@@ -11,7 +11,7 @@ import org.apache.lucene.facet.index.attributes.OrdinalProperty;
 import org.apache.lucene.facet.index.streaming.CategoryListTokenizer;
 import org.apache.lucene.util.encoding.SimpleIntEncoder;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -79,7 +79,9 @@ public class AssociationListTokenizer extends CategoryListTokenizer {
     }
     if (payloadStream != null) {
       termAttribute.setEmpty().append(categoryListTermText);
-      payload.setData(payloadStream.convertStreamToByteArray());
+      payload.bytes = payloadStream.convertStreamToByteArray();
+      payload.offset = 0;
+      payload.length = payload.bytes.length;
       payloadAttribute.setPayload(payload);
       payloadStream = null;
       return true;

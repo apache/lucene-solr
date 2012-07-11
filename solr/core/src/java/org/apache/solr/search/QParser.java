@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -300,15 +300,15 @@ public abstract class QParser {
   }
 
   /** Create a <code>QParser</code> to parse <code>qstr</code>,
-   * assuming that the default query type is <code>defaultType</code>.
-   * The query type may be overridden by local parameters in the query
-   * string itself.  For example if defaultType=<code>"dismax"</code>
+   * assuming that the default query parser is <code>defaultParser</code>.
+   * The query parser may be overridden by local parameters in the query
+   * string itself.  For example if defaultParser=<code>"dismax"</code>
    * and qstr=<code>foo</code>, then the dismax query parser will be used
    * to parse and construct the query object.  However
    * if qstr=<code>{!prefix f=myfield}foo</code>
    * then the prefix query parser will be used.
    */
-  public static QParser getParser(String qstr, String defaultType, SolrQueryRequest req) throws ParseException {
+  public static QParser getParser(String qstr, String defaultParser, SolrQueryRequest req) throws ParseException {
     // SolrParams localParams = QueryParsing.getLocalParams(qstr, req.getParams());
 
     String stringIncludingLocalParams = qstr;
@@ -335,18 +335,18 @@ public abstract class QParser {
     }
 
 
-    String type;
+    String parserName;
     
     if (localParams == null) {
-      type = defaultType;
+      parserName = defaultParser;
     } else {
-      type = localParams.get(QueryParsing.TYPE,defaultType);
+      parserName = localParams.get(QueryParsing.TYPE,defaultParser);
       qstr = localParams.get("v");
     }
 
-    type = type==null ? QParserPlugin.DEFAULT_QTYPE : type;
+    parserName = parserName==null ? QParserPlugin.DEFAULT_QTYPE : parserName;
 
-    QParserPlugin qplug = req.getCore().getQueryPlugin(type);
+    QParserPlugin qplug = req.getCore().getQueryPlugin(parserName);
     QParser parser =  qplug.createParser(qstr, localParams, req.getParams(), req);
 
     parser.stringIncludingLocalParams = stringIncludingLocalParams;

@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -25,7 +24,7 @@ import java.util.Iterator;
 import junit.framework.Assert;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -50,13 +49,13 @@ public class TestDocIdSet extends LuceneTestCase {
             }
             
             @Override
-            public int nextDoc() throws IOException {
+            public int nextDoc() {
               docid++;
               return docid < maxdoc ? docid : (docid = NO_MORE_DOCS);
             }
 
             @Override
-            public int advance(int target) throws IOException {
+            public int advance(int target) {
               while (nextDoc() < target) {}
               return docid;
             }
@@ -103,7 +102,7 @@ public class TestDocIdSet extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("c", "val", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("c", "val", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -115,7 +114,7 @@ public class TestDocIdSet extends LuceneTestCase {
     // Now search w/ a Filter which returns a null DocIdSet
     Filter f = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
         return null;
       }
     };
@@ -129,7 +128,7 @@ public class TestDocIdSet extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("c", "val", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("c", "val", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -141,7 +140,7 @@ public class TestDocIdSet extends LuceneTestCase {
       // Now search w/ a Filter which returns a null DocIdSet
     Filter f = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
         final DocIdSet innerNullIteratorSet = new DocIdSet() {
           @Override
           public DocIdSetIterator iterator() {

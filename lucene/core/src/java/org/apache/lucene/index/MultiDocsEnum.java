@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.ReaderUtil;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -42,7 +42,7 @@ public final class MultiDocsEnum extends DocsEnum {
     subDocsEnum = new DocsEnum[subReaderCount];
   }
 
-  MultiDocsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {
+  MultiDocsEnum reset(final EnumWithSlice[] subs, final int numSubs) {
     this.numSubs = numSubs;
 
     this.subs = new EnumWithSlice[subs.length];
@@ -123,7 +123,7 @@ public final class MultiDocsEnum extends DocsEnum {
   // TODO: implement bulk read more efficiently than super
   public final static class EnumWithSlice {
     public DocsEnum docsEnum;
-    public ReaderUtil.Slice slice;
+    public ReaderSlice slice;
     
     @Override
     public String toString() {

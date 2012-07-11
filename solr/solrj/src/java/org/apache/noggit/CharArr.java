@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -198,7 +198,7 @@ public class CharArr implements CharSequence, Appendable {
     return null;
   }
 
-  public final Appendable append(char c) throws IOException {
+  public final Appendable append(char c) {
     write(c);
     return this;
   }

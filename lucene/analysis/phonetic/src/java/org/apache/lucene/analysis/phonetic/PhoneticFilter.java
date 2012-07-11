@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,9 +27,8 @@ import java.io.IOException;
 
 /**
  * Create tokens for phonetic matches.
- * @see <a href="
- * http://commons.apache.org/codec/api-release/org/apache/commons/codec/language/package-summary.html
- * ">Apache Commons Codec</a>
+ * @see <a href="http://commons.apache.org/codec/api-release/org/apache/commons/codec/language/package-summary.html">
+ * Apache Commons Codec</a>
  */
 public final class PhoneticFilter extends TokenFilter 
 {

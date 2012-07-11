@@ -1,6 +1,6 @@
 package org.apache.solr.common.cloud;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,6 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.List;
 
 import org.apache.zookeeper.CreateMode;
@@ -51,10 +50,13 @@ public class ZkCmdExecutor {
     this.retryDelay = retryDelay;
   }
   
+
   /**
    * Perform the given operation, retrying if the connection fails
    * 
-   * @throws IOException 
+   * @param operation
+   * @throws KeeperException
+   * @throws InterruptedException
    */
   @SuppressWarnings("unchecked")
   public <T> T retryOperation(ZkOperation operation)

@@ -717,8 +717,8 @@ public final class MoreLikeThis {
       if (vector == null) {
         Document d = ir.document(docNum);
         IndexableField fields[] = d.getFields(fieldName);
-        for (int j = 0; j < fields.length; j++) {
-          final String stringValue = fields[j].stringValue();
+        for (IndexableField field : fields) {
+          final String stringValue = field.stringValue();
           if (stringValue != null) {
             addTermFrequencies(new StringReader(stringValue), termFreqMap, fieldName);
           }

@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -245,7 +245,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   
   @Override
   public MergeSpecification findForcedDeletesMerges(SegmentInfos infos)
-    throws CorruptIndexException, IOException {
+    throws IOException {
     final int numSegs = infos.size();
     final int numLargeSegs = (numSegs < _numLargeSegments ? numSegs : _numLargeSegments);
     MergeSpecification spec = null;
@@ -335,7 +335,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
     }      
   }
   
-  private OneMerge findOneSegmentToExpunge(SegmentInfos infos, int maxNumSegments) throws IOException {
+  private OneMerge findOneSegmentToExpunge(SegmentInfos infos, int maxNumSegments) {
     int expungeCandidate = -1;
     int maxDelCount = 0;
     

@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.byTask.feeds;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -108,7 +108,7 @@ public class TrecContentSource extends ContentSource {
       dfi = new DateFormatInfo();
       dfi.dfs = new SimpleDateFormat[DATE_FORMATS.length];
       for (int i = 0; i < dfi.dfs.length; i++) {
-        dfi.dfs[i] = new SimpleDateFormat(DATE_FORMATS[i], Locale.US);
+        dfi.dfs[i] = new SimpleDateFormat(DATE_FORMATS[i], Locale.ROOT);
         dfi.dfs[i].setLenient(true);
       }
       dfi.pos = new ParsePosition(0);

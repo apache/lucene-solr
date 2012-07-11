@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 
@@ -107,14 +106,6 @@ public final class SegmentInfo {
   }
 
   /**
-   * @deprecated separate norms are not supported in >= 4.0
-   */
-  @Deprecated
-  boolean hasSeparateNorms() {
-    return getAttribute(Lucene3xSegmentInfoFormat.NORMGEN_KEY) != null;
-  }
-
-  /**
    * Mark whether this segment is stored as a compound file.
    *
    * @param isCompoundFile true if this is a compound file;
@@ -166,7 +157,7 @@ public final class SegmentInfo {
    * modify it.
    */
 
-  public Set<String> files() throws IOException {
+  public Set<String> files() {
     if (setFiles == null) {
       throw new IllegalStateException("files were not computed yet");
     }

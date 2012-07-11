@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -229,7 +229,7 @@ public class FastInputStream extends InputStream implements DataInput {
   }
 
   public String readLine() throws IOException {
-    return new DataInputStream(this).readLine();
+    throw new UnsupportedOperationException();
   }
 
   public String readUTF() throws IOException {

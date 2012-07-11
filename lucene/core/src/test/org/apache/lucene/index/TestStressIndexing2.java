@@ -267,21 +267,21 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
   
   public void verifyEquals(Random r, DirectoryReader r1, Directory dir2, String idField) throws Throwable {
-    DirectoryReader r2 = IndexReader.open(dir2);
+    DirectoryReader r2 = DirectoryReader.open(dir2);
     verifyEquals(r1, r2, idField);
     r2.close();
   }
 
   public void verifyEquals(Directory dir1, Directory dir2, String idField) throws Throwable {
-    DirectoryReader r1 = IndexReader.open(dir1);
-    DirectoryReader r2 = IndexReader.open(dir2);
+    DirectoryReader r1 = DirectoryReader.open(dir1);
+    DirectoryReader r2 = DirectoryReader.open(dir2);
     verifyEquals(r1, r2, idField);
     r1.close();
     r2.close();
   }
 
   private static void printDocs(DirectoryReader r) throws Throwable {
-    IndexReader[] subs = r.getSequentialSubReaders();
+    List<? extends AtomicReader> subs = r.getSequentialSubReaders();
     for(IndexReader sub : subs) {
       // TODO: improve this
       Bits liveDocs = ((AtomicReader)sub).getLiveDocs();

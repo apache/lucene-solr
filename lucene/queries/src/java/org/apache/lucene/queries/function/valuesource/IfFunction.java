@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,9 +31,9 @@ import java.util.Map;
 
 
 public class IfFunction extends BoolFunction {
-  private ValueSource ifSource;
-  private ValueSource trueSource;
-  private ValueSource falseSource;
+  private final ValueSource ifSource;
+  private final ValueSource trueSource;
+  private final ValueSource falseSource;
 
 
   public IfFunction(ValueSource ifSource, ValueSource trueSource, ValueSource falseSource) {

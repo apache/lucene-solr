@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,6 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Attribute;
@@ -183,7 +182,7 @@ public class TestToken extends LuceneTestCase {
     assertEquals(t.toString(), copy.toString());
     assertNotSame(buf, copy.buffer());
 
-    Payload pl = new Payload(new byte[]{1,2,3,4});
+    BytesRef pl = new BytesRef(new byte[]{1,2,3,4});
     t.setPayload(pl);
     copy = assertCloneIsEqual(t);
     assertEquals(pl, copy.getPayload());
@@ -204,7 +203,7 @@ public class TestToken extends LuceneTestCase {
     assertEquals(t.toString(), copy.toString());
     assertNotSame(buf, copy.buffer());
 
-    Payload pl = new Payload(new byte[]{1,2,3,4});
+    BytesRef pl = new BytesRef(new byte[]{1,2,3,4});
     t.setPayload(pl);
     copy = assertCopyIsEqual(t);
     assertEquals(pl, copy.getPayload());

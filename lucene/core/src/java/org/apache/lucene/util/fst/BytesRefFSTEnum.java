@@ -1,6 +1,6 @@
 package org.apache.lucene.util.fst;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.lucene.util.fst;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /** Enumerates all input (BytesRef) + output pairs in an
@@ -110,7 +111,7 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
 
   @Override
   protected void grow() {
-    current.grow(upto+1);
+    current.bytes = ArrayUtil.grow(current.bytes, upto+1);
   }
 
   private InputOutput<T> setResult() {

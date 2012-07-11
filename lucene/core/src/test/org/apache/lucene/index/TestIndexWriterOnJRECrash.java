@@ -65,9 +65,12 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
           return;
       }
     } else {
+      // note: re-enable this if we create a 4.x impersonator,
+      // and if its format is actually different than the real 4.x (unlikely)
       // TODO: the non-fork code could simply enable impersonation?
-      assumeFalse("does not support PreFlex, see LUCENE-3992", 
-          Codec.getDefault().getName().equals("Lucene3x"));
+      // assumeFalse("does not support PreFlex, see LUCENE-3992", 
+      //    Codec.getDefault().getName().equals("Lucene4x"));
+      
       // we are the fork, setup a crashing thread
       final int crashTime = _TestUtil.nextInt(random(), 3000, 4000);
       Thread t = new Thread() {

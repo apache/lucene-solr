@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.phonetic;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -62,9 +62,13 @@ public final class BeiderMorseFilter extends TokenFilter {
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
-  /** 
-   * Calls {@link #BeiderMorseFilter(TokenStream, PhoneticEngine, Languages.LanguageSet)
-   *        BeiderMorseFilter(input, engine, null)}
+  
+  /**
+   * Calls
+   * {@link #BeiderMorseFilter(TokenStream, PhoneticEngine, org.apache.commons.codec.language.bm.Languages.LanguageSet)}
+   * 
+   * @param input
+   * @param engine
    */
   public BeiderMorseFilter(TokenStream input, PhoneticEngine engine) {
     this(input, engine, null);

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,6 +25,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -51,6 +52,7 @@ import org.junit.Before;
  *   </li>
  * </ul>
  */
+@Slow
 public class SoftAutoCommitTest extends AbstractSolrTestCase {
 
   @Override

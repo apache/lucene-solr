@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -209,7 +209,7 @@ public class StrUtils {
   public static List<String> toLower(List<String> strings) {
     ArrayList<String> ret = new ArrayList<String>(strings.size());
     for (String str : strings) {
-      ret.add(str.toLowerCase(Locale.ENGLISH));
+      ret.add(str.toLowerCase(Locale.ROOT));
     }
     return ret;
   }

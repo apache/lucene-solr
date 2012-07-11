@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.core;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -158,7 +158,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       // TODO: doesn't handle graph inputs
       CJKBigramFilter.class,
       // TODO: doesn't handle graph inputs (or even look at positionIncrement)
-      HyphenatedWordsFilter.class
+      HyphenatedWordsFilter.class,
+      // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
+      TypeTokenFilter.class
     );
   }
   
@@ -222,7 +224,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
   
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     tokenizers = null;
     tokenfilters = null;
     charfilters = null;
@@ -609,7 +611,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
 
     @Override
-    protected Reader initReader(Reader reader) {
+    protected Reader initReader(String fieldName, Reader reader) {
       Random random = new Random(seed);
       CharFilterSpec charfilterspec = newCharFilterChain(random, reader);
       return charfilterspec.reader;

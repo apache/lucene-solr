@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 
@@ -223,11 +223,11 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   private void addDoc(IndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("content", "aaa", Field.Store.NO));
     writer.addDocument(doc);
   }
 
-  private void checkInvariants(IndexWriter writer) throws IOException {
+  private void checkInvariants(IndexWriter writer) {
     writer.waitForMerges();
     int maxBufferedDocs = writer.getConfig().getMaxBufferedDocs();
     int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();

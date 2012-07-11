@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -39,7 +38,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    lineDocFile = new LineFileDocs(random(), defaultCodecSupportsDocValues());
+    lineDocFile = new LineFileDocs(random(), true);
   }
   
   @AfterClass
@@ -48,22 +47,19 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     lineDocFile = null;
   }
 
-  public void testFlushByRam() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InterruptedException {
+  public void testFlushByRam() throws IOException, InterruptedException {
     final double ramBuffer = (TEST_NIGHTLY ? 1 : 10) + atLeast(2)
         + random().nextDouble();
     runFlushByRam(1 + random().nextInt(TEST_NIGHTLY ? 5 : 1), ramBuffer, false);
   }
   
-  public void testFlushByRamLargeBuffer() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InterruptedException {
+  public void testFlushByRamLargeBuffer() throws IOException, InterruptedException {
     // with a 256 mb ram buffer we should never stall
     runFlushByRam(1 + random().nextInt(TEST_NIGHTLY ? 5 : 1), 256.d, true);
   }
 
   protected void runFlushByRam(int numThreads, double maxRamMB,
-      boolean ensureNotStalled) throws IOException, CorruptIndexException,
-      LockObtainFailedException, InterruptedException {
+      boolean ensureNotStalled) throws IOException, InterruptedException {
     final int numDocumentsToIndex = 10 + atLeast(30);
     AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
     Directory dir = newDirectory();
@@ -78,6 +74,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     IndexWriter writer = new IndexWriter(dir, iwc);
+    flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
     assertFalse(flushPolicy.flushOnDocCount());
     assertFalse(flushPolicy.flushOnDeleteTerms());
     assertTrue(flushPolicy.flushOnRAM());
@@ -108,15 +105,14 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       assertTrue(maxRAMBytes < flushControl.peakActiveBytes);
     }
     if (ensureNotStalled) {
-      assertFalse(docsWriter.flushControl.stallControl.wasStalled);
+      assertFalse(docsWriter.flushControl.stallControl.wasStalled());
     }
     writer.close();
     assertEquals(0, flushControl.activeBytes());
     dir.close();
   }
 
-  public void testFlushDocCount() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InterruptedException {
+  public void testFlushDocCount() throws IOException, InterruptedException {
     int[] numThreads = new int[] { 2 + atLeast(1), 1 };
     for (int i = 0; i < numThreads.length; i++) {
 
@@ -135,6 +131,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       iwc.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       IndexWriter writer = new IndexWriter(dir, iwc);
+      flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
       assertTrue(flushPolicy.flushOnDocCount());
       assertFalse(flushPolicy.flushOnDeleteTerms());
       assertFalse(flushPolicy.flushOnRAM());
@@ -183,6 +180,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     iwc.setIndexerThreadPool(threadPool);
 
     IndexWriter writer = new IndexWriter(dir, iwc);
+    flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
     DocumentsWriter docsWriter = writer.getDocsWriter();
     assertNotNull(docsWriter);
     DocumentsWriterFlushControl flushControl = docsWriter.flushControl;
@@ -215,11 +213,11 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     assertActiveBytesAfter(flushControl);
     writer.commit();
     assertEquals(0, flushControl.activeBytes());
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     assertEquals(numDocumentsToIndex, r.numDocs());
     assertEquals(numDocumentsToIndex, r.maxDoc());
     if (!flushPolicy.flushOnRAM()) {
-      assertFalse("never stall if we don't flush on RAM", docsWriter.flushControl.stallControl.wasStalled);
+      assertFalse("never stall if we don't flush on RAM", docsWriter.flushControl.stallControl.wasStalled());
       assertFalse("never block if we don't flush on RAM", docsWriter.flushControl.stallControl.hasBlocked());
     }
     r.close();
@@ -227,8 +225,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     dir.close();
   }
 
-  public void testStallControl() throws InterruptedException,
-      CorruptIndexException, LockObtainFailedException, IOException {
+  public void testStallControl() throws InterruptedException, IOException {
 
     int[] numThreads = new int[] { 4 + random().nextInt(8), 1 };
     final int numDocumentsToIndex = 50 + random().nextInt(50);
@@ -272,7 +269,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
             docsWriter.flushControl.stallControl.hasBlocked());
       }
       if (docsWriter.flushControl.peakNetBytes > (2.d * iwc.getRAMBufferSizeMB() * 1024.d * 1024.d)) {
-        assertTrue(docsWriter.flushControl.stallControl.wasStalled);
+        assertTrue(docsWriter.flushControl.stallControl.wasStalled());
       }
       assertActiveBytesAfter(flushControl);
       writer.close(true);
@@ -291,7 +288,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   public class IndexThread extends Thread {
     IndexWriter writer;
-    IndexWriterConfig iwc;
+    LiveIndexWriterConfig iwc;
     LineFileDocs docs;
     private AtomicInteger pendingDocs;
     private final boolean doRandomCommit;

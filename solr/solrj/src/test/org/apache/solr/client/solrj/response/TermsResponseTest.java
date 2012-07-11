@@ -1,5 +1,5 @@
 package org.apache.solr.client.solrj.response;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -57,7 +57,7 @@ public class TermsResponseTest extends SolrJettyTestBase {
     getSolrServer().commit(true, true);
 
     SolrQuery query = new SolrQuery();
-    query.setQueryType("/terms");
+    query.setRequestHandler("/terms");
     query.setTerms(true);
     query.setTermsLimit(5);
     query.setTermsLower("s");

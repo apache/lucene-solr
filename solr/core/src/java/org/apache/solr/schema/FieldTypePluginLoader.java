@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -135,10 +135,10 @@ public final class FieldTypePluginLoader
     return fieldTypes.put( name, plugin );
   }
 
-  // The point here is that, if no multitermanalyzer was specified in the schema file, do one of several things:
+  // The point here is that, if no multiterm analyzer was specified in the schema file, do one of several things:
   // 1> If legacyMultiTerm == false, assemble a new analyzer composed of all of the charfilters,
   //    lowercase filters and asciifoldingfilter.
-  // 2> If letacyMultiTerm == true just construct the analyzer from a KeywordTokenizer. That should mimic current behavior.
+  // 2> If legacyMultiTerm == true just construct the analyzer from a KeywordTokenizer. That should mimic current behavior.
   //    Do the same if they've specified that the old behavior is required (legacyMultiTerm="true")
 
   private Analyzer constructMultiTermAnalyzer(Analyzer queryAnalyzer) {

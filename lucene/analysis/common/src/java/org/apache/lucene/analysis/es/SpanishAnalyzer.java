@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.es;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -34,17 +34,9 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
-import org.tartarus.snowball.ext.SpanishStemmer;
 
 /**
  * {@link Analyzer} for Spanish.
- * <p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating SpanishAnalyzer:
- * <ul>
- *   <li> As of 3.6, SpanishLightStemFilter is used for less aggressive stemming.
- * </ul>
  */
 public final class SpanishAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -132,11 +124,7 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new KeywordMarkerFilter(result, stemExclusionSet);
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-      result = new SpanishLightStemFilter(result);
-    } else {
-      result = new SnowballFilter(result, new SpanishStemmer());
-    }
+    result = new SpanishLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
 }

@@ -8,9 +8,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -35,7 +33,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -54,7 +52,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 public class FacetTestUtils {
 
-  public static Directory[][] createIndexTaxonomyDirs(int number) throws IOException {
+  public static Directory[][] createIndexTaxonomyDirs(int number) {
     Directory[][] dirs = new Directory[number][2];
     for (int i = 0; i < number; i++) {
       dirs[i][0] = LuceneTestCase.newDirectory();
@@ -68,7 +66,7 @@ public class FacetTestUtils {
     IndexTaxonomyReaderPair[] pairs = new IndexTaxonomyReaderPair[dirs.length];
     for (int i = 0; i < dirs.length; i++) {
       IndexTaxonomyReaderPair pair = new IndexTaxonomyReaderPair();
-      pair.indexReader = IndexReader.open(dirs[i][0]);
+      pair.indexReader = DirectoryReader.open(dirs[i][0]);
       pair.indexSearcher = new IndexSearcher(pair.indexReader);
       pair.taxReader = new DirectoryTaxonomyReader(dirs[i][1]);
       pairs[i] = pair;
@@ -94,8 +92,7 @@ public class FacetTestUtils {
 
   public static Collector[] search(IndexSearcher searcher,
       TaxonomyReader taxonomyReader, DefaultFacetIndexingParams iParams,
-      int k, String... facetNames) throws IOException,
-      IllegalAccessException, InstantiationException {
+      int k, String... facetNames) throws IOException {
     
     Collector[] collectors = new Collector[2];
     
@@ -122,14 +119,13 @@ public class FacetTestUtils {
   }
   
   public static void add(FacetIndexingParams iParams, RandomIndexWriter iw,
-      TaxonomyWriter tw, String... strings) throws IOException,
-      CorruptIndexException {
+      TaxonomyWriter tw, String... strings) throws IOException {
     ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();
     CategoryPath cp = new CategoryPath(strings);
     cps.add(cp);
     Document d = new Document();
     new CategoryDocumentBuilder(tw, iParams).setCategoryPaths(cps).build(d);
-    d.add(new Field("content", "alpha", TextField.TYPE_STORED));
+    d.add(new TextField("content", "alpha", Field.Store.YES));
     iw.addDocument(d);
   }
 

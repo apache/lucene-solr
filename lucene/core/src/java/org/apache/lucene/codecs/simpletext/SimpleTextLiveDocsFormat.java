@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.simpletext;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -99,7 +99,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     }
   }
   
-  private int parseIntAt(BytesRef bytes, int offset, CharsRef scratch) throws IOException {
+  private int parseIntAt(BytesRef bytes, int offset, CharsRef scratch) {
     UnicodeUtil.UTF8toUTF16(bytes.bytes, bytes.offset+offset, bytes.length-offset, scratch);
     return ArrayUtil.parseInt(scratch.chars, 0, scratch.length);
   }

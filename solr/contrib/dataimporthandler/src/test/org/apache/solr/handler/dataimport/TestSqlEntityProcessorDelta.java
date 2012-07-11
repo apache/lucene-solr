@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,7 +69,7 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
   }
   
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {

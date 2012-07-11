@@ -1,5 +1,5 @@
 package org.apache.lucene.search.payloads;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,11 +21,10 @@ import java.io.Reader;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Norm;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
@@ -36,7 +35,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -80,9 +78,9 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       boolean result = false;
       if (input.incrementToken()) {
         if (numSeen % 2 == 0) {
-          payAtt.setPayload(new Payload(payload2));
+          payAtt.setPayload(new BytesRef(payload2));
         } else {
-          payAtt.setPayload(new Payload(payload4));
+          payAtt.setPayload(new BytesRef(payload4));
         }
         numSeen++;
         result = true;
@@ -115,9 +113,9 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(newField("field", English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(newTextField("field", English.intToEnglish(i), Field.Store.YES));
       String txt = English.intToEnglish(i) +' '+English.intToEnglish(i+1);
-      doc.add(newField("field2",  txt, TextField.TYPE_STORED));
+      doc.add(newTextField("field2", txt, Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

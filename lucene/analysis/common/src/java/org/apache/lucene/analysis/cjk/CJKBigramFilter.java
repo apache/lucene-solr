@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.cjk;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -205,7 +205,7 @@ public final class CJKBigramFilter extends TokenFilter {
   /**
    * refills buffers with new data from the current token.
    */
-  private void refill() throws IOException {
+  private void refill() {
     // compact buffers to keep them smallish if they become large
     // just a safety check, but technically we only need the last codepoint
     if (bufferLen > 64) {

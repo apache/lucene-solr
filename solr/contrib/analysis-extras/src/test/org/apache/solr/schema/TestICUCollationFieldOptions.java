@@ -1,6 +1,6 @@
 package org.apache.solr.schema;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,14 +17,12 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 /**
  * Tests expert options of {@link ICUCollationField}.
  */
-@SuppressCodecs("Lucene3x")
 public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

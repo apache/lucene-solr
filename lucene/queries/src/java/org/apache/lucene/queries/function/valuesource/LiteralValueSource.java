@@ -1,5 +1,5 @@
 package org.apache.lucene.queries.function.valuesource;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -78,9 +78,8 @@ public class LiteralValueSource extends ValueSource {
 
     LiteralValueSource that = (LiteralValueSource) o;
 
-    if (!string.equals(that.string)) return false;
+    return string.equals(that.string);
 
-    return true;
   }
 
   public static final int hash = LiteralValueSource.class.hashCode();

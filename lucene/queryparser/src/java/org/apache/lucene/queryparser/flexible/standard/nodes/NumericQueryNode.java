@@ -1,6 +1,6 @@
 package org.apache.lucene.queryparser.flexible.standard.nodes;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -90,8 +90,8 @@ public class NumericQueryNode extends QueryNodeImpl implements
    * @return the value converte to {@link String} and escaped
    */
   protected CharSequence getTermEscaped(EscapeQuerySyntax escaper) {
-    return escaper.escape(NumberFormat.getNumberInstance().format(this.value),
-        Locale.ENGLISH, Type.NORMAL);
+    return escaper.escape(numberFormat.format(this.value),
+        Locale.ROOT, Type.NORMAL);
   }
   
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {

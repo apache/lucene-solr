@@ -18,19 +18,28 @@ package org.apache.lucene.search.grouping;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,28 +60,28 @@ public class GroupingSearchTest extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseIDV = true;
     List<Document> documents = new ArrayList<Document>();
     // 0
     Document doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
-    doc.add(new Field("content", "random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random text", Field.Store.YES));
     doc.add(new Field("id", "1", customType));
     documents.add(doc);
 
     // 1
     doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
-    doc.add(new Field("content", "some more random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some more random text", Field.Store.YES));
     doc.add(new Field("id", "2", customType));
     documents.add(doc);
 
     // 2
     doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
-    doc.add(new Field("content", "some more random textual data", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some more random textual data", Field.Store.YES));
     doc.add(new Field("id", "3", customType));
-    doc.add(new Field("groupend", "x", StringField.TYPE_UNSTORED));
+    doc.add(new StringField("groupend", "x", Field.Store.NO));
     documents.add(doc);
     w.addDocuments(documents);
     documents.clear();
@@ -80,33 +89,33 @@ public class GroupingSearchTest extends LuceneTestCase {
     // 3
     doc = new Document();
     addGroupField(doc, groupField, "author2", canUseIDV);
-    doc.add(new Field("content", "some random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some random text", Field.Store.YES));
     doc.add(new Field("id", "4", customType));
-    doc.add(new Field("groupend", "x", StringField.TYPE_UNSTORED));
+    doc.add(new StringField("groupend", "x", Field.Store.NO));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
     addGroupField(doc, groupField, "author3", canUseIDV);
-    doc.add(new Field("content", "some more random text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "some more random text", Field.Store.YES));
     doc.add(new Field("id", "5", customType));
     documents.add(doc);
 
     // 5
     doc = new Document();
     addGroupField(doc, groupField, "author3", canUseIDV);
-    doc.add(new Field("content", "random", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random", Field.Store.YES));
     doc.add(new Field("id", "6", customType));
-    doc.add(new Field("groupend", "x", StringField.TYPE_UNSTORED));
+    doc.add(new StringField("groupend", "x", Field.Store.NO));
     documents.add(doc);
     w.addDocuments(documents);
     documents.clear();
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(new Field("content", "random word stuck in alot of other text", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.YES));
     doc.add(new Field("id", "6", customType));
-    doc.add(new Field("groupend", "x", StringField.TYPE_UNSTORED));
+    doc.add(new StringField("groupend", "x", Field.Store.NO));
 
     w.addDocument(doc);
 
@@ -166,7 +175,7 @@ public class GroupingSearchTest extends LuceneTestCase {
   }
 
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
-    doc.add(new Field(groupField, value, TextField.TYPE_STORED));
+    doc.add(new TextField(groupField, value, Field.Store.YES));
     if (canUseIDV) {
       doc.add(new SortedBytesDocValuesField(groupField, new BytesRef(value)));
     }
@@ -195,7 +204,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     }
   }
 
-  private GroupingSearch createRandomGroupingSearch(String groupField, Sort groupSort, int docsInGroup, boolean canUseIDV) throws IOException {
+  private GroupingSearch createRandomGroupingSearch(String groupField, Sort groupSort, int docsInGroup, boolean canUseIDV) {
     GroupingSearch groupingSearch;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);

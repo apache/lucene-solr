@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -50,9 +50,9 @@ import org.apache.lucene.util.SetOnce;
  * @see DocumentsWriterPerThread
  * @see IndexWriterConfig#setFlushPolicy(FlushPolicy)
  */
-abstract class FlushPolicy {
-  protected final SetOnce<DocumentsWriter> writer = new SetOnce<DocumentsWriter>();
-  protected IndexWriterConfig indexWriterConfig;
+abstract class FlushPolicy implements Cloneable {
+  protected SetOnce<DocumentsWriter> writer = new SetOnce<DocumentsWriter>();
+  protected LiveIndexWriterConfig indexWriterConfig;
 
   /**
    * Called for each delete term. If this is a delete triggered due to an update
@@ -132,4 +132,17 @@ abstract class FlushPolicy {
     return true;
   }
 
+  @Override
+  public FlushPolicy clone() {
+    FlushPolicy clone;
+    try {
+      clone = (FlushPolicy) super.clone();
+    } catch (CloneNotSupportedException e) {
+      // should not happen
+      throw new RuntimeException(e);
+    }
+    clone.writer = new SetOnce<DocumentsWriter>();
+    clone.indexWriterConfig = null;
+    return clone;
+  }
 }

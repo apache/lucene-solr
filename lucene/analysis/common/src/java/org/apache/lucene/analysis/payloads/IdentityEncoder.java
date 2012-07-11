@@ -1,5 +1,5 @@
 package org.apache.lucene.analysis.payloads;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,11 +16,11 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Payload;
-
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+
+import org.apache.lucene.util.BytesRef;
 
 
 /**
@@ -37,15 +37,15 @@ public class IdentityEncoder extends AbstractEncoder implements PayloadEncoder{
     this.charset = charset;
   }
 
-  public Payload encode(char[] buffer, int offset, int length) {
+  public BytesRef encode(char[] buffer, int offset, int length) {
     final ByteBuffer bb = charset.encode(CharBuffer.wrap(buffer, offset, length));
     if (bb.hasArray()) {
-      return new Payload(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining());
+      return new BytesRef(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining());
     } else {
       // normally it should always have an array, but who knows?
       final byte[] b = new byte[bb.remaining()];
       bb.get(b);
-      return new Payload(b);
+      return new BytesRef(b);
     }
   }
 }

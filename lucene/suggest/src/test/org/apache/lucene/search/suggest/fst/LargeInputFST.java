@@ -1,6 +1,6 @@
 package org.apache.lucene.search.suggest.fst;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -56,5 +56,6 @@ public class LargeInputFST {
     File fstFile = new File("completion.fst");
     System.out.println("Done. Writing automaton: " + fstFile.getAbsolutePath());
     completion.getFST().save(fstFile);
+    sorter.close();
   }
 }

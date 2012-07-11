@@ -1,7 +1,7 @@
 package org.apache.lucene.search.suggest;
 
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -47,7 +47,7 @@ final class Average
 
     public String toString()
     {
-        return String.format(Locale.ENGLISH, "%.0f [+- %.2f]", 
+        return String.format(Locale.ROOT, "%.0f [+- %.2f]", 
             avg, stddev);
     }
 

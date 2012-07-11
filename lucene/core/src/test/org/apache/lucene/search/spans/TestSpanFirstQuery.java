@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spans;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -43,10 +44,10 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, analyzer);
     Document doc = new Document();
-    doc.add(newField("field", "the quick brown fox", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "the quick brown fox", Field.Store.NO));
     writer.addDocument(doc);
     Document doc2 = new Document();
-    doc2.add(newField("field", "quick brown fox", TextField.TYPE_UNSTORED));
+    doc2.add(newTextField("field", "quick brown fox", Field.Store.NO));
     writer.addDocument(doc2);
     
     IndexReader reader = writer.getReader();
@@ -75,10 +76,10 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, analyzer);
     Document doc = new Document();
-    doc.add(newField("field", "the quick brown fox", TextField.TYPE_UNSTORED));
+    doc.add(newField("field", "the quick brown fox", TextField.TYPE_NOT_STORED));
     writer.addDocument(doc);
     Document doc2 = new Document();
-    doc2.add(newField("field", "quick brown fox", TextField.TYPE_UNSTORED));
+    doc2.add(newField("field", "quick brown fox", TextField.TYPE_NOT_STORED));
     writer.addDocument(doc2);
     
     IndexReader reader = writer.getReader();

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -68,19 +68,17 @@ public class SolrIndexConfig {
   @SuppressWarnings("deprecation")
   private SolrIndexConfig(SolrConfig solrConfig) {
     luceneVersion = solrConfig.luceneMatchVersion;
-    useCompoundFile = luceneVersion.onOrAfter(Version.LUCENE_36) ? false : true;
+    useCompoundFile = false;
     maxBufferedDocs = -1;
     maxMergeDocs = -1;
     mergeFactor = -1;
-    ramBufferSizeMB = luceneVersion.onOrAfter(Version.LUCENE_36) ? 32 : 16;
+    ramBufferSizeMB = 32;
     writeLockTimeout = -1;
-    lockType = luceneVersion.onOrAfter(Version.LUCENE_36) ? 
-               LOCK_TYPE_NATIVE : 
-               LOCK_TYPE_SIMPLE;
+    lockType = LOCK_TYPE_NATIVE;
     termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
     mergePolicyInfo = null;
     mergeSchedulerInfo = null;
-    defaultMergePolicyClassName = luceneVersion.onOrAfter(Version.LUCENE_33) ? TieredMergePolicy.class.getName() : LogByteSizeMergePolicy.class.getName();
+    defaultMergePolicyClassName = TieredMergePolicy.class.getName();
   }
   
   /**
@@ -106,13 +104,13 @@ public class SolrIndexConfig {
     // Warn for luceneMatchVersion's before LUCENE_36, fail fast above
     assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
         !((solrConfig.get(prefix+"/mergeScheduler/text()",null) != null) && (solrConfig.get(prefix+"/mergeScheduler/@class",null) == null)),
-        luceneVersion.onOrAfter(Version.LUCENE_36));
+        true);
     assertWarnOrFail("The <mergePolicy>myclass</mergePolicy> syntax is no longer supported in solrconfig.xml. Please use syntax <mergePolicy class=\"myclass\"/> instead.",
         !((solrConfig.get(prefix+"/mergePolicy/text()",null) != null) && (solrConfig.get(prefix+"/mergePolicy/@class",null) == null)),
-        luceneVersion.onOrAfter(Version.LUCENE_36));
+        true);
     assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
         solrConfig.get(prefix+"/luceneAutoCommit", null) == null,
-        luceneVersion.onOrAfter(Version.LUCENE_36));
+        true);
 
     defaultMergePolicyClassName = def.defaultMergePolicyClassName;
     useCompoundFile=solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
@@ -157,7 +155,11 @@ public class SolrIndexConfig {
   }
 
   public IndexWriterConfig toIndexWriterConfig(IndexSchema schema) {
-    IndexWriterConfig iwc = new IndexWriterConfig(luceneVersion, schema.getAnalyzer());
+    // so that we can update the analyzer on core reload, we pass null
+    // for the default analyzer, and explicitly pass an analyzer on 
+    // appropriate calls to IndexWriter
+    
+    IndexWriterConfig iwc = new IndexWriterConfig(luceneVersion, null);
     if (maxBufferedDocs != -1)
       iwc.setMaxBufferedDocs(maxBufferedDocs);
 

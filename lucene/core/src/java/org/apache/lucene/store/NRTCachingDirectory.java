@@ -1,6 +1,6 @@
 package org.apache.lucene.store;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -82,6 +82,10 @@ public class NRTCachingDirectory extends Directory {
     this.delegate = delegate;
     maxMergeSizeBytes = (long) (maxMergeSizeMB*1024*1024);
     maxCachedBytes = (long) (maxCachedMB*1024*1024);
+  }
+
+  public Directory getDelegate() {
+    return delegate;
   }
 
   @Override

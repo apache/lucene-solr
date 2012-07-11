@@ -1,6 +1,6 @@
 package org.apache.lucene.util.packed;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +16,10 @@ package org.apache.lucene.util.packed;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+
+import org.apache.lucene.store.DataOutput;
 
 /**     
  * Implements {@link PackedInts.Mutable}, but grows the
@@ -62,21 +66,21 @@ public class GrowableWriter implements PackedInts.Mutable {
     return current.hasArray();
   }
 
-  public void set(int index, long value) {
-    if (value >= currentMaxValue) {
-      int bpv = getBitsPerValue();
-      while(currentMaxValue <= value && currentMaxValue != Long.MAX_VALUE) {
-        bpv++;
-        currentMaxValue *= 2;
-      }
-      final int valueCount = size();
-      PackedInts.Mutable next = PackedInts.getMutable(valueCount, bpv, acceptableOverheadRatio);
-      for(int i=0;i<valueCount;i++) {
-        next.set(i, current.get(i));
-      }
-      current = next;
-      currentMaxValue = PackedInts.maxValue(current.getBitsPerValue());
+  private void ensureCapacity(long value) {
+    assert value >= 0;
+    if (value <= currentMaxValue) {
+      return;
     }
+    final int bitsRequired = PackedInts.bitsRequired(value);
+    final int valueCount = size();
+    PackedInts.Mutable next = PackedInts.getMutable(valueCount, bitsRequired, acceptableOverheadRatio);
+    PackedInts.copy(current, 0, next, 0, valueCount, PackedInts.DEFAULT_BUFFER_SIZE);
+    current = next;
+    currentMaxValue = PackedInts.maxValue(current.getBitsPerValue());
+  }
+
+  public void set(int index, long value) {
+    ensureCapacity(value);
     current.set(index, value);
   }
 
@@ -87,10 +91,38 @@ public class GrowableWriter implements PackedInts.Mutable {
   public GrowableWriter resize(int newSize) {
     GrowableWriter next = new GrowableWriter(getBitsPerValue(), newSize, acceptableOverheadRatio);
     final int limit = Math.min(size(), newSize);
-    for(int i=0;i<limit;i++) {
-      next.set(i, get(i));
-    }
+    PackedInts.copy(current, 0, next, 0, limit, PackedInts.DEFAULT_BUFFER_SIZE);
     return next;
+  }
+
+  public int get(int index, long[] arr, int off, int len) {
+    return current.get(index, arr, off, len);
+  }
+
+  @Override
+  public int set(int index, long[] arr, int off, int len) {
+    long max = 0;
+    for (int i = off, end = off + len; i < end; ++i) {
+      max |= arr[i];
+    }
+    ensureCapacity(max);
+    return current.set(index, arr, off, len);
+  }
+
+  @Override
+  public void fill(int fromIndex, int toIndex, long val) {
+    ensureCapacity(val);
+    current.fill(fromIndex, toIndex, val);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return current.ramBytesUsed();
+  }
+
+  @Override
+  public void save(DataOutput out) throws IOException {
+    current.save(out);
   }
 
 }

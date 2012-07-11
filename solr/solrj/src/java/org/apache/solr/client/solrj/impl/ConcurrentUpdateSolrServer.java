@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,8 +19,8 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -86,10 +86,9 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
    *          The buffer size before the documents are sent to the server
    * @param threadCount
    *          The number of background threads used to empty the queue
-   * @throws MalformedURLException
    */
   public ConcurrentUpdateSolrServer(String solrServerUrl, int queueSize,
-      int threadCount) throws MalformedURLException {
+      int threadCount) {
     this(solrServerUrl, null, queueSize, threadCount);
   }
 
@@ -99,8 +98,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
    * ThreadSafeClientConnManager.
    */
   public ConcurrentUpdateSolrServer(String solrServerUrl,
-      HttpClient client, int queueSize, int threadCount)
-      throws MalformedURLException {
+      HttpClient client, int queueSize, int threadCount) {
     this.server = new HttpSolrServer(solrServerUrl, client);
     this.server.setFollowRedirects(false);
     queue = new LinkedBlockingQueue<UpdateRequest>(queueSize);
@@ -161,7 +159,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                           fmt = "<commit waitSearcher=\"%s\" waitFlush=\"%s\" />";
                         }
                         if (fmt != null) {
-                          byte[] content = String.format(
+                          byte[] content = String.format(Locale.ROOT,
                               fmt,
                               params.getBool(UpdateParams.WAIT_SEARCHER, false)
                                   + "").getBytes("UTF-8");
@@ -354,6 +352,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
     log.error("error", ex);
   }
 
+  @Override
   public void shutdown() {
     server.shutdown();
     scheduler.shutdown();

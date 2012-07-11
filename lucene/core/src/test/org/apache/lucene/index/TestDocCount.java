@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,18 +18,16 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Tests the Terms.docCount statistic
  */
-@SuppressCodecs("Lucene3x")
 public class TestDocCount extends LuceneTestCase {
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
@@ -53,7 +51,7 @@ public class TestDocCount extends LuceneTestCase {
     Document doc = new Document();
     int numFields = _TestUtil.nextInt(random(), 1, 10);
     for (int i = 0; i < numFields; i++) {
-      doc.add(newField("" + _TestUtil.nextInt(random(), 'a', 'z'), "" + _TestUtil.nextInt(random(), 'a', 'z'), StringField.TYPE_UNSTORED));
+      doc.add(newStringField("" + _TestUtil.nextInt(random(), 'a', 'z'), "" + _TestUtil.nextInt(random(), 'a', 'z'), Field.Store.NO));
     }
     return doc;
   }

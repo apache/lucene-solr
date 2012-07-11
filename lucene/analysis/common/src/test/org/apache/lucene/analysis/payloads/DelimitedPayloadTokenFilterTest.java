@@ -1,5 +1,5 @@
 package org.apache.lucene.analysis.payloads;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
@@ -109,11 +109,11 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     stream.reset();
     assertTrue(stream.incrementToken());
     assertEquals(expected, termAtt.toString());
-    Payload payload = payloadAtt.getPayload();
+    BytesRef payload = payloadAtt.getPayload();
     if (payload != null) {
-      assertTrue(payload.length() + " does not equal: " + expectPay.length, payload.length() == expectPay.length);
+      assertTrue(payload.length + " does not equal: " + expectPay.length, payload.length == expectPay.length);
       for (int i = 0; i < expectPay.length; i++) {
-        assertTrue(expectPay[i] + " does not equal: " + payload.byteAt(i), expectPay[i] == payload.byteAt(i));
+        assertTrue(expectPay[i] + " does not equal: " + payload.bytes[i + payload.offset], expectPay[i] == payload.bytes[i + payload.offset]);
 
       }
     } else {
@@ -126,11 +126,11 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     stream.reset();
     assertTrue(stream.incrementToken());
     assertEquals(expected, termAtt.toString());
-    Payload payload = payAtt.getPayload();
+    BytesRef payload = payAtt.getPayload();
     if (payload != null) {
-      assertTrue(payload.length() + " does not equal: " + expectPay.length, payload.length() == expectPay.length);
+      assertTrue(payload.length + " does not equal: " + expectPay.length, payload.length == expectPay.length);
       for (int i = 0; i < expectPay.length; i++) {
-        assertTrue(expectPay[i] + " does not equal: " + payload.byteAt(i), expectPay[i] == payload.byteAt(i));
+        assertTrue(expectPay[i] + " does not equal: " + payload.bytes[i + payload.offset], expectPay[i] == payload.bytes[i + payload.offset]);
 
       }
     } else {

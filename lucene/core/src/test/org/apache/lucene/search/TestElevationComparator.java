@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -51,7 +51,7 @@ public class TestElevationComparator extends LuceneTestCase {
     writer.addDocument(adoc(new String[] {"id", "y", "title", "boosted boosted", "str_s","y"}));
     writer.addDocument(adoc(new String[] {"id", "z", "title", "boosted boosted boosted","str_s", "z"}));
 
-    IndexReader r = IndexReader.open(writer, true);
+    IndexReader r = DirectoryReader.open(writer, true);
     writer.close();
 
     IndexSearcher searcher = newSearcher(r);
@@ -125,7 +125,7 @@ public class TestElevationComparator extends LuceneTestCase {
  private Document adoc(String[] vals) {
    Document doc = new Document();
    for (int i = 0; i < vals.length - 2; i += 2) {
-     doc.add(newField(vals[i], vals[i + 1], TextField.TYPE_STORED));
+     doc.add(newTextField(vals[i], vals[i + 1], Field.Store.YES));
    }
    return doc;
  }
@@ -157,7 +157,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
        bottomVal = values[slot];
      }
 
-     private int docVal(int doc) throws IOException {
+     private int docVal(int doc) {
        int ord = idIndex.getOrd(doc);
        if (ord == 0) {
          return 0;
@@ -169,12 +169,12 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public int compareBottom(int doc) throws IOException {
+     public int compareBottom(int doc) {
        return docVal(doc) - bottomVal;
      }
 
      @Override
-     public void copy(int slot, int doc) throws IOException {
+     public void copy(int slot, int doc) {
        values[slot] = docVal(doc);
      }
 
@@ -190,7 +190,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public int compareDocToValue(int doc, Integer valueObj) throws IOException {
+     public int compareDocToValue(int doc, Integer valueObj) {
        final int value = valueObj.intValue();
        final int docValue = docVal(doc);
        // values will be small enough that there is no overflow concern

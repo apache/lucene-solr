@@ -1,6 +1,6 @@
 package org.apache.lucene.search.suggest.fst;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -233,9 +233,9 @@ public class FSTCompletionTest extends LuceneTestCase {
       
       StringBuilder b = new StringBuilder();
       String format = "%" + colLen + "s  " + "%" + colLen + "s\n"; 
-      b.append(String.format(Locale.ENGLISH, format, "Expected", "Result"));
+      b.append(String.format(Locale.ROOT, format, "Expected", "Result"));
       for (int i = 0; i < Math.max(result.length, expected.length); i++) {
-        b.append(String.format(Locale.ENGLISH, format, 
+        b.append(String.format(Locale.ROOT, format, 
             i < expected.length ? expected[i] : "--", 
             i < result.length ? result[i] : "--"));
       }

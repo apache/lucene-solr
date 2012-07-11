@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.byTask.utils;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -99,7 +99,7 @@ public class StreamUtils {
     String fileName = file.getName();
     int idx = fileName.lastIndexOf('.');
     if (idx != -1) {
-      type = extensionToType.get(fileName.substring(idx).toLowerCase(Locale.ENGLISH));
+      type = extensionToType.get(fileName.substring(idx).toLowerCase(Locale.ROOT));
     }
     return type==null ? Type.PLAIN : type;
 	}

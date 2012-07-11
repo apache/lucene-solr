@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -193,17 +193,6 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(p.matcher(resp).find());
     assertTrue(p_bool.matcher(resp).find());
 
-  }
-
-  @Test
-  public void testSimplestParams() throws Exception {
-
-    assertQ("match w/o only q param",
-            req("qt", "dismaxNoDefaults",
-                "q","guide")
-            ,"//*[@numFound='2']"
-            );
-    
   }
   
 }

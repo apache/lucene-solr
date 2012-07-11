@@ -27,10 +27,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
@@ -51,7 +51,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   private static final String SOLR_CONFIG = "dataimport-solrconfig.xml";
   private static final String SOLR_SCHEMA = "dataimport-schema.xml";
   private static final String SOLR_HOME = "dih/solr";
-  private static final String CONF_DIR = "dih" + File.separator + "solr" + File.separator + "conf" + File.separator;
+  private static final String CONF_DIR = "dih" + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
   
   private static final List<Map<String,Object>> DB_DOCS = new ArrayList<Map<String,Object>>();
   private static final List<Map<String,Object>> SOLR_DOCS = new ArrayList<Map<String,Object>>();
@@ -101,13 +101,13 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   //TODO: fix this test to close its directories
   static String savedFactory;
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
   }
   
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {
@@ -274,7 +274,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       sidl.add(sd);
     }
     
-    DefaultHttpClient client = new DefaultHttpClient(new ThreadSafeClientConnManager());
+    HttpClient client = HttpClientUtil.createClient(null);
     URL url = new URL(getSourceUrl(jetty.getLocalPort()));
     HttpSolrServer solrServer = new HttpSolrServer(url.toExternalForm(), client);
     solrServer.add(sidl);
@@ -308,8 +308,8 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
           + System.currentTimeMillis());
       
       homeDir = new File(home + "inst");
-      dataDir = new File(homeDir, "data");
-      confDir = new File(homeDir, "conf");
+      dataDir = new File(homeDir + "/collection1", "data");
+      confDir = new File(homeDir + "/collection1", "conf");
       
       homeDir.mkdirs();
       dataDir.mkdirs();

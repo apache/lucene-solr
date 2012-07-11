@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,8 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
@@ -75,7 +73,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
     Document doc = new Document();
-    Field idField = newField("id", "", StringField.TYPE_STORED);
+    Field idField = newStringField("id", "", Field.Store.YES);
     doc.add(idField);
     int extraCount = 0;
 
@@ -113,7 +111,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
 
     writer.close();
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
     assertEquals(200+extraCount, reader.numDocs());
     reader.close();
     directory.close();
@@ -134,7 +132,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         .setMergePolicy(mp));
 
     Document doc = new Document();
-    Field idField = newField("id", "", StringField.TYPE_STORED);
+    Field idField = newStringField("id", "", Field.Store.YES);
     doc.add(idField);
     for(int i=0;i<10;i++) {
       if (VERBOSE) {
@@ -158,7 +156,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
 
     writer.close();
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
     // Verify that we did not lose any deletes...
     assertEquals(450, reader.numDocs());
     reader.close();
@@ -178,7 +176,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
       for(int j=0;j<21;j++) {
         Document doc = new Document();
-        doc.add(newField("content", "a b c", TextField.TYPE_UNSTORED));
+        doc.add(newTextField("content", "a b c", Field.Store.NO));
         writer.addDocument(doc);
       }
         
@@ -199,7 +197,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   public void testNoWaitClose() throws IOException {
     MockDirectoryWrapper directory = newDirectory();
     Document doc = new Document();
-    Field idField = newField("id", "", StringField.TYPE_STORED);
+    Field idField = newStringField("id", "", Field.Store.YES);
     doc.add(idField);
 
     IndexWriter writer = new IndexWriter(
@@ -230,7 +228,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
       writer.close(false);
 
-      IndexReader reader = IndexReader.open(directory);
+      IndexReader reader = DirectoryReader.open(directory);
       assertEquals((1+iter)*182, reader.numDocs());
       reader.close();
 

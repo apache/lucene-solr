@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.ar;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,6 +23,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
@@ -88,7 +89,7 @@ public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
   }  
   
   private void check(final String input, final String expected) throws IOException {
-    ArabicLetterTokenizer tokenStream = new ArabicLetterTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    MockTokenizer tokenStream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     ArabicNormalizationFilter filter = new ArabicNormalizationFilter(tokenStream);
     assertTokenStreamContents(filter, new String[]{expected});
   }

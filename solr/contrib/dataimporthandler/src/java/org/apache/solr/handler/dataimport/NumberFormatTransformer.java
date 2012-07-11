@@ -1,5 +1,5 @@
 package org.apache.solr.handler.dataimport;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -72,7 +72,7 @@ public class NumberFormatTransformer extends Transformer {
         }
 
         Object val = row.get(srcCol);
-        String styleSmall = style.toLowerCase(Locale.ENGLISH);
+        String styleSmall = style.toLowerCase(Locale.ROOT);
 
         if (val instanceof List) {
           List<String> inputs = (List) val;

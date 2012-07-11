@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.sinks;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -29,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -92,7 +94,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     TokenStream tokenStream = analyzer.tokenStream("field", new StringReader("abcd   "));
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(tokenStream);
     TokenStream sink = tee.newSinkTokenStream();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorOffsets(true);
     ft.setStoreTermVectorPositions(true);
@@ -103,7 +105,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     Terms vector = r.getTermVectors(0).terms("field");
     assertEquals(1, vector.size());
     TermsEnum termsEnum = vector.iterator(null);
@@ -163,7 +165,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     TokenStream lowerCasing = new LowerCaseFilter(TEST_VERSION_CURRENT, source1);
     String[] lowerCaseTokens = new String[tokens1.length];
     for (int i = 0; i < tokens1.length; i++)
-      lowerCaseTokens[i] = tokens1[i].toLowerCase();
+      lowerCaseTokens[i] = tokens1[i].toLowerCase(Locale.ROOT);
     assertTokenStreamContents(lowerCasing, lowerCaseTokens);
   }
 
@@ -179,7 +181,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
       StringBuilder buffer = new StringBuilder();
       System.out.println("-----Tokens: " + tokCount[k] + "-----");
       for (int i = 0; i < tokCount[k]; i++) {
-        buffer.append(English.intToEnglish(i).toUpperCase()).append(' ');
+        buffer.append(English.intToEnglish(i).toUpperCase(Locale.ROOT)).append(' ');
       }
       //make sure we produce the same tokens
       TeeSinkTokenFilter teeStream = new TeeSinkTokenFilter(new StandardFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))));

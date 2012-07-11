@@ -1,6 +1,6 @@
 package org.apache.lucene.sandbox.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -63,11 +63,9 @@ public class SlowCollatedTermRangeTermsEnum extends FilteredTermsEnum {
    *          The collator to use to collate index Terms, to determine their
    *          membership in the range bounded by <code>lowerTerm</code> and
    *          <code>upperTerm</code>.
-   * 
-   * @throws IOException
    */
   public SlowCollatedTermRangeTermsEnum(TermsEnum tenum, String lowerTermText, String upperTermText, 
-    boolean includeLower, boolean includeUpper, Collator collator) throws IOException {
+    boolean includeLower, boolean includeUpper, Collator collator) {
     super(tenum);
     this.collator = collator;
     this.upperTermText = upperTermText;

@@ -1,5 +1,5 @@
 package org.apache.solr.analysis;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,7 +31,7 @@ import java.util.HashMap;
 public class TestKeepFilterFactory extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     assertTrue("loader is null and it shouldn't be", loader != null);
     KeepWordFilterFactory factory = new KeepWordFilterFactory();
     Map<String, String> args = new HashMap<String, String>();

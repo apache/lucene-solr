@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,17 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 /** Scorer for conjunctions, sets of terms, all of which are required. */
 final class MatchOnlyConjunctionTermScorer extends ConjunctionTermScorer {
   MatchOnlyConjunctionTermScorer(Weight weight, float coord,
-      DocsAndFreqs[] docsAndFreqs) throws IOException {
+      DocsAndFreqs[] docsAndFreqs) {
     super(weight, coord, docsAndFreqs);
   }
 
   @Override
-  public float score() throws IOException {
+  public float score() {
     float sum = 0.0f;
     for (DocsAndFreqs docs : docsAndFreqs) {
       sum += docs.docScorer.score(lastDoc, 1);

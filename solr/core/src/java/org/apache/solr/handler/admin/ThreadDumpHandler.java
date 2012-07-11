@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.util.Locale;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -79,8 +80,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
   //--------------------------------------------------------------------------------
   //--------------------------------------------------------------------------------
   
-  private static SimpleOrderedMap<Object> getThreadInfo( ThreadInfo ti, ThreadMXBean tmbean ) throws IOException 
-  {
+  private static SimpleOrderedMap<Object> getThreadInfo( ThreadInfo ti, ThreadMXBean tmbean ) {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     long tid = ti.getThreadId();
 
@@ -120,7 +120,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
   }
   
   private static String formatNanos(long ns) {
-    return String.format("%.4fms", ns / (double) 1000000);
+    return String.format(Locale.ROOT, "%.4fms", ns / (double) 1000000);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

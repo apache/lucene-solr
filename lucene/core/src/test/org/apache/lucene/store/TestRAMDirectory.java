@@ -1,6 +1,6 @@
 package org.apache.lucene.store;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,11 +20,12 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -56,7 +57,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     Document doc = null;
     for (int i = 0; i < docsToAdd; i++) {
       doc = new Document();
-      doc.add(newField("content", English.intToEnglish(i).trim(), StringField.TYPE_STORED));
+      doc.add(newStringField("content", English.intToEnglish(i).trim(), Field.Store.YES));
       writer.addDocument(doc);
     }
     assertEquals(docsToAdd, writer.maxDoc());
@@ -76,7 +77,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
     // open reader to test document count
-    IndexReader reader = IndexReader.open(ramDir);
+    IndexReader reader = DirectoryReader.open(ramDir);
     assertEquals(docsToAdd, reader.numDocs());
     
     // open search zo check if all doc's are there
@@ -115,7 +116,7 @@ public class TestRAMDirectory extends LuceneTestCase {
         public void run() {
           for (int j=1; j<docsPerThread; j++) {
             Document doc = new Document();
-            doc.add(newField("sizeContent", English.intToEnglish(num*docsPerThread+j).trim(), StringField.TYPE_STORED));
+            doc.add(newStringField("sizeContent", English.intToEnglish(num*docsPerThread+j).trim(), Field.Store.YES));
             try {
               writer.addDocument(doc);
             } catch (IOException e) {

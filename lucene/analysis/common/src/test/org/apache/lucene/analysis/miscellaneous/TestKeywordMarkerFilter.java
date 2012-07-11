@@ -13,7 +13,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.junit.Test;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -79,7 +79,7 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
         if (!keywordAttr.isKeyword()) {
-          final String term = termAtt.toString().toLowerCase(Locale.ENGLISH);
+          final String term = termAtt.toString().toLowerCase(Locale.ROOT);
           termAtt.setEmpty().append(term);
         }
         return true;

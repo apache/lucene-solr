@@ -24,6 +24,7 @@ import com.spatial4j.core.distance.DistanceUtils;
 import java.util.Map;
 
 /**
+ * @lucene.experimental
  */
 public abstract class SpatialPrefixTreeFactory {
 

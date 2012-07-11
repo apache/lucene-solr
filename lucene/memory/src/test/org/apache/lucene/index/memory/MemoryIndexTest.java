@@ -1,6 +1,6 @@
 package org.apache.lucene.index.memory;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -126,8 +125,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     IndexWriter writer = new IndexWriter(ramdir,
                                          new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())));
     Document doc = new Document();
-    Field field1 = newField("foo", fooField.toString(), TextField.TYPE_UNSTORED);
-    Field field2 = newField("term", termField.toString(), TextField.TYPE_UNSTORED);
+    Field field1 = newTextField("foo", fooField.toString(), Field.Store.NO);
+    Field field2 = newTextField("term", termField.toString(), Field.Store.NO);
     doc.add(field1);
     doc.add(field2);
     writer.addDocument(doc);

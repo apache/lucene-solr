@@ -1,6 +1,6 @@
 package org.apache.lucene.store;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -347,7 +348,7 @@ public class TestLockFactory extends LuceneTestCase {
             Query query = new TermQuery(new Term("content", "aaa"));
             for(int i=0;i<this.numIteration;i++) {
                 try{
-                    reader = IndexReader.open(dir);
+                    reader = DirectoryReader.open(dir);
                     searcher = new IndexSearcher(reader);
                 } catch (Exception e) {
                     hitException = true;
@@ -420,7 +421,7 @@ public class TestLockFactory extends LuceneTestCase {
 
     private void addDoc(IndexWriter writer) throws IOException {
         Document doc = new Document();
-        doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+        doc.add(newTextField("content", "aaa", Field.Store.NO));
         writer.addDocument(doc);
     }
 }

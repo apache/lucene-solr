@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,6 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -60,7 +58,7 @@ public class Test2BPostings extends LuceneTestCase {
     }
 
     Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setOmitNorms(true);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
     Field field = new Field("field", new MyTokenStream(), ft);
@@ -94,7 +92,7 @@ public class Test2BPostings extends LuceneTestCase {
     }
     
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       if (index <= 'z') {
         buffer[0] = (char) index++;
         return true;
@@ -103,7 +101,7 @@ public class Test2BPostings extends LuceneTestCase {
     }
     
     @Override
-    public void reset() throws IOException {
+    public void reset() {
       index = 'a';
     }
   }

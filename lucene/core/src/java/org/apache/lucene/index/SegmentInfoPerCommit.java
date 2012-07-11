@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -129,6 +129,15 @@ public class SegmentInfoPerCommit {
 
   public String toString(Directory dir, int pendingDelCount) {
     return info.toString(dir, delCount + pendingDelCount);
+  }
+
+  @Override
+  public String toString() {
+    String s = info.toString(info.dir, delCount);
+    if (delGen != -1) {
+      s += ":delGen=" + delGen;
+    }
+    return s;
   }
 
   @Override

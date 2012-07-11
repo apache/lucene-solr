@@ -1,6 +1,5 @@
 package org.apache.lucene.facet.enhancements;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -9,7 +8,7 @@ import org.apache.lucene.facet.enhancements.params.EnhancementsIndexingParams;
 import org.apache.lucene.facet.index.streaming.CategoryTokenizer;
 import org.apache.lucene.util.Vint8;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -59,10 +58,9 @@ public class EnhancementsCategoryTokenizer extends CategoryTokenizer {
    *            The stream of category tokens.
    * @param indexingParams
    *            The indexing params to use.
-   * @throws IOException
    */
   public EnhancementsCategoryTokenizer(TokenStream input,
-      EnhancementsIndexingParams indexingParams) throws IOException {
+      EnhancementsIndexingParams indexingParams) {
     super(input, indexingParams);
     payloadBytes = new byte[Vint8.MAXIMUM_BYTES_NEEDED
         * (indexingParams.getCategoryEnhancements().size() + 1)];
@@ -114,7 +112,9 @@ public class EnhancementsCategoryTokenizer extends CategoryTokenizer {
           nBytes += enhancementBytes[i].length;
         }
       }
-      payload.setData(payloadBytes, 0, nBytes);
+      payload.bytes = payloadBytes;
+      payload.offset = 0;
+      payload.length = nBytes;
       payloadAttribute.setPayload(payload);
     }
   }

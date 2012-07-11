@@ -1,13 +1,14 @@
 package org.apache.lucene.facet.search;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.sampling.BaseSampleTestTopK;
 import org.apache.lucene.facet.search.sampling.Sampler;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,6 +25,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  * limitations under the License.
  */
 
+@Slow
 public class AdaptiveAccumulatorTest extends BaseSampleTestTopK {
 
   @Override

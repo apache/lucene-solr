@@ -1,6 +1,6 @@
 package org.apache.lucene.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,9 +38,9 @@ import org.apache.lucene.search.*;
  * and is documented here: http://wiki.apache.org/lucene-java/CommunityContributions
  */
 public class BoostingQuery extends Query {
-    private float boost;                            // the amount to boost by
-    private Query match;                            // query to match
-    private Query context;                          // boost when matches too
+    private final float boost;                            // the amount to boost by
+    private final Query match;                            // query to match
+    private final Query context;                          // boost when matches too
 
     public BoostingQuery(Query match, Query context, float boost) {
       this.match = match;

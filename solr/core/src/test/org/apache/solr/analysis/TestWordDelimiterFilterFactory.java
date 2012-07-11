@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -197,7 +197,7 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
   public void testCustomTypes() throws Exception {
     String testText = "I borrowed $5,400.00 at 25% interest-rate";
     WordDelimiterFilterFactory factoryDefault = new WordDelimiterFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     Map<String,String> args = new HashMap<String,String>();
     args.put("generateWordParts", "1");
     args.put("generateNumberParts", "1");

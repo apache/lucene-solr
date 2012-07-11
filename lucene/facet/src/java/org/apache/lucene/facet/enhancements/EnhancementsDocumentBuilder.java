@@ -14,7 +14,7 @@ import org.apache.lucene.facet.index.streaming.CategoryParentsStream;
 import org.apache.lucene.facet.index.streaming.CategoryTokenizer;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -46,10 +46,9 @@ public class EnhancementsDocumentBuilder extends CategoryDocumentBuilder {
    * @param taxonomyWriter
    * @param params
    *            Indexing params which include {@link CategoryEnhancement}s.
-   * @throws IOException
    */
   public EnhancementsDocumentBuilder(TaxonomyWriter taxonomyWriter,
-      EnhancementsIndexingParams params) throws IOException {
+      EnhancementsIndexingParams params) {
     super(taxonomyWriter, params);
   }
 

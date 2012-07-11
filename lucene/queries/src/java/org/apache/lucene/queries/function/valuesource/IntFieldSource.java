@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -172,5 +172,5 @@ public class IntFieldSource extends FieldCacheSource {
     int h = parser==null ? Integer.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();
     return h;
-  };
+  }
 }

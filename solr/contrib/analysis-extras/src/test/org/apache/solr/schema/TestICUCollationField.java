@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,6 @@ import java.io.FileOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -33,7 +32,6 @@ import com.ibm.icu.util.ULocale;
 /**
  * Tests {@link ICUCollationField} with TermQueries, RangeQueries, and sort order.
  */
-@SuppressCodecs("Lucene3x")
 public class TestICUCollationField extends SolrTestCaseJ4 {
   
   @BeforeClass
@@ -69,13 +67,13 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
     tmpFile.mkdir();
     
     // make data and conf dirs
-    new File(tmpFile, "data").mkdir();
-    File confDir = new File(tmpFile, "conf");
-    confDir.mkdir();
+    new File(tmpFile + "/collection1", "data").mkdirs();
+    File confDir = new File(tmpFile + "/collection1", "conf");
+    confDir.mkdirs();
     
     // copy over configuration files
-    FileUtils.copyFile(getFile("analysis-extras/solr/conf/solrconfig-icucollate.xml"), new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(getFile("analysis-extras/solr/conf/schema-icucollate.xml"), new File(confDir, "schema.xml"));
+    FileUtils.copyFile(getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml"), new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(getFile("analysis-extras/solr/collection1/conf/schema-icucollate.xml"), new File(confDir, "schema.xml"));
     
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator = (RuleBasedCollator) Collator.getInstance(new ULocale("de", "DE"));

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,7 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
+ * A request for the org.apache.solr.handler.FieldAnalysisRequestHandler.
  *
  *
  * @since solr.14

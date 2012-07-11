@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -55,7 +55,7 @@ public class TestBinaryResponseWriter extends AbstractSolrTestCase {
    * Tests known types implementation by asserting correct encoding/decoding of UUIDField
    */
   public void testUUID() throws Exception {
-    String s = UUID.randomUUID().toString().toLowerCase(Locale.ENGLISH);
+    String s = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
     assertU(adoc("id", "101", "uuid", s));
     assertU(commit());
     LocalSolrQueryRequest req = lrf.makeRequest("q", "*:*");

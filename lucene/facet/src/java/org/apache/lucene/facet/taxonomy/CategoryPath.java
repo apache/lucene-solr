@@ -5,7 +5,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -1013,7 +1013,7 @@ public class CategoryPath implements Serializable, Cloneable, Comparable<Categor
     osw.flush();
   }
   
-  private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+  private void readObject(java.io.ObjectInputStream in) throws IOException {
     InputStreamReader isr = new InputStreamReader(in, "UTF-8");
     this.deserializeFromStreamReader(isr);
   }

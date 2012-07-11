@@ -1,6 +1,6 @@
 package org.apache.lucene.search.join;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,12 +20,14 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;       // javadocs
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -33,7 +35,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
@@ -83,23 +84,7 @@ import org.apache.lucene.util.FixedBitSet;
  *
  * @lucene.experimental
  */
-
 public class ToParentBlockJoinQuery extends Query {
-
-  /** How to aggregate multiple child hit scores into a
-   *  single parent score. */
-  public static enum ScoreMode {
-    /** Do no scoring. */
-    None,
-    /** Parent hit's score is the average of all child
-        scores. */
-    Avg,
-    /** Parent hit's score is the max of all child
-        scores. */
-    Max,
-    /** Parent hit's score is the sum of all child
-        scores. */
-    Total};
 
   private final Filter parentsFilter;
   private final Query childQuery;
@@ -197,7 +182,8 @@ public class ToParentBlockJoinQuery extends Query {
       // acceptDocs when we score:
       final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, null);
 
-      if (parents == null) {
+      if (parents == null
+          || parents.iterator().docID() == DocIdSetIterator.NO_MORE_DOCS) { // <-- means DocIdSet#EMPTY_DOCIDSET
         // No matches
         return null;
       }
@@ -209,10 +195,14 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext reader, int doc) throws IOException {
-      // TODO
-      throw new UnsupportedOperationException(getClass().getName() +
-                                              " cannot explain match on parent document");
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, true, false, context.reader().getLiveDocs());
+      if (scorer != null) {
+        if (scorer.advance(doc) == doc) {
+          return scorer.explain(context.docBase);
+        }
+      }
+      return new ComplexExplanation(false, 0.0f, "Not a match");
     }
 
     @Override
@@ -227,6 +217,7 @@ public class ToParentBlockJoinQuery extends Query {
     private final ScoreMode scoreMode;
     private final Bits acceptDocs;
     private int parentDoc = -1;
+    private int prevParentDoc;
     private float parentScore;
     private int nextChildDoc;
 
@@ -383,7 +374,7 @@ public class ToParentBlockJoinQuery extends Query {
         return nextDoc();
       }
 
-      final int prevParentDoc = parentBits.prevSetBit(parentTarget-1);
+      prevParentDoc = parentBits.prevSetBit(parentTarget-1);
 
       //System.out.println("  rolled back to prevParentDoc=" + prevParentDoc + " vs parentDoc=" + parentDoc);
       assert prevParentDoc >= parentDoc;
@@ -402,11 +393,20 @@ public class ToParentBlockJoinQuery extends Query {
       return nd;
     }
 
+    public Explanation explain(int docBase) throws IOException {
+      int start = docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
+      int end = docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
+      return new ComplexExplanation(
+          true, score(), String.format(Locale.ROOT, "Score based on child doc range from %d to %d", start, end)
+      );
+    }
+
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
-      //nocommit - what can we do here?
+    public PositionIntervalIterator positions(boolean needsPayloads,
+        boolean needsOffsets) throws IOException {
       throw new UnsupportedOperationException();
     }
+
   }
 
   @Override

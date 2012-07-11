@@ -1,7 +1,7 @@
 package org.apache.lucene.analysis.de;
 // This file is encoded in UTF-8
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.de;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -37,7 +36,6 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
-import org.tartarus.snowball.ext.German2Stemmer;
 
 /**
  * {@link Analyzer} for German language. 
@@ -49,38 +47,10 @@ import org.tartarus.snowball.ext.German2Stemmer;
  * exclusion list is empty by default.
  * </p>
  * 
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating GermanAnalyzer:
- * <ul>
- *   <li> As of 3.6, GermanLightStemFilter is used for less aggressive stemming.
- *   <li> As of 3.1, Snowball stemming is done with SnowballFilter, and 
- *        Snowball stopwords are used by default.
- *   <li> As of 2.9, StopFilter preserves position
- *        increments
- * </ul>
- * 
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
 public final class GermanAnalyzer extends StopwordAnalyzerBase {
-  
-  /** @deprecated in 3.1, remove in Lucene 5.0 (index bw compat) */
-  @Deprecated
-  private final static String[] GERMAN_STOP_WORDS = {
-    "einer", "eine", "eines", "einem", "einen",
-    "der", "die", "das", "dass", "daß",
-    "du", "er", "sie", "es",
-    "was", "wer", "wie", "wir",
-    "und", "oder", "ohne", "mit",
-    "am", "im", "in", "aus", "auf",
-    "ist", "sein", "war", "wird",
-    "ihr", "ihre", "ihres",
-    "als", "für", "von", "mit",
-    "dich", "dir", "mich", "mir",
-    "mein", "sein", "kein",
-    "durch", "wegen", "wird"
-  };
   
   /** File containing default German stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "german_stop.txt";
@@ -94,10 +64,6 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   }
   
   private static class DefaultSetHolder {
-    /** @deprecated in 3.1, remove in Lucene 5.0 (index bw compat) */
-    @Deprecated
-    private static final CharArraySet DEFAULT_SET_30 = CharArraySet.unmodifiableSet(new CharArraySet(
-        Version.LUCENE_CURRENT, Arrays.asList(GERMAN_STOP_WORDS), false));
     private static final CharArraySet DEFAULT_SET;
     static {
       try {
@@ -125,9 +91,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * {@link #getDefaultStopSet()}.
    */
   public GermanAnalyzer(Version matchVersion) {
-    this(matchVersion,
-        matchVersion.onOrAfter(Version.LUCENE_31) ? DefaultSetHolder.DEFAULT_SET
-            : DefaultSetHolder.DEFAULT_SET_30);
+    this(matchVersion, DefaultSetHolder.DEFAULT_SET);
   }
   
   /**
@@ -176,14 +140,8 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter( matchVersion, result, stopwords);
     result = new KeywordMarkerFilter(result, exclusionSet);
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-      result = new GermanNormalizationFilter(result);
-      result = new GermanLightStemFilter(result);
-    } else if (matchVersion.onOrAfter(Version.LUCENE_31)) {
-      result = new SnowballFilter(result, new German2Stemmer());
-    } else {
-      result = new GermanStemFilter(result);
-    }
+    result = new GermanNormalizationFilter(result);
+    result = new GermanLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
 }

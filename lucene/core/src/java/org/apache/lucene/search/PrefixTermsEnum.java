@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,6 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.IOException;
 
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.TermsEnum;
@@ -35,7 +33,7 @@ public class PrefixTermsEnum extends FilteredTermsEnum {
 
   private final BytesRef prefixRef;
 
-  public PrefixTermsEnum(TermsEnum tenum, BytesRef prefixText) throws IOException {
+  public PrefixTermsEnum(TermsEnum tenum, BytesRef prefixText) {
     super(tenum);
     setInitialSeekTerm(this.prefixRef = prefixText);
   }

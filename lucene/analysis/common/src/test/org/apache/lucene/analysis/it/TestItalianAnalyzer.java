@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.it;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -54,7 +54,7 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new ItalianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new ItalianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
   
   /** test that the elisionfilter is working */
@@ -62,12 +62,5 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new ItalianAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "dell'Italia", new String[] { "ital" });
     assertAnalyzesTo(a, "l'Italiano", new String[] { "italian" });
-  }
-  
-  /** test that we don't enable this before 3.2*/
-  public void testContractionsBackwards() throws IOException {
-    Analyzer a = new ItalianAnalyzer(Version.LUCENE_31);
-    assertAnalyzesTo(a, "dell'Italia", new String[] { "dell'ital" });
-    assertAnalyzesTo(a, "l'Italiano", new String[] { "l'ital" });
   }
 }

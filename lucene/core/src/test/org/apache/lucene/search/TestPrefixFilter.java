@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,13 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
 
 /**
  * Tests {@link PrefixFilter} class.
@@ -40,7 +40,7 @@ public class TestPrefixFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
-      doc.add(newField("category", categories[i], StringField.TYPE_STORED));
+      doc.add(newStringField("category", categories[i], Field.Store.YES));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();

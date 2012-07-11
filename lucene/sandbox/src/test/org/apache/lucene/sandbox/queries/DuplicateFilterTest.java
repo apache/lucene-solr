@@ -1,6 +1,6 @@
 package org.apache.lucene.sandbox.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,8 +22,7 @@ import java.util.HashSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -76,9 +75,9 @@ public class DuplicateFilterTest extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter writer, String url, String text, String date) throws IOException {
     Document doc = new Document();
-    doc.add(newField(KEY_FIELD, url, StringField.TYPE_STORED));
-    doc.add(newField("text", text, TextField.TYPE_STORED));
-    doc.add(newField("date", date, TextField.TYPE_STORED));
+    doc.add(newStringField(KEY_FIELD, url, Field.Store.YES));
+    doc.add(newTextField("text", text, Field.Store.YES));
+    doc.add(newTextField("date", date, Field.Store.YES));
     writer.addDocument(doc);
   }
 

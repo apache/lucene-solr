@@ -10,7 +10,7 @@ import org.apache.solr.spelling.SpellingResult;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.

@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.core;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,6 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -52,13 +53,13 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
     Document doc = new Document();
-    doc.add(new Field("partnum", "Q36", StringField.TYPE_STORED));
-    doc.add(new Field("description", "Illidium Space Modulator", TextField.TYPE_STORED));
+    doc.add(new StringField("partnum", "Q36", Field.Store.YES));
+    doc.add(new TextField("description", "Illidium Space Modulator", Field.Store.YES));
     writer.addDocument(doc);
 
     writer.close();
 
-    reader = IndexReader.open(directory);
+    reader = DirectoryReader.open(directory);
     searcher = new IndexSearcher(reader);
   }
   
@@ -88,14 +89,14 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     RAMDirectory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("partnum", "Q36", TextField.TYPE_STORED));
+    doc.add(new TextField("partnum", "Q36", Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new Field("partnum", "Q37", TextField.TYPE_STORED));
+    doc.add(new TextField("partnum", "Q37", Field.Store.YES));
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     DocsEnum td = _TestUtil.docs(random(),
                                  reader,
                                  "partnum",
@@ -126,6 +127,6 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new KeywordAnalyzer(), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new KeywordAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
 }

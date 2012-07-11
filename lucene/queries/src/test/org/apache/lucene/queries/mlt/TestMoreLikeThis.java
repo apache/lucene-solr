@@ -1,6 +1,6 @@
 package org.apache.lucene.queries.mlt;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause;
@@ -65,7 +65,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   
   private void addDoc(RandomIndexWriter writer, String text) throws IOException {
     Document doc = new Document();
-    doc.add(newField("text", text, TextField.TYPE_STORED));
+    doc.add(newTextField("text", text, Field.Store.YES));
     writer.addDocument(doc);
   }
   

@@ -1,9 +1,8 @@
 package org.apache.lucene.util;
 
 import org.apache.lucene.search.BooleanQuery;
-import org.junit.internal.AssumptionViolatedException;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,12 +28,6 @@ final class TestRuleSetupAndRestoreInstanceEnv extends AbstractBeforeAfterRule {
 
   protected void before() {
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
-
-    final String defFormat = _TestUtil.getPostingsFormat("thisCodeMakesAbsolutelyNoSenseCanWeDeleteIt");
-    if (LuceneTestCase.shouldAvoidCodec(defFormat)) {
-      throw new AssumptionViolatedException(
-          "Method not allowed to use codec: " + defFormat + ".");
-    }
   }
 
   protected void after() {

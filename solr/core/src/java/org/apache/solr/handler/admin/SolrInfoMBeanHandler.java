@@ -1,6 +1,6 @@
 package org.apache.solr.handler.admin;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -255,9 +255,9 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
      .append(ref).append(", Now: ").append(now);
     
     if(ref instanceof Number) {
-      NumberFormat nf = NumberFormat.getIntegerInstance(Locale.ENGLISH);
+      NumberFormat nf = NumberFormat.getIntegerInstance(Locale.ROOT);
       if((ref instanceof Double) || (ref instanceof Float)) {
-        nf = NumberFormat.getInstance(Locale.ENGLISH);
+        nf = NumberFormat.getInstance(Locale.ROOT);
       }
       double dref = ((Number)ref).doubleValue();
       double dnow = ((Number)now).doubleValue();

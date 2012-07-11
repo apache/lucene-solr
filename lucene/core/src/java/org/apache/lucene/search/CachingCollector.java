@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -342,13 +342,13 @@ public abstract class CachingCollector extends Collector {
       }
       
       @Override
-      public void setScorer(Scorer scorer) throws IOException {}
+      public void setScorer(Scorer scorer) {}
 
       @Override
-      public void collect(int doc) throws IOException {}
+      public void collect(int doc) {}
 
       @Override
-      public void setNextReader(AtomicReaderContext context) throws IOException {}
+      public void setNextReader(AtomicReaderContext context) {}
 
     };
     return create(other, cacheScores, maxRAMMB);

@@ -1,6 +1,6 @@
 package org.apache.solr.uima.processor;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -39,7 +39,6 @@ import java.util.Map;
 
 /**
  * Update document(s) to be indexed with UIMA extracted information
- *
  *
  */
 public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
@@ -102,16 +101,24 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
         new StringBuilder(". ").append(logField).append("=")
         .append((String)cmd.getSolrInputDocument().getField(logField).getValue())
         .append(", ").toString();
-      int len = Math.min(text.length(), 100);
+      int len;
+      String debugString;
+      if (text != null && text.length() > 0) {
+        len = Math.min(text.length(), 100);
+        debugString = new StringBuilder(" text=\"").append(text.substring(0, len)).append("...\"").toString();
+      }
+      else {
+        debugString = " null text";
+      }
       if (solrUIMAConfiguration.isIgnoreErrors()) {
         log.warn(new StringBuilder("skip the text processing due to ")
           .append(e.getLocalizedMessage()).append(optionalFieldInfo)
-          .append(" text=\"").append(text.substring(0, len)).append("...\"").toString());
+          .append(debugString).toString());
       } else {
         throw new SolrException(ErrorCode.SERVER_ERROR,
-            new StringBuilder("processing error: ")
+            new StringBuilder("processing error ")
               .append(e.getLocalizedMessage()).append(optionalFieldInfo)
-              .append(" text=\"").append(text.substring(0, len)).append("...\"").toString(), e);
+              .append(debugString).toString(), e);
       }
     }
     super.processAdd(cmd);
@@ -143,7 +150,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   /* process a field value executing UIMA the CAS containing it as document text */
   private JCas processText(String textFieldValue) throws ResourceInitializationException,
           AnalysisEngineProcessException {
-    log.info(new StringBuffer("Analazying text").toString());
+    log.info(new StringBuffer("Analyzing text").toString());
     /* get the UIMA analysis engine */
     AnalysisEngine ae = aeProvider.getAE();
 

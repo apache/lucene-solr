@@ -14,7 +14,7 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -34,7 +34,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 public class TestTopKResultsHandlerRandom extends BaseTestTopK {
   
   private List<FacetResult> countFacets(int partitionSize, int numResults, final boolean doComplement)
-      throws IOException, IllegalAccessException, InstantiationException {
+      throws IOException {
     Query q = new MatchAllDocsQuery();
     FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, partitionSize);
     FacetsCollector fc = new FacetsCollector(facetSearchParams, indexReader, taxoReader) {

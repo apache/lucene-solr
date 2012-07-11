@@ -1,6 +1,6 @@
 package org.apache.lucene.search.similarities;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +16,8 @@ package org.apache.lucene.search.similarities;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.Locale;
 
 import org.apache.lucene.search.Explanation;
 
@@ -72,6 +74,6 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
 
   @Override
   public String getName() {
-    return String.format("Jelinek-Mercer(%f)", getLambda());
+    return String.format(Locale.ROOT, "Jelinek-Mercer(%f)", getLambda());
   }
 }

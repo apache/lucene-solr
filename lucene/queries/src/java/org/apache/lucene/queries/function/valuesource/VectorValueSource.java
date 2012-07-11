@@ -1,5 +1,5 @@
 package org.apache.lucene.queries.function.valuesource;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -210,9 +210,8 @@ public class VectorValueSource extends MultiValueSource {
 
     VectorValueSource that = (VectorValueSource) o;
 
-    if (!sources.equals(that.sources)) return false;
+    return sources.equals(that.sources);
 
-    return true;
   }
 
   @Override

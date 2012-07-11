@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,8 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -37,7 +36,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -304,7 +302,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     final NRTManager.TrackingIndexWriter writer = new NRTManager.TrackingIndexWriter(_writer);
     final NRTManager manager = new NRTManager(writer, null, false);
     Document doc = new Document();
-    doc.add(newField("test","test", TextField.TYPE_STORED));
+    doc.add(newTextField("test", "test", Field.Store.YES));
     long gen = writer.addDocument(doc);
     manager.maybeRefresh();
     assertFalse(gen < manager.getCurrentSearchingGen());
@@ -367,7 +365,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
     public LatchedIndexWriter(Directory d, IndexWriterConfig conf,
         CountDownLatch latch, CountDownLatch signal)
-        throws CorruptIndexException, LockObtainFailedException, IOException {
+        throws IOException {
       super(d, conf);
       this.latch = latch;
       this.signal = signal;
@@ -376,7 +374,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
     public void updateDocument(Term term,
         Iterable<? extends IndexableField> doc, Analyzer analyzer)
-        throws CorruptIndexException, IOException {
+        throws IOException {
       super.updateDocument(term, doc, analyzer);
       try {
         if (waitAfterUpdate) {
@@ -398,7 +396,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
     final SearcherFactory theEvilOne = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader ignored) throws IOException {
+      public IndexSearcher newSearcher(IndexReader ignored) {
         return new IndexSearcher(other);
       }
       };

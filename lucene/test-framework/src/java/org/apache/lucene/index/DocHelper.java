@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -78,7 +78,7 @@ class DocHelper {
   public static final String KEYWORD_FIELD_KEY = "keyField";
   public static Field keyField;
   static {
-    keyField = new Field(KEYWORD_FIELD_KEY, KEYWORD_TEXT, StringField.TYPE_STORED);
+    keyField = new StringField(KEYWORD_FIELD_KEY, KEYWORD_TEXT, Field.Store.YES);
   }
 
   public static final FieldType customType5;
@@ -115,14 +115,14 @@ class DocHelper {
 
   public static final String UNSTORED_1_FIELD_TEXT = "unstored field text";
   public static final String UNSTORED_FIELD_1_KEY = "unStoredField1";
-  public static Field unStoredField1 = new Field(UNSTORED_FIELD_1_KEY, UNSTORED_1_FIELD_TEXT, TextField.TYPE_UNSTORED);
+  public static Field unStoredField1 = new TextField(UNSTORED_FIELD_1_KEY, UNSTORED_1_FIELD_TEXT, Field.Store.NO);
 
   public static final FieldType customType8;
   public static final String UNSTORED_2_FIELD_TEXT = "unstored field text";
   public static final String UNSTORED_FIELD_2_KEY = "unStoredField2";
   public static Field unStoredField2;
   static {
-    customType8 = new FieldType(TextField.TYPE_UNSTORED);
+    customType8 = new FieldType(TextField.TYPE_NOT_STORED);
     customType8.setStoreTermVectors(true);
     unStoredField2 = new Field(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT, customType8);
   }

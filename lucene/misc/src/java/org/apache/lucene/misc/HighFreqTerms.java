@@ -1,6 +1,6 @@
 package org.apache.lucene.misc;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,9 +18,12 @@ package org.apache.lucene.misc;
  */
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
@@ -30,7 +33,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ReaderUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -78,7 +80,7 @@ public class HighFreqTerms {
       }
     }
     
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
     TermStats[] terms = getHighFreqTerms(reader, numTerms, field);
     if (!IncludeTermFreqs) {
       //default HighFreqTerms behavior
@@ -183,33 +185,29 @@ public class HighFreqTerms {
   }
   
   public static long getTotalTermFreq(IndexReader reader, final String field, final BytesRef termText) throws Exception {   
-    final long totalTF[] = new long[1];
-    
-    new ReaderUtil.Gather(reader) {
-
-      @Override
-      protected void add(int base, AtomicReader r) throws IOException {
-        Bits liveDocs = r.getLiveDocs();
-        if (liveDocs == null) {
-          // TODO: we could do this up front, during the scan
-          // (next()), instead of after-the-fact here w/ seek,
-          // if the codec supports it and there are no del
-          // docs...
-          final long totTF = r.totalTermFreq(field, termText);
-          if (totTF != -1) {
-            totalTF[0] += totTF;
-            return;
-          }
-        }
-        DocsEnum de = r.termDocsEnum(liveDocs, field, termText, true);
-        if (de != null) {
-          while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
-            totalTF[0] += de.freq();
-        }
+    long totalTF = 0L;
+    for (final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
+      AtomicReader r = ctx.reader();
+      Bits liveDocs = r.getLiveDocs();
+      if (liveDocs == null) {
+        // TODO: we could do this up front, during the scan
+        // (next()), instead of after-the-fact here w/ seek,
+        // if the codec supports it and there are no del
+        // docs...
+        final long totTF = r.totalTermFreq(field, termText);
+        if (totTF != -1) {
+          totalTF += totTF;
+          continue;
+        } // otherwise we fall-through
       }
-    }.run();
+      DocsEnum de = r.termDocsEnum(liveDocs, field, termText, true);
+      if (de != null) {
+        while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
+          totalTF += de.freq();
+      }
+    }
     
-    return totalTF[0];
+    return totalTF;
   }
  }
 

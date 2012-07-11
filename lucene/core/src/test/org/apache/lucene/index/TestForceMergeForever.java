@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -40,7 +40,7 @@ public class TestForceMergeForever extends LuceneTestCase {
     }
 
     @Override
-    public void merge(MergePolicy.OneMerge merge) throws CorruptIndexException, IOException {
+    public void merge(MergePolicy.OneMerge merge) throws IOException {
       if (merge.maxNumSegments != -1 && (first || merge.segments.size() == 1)) {
         first = false;
         if (VERBOSE) {
@@ -59,7 +59,7 @@ public class TestForceMergeForever extends LuceneTestCase {
     // Try to make an index that requires merging:
     w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random(), 2, 11));
     final int numStartDocs = atLeast(20);
-    final LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random(), true);
     for(int docIDX=0;docIDX<numStartDocs;docIDX++) {
       w.addDocument(docs.nextDoc());
     }

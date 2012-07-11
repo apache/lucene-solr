@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -49,12 +49,12 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
   }
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {
@@ -71,7 +71,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         + System.getProperty("file.separator") + "data");
     dataDir.mkdirs();
 
-    solrConfig = TestHarness.createConfig("solrconfig.xml");
+    solrConfig = TestHarness.createConfig(getSolrHome(), "solrconfig.xml");
     h = new TestHarness( dataDir.getAbsolutePath(),
         solrConfig,
         "schema12.xml");
@@ -124,8 +124,8 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         new IndexWriterConfig(Version.LUCENE_40, new StandardAnalyzer(Version.LUCENE_40))
     );
     Document doc = new Document();
-    doc.add(new Field("id", "2", TextField.TYPE_STORED));
-    doc.add(new Field("name", "name2", TextField.TYPE_STORED));
+    doc.add(new TextField("id", "2", Field.Store.YES));
+    doc.add(new TextField("name", "name2", Field.Store.YES));
     iw.addDocument(doc);
     iw.commit();
     iw.close();

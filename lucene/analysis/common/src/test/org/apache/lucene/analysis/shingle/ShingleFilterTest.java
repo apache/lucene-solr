@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.shingle;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -54,7 +54,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public final boolean incrementToken() throws IOException {
+    public final boolean incrementToken() {
       clearAttributes();
       if (index < testToken.length) {
         Token t = testToken[index++];
@@ -1144,7 +1144,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
@@ -1157,7 +1157,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);
   }
   
   public void testEmptyTerm() throws IOException {

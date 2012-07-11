@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -398,7 +398,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     MergePolicy.OneMerge runningMerge;
     private volatile boolean done;
 
-    public MergeThread(IndexWriter writer, MergePolicy.OneMerge startMerge) throws IOException {
+    public MergeThread(IndexWriter writer, MergePolicy.OneMerge startMerge) {
       this.tWriter = writer;
       this.startMerge = startMerge;
     }

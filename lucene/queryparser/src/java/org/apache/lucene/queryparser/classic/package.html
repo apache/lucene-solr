@@ -51,6 +51,9 @@ enabling substantial customization to how a query is created.
 <a href="#Wildcard_Searches">Wildcard Searches</a>
 </li>
 <li>
+<a href="#Regexp_Searches">Regular expression Searches</a>
+</li>
+<li>
 <a href="#Fuzzy_Searches">Fuzzy Searches</a>
 </li>
 <li>
@@ -189,6 +192,12 @@ enabling substantial customization to how a query is created.
 <p>You can also use the wildcard searches in the middle of a term.</p>
 <pre class="code">te*t</pre>
 <p>Note: You cannot use a * or ? symbol as the first character of a search.</p>
+<a name="Regexp_Searches"></a>
+<h3 class="boxed">Regular Expression Searches</h3>
+<p>Lucene supports regular expression searches matching a pattern between forward slashes "/". The syntax may change across releases, but the current supported
+syntax is documented in the {@link org.apache.lucene.util.automaton.RegExp RegExp} class. For example to find documents containing "moat" or "boat":
+</p>
+<pre class="code">/[mb]oat/</pre>
 <a name="N1009B"></a><a name="Fuzzy_Searches"></a>
 <h3 class="boxed">Fuzzy Searches</h3>
 <p>Lucene supports fuzzy searches based on Damerau-Levenshtein Distance. To do a fuzzy search use the tilde, "~", symbol at the end of a Single word Term. For example to search for a term similar in spelling to "roam" use the fuzzy search: </p>
@@ -294,7 +303,7 @@ enabling substantial customization to how a query is created.
 <h2 class="boxed">Escaping Special Characters</h2>
 <div class="section">
 <p>Lucene supports escaping special characters that are part of the query syntax. The current list special characters are</p>
-<p>+ - &amp;&amp; || ! ( ) { } [ ] ^ " ~ * ? : \</p>
+<p>+ - &amp;&amp; || ! ( ) { } [ ] ^ " ~ * ? : \ /</p>
 <p>To escape these character use the \ before the character. For example to search for (1+1):2 use the query:</p>
 <pre class="code">\(1\+1\)\:2</pre>
 </div>

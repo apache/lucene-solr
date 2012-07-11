@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.tokenattributes;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -47,10 +47,10 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
     // tokenizer should call clearAtts before re-using
     // OffsetAtt
 
-    // TODO: check that these are valid!  IE, each should be
-    // >= 0, and endOffset should be >= startOffset.
-    // Problem is this could "break" existing
-    // tokenizers/filters.
+    if (startOffset < 0 || endOffset < startOffset) {
+      throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
+          + "startOffset=" + startOffset + ",endOffset=" + endOffset);
+    }
 
     this.startOffset = startOffset;
     this.endOffset = endOffset;

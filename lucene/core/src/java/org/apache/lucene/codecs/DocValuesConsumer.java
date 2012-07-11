@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,6 +29,7 @@ import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.ShortDocValuesField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
@@ -76,7 +77,20 @@ public abstract class DocValuesConsumer {
    * @throws IOException
    */
   public abstract void finish(int docCount) throws IOException;
-
+  
+  
+  /**
+   * Returns the value size this consumer accepts or <tt>-1</tt> iff this
+   * consumer is value size agnostic ie. accepts variable length values.
+   * <p>
+   * NOTE: the return value is undefined until the consumer has successfully
+   * consumed at least one value.
+   * 
+   * @return the value size this consumer accepts or <tt>-1</tt> iff this
+   *         consumer is value size agnostic ie. accepts variable length values.
+   */
+  public abstract int getValueSize();
+  
   /**
    * Merges the given {@link org.apache.lucene.index.MergeState} into
    * this {@link DocValuesConsumer}.
@@ -93,12 +107,12 @@ public abstract class DocValuesConsumer {
     assert mergeState != null;
     boolean hasMerged = false;
     for(int readerIDX=0;readerIDX<mergeState.readers.size();readerIDX++) {
-      final org.apache.lucene.index.MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(readerIDX);
+      final AtomicReader reader = mergeState.readers.get(readerIDX);
       if (docValues[readerIDX] != null) {
         hasMerged = true;
         merge(docValues[readerIDX], mergeState.docBase[readerIDX],
-              reader.reader.maxDoc(), reader.liveDocs);
-        mergeState.checkAbort.work(reader.reader.maxDoc());
+              reader.maxDoc(), reader.getLiveDocs());
+        mergeState.checkAbort.work(reader.maxDoc());
       }
     }
     // only finish if no exception is thrown!

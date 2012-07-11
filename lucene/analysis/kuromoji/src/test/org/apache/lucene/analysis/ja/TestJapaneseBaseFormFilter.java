@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.ja;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -46,7 +46,7 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
   }
   
   public void testRandomStrings() throws IOException {
-    checkRandomData(random(), analyzer, atLeast(10000));
+    checkRandomData(random(), analyzer, atLeast(1000));
   }
   
   public void testEmptyTerm() throws IOException {

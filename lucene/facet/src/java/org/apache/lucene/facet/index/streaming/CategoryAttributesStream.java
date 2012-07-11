@@ -1,13 +1,12 @@
 package org.apache.lucene.facet.index.streaming;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.TokenStream;
 
 import org.apache.lucene.facet.index.attributes.CategoryAttribute;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -59,7 +58,7 @@ public class CategoryAttributesStream extends TokenStream {
   }
 
   @Override
-  public final boolean incrementToken() throws IOException {
+  public final boolean incrementToken() {
     if (iterator == null) {
       if (iterable == null) {
         return false;

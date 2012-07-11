@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.simpletext;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -34,12 +34,12 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
   public static final String SI_EXTENSION = "si";
   
   @Override
-  public SegmentInfoReader getSegmentInfosReader() {
+  public SegmentInfoReader getSegmentInfoReader() {
     return reader;
   }
 
   @Override
-  public SegmentInfoWriter getSegmentInfosWriter() {
+  public SegmentInfoWriter getSegmentInfoWriter() {
     return writer;
   }
 }

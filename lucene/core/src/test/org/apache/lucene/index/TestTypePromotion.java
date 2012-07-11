@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
  * work for additional information regarding copyright ownership. The ASF
@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -41,9 +42,7 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-@SuppressCodecs("Lucene3x")
 public class TestTypePromotion extends LuceneTestCase {
 
   private static EnumSet<Type> INTEGERS = EnumSet.of(Type.VAR_INTS,
@@ -51,7 +50,7 @@ public class TestTypePromotion extends LuceneTestCase {
       Type.FIXED_INTS_64, Type.FIXED_INTS_8);
 
   private static EnumSet<Type> FLOATS = EnumSet.of(Type.FLOAT_32,
-      Type.FLOAT_64);
+      Type.FLOAT_64, Type.FIXED_INTS_8);
 
   private static EnumSet<Type> UNSORTED_BYTES = EnumSet.of(
       Type.BYTES_FIXED_DEREF, Type.BYTES_FIXED_STRAIGHT,
@@ -69,8 +68,7 @@ public class TestTypePromotion extends LuceneTestCase {
     Int, Float, Byte
   }
 
-  private void runTest(EnumSet<Type> types, TestType type)
-      throws CorruptIndexException, IOException {
+  private void runTest(EnumSet<Type> types, TestType type) throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -78,12 +76,13 @@ public class TestTypePromotion extends LuceneTestCase {
     int num_2 = atLeast(200);
     int num_3 = atLeast(200);
     long[] values = new long[num_1 + num_2 + num_3];
+    Type[] sourceType = new Type[num_1 + num_2 + num_3];
     index(writer,
-        randomValueType(types, random()), values, 0, num_1);
+        randomValueType(types, random()), values, sourceType, 0, num_1);
     writer.commit();
     
     index(writer,
-        randomValueType(types, random()), values, num_1, num_2);
+        randomValueType(types, random()), values, sourceType, num_1, num_2);
     writer.commit();
     
     if (random().nextInt(4) == 0) {
@@ -94,38 +93,38 @@ public class TestTypePromotion extends LuceneTestCase {
       IndexWriter writer_2 = new IndexWriter(dir_2,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       index(writer_2,
-          randomValueType(types, random()), values, num_1 + num_2, num_3);
+          randomValueType(types, random()), values, sourceType, num_1 + num_2, num_3);
       writer_2.commit();
       writer_2.close();
       if (rarely()) {
         writer.addIndexes(dir_2);
       } else {
         // do a real merge here
-        IndexReader open = maybeWrapReader(IndexReader.open(dir_2));
+        IndexReader open = maybeWrapReader(DirectoryReader.open(dir_2));
         writer.addIndexes(open);
         open.close();
       }
       dir_2.close();
     } else {
       index(writer,
-          randomValueType(types, random()), values, num_1 + num_2, num_3);
+          randomValueType(types, random()), values, sourceType, num_1 + num_2, num_3);
     }
 
     writer.forceMerge(1);
     writer.close();
-    assertValues(type, dir, values);
+    assertValues(type, dir, values, sourceType);
     dir.close();
   }
 
   
-  private void assertValues(TestType type, Directory dir, long[] values)
-      throws CorruptIndexException, IOException {
+  private void assertValues(TestType type, Directory dir, long[] values, Type[] sourceType)
+      throws IOException {
     DirectoryReader reader = DirectoryReader.open(dir);
-    assertEquals(1, reader.getSequentialSubReaders().length);
+    assertEquals(1, reader.getSequentialSubReaders().size());
     IndexReaderContext topReaderContext = reader.getTopReaderContext();
-    AtomicReaderContext[] children = topReaderContext.leaves();
-    assertEquals(1, children.length);
-    DocValues docValues = children[0].reader().docValues("promote");
+    List<AtomicReaderContext> leaves = topReaderContext.leaves();
+    assertEquals(1, leaves.size());
+    DocValues docValues = leaves.get(0).reader().docValues("promote");
     Source directSource = docValues.getDirectSource();
     for (int i = 0; i < values.length; i++) {
       int id = Integer.parseInt(reader.document(i).get("id"));
@@ -159,7 +158,13 @@ public class TestTypePromotion extends LuceneTestCase {
         assertEquals(msg  + " byteSize: " + bytes.length, values[id], value);
         break;
       case Float:
-        assertEquals(msg, values[id], Double.doubleToRawLongBits(directSource.getFloat(i)));
+          if (sourceType[id] == Type.FLOAT_32
+              || sourceType[id] == Type.FLOAT_64) {
+            assertEquals(msg, values[id],
+                Double.doubleToRawLongBits(directSource.getFloat(i)));
+          } else {
+            assertEquals(msg, values[id], directSource.getFloat(i), 0.0d);
+          }
         break;
       case Int:
         assertEquals(msg, values[id], directSource.getInt(i));
@@ -174,8 +179,8 @@ public class TestTypePromotion extends LuceneTestCase {
   }
 
   public void index(IndexWriter writer,
-      Type valueType, long[] values, int offset, int num)
-      throws CorruptIndexException, IOException {
+      Type valueType, long[] values, Type[] sourceTypes, int offset, int num)
+      throws IOException {
     final Field valField;
 
     if (VERBOSE) {
@@ -228,7 +233,8 @@ public class TestTypePromotion extends LuceneTestCase {
 
     for (int i = offset; i < offset + num; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", i + "", TextField.TYPE_STORED));
+      doc.add(new TextField("id", i + "", Field.Store.YES));
+      sourceTypes[i] = valueType;
       switch (valueType) {
       case VAR_INTS:
         // TODO: can we do nextLong()?
@@ -315,8 +321,7 @@ public class TestTypePromotion extends LuceneTestCase {
     runTest(INTEGERS, TestType.Int);
   }
 
-  public void testPromotFloatingPoint() throws CorruptIndexException,
-      IOException {
+  public void testPromotFloatingPoint() throws IOException {
     runTest(FLOATS, TestType.Float);
   }
   
@@ -328,8 +333,9 @@ public class TestTypePromotion extends LuceneTestCase {
     int num_1 = atLeast(200);
     int num_2 = atLeast(200);
     long[] values = new long[num_1 + num_2];
+    Type[] sourceType = new Type[num_1 + num_2];
     index(writer,
-        randomValueType(INTEGERS, random()), values, 0, num_1);
+        randomValueType(INTEGERS, random()), values, sourceType, 0, num_1);
     writer.commit();
     
     if (random().nextInt(4) == 0) {
@@ -338,21 +344,21 @@ public class TestTypePromotion extends LuceneTestCase {
       IndexWriter writer_2 = new IndexWriter(dir_2,
                        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       index(writer_2,
-          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, num_1, num_2);
+          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, sourceType, num_1, num_2);
       writer_2.commit();
       writer_2.close();
       if (random().nextBoolean()) {
         writer.addIndexes(dir_2);
       } else {
         // do a real merge here
-        IndexReader open = IndexReader.open(dir_2);
+        IndexReader open = DirectoryReader.open(dir_2);
         writer.addIndexes(open);
         open.close();
       }
       dir_2.close();
     } else {
       index(writer,
-          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, num_1, num_2);
+          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, sourceType, num_1, num_2);
       writer.commit();
     }
     writer.close();
@@ -365,12 +371,12 @@ public class TestTypePromotion extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
-    assertEquals(1, reader.getSequentialSubReaders().length);
+    assertEquals(1, reader.getSequentialSubReaders().size());
     IndexReaderContext topReaderContext = reader.getTopReaderContext();
-    AtomicReaderContext[] children = topReaderContext.leaves();
-    DocValues docValues = children[0].reader().docValues("promote");
+    List<AtomicReaderContext> leaves = topReaderContext.leaves();
+    DocValues docValues = leaves.get(0).reader().docValues("promote");
     assertNotNull(docValues);
-    assertValues(TestType.Byte, dir, values);
+    assertValues(TestType.Byte, dir, values, sourceType);
     assertEquals(Type.BYTES_VAR_STRAIGHT, docValues.getType());
     reader.close();
     dir.close();

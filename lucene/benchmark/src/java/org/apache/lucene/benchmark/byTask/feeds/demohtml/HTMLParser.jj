@@ -22,6 +22,7 @@ options {
   //DEBUG_LOOKAHEAD = true;
   //DEBUG_TOKEN_MANAGER = true;
   UNICODE_INPUT = true;
+  USER_CHAR_STREAM=true;
 }
 
 PARSER_BEGIN(HTMLParser)
@@ -56,6 +57,10 @@ public class HTMLParser {
   private MyPipedInputStream pipeInStream = null;
   private PipedOutputStream pipeOutStream = null;
   
+  public HTMLParser(Reader reader) {
+    this(new FastCharStream(reader));
+  }
+
   private class MyPipedInputStream extends PipedInputStream{
     
     public MyPipedInputStream(){
@@ -227,7 +232,7 @@ void Tag() throws IOException :
 }
 {
   t1=<TagName> {
-   String tagName = t1.image.toLowerCase(Locale.ENGLISH);
+   String tagName = t1.image.toLowerCase(Locale.ROOT);
    if(Tags.WS_ELEMS.contains(tagName) ) {
       addSpace();
     }
@@ -249,7 +254,7 @@ void Tag() throws IOException :
 			)
 	   && t2 != null)
 	{
-		currentMetaTag=t2.image.toLowerCase(Locale.ENGLISH);
+		currentMetaTag=t2.image.toLowerCase(Locale.ROOT);
 		if(currentMetaTag != null && currentMetaContent != null) {
         	addMetaTag();
 		}
@@ -257,7 +262,7 @@ void Tag() throws IOException :
     	if(inMetaTag && t1.image.equalsIgnoreCase("content") && t2 !=
 null)
 	{
-		currentMetaContent=t2.image.toLowerCase(Locale.ENGLISH);
+		currentMetaContent=t2.image.toLowerCase(Locale.ROOT);
 		if(currentMetaTag != null && currentMetaContent != null) {
         	addMetaTag();
 		}

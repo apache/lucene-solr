@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.byTask.utils;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.lucene.benchmark.byTask.utils;
  */
 
 import java.text.NumberFormat;
+import java.util.Locale;
 
 /**
  * Formatting utilities (for reports).
@@ -25,9 +26,9 @@ import java.text.NumberFormat;
 public class Format {
 
   private static NumberFormat numFormat [] = { 
-    NumberFormat.getInstance(), 
-    NumberFormat.getInstance(),
-    NumberFormat.getInstance(),
+    NumberFormat.getInstance(Locale.ROOT), 
+    NumberFormat.getInstance(Locale.ROOT),
+    NumberFormat.getInstance(Locale.ROOT),
   };
   private static final String padd = "                                                 ";
   

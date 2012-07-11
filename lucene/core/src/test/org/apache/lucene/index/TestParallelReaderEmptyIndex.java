@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,7 +27,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Some tests for {@link ParallelAtomicReader}s with empty indexes
@@ -94,14 +93,14 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       }
       IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       Document doc = new Document();
-      Field idField = newField("id", "", TextField.TYPE_UNSTORED);
+      Field idField = newTextField("id", "", Field.Store.NO);
       doc.add(idField);
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setStoreTermVectors(true);
       doc.add(newField("test", "", customType));
       idField.setStringValue("1");
       iw.addDocument(doc);
-      doc.add(newField("test", "", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("test", "", Field.Store.NO));
       idField.setStringValue("2");
       iw.addDocument(doc);
       iw.close();
@@ -115,7 +114,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       
       writer.deleteDocuments(new Term("id", "1"));
       writer.close();
-      IndexReader ir = IndexReader.open(rd1);
+      IndexReader ir = DirectoryReader.open(rd1);
       assertEquals(2, ir.maxDoc());
       assertEquals(1, ir.numDocs());
       ir.close();

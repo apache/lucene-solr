@@ -1,6 +1,6 @@
 package org.apache.lucene.queryparser.flexible.standard.builders;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -84,8 +84,7 @@ public class StandardBooleanQueryNodeBuilder implements StandardQueryBuilder {
 
   }
 
-  private static BooleanClause.Occur getModifierValue(QueryNode node)
-      throws QueryNodeException {
+  private static BooleanClause.Occur getModifierValue(QueryNode node) {
 
     if (node instanceof ModifierQueryNode) {
       ModifierQueryNode mNode = ((ModifierQueryNode) node);

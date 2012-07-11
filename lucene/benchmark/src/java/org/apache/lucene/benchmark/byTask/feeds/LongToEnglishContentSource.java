@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.byTask.feeds;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -35,7 +35,7 @@ public class LongToEnglishContentSource extends ContentSource{
   }
 
   // TODO: we could take param to specify locale...
-  private final RuleBasedNumberFormat rnbf = new RuleBasedNumberFormat(Locale.ENGLISH,
+  private final RuleBasedNumberFormat rnbf = new RuleBasedNumberFormat(Locale.ROOT,
                                                                        RuleBasedNumberFormat.SPELLOUT);
   @Override
   public synchronized DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {

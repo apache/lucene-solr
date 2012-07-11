@@ -1,6 +1,6 @@
 package org.apache.lucene.sandbox.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -462,7 +462,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
 
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(newField("field", text, TextField.TYPE_STORED));
+    doc.add(newTextField("field", text, Field.Store.YES));
     writer.addDocument(doc);
   }
 }

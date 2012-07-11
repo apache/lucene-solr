@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,7 +31,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
@@ -639,7 +638,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
     // for debugging
     @SuppressWarnings("unused")
-	private String toString(BytesRef b) {
+    private String toString(BytesRef b) {
       try {
         return b.utf8ToString() + " " + b;
       } catch (Throwable t) {
@@ -896,6 +895,10 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         //   System.out.println("SAVED to " + dotFileName);
         //   w.close();
         // }
+      } else {
+        assert sumTotalTermFreq == 0;
+        assert sumDocFreq == 0;
+        assert docCount == 0;
       }
     }
 

@@ -56,7 +56,7 @@
   any query matching parent documents, creating the joined query
   matching only child documents.
 
-<h2>Search-time joins</h2>
+<h2>Query-time joins</h2>
 
 <p>
   The query time joining is index term based and implemented as two pass search. The first pass collects all the terms from a fromField
@@ -68,22 +68,26 @@
   <li><code>fromField</code>: The from field to join from.
   <li><code>fromQuery</code>:  The query executed to collect the from terms. This is usually the user specified query.
   <li><code>multipleValuesPerDocument</code>:  Whether the fromField contains more than one value per document
+  <li><code>scoreMode</code>:  Defines how scores are translated to the other join side. If you don't care about scoring
+  use {@link org.apache.lucene.search.join.ScoreMode#None} mode. This will disable scoring and is therefore more
+  efficient (requires less memory and is faster).
   <li><code>toField</code>: The to field to join to
 </ul>
 <p>
   Basically the query-time joining is accessible from one static method. The user of this method supplies the method
   with the described input and a <code>IndexSearcher</code> where the from terms need to be collected from. The returned
   query can be executed with the same <code>IndexSearcher</code>, but also with another <code>IndexSearcher</code>.
-  Example usage of the {@link org.apache.lucene.search.join.JoinUtil#createJoinQuery(String, boolean, String, org.apache.lucene.search.Query, org.apache.lucene.search.IndexSearcher) 
+  Example usage of the {@link org.apache.lucene.search.join.JoinUtil#createJoinQuery(String, boolean, String, org.apache.lucene.search.Query, org.apache.lucene.search.IndexSearcher, org.apache.lucene.search.join.ScoreMode)
   JoinUtil.createJoinQuery()} :
 </p>
 <pre class="prettyprint">
   String fromField = "from"; // Name of the from field
   boolean multipleValuesPerDocument = false; // Set only yo true in the case when your fromField has multiple values per document in your index
   String toField = "to"; // Name of the to field
+  ScoreMode scoreMode = ScoreMode.Max // Defines how the scores are translated into the other side of the join.
   Query fromQuery = new TermQuery(new Term("content", searchTerm)); // Query executed to collect from values to join to the to values
 
-  Query joinQuery = JoinUtil.createJoinQuery(fromField, multipleValuesPerDocument, toField, fromQuery, fromSearcher);
+  Query joinQuery = JoinUtil.createJoinQuery(fromField, multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode);
   TopDocs topDocs = toSearcher.search(joinQuery, 10); // Note: toSearcher can be the same as the fromSearcher
   // Render topDocs...
 </pre>

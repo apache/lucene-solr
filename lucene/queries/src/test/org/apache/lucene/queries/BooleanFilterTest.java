@@ -1,6 +1,6 @@
 package org.apache.lucene.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ package org.apache.lucene.queries;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -69,10 +69,10 @@ public class BooleanFilterTest extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException {
     Document doc = new Document();
-    doc.add(newField("accessRights", accessRights, TextField.TYPE_STORED));
-    doc.add(newField("price", price, TextField.TYPE_STORED));
-    doc.add(newField("date", date, TextField.TYPE_STORED));
-    doc.add(newField("inStock", inStock, TextField.TYPE_STORED));
+    doc.add(newTextField("accessRights", accessRights, Field.Store.YES));
+    doc.add(newTextField("price", price, Field.Store.YES));
+    doc.add(newTextField("date", date, Field.Store.YES));
+    doc.add(newTextField("inStock", inStock, Field.Store.YES));
     writer.addDocument(doc);
   }
 

@@ -29,6 +29,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * An implementation of {@link AbstractGroupFacetCollector} that computes grouped facets based on docvalues.
@@ -84,12 +85,12 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
       case BYTES_FIXED_DEREF:
       case BYTES_VAR_STRAIGHT:
       case BYTES_VAR_DEREF:
-        throw new IllegalArgumentException(String.format("Group valueType %s not supported", groupDvType));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "Group valueType %s not supported", groupDvType));
       case BYTES_VAR_SORTED:
       case BYTES_FIXED_SORTED:
         return GroupSortedBR.createGroupSortedFacetCollector(groupField, groupDvType, groupDiskResident, facetField, facetDvType, facetDiskResident, facetPrefix, initialSize);
       default:
-        throw new IllegalArgumentException(String.format("Group valueType %s not supported", groupDvType));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "Group valueType %s not supported", groupDvType));
     }
   }
 
@@ -133,12 +134,12 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
         case BYTES_FIXED_DEREF:
         case BYTES_VAR_STRAIGHT:
         case BYTES_VAR_DEREF:
-          throw new IllegalArgumentException(String.format("Facet valueType %s not supported", facetDvType));
+          throw new IllegalArgumentException(String.format(Locale.ROOT, "Facet valueType %s not supported", facetDvType));
         case BYTES_VAR_SORTED:
         case BYTES_FIXED_SORTED:
           return new FacetSortedBR(groupField, groupDvType, groupDiskResident, facetField, facetDvType, facetDiskResident, facetPrefix, initialSize);
         default:
-          throw new IllegalArgumentException(String.format("Facet valueType %s not supported", facetDvType));
+          throw new IllegalArgumentException(String.format(Locale.ROOT, "Facet valueType %s not supported", facetDvType));
       }
     }
 

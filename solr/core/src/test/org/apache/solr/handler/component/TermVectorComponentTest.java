@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -128,6 +128,73 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
             " 'uniqueKeyFieldName':'id'}"
     );
+    // tv.fl diff from fl
+    assertJQ(req("json.nl","map", 
+                 "qt",tv, 
+                 "q", "id:0", 
+                 "fl", "*,score",
+                 "tv.fl", "test_basictv,test_offtv",
+                 TermVectorComponent.COMPONENT_NAME, "true", 
+                 TermVectorParams.TF, "true")
+       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+            " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
+            " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
+            " 'uniqueKeyFieldName':'id'}"
+    );
+    // multi-valued tv.fl 
+    assertJQ(req("json.nl","map", 
+                 "qt",tv, 
+                 "q", "id:0", 
+                 "fl", "*,score",
+                 "tv.fl", "test_basictv",
+                 "tv.fl","test_offtv",
+                 TermVectorComponent.COMPONENT_NAME, "true", 
+                 TermVectorParams.TF, "true")
+       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+            " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
+            " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
+            " 'uniqueKeyFieldName':'id'}"
+    );
+    // re-use fl glob
+    assertJQ(req("json.nl","map", 
+                 "qt",tv, 
+                 "q", "id:0", 
+                 "fl", "*,score",
+                 TermVectorComponent.COMPONENT_NAME, "true", 
+                 TermVectorParams.TF, "true")
+       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+            " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
+            " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
+            " 'test_posofftv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
+            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
+            " 'uniqueKeyFieldName':'id'}"
+    );
+    // re-use fl, ignore things we can't handle
+    assertJQ(req("json.nl","map", 
+                 "qt",tv, 
+                 "q", "id:0", 
+                 "fl", "score,test_basictv,[docid],test_postv,val:sum(3,4)",
+                 TermVectorComponent.COMPONENT_NAME, "true", 
+                 TermVectorParams.TF, "true")
+       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+            " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
+            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
+            " 'uniqueKeyFieldName':'id'}"
+    );
+    // re-use (multi-valued) fl, ignore things we can't handle
+    assertJQ(req("json.nl","map", 
+                 "qt",tv, 
+                 "q", "id:0", 
+                 "fl", "score,test_basictv",
+                 "fl", "[docid],test_postv,val:sum(3,4)",
+                 TermVectorComponent.COMPONENT_NAME, "true", 
+                 TermVectorParams.TF, "true")
+       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+            " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
+            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
+            " 'uniqueKeyFieldName':'id'}"
+    );
+
   }
 
   @Test

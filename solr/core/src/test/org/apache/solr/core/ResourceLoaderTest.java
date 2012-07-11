@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -95,7 +95,7 @@ public class ResourceLoaderTest extends LuceneTestCase
   
   public void testBOMMarkers() throws Exception {
     final String fileWithBom = "stopwithbom.txt";
-    SolrResourceLoader loader = new SolrResourceLoader(null);
+    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
 
     // preliminary sanity check
     InputStream bomStream = loader.openResource(fileWithBom);
@@ -121,7 +121,7 @@ public class ResourceLoaderTest extends LuceneTestCase
   
   public void testWrongEncoding() throws Exception {
     String wrongEncoding = "stopwordsWrongEncoding.txt";
-    SolrResourceLoader loader = new SolrResourceLoader(null);
+    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
     // ensure we get our exception
     try {
       List<String> lines = loader.getLines(wrongEncoding);

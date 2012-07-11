@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -136,7 +136,7 @@ class JoinQuery extends Query {
     private float queryWeight;
     ResponseBuilder rb;
 
-    public JoinQueryWeight(SolrIndexSearcher searcher) throws IOException {
+    public JoinQueryWeight(SolrIndexSearcher searcher) {
       this.fromSearcher = searcher;
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       if (info != null) {
@@ -176,7 +176,7 @@ class JoinQuery extends Query {
           final RefCounted<SolrIndexSearcher> ref = fromRef;
           info.addCloseHook(new Closeable() {
             @Override
-            public void close() throws IOException {
+            public void close() {
               ref.decref();
             }
           });
@@ -184,7 +184,7 @@ class JoinQuery extends Query {
 
         info.addCloseHook(new Closeable() {
           @Override
-          public void close() throws IOException {
+          public void close() {
             fromCore.close();
           }
         });
@@ -559,7 +559,7 @@ class JoinQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    if (getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     JoinQuery other = (JoinQuery)o;
     return this.fromField.equals(other.fromField)
            && this.toField.equals(other.toField)
@@ -572,7 +572,9 @@ class JoinQuery extends Query {
 
   @Override
   public int hashCode() {
-    int h = q.hashCode() + (int)fromCoreOpenTime;
+    int h = super.hashCode();
+    h = h * 31 + q.hashCode();
+    h = h * 31 + (int)fromCoreOpenTime;
     h = h * 31 + fromField.hashCode();
     h = h * 31 + toField.hashCode();
     return h;

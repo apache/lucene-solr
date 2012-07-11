@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -59,7 +59,7 @@ public interface MoreLikeThisParams
     public static TermStyle get( String p )
     {
       if( p != null ) {
-        p = p.toUpperCase(Locale.ENGLISH);
+        p = p.toUpperCase(Locale.ROOT);
         if( p.equals( "DETAILS" ) ) {
           return DETAILS;
         }

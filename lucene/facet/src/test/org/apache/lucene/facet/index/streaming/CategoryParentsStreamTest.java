@@ -15,13 +15,10 @@ import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
 import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.index.streaming.CategoryAttributesStream;
-import org.apache.lucene.facet.index.streaming.CategoryListTokenizer;
-import org.apache.lucene.facet.index.streaming.CategoryParentsStream;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -116,7 +113,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
    * @throws FacetException 
    */
   @Test
-  public void testNoRetainableAttributes() throws IOException, FacetException {
+  public void testNoRetainableAttributes() throws IOException {
     Directory directory = newDirectory();
     TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(directory);
 
@@ -150,7 +147,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
    * @throws FacetException 
    */
   @Test
-  public void testRetainableAttributes() throws IOException, FacetException {
+  public void testRetainableAttributes() throws IOException {
     Directory directory = newDirectory();
     TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(
         directory);

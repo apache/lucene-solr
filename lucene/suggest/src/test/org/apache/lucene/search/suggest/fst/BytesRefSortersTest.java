@@ -1,6 +1,6 @@
 package org.apache.lucene.search.suggest.fst;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,9 @@ import org.junit.Test;
 public class BytesRefSortersTest extends LuceneTestCase {
   @Test
   public void testExternalRefSorter() throws Exception {
-    check(new ExternalRefSorter(new Sort()));
+    ExternalRefSorter s = new ExternalRefSorter(new Sort());
+    check(s);
+    s.close();
   }
 
   @Test

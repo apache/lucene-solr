@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -50,7 +49,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     config.setSimilarity(new TestSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
-    Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
+    Field foo = newTextField("foo", "", Field.Store.NO);
     doc.add(foo);
     for (int i = 0; i < 100; i++) {
       foo.setStringValue(addValue());

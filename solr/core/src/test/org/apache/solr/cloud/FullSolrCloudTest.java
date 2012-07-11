@@ -1,6 +1,6 @@
 package org.apache.solr.cloud;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,15 +17,20 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
-import java.util.concurrent.TimeoutException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.params.CoreConnectionPNames;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,12 +51,10 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * 
@@ -59,9 +62,10 @@ import org.junit.Ignore;
  * what we test now - the default update chain
  * 
  */
+@Slow
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @BeforeClass
-  public static void beforeFullSolrCloudTest() throws Exception {
+  public static void beforeFullSolrCloudTest() {
     // shorten the log output more for this test type
     if (formatter != null) formatter.setShorterFormat();
   }
@@ -148,15 +152,12 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    System
-        .setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+  public static void beforeClass() {
     System.setProperty("solrcloud.update.delay", "0");
   }
   
   @AfterClass
   public static void afterClass() {
-    System.clearProperty("solr.directoryFactory");
     System.clearProperty("solrcloud.update.delay");
   }
   
@@ -223,7 +224,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     System.setProperty("collection", "control_collection");
     String numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
     System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
-    controlJetty = createJetty(testDir, testDir + "/control/data",
+    controlJetty = createJetty(new File(getSolrHome()), testDir + "/control/data",
         "control_shard");
     System.clearProperty("collection");
     if(numShards != null) {
@@ -255,7 +256,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, testDir + "/jetty"
+      JettySolrRunner j = createJetty(new File(getSolrHome()), testDir + "/jetty"
           + this.jettyIntCntr.incrementAndGet(), null, "solrconfig.xml", null);
       jettys.add(j);
       SolrServer client = createNewSolrServer(j.getLocalPort());
@@ -327,8 +328,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
-      List<SolrServer> clients) throws Exception, IOException, KeeperException,
-      URISyntaxException {
+      List<SolrServer> clients) throws Exception {
     zkStateReader.updateCloudState(true);
     shardToClient.clear();
     shardToJetty.clear();
@@ -596,8 +596,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
   }
   
-  private long testUpdateAndDelete() throws Exception, SolrServerException,
-      IOException {
+  private long testUpdateAndDelete() throws Exception {
     long docId = 99999999L;
     indexr("id", docId, t1, "originalcontent");
     
@@ -632,9 +631,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     return docId;
   }
   
-  private void addNewReplica() throws Exception, InterruptedException,
-      TimeoutException, IOException, KeeperException, URISyntaxException,
-      SolrServerException {
+  private void addNewReplica() throws Exception {
     JettySolrRunner newReplica = createJettys(1).get(0);
     
     waitForRecoveriesToFinish(false);
@@ -656,8 +653,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose);
   }
   
-  private void brindDownShardIndexSomeDocsAndRecover() throws Exception,
-      SolrServerException, IOException, InterruptedException {
+  private void brindDownShardIndexSomeDocsAndRecover() throws Exception {
     SolrQuery query = new SolrQuery("*:*");
     query.set("distrib", false);
     
@@ -697,7 +693,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     // try to index to a living shard at shard2
     
-    // we are careful to make sure the downed node is not longer in the state,
+    // we are careful to make sure the downed node is no longer in the state,
     // because on some systems (especially freebsd w/ blackhole enabled), trying
     // to talk to a downed node causes grief
     tries = 0;
@@ -1320,7 +1316,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     ((HttpSolrServer) controlClient).shutdown();
     if (cloudClient != null) {
-      cloudClient.close();
+      cloudClient.shutdown();
     }
     if (zkStateReader != null) {
       zkStateReader.close();

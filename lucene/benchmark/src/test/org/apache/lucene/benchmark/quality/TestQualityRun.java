@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.quality;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,6 +22,7 @@ import org.apache.lucene.benchmark.quality.trec.TrecJudge;
 import org.apache.lucene.benchmark.quality.trec.TrecTopicsReader;
 import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
@@ -30,7 +31,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 
 /**
  * Test that quality run does its job.
@@ -54,7 +57,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     int maxResults = 1000;
     String docNameField = "doctitle"; // orig docID is in the linedoc format title 
     
-    PrintWriter logger = VERBOSE ? new PrintWriter(System.out,true) : null;
+    PrintWriter logger = VERBOSE ? new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()),true) : null;
    
     // prepare topics
     InputStream topics = getClass().getResourceAsStream("trecTopics.txt");
@@ -69,7 +72,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     judge.validateData(qqs, logger);
     
     Directory dir = newFSDirectory(new File(getWorkDir(),"index"));
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     QualityQueryParser qqParser = new SimpleQQParser("title","body");

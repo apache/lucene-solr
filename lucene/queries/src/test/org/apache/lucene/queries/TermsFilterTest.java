@@ -1,6 +1,6 @@
 package org.apache.lucene.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ package org.apache.lucene.queries;
 import java.util.HashSet;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -58,7 +58,7 @@ public class TermsFilterTest extends LuceneTestCase {
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       int term = i * 10; //terms are units of 10;
-      doc.add(newField(fieldName, "" + term, StringField.TYPE_STORED));
+      doc.add(newStringField(fieldName, "" + term, Field.Store.YES));
       w.addDocument(doc);
     }
     IndexReader reader = new SlowCompositeReaderWrapper(w.getReader());
@@ -92,7 +92,7 @@ public class TermsFilterTest extends LuceneTestCase {
     Directory rd1 = newDirectory();
     RandomIndexWriter w1 = new RandomIndexWriter(random(), rd1);
     Document doc = new Document();
-    doc.add(newField(fieldName, "content1", StringField.TYPE_STORED));
+    doc.add(newStringField(fieldName, "content1", Field.Store.YES));
     w1.addDocument(doc);
     IndexReader reader1 = w1.getReader();
     w1.close();
@@ -101,7 +101,7 @@ public class TermsFilterTest extends LuceneTestCase {
     Directory rd2 = newDirectory();
     RandomIndexWriter w2 = new RandomIndexWriter(random(), rd2);
     doc = new Document();
-    doc.add(newField(fieldName, "content2", StringField.TYPE_STORED));
+    doc.add(newStringField(fieldName, "content2", Field.Store.YES));
     w2.addDocument(doc);
     IndexReader reader2 = w2.getReader();
     w2.close();

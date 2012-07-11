@@ -1,20 +1,12 @@
 package org.apache.lucene.util;
 
-import static org.apache.lucene.util.LuceneTestCase.DEFAULT_LINE_DOCS_FILE;
-import static org.apache.lucene.util.LuceneTestCase.JENKINS_LARGE_LINE_DOCS_FILE;
-import static org.apache.lucene.util.LuceneTestCase.RANDOM_MULTIPLIER;
-import static org.apache.lucene.util.LuceneTestCase.TEST_CODEC;
-import static org.apache.lucene.util.LuceneTestCase.TEST_DIRECTORY;
-import static org.apache.lucene.util.LuceneTestCase.TEST_LINE_DOCS_FILE;
-import static org.apache.lucene.util.LuceneTestCase.TEST_NIGHTLY;
-import static org.apache.lucene.util.LuceneTestCase.TEST_POSTINGSFORMAT;
-import static org.apache.lucene.util.LuceneTestCase.classEnvRule;
+import static org.apache.lucene.util.LuceneTestCase.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
-import org.apache.lucene.codecs.Codec;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
@@ -23,7 +15,7 @@ import org.junit.runner.notification.RunListener;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -112,11 +104,11 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
       reportAdditionalFailureInfo(null);
     }
   }
-  
+
   /** print some useful debugging information about the environment */
-  static void printDebuggingInformation() {
+  private static void printDebuggingInformation() {
     if (classEnvRule != null) {
-      System.err.println("NOTE: test params are: codec=" + Codec.getDefault() +
+      System.err.println("NOTE: test params are: codec=" + classEnvRule.codec +
           ", sim=" + classEnvRule.similarity +
           ", locale=" + classEnvRule.locale +
           ", timezone=" + (classEnvRule.timeZone == null ? "(null)" : classEnvRule.timeZone.getID()));
@@ -134,41 +126,60 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     System.err.println("NOTE: All tests run in this JVM: " + Arrays.toString(testClassesRun.toArray()));
   }
 
-  // We get here from InterceptTestCaseEvents on the 'failed' event....
-  public void reportAdditionalFailureInfo(final String testName) {
+  private void reportAdditionalFailureInfo(final String testName) {
     if (TEST_LINE_DOCS_FILE.endsWith(JENKINS_LARGE_LINE_DOCS_FILE)) {
-      System.err.println("NOTE: download the large Jenkins line-docs file by running 'ant get-jenkins-line-docs' in the lucene directory.");
+      System.err.println("NOTE: download the large Jenkins line-docs file by running " +
+      		"'ant get-jenkins-line-docs' in the lucene directory.");
     }
 
-    StringBuilder b = new StringBuilder();
-    b.append("NOTE: reproduce with: ant test ")
-     .append("-Dtestcase=").append(RandomizedContext.current().getTargetClass().getSimpleName());
-    if (testName != null) {
-      b.append(" -Dtests.method=").append(testName);
+    final StringBuilder b = new StringBuilder();
+    b.append("NOTE: reproduce with: ant test ");
+
+    // Test case, method, seed.
+    addVmOpt(b, "testcase", RandomizedContext.current().getTargetClass().getSimpleName());
+    addVmOpt(b, "tests.method", testName);
+    addVmOpt(b, "tests.seed", RandomizedContext.current().getRunnerSeedAsString());
+
+    // Test groups and multipliers.
+    if (RANDOM_MULTIPLIER > 1) addVmOpt(b, "tests.multiplier", RANDOM_MULTIPLIER);
+    if (TEST_NIGHTLY) addVmOpt(b, SYSPROP_NIGHTLY, TEST_NIGHTLY);
+    if (TEST_WEEKLY) addVmOpt(b, SYSPROP_WEEKLY, TEST_WEEKLY);
+    if (TEST_SLOW) addVmOpt(b, SYSPROP_SLOW, TEST_SLOW);
+    if (TEST_AWAITSFIX) addVmOpt(b, SYSPROP_AWAITSFIX, TEST_AWAITSFIX);
+
+    // Codec, postings, directories.
+    if (!TEST_CODEC.equals("random")) addVmOpt(b, "tests.codec", TEST_CODEC);
+    if (!TEST_POSTINGSFORMAT.equals("random")) addVmOpt(b, "tests.postingsformat", TEST_POSTINGSFORMAT);
+    if (!TEST_DIRECTORY.equals("random")) addVmOpt(b, "tests.directory", TEST_DIRECTORY);
+
+    // Environment.
+    if (!TEST_LINE_DOCS_FILE.equals(DEFAULT_LINE_DOCS_FILE)) addVmOpt(b, "tests.linedocsfile", TEST_LINE_DOCS_FILE);
+    if (classEnvRule != null) {
+      addVmOpt(b, "tests.locale", classEnvRule.locale);
+      if (classEnvRule.timeZone != null) {
+        addVmOpt(b, "tests.timezone", classEnvRule.timeZone.getID());
+      }
     }
-    b.append(" -Dtests.seed=")
-     .append(RandomizedContext.current().getRunnerSeedAsString())
-     .append(reproduceWithExtraParams());
+
+    addVmOpt(b, "tests.file.encoding", System.getProperty("file.encoding"));
+
     System.err.println(b.toString());
   }
 
-  // extra params that were overridden needed to reproduce the command
-  private static String reproduceWithExtraParams() {
-    StringBuilder sb = new StringBuilder();
-    if (classEnvRule != null) {
-      if (classEnvRule.locale != null) sb.append(" -Dtests.locale=").append(classEnvRule.locale);
-      if (classEnvRule.timeZone != null) sb.append(" -Dtests.timezone=").append(classEnvRule.timeZone.getID());
-    }
-    if (!TEST_CODEC.equals("random")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
-    if (!TEST_POSTINGSFORMAT.equals("random")) sb.append(" -Dtests.postingsformat=").append(TEST_POSTINGSFORMAT);
-    if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
-    if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
-    if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
-    if (!TEST_LINE_DOCS_FILE.equals(DEFAULT_LINE_DOCS_FILE)) sb.append(" -Dtests.linedocsfile=" + TEST_LINE_DOCS_FILE);
+  /**
+   * Append a VM option (-Dkey=value) to a {@link StringBuilder}. Add quotes if 
+   * spaces or other funky characters are detected.
+   */
+  static void addVmOpt(StringBuilder b, String key, Object value) {
+    if (value == null) return;
 
-    // TODO we can't randomize this yet (it drives ant crazy) but this makes tests reproduce
-    // in case machines have different default charsets...
-    sb.append(" -Dargs=\"-Dfile.encoding=" + System.getProperty("file.encoding") + "\"");
-    return sb.toString();
-  }  
+    b.append(" -D").append(key).append("=");
+    String v = value.toString();
+    // Add simplistic quoting. This varies a lot from system to system and between
+    // shells... ANT should have some code for doing it properly.
+    if (Pattern.compile("[\\s=']").matcher(v).find()) {
+      v = '"' + v + '"';
+    }
+    b.append(v);
+  }
 }

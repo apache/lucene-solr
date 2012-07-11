@@ -1,5 +1,5 @@
 package org.apache.lucene.analysis.query;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,6 +20,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -48,12 +49,12 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
       Document doc = new Document();
       String variedFieldValue = variedFieldValues[i % variedFieldValues.length];
       String repetitiveFieldValue = repetitiveFieldValues[i % repetitiveFieldValues.length];
-      doc.add(new Field("variedField", variedFieldValue, TextField.TYPE_STORED));
-      doc.add(new Field("repetitiveField", repetitiveFieldValue, TextField.TYPE_STORED));
+      doc.add(new TextField("variedField", variedFieldValue, Field.Store.YES));
+      doc.add(new TextField("repetitiveField", repetitiveFieldValue, Field.Store.YES));
       writer.addDocument(doc);
     }
     writer.close();
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
   }
 
   @Override

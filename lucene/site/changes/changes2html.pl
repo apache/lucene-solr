@@ -24,7 +24,8 @@
 use strict;
 use warnings;
 
-my $project_info_url = 'https://issues.apache.org/jira/rest/api/2.0.alpha1/project/LUCENE';
+# JIRA REST API documentation: <http://docs.atlassian.com/jira/REST/latest/>
+my $project_info_url = 'https://issues.apache.org/jira/rest/api/2/project/LUCENE';
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
 my $bugzilla_url_prefix = 'http://issues.apache.org/bugzilla/show_bug.cgi?id=';
 my %release_dates = &setup_release_dates;
@@ -64,7 +65,7 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
   if (/\s*===+\s*(.*?)\s*===+\s*/) {   # New-style release headings
     $release = $1;
     $release =~ s/^(?:release|lucene)\s*//i;  # Trim "Release " or "Lucene " prefix
-    ($release, $relinfo) = ($release =~ /^(\d+(?:\.(?:\d+|[xyz]))*|Trunk)\s*(.*)/i);
+    ($release, $relinfo) = ($release =~ /^(\d+(?:\.(?:\d+))*(?:-(?:ALPHA|BETA))?|Trunk)\s*(.*)/i);
     $relinfo =~ s/\s*:\s*$//;          # Trim trailing colon
     $relinfo =~ s/^\s*,\s*//;          # Trim leading comma
     ($reldate, $relinfo) = get_release_date($release, $relinfo);
@@ -155,7 +156,7 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     $item .= "\n";
 
     while ($line_num < $#lines
-           and ($line = $lines[++$line_num]) !~ /^(?:\S|\s*\Q$type\E)/) {
+           and ($line = $lines[++$line_num]) !~ /^(?:\S|\s*\Q$type\E\s+)/) {
       $line =~ s/^\s{$leading_ws_width}//; # Trim leading whitespace
       $line =~ s/\s+$//;                   # Trim trailing whitespace
       $item .= "$line\n";
@@ -507,6 +508,9 @@ for my $rel (@releases) {
                     if (defined($jira_issue_2));
                   $leading_whitespace . $issue1 . $interlude . $issue2;
                 ~gex;
+
+      # Linkify URLs, except Bugzilla links, which don't work anymore
+      $item =~ s~(?<![">])(https?://(?!(?:nagoya|issues)\.apache\.org/bugzilla)\S+)~<a href="$1">$1</a>~g;
 
       print "      <li>$item</li>\n";
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -86,7 +86,7 @@ public class TestWriterPerf extends AbstractSolrTestCase {
 
 
   /** make sure to close req after you are done using the response */
-  public SolrQueryResponse getResponse(SolrQueryRequest req) throws IOException, Exception {
+  public SolrQueryResponse getResponse(SolrQueryRequest req) throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     h.getCore().execute(h.getCore().getRequestHandler(null),req,rsp);
     if (rsp.getException() != null) {

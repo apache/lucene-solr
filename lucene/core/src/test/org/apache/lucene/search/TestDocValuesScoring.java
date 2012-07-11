@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInvertState;
@@ -35,7 +34,6 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Tests the use of indexdocvalues in scoring.
@@ -43,7 +41,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  * In the example, a docvalues field is used as a per-document boost (separate from the norm)
  * @lucene.experimental
  */
-@SuppressCodecs("Lucene3x")
 public class TestDocValuesScoring extends LuceneTestCase {
   private static final float SCORE_EPSILON = 0.001f; /* for comparing floats */
 
@@ -51,11 +48,11 @@ public class TestDocValuesScoring extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    Field field = newField("foo", "", TextField.TYPE_UNSTORED);
+    Field field = newTextField("foo", "", Field.Store.NO);
     doc.add(field);
     Field dvField = new FloatDocValuesField("foo_boost", 0.0f);
     doc.add(dvField);
-    Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
+    Field field2 = newTextField("bar", "", Field.Store.NO);
     doc.add(field2);
     
     field.setStringValue("quick brown fox");

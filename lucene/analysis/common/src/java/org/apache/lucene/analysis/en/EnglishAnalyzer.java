@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.en;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -94,7 +94,8 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
    * @return A
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
+   *         {@link StandardFilter}, {@link EnglishPossessiveFilter}, 
+   *         {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link KeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link PorterStemFilter}.
    */
@@ -103,9 +104,7 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
-    // prior to this we get the classic behavior, standardfilter does it for us.
-    if (matchVersion.onOrAfter(Version.LUCENE_31))
-      result = new EnglishPossessiveFilter(matchVersion, result);
+    result = new EnglishPossessiveFilter(matchVersion, result);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())

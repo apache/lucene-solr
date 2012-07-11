@@ -48,7 +48,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseDV = true;
     boolean useDv = canUseDV && random().nextBoolean();
 
     // 0
@@ -218,7 +218,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
   }
 
   private void addField(Document doc, String field, String value, boolean canUseIDV) {
-    doc.add(new Field(field, value, StringField.TYPE_UNSTORED));
+    doc.add(new StringField(field, value, Field.Store.NO));
     if (canUseIDV) {
       doc.add(new SortedBytesDocValuesField(field, new BytesRef(value)));
     }
@@ -284,7 +284,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
           int counter = 1;
           for (TermGroupFacetCollector.FacetEntry expectedFacetEntry : expectedFacetEntries) {
             System.out.println(
-                String.format(
+                String.format(Locale.ROOT,
                     "%d. Expected facet value %s with count %d",
                     counter++, expectedFacetEntry.getValue().utf8ToString(), expectedFacetEntry.getCount()
                 )
@@ -297,7 +297,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
           counter = 1;
           for (TermGroupFacetCollector.FacetEntry actualFacetEntry : actualFacetEntries) {
             System.out.println(
-                String.format(
+                String.format(Locale.ROOT,
                     "%d. Actual facet value %s with count %d",
                     counter++, actualFacetEntry.getValue().utf8ToString(), actualFacetEntry.getCount()
                 )
@@ -360,14 +360,14 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
             new MockAnalyzer(random)
         )
     );
-    boolean canUseDV = !"Lucene3x".equals(writer.w.getConfig().getCodec().getName());
+    boolean canUseDV = true;
     boolean useDv = canUseDV && random.nextBoolean();
 
     Document doc = new Document();
     Document docNoGroup = new Document();
     Document docNoFacet = new Document();
     Document docNoGroupNoFacet = new Document();
-    Field group = newField("group", "", StringField.TYPE_UNSTORED);
+    Field group = newStringField("group", "", Field.Store.NO);
     Field groupDc = new SortedBytesDocValuesField("group", new BytesRef());
     if (useDv) {
       doc.add(groupDc);
@@ -378,7 +378,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     Field[] facetFields;
     if (useDv) {
       facetFields = new Field[2];
-      facetFields[0] = newField("facet", "", StringField.TYPE_UNSTORED);
+      facetFields[0] = newStringField("facet", "", Field.Store.NO);
       doc.add(facetFields[0]);
       docNoGroup.add(facetFields[0]);
       facetFields[1] = new SortedBytesDocValuesField("facet", new BytesRef());
@@ -387,12 +387,12 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     } else {
       facetFields = multipleFacetValuesPerDocument ? new Field[2 + random.nextInt(6)] : new Field[1];
       for (int i = 0; i < facetFields.length; i++) {
-        facetFields[i] = newField("facet", "", StringField.TYPE_UNSTORED);
+        facetFields[i] = newStringField("facet", "", Field.Store.NO);
         doc.add(facetFields[i]);
         docNoGroup.add(facetFields[i]);
       }
     }
-    Field content = newField("content", "", StringField.TYPE_UNSTORED);
+    Field content = newStringField("content", "", Field.Store.NO);
     doc.add(content);
     docNoGroup.add(content);
     docNoFacet.add(content);

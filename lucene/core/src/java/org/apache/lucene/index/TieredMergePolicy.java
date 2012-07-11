@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +39,7 @@ import java.util.ArrayList;
  *  policy also does not over-merge (i.e. cascade merges). 
  *
  *  <p>For normal merging, this policy first computes a
- *  "budget" of how many segments are allowed by be in the
+ *  "budget" of how many segments are allowed to be in the
  *  index.  If the index is over-budget, then the policy
  *  sorts segments by decreasing size (pro-rating by percent
  *  deletes), and then finds the least-cost merge.  Merge
@@ -256,8 +257,6 @@ public class TieredMergePolicy extends MergePolicy {
     }
   }
 
-  private final Comparator<SegmentInfoPerCommit> segmentByteSizeDescending = new SegmentByteSizeDescending();
-
   /** Holds score and explanation for a single candidate
    *  merge. */
   protected static abstract class MergeScore {
@@ -277,7 +276,7 @@ public class TieredMergePolicy extends MergePolicy {
     final Collection<SegmentInfoPerCommit> toBeMerged = new HashSet<SegmentInfoPerCommit>();
 
     final List<SegmentInfoPerCommit> infosSorted = new ArrayList<SegmentInfoPerCommit>(infos.asList());
-    Collections.sort(infosSorted, segmentByteSizeDescending);
+    Collections.sort(infosSorted, new SegmentByteSizeDescending());
 
     // Compute total index bytes & print details about the index
     long totIndexBytes = 0;
@@ -291,7 +290,7 @@ public class TieredMergePolicy extends MergePolicy {
         } else if (segBytes < floorSegmentBytes) {
           extra += " [floored]";
         }
-        message("  seg=" + writer.get().segString(info) + " size=" + String.format("%.3f", segBytes/1024/1024.) + " MB" + extra);
+        message("  seg=" + writer.get().segString(info) + " size=" + String.format(Locale.ROOT, "%.3f", segBytes/1024/1024.) + " MB" + extra);
       }
 
       minSegmentBytes = Math.min(segBytes, minSegmentBytes);
@@ -390,7 +389,7 @@ public class TieredMergePolicy extends MergePolicy {
 
           final MergeScore score = score(candidate, hitTooLarge, mergingBytes);
           if (verbose()) {
-            message("  maybe=" + writer.get().segString(candidate) + " score=" + score.getScore() + " " + score.getExplanation() + " tooLarge=" + hitTooLarge + " size=" + String.format("%.3f MB", totAfterMergeBytes/1024./1024.));
+            message("  maybe=" + writer.get().segString(candidate) + " score=" + score.getScore() + " " + score.getExplanation() + " tooLarge=" + hitTooLarge + " size=" + String.format(Locale.ROOT, "%.3f MB", totAfterMergeBytes/1024./1024.));
           }
 
           // If we are already running a max sized merge
@@ -415,7 +414,7 @@ public class TieredMergePolicy extends MergePolicy {
           }
 
           if (verbose()) {
-            message("  add merge=" + writer.get().segString(merge.segments) + " size=" + String.format("%.3f MB", bestMergeBytes/1024./1024.) + " score=" + String.format("%.3f", bestScore.getScore()) + " " + bestScore.getExplanation() + (bestTooLarge ? " [max merge]" : ""));
+            message("  add merge=" + writer.get().segString(merge.segments) + " size=" + String.format(Locale.ROOT, "%.3f MB", bestMergeBytes/1024./1024.) + " score=" + String.format(Locale.ROOT, "%.3f", bestScore.getScore()) + " " + bestScore.getExplanation() + (bestTooLarge ? " [max merge]" : ""));
           }
         } else {
           return spec;
@@ -477,7 +476,7 @@ public class TieredMergePolicy extends MergePolicy {
 
       @Override
       public String getExplanation() {
-        return "skew=" + String.format("%.3f", skew) + " nonDelRatio=" + String.format("%.3f", nonDelRatio);
+        return "skew=" + String.format(Locale.ROOT, "%.3f", skew) + " nonDelRatio=" + String.format(Locale.ROOT, "%.3f", nonDelRatio);
       }
     };
   }
@@ -516,7 +515,7 @@ public class TieredMergePolicy extends MergePolicy {
       return null;
     }
 
-    Collections.sort(eligible, segmentByteSizeDescending);
+    Collections.sort(eligible, new SegmentByteSizeDescending());
 
     if (verbose()) {
       message("eligible=" + eligible);
@@ -555,8 +554,7 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos infos)
-      throws CorruptIndexException, IOException {
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos infos) throws IOException {
     if (verbose()) {
       message("findForcedDeletesMerges infos=" + writer.get().segString(infos) + " forceMergeDeletesPctAllowed=" + forceMergeDeletesPctAllowed);
     }
@@ -573,7 +571,7 @@ public class TieredMergePolicy extends MergePolicy {
       return null;
     }
 
-    Collections.sort(eligible, segmentByteSizeDescending);
+    Collections.sort(eligible, new SegmentByteSizeDescending());
 
     if (verbose()) {
       message("eligible=" + eligible);
@@ -625,13 +623,11 @@ public class TieredMergePolicy extends MergePolicy {
   public void close() {
   }
 
-  private boolean isMerged(SegmentInfoPerCommit info)
-    throws IOException {
+  private boolean isMerged(SegmentInfoPerCommit info) {
     IndexWriter w = writer.get();
     assert w != null;
     boolean hasDeletions = w.numDeletedDocs(info) > 0;
     return !hasDeletions &&
-      !info.info.hasSeparateNorms() &&
       info.info.dir == w.getDirectory() &&
       (info.info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0);
   }

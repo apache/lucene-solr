@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -114,7 +115,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             assertNoUnreferencedFiles(dir, "after disk full during addDocument");
             
             // Make sure reader can open the index:
-            IndexReader.open(dir).close();
+            DirectoryReader.open(dir).close();
           }
             
           dir.close();
@@ -190,7 +191,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     
     // Make sure starting index seems to be working properly:
     Term searchTerm = new Term("content", "aaa");        
-    IndexReader reader = IndexReader.open(startDir);
+    IndexReader reader = DirectoryReader.open(startDir);
     assertEquals("first docFreq", 57, reader.docFreq(searchTerm));
     
     IndexSearcher searcher = newSearcher(reader);
@@ -313,7 +314,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             } else if (1 == method) {
               IndexReader readers[] = new IndexReader[dirs.length];
               for(int i=0;i<dirs.length;i++) {
-                readers[i] = IndexReader.open(dirs[i]);
+                readers[i] = DirectoryReader.open(dirs[i]);
               }
               try {
                 writer.addIndexes(readers);
@@ -362,7 +363,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           // failed, we see either all docs or no docs added
           // (transactional semantics):
           try {
-            reader = IndexReader.open(dir);
+            reader = DirectoryReader.open(dir);
           } catch (IOException e) {
             e.printStackTrace(System.out);
             fail(testName + ": exception when creating IndexReader: " + e);
@@ -488,7 +489,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
     Document doc = new Document();
 
-    doc.add(newField("f", "doctor who", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("f", "doctor who", Field.Store.NO));
     w.addDocument(doc);
     w.commit();
 
@@ -557,15 +558,15 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   private void addDoc(IndexWriter writer) throws IOException
   {
       Document doc = new Document();
-      doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "aaa", Field.Store.NO));
       writer.addDocument(doc);
   }
   
   private void addDocWithIndex(IndexWriter writer, int index) throws IOException
   {
       Document doc = new Document();
-      doc.add(newField("content", "aaa " + index, TextField.TYPE_UNSTORED));
-      doc.add(newField("id", "" + index, TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "aaa " + index, Field.Store.NO));
+      doc.add(newTextField("id", "" + index, Field.Store.NO));
       writer.addDocument(doc);
   }
 }

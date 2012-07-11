@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spell;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ package org.apache.lucene.search.spell;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -39,7 +39,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     String[] termsToAdd = { "metanoia", "metanoian", "metanoiai", "metanoias", "metanoi𐑍" };
     for (int i = 0; i < termsToAdd.length; i++) {
       Document doc = new Document();
-      doc.add(newField("repentance", termsToAdd[i], TextField.TYPE_UNSTORED));
+      doc.add(newTextField("repentance", termsToAdd[i], Field.Store.NO));
       writer.addDocument(doc);
     }
 
@@ -68,7 +68,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
+      doc.add(newTextField("numbers", English.intToEnglish(i), Field.Store.NO));
       writer.addDocument(doc);
     }
 
@@ -108,7 +108,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     // add some more documents
     for (int i = 1000; i < 1100; i++) {
       Document doc = new Document();
-      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
+      doc.add(newTextField("numbers", English.intToEnglish(i), Field.Store.NO));
       writer.addDocument(doc);
     }
 
@@ -132,13 +132,13 @@ public class TestDirectSpellChecker extends LuceneTestCase {
         new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
 
     Document doc = new Document();
-    doc.add(newField("text", "foobar", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("text", "foobar", Field.Store.NO));
     writer.addDocument(doc);
-    doc.add(newField("text", "foobar", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("text", "foobar", Field.Store.NO));
     writer.addDocument(doc);
-    doc.add(newField("text", "foobaz", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("text", "foobaz", Field.Store.NO));
     writer.addDocument(doc);
-    doc.add(newField("text", "fobar", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("text", "fobar", Field.Store.NO));
     writer.addDocument(doc);
    
     IndexReader ir = writer.getReader();
@@ -200,7 +200,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
+      doc.add(newTextField("numbers", English.intToEnglish(i), Field.Store.NO));
       writer.addDocument(doc);
     }
 
@@ -224,7 +224,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
+      doc.add(newTextField("numbers", English.intToEnglish(i), Field.Store.NO));
       writer.addDocument(doc);
     }
 
@@ -249,7 +249,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
+      doc.add(newTextField("numbers", English.intToEnglish(i), Field.Store.NO));
       writer.addDocument(doc);
     }
 

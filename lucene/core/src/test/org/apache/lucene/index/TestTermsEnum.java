@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,27 +24,25 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
+import org.apache.lucene.util.automaton.RegExp;
 
 @SuppressCodecs({ "SimpleText", "Memory" })
 public class TestTermsEnum extends LuceneTestCase {
 
   public void test() throws Exception {
     Random random = new Random(random().nextLong());
-    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random, true);
     final Directory d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), d);
     final int numDocs = atLeast(10);
@@ -158,12 +156,12 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
     Document doc = new Document();
-    doc.add(new IntField("id", id));
+    doc.add(new IntField("id", id, Field.Store.NO));
     if (VERBOSE) {
       System.out.println("TEST: addDoc id:" + id + " terms=" + terms);
     }
     for (String s2 : terms) {
-      doc.add(newField("f", s2, StringField.TYPE_UNSTORED));
+      doc.add(newStringField("f", s2, Field.Store.NO));
       termToID.put(new BytesRef(s2), id);
     }
     w.addDocument(doc);
@@ -184,8 +182,9 @@ public class TestTermsEnum extends LuceneTestCase {
 
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    
+
     final int numTerms = atLeast(300);
+    //final int numTerms = 50;
 
     final Set<String> terms = new HashSet<String>();
     final Collection<String> pendingTerms = new ArrayList<String>();
@@ -257,8 +256,16 @@ public class TestTermsEnum extends LuceneTestCase {
           acceptTerms.add(s2);
           sortedAcceptTerms.add(new BytesRef(s2));
         }
-        a = DaciukMihovAutomatonBuilder.build(sortedAcceptTerms);
+        a = BasicAutomata.makeStringUnion(sortedAcceptTerms);
       }
+      
+      if (random().nextBoolean()) {
+        if (VERBOSE) {
+          System.out.println("TEST: reduce the automaton");
+        }
+        a.reduce();
+      }
+
       final CompiledAutomaton c = new CompiledAutomaton(a, true, false);
 
       final BytesRef[] acceptTermsArray = new BytesRef[acceptTerms.size()];
@@ -321,7 +328,7 @@ public class TestTermsEnum extends LuceneTestCase {
           final BytesRef expected = termsArray[loc];
           final BytesRef actual = te.next();
           if (VERBOSE) {
-            System.out.println("TEST:   next() expected=" + expected.utf8ToString() + " actual=" + actual.utf8ToString());
+            System.out.println("TEST:   next() expected=" + expected.utf8ToString() + " actual=" + (actual == null ? "null" : actual.utf8ToString()));
           }
           assertEquals(expected, actual);
           assertEquals(1, te.docFreq());
@@ -358,7 +365,7 @@ public class TestTermsEnum extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
     for(String term : terms) {
       Document doc = new Document();
-      Field f = newField(FIELD, term, StringField.TYPE_UNSTORED);
+      Field f = newStringField(FIELD, term, Field.Store.NO);
       doc.add(f);
       w.addDocument(doc);
     }
@@ -497,9 +504,9 @@ public class TestTermsEnum extends LuceneTestCase {
     d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
-    doc.add(newField("field", "one two three", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "one two three", Field.Store.NO));
     doc = new Document();
-    doc.add(newField("field2", "one two three", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field2", "one two three", Field.Store.NO));
     w.addDocument(doc);
     w.commit();
     w.deleteDocuments(new Term("field", "one"));
@@ -517,7 +524,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private String getRandomString() {
-    //return _TestUtil.randomSimpleString(random);
+    //return _TestUtil.randomSimpleString(random());
     return _TestUtil.randomRealisticUnicodeString(random());
   }
 
@@ -712,5 +719,56 @@ public class TestTermsEnum extends LuceneTestCase {
         }
       }
     }
+  }
+
+  public void testIntersectBasic() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(new LogDocMergePolicy());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newTextField("field", "aaa", Field.Store.NO));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(newStringField("field", "bbb", Field.Store.NO));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(newTextField("field", "ccc", Field.Store.NO));
+    w.addDocument(doc);
+
+    w.forceMerge(1);
+    DirectoryReader r = w.getReader();
+    w.close();
+    AtomicReader sub = getOnlySegmentReader(r);
+    Terms terms = sub.fields().terms("field");
+    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();    
+    CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
+    TermsEnum te = terms.intersect(ca, null);
+    assertEquals("aaa", te.next().utf8ToString());
+    assertEquals(0, te.docs(null, null, false).nextDoc());
+    assertEquals("bbb", te.next().utf8ToString());
+    assertEquals(1, te.docs(null, null, false).nextDoc());
+    assertEquals("ccc", te.next().utf8ToString());
+    assertEquals(2, te.docs(null, null, false).nextDoc());
+    assertNull(te.next());
+
+    te = terms.intersect(ca, new BytesRef("abc"));
+    assertEquals("bbb", te.next().utf8ToString());
+    assertEquals(1, te.docs(null, null, false).nextDoc());
+    assertEquals("ccc", te.next().utf8ToString());
+    assertEquals(2, te.docs(null, null, false).nextDoc());
+    assertNull(te.next());
+
+    te = terms.intersect(ca, new BytesRef("aaa"));
+    assertEquals("bbb", te.next().utf8ToString());
+    assertEquals(1, te.docs(null, null, false).nextDoc());
+    assertEquals("ccc", te.next().utf8ToString());
+    assertEquals(2, te.docs(null, null, false).nextDoc());
+    assertNull(te.next());
+
+    r.close();
+    dir.close();
   }
 }

@@ -1,5 +1,5 @@
 package org.apache.lucene.search.vectorhighlight;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -42,13 +42,22 @@ public class FieldPhraseList {
   }
   
   /**
+   * return the list of WeightedPhraseInfo.
+   * 
+   * @return phraseList.
+   */ 
+  public List<WeightedPhraseInfo> getPhraseList() {
+    return phraseList; 
+  }
+  
+  /**
    * a constructor.
    * 
    * @param fieldTermStack FieldTermStack object
    * @param fieldQuery FieldQuery object
    * @param phraseLimit maximum size of phraseList
    */
-  public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit){
+  public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit ){
     final String field = fieldTermStack.getFieldName();
 
     LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
@@ -96,29 +105,68 @@ public class FieldPhraseList {
       }
     }
   }
-  
-  void addIfNoOverlap( WeightedPhraseInfo wpi ){
-    for( WeightedPhraseInfo existWpi : phraseList ){
-      if( existWpi.isOffsetOverlap( wpi ) ) return;
+
+  public void addIfNoOverlap( WeightedPhraseInfo wpi ){
+    for( WeightedPhraseInfo existWpi : getPhraseList() ){
+      if( existWpi.isOffsetOverlap( wpi ) ) {
+        // WeightedPhraseInfo.addIfNoOverlap() dumps the second part of, for example, hyphenated words (social-economics). 
+        // The result is that all informations in TermInfo are lost and not available for further operations. 
+        existWpi.getTermsInfos().addAll( wpi.getTermsInfos() );
+        return;
+      }
     }
-    phraseList.add( wpi );
+    getPhraseList().add( wpi );
   }
   
   public static class WeightedPhraseInfo {
 
-    String text;  // unnecessary member, just exists for debugging purpose
-    List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
+    private String text;  // unnecessary member, just exists for debugging purpose
+    private List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
                             // but if position-gap > 1 and slop > 0 then size() could be greater than 1
-    float boost;  // query boost
-    int seqnum;
+    private float boost;  // query boost
+    private int seqnum;
     
+    private ArrayList<TermInfo> termsInfos;
+    
+    /**
+     * @return the text
+     */
+    public String getText() {
+      return text;
+    }
+
+    /**
+     * @return the termsOffsets
+     */
+    public List<Toffs> getTermsOffsets() {
+      return termsOffsets;
+    }
+
+    /**
+     * @return the boost
+     */
+    public float getBoost() {
+      return boost;
+    }
+
+    /**
+     * @return the termInfos 
+     */    
+    public List<TermInfo> getTermsInfos() {
+      return termsInfos;
+    }
+
     public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost ){
       this( terms, boost, 0 );
     }
     
-    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost, int number ){
+    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost, int seqnum ){
       this.boost = boost;
-      this.seqnum = number;
+      this.seqnum = seqnum;
+      
+      // We keep TermInfos for further operations
+      termsInfos = new ArrayList<TermInfo>( terms );
+      
       termsOffsets = new ArrayList<Toffs>( terms.size() );
       TermInfo ti = terms.get( 0 );
       termsOffsets.add( new Toffs( ti.getStartOffset(), ti.getEndOffset() ) );
@@ -175,9 +223,16 @@ public class FieldPhraseList {
       return sb.toString();
     }
     
+    /**
+     * @return the seqnum
+     */
+    public int getSeqnum() {
+      return seqnum;
+    }
+
     public static class Toffs {
-      int startOffset;
-      int endOffset;
+      private int startOffset;
+      private int endOffset;
       public Toffs( int startOffset, int endOffset ){
         this.startOffset = startOffset;
         this.endOffset = endOffset;

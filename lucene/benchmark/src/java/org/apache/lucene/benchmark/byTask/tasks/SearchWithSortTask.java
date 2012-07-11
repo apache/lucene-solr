@@ -1,5 +1,5 @@
 package org.apache.lucene.benchmark.byTask.tasks;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -77,7 +77,7 @@ public class SearchWithSortTask extends ReadTask {
         } else {
           throw new RuntimeException("You must specify the sort type ie page:int,subject:string");
         }
-        sortField0 = new SortField(fieldName, SortField.Type.valueOf(typeString.toUpperCase(Locale.ENGLISH)));
+        sortField0 = new SortField(fieldName, SortField.Type.valueOf(typeString.toUpperCase(Locale.ROOT)));
       }
       sortFields[upto++] = sortField0;
     }

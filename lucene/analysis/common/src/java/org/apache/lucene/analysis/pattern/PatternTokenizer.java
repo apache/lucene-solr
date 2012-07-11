@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -84,7 +84,7 @@ public final class PatternTokenizer extends Tokenizer {
   }
 
   @Override
-  public boolean incrementToken() throws IOException {
+  public boolean incrementToken() {
     if (index >= str.length()) return false;
     clearAttributes();
     if (group >= 0) {
@@ -130,7 +130,7 @@ public final class PatternTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() throws IOException {
+  public void end() {
     final int ofs = correctOffset(str.length());
     offsetAtt.setOffset(ofs, ofs);
   }

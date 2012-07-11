@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.index.IndexWriter;
@@ -232,13 +231,13 @@ public class NRTManager extends ReferenceManager<IndexSearcher> {
       return indexingGen.get();
     }
 
-    public long addIndexes(Directory... dirs) throws CorruptIndexException, IOException {
+    public long addIndexes(Directory... dirs) throws IOException {
       writer.addIndexes(dirs);
       // Return gen as of when indexing finished:
       return indexingGen.get();
     }
 
-    public long addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
+    public long addIndexes(IndexReader... readers) throws IOException {
       writer.addIndexes(readers);
       // Return gen as of when indexing finished:
       return indexingGen.get();

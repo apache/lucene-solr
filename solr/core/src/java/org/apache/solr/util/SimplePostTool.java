@@ -1,6 +1,6 @@
 package org.apache.solr.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -72,8 +72,8 @@ public class SimplePostTool {
          "  java -jar post.jar *.xml\n"+
          "  java -Ddata=args  -jar post.jar '<delete><id>42</id></delete>'\n"+
          "  java -Ddata=stdin -jar post.jar < hd.xml\n"+
-         "  java -Durl=http://localhost:8983/solr/update/csv -Dtype=text/csv -jar post.jar *.csv\n"+
-         "  java -Durl=http://localhost:8983/solr/update/json -Dtype=application/json -jar post.jar *.json\n"+
+         "  java -Dtype=text/csv -jar post.jar *.csv\n"+
+         "  java -Dtype=application/json -jar post.jar *.json\n"+
          "  java -Durl=http://localhost:8983/solr/update/extract?literal.id=a -Dtype=application/pdf -jar post.jar a.pdf\n"+
          "Other options controlled by System Properties include the Solr\n"+
          "URL to POST to, the Content-Type of the data, whether a commit\n"+
@@ -218,8 +218,7 @@ public class SimplePostTool {
   
   /**
    * Opens the file and posts it's contents to the solrUrl,
-   * writes to response to output.
-   * @throws UnsupportedEncodingException 
+   * writes to response to output. 
    */
   public void postFile(File file, OutputStream output, String type) {
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,10 +17,9 @@
 
 package org.apache.solr.search;
 
-import java.io.IOException;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Test;
 
 public class TestExtendedDismaxParser extends AbstractSolrTestCase {
   @Override
@@ -65,6 +64,39 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.tearDown();
+  }
+  
+
+  public void testLowercaseOperators() {
+    assertQ("Upper case operator",
+        req("q","Zapp AND Brannigan",
+            "qf", "name",
+            "lowercaseOperators", "false",
+            "defType","edismax")
+        ,"*[count(//doc)=1]");
+    
+    assertQ("Upper case operator, allow lowercase",
+        req("q","Zapp AND Brannigan",
+            "qf", "name",
+            "lowercaseOperators", "true",
+            "defType","edismax")
+        ,"*[count(//doc)=1]");
+    
+    assertQ("Lower case operator, don't allow lowercase operators",
+        req("q","Zapp and Brannigan",
+            "qf", "name",
+            "q.op", "AND", 
+            "lowercaseOperators", "false",
+            "defType","edismax")
+        ,"*[count(//doc)=0]");
+    
+    assertQ("Lower case operator, allow lower case operators",
+        req("q","Zapp and Brannigan",
+            "qf", "name",
+            "q.op", "AND", 
+            "lowercaseOperators", "true",
+            "defType","edismax")
+        ,"*[count(//doc)=1]");
   }
     
   // test the edismax query parser based on the dismax parser
@@ -121,6 +153,11 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
    // test that numeric field types can be queried  via qf
    assertQ(req("defType", "edismax", "qf", "text_sw foo_i",
                "q","100"), oner
+    );
+
+    assertQ("qf defaults to df",
+        req("defType", "edismax", "df", "trait_ss",
+        "q","Tool"), twor
     );
 
    assertQ("qf defaults to defaultSearchField"
@@ -391,7 +428,7 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     
   }
   
-  public void testAliasing() throws IOException, Exception {
+  public void testAliasing() throws Exception {
     String oner = "*[count(//doc)=1]";
     String twor = "*[count(//doc)=2]";
     String nor = "*[count(//doc)=0]";
@@ -424,12 +461,12 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     
   }
   
-  public void testAliasingBoost() throws IOException, Exception {
+  public void testAliasingBoost() throws Exception {
     assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias", "f.myalias.qf","name trait_ss^0.5"), "//result/doc[1]/str[@name='id']=42", "//result/doc[2]/str[@name='id']=47");//doc 42 should score higher than 46
     assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.5"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
   }
   
-  public void testCyclicAliasing() throws IOException, Exception {
+  public void testCyclicAliasing() throws Exception {
     try {
       h.query(req("defType","edismax", "q","ignore_exception", "qf","who", "f.who.qf","name","f.name.qf","who"));
       fail("Simple cyclic alising");
@@ -621,5 +658,85 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
         "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc\"~3^333.0')]",
         "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc vvvv\"~3^333.0')]"
      );
+
+    assertQ(
+        "ps2 not working",
+        req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw^10", "ps2",
+            "2", "bf", "boost_d", "fl", "score,*", "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s0']");
+    
+    assertQ(
+        "Specifying slop in pf2 param not working",
+        req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw~2^10", "bf",
+            "boost_d", "fl", "score,*", "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s0']");
+    
+    assertQ(
+        "Slop in ps2 parameter should override ps",
+        req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw^10", "ps",
+            "0", "ps2", "2", "bf", "boost_d", "fl", "score,*", "defType",
+            "edismax"), "//doc[1]/str[@name='id'][.='s0']");
+
+    assertQ(
+        "ps3 not working",
+        req("q", "a bar foo", "qf", "phrase_sw", "pf3", "phrase_sw^10", "ps3",
+            "3", "bf", "boost_d", "fl", "score,*", "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s1']");
+    
+    assertQ(
+        "Specifying slop in pf3 param not working",
+        req("q", "a bar foo", "qf", "phrase_sw", "pf3", "phrase_sw~3^10", "bf",
+            "boost_d", "fl", "score,*", "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s1']");
+   
+    assertQ("ps2 should not override slop specified inline in pf2",
+        req("q", "zzzz xxxx cccc vvvv",
+            "qf", "phrase_sw",
+            "pf2", "phrase_sw~2^22",
+            "ps2", "4",
+            "defType", "edismax",
+            "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx\"~2^22.0')]"
+     );
+
+  }
+
+  /**
+   * verify that all reserved characters are properly escaped when being set in
+   * {@link org.apache.solr.search.ExtendedDismaxQParser.Clause#val}.
+   *
+   * @see ExtendedDismaxQParser#splitIntoClauses(String, boolean)
+   */
+  @Test
+  public void testEscapingOfReservedCharacters() throws Exception {
+    // create a document that contains all reserved characters
+    String allReservedCharacters = "!():^[]{}~*?\"+-\\|&/";
+
+    assertU(adoc("id", "reservedChars",
+                 "name", allReservedCharacters,
+                 "cat_s", "foo/"));
+    assertU(commit());
+
+    // the backslash needs to be manually escaped (the query parser sees the raw backslash as an escape the subsequent
+    // character)
+    String query = allReservedCharacters.replace("\\", "\\\\");
+
+    // query for all those reserved characters. This will fail to parse in the initial parse, meaning that the escaped
+    // query will then be used
+    assertQ("Escaping reserved characters",
+        req("q", query,
+            "qf", "name",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+    
+    // Query string field 'cat_s' for special char / - causes ParseException without patch SOLR-3467
+    assertQ("Escaping string with reserved / character",
+        req("q", "foo/",
+            "qf", "cat_s",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+    
   }
 }

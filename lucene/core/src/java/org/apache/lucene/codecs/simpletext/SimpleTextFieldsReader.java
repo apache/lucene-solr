@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.simpletext;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -105,7 +105,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private boolean ended;
     private final BytesRefFSTEnum<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fstEnum;
 
-    public SimpleTextTermsEnum(FST<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fst, IndexOptions indexOptions) throws IOException {
+    public SimpleTextTermsEnum(FST<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fst, IndexOptions indexOptions) {
       this.indexOptions = indexOptions;
       fstEnum = new BytesRefFSTEnum<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(fst);
     }

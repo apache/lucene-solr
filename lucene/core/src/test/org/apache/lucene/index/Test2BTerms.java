@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,24 +23,19 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import org.junit.Ignore;
 
-// NOTE: this test will fail w/ PreFlexRW codec!  (Because
-// this test uses full binary term space, but PreFlex cannot
-// handle this since it requires the terms are UTF8 bytes).
-//
-// Also, SimpleText codec will consume very large amounts of
+// NOTE: SimpleText codec will consume very large amounts of
 // disk (but, should run successfully).  Best to run w/
-// -Dtests.codec=Standard, and w/ plenty of RAM, eg:
+// -Dtests.codec=<current codec>, and w/ plenty of RAM, eg:
 //
 //   ant test -Dtest.slow=true -Dtests.heapsize=8g
 //
@@ -141,12 +136,9 @@ public class Test2BTerms extends LuceneTestCase {
     }
   }
 
-  @Slow
+  @Ignore("Very slow. Enable manually by removing @Ignore.")
   public void test2BTerms() throws IOException {
 
-    if ("Lucene3x".equals(Codec.getDefault().getName())) {
-      throw new RuntimeException("this test cannot run with PreFlex codec");
-    }
     System.out.println("Starting Test2B");
     final long TERM_COUNT = ((long) Integer.MAX_VALUE) + 100000000;
 
@@ -178,7 +170,7 @@ public class Test2BTerms extends LuceneTestCase {
       Document doc = new Document();
       final MyTokenStream ts = new MyTokenStream(random(), TERMS_PER_DOC);
 
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setIndexOptions(IndexOptions.DOCS_ONLY);
       customType.setOmitNorms(true);
       Field field = new Field("field", ts, customType);
@@ -203,7 +195,7 @@ public class Test2BTerms extends LuceneTestCase {
     }
 
     System.out.println("TEST: open reader");
-    final IndexReader r = IndexReader.open(dir);
+    final IndexReader r = DirectoryReader.open(dir);
     if (savedTerms == null) {
       savedTerms = findTerms(r);
     }

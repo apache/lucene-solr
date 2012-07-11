@@ -1,6 +1,6 @@
 package org.apache.lucene.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -76,6 +78,9 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.junit.Assert;
+
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
  * General utility methods for Lucene unit tests. 
@@ -182,15 +187,15 @@ public class _TestUtil {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
     checker.setCrossCheckTermVectors(crossCheckTermVectors);
-    checker.setInfoStream(new PrintStream(bos), false);
+    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     if (indexStatus == null || indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
-      System.out.println(bos.toString());
+      System.out.println(bos.toString("UTF-8"));
       throw new RuntimeException("CheckIndex failed");
     } else {
       if (LuceneTestCase.INFOSTREAM) {
-        System.out.println(bos.toString());
+        System.out.println(bos.toString("UTF-8"));
       }
       return indexStatus;
     }
@@ -207,7 +212,23 @@ public class _TestUtil {
 
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
-    return start + r.nextInt(end-start+1);
+    return RandomInts.randomIntBetween(r, start, end);
+  }
+
+  /** start and end are BOTH inclusive */
+  public static long nextLong(Random r, long start, long end) {
+    assert end >= start;
+    final BigInteger range = BigInteger.valueOf(end).add(BigInteger.valueOf(1)).subtract(BigInteger.valueOf(start));
+    if (range.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) <= 0) {
+      return start + r.nextInt(range.intValue());
+    } else {
+      // probably not evenly distributed when range is large, but OK for tests
+      final BigInteger augend = new BigDecimal(range).multiply(new BigDecimal(r.nextDouble())).toBigInteger();
+      final long result = BigInteger.valueOf(start).add(augend).longValue();
+      assert result >= start;
+      assert result <= end;
+      return result;
+    }
   }
 
   public static String randomSimpleString(Random r, int maxLength) {
@@ -293,37 +314,49 @@ public class _TestUtil {
   public static String randomRegexpishString(Random r) {
     return randomRegexpishString(r, 20);
   }
-  
+
+  /**
+   * Maximum recursion bound for '+' and '*' replacements in
+   * {@link #randomRegexpishString(Random, int)}.
+   */
+  private final static int maxRecursionBound = 5;
+
+  /**
+   * Operators for {@link #randomRegexpishString(Random, int)}.
+   */
+  private final static List<String> ops = Arrays.asList(
+      ".", "?", 
+      "{0," + maxRecursionBound + "}",  // bounded replacement for '*'
+      "{1," + maxRecursionBound + "}",  // bounded replacement for '+'
+      "(",
+      ")",
+      "-",
+      "[",
+      "]",
+      "|"
+  );
+
   /**
    * Returns a String thats "regexpish" (contains lots of operators typically found in regular expressions)
    * If you call this enough times, you might get a valid regex!
+   * 
+   * <P>Note: to avoid practically endless backtracking patterns we replace asterisk and plus
+   * operators with bounded repetitions. See LUCENE-4111 for more info.
+   * 
+   * @param maxLength A hint about maximum length of the regexpish string. It may be exceeded by a few characters.
    */
   public static String randomRegexpishString(Random r, int maxLength) {
-    final int end = nextInt(r, 0, maxLength);
-    if (end == 0) {
-      // allow 0 length
-      return "";
-    }
-    final char[] buffer = new char[end];
-    for (int i = 0; i < end; i++) {
-      int t = r.nextInt(11);
-      if (t == 0) {
-        buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
+    final StringBuilder regexp = new StringBuilder(maxLength);
+    for (int i = nextInt(r, 0, maxLength); i > 0; i--) {
+      if (r.nextBoolean()) {
+        regexp.append((char) RandomInts.randomIntBetween(r, 'a', 'z'));
+      } else {
+        regexp.append(RandomPicks.randomFrom(r, ops));
       }
-      else if (1 == t) buffer[i] = '.';
-      else if (2 == t) buffer[i] = '?';
-      else if (3 == t) buffer[i] = '*';
-      else if (4 == t) buffer[i] = '+';
-      else if (5 == t) buffer[i] = '(';
-      else if (6 == t) buffer[i] = ')';
-      else if (7 == t) buffer[i] = '-';
-      else if (8 == t) buffer[i] = '[';
-      else if (9 == t) buffer[i] = ']';
-      else if (10 == t) buffer[i] = '|';
     }
-    return new String(buffer, 0, end);
+    return regexp.toString();
   }
-  
+
   private static final String[] HTML_CHAR_ENTITIES = {
       "AElig", "Aacute", "Acirc", "Agrave", "Alpha", "AMP", "Aring", "Atilde",
       "Auml", "Beta", "COPY", "Ccedil", "Chi", "Dagger", "Delta", "ETH",
@@ -646,10 +679,12 @@ public class _TestUtil {
     if (mp instanceof LogMergePolicy) {
       LogMergePolicy lmp = (LogMergePolicy) mp;
       lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
+      lmp.setUseCompoundFile(true);
     } else if (mp instanceof TieredMergePolicy) {
       TieredMergePolicy tmp = (TieredMergePolicy) mp;
       tmp.setMaxMergeAtOnce(Math.min(5, tmp.getMaxMergeAtOnce()));
       tmp.setSegmentsPerTier(Math.min(5, tmp.getSegmentsPerTier()));
+      tmp.setUseCompoundFile(true);
     }
     MergeScheduler ms = w.getConfig().getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
@@ -933,8 +968,9 @@ public class _TestUtil {
         Pattern p = Pattern.compile(_TestUtil.randomRegexpishString(random));
         // Make sure the result of applying the pattern to a string with extended
         // unicode characters is a valid utf16 string. See LUCENE-4078 for discussion.
-        if (UnicodeUtil.validUTF16String(p.matcher(nonBmpString).replaceAll("_")))
+        if (UnicodeUtil.validUTF16String(p.matcher(nonBmpString).replaceAll("_"))) {
           return p;
+        }
       } catch (PatternSyntaxException ignored) {
         // Loop trying until we hit something that compiles.
       }

@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -52,12 +52,12 @@ public class TestCheckIndex extends LuceneTestCase {
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
-    checker.setInfoStream(new PrintStream(bos));
+    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"));
     if (VERBOSE) checker.setInfoStream(System.out);
     CheckIndex.Status indexStatus = checker.checkIndex();
     if (indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
-      System.out.println(bos.toString());
+      System.out.println(bos.toString("UTF-8"));
       fail();
     }
     
@@ -101,7 +101,7 @@ public class TestCheckIndex extends LuceneTestCase {
     assertTrue("Invalid version: "+version,
                version.equals(Constants.LUCENE_MAIN_VERSION+"-SNAPSHOT") ||
                version.equals(Constants.LUCENE_MAIN_VERSION));
-    assertTrue(version + " should start with: "+Constants.LUCENE_VERSION,
+    assertTrue(Constants.LUCENE_VERSION + " should start with: "+version,
                Constants.LUCENE_VERSION.startsWith(version));
   }
 }

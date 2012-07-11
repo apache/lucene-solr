@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -43,6 +44,7 @@ import org.apache.solr.common.util.NamedList;
  *
  * @since solr 1.3
  */
+@Slow
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   String t1="a_t";
@@ -348,7 +350,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         downJettys.add(downJetty);
       }
       
-      queryPartialResults(upShards, upClients, "q","*:*",ShardParams.SHARDS_INFO,"true",ShardParams.SHARDS_TOLERANT,"true");
+      queryPartialResults(upShards, upClients, 
+          "q","*:*",
+          "facet","true", 
+          "facet.field",t1,
+          "facet.limit",5,
+          ShardParams.SHARDS_INFO,"true",
+          ShardParams.SHARDS_TOLERANT,"true");
       
       // restart the jettys
       for (JettySolrRunner downJetty : downJettys) {

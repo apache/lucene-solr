@@ -27,7 +27,7 @@ import org.apache.lucene.facet.index.streaming.CountingListTokenizer;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -93,11 +93,9 @@ public class CategoryDocumentBuilder {
    * @param taxonomyWriter
    *            to which new categories will be added, as well as translating
    *            known categories to ordinals
-   * @throws IOException
-   * 
+   *
    */
-  public CategoryDocumentBuilder(TaxonomyWriter taxonomyWriter)
-      throws IOException {
+  public CategoryDocumentBuilder(TaxonomyWriter taxonomyWriter) {
     this(taxonomyWriter, new DefaultFacetIndexingParams());
   }
 
@@ -111,10 +109,9 @@ public class CategoryDocumentBuilder {
    * @param params
    *            holds all parameters the indexing process should use such as
    *            category-list parameters
-   * @throws IOException
    */
   public CategoryDocumentBuilder(TaxonomyWriter taxonomyWriter,
-      FacetIndexingParams params) throws IOException {
+      FacetIndexingParams params) {
     this.taxonomyWriter = taxonomyWriter;
     this.indexingParams = params;
     this.categoriesMap = new HashMap<String, List<CategoryAttribute>>();
@@ -184,7 +181,7 @@ public class CategoryDocumentBuilder {
       // Finally creating a suitable field with stream and adding it to a
       // master field-list, used during the build process (see
       // super.build())
-      FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
       ft.setOmitNorms(true);
       fieldList.add(new Field(e.getKey(), stream, ft));
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -64,7 +64,7 @@ public class TransformerProvider {
   }
   
   /** Return a new Transformer, possibly created from our cached Templates object  
-   * @throws TransformerConfigurationException 
+   * @throws IOException 
    */ 
   public synchronized Transformer getTransformer(SolrConfig solrConfig, String filename,int cacheLifetimeSeconds) throws IOException {
     // For now, the Templates are blindly reloaded once cacheExpires is over.

@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.cjk;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -89,16 +89,11 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      // run the widthfilter first before bigramming, it sometimes combines characters.
-      TokenStream result = new CJKWidthFilter(source);
-      result = new LowerCaseFilter(matchVersion, result);
-      result = new CJKBigramFilter(result);
-      return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
-    } else {
-      final Tokenizer source = new CJKTokenizer(reader);
-      return new TokenStreamComponents(source, new StopFilter(matchVersion, source, stopwords));
-    }
+    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+    // run the widthfilter first before bigramming, it sometimes combines characters.
+    TokenStream result = new CJKWidthFilter(source);
+    result = new LowerCaseFilter(matchVersion, result);
+    result = new CJKBigramFilter(result);
+    return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
   }
 }

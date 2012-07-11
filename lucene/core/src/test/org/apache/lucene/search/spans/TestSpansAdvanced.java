@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spans;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,14 +19,13 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -92,8 +91,8 @@ public class TestSpansAdvanced extends LuceneTestCase {
       final String text) throws IOException {
     
     final Document document = new Document();
-    document.add(newField(FIELD_ID, id, StringField.TYPE_STORED));
-    document.add(newField(FIELD_TEXT, text, TextField.TYPE_STORED));
+    document.add(newStringField(FIELD_ID, id, Field.Store.YES));
+    document.add(newTextField(FIELD_TEXT, text, Field.Store.YES));
     writer.addDocument(document);
   }
   

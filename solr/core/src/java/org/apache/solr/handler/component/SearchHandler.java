@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -35,7 +34,10 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 
 /**
  *
@@ -156,7 +158,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   
 
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception, ParseException, InstantiationException, IllegalAccessException
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     // int sleep = req.getParams().getInt("sleep",0);
     // if (sleep > 0) {log.error("SLEEPING for " + sleep);  Thread.sleep(sleep);}

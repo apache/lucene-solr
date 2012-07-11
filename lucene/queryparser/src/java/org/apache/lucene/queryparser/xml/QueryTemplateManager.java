@@ -11,14 +11,14 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayOutputStream;
+import java.io.StringWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Properties;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -97,11 +97,12 @@ public class QueryTemplateManager {
    * Fast means of constructing query using a precompiled stylesheet
    */
   public static String getQueryAsXmlString(Properties formProperties, Templates template)
-      throws SAXException, IOException, ParserConfigurationException, TransformerException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    StreamResult result = new StreamResult(baos);
+      throws ParserConfigurationException, TransformerException {
+    // TODO: Suppress XML header with encoding (as Strings have no encoding)
+    StringWriter writer = new StringWriter();
+    StreamResult result = new StreamResult(writer);
     transformCriteria(formProperties, template, result);
-    return baos.toString();
+    return writer.toString();
   }
 
   /**
@@ -109,10 +110,11 @@ public class QueryTemplateManager {
    */
   public static String getQueryAsXmlString(Properties formProperties, InputStream xslIs)
       throws SAXException, IOException, ParserConfigurationException, TransformerException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    StreamResult result = new StreamResult(baos);
+    // TODO: Suppress XML header with encoding (as Strings have no encoding)
+    StringWriter writer = new StringWriter();
+    StreamResult result = new StreamResult(writer);
     transformCriteria(formProperties, xslIs, result);
-    return baos.toString();
+    return writer.toString();
   }
 
 
@@ -120,7 +122,7 @@ public class QueryTemplateManager {
    * Fast means of constructing query using a cached,precompiled stylesheet
    */
   public static Document getQueryAsDOM(Properties formProperties, Templates template)
-      throws SAXException, IOException, ParserConfigurationException, TransformerException {
+      throws ParserConfigurationException, TransformerException {
     DOMResult result = new DOMResult();
     transformCriteria(formProperties, template, result);
     return (Document) result.getNode();
@@ -159,13 +161,13 @@ public class QueryTemplateManager {
    * Fast transformation using a pre-compiled stylesheet (suitable for production environments)
    */
   public static void transformCriteria(Properties formProperties, Templates template, Result result)
-      throws SAXException, IOException, ParserConfigurationException, TransformerException {
+      throws ParserConfigurationException, TransformerException {
     transformCriteria(formProperties, template.newTransformer(), result);
   }
 
 
   public static void transformCriteria(Properties formProperties, Transformer transformer, Result result)
-      throws SAXException, IOException, ParserConfigurationException, TransformerException {
+      throws ParserConfigurationException, TransformerException {
     dbf.setNamespaceAware(true);
 
     //Create an XML document representing the search index document.

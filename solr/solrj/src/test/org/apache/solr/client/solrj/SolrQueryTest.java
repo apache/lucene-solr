@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,6 +26,7 @@ import org.apache.solr.common.util.DateUtil;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * 
@@ -139,7 +140,7 @@ public class SolrQueryTest extends LuceneTestCase {
 
   public void testFacetDateRange() {
     SolrQuery q = new SolrQuery("dog");
-    Calendar calendar = Calendar.getInstance(Locale.UK);
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"), Locale.UK);
     calendar.set(2010, 1, 1);
     Date start = calendar.getTime();
     calendar.set(2011, 1, 1);
@@ -166,7 +167,7 @@ public class SolrQueryTest extends LuceneTestCase {
       assertEquals("foo", q.setQuery("foo").getQuery());
       assertEquals(10, q.setRows(10).getRows().intValue());
       assertEquals(10, q.setStart(10).getStart().intValue());
-      assertEquals("foo", q.setQueryType("foo").getQueryType());
+      assertEquals("foo", q.setRequestHandler("foo").getRequestHandler());
       assertEquals(10, q.setTimeAllowed(10).getTimeAllowed().intValue());
       
       // non-standard

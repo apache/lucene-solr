@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,20 +25,39 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
-import org.apache.solr.handler.component.*;
+import org.apache.solr.handler.component.DebugComponent;
+import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.handler.component.HighlightComponent;
+import org.apache.solr.handler.component.MoreLikeThisComponent;
+import org.apache.solr.handler.component.QueryComponent;
+import org.apache.solr.handler.component.RealTimeGetComponent;
+import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.component.StatsComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.*;
+import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.CSVResponseWriter;
+import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.PHPResponseWriter;
+import org.apache.solr.response.PHPSerializedResponseWriter;
+import org.apache.solr.response.PythonResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.RawResponseWriter;
+import org.apache.solr.response.RubyResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaAware;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -46,7 +65,11 @@ import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.update.processor.*;
+import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
+import org.apache.solr.update.processor.LogUpdateProcessorFactory;
+import org.apache.solr.update.processor.RunUpdateProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -56,11 +79,35 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.net.URL;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -75,7 +122,7 @@ public final class SolrCore implements SolrInfoMBean {
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-  public static Map<SolrCore,Exception> openHandles = Collections.synchronizedMap(new IdentityHashMap<SolrCore,Exception>());
+  public static Map<SolrCore,Exception> openHandles = Collections.synchronizedMap(new IdentityHashMap<SolrCore, Exception>());
 
   
   public static Logger log = LoggerFactory.getLogger(SolrCore.class);
@@ -198,8 +245,14 @@ public final class SolrCore implements SolrInfoMBean {
           result = dataDir + s;
       }
     }
+    if (!result.equals(lastNewIndexDir)) {
+      log.warn("New index directory detected: old="+lastNewIndexDir + " new=" + result);
+    }
+    lastNewIndexDir = result;
     return result;
   }
+  private String lastNewIndexDir; // for debugging purposes only... access not synchronized, but that's ok
+
   
   public DirectoryFactory getDirectoryFactory() {
     return directoryFactory;
@@ -334,7 +387,7 @@ public final class SolrCore implements SolrInfoMBean {
       dirFactory = getResourceLoader().newInstance(info.className, DirectoryFactory.class);
       dirFactory.init(info.initArgs);
     } else {
-      dirFactory = new StandardDirectoryFactory();
+      dirFactory = new NRTCachingDirectoryFactory();
     }
     // And set it
     directoryFactory = dirFactory;
@@ -639,9 +692,25 @@ public final class SolrCore implements SolrInfoMBean {
       factory = schema.getResourceLoader().newInstance(info.className, CodecFactory.class);
       factory.init(info.initArgs);
     } else {
-      factory = new DefaultCodecFactory();
+      factory = new CodecFactory() {
+        @Override
+        public Codec getCodec() {
+          return Codec.getDefault();
+        }
+      };
     }
-    return factory.create(schema);
+    if (factory instanceof SchemaAware) {
+      ((SchemaAware)factory).inform(schema);
+    } else {
+      for (FieldType ft : schema.getFieldTypes().values()) {
+        if (null != ft.getPostingsFormat()) {
+          String msg = "FieldType '" + ft.getTypeName() + "' is configured with a postings format, but the codec does not support it: " + factory.getClass();
+          log.error(msg);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+        }
+      }
+    }
+    return factory.getCodec();
   }
 
   /**
@@ -831,13 +900,14 @@ public final class SolrCore implements SolrInfoMBean {
   public static void verbose(Object... args) {
     if (!VERBOSE) return;
     StringBuilder sb = new StringBuilder("VERBOSE:");
-    sb.append(Thread.currentThread().getName());
-    sb.append(':');
+//    sb.append(Thread.currentThread().getName());
+//    sb.append(':');
     for (Object o : args) {
       sb.append(' ');
       sb.append(o==null ? "(null)" : o.toString());
     }
-    System.out.println(sb.toString());
+    // System.out.println(sb.toString());
+    log.info(sb.toString());
   }
 
 
@@ -997,12 +1067,7 @@ public final class SolrCore implements SolrInfoMBean {
    * {@link org.apache.solr.request.SolrQueryRequest#getSearcher()} instead.
   */
   public RefCounted<SolrIndexSearcher> getSearcher() {
-    try {
-      return getSearcher(false,true,null);
-    } catch (IOException e) {
-      SolrException.log(log,null,e);
-      return null;
-    }
+    return getSearcher(false,true,null);
   }
 
   /**
@@ -1066,7 +1131,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
 
-  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final Future[] waitSearcher) throws IOException {
+  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final Future[] waitSearcher) {
     return getSearcher(forceNew, returnSearcher, waitSearcher, false);
   }
 
@@ -1211,9 +1276,8 @@ public final class SolrCore implements SolrInfoMBean {
    * @param returnSearcher       if true, returns a {@link SolrIndexSearcher} holder with the refcount already incremented.
    * @param waitSearcher         if non-null, will be filled in with a {@link Future} that will return after the new searcher is registered.
    * @param updateHandlerReopens if true, the UpdateHandler will be used when reopening a {@link SolrIndexSearcher}.
-   * @throws IOException
    */
-  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final Future[] waitSearcher, boolean updateHandlerReopens) throws IOException {
+  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final Future[] waitSearcher, boolean updateHandlerReopens) {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
     // if it isn't necessary.
@@ -1470,7 +1534,7 @@ public final class SolrCore implements SolrInfoMBean {
   //
   // onDeckSearchers will also be decremented (it should have been incremented
   // as a result of opening a new searcher).
-  private void registerSearcher(RefCounted<SolrIndexSearcher> newSearcherHolder) throws IOException {
+  private void registerSearcher(RefCounted<SolrIndexSearcher> newSearcherHolder) {
     synchronized (searcherLock) {
       try {
         if (_searcher != null) {
@@ -1747,7 +1811,7 @@ public final class SolrCore implements SolrInfoMBean {
   public QParserPlugin getQueryPlugin(String parserName) {
     QParserPlugin plugin = qParserPlugins.get(parserName);
     if (plugin != null) return plugin;
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown query type '"+parserName+"'");
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown query parser '"+parserName+"'");
   }
   
   private final HashMap<String, ValueSourceParser> valueSourceParsers = new HashMap<String, ValueSourceParser>();
@@ -1867,13 +1931,13 @@ public final class SolrCore implements SolrInfoMBean {
         Set<String> hide = new HashSet<String>();
 
         for (String file : solrConfig.getResourceLoader().listConfigDir()) {
-          hide.add(file.toUpperCase(Locale.ENGLISH));
+          hide.add(file.toUpperCase(Locale.ROOT));
         }    
         
         // except the "gettable" list
         StringTokenizer st = new StringTokenizer( gettable );
         while( st.hasMoreTokens() ) {
-          hide.remove( st.nextToken().toUpperCase(Locale.ENGLISH) );
+          hide.remove( st.nextToken().toUpperCase(Locale.ROOT) );
         }
         for( String s : hide ) {
           invariants.add( ShowFileRequestHandler.HIDDEN, s );
@@ -1935,9 +1999,26 @@ public final class SolrCore implements SolrInfoMBean {
     lst.add("startTime", new Date(startTime));
     lst.add("refCount", getOpenCount());
 
-    if (null != getCoreDescriptor() && null != getCoreDescriptor().getCoreContainer()) {
-      lst.add("aliases", getCoreDescriptor().getCoreContainer().getCoreNames(this));
+    CoreDescriptor cd = getCoreDescriptor();
+    if (cd != null) {
+      if (null != cd && cd.getCoreContainer() != null) {
+        lst.add("aliases", getCoreDescriptor().getCoreContainer().getCoreNames(this));
+      }
+      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+      if (cloudDesc != null) {
+        String collection = cloudDesc.getCollectionName();
+        if (collection == null) {
+          collection = "_notset_";
+        }
+        lst.add("collection", collection);
+        String shard = cloudDesc.getShardId();
+        if (shard == null) {
+          shard = "_auto_";
+        }
+        lst.add("shard", shard);
+      }
     }
+    
     return lst;
   }
   

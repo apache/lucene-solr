@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.util._TestUtil;
@@ -17,7 +16,7 @@ import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -51,7 +50,7 @@ public abstract class BaseTestTopK extends FacetTestBase {
 
   @Override
   protected void populateIndex(RandomIndexWriter iw, TaxonomyWriter taxo,
-      FacetIndexingParams iParams) throws IOException, CorruptIndexException {
+      FacetIndexingParams iParams) throws IOException {
     currDoc = -1;
     super.populateIndex(iw, taxo, iParams);
   }

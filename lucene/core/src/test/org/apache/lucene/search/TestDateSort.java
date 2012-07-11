@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,8 +25,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -104,12 +102,12 @@ public class TestDateSort extends LuceneTestCase {
     Document document = new Document();
 
     // Add the text field.
-    Field textField = newField(TEXT_FIELD, text, TextField.TYPE_STORED);
+    Field textField = newTextField(TEXT_FIELD, text, Field.Store.YES);
     document.add(textField);
 
     // Add the date/time field.
     String dateTimeString = DateTools.timeToString(time, DateTools.Resolution.SECOND);
-    Field dateTimeField = newField(DATE_TIME_FIELD, dateTimeString, StringField.TYPE_STORED);
+    Field dateTimeField = newStringField(DATE_TIME_FIELD, dateTimeString, Field.Store.YES);
     document.add(dateTimeField);
 
     return document;

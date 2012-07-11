@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,6 @@ import java.util.Locale;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -52,10 +51,10 @@ public class TestWildcardRandom extends LuceneTestCase {
         .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
     
     Document doc = new Document();
-    Field field = newField("field", "", StringField.TYPE_UNSTORED);
+    Field field = newStringField("field", "", Field.Store.NO);
     doc.add(field);
     
-    NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ENGLISH));
+    NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ROOT));
     for (int i = 0; i < 1000; i++) {
       field.setStringValue(df.format(i));
       writer.addDocument(doc);

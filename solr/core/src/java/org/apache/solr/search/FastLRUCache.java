@@ -1,5 +1,5 @@
 package org.apache.solr.search;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,9 +20,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrCore;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +134,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     cache.setAlive(state == State.LIVE);
   }
 
-  public void warm(SolrIndexSearcher searcher, SolrCache old) throws IOException {
+  public void warm(SolrIndexSearcher searcher, SolrCache old) {
     if (regenerator == null) return;
     long warmingStartTime = System.currentTimeMillis();
     FastLRUCache other = (FastLRUCache) old;

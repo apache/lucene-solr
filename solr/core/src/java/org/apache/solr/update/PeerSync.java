@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,12 +27,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.http.NoHttpResponseException;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
-import org.apache.http.params.CoreConnectionPNames;
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -80,17 +78,15 @@ public class PeerSync  {
   private Set<Long> requestedUpdateSet;
   private long ourLowThreshold;  // 20th percentile
   private long ourHighThreshold; // 80th percentile
-  private static ThreadSafeClientConnManager mgr = new ThreadSafeClientConnManager();
-  private static DefaultHttpClient client = new DefaultHttpClient(mgr);
+  private static final HttpClient client;
   static {
-    mgr.setDefaultMaxPerRoute(20);
-    mgr.setMaxTotal(10000);
-    client.getParams().setIntParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 30000);
-    client.getParams().setIntParameter(CoreConnectionPNames.SO_TIMEOUT, 30000);
-
-    // prevent retries  (note: this didn't work when set on mgr.. needed to be set on client)
-    DefaultHttpRequestRetryHandler retryhandler = new DefaultHttpRequestRetryHandler(0, false);
-    client.setHttpRequestRetryHandler(retryhandler);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 20);
+    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000);
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 30000);
+    params.set(HttpClientUtil.PROP_USE_RETRY, false);
+    client = HttpClientUtil.createClient(params);
   }
 
   // comparator that sorts by absolute value, putting highest first

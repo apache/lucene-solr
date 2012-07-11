@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.simpletext;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -72,6 +72,15 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         assert StringHelper.startsWith(scratch, ISINDEXED);
         boolean isIndexed = Boolean.parseBoolean(readString(ISINDEXED.length, scratch));
         
+        final IndexOptions indexOptions;
+        if (isIndexed) {
+          SimpleTextUtil.readLine(input, scratch);
+          assert StringHelper.startsWith(scratch, INDEXOPTIONS);
+          indexOptions = IndexOptions.valueOf(readString(INDEXOPTIONS.length, scratch));          
+        } else {
+          indexOptions = null;
+        }
+        
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, STORETV);
         boolean storeTermVector = Boolean.parseBoolean(readString(STORETV.length, scratch));
@@ -94,10 +103,6 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         String dvType = readString(DOCVALUES.length, scratch);
         final DocValues.Type docValuesType = docValuesType(dvType);
         
-        SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, INDEXOPTIONS);
-        IndexOptions indexOptions = IndexOptions.valueOf(readString(INDEXOPTIONS.length, scratch));
-      
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, NUM_ATTS);
         int numAtts = Integer.parseInt(readString(NUM_ATTS.length, scratch));

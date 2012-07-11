@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -108,7 +108,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
   extends UpdateRequestProcessorFactory 
   implements SolrCoreAware {
   
-  private static class SelectorParams {
+  public static final class SelectorParams {
     public Set<String> fieldName = Collections.emptySet();
     public Set<String> typeName = Collections.emptySet();
     public Collection<String> typeClass = Collections.emptyList();
@@ -129,7 +129,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
   }
 
   @SuppressWarnings("unchecked")
-  private static final SelectorParams parseSelectorParams(NamedList args) {
+  public static SelectorParams parseSelectorParams(NamedList args) {
     SelectorParams params = new SelectorParams();
     
     params.fieldName = new HashSet<String>(oneOrMany(args, "fieldName"));
@@ -246,7 +246,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
    * to one or more strings (or arrays of strings)
    * @exception SolrException invalid arr/str structure.
    */
-  private static Collection<String> oneOrMany(final NamedList args, final String key) {
+  public static Collection<String> oneOrMany(final NamedList args, final String key) {
     List<String> result = new ArrayList<String>(args.size() / 2);
     final String err = "init arg '" + key + "' must be a string "
       + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";

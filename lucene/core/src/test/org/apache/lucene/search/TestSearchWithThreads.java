@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,14 +22,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 @SuppressCodecs({ "SimpleText", "Memory" })
 public class TestSearchWithThreads extends LuceneTestCase {
@@ -53,7 +51,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
     // TODO: replace w/ the @nightly test data; make this
     // into an optional @nightly stress test
     final Document doc = new Document();
-    final Field body = newField("body", "", TextField.TYPE_UNSTORED);
+    final Field body = newTextField("body", "", Field.Store.NO);
     doc.add(body);
     final StringBuilder sb = new StringBuilder();
     for(int docCount=0;docCount<NUM_DOCS;docCount++) {

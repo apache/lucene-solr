@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,6 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.IOException;
 
 import org.apache.lucene.search.MultiTermQuery;  // javadocs
 import org.apache.lucene.util.BytesRef;
@@ -39,7 +37,7 @@ public final class SingleTermsEnum extends FilteredTermsEnum {
    * After calling the constructor the enumeration is already pointing to the term,
    * if it exists.
    */
-  public SingleTermsEnum(TermsEnum tenum, BytesRef termText) throws IOException {
+  public SingleTermsEnum(TermsEnum tenum, BytesRef termText) {
     super(tenum);
     singleRef = termText;
     setInitialSeekTerm(termText);

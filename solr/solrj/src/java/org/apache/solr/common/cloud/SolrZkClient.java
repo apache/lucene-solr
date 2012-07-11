@@ -1,6 +1,6 @@
 package org.apache.solr.common.cloud;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
  * work for additional information regarding copyright ownership. The ASF
@@ -207,8 +207,8 @@ public class SolrZkClient {
   /**
    * @param path
    * @return true if path exists
-   * @throws KeeperException
    * @param retryOnConnLoss  
+   * @throws KeeperException
    * @throws InterruptedException
    */
   public Boolean exists(final String path, boolean retryOnConnLoss)
@@ -678,6 +678,24 @@ public class SolrZkClient {
   
   public SolrZooKeeper getSolrZooKeeper() {
     return keeper;
+  }
+
+  // yeah, it's recursive :(
+  public void clean(String path) throws InterruptedException, KeeperException {
+    List<String> children;
+    try {
+      children = getChildren(path, null, true);
+    } catch (NoNodeException r) {
+      return;
+    }
+    for (String string : children) {
+      clean(path + "/" + string);
+    }
+    try {
+      delete(path, -1, true);
+    } catch (NoNodeException r) {
+      return;
+    }
   }
 
 }

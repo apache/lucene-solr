@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.ja;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,10 +24,12 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
  * Test Kuromoji Japanese morphological analyzer
  */
+@Slow
 public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
@@ -138,7 +140,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     final Analyzer a = new JapaneseAnalyzer(TEST_VERSION_CURRENT, null, Mode.SEARCH,
         JapaneseAnalyzer.getDefaultStopSet(),
         JapaneseAnalyzer.getDefaultStopTags());
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);
   }
 
   // Copied from TestJapaneseTokenizer, to make sure passing

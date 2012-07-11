@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,11 +25,11 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TermContext;
 
 abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.RewriteMethod {
   
@@ -48,8 +48,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
   final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
     IndexReaderContext topReaderContext = reader.getTopReaderContext();
     Comparator<BytesRef> lastTermComp = null;
-    final AtomicReaderContext[] leaves = topReaderContext.leaves();
-    for (AtomicReaderContext context : leaves) {
+    for (AtomicReaderContext context : topReaderContext.leaves()) {
       final Fields fields = context.reader().fields();
       if (fields == null) {
         // reader has no fields

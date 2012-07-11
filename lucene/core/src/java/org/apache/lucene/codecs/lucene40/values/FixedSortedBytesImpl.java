@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40.values;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -58,7 +58,7 @@ class FixedSortedBytesImpl {
     private final Comparator<BytesRef> comp;
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
-        Counter bytesUsed, IOContext context, float acceptableOverheadRatio) throws IOException {
+        Counter bytesUsed, IOContext context, float acceptableOverheadRatio) {
       super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, acceptableOverheadRatio, Type.BYTES_FIXED_SORTED);
       this.comp = comp;
     }
@@ -213,10 +213,10 @@ class FixedSortedBytesImpl {
     public BytesRef getByOrd(int ord, BytesRef bytesRef) {
       try {
         datIn.seek(basePointer + size * ord);
+        bytesRef.offset = 0;
         bytesRef.grow(size);
         datIn.readBytes(bytesRef.bytes, 0, size);
         bytesRef.length = size;
-        bytesRef.offset = 0;
         return bytesRef;
       } catch (IOException ex) {
         throw new IllegalStateException("failed to getByOrd", ex);

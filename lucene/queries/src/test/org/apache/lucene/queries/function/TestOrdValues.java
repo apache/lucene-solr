@@ -1,6 +1,6 @@
 package org.apache.lucene.queries.function;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,11 +17,15 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
 import org.apache.lucene.queries.function.valuesource.ReverseOrdFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,7 +51,7 @@ public class TestOrdValues extends FunctionTestSetup {
    * Test OrdFieldSource
    */
   @Test
-  public void testOrdFieldRank() throws CorruptIndexException, Exception {
+  public void testOrdFieldRank() throws Exception {
     doTestRank(ID_FIELD, true);
   }
 
@@ -55,13 +59,13 @@ public class TestOrdValues extends FunctionTestSetup {
    * Test ReverseOrdFieldSource
    */
   @Test
-  public void testReverseOrdFieldRank() throws CorruptIndexException, Exception {
+  public void testReverseOrdFieldRank() throws Exception {
     doTestRank(ID_FIELD, false);
   }
 
   // Test that queries based on reverse/ordFieldScore scores correctly
-  private void doTestRank(String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexReader r = IndexReader.open(dir);
+  private void doTestRank(String field, boolean inOrder) throws Exception {
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
     ValueSource vs;
     if (inOrder) {
@@ -97,7 +101,7 @@ public class TestOrdValues extends FunctionTestSetup {
    * Test exact score for OrdFieldSource
    */
   @Test
-  public void testOrdFieldExactScore() throws CorruptIndexException, Exception {
+  public void testOrdFieldExactScore() throws Exception {
     doTestExactScore(ID_FIELD, true);
   }
 
@@ -105,14 +109,14 @@ public class TestOrdValues extends FunctionTestSetup {
    * Test exact score for ReverseOrdFieldSource
    */
   @Test
-  public void testReverseOrdFieldExactScore() throws CorruptIndexException, Exception {
+  public void testReverseOrdFieldExactScore() throws Exception {
     doTestExactScore(ID_FIELD, false);
   }
 
 
   // Test that queries based on reverse/ordFieldScore returns docs with expected score.
-  private void doTestExactScore(String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexReader r = IndexReader.open(dir);
+  private void doTestExactScore(String field, boolean inOrder) throws Exception {
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
     ValueSource vs;
     if (inOrder) {

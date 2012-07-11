@@ -6,12 +6,11 @@ import java.util.List;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.example.ExampleResult;
 import org.apache.lucene.facet.example.multiCL.MultiCLMain;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -40,8 +39,7 @@ public class TestMultiCLExample extends LuceneTestCase {
     assertCorrectMultiResults(res);
   }
 
-  public static void assertCorrectMultiResults(ExampleResult exampleResults)
-      throws Exception {
+  public static void assertCorrectMultiResults(ExampleResult exampleResults) {
     List<FacetResult> results = exampleResults.getFacetResults();
     FacetResult result = results.get(0);
     assertNotNull("Result should not be null", result);

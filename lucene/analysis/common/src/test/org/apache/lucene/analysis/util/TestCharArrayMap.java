@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -36,7 +36,7 @@ public class TestCharArrayMap extends LuceneTestCase {
         key[j] = (char)random().nextInt(127);
       }
       String keyStr = new String(key);
-      String hmapKey = ignoreCase ? keyStr.toLowerCase(Locale.ENGLISH) : keyStr; 
+      String hmapKey = ignoreCase ? keyStr.toLowerCase(Locale.ROOT) : keyStr; 
 
       int val = random().nextInt();
 

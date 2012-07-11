@@ -1,36 +1,6 @@
 package org.apache.lucene.util;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.TimeZone;
-
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.appending.AppendingCodec;
-import org.apache.lucene.codecs.lucene3x.PreFlexRWCodec;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.index.RandomCodec;
-import org.apache.lucene.search.RandomSimilarityProvider;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import com.carrotsearch.randomizedtesting.RandomizedContext;
-
-import static org.apache.lucene.util.LuceneTestCase.*;
-import static org.apache.lucene.util.LuceneTestCase.INFOSTREAM;
-import static org.apache.lucene.util.LuceneTestCase.TEST_CODEC;
-import static org.apache.lucene.util.LuceneTestCase.VERBOSE;
-
-
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -46,6 +16,34 @@ import static org.apache.lucene.util.LuceneTestCase.VERBOSE;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
+
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.appending.AppendingCodec;
+import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
+import org.apache.lucene.index.RandomCodec;
+import org.apache.lucene.search.RandomSimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.junit.internal.AssumptionViolatedException;
+
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+
+import static org.apache.lucene.util.LuceneTestCase.*;
+
+
 
 /**
  * Setup and restore suite-level environment (fine grained junk that 
@@ -65,6 +63,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
   Locale locale;
   TimeZone timeZone;
   Similarity similarity;
+  Codec codec;
 
   /**
    * @see SuppressCodecs
@@ -81,7 +80,11 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     if (System.getProperty("solr.directoryFactory") == null) {
       System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
     }
-    
+
+    // Restore more Solr properties. 
+    restoreProperties.put("solr.solr.home", System.getProperty("solr.solr.home"));
+    restoreProperties.put("solr.data.dir", System.getProperty("solr.data.dir"));
+
     // enable the Lucene 3.x PreflexRW codec explicitly, to work around bugs in IBM J9 / Harmony ServiceLoader:
     try {
       final java.lang.reflect.Field spiLoaderField = Codec.class.getDeclaredField("loader");
@@ -89,6 +92,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       final Object spiLoader = spiLoaderField.get(null);
       final java.lang.reflect.Field modifiableServicesField = NamedSPILoader.class.getDeclaredField("modifiableServices");
       modifiableServicesField.setAccessible(true);
+      /* note: re-enable this if we make a Lucene4x impersonator 
       @SuppressWarnings({"unchecked","rawtypes"}) final Map<String,Codec> serviceMap =
         (Map) modifiableServicesField.get(spiLoader);
       if (!(Codec.forName("Lucene3x") instanceof PreFlexRWCodec)) {
@@ -103,12 +107,12 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
               " and does not respect classpath order, please report this to the vendor.");
         }
         serviceMap.put("Lucene3x", new PreFlexRWCodec());
-      }
+      } */
     } catch (Exception e) {
       throw new RuntimeException("Cannot access internals of Codec and NamedSPILoader classes", e);
     }
     
-    // if verbose: print some debugging stuff about which codecs are loaded
+    // if verbose: print some debugging stuff about which codecs are loaded.
     if (VERBOSE) {
       Set<String> codecs = Codec.availableCodecs();
       for (String codec : codecs) {
@@ -131,7 +135,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
             final String name;
             if (Thread.currentThread().getName().startsWith("TEST-")) {
               // The name of the main thread is way too
-              // long when looking at IW verbose output...:
+              // long when looking at IW verbose output...
               name = "main";
             } else {
               name = Thread.currentThread().getName();
@@ -148,27 +152,21 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     if (targetClass.isAnnotationPresent(SuppressCodecs.class)) {
       SuppressCodecs a = targetClass.getAnnotation(SuppressCodecs.class);
       avoidCodecs.addAll(Arrays.asList(a.value()));
-      System.err.println("NOTE: Suppressing codecs " + Arrays.toString(a.value()) 
-          + " for " + targetClass.getSimpleName() + ".");
     }
     
     PREFLEX_IMPERSONATION_IS_ACTIVE = false;
     savedCodec = Codec.getDefault();
-    final Codec codec;
     int randomVal = random.nextInt(10);
-    if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2 && !shouldAvoidCodec("Lucene3x"))) { // preflex-only setup
+
+    /* note: re-enable this if we make a 4.x impersonator
+      if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
+                                          "random".equals(TEST_POSTINGSFORMAT) &&
+                                          randomVal < 2 &&
+                                          !shouldAvoidCodec("Lucene3x"))) { // preflex-only setup
       codec = Codec.forName("Lucene3x");
       assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
-    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
-      codec = new SimpleTextCodec();
-    } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
-      codec = new AppendingCodec();
-    } else if (!"random".equals(TEST_CODEC)) {
-      codec = Codec.forName(TEST_CODEC);
-    } else if ("random".equals(TEST_POSTINGSFORMAT)) {
-      codec = new RandomCodec(random, avoidCodecs);
-    } else {
+    } else */ if (!"random".equals(TEST_POSTINGSFORMAT)) {
       codec = new Lucene40Codec() {
         private final PostingsFormat format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
         
@@ -182,6 +180,16 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
           return super.toString() + ": " + format.toString();
         }
       };
+    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
+      codec = new SimpleTextCodec();
+    } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
+      codec = new AppendingCodec();
+    } else if (!"random".equals(TEST_CODEC)) {
+      codec = Codec.forName(TEST_CODEC);
+    } else if ("random".equals(TEST_POSTINGSFORMAT)) {
+      codec = new RandomCodec(random, avoidCodecs);
+    } else {
+      assert false;
     }
     Codec.setDefault(codec);
 
@@ -202,7 +210,40 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     TimeZone randomTimeZone = randomTimeZone(random());
     timeZone = testTimeZone.equals("random") ? randomTimeZone : TimeZone.getTimeZone(testTimeZone);
     TimeZone.setDefault(timeZone);
-    similarity = random().nextBoolean() ? new DefaultSimilarity() : new RandomSimilarityProvider(random());    
+    similarity = random().nextBoolean() ? new DefaultSimilarity() : new RandomSimilarityProvider(random());
+
+    // Check codec restrictions once at class level.
+    try {
+      checkCodecRestrictions(codec);
+    } catch (AssumptionViolatedException e) {
+      System.err.println("NOTE: " + e.getMessage() + " Suppressed codecs: " + 
+          Arrays.toString(avoidCodecs.toArray()));
+      throw e;
+    }
+  }
+
+  /**
+   * Check codec restrictions.
+   * 
+   * @throws AssumptionViolatedException if the class does not work with a given codec.
+   */
+  private void checkCodecRestrictions(Codec codec) {
+    assumeFalse("Class not allowed to use codec: " + codec.getName() + ".",
+        shouldAvoidCodec(codec.getName()));
+
+    if (codec instanceof RandomCodec && !avoidCodecs.isEmpty()) {
+      for (String name : ((RandomCodec)codec).formatNames) {
+        assumeFalse("Class not allowed to use postings format: " + name + ".",
+            shouldAvoidCodec(name));
+      }
+    }
+
+    PostingsFormat pf = codec.postingsFormat();
+    assumeFalse("Class not allowed to use postings format: " + pf.getName() + ".",
+        shouldAvoidCodec(pf.getName()));
+
+    assumeFalse("Class not allowed to use postings format: " + LuceneTestCase.TEST_POSTINGSFORMAT + ".", 
+        shouldAvoidCodec(LuceneTestCase.TEST_POSTINGSFORMAT));
   }
 
   /**
@@ -221,17 +262,14 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
 
     Codec.setDefault(savedCodec);
     InfoStream.setDefault(savedInfoStream);
-    Locale.setDefault(savedLocale);
-    TimeZone.setDefault(savedTimeZone);
-
-    System.clearProperty("solr.solr.home");
-    System.clearProperty("solr.data.dir");
+    if (savedLocale != null) Locale.setDefault(savedLocale);
+    if (savedTimeZone != null) TimeZone.setDefault(savedTimeZone);
   }
 
   /**
    * Should a given codec be avoided for the currently executing suite?
    */
-  public boolean shouldAvoidCodec(String codec) {
+  private boolean shouldAvoidCodec(String codec) {
     return !avoidCodecs.isEmpty() && avoidCodecs.contains(codec);
   }
 }

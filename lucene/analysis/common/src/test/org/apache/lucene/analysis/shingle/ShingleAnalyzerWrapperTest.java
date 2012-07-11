@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.shingle;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -48,8 +49,6 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   /**
    * Set up a new index in RAM with three test phrases and the supplied Analyzer.
    *
-   * @param analyzer the analyzer to use
-   * @return an indexSearcher on the test index.
    * @throws Exception if an error occurs with index writer or searcher
    */
   @Override
@@ -61,20 +60,20 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     Document doc;
     doc = new Document();
-    doc.add(new Field("content", "please divide this sentence into shingles", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "please divide this sentence into shingles", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("content", "just another test sentence", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "just another test sentence", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("content", "a sentence which contains no test", TextField.TYPE_STORED));
+    doc.add(new TextField("content", "a sentence which contains no test", Field.Store.YES));
     writer.addDocument(doc);
 
     writer.close();
 
-    reader = IndexReader.open(directory);
+    reader = DirectoryReader.open(directory);
     searcher = new IndexSearcher(reader);
   }
   

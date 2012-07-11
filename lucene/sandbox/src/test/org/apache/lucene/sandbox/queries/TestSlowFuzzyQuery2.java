@@ -1,6 +1,6 @@
 package org.apache.lucene.sandbox.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -93,7 +92,7 @@ public class TestSlowFuzzyQuery2 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
 
     Document doc = new Document();
-    Field field = newField("field", "", TextField.TYPE_UNSTORED);
+    Field field = newTextField("field", "", Field.Store.NO);
     doc.add(field);
     
     for (int i = 0; i < terms; i++) {

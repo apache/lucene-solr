@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
@@ -122,7 +122,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document d3 = new Document();
 
-    d3.add(newField("f3", "v1", TextField.TYPE_STORED));
+    d3.add(newTextField("f3", "v1", Field.Store.YES));
     w2.addDocument(d3);
     w2.close();
     
@@ -238,16 +238,16 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d1 = new Document();
-    d1.add(newField("f1", "v1", TextField.TYPE_STORED));
-    d1.add(newField("f2", "v1", TextField.TYPE_STORED));
-    d1.add(newField("f3", "v1", TextField.TYPE_STORED));
-    d1.add(newField("f4", "v1", TextField.TYPE_STORED));
+    d1.add(newTextField("f1", "v1", Field.Store.YES));
+    d1.add(newTextField("f2", "v1", Field.Store.YES));
+    d1.add(newTextField("f3", "v1", Field.Store.YES));
+    d1.add(newTextField("f4", "v1", Field.Store.YES));
     w.addDocument(d1);
     Document d2 = new Document();
-    d2.add(newField("f1", "v2", TextField.TYPE_STORED));
-    d2.add(newField("f2", "v2", TextField.TYPE_STORED));
-    d2.add(newField("f3", "v2", TextField.TYPE_STORED));
-    d2.add(newField("f4", "v2", TextField.TYPE_STORED));
+    d2.add(newTextField("f1", "v2", Field.Store.YES));
+    d2.add(newTextField("f2", "v2", Field.Store.YES));
+    d2.add(newTextField("f3", "v2", Field.Store.YES));
+    d2.add(newTextField("f4", "v2", Field.Store.YES));
     w.addDocument(d2);
     w.close();
 
@@ -269,12 +269,12 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     Directory dir1 = newDirectory();
     IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d1 = new Document();
-    d1.add(newField("f1", "v1", TextField.TYPE_STORED));
-    d1.add(newField("f2", "v1", TextField.TYPE_STORED));
+    d1.add(newTextField("f1", "v1", Field.Store.YES));
+    d1.add(newTextField("f2", "v1", Field.Store.YES));
     w1.addDocument(d1);
     Document d2 = new Document();
-    d2.add(newField("f1", "v2", TextField.TYPE_STORED));
-    d2.add(newField("f2", "v2", TextField.TYPE_STORED));
+    d2.add(newTextField("f1", "v2", Field.Store.YES));
+    d2.add(newTextField("f2", "v2", Field.Store.YES));
     w1.addDocument(d2);
     w1.close();
     return dir1;
@@ -284,12 +284,12 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d3 = new Document();
-    d3.add(newField("f3", "v1", TextField.TYPE_STORED));
-    d3.add(newField("f4", "v1", TextField.TYPE_STORED));
+    d3.add(newTextField("f3", "v1", Field.Store.YES));
+    d3.add(newTextField("f4", "v1", Field.Store.YES));
     w2.addDocument(d3);
     Document d4 = new Document();
-    d4.add(newField("f3", "v2", TextField.TYPE_STORED));
-    d4.add(newField("f4", "v2", TextField.TYPE_STORED));
+    d4.add(newTextField("f3", "v2", Field.Store.YES));
+    d4.add(newTextField("f4", "v2", Field.Store.YES));
     w2.addDocument(d4);
     w2.close();
     return dir2;

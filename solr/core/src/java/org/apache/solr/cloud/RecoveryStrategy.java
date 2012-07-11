@@ -1,6 +1,6 @@
 package org.apache.solr.cloud;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,12 +18,10 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -36,6 +34,7 @@ import org.apache.solr.common.cloud.SafeStopThread;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -52,6 +51,7 @@ import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,11 +98,10 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   
   private void recoveryFailed(final SolrCore core,
       final ZkController zkController, final String baseUrl,
-      final String shardZkNodeName, final CoreDescriptor cd) {
+      final String shardZkNodeName, final CoreDescriptor cd) throws KeeperException, InterruptedException {
     SolrException.log(log, "Recovery failed - I give up.");
     try {
-      zkController.publishAsRecoveryFailed(baseUrl, cd,
-          shardZkNodeName, core.getName());
+      zkController.publish(cd, ZkStateReader.RECOVERY_FAILED);
     } finally {
       close();
     }
@@ -136,7 +135,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
       }
       
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
+      solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
       
       if (isClosed()) retries = INTERRUPTED;
       boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making sure force=true does not download files we already have
@@ -161,8 +160,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     }
   }
 
-  private void commitOnLeader(String leaderUrl) throws MalformedURLException,
-      SolrServerException, IOException {
+  private void commitOnLeader(String leaderUrl) throws SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(leaderUrl);
     server.setConnectionTimeout(30000);
     server.setSoTimeout(30000);
@@ -175,7 +173,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   }
 
   private void sendPrepRecoveryCmd(String leaderBaseUrl,
-      String leaderCoreName) throws MalformedURLException, SolrServerException,
+      String leaderCoreName) throws SolrServerException,
       IOException {
     HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
     server.setConnectionTimeout(45000);
@@ -208,7 +206,18 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
       log.info("Starting recovery process. recoveringAfterStartup=" + recoveringAfterStartup);
 
-      doRecovery(core);
+      try {
+        doRecovery(core);
+      } catch (KeeperException e) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        SolrException.log(log, "", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
+            e);
+      }
     } finally {
       if (core != null) core.close();
       SolrRequestInfo.clearRequestInfo();
@@ -216,7 +225,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   }
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
-  public void doRecovery(SolrCore core) {
+  public void doRecovery(SolrCore core) throws KeeperException, InterruptedException {
     boolean replayed = false;
     boolean successfulRecovery = false;
 
@@ -327,8 +336,8 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             // }
 
             // sync success - register as active and return
-            zkController.publishAsActive(baseUrl, core.getCoreDescriptor(),
-                coreZkNodeName, coreName);
+            zkController.publish(core.getCoreDescriptor(),
+                ZkStateReader.ACTIVE);
             successfulRecovery = true;
             close = true;
             return;
@@ -352,8 +361,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
           log.info("Recovery was successful - registering as Active");
           // if there are pending recovery requests, don't advert as active
-          zkController.publishAsActive(baseUrl, core.getCoreDescriptor(),
-              coreZkNodeName, coreName);
+          zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
           close = true;
           successfulRecovery = true;
         } catch (InterruptedException e) {
@@ -419,7 +427,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   }
 
   private Future<RecoveryInfo> replay(UpdateLog ulog)
-      throws InterruptedException, ExecutionException, TimeoutException {
+      throws InterruptedException, ExecutionException {
     Future<RecoveryInfo> future = ulog.applyBufferedUpdates();
     if (future == null) {
       // no replay needed\

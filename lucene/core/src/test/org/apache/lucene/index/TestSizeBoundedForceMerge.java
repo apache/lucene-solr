@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -36,14 +36,14 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       if (withID) {
-        doc.add(new Field("id", "" + i, StringField.TYPE_UNSTORED));
+        doc.add(new StringField("id", "" + i, Field.Store.NO));
       }
       writer.addDocument(doc);
     }
     writer.commit();
   }
   
-  private static IndexWriterConfig newWriterConfig() throws IOException {
+  private static IndexWriterConfig newWriterConfig() {
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);

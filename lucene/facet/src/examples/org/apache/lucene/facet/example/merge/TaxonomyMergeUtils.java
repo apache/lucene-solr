@@ -2,6 +2,7 @@ package org.apache.lucene.facet.example.merge;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -16,7 +17,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.DiskOr
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -87,7 +88,7 @@ public class TaxonomyMergeUtils {
         srcIndexDir, map.getMap(), new DefaultFacetIndexingParams());
     destIndexWriter.setPayloadProcessorProvider(payloadProcessor);
 
-    IndexReader reader = IndexReader.open(srcIndexDir);
+    IndexReader reader = DirectoryReader.open(srcIndexDir);
     try {
       destIndexWriter.addIndexes(reader);
       

@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,8 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -28,11 +33,6 @@ import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class TestBooleanScorer extends LuceneTestCase
 {
@@ -46,7 +46,7 @@ public class TestBooleanScorer extends LuceneTestCase
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
-      doc.add(newField(FIELD, values[i], StringField.TYPE_STORED));
+      doc.add(newStringField(FIELD, values[i], Field.Store.YES));
       writer.addDocument(doc);
     }
     IndexReader ir = writer.getReader();
@@ -82,19 +82,20 @@ public class TestBooleanScorer extends LuceneTestCase
     BooleanWeight weight = (BooleanWeight) new BooleanQuery().createWeight(searcher);
     Scorer[] scorers = new Scorer[] {new Scorer(weight) {
       private int doc = -1;
-      @Override public float score() throws IOException { return 0; }
+      @Override public float score() { return 0; }
       @Override public int docID() { return doc; }
       
-      @Override public int nextDoc() throws IOException {
+      @Override public int nextDoc() {
         return doc = doc == -1 ? 3000 : NO_MORE_DOCS;
       }
 
-      @Override public int advance(int target) throws IOException {
+      @Override public int advance(int target) {
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
       }
       @Override
-      public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
-        throw new UnsupportedOperationException();
+      public PositionIntervalIterator positions(boolean needsPayloads,
+          boolean needsOffsets) throws IOException {
+        return null;
       }
       
     }};
@@ -109,7 +110,7 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       
       @Override
-      public void collect(int doc) throws IOException {
+      public void collect(int doc) {
         hits.add(docBase+doc);
       }
       
@@ -134,10 +135,10 @@ public class TestBooleanScorer extends LuceneTestCase
     final Directory d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
-    doc.add(new TextField("field", "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33"));
+    doc.add(new TextField("field", "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33", Field.Store.NO));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(new TextField("field", "33"));
+    doc.add(new TextField("field", "33", Field.Store.NO));
     w.addDocument(doc);
     final IndexReader r = w.getReader();
     w.close();
@@ -163,7 +164,7 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       
       @Override
-      public void collect(int doc) throws IOException {
+      public void collect(int doc) {
         count[0]++;
       }
       

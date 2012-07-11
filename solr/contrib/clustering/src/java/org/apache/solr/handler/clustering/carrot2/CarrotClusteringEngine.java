@@ -1,6 +1,6 @@
 package org.apache.solr.handler.clustering.carrot2;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -147,7 +147,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
       final IResource foundResource = new IResource() {
         @Override
-        public InputStream open() throws IOException {
+        public InputStream open() {
           return new ByteArrayInputStream(asBytes);
         }
 

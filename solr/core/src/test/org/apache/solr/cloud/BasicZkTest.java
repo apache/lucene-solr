@@ -1,6 +1,6 @@
 package org.apache.solr.cloud;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,9 +19,11 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -37,6 +39,7 @@ import org.xml.sax.SAXParseException;
  * detect if a node is trying to do an update to itself with http - it shouldn't
  * do that.
  */
+@Slow
 public class BasicZkTest extends AbstractZkTestCase {
   
   @BeforeClass
@@ -158,6 +161,13 @@ public class BasicZkTest extends AbstractZkTestCase {
       
     }
     
+    // test stats call
+    NamedList stats = core.getStatistics();
+    assertEquals("collection1", stats.get("coreName"));
+    assertEquals("collection1", stats.get("collection"));
+    assertEquals("shard1", stats.get("shard"));
+    assertTrue(stats.get("refCount") != null);
+
     //zkController.getZkClient().printLayoutToStdOut();
   }
   

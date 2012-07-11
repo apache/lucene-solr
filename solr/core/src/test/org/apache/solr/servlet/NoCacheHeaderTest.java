@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,7 +33,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
   // as its home. it could interfere with other tests!
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(TEST_HOME(), "solr/conf/solrconfig-nocache.xml", null);
+    createJetty(TEST_HOME(), "solr/collection1/conf/solrconfig-nocache.xml", null);
   }
 
   // The tests

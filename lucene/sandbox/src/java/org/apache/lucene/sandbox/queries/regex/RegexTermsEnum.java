@@ -1,6 +1,6 @@
 package org.apache.lucene.sandbox.queries.regex;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,8 +23,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 
-import java.io.IOException;
-
 /**
  * Subclass of FilteredTermEnum for enumerating all terms that match the
  * specified regular expression term using the specified regular expression
@@ -39,7 +37,7 @@ public class RegexTermsEnum extends FilteredTermsEnum {
   private RegexCapabilities.RegexMatcher regexImpl;
   private final BytesRef prefixRef;
 
-  public RegexTermsEnum(TermsEnum tenum, Term term, RegexCapabilities regexCap) throws IOException {
+  public RegexTermsEnum(TermsEnum tenum, Term term, RegexCapabilities regexCap) {
     super(tenum);
     String text = term.text();
     this.regexImpl = regexCap.compile(text);

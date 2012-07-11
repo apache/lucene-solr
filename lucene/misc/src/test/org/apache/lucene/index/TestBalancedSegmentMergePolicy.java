@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -44,7 +44,7 @@ public class TestBalancedSegmentMergePolicy extends LuceneTestCase {
     mp.setMergePolicyParams(newMergePolicyParams(random()));
     iwc.setMergePolicy(mp);
     iw = new RandomIndexWriter(random(), dir, iwc);
-    LineFileDocs docs = new LineFileDocs(random(), !Codec.getDefault().getName().equals("Lucene3x"));
+    LineFileDocs docs = new LineFileDocs(random(), true);
     int numDocs = atLeast(200);
     for (int i = 0; i < numDocs; i++) {
       iw.addDocument(docs.nextDoc());
@@ -67,7 +67,7 @@ public class TestBalancedSegmentMergePolicy extends LuceneTestCase {
     int numSegments = _TestUtil.nextInt(random(), 1, 4);
     iw.forceMerge(numSegments);
     DirectoryReader ir = iw.getReader();
-    assertTrue(ir.getSequentialSubReaders().length <= numSegments);
+    assertTrue(ir.getSequentialSubReaders().size() <= numSegments);
     ir.close();
   }
   

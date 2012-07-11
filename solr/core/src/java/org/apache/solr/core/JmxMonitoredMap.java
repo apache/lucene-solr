@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -281,7 +281,7 @@ public class JmxMonitoredMap<K, V> extends
       } else if (staticStats.contains(attribute) && attribute != null
               && attribute.length() > 0) {
         try {
-          String getter = "get" + attribute.substring(0, 1).toUpperCase(Locale.ENGLISH)
+          String getter = "get" + attribute.substring(0, 1).toUpperCase(Locale.ROOT)
                   + attribute.substring(1);
           Method meth = infoBean.getClass().getMethod(getter);
           val = meth.invoke(infoBean);

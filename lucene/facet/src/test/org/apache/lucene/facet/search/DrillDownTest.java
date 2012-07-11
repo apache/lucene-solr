@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -16,7 +16,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,7 +30,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -57,7 +56,7 @@ public class DrillDownTest extends LuceneTestCase {
   private static Directory dir;
   private static Directory taxoDir;
   
-  public DrillDownTest() throws IOException {
+  public DrillDownTest() {
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
     CategoryListParams aClParams = new CategoryListParams(new Term("testing_facets_a", "a"));
     CategoryListParams bClParams = new CategoryListParams(new Term("testing_facets_b", "b"));
@@ -69,7 +68,7 @@ public class DrillDownTest extends LuceneTestCase {
   }
 
   @BeforeClass
-  public static void createIndexes() throws CorruptIndexException, LockObtainFailedException, IOException {
+  public static void createIndexes() throws IOException {
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)));
@@ -81,10 +80,10 @@ public class DrillDownTest extends LuceneTestCase {
       ArrayList<CategoryPath> paths = new ArrayList<CategoryPath>();
       Document doc = new Document();
       if (i % 2 == 0) { // 50
-        doc.add(new TextField("content", "foo"));
+        doc.add(new TextField("content", "foo", Field.Store.NO));
       }
       if (i % 3 == 0) { // 33
-        doc.add(new TextField("content", "bar"));
+        doc.add(new TextField("content", "bar", Field.Store.NO));
       }
       if (i % 4 == 0) { // 25
         paths.add(new CategoryPath("a"));

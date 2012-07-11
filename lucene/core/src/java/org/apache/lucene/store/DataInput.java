@@ -1,6 +1,6 @@
 package org.apache.lucene.store;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -204,7 +204,7 @@ public abstract class DataInput implements Cloneable {
   }
 
   /** Reads a Map&lt;String,String&gt; previously written
-   *  with {@link DataOutput#writeStringStringMap}. */
+   *  with {@link DataOutput#writeStringStringMap(Map)}. */
   public Map<String,String> readStringStringMap() throws IOException {
     final Map<String,String> map = new HashMap<String,String>();
     final int count = readInt();
@@ -218,7 +218,7 @@ public abstract class DataInput implements Cloneable {
   }
 
   /** Reads a Set&lt;String&gt; previously written
-   *  with {@link DataOutput#writeStringSet}. */
+   *  with {@link DataOutput#writeStringSet(Set)}. */
   public Set<String> readStringSet() throws IOException {
     final Set<String> set = new HashSet<String>();
     final int count = readInt();

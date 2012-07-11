@@ -33,13 +33,6 @@ import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Thai language. It uses {@link java.text.BreakIterator} to break words.
- * <p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating ThaiAnalyzer:
- * <ul>
- *   <li> As of 3.6, a set of Thai stopwords is used by default
- * </ul>
  */
 public final class ThaiAnalyzer extends StopwordAnalyzerBase {
   
@@ -84,7 +77,7 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    * @param matchVersion lucene compatibility version
    */
   public ThaiAnalyzer(Version matchVersion) {
-    this(matchVersion, matchVersion.onOrAfter(Version.LUCENE_36) ? DefaultSetHolder.DEFAULT_STOP_SET : StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
   
   /**
@@ -112,8 +105,7 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
-    if (matchVersion.onOrAfter(Version.LUCENE_31))
-      result = new LowerCaseFilter(matchVersion, result);
+    result = new LowerCaseFilter(matchVersion, result);
     result = new ThaiWordFilter(matchVersion, result);
     return new TokenStreamComponents(source, new StopFilter(matchVersion,
         result, stopwords));

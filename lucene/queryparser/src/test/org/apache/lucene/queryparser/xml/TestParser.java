@@ -1,6 +1,6 @@
 package org.apache.lucene.queryparser.xml;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,9 +22,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.DisjunctionMaxQuery;
@@ -43,6 +44,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
 
 public class TestParser extends LuceneTestCase {
@@ -59,7 +61,8 @@ public class TestParser extends LuceneTestCase {
     //initialize the parser
     builder = new CorePlusExtensionsParser("contents", analyzer);
 
-    BufferedReader d = new BufferedReader(new InputStreamReader(TestParser.class.getResourceAsStream("reuters21578.txt")));
+    BufferedReader d = new BufferedReader(new InputStreamReader(
+        TestParser.class.getResourceAsStream("reuters21578.txt"), "US-ASCII"));
     dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(Version.LUCENE_40, analyzer));
     String line = d.readLine();
@@ -68,15 +71,15 @@ public class TestParser extends LuceneTestCase {
       String date = line.substring(0, endOfDate).trim();
       String content = line.substring(endOfDate).trim();
       Document doc = new Document();
-      doc.add(newField("date", date, TextField.TYPE_STORED));
-      doc.add(newField("contents", content, TextField.TYPE_STORED));
-      doc.add(new IntField("date2", Integer.valueOf(date)));
+      doc.add(newTextField("date", date, Field.Store.YES));
+      doc.add(newTextField("contents", content, Field.Store.YES));
+      doc.add(new IntField("date2", Integer.valueOf(date), Field.Store.NO));
       writer.addDocument(doc);
       line = d.readLine();
     }
     d.close();
     writer.close();
-    reader = IndexReader.open(dir);
+    reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
 
   }
@@ -193,8 +196,8 @@ public class TestParser extends LuceneTestCase {
   }
 
   public void testDuplicateFilterQueryXML() throws ParserException, IOException {
-    AtomicReaderContext leaves[] = searcher.getTopReaderContext().leaves();
-    Assume.assumeTrue(leaves == null || leaves.length == 1);
+    List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    Assume.assumeTrue(leaves.size() == 1);
     Query q = parse("DuplicateFilterQuery.xml");
     int h = searcher.search(q, null, 1000).totalHits;
     assertEquals("DuplicateFilterQuery should produce 1 result ", 1, h);

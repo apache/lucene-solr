@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.byTask.tasks;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -60,7 +60,7 @@ public class NearRealtimeReaderTask extends PerfTask {
     }
     
     long t = System.currentTimeMillis();
-    DirectoryReader r = IndexReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w, true);
     runData.setIndexReader(r);
     // Transfer our reference to runData
     r.decRef();

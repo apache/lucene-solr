@@ -1,5 +1,5 @@
 package org.apache.solr.handler.component;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,12 +21,10 @@ import java.util.Random;
 import java.util.concurrent.*;
 
 import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
-import org.apache.http.params.CoreConnectionPNames;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -51,36 +49,24 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
       new DefaultSolrThreadFactory("httpShardExecutor")
   );
 
-  HttpClient client;
-  Random r = new Random();
+  private HttpClient defaultClient;
   LBHttpSolrServer loadbalancer;
-  int soTimeout = 0; //current default values
-  int connectionTimeout = 0; //current default values
+  //default values:
+  int soTimeout = 0; 
+  int connectionTimeout = 0; 
   int maxConnectionsPerHost = 20;
   int corePoolSize = 0;
-  int maximumPoolSize = 10;
+  int maximumPoolSize = Integer.MAX_VALUE;
   int keepAliveTime = 5;
-  int queueSize = 1;
-  boolean accessPolicy = true;
+  int queueSize = -1;
+  boolean accessPolicy = false;
 
   public String scheme = "http://"; //current default values
 
-  private ThreadSafeClientConnManager mgr;
-  // socket timeout measured in ms, closes a socket if read
-  // takes longer than x ms to complete. throws
-  // java.net.SocketTimeoutException: Read timed out exception
-  static final String INIT_SO_TIMEOUT = "socketTimeout";
-
-  // connection timeout measures in ms, closes a socket if connection
-  // cannot be established within x ms. with a
-  // java.net.SocketTimeoutException: Connection timed out
-  static final String INIT_CONNECTION_TIMEOUT = "connTimeout";
+  final Random r = new Random();
 
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";
-
-  // Maximum connections allowed per host
-  static final String INIT_MAX_CONNECTION_PER_HOST = "maxConnectionsPerHost";
 
   // The core size of the threadpool servicing requests
   static final String INIT_CORE_POOL_SIZE = "corePoolSize";
@@ -97,27 +83,32 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   // Configure if the threadpool favours fairness over throughput
   static final String INIT_FAIRNESS_POLICY = "fairnessPolicy";
 
+  /**
+   * Get {@link ShardHandler} that uses the default http client.
+   */
   public ShardHandler getShardHandler() {
-    return getShardHandler(null);
+    return getShardHandler(defaultClient);
   }
 
-  public ShardHandler getShardHandler(DefaultHttpClient httpClient){
+  /**
+   * Get {@link ShardHandler} that uses custom http client.
+   */
+  public ShardHandler getShardHandler(final HttpClient httpClient){
     return new HttpShardHandler(this, httpClient);
   }
 
   public void init(PluginInfo info) {
     NamedList args = info.initArgs;
-    this.soTimeout = getParameter(args, INIT_SO_TIMEOUT, 0);
-
+    this.soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);
     this.scheme = getParameter(args, INIT_URL_SCHEME, "http://");
     this.scheme = (this.scheme.endsWith("://")) ? this.scheme : this.scheme + "://";
-    this.connectionTimeout = getParameter(args, INIT_CONNECTION_TIMEOUT, 0);
-    this.maxConnectionsPerHost = getParameter(args, INIT_MAX_CONNECTION_PER_HOST, 20);
-    this.corePoolSize = getParameter(args, INIT_CORE_POOL_SIZE, 0);
-    this.maximumPoolSize = getParameter(args, INIT_MAX_POOL_SIZE, Integer.MAX_VALUE);
-    this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, 5);
-    this.queueSize = getParameter(args, INIT_SIZE_OF_QUEUE, -1);
-    this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, false);
+    this.connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout);
+    this.maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
+    this.corePoolSize = getParameter(args, INIT_CORE_POOL_SIZE, corePoolSize);
+    this.maximumPoolSize = getParameter(args, INIT_MAX_POOL_SIZE, maximumPoolSize);
+    this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, keepAliveTime);
+    this.queueSize = getParameter(args, INIT_SIZE_OF_QUEUE, queueSize);
+    this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy);
 
     BlockingQueue<Runnable> blockingQueue = (this.queueSize == -1) ?
         new SynchronousQueue<Runnable>(this.accessPolicy) :
@@ -131,23 +122,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
         new DefaultSolrThreadFactory("httpShardExecutor")
     );
 
-    mgr = new ThreadSafeClientConnManager();
-    mgr.setDefaultMaxPerRoute(256);
-    mgr.setMaxTotal(10000);
-    DefaultHttpClient client = new DefaultHttpClient(mgr);
-    
-    client.getParams().setIntParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, connectionTimeout);
-    client.getParams().setIntParameter(CoreConnectionPNames.SO_TIMEOUT, soTimeout);
-    // mgr.getParams().setStaleCheckingEnabled(false);
-
-
-    // prevent retries  (note: this didn't work when set on mgr.. needed to be set on client)
-    DefaultHttpRequestRetryHandler retryhandler = new DefaultHttpRequestRetryHandler(0, false);
-    client.setHttpRequestRetryHandler(retryhandler);
-    this.client = client;
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
+    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
+    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
+    clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);
+    clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout);
+    clientParams.set(HttpClientUtil.PROP_USE_RETRY, false);
+    this.defaultClient = HttpClientUtil.createClient(clientParams);
 
     try {
-      loadbalancer = new LBHttpSolrServer(client);
+      loadbalancer = new LBHttpSolrServer(defaultClient);
     } catch (MalformedURLException e) {
       // should be impossible since we're not passing any URLs here
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -169,7 +153,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   @Override
   public void close() {
     try {
-      mgr.shutdown();
+      defaultClient.getConnectionManager().shutdown();
     } catch (Throwable e) {
       SolrException.log(log, e);
     }

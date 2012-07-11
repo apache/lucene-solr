@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spans;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,11 +22,11 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.TermContext;
 
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {

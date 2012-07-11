@@ -1,6 +1,6 @@
 package org.apache.lucene.search.similarities;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -99,7 +99,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * </ol>
  * <p>
  * <a name="explaintime"/>
- * When {@link IndexSearcher#explain(Query, int)} is called, queries consult the Similarity's DocScorer for an 
+ * When {@link IndexSearcher#explain(org.apache.lucene.search.Query, int)} is called, queries consult the Similarity's DocScorer for an 
  * explanation of how it computed its score. The query passes in a the document id and an explanation of how the frequency
  * was computed.
  *

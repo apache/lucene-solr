@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.ja;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.ja;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
@@ -37,7 +36,7 @@ public final class JapanesePartOfSpeechStopFilter extends FilteringTokenFilter {
   }
 
   @Override
-  protected boolean accept() throws IOException {
+  protected boolean accept() {
     final String pos = posAtt.getPartOfSpeech();
     return pos == null || !stopTags.contains(pos);
   }

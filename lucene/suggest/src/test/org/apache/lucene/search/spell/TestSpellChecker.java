@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spell;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,14 +22,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -58,14 +59,14 @@ public class TestSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(newField("field1", English.intToEnglish(i), TextField.TYPE_STORED));
-      doc.add(newField("field2", English.intToEnglish(i + 1), TextField.TYPE_STORED)); // + word thousand
-      doc.add(newField("field3", "fvei" + (i % 2 == 0 ? " five" : ""), TextField.TYPE_STORED)); // + word thousand
+      doc.add(newTextField("field1", English.intToEnglish(i), Field.Store.YES));
+      doc.add(newTextField("field2", English.intToEnglish(i + 1), Field.Store.YES)); // + word thousand
+      doc.add(newTextField("field3", "fvei" + (i % 2 == 0 ? " five" : ""), Field.Store.YES)); // + word thousand
       writer.addDocument(doc);
     }
     {
       Document doc = new Document();
-      doc.add(newField("field1", "eight", TextField.TYPE_STORED)); // "eight" in
+      doc.add(newTextField("field1", "eight", Field.Store.YES)); // "eight" in
                                                                    // the index
                                                                    // twice
       writer.addDocument(doc);
@@ -73,13 +74,12 @@ public class TestSpellChecker extends LuceneTestCase {
     {
       Document doc = new Document();
       doc
-          .add(newField("field1", "twenty-one twenty-one",
-              TextField.TYPE_STORED)); // "twenty-one" in the index thrice
+          .add(newTextField("field1", "twenty-one twenty-one", Field.Store.YES)); // "twenty-one" in the index thrice
       writer.addDocument(doc);
     }
     {
       Document doc = new Document();
-      doc.add(newField("field1", "twenty", TextField.TYPE_STORED)); // "twenty"
+      doc.add(newTextField("field1", "twenty", Field.Store.YES)); // "twenty"
                                                                     // in the
                                                                     // index
                                                                     // twice
@@ -103,8 +103,8 @@ public class TestSpellChecker extends LuceneTestCase {
   }
 
 
-  public void testBuild() throws CorruptIndexException, IOException {
-    IndexReader r = IndexReader.open(userindex);
+  public void testBuild() throws IOException {
+    IndexReader r = DirectoryReader.open(userindex);
 
     spellChecker.clearIndex();
 
@@ -144,7 +144,7 @@ public class TestSpellChecker extends LuceneTestCase {
   }
 
   public void testComparator() throws Exception {
-    IndexReader r = IndexReader.open(userindex);
+    IndexReader r = DirectoryReader.open(userindex);
     Directory compIdx = newDirectory();
     SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
     addwords(r, compareSP, "field3");
@@ -162,7 +162,7 @@ public class TestSpellChecker extends LuceneTestCase {
   }
   
   public void testBogusField() throws Exception {
-    IndexReader r = IndexReader.open(userindex);
+    IndexReader r = DirectoryReader.open(userindex);
     Directory compIdx = newDirectory();
     SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
     addwords(r, compareSP, "field3");
@@ -177,7 +177,7 @@ public class TestSpellChecker extends LuceneTestCase {
   }
   
   public void testSuggestModes() throws Exception {
-    IndexReader r = IndexReader.open(userindex);
+    IndexReader r = DirectoryReader.open(userindex);
     spellChecker.clearIndex();
     addwords(r, spellChecker, "field1");
     
@@ -337,7 +337,7 @@ public class TestSpellChecker extends LuceneTestCase {
   }
 
   private int numdoc() throws IOException {
-    IndexReader rs = IndexReader.open(spellindex);
+    IndexReader rs = DirectoryReader.open(spellindex);
     int num = rs.numDocs();
     assertTrue(num != 0);
     //System.out.println("num docs: " + num);
@@ -346,7 +346,7 @@ public class TestSpellChecker extends LuceneTestCase {
   }
   
   public void testClose() throws IOException {
-    IndexReader r = IndexReader.open(userindex);
+    IndexReader r = DirectoryReader.open(userindex);
     spellChecker.clearIndex();
     String field = "field1";
     addwords(r, spellChecker, "field1");
@@ -402,7 +402,7 @@ public class TestSpellChecker extends LuceneTestCase {
    */
   public void testConcurrentAccess() throws IOException, InterruptedException {
     assertEquals(1, searchers.size());
-    final IndexReader r = IndexReader.open(userindex);
+    final IndexReader r = DirectoryReader.open(userindex);
     spellChecker.clearIndex();
     assertEquals(2, searchers.size());
     addwords(r, spellChecker, "field1");
@@ -436,8 +436,8 @@ public class TestSpellChecker extends LuceneTestCase {
     executor.awaitTermination(60L, TimeUnit.SECONDS);
     
     for (int i = 0; i < workers.length; i++) {
-      assertFalse(String.format("worker thread %d failed", i), workers[i].failed);
-      assertTrue(String.format("worker thread %d is still running but should be terminated", i), workers[i].terminated);
+      assertFalse(String.format(Locale.ROOT, "worker thread %d failed", i), workers[i].failed);
+      assertTrue(String.format(Locale.ROOT, "worker thread %d is still running but should be terminated", i), workers[i].terminated);
     }
     // 4 searchers more than iterations
     // 1. at creation

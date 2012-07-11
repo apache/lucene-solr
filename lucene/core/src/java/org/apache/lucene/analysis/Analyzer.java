@@ -78,7 +78,7 @@ public abstract class Analyzer {
   public final TokenStream tokenStream(final String fieldName,
                                        final Reader reader) throws IOException {
     TokenStreamComponents components = reuseStrategy.getReusableComponents(fieldName);
-    final Reader r = initReader(reader);
+    final Reader r = initReader(fieldName, reader);
     if (components == null) {
       components = createComponents(fieldName, r);
       reuseStrategy.setReusableComponents(fieldName, components);
@@ -91,7 +91,7 @@ public abstract class Analyzer {
   /**
    * Override this if you want to add a CharFilter chain.
    */
-  protected Reader initReader(Reader reader) {
+  protected Reader initReader(String fieldName, Reader reader) {
     return reader;
   }
 

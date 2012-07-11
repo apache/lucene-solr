@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.nl;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -47,20 +47,6 @@ import java.io.Reader;
  * A default set of stopwords is used unless an alternative list is specified, but the
  * exclusion list is empty by default.
  * </p>
- *
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating DutchAnalyzer:
- * <ul>
- *   <li> As of 3.6, {@link #DutchAnalyzer(Version, CharArraySet)} and
- *        {@link #DutchAnalyzer(Version, CharArraySet, CharArraySet)} also populate
- *        the default entries for the stem override dictionary
- *   <li> As of 3.1, Snowball stemming is done with SnowballFilter, 
- *        LowerCaseFilter is used prior to StopFilter, and Snowball 
- *        stopwords are used by default.
- *   <li> As of 2.9, StopFilter preserves position
- *        increments
- * </ul>
  * 
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
@@ -119,26 +105,15 @@ public final class DutchAnalyzer extends Analyzer {
    * 
    */
   public DutchAnalyzer(Version matchVersion) {
-    // historically, only this ctor populated the stem dict!!!!!
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET, CharArraySet.EMPTY_SET, DefaultSetHolder.DEFAULT_STEM_DICT);
   }
   
   public DutchAnalyzer(Version matchVersion, CharArraySet stopwords){
-    // historically, this ctor never the stem dict!!!!!
-    // so we populate it only for >= 3.6
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET, 
-        matchVersion.onOrAfter(Version.LUCENE_36) 
-        ? DefaultSetHolder.DEFAULT_STEM_DICT 
-        : CharArrayMap.<String>emptyMap());
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET, DefaultSetHolder.DEFAULT_STEM_DICT);
   }
   
   public DutchAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionTable){
-    // historically, this ctor never the stem dict!!!!!
-    // so we populate it only for >= 3.6
-    this(matchVersion, stopwords, stemExclusionTable,
-        matchVersion.onOrAfter(Version.LUCENE_36)
-        ? DefaultSetHolder.DEFAULT_STEM_DICT
-        : CharArrayMap.<String>emptyMap());
+    this(matchVersion, stopwords, stemExclusionTable, DefaultSetHolder.DEFAULT_STEM_DICT);
   }
   
   public DutchAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionTable, CharArrayMap<String> stemOverrideDict) {
@@ -160,25 +135,15 @@ public final class DutchAnalyzer extends Analyzer {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader aReader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
-      final Tokenizer source = new StandardTokenizer(matchVersion, aReader);
-      TokenStream result = new StandardFilter(matchVersion, source);
-      result = new LowerCaseFilter(matchVersion, result);
-      result = new StopFilter(matchVersion, result, stoptable);
-      if (!excltable.isEmpty())
-        result = new KeywordMarkerFilter(result, excltable);
-      if (!stemdict.isEmpty())
-        result = new StemmerOverrideFilter(matchVersion, result, stemdict);
-      result = new SnowballFilter(result, new org.tartarus.snowball.ext.DutchStemmer());
-      return new TokenStreamComponents(source, result);
-    } else {
-      final Tokenizer source = new StandardTokenizer(matchVersion, aReader);
-      TokenStream result = new StandardFilter(matchVersion, source);
-      result = new StopFilter(matchVersion, result, stoptable);
-      if (!excltable.isEmpty())
-        result = new KeywordMarkerFilter(result, excltable);
-      result = new DutchStemFilter(result, stemdict);
-      return new TokenStreamComponents(source, result);
-    }
+    final Tokenizer source = new StandardTokenizer(matchVersion, aReader);
+    TokenStream result = new StandardFilter(matchVersion, source);
+    result = new LowerCaseFilter(matchVersion, result);
+    result = new StopFilter(matchVersion, result, stoptable);
+    if (!excltable.isEmpty())
+      result = new KeywordMarkerFilter(result, excltable);
+    if (!stemdict.isEmpty())
+      result = new StemmerOverrideFilter(matchVersion, result, stemdict);
+    result = new SnowballFilter(result, new org.tartarus.snowball.ext.DutchStemmer());
+    return new TokenStreamComponents(source, result);
   }
 }

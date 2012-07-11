@@ -1,6 +1,6 @@
 package org.apache.lucene.search.similarities;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,26 +17,21 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanOrQuery;
@@ -99,7 +94,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("foo", "bar", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
@@ -121,7 +116,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("foo", "bar", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
@@ -143,7 +138,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setOmitNorms(true);
     ft.freeze();
     doc.add(newField("foo", "bar", ft));
@@ -167,7 +162,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
     ft.freeze();
     Field f = newField("foo", "bar", ft);
@@ -192,7 +187,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
     ft.setOmitNorms(true);
     ft.freeze();
@@ -222,7 +217,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     doc.add(newField("foo", "bar", ft));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();

@@ -1,5 +1,5 @@
 package org.apache.lucene.analysis.payloads;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,23 +16,22 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
 
 /**
- *  Encode a character array Integer as a {@link org.apache.lucene.index.Payload}.
+ *  Encode a character array Integer as a {@link BytesRef}.
  * <p/>
  * See {@link org.apache.lucene.analysis.payloads.PayloadHelper#encodeInt(int, byte[], int)}.
  *
  **/
 public class IntegerEncoder extends AbstractEncoder implements PayloadEncoder {
 
-  public Payload encode(char[] buffer, int offset, int length) {
-    Payload result = new Payload();
+  public BytesRef encode(char[] buffer, int offset, int length) {
     int payload = ArrayUtil.parseInt(buffer, offset, length);//TODO: improve this so that we don't have to new Strings
     byte[] bytes = PayloadHelper.encodeInt(payload);
-    result.setData(bytes);
+    BytesRef result = new BytesRef(bytes);
     return result;
   }
 }

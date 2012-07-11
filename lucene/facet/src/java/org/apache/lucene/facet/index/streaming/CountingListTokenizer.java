@@ -15,7 +15,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.util.encoding.IntEncoder;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -90,7 +90,9 @@ public class CountingListTokenizer extends CategoryListTokenizer {
       countingListName.getChars(0, length, termAttribute.buffer(), 0);
       this.termAttribute.setLength(length);
       CategoryListPayloadStream payloadStream = entry.getValue();
-      payload.setData(payloadStream.convertStreamToByteArray());
+      payload.bytes = payloadStream.convertStreamToByteArray();
+      payload.offset = 0;
+      payload.length = payload.bytes.length;
       this.payloadAttribute.setPayload(payload);
       return true;
     }

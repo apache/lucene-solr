@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -39,7 +39,7 @@ public class MatchAllDocsQuery extends Query {
     private final int maxDoc;
     private final Bits liveDocs;
 
-    MatchAllScorer(IndexReader reader, Bits liveDocs, Weight w, float score) throws IOException {
+    MatchAllScorer(IndexReader reader, Bits liveDocs, Weight w, float score) {
       super(w);
       this.liveDocs = liveDocs;
       this.score = score;

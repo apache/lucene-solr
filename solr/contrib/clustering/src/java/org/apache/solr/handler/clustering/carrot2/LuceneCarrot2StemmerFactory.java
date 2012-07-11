@@ -1,6 +1,6 @@
 package org.apache.solr.handler.clustering.carrot2;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -180,7 +180,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
 
       private char[] buffer = new char[0];
 
-      private LuceneStemmerAdapter() throws Exception {
+      private LuceneStemmerAdapter() {
         delegate = new org.apache.lucene.analysis.ar.ArabicStemmer();
         normalizer = new org.apache.lucene.analysis.ar.ArabicNormalizer();
       }

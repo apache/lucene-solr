@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,6 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 
 /**
@@ -30,7 +29,7 @@ public final class EmptyTokenizer extends Tokenizer {
   }
 
   @Override
-  public boolean incrementToken() throws IOException {
+  public boolean incrementToken() {
     return false;
   }
 }

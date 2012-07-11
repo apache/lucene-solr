@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -69,7 +69,7 @@ public class TestTermVectors extends LuceneTestCase {
       }
       doc.add(new Field("field", English.intToEnglish(i), ft));
       //test no term vectors too
-      doc.add(new Field("noTV", English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(new TextField("noTV", English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -341,7 +341,7 @@ public class TestTermVectors extends LuceneTestCase {
     }
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
-      doc.add(newField("field", English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(newTextField("field", English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
     if (VERBOSE) {
@@ -401,7 +401,7 @@ public class TestTermVectors extends LuceneTestCase {
     ft5.setStoreTermVectorOffsets(true);
     ft5.setStoreTermVectorPositions(true);
     
-    doc.add(newField("field", "one", TextField.TYPE_STORED));
+    doc.add(newTextField("field", "one", Field.Store.YES));
     doc.add(newField("field", "one", ft2));
     doc.add(newField("field", "one", ft3));
     doc.add(newField("field", "one", ft4));
@@ -468,7 +468,7 @@ public class TestTermVectors extends LuceneTestCase {
   }
 
   private void verifyIndex(Directory dir) throws IOException {
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     int numDocs = r.numDocs();
     for (int i = 0; i < numDocs; i++) {
       assertNotNull("term vectors should not have been null for document " + i, r.getTermVectors(i).terms("c"));
@@ -519,7 +519,7 @@ public class TestTermVectors extends LuceneTestCase {
     
     IndexWriter writer = createWriter(target);
     for (Directory dir : input) {
-      IndexReader r = IndexReader.open(dir);
+      IndexReader r = DirectoryReader.open(dir);
       writer.addIndexes(r);
       r.close();
     }

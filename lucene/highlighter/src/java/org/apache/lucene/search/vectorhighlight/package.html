@@ -27,9 +27,9 @@ This is an another highlighter implementation.
 <li>support multi-term (includes wildcard, range, regexp, etc) queries</li>
 <li>need Java 1.5</li>
 <li>highlight fields need to be stored with Positions and Offsets</li>
-<li>take into account query boost to score fragments</li>
+<li>take into account query boost and/or IDF-weight to score fragments</li>
 <li>support colored highlight tags</li>
-<li>pluggable FragListBuilder</li>
+<li>pluggable FragListBuilder / FieldFragList</li>
 <li>pluggable FragmentsBuilder</li>
 </ul>
 
@@ -122,9 +122,8 @@ by reference to <code>QueryPhraseMap</code> and <code>FieldTermStack</code>.</p>
 +----------------+-----------------+---+
 </pre>
 <p>The type of each entry is <code>WeightedPhraseInfo</code> that consists of
-an array of terms offsets and weight. The weight (Fast Vector Highlighter uses query boost to
-calculate the weight) will be taken into account when Fast Vector Highlighter creates
-{@link org.apache.lucene.search.vectorhighlight.FieldFragList} in the next step.</p>
+an array of terms offsets and weight. 
+</p>
 <h3>Step 4.</h3>
 <p>In Step 4, Fast Vector Highlighter creates <code>FieldFragList</code> by reference to
 <code>FieldPhraseList</code>. In this sample case, the following
@@ -137,6 +136,59 @@ calculate the weight) will be taken into account when Fast Vector Highlighter cr
 |totalBoost=3                     |
 +---------------------------------+
 </pre>
+
+<p>
+The calculation for each <code>FieldFragList.WeightedFragInfo.totalBoost</code> (weight)  
+depends on the implementation of <code>FieldFragList.add( ... )</code>:
+<pre class="prettyprint">
+  public void add( int startOffset, int endOffset, List&lt;WeightedPhraseInfo&gt; phraseInfoList ) {
+    float totalBoost = 0;
+    List&lt;SubInfo&gt; subInfos = new ArrayList&lt;SubInfo&gt;();
+    for( WeightedPhraseInfo phraseInfo : phraseInfoList ){
+      subInfos.add( new SubInfo( phraseInfo.getText(), phraseInfo.getTermsOffsets(), phraseInfo.getSeqnum() ) );
+      totalBoost += phraseInfo.getBoost();
+    }
+    getFragInfos().add( new WeightedFragInfo( startOffset, endOffset, subInfos, totalBoost ) );
+  }
+  
+</pre>
+The used implementation of <code>FieldFragList</code> is noted in <code>BaseFragListBuilder.createFieldFragList( ... )</code>:
+<pre class="prettyprint">
+  public FieldFragList createFieldFragList( FieldPhraseList fieldPhraseList, int fragCharSize ){
+    return createFieldFragList( fieldPhraseList, new SimpleFieldFragList( fragCharSize ), fragCharSize );
+  }
+</pre>
+<p>
+Currently there are basically to approaches available:
+</p>
+<ul>
+<li><code>SimpleFragListBuilder using SimpleFieldFragList</code>: <i>sum-of-boosts</i>-approach. The totalBoost is calculated by summarizing the query-boosts per term. Per default a term is boosted by 1.0</li>
+<li><code>WeightedFragListBuilder using WeightedFieldFragList</code>: <i>sum-of-distinct-weights</i>-approach. The totalBoost is calculated by summarizing the IDF-weights of distinct terms.</li>
+</ul> 
+<p>Comparison of the two approaches:</p>
+<table border="1">
+<caption>
+	query = das alte testament (The Old Testament)
+</caption>
+<tr><th>Terms in fragment</th><th>sum-of-distinct-weights</th><th>sum-of-boosts</th></tr>
+<tr><td>das alte testament</td><td>5.339621</td><td>3.0</td></tr>
+<tr><td>das alte testament</td><td>5.339621</td><td>3.0</td></tr>
+<tr><td>das testament alte</td><td>5.339621</td><td>3.0</td></tr>
+<tr><td>das alte testament</td><td>5.339621</td><td>3.0</td></tr>
+<tr><td>das testament</td><td>2.9455688</td><td>2.0</td></tr>
+<tr><td>das alte</td><td>2.4759595</td><td>2.0</td></tr>
+<tr><td>das das das das</td><td>1.5015357</td><td>4.0</td></tr>
+<tr><td>das das das</td><td>1.3003681</td><td>3.0</td></tr>
+<tr><td>das das</td><td>1.061746</td><td>2.0</td></tr>
+<tr><td>alte</td><td>1.0</td><td>1.0</td></tr>
+<tr><td>alte</td><td>1.0</td><td>1.0</td></tr>
+<tr><td>das</td><td>0.7507678</td><td>1.0</td></tr>
+<tr><td>das</td><td>0.7507678</td><td>1.0</td></tr>
+<tr><td>das</td><td>0.7507678</td><td>1.0</td></tr>
+<tr><td>das</td><td>0.7507678</td><td>1.0</td></tr>
+<tr><td>das</td><td>0.7507678</td><td>1.0</td></tr>
+</table>
+
 <h3>Step 5.</h3>
 <p>In Step 5, by using <code>FieldFragList</code> and the field stored data,
 Fast Vector Highlighter creates highlighted snippets!</p>

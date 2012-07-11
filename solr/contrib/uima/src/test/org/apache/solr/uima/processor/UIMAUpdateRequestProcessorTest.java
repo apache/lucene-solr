@@ -1,6 +1,6 @@
 package org.apache.solr.uima.processor;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -46,6 +47,7 @@ import org.junit.Test;
  * 
  *
  */
+@Slow
 public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
 
   @BeforeClass

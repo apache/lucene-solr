@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -54,7 +54,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   }
 
   protected void checkMaxDoc(IndexCommit commit, int expectedMaxDoc) throws Exception {
-    IndexReader reader = IndexReader.open(commit);
+    IndexReader reader = DirectoryReader.open(commit);
     try {
       assertEquals(expectedMaxDoc, reader.maxDoc());
     } finally {
@@ -245,7 +245,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     assertSnapshotExists(dir, sdp, numSnapshots);
 
     // open a reader on a snapshot - should succeed.
-    IndexReader.open(sdp.getSnapshot("snapshot0")).close();
+    DirectoryReader.open(sdp.getSnapshot("snapshot0")).close();
 
     // open a new IndexWriter w/ no snapshots to keep and assert that all snapshots are gone.
     sdp = getDeletionPolicy();

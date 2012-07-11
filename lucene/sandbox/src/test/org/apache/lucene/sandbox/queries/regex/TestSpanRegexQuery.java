@@ -1,6 +1,6 @@
 package org.apache.lucene.sandbox.queries.regex;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,23 +17,19 @@ package org.apache.lucene.sandbox.queries.regex;
  * limitations under the License.
  */
 
-import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSpanRegexQuery extends LuceneTestCase {
@@ -64,15 +60,15 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     // Field.Store.NO, Field.Index.ANALYZED));
     // writer.addDocument(doc);
     // doc = new Document();
-    doc.add(newField("field", "auto update", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "auto update", Field.Store.NO));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newField("field", "first auto update", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "first auto update", Field.Store.NO));
     writer.addDocument(doc);
     writer.forceMerge(1);
     writer.close();
 
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = new IndexSearcher(reader);
     SpanQuery srq = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(new Term("field", "aut.*")));
     SpanFirstQuery sfq = new SpanFirstQuery(srq, 1);

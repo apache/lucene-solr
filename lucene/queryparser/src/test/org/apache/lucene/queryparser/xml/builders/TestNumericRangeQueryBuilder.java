@@ -1,6 +1,6 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -166,7 +166,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
   private static Document getDocumentFromString(String str)
       throws SAXException, IOException, ParserConfigurationException {
-    InputStream is = new ByteArrayInputStream(str.getBytes());
+    InputStream is = new ByteArrayInputStream(str.getBytes("UTF-8"));
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setNamespaceAware(true);
     DocumentBuilder builder = factory.newDocumentBuilder();

@@ -1,5 +1,5 @@
 package org.apache.solr.handler.loader;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,6 @@ import java.util.*;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.noggit.JSONParser;
-import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -138,7 +137,7 @@ public class JsonLoader extends ContentStreamLoader {
               processor.processCommit( cmd );
             }
             else if( v.equals( UpdateRequestHandler.DELETE ) ) {
-              processor.processDelete( parseDelete() );
+              handleDeleteCommand();
             }
             else if( v.equals( UpdateRequestHandler.ROLLBACK ) ) {
               processor.processRollback( parseRollback() );
@@ -171,49 +170,116 @@ public class JsonLoader extends ContentStreamLoader {
         ev = parser.nextEvent();
       }
     }
-  
-    DeleteUpdateCommand parseDelete() throws IOException {
-      assertNextEvent( JSONParser.OBJECT_START );
-  
+
+    //
+    // "delete":"id"
+    // "delete":["id1","id2"]
+    // "delete":{"id":"foo"}
+    // "delete":{"query":"myquery"}
+    //
+    void handleDeleteCommand() throws IOException {
+      int ev = parser.nextEvent();
+      switch (ev) {
+        case JSONParser.ARRAY_START:
+          handleDeleteArray(ev);
+          break;
+        case JSONParser.OBJECT_START:
+          handleDeleteMap(ev);
+          break;
+        default:
+          handleSingleDelete(ev);
+      }
+    }
+
+    // returns the string value for a primitive value, or null for the null value
+    String getString(int ev) throws IOException {
+      switch (ev) {
+        case JSONParser.STRING:
+          return parser.getString();
+        case JSONParser.BIGNUMBER:
+        case JSONParser.NUMBER:
+        case JSONParser.LONG:
+          return parser.getNumberChars().toString();
+        case JSONParser.BOOLEAN:
+          return Boolean.toString(parser.getBoolean());
+        case JSONParser.NULL:
+          return null;
+        default:
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Expected primitive JSON value but got: "+JSONParser.getEventString( ev  )
+                  +" at ["+parser.getPosition()+"]" );
+      }
+    }
+
+
+    void handleSingleDelete(int ev) throws IOException {
+      if (ev == JSONParser.OBJECT_START) {
+        handleDeleteMap(ev);
+      } else {
+        DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+        cmd.commitWithin = commitWithin;
+        String id = getString(ev);
+        cmd.setId(id);
+        processor.processDelete(cmd);
+      }
+    }
+
+    void handleDeleteArray(int ev) throws IOException {
+      assert ev == JSONParser.ARRAY_START;
+      for (;;) {
+        ev = parser.nextEvent();
+        if (ev == JSONParser.ARRAY_END) return;
+        handleSingleDelete(ev);
+      }
+    }
+
+    void handleDeleteMap(int ev) throws IOException {
+      assert ev == JSONParser.OBJECT_START;
+
       DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
       cmd.commitWithin = commitWithin;
-  
+
       while( true ) {
-        int ev = parser.nextEvent();
+        ev = parser.nextEvent();
         if( ev == JSONParser.STRING ) {
           String key = parser.getString();
           if( parser.wasKey() ) {
             if( "id".equals( key ) ) {
-              cmd.setId(parser.getString());
-            }
-            else if( "query".equals(key) ) {
+              cmd.setId(getString(parser.nextEvent()));
+            } else if( "query".equals(key) ) {
               cmd.setQuery(parser.getString());
-            }
-            else if( "commitWithin".equals(key) ) { 
-              cmd.commitWithin = Integer.parseInt(parser.getString());
+            } else if( "commitWithin".equals(key) ) {
+              cmd.commitWithin = (int)parser.getLong();
+            } else if( "_version_".equals(key) ) {
+              cmd.setVersion(parser.getLong());
             } else {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
             }
           }
           else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "invalid string: " + key 
-                +" at ["+parser.getPosition()+"]" );
+                "invalid string: " + key
+                    +" at ["+parser.getPosition()+"]" );
           }
         }
         else if( ev == JSONParser.OBJECT_END ) {
           if( cmd.getId() == null && cmd.getQuery() == null ) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing id or query for delete ["+parser.getPosition()+"]" );
           }
-          return cmd;
+
+          processor.processDelete(cmd);
+          return;
         }
         else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Got: "+JSONParser.getEventString( ev  )
-              +" at ["+parser.getPosition()+"]" );
+                  +" at ["+parser.getPosition()+"]" );
         }
       }
     }
+
+
+
     
     RollbackUpdateCommand parseRollback() throws IOException {
       assertNextEvent( JSONParser.OBJECT_START );

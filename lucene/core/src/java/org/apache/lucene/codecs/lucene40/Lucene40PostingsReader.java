@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -36,7 +37,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 
 /** 
  * Concrete class that reads the 4.0 frq/prox
@@ -58,29 +59,35 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   // private String segment;
 
   public Lucene40PostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
-    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION),
+    boolean success = false;
+    IndexInput freqIn = null;
+    IndexInput proxIn = null;
+    try {
+      freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION),
                            ioContext);
-    // TODO: hasProx should (somehow!) become codec private,
-    // but it's tricky because 1) FIS.hasProx is global (it
-    // could be all fields that have prox are written by a
-    // different codec), 2) the field may have had prox in
-    // the past but all docs w/ that field were deleted.
-    // Really we'd need to init prxOut lazily on write, and
-    // then somewhere record that we actually wrote it so we
-    // know whether to open on read:
-    if (fieldInfos.hasProx()) {
-      boolean success = false;
-      try {
+      CodecUtil.checkHeader(freqIn, Lucene40PostingsWriter.FRQ_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_START);
+      // TODO: hasProx should (somehow!) become codec private,
+      // but it's tricky because 1) FIS.hasProx is global (it
+      // could be all fields that have prox are written by a
+      // different codec), 2) the field may have had prox in
+      // the past but all docs w/ that field were deleted.
+      // Really we'd need to init prxOut lazily on write, and
+      // then somewhere record that we actually wrote it so we
+      // know whether to open on read:
+      if (fieldInfos.hasProx()) {
         proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION),
-                               ioContext);
-        success = true;
-      } finally {
-        if (!success) {
-          freqIn.close();
-        }
+                             ioContext);
+        CodecUtil.checkHeader(proxIn, Lucene40PostingsWriter.PRX_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_START);
+      } else {
+        proxIn = null;
       }
-    } else {
-      proxIn = null;
+      this.freqIn = freqIn;
+      this.proxIn = proxIn;
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(freqIn, proxIn);
+      }
     }
   }
 
@@ -88,7 +95,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   public void init(IndexInput termsIn) throws IOException {
 
     // Make sure we are talking to the matching past writer
-    CodecUtil.checkHeader(termsIn, Lucene40PostingsWriter.CODEC,
+    CodecUtil.checkHeader(termsIn, Lucene40PostingsWriter.TERMS_CODEC,
       Lucene40PostingsWriter.VERSION_START, Lucene40PostingsWriter.VERSION_START);
 
     skipInterval = termsIn.readInt();
@@ -212,9 +219,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-    if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-      return null;
-    } else if (canReuse(reuse, liveDocs)) {
+    if (canReuse(reuse, liveDocs)) {
       // if (DEBUG) System.out.println("SPR.docs ts=" + termState);
       return ((SegmentDocsEnumBase) reuse).reset(fieldInfo, (StandardTermState)termState);
     }
@@ -249,9 +254,6 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     throws IOException {
 
     boolean hasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-    if (needsOffsets && !hasOffsets) {
-      return null; // not available
-    }
 
     // TODO: refactor
     if (fieldInfo.hasPayloads() || hasOffsets) {
@@ -317,7 +319,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     protected boolean skipped;
     protected final Bits liveDocs;
     
-    SegmentDocsEnumBase(IndexInput startFreqIn, Bits liveDocs) throws IOException {
+    SegmentDocsEnumBase(IndexInput startFreqIn, Bits liveDocs) {
       this.startFreqIn = startFreqIn;
       this.freqIn = (IndexInput)startFreqIn.clone();
       this.liveDocs = liveDocs;
@@ -351,7 +353,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
     
     @Override
-    public final int freq() throws IOException {
+    public final int freq() {
       assert !indexOmitsTF;
       return freq;
     }
@@ -497,7 +499,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   
   private final class AllDocsSegmentDocsEnum extends SegmentDocsEnumBase {
 
-    AllDocsSegmentDocsEnum(IndexInput startFreqIn) throws IOException {
+    AllDocsSegmentDocsEnum(IndexInput startFreqIn) {
       super(startFreqIn, null);
       assert liveDocs == null;
     }
@@ -574,7 +576,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   
   private final class LiveDocsSegmentDocsEnum extends SegmentDocsEnumBase {
 
-    LiveDocsSegmentDocsEnum(IndexInput startFreqIn, Bits liveDocs) throws IOException {
+    LiveDocsSegmentDocsEnum(IndexInput startFreqIn, Bits liveDocs) {
       super(startFreqIn, liveDocs);
       assert liveDocs != null;
     }
@@ -694,7 +696,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     Lucene40SkipListReader skipper;
     private long lazyProxPointer;
 
-    public SegmentDocsAndPositionsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
+    public SegmentDocsAndPositionsEnum(IndexInput freqIn, IndexInput proxIn) {
       startFreqIn = freqIn;
       this.freqIn = (IndexInput) freqIn.clone();
       this.proxIn = (IndexInput) proxIn.clone();
@@ -770,7 +772,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int freq() throws IOException {
+    public int freq() {
       return freq;
     }
 
@@ -851,12 +853,12 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int startOffset() throws IOException {
+    public int startOffset() {
       return -1;
     }
 
     @Override
-    public int endOffset() throws IOException {
+    public int endOffset() {
       return -1;
     }
 
@@ -907,7 +909,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     int offsetLength;
     int startOffset;
 
-    public SegmentFullPositionsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
+    public SegmentFullPositionsEnum(IndexInput freqIn, IndexInput proxIn) {
       startFreqIn = freqIn;
       this.freqIn = (IndexInput) freqIn.clone();
       this.proxIn = (IndexInput) proxIn.clone();

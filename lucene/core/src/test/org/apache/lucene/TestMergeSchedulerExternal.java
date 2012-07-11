@@ -1,6 +1,6 @@
 package org.apache.lucene;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
@@ -33,7 +32,6 @@ import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 
 /**
  * Holds tests cases to verify external APIs are accessible
@@ -48,7 +46,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private class MyMergeScheduler extends ConcurrentMergeScheduler {
 
     private class MyMergeThread extends ConcurrentMergeScheduler.MergeThread {
-      public MyMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+      public MyMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) {
         super(writer, merge);
         mergeThreadCreated = true;
       }
@@ -91,7 +89,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     dir.failOn(new FailOnlyOnMerge());
 
     Document doc = new Document();
-    Field idField = newField("id", "", StringField.TYPE_STORED);
+    Field idField = newStringField("id", "", Field.Store.YES);
     doc.add(idField);
     
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
@@ -115,7 +113,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private static class ReportingMergeScheduler extends MergeScheduler {
 
     @Override
-    public void merge(IndexWriter writer) throws CorruptIndexException, IOException {
+    public void merge(IndexWriter writer) throws IOException {
       OneMerge merge = null;
       while ((merge = writer.getNextMerge()) != null) {
         if (VERBOSE) {
@@ -126,7 +124,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     }
 
     @Override
-    public void close() throws CorruptIndexException, IOException {}
+    public void close() throws IOException {}
     
   }
 

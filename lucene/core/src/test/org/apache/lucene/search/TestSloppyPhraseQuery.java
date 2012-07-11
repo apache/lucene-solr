@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -159,7 +159,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
 
   private static Document makeDocument(String docText) {
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     Field f = new Field("f", docText, customType);
     doc.add(f);
@@ -207,7 +207,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       Scorer scorer;
       
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorer scorer) {
         this.scorer = scorer;
       }
       
@@ -218,7 +218,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       }
       
       @Override
-      public void setNextReader(AtomicReaderContext context) throws IOException {
+      public void setNextReader(AtomicReaderContext context) {
         // do nothing
       }
       
@@ -234,7 +234,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   public void testSlopWithHoles() throws Exception {  
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     Field f = new Field("lyrics", "", customType);
     Document doc = new Document();
@@ -272,7 +272,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_UNSTORED)));
+    doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_NOT_STORED)));
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
@@ -325,7 +325,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
 
      RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
      Document doc = new Document();
-     doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_UNSTORED)));
+     doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_NOT_STORED)));
      iw.addDocument(doc);
      IndexReader ir = iw.getReader();
      iw.close();

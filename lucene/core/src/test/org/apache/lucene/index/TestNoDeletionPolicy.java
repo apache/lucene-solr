@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -73,7 +73,7 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
         .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
-      doc.add(newField("c", "a" + i, TextField.TYPE_STORED));
+      doc.add(newTextField("c", "a" + i, Field.Store.YES));
       writer.addDocument(doc);
       writer.commit();
       assertEquals("wrong number of commits !", i + 1, DirectoryReader.listCommits(dir).size());

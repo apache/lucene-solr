@@ -1,5 +1,5 @@
 package org.apache.lucene.analysis;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -67,9 +67,9 @@ final class MockPayloadFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      payloadAttr.setPayload(new Payload(("pos: " + pos).getBytes()));
+      payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes("UTF-8")));
       int posIncr;
-      if (i % 2 == 1) {
+      if (pos == 0 || i % 2 == 1) {
         posIncr = 1;
       } else {
         posIncr = 0;

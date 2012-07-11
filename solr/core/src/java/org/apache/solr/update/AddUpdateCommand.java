@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -26,6 +27,8 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+
+import java.util.List;
 
 /**
  *
@@ -42,6 +45,7 @@ public class AddUpdateCommand extends UpdateCommand {
    public boolean overwrite = true;
    
    public Term updateTerm;
+
    public int commitWithin = -1;
    
    public AddUpdateCommand(SolrQueryRequest req) {

@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -96,15 +96,6 @@ public final class ValidatingTokenFilter extends TokenFilter {
       startOffset = offsetAtt.startOffset();
       endOffset = offsetAtt.endOffset();
 
-      if (startOffset < 0) {
-        throw new IllegalStateException(name + ": startOffset=" + startOffset + " is < 0");
-      }
-      if (endOffset < 0) {
-        throw new IllegalStateException(name + ": endOffset=" + endOffset + " is < 0");
-      }
-      if (endOffset < startOffset) {
-        throw new IllegalStateException(name + ": startOffset=" + startOffset + " is > endOffset=" + endOffset + " pos=" + pos + "; token=" + termAtt);
-      }
       if (offsetsAreCorrect && offsetAtt.startOffset() < lastStartOffset) {
         throw new IllegalStateException(name + ": offsets must not go backwards startOffset=" + startOffset + " is < lastStartOffset=" + lastStartOffset);
       }

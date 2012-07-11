@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -138,7 +138,15 @@ public interface SpellingParams {
    * </p>
    */
   public static final String SPELLCHECK_COLLATE_EXTENDED_RESULTS = SPELLCHECK_PREFIX + "collateExtendedResults";
-    
+  
+  /**
+   * <p>
+   * For use with {@link SpellingParams#SPELLCHECK_MAX_COLLATION_TRIES}, use this to override any original query parameters
+   * when issuing test queries.  For instance, if the original query has "mm=1" but it is preferred to test collations
+   * with "mm=100%", then use "spellcheck.collateParam.mm=100%".
+   * </p>
+   */
+  public static final String SPELLCHECK_COLLATE_PARAM_OVERRIDE = SPELLCHECK_PREFIX + "collateParam.";
   /**
    * Certain spelling implementations may allow for an accuracy setting.
    */

@@ -1,6 +1,6 @@
 package org.apache.lucene.store;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,7 +28,8 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -252,14 +253,14 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         );
         for(int i=0;i<37;i++) {
           Document doc = new Document();
-          doc.add(newField("content", "aaa bbb ccc ddd" + i, TextField.TYPE_STORED));
-          doc.add(newField("id", "" + i, TextField.TYPE_STORED));
+          doc.add(newTextField("content", "aaa bbb ccc ddd" + i, Field.Store.YES));
+          doc.add(newTextField("id", "" + i, Field.Store.YES));
           writer.addDocument(doc);
         }
 
         dir.allIndexInputs.clear();
 
-        IndexReader reader = IndexReader.open(writer, true);
+        IndexReader reader = DirectoryReader.open(writer, true);
         Term aaa = new Term("content", "aaa");
         Term bbb = new Term("content", "bbb");
         
@@ -267,7 +268,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         
         dir.tweakBufferSizes();
         writer.deleteDocuments(new Term("id", "0"));
-        reader = IndexReader.open(writer, true);
+        reader = DirectoryReader.open(writer, true);
         IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(new TermQuery(bbb), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
@@ -277,7 +278,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         
         dir.tweakBufferSizes();
         writer.deleteDocuments(new Term("id", "4"));
-        reader = IndexReader.open(writer, true);
+        reader = DirectoryReader.open(writer, true);
         searcher = newSearcher(reader);
 
         hits = searcher.search(new TermQuery(bbb), null, 1000).scoreDocs;

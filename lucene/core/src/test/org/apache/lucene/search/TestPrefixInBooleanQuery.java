@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -28,7 +27,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeaks;
 
 /**
  * https://issues.apache.org/jira/browse/LUCENE-1974
@@ -52,7 +50,7 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
 
     Document doc = new Document();
-    Field field = newField(FIELD, "meaninglessnames", StringField.TYPE_UNSTORED);
+    Field field = newStringField(FIELD, "meaninglessnames", Field.Store.NO);
     doc.add(field);
     
     for (int i = 0; i < 5137; ++i) {

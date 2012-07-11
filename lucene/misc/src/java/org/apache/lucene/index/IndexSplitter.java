@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,11 +23,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
-import org.apache.lucene.index.IndexWriter;  // Required for javadocs
 import org.apache.lucene.store.FSDirectory;
 
 /**
@@ -46,11 +47,6 @@ import org.apache.lucene.store.FSDirectory;
  * @lucene.experimental You can easily
  * accidentally remove segments from your index so be
  * careful!
- *
- * <p><b>NOTE</b>: this tool is unaware of documents added
- * atomically via {@link IndexWriter#addDocuments} or {@link
- * IndexWriter#updateDocuments}, which means it can easily
- * break up such document groups.
  */
 public class IndexSplitter {
   public SegmentInfos infos;
@@ -103,7 +99,7 @@ public class IndexSplitter {
   }
 
   public void listSegments() throws IOException {
-    DecimalFormat formatter = new DecimalFormat("###,###.###");
+    DecimalFormat formatter = new DecimalFormat("###,###.###", DecimalFormatSymbols.getInstance(Locale.ROOT));
     for (int x = 0; x < infos.size(); x++) {
       SegmentInfoPerCommit info = infos.info(x);
       String sizeStr = formatter.format(info.sizeInBytes());

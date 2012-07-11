@@ -83,7 +83,7 @@ public abstract class DVDistinctValuesCollector<GC extends AbstractDistinctValue
         // Type erasure b/c otherwise we have inconvertible types...
         return (DVDistinctValuesCollector) new Sorted.BR(groupField, countField, (Collection) groups, diskResident, type);
       default:
-        throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "ValueType %s not supported", type));
     }
   }
 

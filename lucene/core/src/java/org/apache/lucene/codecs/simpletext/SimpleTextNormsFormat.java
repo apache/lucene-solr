@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.simpletext;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -95,8 +95,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
   public static class SimpleTextNormsPerDocConsumer extends
       SimpleTextPerDocConsumer {
     
-    public SimpleTextNormsPerDocConsumer(PerDocWriteState state)
-      throws IOException {
+    public SimpleTextNormsPerDocConsumer(PerDocWriteState state) {
       super(state, NORMS_SEG_SUFFIX);
     }
     

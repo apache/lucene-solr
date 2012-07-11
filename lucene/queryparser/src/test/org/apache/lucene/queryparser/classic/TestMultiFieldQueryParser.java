@@ -1,6 +1,6 @@
 package org.apache.lucene.queryparser.classic;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -282,7 +283,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     Directory ramDir = newDirectory();
     IndexWriter iw =  new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    doc.add(newField("body", "blah the footest blah", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("body", "blah the footest blah", Field.Store.NO));
     iw.addDocument(doc);
     iw.close();
     
@@ -290,7 +291,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
       new MultiFieldQueryParser(TEST_VERSION_CURRENT, new String[] {"body"}, analyzer);
     mfqp.setDefaultOperator(QueryParser.Operator.AND);
     Query q = mfqp.parse("the footest");
-    IndexReader ir = IndexReader.open(ramDir);
+    IndexReader ir = DirectoryReader.open(ramDir);
     IndexSearcher is = new IndexSearcher(ir);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);

@@ -1,5 +1,5 @@
 package org.apache.solr.handler.component;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -242,7 +242,7 @@ public class TermsComponent extends SearchComponent {
       int flags = 0;
       for (String flagParam : flagParams) {
           try {
-            flags |= TermsParams.TermsRegexpFlag.valueOf(flagParam.toUpperCase(Locale.ENGLISH)).getValue();
+            flags |= TermsParams.TermsRegexpFlag.valueOf(flagParam.toUpperCase(Locale.ROOT)).getValue();
           } catch (IllegalArgumentException iae) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown terms regex flag '" + flagParam + "'");
           }

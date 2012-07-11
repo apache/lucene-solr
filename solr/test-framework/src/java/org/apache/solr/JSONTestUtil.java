@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -87,7 +87,7 @@ public class JSONTestUtil {
    * @param expected expected JSON Object
    * @param delta tollerance allowed in comparing float/double values
    */
-  public static String matchObj(String path, Object input, Object expected, double delta) throws Exception {
+  public static String matchObj(String path, Object input, Object expected, double delta) {
     CollectionTester tester = new CollectionTester(input,delta);
     boolean reversed = path.startsWith("!");
     String positivePath = reversed ? path.substring(1) : path;

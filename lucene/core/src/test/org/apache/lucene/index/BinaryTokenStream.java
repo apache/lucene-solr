@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,6 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -36,7 +34,7 @@ public final class BinaryTokenStream extends TokenStream {
   }
   
   @Override
-  public boolean incrementToken() throws IOException {
+  public boolean incrementToken() {
     if (available) {
       available = false;
       return true;
@@ -45,7 +43,7 @@ public final class BinaryTokenStream extends TokenStream {
   }
   
   @Override
-  public void reset() throws IOException {
+  public void reset() {
     available = true;
   }
   

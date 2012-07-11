@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -348,7 +348,7 @@ public class FilterAtomicReader extends AtomicReader {
   }
 
   @Override
-  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
     in.document(docID, visitor);
   }

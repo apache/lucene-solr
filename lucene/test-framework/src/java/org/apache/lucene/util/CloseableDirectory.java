@@ -1,12 +1,11 @@
 package org.apache.lucene.util;
 
 import java.io.Closeable;
-import java.io.IOException;
 
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.Assert;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -39,7 +38,7 @@ final class CloseableDirectory implements Closeable {
   }
   
   @Override
-  public void close() throws IOException {
+  public void close() {
     // We only attempt to check open/closed state if there were no other test
     // failures.
     try {

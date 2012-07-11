@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexableField;
 
 /**
  * Hold some of the parameters used by solr...
+ * @lucene.experimental
  */
 public class NumericFieldInfo {
   public int precisionStep = 8; // same as solr default
@@ -39,7 +40,7 @@ public class NumericFieldInfo {
     if (!store && !index)
       throw new IllegalArgumentException("field must be indexed or stored");
 
-    FieldType fieldType = new FieldType(DoubleField.TYPE);
+    FieldType fieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
     fieldType.setStored(store);
     fieldType.setIndexed(index);
     fieldType.setNumericPrecisionStep(precisionStep);

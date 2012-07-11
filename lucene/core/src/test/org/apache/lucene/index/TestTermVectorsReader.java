@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -99,7 +97,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
     Document doc = new Document();
     for(int i=0;i<testFields.length;i++) {
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       if (testFieldsStorePos[i] && testFieldsStoreOff[i]) {
         customType.setStoreTermVectors(true);
         customType.setStoreTermVectorPositions(true);
@@ -185,7 +183,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void test() throws IOException {
     //Check to see the files were created properly in setup
-    DirectoryReader reader = IndexReader.open(dir);
+    DirectoryReader reader = DirectoryReader.open(dir);
     for (IndexReader r : reader.getSequentialSubReaders()) {
       SegmentInfoPerCommit s = ((SegmentReader) r).getSegmentInfo();
       assertTrue(((SegmentReader) r).getFieldInfos().hasVectors());

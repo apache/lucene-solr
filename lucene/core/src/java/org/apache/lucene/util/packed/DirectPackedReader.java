@@ -1,6 +1,6 @@
 package org.apache.lucene.util.packed;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,8 +32,7 @@ final class DirectPackedReader extends PackedInts.ReaderImpl {
   // masks[n-1] masks for bottom n bits
   private final long[] masks;
 
-  public DirectPackedReader(int bitsPerValue, int valueCount, IndexInput in)
-    throws IOException {
+  public DirectPackedReader(int bitsPerValue, int valueCount, IndexInput in) {
     super(valueCount, bitsPerValue);
     this.in = in;
 
@@ -72,5 +71,10 @@ final class DirectPackedReader extends PackedInts.ReaderImpl {
     } catch (IOException ioe) {
       throw new IllegalStateException("failed", ioe);
     }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return 0;
   }
 }

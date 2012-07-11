@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
@@ -34,8 +35,6 @@ import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -342,7 +341,7 @@ public class CheckIndex {
    *  you only call this when the index is not opened by any
    *  writer. */
   public Status checkIndex(List<String> onlySegments) throws IOException {
-    NumberFormat nf = NumberFormat.getInstance();
+    NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
     SegmentInfos sis = new SegmentInfos();
     Status result = new Status();
     result.dir = dir;
@@ -643,12 +642,10 @@ public class CheckIndex {
       }
       for (FieldInfo info : fieldInfos) {
         if (info.hasNorms()) {
-          assert reader.hasNorms(info.name); // deprecated path
           DocValues dv = reader.normValues(info.name);
           checkDocValues(dv, info.name, info.getNormType(), reader.maxDoc());
           ++status.totFields;
         } else {
-          assert !reader.hasNorms(info.name); // deprecated path
           if (reader.normValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
           }
@@ -671,7 +668,7 @@ public class CheckIndex {
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, IndexSearcher searcher, boolean doPrint) throws IOException {
+  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
@@ -685,6 +682,7 @@ public class CheckIndex {
     DocsEnum docs = null;
     DocsEnum docsAndFreqs = null;
     DocsAndPositionsEnum postings = null;
+    DocsAndPositionsEnum offsets = null;
     
     String lastField = null;
     final FieldsEnum fieldsEnum = fields.iterator();
@@ -760,6 +758,7 @@ public class CheckIndex {
         docs = termsEnum.docs(liveDocs, docs, false);
         docsAndFreqs = termsEnum.docs(liveDocs, docsAndFreqs, true);
         postings = termsEnum.docsAndPositions(liveDocs, postings, false);
+        offsets = termsEnum.docsAndPositions(liveDocs, offsets, true);
         
         if (hasOrd) {
           long ord = -1;
@@ -783,19 +782,29 @@ public class CheckIndex {
         final DocsEnum docsAndFreqs2;
         final boolean hasPositions;
         final boolean hasFreqs;
-        if (postings != null) {
+        final boolean hasOffsets;
+        if (offsets != null) {
+          docs2 = postings = offsets;
+          docsAndFreqs2 = postings = offsets;
+          hasOffsets = true;
+          hasPositions = true;
+          hasFreqs = true;
+        } else if (postings != null) {
           docs2 = postings;
           docsAndFreqs2 = postings;
+          hasOffsets = false;
           hasPositions = true;
           hasFreqs = true;
         } else if (docsAndFreqs != null) {
           docs2 = docsAndFreqs;
           docsAndFreqs2 = docsAndFreqs;
+          hasOffsets = false;
           hasPositions = false;
           hasFreqs = true;
         } else {
           docs2 = docs;
           docsAndFreqs2 = null;
+          hasOffsets = false;
           hasPositions = false;
           hasFreqs = false;
         }
@@ -830,6 +839,7 @@ public class CheckIndex {
           lastDoc = doc;
           
           int lastPos = -1;
+          int lastOffset = 0;
           if (hasPositions) {
             for(int j=0;j<freq;j++) {
               final int pos = postings.nextPosition();
@@ -849,6 +859,23 @@ public class CheckIndex {
               lastPos = pos;
               if (postings.hasPayload()) {
                 postings.getPayload();
+              }
+              if (hasOffsets) {
+                int startOffset = postings.startOffset();
+                int endOffset = postings.endOffset();
+                if (startOffset < 0) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
+                }
+                if (startOffset < lastOffset) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset);
+                }
+                if (endOffset < 0) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
+                }
+                if (endOffset < startOffset) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
+                }
+                lastOffset = startOffset;
               }
             }
           }
@@ -896,7 +923,7 @@ public class CheckIndex {
         if (hasPositions) {
           for(int idx=0;idx<7;idx++) {
             final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-            postings = termsEnum.docsAndPositions(liveDocs, postings, false);
+            postings = termsEnum.docsAndPositions(liveDocs, postings, hasOffsets);
             final int docID = postings.advance(skipDocID);
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
@@ -909,6 +936,7 @@ public class CheckIndex {
                 throw new RuntimeException("termFreq " + freq + " is out of bounds");
               }
               int lastPosition = -1;
+              int lastOffset = 0;
               for(int posUpto=0;posUpto<freq;posUpto++) {
                 final int pos = postings.nextPosition();
                 // NOTE: pos=-1 is allowed because of ancient bug
@@ -925,6 +953,23 @@ public class CheckIndex {
                   throw new RuntimeException("position " + pos + " is < lastPosition " + lastPosition);
                 }
                 lastPosition = pos;
+                if (hasOffsets) {
+                  int startOffset = postings.startOffset();
+                  int endOffset = postings.endOffset();
+                  if (startOffset < 0) {
+                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
+                  }
+                  if (startOffset < lastOffset) {
+                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset);
+                  }
+                  if (endOffset < 0) {
+                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
+                  }
+                  if (endOffset < startOffset) {
+                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
+                  }
+                  lastOffset = startOffset;
+                }
               } 
               
               final int nextDocID = postings.nextDoc();
@@ -1008,8 +1053,14 @@ public class CheckIndex {
             throw new RuntimeException("seek to last term " + lastTerm + " failed");
           }
           
-          if (searcher != null) {
-            searcher.search(new TermQuery(new Term(field, lastTerm)), 1);
+          int expectedDocFreq = termsEnum.docFreq();
+          DocsEnum d = termsEnum.docs(null, null, false);
+          int docFreq = 0;
+          while (d.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            docFreq++;
+          }
+          if (docFreq != expectedDocFreq) {
+            throw new RuntimeException("docFreq for last term " + lastTerm + "=" + expectedDocFreq + " != recomputed docFreq=" + docFreq);
           }
         }
         
@@ -1054,16 +1105,30 @@ public class CheckIndex {
               }
             }
             
-            // TermQuery
-            if (searcher != null) {
-              long totDocCount2 = 0;
-              for(int i=0;i<seekCount;i++) {
-                totDocCount2 += searcher.search(new TermQuery(new Term(field, seekTerms[i])), 1).totalHits;
+            long totDocCountNoDeletes = 0;
+            long totDocFreq = 0;
+            for(int i=0;i<seekCount;i++) {
+              if (!termsEnum.seekExact(seekTerms[i], true)) {
+                throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
-              if (totDocCount != totDocCount2) {
-                throw new RuntimeException("search to seek terms produced wrong number of hits: " + totDocCount + " vs " + totDocCount2);
+              totDocFreq += termsEnum.docFreq();
+              docs = termsEnum.docs(null, docs, false);
+              if (docs == null) {
+                throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
+              
+              while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+                totDocCountNoDeletes++;
+              }
+            }
+            
+            if (totDocCount > totDocCountNoDeletes) {
+              throw new RuntimeException("more postings with deletes=" + totDocCount + " than without=" + totDocCountNoDeletes);
+            }
+            
+            if (totDocCountNoDeletes != totDocFreq) {
+              throw new RuntimeException("docfreqs=" + totDocFreq + " != recomputed docfreqs=" + totDocCountNoDeletes);
             }
           }
         }
@@ -1121,7 +1186,6 @@ public class CheckIndex {
     Status.TermIndexStatus status;
     final int maxDoc = reader.maxDoc();
     final Bits liveDocs = reader.getLiveDocs();
-    final IndexSearcher is = new IndexSearcher(reader);
 
     try {
       if (infoStream != null) {
@@ -1129,13 +1193,12 @@ public class CheckIndex {
       }
 
       final Fields fields = reader.fields();
-      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, is, true);
+      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, true);
       if (liveDocs != null) {
         if (infoStream != null) {
           infoStream.print("    test (ignoring deletes): terms, freq, prox...");
         }
-        // TODO: can we make a IS that ignores all deletes?
-        checkFields(fields, null, maxDoc, fieldInfos, null, true);
+        checkFields(fields, null, maxDoc, fieldInfos, true);
       }
     } catch (Throwable e) {
       msg("ERROR: " + e);
@@ -1352,10 +1415,10 @@ public class CheckIndex {
 
         if (tfv != null) {
           // First run with no deletions:
-          checkFields(tfv, null, 1, fieldInfos, null, false);
+          checkFields(tfv, null, 1, fieldInfos, false);
 
           // Again, with the one doc deleted:
-          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, null, false);
+          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false);
 
           // Only agg stats if the doc is live:
           final boolean doStats = liveDocs == null || liveDocs.get(j);
@@ -1669,6 +1732,7 @@ public class CheckIndex {
                          "              You can't use this with the -fix option\n" +
                          "  -dir-impl X: use a specific " + FSDirectory.class.getSimpleName() + " implementation. " +
                          		"If no package is specified the " + FSDirectory.class.getPackage().getName() + " package will be used.\n" +
+                         "\n" +
                          "**WARNING**: -fix should only be used on an emergency basis as it will cause\n" +
                          "documents (perhaps many) to be permanently removed from the index.  Always make\n" +
                          "a backup copy of your index before running this!  Do not run this tool on an index\n" +

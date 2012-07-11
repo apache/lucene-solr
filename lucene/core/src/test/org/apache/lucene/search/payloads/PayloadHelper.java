@@ -1,6 +1,6 @@
 package org.apache.lucene.search.payloads;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,12 +19,13 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexReader;
@@ -84,13 +85,13 @@ public class PayloadHelper {
       
       if (input.incrementToken()) {
         if (fieldName.equals(FIELD)) {
-          payloadAtt.setPayload(new Payload(payloadField));
+          payloadAtt.setPayload(new BytesRef(payloadField));
         } else if (fieldName.equals(MULTI_FIELD)) {
           if (numSeen  % 2 == 0) {
-            payloadAtt.setPayload(new Payload(payloadMultiField1));
+            payloadAtt.setPayload(new BytesRef(payloadMultiField1));
           }
           else {
-            payloadAtt.setPayload(new Payload(payloadMultiField2));
+            payloadAtt.setPayload(new BytesRef(payloadMultiField2));
           }
           numSeen++;
         }
@@ -125,12 +126,12 @@ public class PayloadHelper {
     // writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, English.intToEnglish(i), TextField.TYPE_STORED));
-      doc.add(new Field(MULTI_FIELD, English.intToEnglish(i) + "  " + English.intToEnglish(i), TextField.TYPE_STORED));
-      doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(new TextField(FIELD, English.intToEnglish(i), Field.Store.YES));
+      doc.add(new TextField(MULTI_FIELD, English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES));
+      doc.add(new TextField(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
-    reader = IndexReader.open(writer, true);
+    reader = DirectoryReader.open(writer, true);
     writer.close();
 
     IndexSearcher searcher = LuceneTestCase.newSearcher(reader);

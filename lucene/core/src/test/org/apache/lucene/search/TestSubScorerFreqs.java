@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -45,11 +45,11 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     int num = atLeast(31);
     for (int i = 0; i < num; i++) {
       Document doc = new Document();
-      doc.add(newField("f", "a b c d b c d c d d", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("f", "a b c d b c d c d d", Field.Store.NO));
       w.addDocument(doc);
 
       doc = new Document();
-      doc.add(newField("f", "a b c d", TextField.TYPE_UNSTORED));
+      doc.add(newTextField("f", "a b c d", Field.Store.NO));
       w.addDocument(doc);
     }
 

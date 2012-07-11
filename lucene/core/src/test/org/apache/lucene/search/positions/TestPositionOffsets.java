@@ -17,6 +17,7 @@ package org.apache.lucene.search.positions;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -104,10 +105,10 @@ public class TestPositionOffsets extends LuceneTestCase {
 
     Weight weight = query.createWeight(searcher);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    AtomicReaderContext[] leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.length);
-    Scorer scorer = weight.scorer(leaves[0],
-        true, true, leaves[0].reader().getLiveDocs());
+    List<AtomicReaderContext> leaves = topReaderContext.leaves();
+    assertEquals(1, leaves.size());
+    Scorer scorer = weight.scorer(leaves.get(0),
+        true, true, leaves.get(0).reader().getLiveDocs());
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);
@@ -140,10 +141,10 @@ public class TestPositionOffsets extends LuceneTestCase {
 
     Weight weight = query.createWeight(searcher);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    AtomicReaderContext[] leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.length);
-    Scorer scorer = weight.scorer(leaves[0],
-        true, true, leaves[0].reader().getLiveDocs());
+    List<AtomicReaderContext> leaves = topReaderContext.leaves();
+    assertEquals(1, leaves.size());
+    Scorer scorer = weight.scorer(leaves.get(0),
+        true, true, leaves.get(0).reader().getLiveDocs());
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);
@@ -178,10 +179,10 @@ public class TestPositionOffsets extends LuceneTestCase {
 
     Weight weight = query.createWeight(searcher);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    AtomicReaderContext[] leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.length);
-    Scorer scorer = weight.scorer(leaves[0],
-        true, true, leaves[0].reader().getLiveDocs());
+    List<AtomicReaderContext> leaves = topReaderContext.leaves();
+    assertEquals(1, leaves.size());
+    Scorer scorer = weight.scorer(leaves.get(0),
+        true, true, leaves.get(0).reader().getLiveDocs());
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);

@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;         // for javadocs
 
 /** {@code AtomicReader} is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -58,19 +57,6 @@ public abstract class AtomicReader extends IndexReader {
   public final AtomicReaderContext getTopReaderContext() {
     ensureOpen();
     return readerContext;
-  }
-
-  /** 
-   * Returns true if there are norms stored for this field.
-   * @deprecated (4.0) use {@link #getFieldInfos()} and check {@link FieldInfo#hasNorms()} 
-   *                   for the field instead.
-   */
-  @Deprecated
-  public final boolean hasNorms(String field) throws IOException {
-    ensureOpen();
-    // note: using normValues(field) != null would potentially cause i/o
-    FieldInfo fi = getFieldInfos().fieldInfo(field);
-    return fi != null && fi.hasNorms();
   }
 
   /**

@@ -1,5 +1,5 @@
 package org.apache.lucene.queries.function.valuesource;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,7 +33,7 @@ import org.apache.lucene.search.FieldCache;
 
 public class ByteFieldSource extends FieldCacheSource {
 
-  private FieldCache.ByteParser parser;
+  private final FieldCache.ByteParser parser;
 
   public ByteFieldSource(String field) {
     this(field, null);

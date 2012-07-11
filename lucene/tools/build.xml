@@ -24,7 +24,11 @@
 
   <import file="../common-build.xml"/>
 
-  <path id="classpath"/>
+  <path id="classpath">
+    <fileset dir="lib">
+      <include name="asm-debug-all-4.0.jar"/>
+    </fileset>
+  </path>
 
   <!--  
       Specialize compile-core to not depend on clover, to exclude a 
@@ -32,8 +36,9 @@
       non-existent resource files to the build output directory.
    -->
   <target name="compile-core" depends="init" description="Compiles tools classes.">
-    <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java" 
-      includeantruntime="true" />
+    <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java" includeantruntime="true">
+      <classpath refid="classpath"/>
+    </compile>
     <copy todir="${build.dir}/classes/java">
       <fileset dir="${src.dir}" excludes="**/*.java" />
     </copy>

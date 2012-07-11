@@ -12,6 +12,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.List;
 
 public class TestOrderedConjunctionPositionsIterator extends LuceneTestCase {
   
@@ -103,10 +104,10 @@ public class TestOrderedConjunctionPositionsIterator extends LuceneTestCase {
     query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
     Weight weight = query.createWeight(searcher);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    AtomicReaderContext[] leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.length);
-    for (int i = 0; i < leaves.length; i++) {
-      Scorer scorer = weight.scorer(leaves[0], true, true, leaves[0].reader()
+    List<AtomicReaderContext> leaves = topReaderContext.leaves();
+    assertEquals(1, leaves.size());
+    for (AtomicReaderContext atomicReaderContext : leaves) {
+      Scorer scorer = weight.scorer(atomicReaderContext, true, true, atomicReaderContext.reader()
           .getLiveDocs());
       {
         int nextDoc = scorer.nextDoc();

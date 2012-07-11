@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,10 +23,10 @@ import org.apache.lucene.index.FilteredTermsEnum; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SingleTermsEnum;   // javadocs
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.TermContext;
 
 /**
  * An abstract {@link Query} that matches documents

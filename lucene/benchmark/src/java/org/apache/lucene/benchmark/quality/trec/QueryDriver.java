@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.quality.trec;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,14 +20,17 @@ package org.apache.lucene.benchmark.quality.trec;
 import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.benchmark.quality.*;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -50,23 +53,23 @@ public class QueryDriver {
     
     File topicsFile = new File(args[0]);
     File qrelsFile = new File(args[1]);
-    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2]), "lucene");
+    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2], "UTF-8"), "lucene");
     FSDirectory dir = FSDirectory.open(new File(args[3]));
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     int maxResults = 1000;
     String docNameField = "docname";
 
-    PrintWriter logger = new PrintWriter(System.out, true);
+    PrintWriter logger = new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()), true);
 
     // use trec utilities to read trec topics into quality queries
     TrecTopicsReader qReader = new TrecTopicsReader();
-    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(new FileReader(topicsFile)));
+    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(IOUtils.getDecodingReader(topicsFile, IOUtils.CHARSET_UTF_8)));
 
     // prepare judge, with trec utilities that read from a QRels file
-    Judge judge = new TrecJudge(new BufferedReader(new FileReader(qrelsFile)));
+    Judge judge = new TrecJudge(new BufferedReader(IOUtils.getDecodingReader(qrelsFile, IOUtils.CHARSET_UTF_8)));
 
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);

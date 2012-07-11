@@ -1,6 +1,6 @@
 package org.apache.lucene.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,9 +19,11 @@ package org.apache.lucene.queries;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -56,15 +58,16 @@ public class ChainedFilterTest extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
-    Calendar cal = new GregorianCalendar();
+    // we use the default Locale/TZ since LuceneTestCase randomizes it
+    Calendar cal = new GregorianCalendar(TimeZone.getDefault(), Locale.getDefault());
     cal.clear();
     cal.setTimeInMillis(1041397200000L); // 2003 January 01
 
     for (int i = 0; i < MAX; i++) {
       Document doc = new Document();
-      doc.add(newField("key", "" + (i + 1), StringField.TYPE_STORED));
-      doc.add(newField("owner", (i < MAX / 2) ? "bob" : "sue", StringField.TYPE_STORED));
-      doc.add(newField("date", cal.getTime().toString(), StringField.TYPE_STORED));
+      doc.add(newStringField("key", "" + (i + 1), Field.Store.YES));
+      doc.add(newStringField("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES));
+      doc.add(newStringField("date", cal.getTime().toString(), Field.Store.YES));
       writer.addDocument(doc);
 
       cal.add(Calendar.DATE, 1);
@@ -183,7 +186,7 @@ public class ChainedFilterTest extends LuceneTestCase {
 
   /*
   private Date parseDate(String s) throws ParseException {
-    return new SimpleDateFormat("yyyy MMM dd", Locale.US).parse(s);
+    return new SimpleDateFormat("yyyy MMM dd", Locale.ROOT).parse(s);
   }
   */
   

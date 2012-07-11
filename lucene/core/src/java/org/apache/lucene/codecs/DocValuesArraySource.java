@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
  * work for additional information regarding copyright ownership. The ASF
@@ -106,6 +106,10 @@ public abstract class DocValuesArraySource extends Source {
     public byte[] getArray() {
       return values;
     }
+    
+    public double getFloat(int docID) {
+      return getInt(docID);
+    }
 
     @Override
     public long getInt(int docID) {
@@ -167,6 +171,10 @@ public abstract class DocValuesArraySource extends Source {
     public short[] getArray() {
       return values;
     }
+    
+    public double getFloat(int docID) {
+      return getInt(docID);
+    }
 
     @Override
     public long getInt(int docID) {
@@ -222,6 +230,10 @@ public abstract class DocValuesArraySource extends Source {
     @Override
     public int[] getArray() {
       return values;
+    }
+    
+    public double getFloat(int docID) {
+      return getInt(docID);
     }
 
     @Override

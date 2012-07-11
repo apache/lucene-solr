@@ -1,5 +1,5 @@
 package org.apache.solr.handler.component;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -174,7 +174,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   public void testFieldStatisticsResultsDateField() throws Exception {
     SolrCore core = h.getCore();
 
-    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT);
     dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     String date1 = dateFormat.format(new Date(123456789)) + "Z";

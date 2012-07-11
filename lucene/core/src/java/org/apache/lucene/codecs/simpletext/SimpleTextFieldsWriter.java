@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.simpletext;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -104,7 +104,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
     private final boolean writeOffsets;
 
     // for assert:
-    private int lastEndOffset = -1;
+    private int lastStartOffset = 0;
 
     public SimpleTextPostingsWriter(FieldInfo field) {
       this.indexOptions = field.getIndexOptions();
@@ -133,7 +133,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
         newline();
       }
 
-      lastEndOffset = -1;
+      lastStartOffset = 0;
     }
     
     public PostingsConsumer reset(BytesRef term) {
@@ -152,8 +152,8 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
       if (writeOffsets) {
         assert endOffset >= startOffset;
-        assert startOffset >= lastEndOffset: "startOffset=" + startOffset + " lastEndOffset=" + lastEndOffset;
-        lastEndOffset = endOffset;
+        assert startOffset >= lastStartOffset: "startOffset=" + startOffset + " lastStartOffset=" + lastStartOffset;
+        lastStartOffset = startOffset;
         write(START_OFFSET);
         write(Integer.toString(startOffset));
         newline();

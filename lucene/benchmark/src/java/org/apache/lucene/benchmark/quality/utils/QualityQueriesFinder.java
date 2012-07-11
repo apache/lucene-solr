@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.lucene.benchmark.quality.utils;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
@@ -86,7 +87,7 @@ public class QualityQueriesFinder {
   
   private String [] bestTerms(String field,int numTerms) throws IOException {
     PriorityQueue<TermDf> pq = new TermsDfQueue(numTerms);
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = DirectoryReader.open(dir);
     try {
       int threshold = ir.maxDoc() / 10; // ignore words too common.
       Terms terms = MultiFields.getTerms(ir, field);

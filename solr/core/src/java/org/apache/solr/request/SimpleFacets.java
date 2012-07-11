@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,6 +22,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
+import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.util.*;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.common.SolrException;
@@ -233,19 +234,45 @@ public class SimpleFacets {
 
     String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
 
+    
     if (null != facetQs && 0 != facetQs.length) {
       for (String q : facetQs) {
         parseParams(FacetParams.FACET_QUERY, q);
 
         // TODO: slight optimization would prevent double-parsing of any localParams
         Query qobj = QParser.getParser(q, null, req).getQuery();
-        res.add(key, searcher.numDocs(qobj, base));
+
+        if (params.getBool(GroupParams.GROUP_FACET, false)) {
+          res.add(key, getGroupedFacetQueryCount(qobj));
+        } else {
+          res.add(key, searcher.numDocs(qobj, base));
+        }
       }
     }
 
     return res;
   }
-
+  
+  /**
+   * Returns a grouped facet count for the facet query
+   *
+   * @see FacetParams#FACET_QUERY
+   */
+  public int getGroupedFacetQueryCount(Query facetQuery) throws IOException {
+    GroupingSpecification groupingSpecification = rb.getGroupingSpec();
+    String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
+    if (groupField == null) {
+      throw new SolrException (
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Specify the group.field as parameter or local parameter"
+      );
+    }
+    
+    TermAllGroupsCollector collector = new TermAllGroupsCollector(groupField);
+    Filter mainQueryFilter = docs.getTopFilter(); // This returns a filter that only matches documents matching with q param and fq params
+    searcher.search(facetQuery, mainQueryFilter, collector);
+    return collector.getGroupCount();
+  }
 
   public NamedList<Integer> getTermCounts(String field) throws IOException {
     int offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
@@ -1172,7 +1199,11 @@ public class SimpleFacets {
   protected int rangeCount(SchemaField sf, String low, String high,
                            boolean iLow, boolean iHigh) throws IOException {
     Query rangeQ = sf.getType().getRangeQuery(null, sf,low,high,iLow,iHigh);
-    return searcher.numDocs(rangeQ ,base);
+    if (params.getBool(GroupParams.GROUP_FACET, false)) {
+      return getGroupedFacetQueryCount(rangeQ);
+    } else {
+      return searcher.numDocs(rangeQ ,base);
+    }
   }
 
   /**

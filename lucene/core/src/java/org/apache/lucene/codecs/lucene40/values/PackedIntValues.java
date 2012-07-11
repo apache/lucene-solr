@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40.values;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40.values;
  */
 import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesArraySource;
 import org.apache.lucene.codecs.lucene40.values.FixedStraightBytesImpl.FixedBytesWriterBase;
 import org.apache.lucene.index.DocValues.Source;
@@ -30,7 +31,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
@@ -57,7 +57,7 @@ class PackedIntValues {
     private int lastDocId = -1;
 
     protected PackedIntsWriter(Directory dir, String id, Counter bytesUsed,
-        IOContext context) throws IOException {
+        IOContext context) {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, Type.VAR_INTS);
       bytesRef = new BytesRef(8);
     }

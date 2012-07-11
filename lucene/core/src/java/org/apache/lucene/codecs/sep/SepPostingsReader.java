@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.sep;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.sep;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -36,7 +37,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 
 /** Concrete class that reads the current doc/freq/skip
  *  postings format.    
@@ -259,9 +259,6 @@ public class SepPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-    if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-      return null;
-    }
     final SepTermState termState = (SepTermState) _termState;
     SepDocsEnum docsEnum;
     if (reuse == null || !(reuse instanceof SepDocsEnum)) {
@@ -283,10 +280,6 @@ public class SepPostingsReader extends PostingsReaderBase {
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs,
                                                DocsAndPositionsEnum reuse, boolean needsOffsets)
     throws IOException {
-
-    if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-      return null;
-    }
 
     if (needsOffsets) {
       return null;

@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spell;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -320,7 +320,7 @@ public class DirectSpellChecker {
       return new SuggestWord[0];
     
     if (lowerCaseTerms) {
-      term = new Term(term.field(), text.toLowerCase(Locale.ENGLISH));
+      term = new Term(term.field(), text.toLowerCase(Locale.ROOT));
     }
     
     int docfreq = ir.docFreq(term);

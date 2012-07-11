@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -45,7 +45,7 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
   * <p>Note that all subreaders are closed if this Multireader is closed.</p>
   * @param subReaders set of (sub)readers
   */
-  public MultiReader(IndexReader... subReaders) throws IOException {
+  public MultiReader(IndexReader... subReaders) {
     this(subReaders, true);
   }
 
@@ -55,7 +55,7 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
    * @param closeSubReaders indicates whether the subreaders should be closed
    * when this MultiReader is closed
    */
-  public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
+  public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) {
     super(subReaders.clone());
     this.closeSubReaders = closeSubReaders;
     if (!closeSubReaders) {
@@ -68,12 +68,12 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
   @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
-    for (int i = 0; i < subReaders.length; i++) {
+    for (final IndexReader r : getSequentialSubReaders()) {
       try {
         if (closeSubReaders) {
-          subReaders[i].close();
+          r.close();
         } else {
-          subReaders[i].decRef();
+          r.decRef();
         }
       } catch (IOException e) {
         if (ioe == null) ioe = e;

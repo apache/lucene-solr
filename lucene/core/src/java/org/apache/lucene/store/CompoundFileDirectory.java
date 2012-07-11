@@ -1,6 +1,6 @@
 package org.apache.lucene.store;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,9 +18,10 @@ package org.apache.lucene.store;
  */
 
 import org.apache.lucene.codecs.Codec; // javadocs
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.util.IOUtils;
 
@@ -51,14 +52,21 @@ import java.io.IOException;
  * </ul>
  * <p>Description:</p>
  * <ul>
- *   <li>Compound (.cfs) --&gt; FileData <sup>FileCount</sup></li>
- *   <li>Compound Entry Table (.cfe) --&gt; Version, FileCount, &lt;FileName,
+ *   <li>Compound (.cfs) --&gt; Header, FileData <sup>FileCount</sup></li>
+ *   <li>Compound Entry Table (.cfe) --&gt; Header, FileCount, &lt;FileName,
  *       DataOffset, DataLength&gt; <sup>FileCount</sup></li>
- *   <li>Version --&gt; {@link DataOutput#writeInt Int32}</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>FileCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>DataOffset,DataLength --&gt; {@link DataOutput#writeLong UInt64}</li>
  *   <li>FileName --&gt; {@link DataOutput#writeString String}</li>
  *   <li>FileData --&gt; raw file data</li>
+ * </ul>
+ * <p>Notes:</p>
+ * <ul>
+ *   <li>FileCount indicates how many files are contained in this compound file. 
+ *       The entry table that follows has that many entries. 
+ *   <li>Each directory entry contains a long pointer to the start of this file's data
+ *       section, the files length, and a String with that file's name.
  * </ul>
  * 
  * @lucene.experimental
@@ -114,105 +122,43 @@ public final class CompoundFileDirectory extends Directory {
   /** Helper method that reads CFS entries from an input stream */
   private static final Map<String, FileEntry> readEntries(
       IndexInputSlicer handle, Directory dir, String name) throws IOException {
-    // read the first VInt. If it is negative, it's the version number
-    // otherwise it's the count (pre-3.1 indexes)
-    final IndexInput stream = handle.openFullSlice();
-    final Map<String, FileEntry> mapping;
-    boolean success = false;
+    IOException priorE = null;
+    IndexInput stream = null, entriesStream = null;
     try {
-      final int firstInt = stream.readVInt();
-      if (firstInt == CompoundFileWriter.FORMAT_CURRENT) {
-        IndexInput input = null;
-        try {
-          final String entriesFileName = IndexFileNames.segmentFileName(
-                                                IndexFileNames.stripExtension(name), "",
-                                                IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-          input = dir.openInput(entriesFileName, IOContext.READONCE);
-          final int readInt = input.readInt(); // unused right now
-          assert readInt == CompoundFileWriter.ENTRY_FORMAT_CURRENT;
-          final int numEntries = input.readVInt();
-          mapping = new HashMap<String, CompoundFileDirectory.FileEntry>(
-              numEntries);
-          for (int i = 0; i < numEntries; i++) {
-            final FileEntry fileEntry = new FileEntry();
-            final String id = input.readString();
-            assert !mapping.containsKey(id): "id=" + id + " was written multiple times in the CFS";
-            mapping.put(id, fileEntry);
-            fileEntry.offset = input.readLong();
-            fileEntry.length = input.readLong();
-          }
-          return mapping;
-        } finally {
-          IOUtils.close(input);
+      stream = handle.openFullSlice();
+      final int firstInt = stream.readInt();
+      // NOTE: as long as we want to throw indexformattooold (vs corruptindexexception), we need
+      // to read the magic ourselves. See SegmentInfos which also has this.
+      if (firstInt == CodecUtil.CODEC_MAGIC) {
+        CodecUtil.checkHeaderNoMagic(stream, CompoundFileWriter.DATA_CODEC, 
+            CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
+        final String entriesFileName = IndexFileNames.segmentFileName(
+                                              IndexFileNames.stripExtension(name), "",
+                                              IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+        entriesStream = dir.openInput(entriesFileName, IOContext.READONCE);
+        CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
+        final int numEntries = entriesStream.readVInt();
+        final Map<String, FileEntry> mapping = new HashMap<String,FileEntry>(numEntries);
+        for (int i = 0; i < numEntries; i++) {
+          final FileEntry fileEntry = new FileEntry();
+          final String id = entriesStream.readString();
+          assert !mapping.containsKey(id): "id=" + id + " was written multiple times in the CFS";
+          mapping.put(id, fileEntry);
+          fileEntry.offset = entriesStream.readLong();
+          fileEntry.length = entriesStream.readLong();
         }
+        return mapping;
       } else {
-        // TODO remove once 3.x is not supported anymore
-        mapping = readLegacyEntries(stream, firstInt);
+        throw new IndexFormatTooOldException(stream, firstInt,
+            CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
-      success = true;
-      return mapping;
+    } catch (IOException ioe) {
+      priorE = ioe;
     } finally {
-      if (success) {
-        IOUtils.close(stream);
-      } else {
-        IOUtils.closeWhileHandlingException(stream);
-      }
+      IOUtils.closeWhileHandlingException(priorE, stream, entriesStream);
     }
-  }
-
-  private static Map<String, FileEntry> readLegacyEntries(IndexInput stream,
-      int firstInt) throws CorruptIndexException, IOException {
-    final Map<String,FileEntry> entries = new HashMap<String,FileEntry>();
-    final int count;
-    final boolean stripSegmentName;
-    if (firstInt < CompoundFileWriter.FORMAT_PRE_VERSION) {
-      if (firstInt < CompoundFileWriter.FORMAT_CURRENT) {
-        throw new CorruptIndexException("Incompatible format version: "
-            + firstInt + " expected " + CompoundFileWriter.FORMAT_CURRENT + " (resource: " + stream + ")");
-      }
-      // It's a post-3.1 index, read the count.
-      count = stream.readVInt();
-      stripSegmentName = false;
-    } else {
-      count = firstInt;
-      stripSegmentName = true;
-    }
-    
-    // read the directory and init files
-    long streamLength = stream.length();
-    FileEntry entry = null;
-    for (int i=0; i<count; i++) {
-      long offset = stream.readLong();
-      if (offset < 0 || offset > streamLength) {
-        throw new CorruptIndexException("Invalid CFS entry offset: " + offset + " (resource: " + stream + ")");
-      }
-      String id = stream.readString();
-      
-      if (stripSegmentName) {
-        // Fix the id to not include the segment names. This is relevant for
-        // pre-3.1 indexes.
-        id = IndexFileNames.stripSegmentName(id);
-      }
-      
-      if (entry != null) {
-        // set length of the previous entry
-        entry.length = offset - entry.offset;
-      }
-      
-      entry = new FileEntry();
-      entry.offset = offset;
-
-      assert !entries.containsKey(id);
-
-      entries.put(id, entry);
-    }
-    
-    // set the length of the final entry
-    if (entry != null) {
-      entry.length = streamLength - entry.offset;
-    }
-    
-    return entries;
+    // this is needed until Java 7's real try-with-resources:
+    throw new AssertionError("impossible to get here");
   }
   
   public Directory getDirectory() {
@@ -260,7 +206,7 @@ public final class CompoundFileDirectory extends Directory {
     } else {
       res = entries.keySet().toArray(new String[entries.size()]);
       // Add the segment name
-      String seg = fileName.substring(0, fileName.indexOf('.'));
+      String seg = IndexFileNames.parseSegmentName(fileName);
       for (int i = 0; i < res.length; i++) {
         res[i] = seg + res[i];
       }
@@ -312,7 +258,7 @@ public final class CompoundFileDirectory extends Directory {
   }
   
   @Override
-  public void sync(Collection<String> names) throws IOException {
+  public void sync(Collection<String> names) {
     throw new UnsupportedOperationException();
   }
   
@@ -335,7 +281,7 @@ public final class CompoundFileDirectory extends Directory {
     }
     return new IndexInputSlicer() {
       @Override
-      public void close() throws IOException {
+      public void close() {
       }
       
       @Override

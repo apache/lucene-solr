@@ -24,7 +24,7 @@
     that you fully re-index after changing this setting as it can affect both how text is indexed
     and queried.
   -->
-  <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
+  <luceneMatchVersion>LUCENE_50</luceneMatchVersion>
 
   <lib dir="../../../../contrib/dataimporthandler/lib/" regex=".*jar$" />
   <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-.*\.jar" />
@@ -283,7 +283,7 @@
 
 
   <!-- requestHandler plugins... incoming queries will be dispatched to the
-     correct handler based on the path or the qt (query type) param.
+     correct handler based on the path or the 'qt' param.
      Names starting with a '/' are accessed with the a path equal to the
      registered name.  Names without a leading '/' are accessed with:
       http://host/app/select?qt=name
@@ -324,7 +324,7 @@
 
   <!-- DisMaxRequestHandler allows easy searching across multiple fields
        for simple user-entered phrases.  It's implementation is now
-       just the standard SearchHandler with a default query type
+       just the standard SearchHandler with a default query parser
        of "dismax".
        see http://wiki.apache.org/solr/DisMaxRequestHandler
    -->

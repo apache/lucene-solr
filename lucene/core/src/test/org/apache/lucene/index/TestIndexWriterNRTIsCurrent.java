@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
  * work for additional information regarding copyright ownership. The ASF
@@ -25,7 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -36,8 +35,8 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
     volatile boolean stop = false;
   }
 
-  public void testIsCurrentWithThreads() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InterruptedException {
+  public void testIsCurrentWithThreads() throws
+      IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));
@@ -92,7 +91,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
       Random random = LuceneTestCase.random();
       try {
         Document doc = new Document();
-        doc.add(new Field("id", "1", TextField.TYPE_UNSTORED));
+        doc.add(new TextField("id", "1", Field.Store.NO));
         writer.addDocument(doc);
         holder.reader = currentReader = writer.getReader(true);
         Term term = new Term("id");

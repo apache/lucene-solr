@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -191,7 +191,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
     else {
       try {
-        action = ACTIONS.valueOf(actionParam.toUpperCase(Locale.ENGLISH));
+        action = ACTIONS.valueOf(actionParam.toUpperCase(Locale.ROOT));
       }
       catch (IllegalArgumentException iae){
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 

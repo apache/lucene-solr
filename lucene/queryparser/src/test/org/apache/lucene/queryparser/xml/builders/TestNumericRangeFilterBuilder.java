@@ -1,6 +1,6 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.lucene.queryparser.xml.builders;
  */
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -63,7 +64,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     writer.commit();
     try {
-      AtomicReader reader = new SlowCompositeReaderWrapper(IndexReader.open(ramDir));
+      AtomicReader reader = new SlowCompositeReaderWrapper(DirectoryReader.open(ramDir));
       try {
         assertNull(filter.getDocIdSet(reader.getTopReaderContext(), reader.getLiveDocs()));
       }
@@ -202,7 +203,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 
   private static Document getDocumentFromString(String str)
       throws SAXException, IOException, ParserConfigurationException {
-    InputStream is = new ByteArrayInputStream(str.getBytes());
+    InputStream is = new ByteArrayInputStream(str.getBytes("UTF-8"));
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setNamespaceAware(true);
     DocumentBuilder builder = factory.newDocumentBuilder();

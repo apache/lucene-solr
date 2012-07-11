@@ -19,14 +19,15 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.TreeMap;
 
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -57,13 +58,13 @@ public class TestCustomSearcherSort extends LuceneTestCase {
       Document doc = new Document();
       if ((i % 5) != 0) { // some documents must not have an entry in the first
                           // sort field
-        doc.add(newField("publicationDate_", random.getLuceneDate(), StringField.TYPE_STORED));
+        doc.add(newStringField("publicationDate_", random.getLuceneDate(), Field.Store.YES));
       }
       if ((i % 7) == 0) { // some documents to match the query (see below)
-        doc.add(newField("content", "test", TextField.TYPE_STORED));
+        doc.add(newTextField("content", "test", Field.Store.YES));
       }
       // every document has a defined 'mandant' field
-      doc.add(newField("mandant", Integer.toString(i % 3), StringField.TYPE_STORED));
+      doc.add(newStringField("mandant", Integer.toString(i % 3), Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -231,10 +232,12 @@ public class TestCustomSearcherSort extends LuceneTestCase {
   private class RandomGen {
     RandomGen(Random random) {
       this.random = random;
+      base.set(1980, 1, 1);
     }
     
     private Random random;
-    private Calendar base = new GregorianCalendar(1980, 1, 1);
+    // we use the default Locale/TZ since LuceneTestCase randomizes it
+    private Calendar base = new GregorianCalendar(TimeZone.getDefault(), Locale.getDefault());
     
     // Just to generate some different Lucene Date strings
     private String getLuceneDate() {

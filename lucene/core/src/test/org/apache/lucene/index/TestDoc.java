@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,19 +17,22 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -78,14 +81,14 @@ public class TestDoc extends LuceneTestCase {
     }
 
     private File createOutput(String name, String text) throws IOException {
-        FileWriter fw = null;
+        Writer fw = null;
         PrintWriter pw = null;
 
         try {
             File f = new File(workDir, name);
             if (f.exists()) f.delete();
 
-            fw = new FileWriter(f);
+            fw = new OutputStreamWriter(new FileOutputStream(f), "UTF-8");
             pw = new PrintWriter(fw);
             pw.println(text);
             return f;
@@ -182,9 +185,11 @@ public class TestDoc extends LuceneTestCase {
    {
       File file = new File(workDir, fileName);
       Document doc = new Document();
-      doc.add(new TextField("contents", new FileReader(file)));
+      InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
+      doc.add(new TextField("contents", is, Field.Store.NO));
       writer.addDocument(doc);
       writer.commit();
+      is.close();
       return writer.newestSegment();
    }
 

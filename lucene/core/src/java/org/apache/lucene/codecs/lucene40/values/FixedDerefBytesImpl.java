@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40.values;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -46,8 +46,7 @@ class FixedDerefBytesImpl {
   static final int VERSION_CURRENT = VERSION_START;
 
   public static class Writer extends DerefBytesWriterBase {
-    public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
-        throws IOException {
+    public Writer(Directory dir, String id, Counter bytesUsed, IOContext context) {
       super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, Type.BYTES_FIXED_DEREF);
     }
 
@@ -67,6 +66,7 @@ class FixedDerefBytesImpl {
       idxOut.writeInt(numValues);
       writeIndex(idxOut, docCount, numValues, docToEntry);
     }
+
   }
 
   public static class FixedDerefReader extends BytesReaderBase {
@@ -109,8 +109,7 @@ class FixedDerefBytesImpl {
 
     @Override
     public BytesRef getBytes(int docID, BytesRef bytesRef) {
-      final int id = (int) addresses.get(docID);
-      return data.fillSlice(bytesRef, (id * size), size);
+      return data.fillSlice(bytesRef, addresses.get(docID) * size, size);
     }
 
   }

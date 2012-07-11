@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -97,7 +97,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
                 content = this.term3 + " " + this.term2;
             }
 
-            doc.add(newField(this.field, content, TextField.TYPE_STORED));
+            doc.add(newTextField(this.field, content, Field.Store.YES));
             writer.addDocument(doc);
         }
         
@@ -105,7 +105,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         writer.forceMerge(1);
         writer.close();
 
-      SegmentReader reader = getOnlySegmentReader(IndexReader.open(directory));
+      SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(directory));
 
       this.searcher = newSearcher(reader);
     }
@@ -146,12 +146,12 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
-            doc.add(newField(this.field, "a b", TextField.TYPE_STORED));
+            doc.add(newTextField(this.field, "a b", Field.Store.YES));
             writer.addDocument(doc);
         }
         
         writer.close();
-        IndexReader reader = IndexReader.open(directory);
+        IndexReader reader = DirectoryReader.open(directory);
 
         DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
                                                                    MultiFields.getLiveDocs(reader),

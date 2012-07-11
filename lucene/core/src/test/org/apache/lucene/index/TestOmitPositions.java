@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -40,7 +40,7 @@ public class TestOmitPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
     Field f = newField("foo", "this is a test test", ft);
     doc.add(f);
@@ -71,7 +71,7 @@ public class TestOmitPositions extends LuceneTestCase {
     Document d = new Document();
         
     // f1,f2,f3: docs only
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
     
     Field f1 = newField("f1", "This field has docs only", ft);
@@ -83,7 +83,7 @@ public class TestOmitPositions extends LuceneTestCase {
     Field f3 = newField("f3", "This field has docs only", ft);
     d.add(f3);
 
-    FieldType ft2 = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft2 = new FieldType(TextField.TYPE_NOT_STORED);
     ft2.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
     
     // f4,f5,f6 docs and freqs
@@ -96,7 +96,7 @@ public class TestOmitPositions extends LuceneTestCase {
     Field f6 = newField("f6", "This field has docs and freqs", ft2);
     d.add(f6);
     
-    FieldType ft3 = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft3 = new FieldType(TextField.TYPE_NOT_STORED);
     ft3.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     
     // f7,f8,f9 docs/freqs/positions
@@ -153,7 +153,7 @@ public class TestOmitPositions extends LuceneTestCase {
     // flush
     writer.close();
 
-    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
+    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
     // docs + docs = docs
     assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").getIndexOptions());
@@ -197,7 +197,7 @@ public class TestOmitPositions extends LuceneTestCase {
     lmp.setUseCompoundFile(false);
     Document d = new Document();
 
-    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
     Field f1 = newField("f1", "This field has term freqs", ft);
     d.add(f1);
@@ -211,7 +211,7 @@ public class TestOmitPositions extends LuceneTestCase {
     
     // now add some documents with positions, and check there is no prox after optimization
     d = new Document();
-    f1 = newField("f1", "This field has positions", TextField.TYPE_UNSTORED);
+    f1 = newTextField("f1", "This field has positions", Field.Store.NO);
     d.add(f1);
     
     for(int i=0;i<30;i++)

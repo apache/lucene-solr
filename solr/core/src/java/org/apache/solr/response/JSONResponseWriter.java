@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -92,7 +92,7 @@ class JSONWriter extends TextResponseWriter {
     if(wrapperFunction!=null) {
         writer.write(')');
     }
-    if (doIndent) writer.write('\n');  // ending with a newline looks much better from the command line
+    writer.write('\n');  // ending with a newline looks much better from the command line
   }
 
   protected void writeKey(String fname, boolean needsEscaping) throws IOException {

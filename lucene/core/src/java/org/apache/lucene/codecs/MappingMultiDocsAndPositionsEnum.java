@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -36,13 +36,13 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
   private MultiDocsAndPositionsEnum.EnumWithSlice[] subs;
   int numSubs;
   int upto;
-  int[] currentMap;
+  MergeState.DocMap currentMap;
   DocsAndPositionsEnum current;
   int currentBase;
   int doc = -1;
   private MergeState mergeState;
 
-  MappingMultiDocsAndPositionsEnum reset(MultiDocsAndPositionsEnum postingsEnum) throws IOException {
+  MappingMultiDocsAndPositionsEnum reset(MultiDocsAndPositionsEnum postingsEnum) {
     this.numSubs = postingsEnum.getNumSubs();
     this.subs = postingsEnum.getSubs();
     upto = -1;
@@ -73,7 +73,7 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
   }
 
   @Override
-  public int advance(int target) throws IOException {
+  public int advance(int target) {
     throw new UnsupportedOperationException();
   }
 
@@ -94,12 +94,10 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
 
       int doc = current.nextDoc();
       if (doc != NO_MORE_DOCS) {
-        if (currentMap != null) {
-          // compact deletions
-          doc = currentMap[doc];
-          if (doc == -1) {
-            continue;
-          }
+        // compact deletions
+        doc = currentMap.get(doc);
+        if (doc == -1) {
+          continue;
         }
         return this.doc = currentBase + doc;
       } else {

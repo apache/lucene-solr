@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -109,7 +109,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     //System.out.println( handler.getHiddenFiles() );
     // should not contain: <gettableFiles>solrconfig.xml scheam.xml admin-extra.html</gettableFiles>
-    assertFalse(handler.getHiddenFiles().contains("scheam.xml".toUpperCase(Locale.ENGLISH)));
+    assertFalse(handler.getHiddenFiles().contains("scheam.xml".toUpperCase(Locale.ROOT)));
     assertTrue(handler.getHiddenFiles().contains("PROTWORDS.TXT"));
   }
 
@@ -130,20 +130,11 @@ public class TestConfig extends SolrTestCaseJ4 {
   // If defaults change, add test methods to cover each version
   @Test
   public void testDefaults() throws Exception {
-    SolrConfig sc = new SolrConfig("solrconfig-basic.xml");
+    SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
     assertTrue("default ramBufferSizeMB should be 32", sic.ramBufferSizeMB == 32);
     assertTrue("default useCompoundFile should be false", sic.useCompoundFile == false);
     assertTrue("default LockType should be native", sic.lockType.equals(SolrIndexConfig.LOCK_TYPE_NATIVE));
-  }
-
-  @Test
-  public void testDefaults31() throws Exception {
-    SolrConfig sc = new SolrConfig("solrconfig-basic-luceneVersion31.xml");
-    SolrIndexConfig sic = sc.indexConfig;
-    assertTrue("default ramBufferSizeMB should be 16", sic.ramBufferSizeMB == 16);
-    assertTrue("default useCompoundFile should be true", sic.useCompoundFile == true);
-    assertTrue("default LockType should be simple", sic.lockType.equals(SolrIndexConfig.LOCK_TYPE_SIMPLE));
   }
 
 }

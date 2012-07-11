@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.ca;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,14 +38,6 @@ import org.tartarus.snowball.ext.CatalanStemmer;
 
 /**
  * {@link Analyzer} for Catalan.
- * <p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating CatalanAnalyzer:
- * <ul>
- *   <li> As of 3.6, ElisionFilter with a set of Catalan 
- *        contractions is used by default.
- * </ul>
  */
 public final class CatalanAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -126,8 +118,8 @@ public final class CatalanAnalyzer extends StopwordAnalyzerBase {
    * @return A
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link KeywordMarkerFilter} if a stem exclusion set is
+   *         {@link StandardFilter}, {@link ElisionFilter}, {@link LowerCaseFilter}, 
+   *         {@link StopFilter}, {@link KeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link SnowballFilter}.
    */
   @Override
@@ -135,9 +127,7 @@ public final class CatalanAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-      result = new ElisionFilter(matchVersion, result, DEFAULT_ARTICLES);
-    }
+    result = new ElisionFilter(matchVersion, result, DEFAULT_ARTICLES);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())

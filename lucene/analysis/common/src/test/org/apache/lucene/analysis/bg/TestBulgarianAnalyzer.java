@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.bg;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -68,7 +68,7 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testWithStemExclusionSet() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_31, 1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("строеве");
     Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "строевете строеве", new String[] { "строй", "строеве" });
@@ -76,6 +76,6 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new BulgarianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new BulgarianAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

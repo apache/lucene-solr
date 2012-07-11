@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,6 +28,6 @@ import org.apache.lucene.index.SegmentInfo;
  * @lucene.experimental
  */
 public abstract class SegmentInfoFormat {
-  public abstract SegmentInfoReader getSegmentInfosReader();
-  public abstract SegmentInfoWriter getSegmentInfosWriter();
+  public abstract SegmentInfoReader getSegmentInfoReader();
+  public abstract SegmentInfoWriter getSegmentInfoWriter();
 }

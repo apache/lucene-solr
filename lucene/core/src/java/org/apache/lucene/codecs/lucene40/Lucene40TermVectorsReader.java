@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,8 +23,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -40,7 +40,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -96,7 +95,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
   }
     
   public Lucene40TermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
-    throws CorruptIndexException, IOException {
+    throws IOException {
     final String segment = si.name;
     final int size = si.getDocCount();
     
@@ -252,7 +251,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
         private int fieldUpto;
 
         @Override
-        public String next() throws IOException {
+        public String next() {
           if (fieldNumbers != null && fieldUpto < fieldNumbers.length) {
             return fieldInfos.fieldInfo(fieldNumbers[fieldUpto++]).name;
           } else {
@@ -365,7 +364,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     private int[] endOffsets;
 
     // NOTE: tvf is pre-positioned by caller
-    public TVTermsEnum() throws IOException {
+    public TVTermsEnum() {
       this.origTVF = Lucene40TermVectorsReader.this.tvf;
       tvf = (IndexInput) origTVF.clone();
     }

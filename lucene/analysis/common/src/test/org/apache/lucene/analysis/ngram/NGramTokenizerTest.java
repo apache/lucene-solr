@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.ngram;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,6 +24,7 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
  * Tests {@link NGramTokenizer} for correctness.
@@ -98,11 +99,11 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new NGramTokenizer(reader, 2, 15);
+        Tokenizer tokenizer = new NGramTokenizer(reader, 2, 4);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
-    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192, false, false);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), a, 50*RANDOM_MULTIPLIER, 1027, false, false);
   }
 }

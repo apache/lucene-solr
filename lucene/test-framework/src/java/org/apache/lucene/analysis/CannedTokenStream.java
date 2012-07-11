@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,6 @@ package org.apache.lucene.analysis;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -42,7 +40,7 @@ public final class CannedTokenStream extends TokenStream {
   }
   
   @Override
-  public boolean incrementToken() throws IOException {
+  public boolean incrementToken() {
     if (upto < tokens.length) {
       final Token token = tokens[upto++];     
       // TODO: can we just capture/restoreState so

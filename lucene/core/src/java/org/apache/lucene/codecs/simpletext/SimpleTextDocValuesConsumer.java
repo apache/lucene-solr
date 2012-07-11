@@ -1,5 +1,5 @@
 package org.apache.lucene.codecs.simpletext;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
  * work for additional information regarding copyright ownership. The ASF
@@ -55,7 +55,7 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
   protected final Type type;
   protected final BytesRefHash hash;
   private int[] ords;
-  private int fixedSize = Integer.MIN_VALUE;
+  private int valueSize = Integer.MIN_VALUE;
   private BytesRef zeroBytes;
   private final String segmentSuffix;
   
@@ -137,12 +137,12 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
       throw new RuntimeException("should not reach this line");
     }
     
-    if (fixedSize == Integer.MIN_VALUE) {
+    if (valueSize == Integer.MIN_VALUE) {
       assert maxDocId == -1;
-      fixedSize = vSize;
+      valueSize = vSize;
     } else {
-      if (fixedSize != vSize) {
-        throw new IllegalArgumentException("value size must be " + fixedSize + " but was: " + vSize);
+      if (valueSize != vSize) {
+        throw new IllegalArgumentException("value size must be " + valueSize + " but was: " + vSize);
       }
     }
     maxDocId = Math.max(docID, maxDocId);
@@ -178,7 +178,7 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
       SimpleTextUtil.write(output, getHeader());
       SimpleTextUtil.writeNewline(output);
       SimpleTextUtil.write(output, VALUE_SIZE);
-      SimpleTextUtil.write(output, Integer.toString(this.fixedSize), scratch);
+      SimpleTextUtil.write(output, Integer.toString(this.valueSize), scratch);
       SimpleTextUtil.writeNewline(output);
       prepareFlush(docCount);
       for (int i = 0; i < docCount; i++) {
@@ -253,8 +253,8 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
       case BYTES_FIXED_SORTED:
       case BYTES_FIXED_STRAIGHT:
         if(zeroBytes == null) {
-          assert fixedSize > 0;
-          zeroBytes = new BytesRef(new byte[fixedSize]);
+          assert valueSize > 0;
+          zeroBytes = new BytesRef(new byte[valueSize]);
         }
         SimpleTextUtil.write(output, zeroBytes);
         break;
@@ -285,5 +285,10 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
   @Override
   protected Type getType() {
     return type;
+  }
+
+  @Override
+  public int getValueSize() {
+    return valueSize;
   }
 }

@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -73,14 +73,14 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
       Document d1 = new Document();
-      d1.add(newField(term.field(), term.text(), TextField.TYPE_UNSTORED));
+      d1.add(newTextField(term.field(), term.text(), Field.Store.NO));
       writer.addDocument(d1);
     }
     writer.commit();
     writer.forceMerge(1);
     writer.close();
 
-    AtomicReader reader = getOnlySegmentReader(IndexReader.open(dir));
+    AtomicReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
     
     for (int i = 0; i < 2; i++) {
       counter = 0;
@@ -138,7 +138,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     public boolean incrementToken() throws IOException {
       boolean hasNext = input.incrementToken();
       if (hasNext) {
-        payloadAtt.setPayload(new Payload(new byte[] { (byte) payloadCount.incrementAndGet() }));
+        payloadAtt.setPayload(new BytesRef(new byte[] { (byte) payloadCount.incrementAndGet() }));
       } 
       return hasNext;
     }

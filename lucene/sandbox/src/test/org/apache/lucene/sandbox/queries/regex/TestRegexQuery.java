@@ -1,6 +1,6 @@
 package org.apache.lucene.sandbox.queries.regex;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@ package org.apache.lucene.sandbox.queries.regex;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.IndexReader;
@@ -25,7 +26,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.index.TermsEnum;
 
@@ -47,7 +47,7 @@ public class TestRegexQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
-    doc.add(newField(FN, "the quick brown fox jumps over the lazy dog", TextField.TYPE_UNSTORED));
+    doc.add(newTextField(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO));
     writer.addDocument(doc);
     reader = writer.getReader();
     writer.close();

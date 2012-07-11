@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.simpletext;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
  * work for additional information regarding copyright ownership. The ASF
@@ -32,8 +32,7 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
 
   protected final PerDocWriteState state;
   protected final String segmentSuffix;
-  public SimpleTextPerDocConsumer(PerDocWriteState state, String segmentSuffix)
-      throws IOException {
+  public SimpleTextPerDocConsumer(PerDocWriteState state, String segmentSuffix) {
     this.state = state;
     this.segmentSuffix = segmentSuffix;
   }

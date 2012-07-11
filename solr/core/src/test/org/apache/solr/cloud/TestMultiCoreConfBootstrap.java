@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,6 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -43,12 +42,12 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   protected static String zkDir;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     createTempDir();
   }
   
   @AfterClass
-  public static void afterClass() throws IOException {
+  public static void afterClass() {
 
   }
   

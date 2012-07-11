@@ -10,7 +10,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,10 +38,10 @@ abstract class AbstractBeforeAfterRule implements TestRule {
   public Statement apply(final Statement s, final Description d) {
     return new Statement() {
       public void evaluate() throws Throwable {
-        before();
-        
         final ArrayList<Throwable> errors = new ArrayList<Throwable>();
+
         try {
+          before();
           s.evaluate();
         } catch (Throwable t) {
           errors.add(t);

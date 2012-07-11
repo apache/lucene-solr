@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public class NormValueSource extends ValueSource {
-  protected String field;
+  protected final String field;
   public NormValueSource(String field) {
     this.field = field;
   }

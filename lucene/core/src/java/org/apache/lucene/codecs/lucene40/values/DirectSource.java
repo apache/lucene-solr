@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40.values;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -43,6 +43,11 @@ abstract class DirectSource extends Source {
       toNumeric = new ShortToLong();
       break;
     case FLOAT_32:
+      toNumeric = new BytesToFloat();
+      break;
+    case FLOAT_64:
+      toNumeric = new BytesToDouble();
+      break;
     case FIXED_INTS_32:
       toNumeric = new IntToLong();
       break;
@@ -58,10 +63,10 @@ abstract class DirectSource extends Source {
   public BytesRef getBytes(int docID, BytesRef ref) {
     try {
       final int sizeToRead = position(docID);
+      ref.offset = 0;
       ref.grow(sizeToRead);
       data.readBytes(ref.bytes, 0, sizeToRead);
       ref.length = sizeToRead;
-      ref.offset = 0;
       return ref;
     } catch (IOException ex) {
       throw new IllegalStateException("failed to get value for docID: " + docID, ex);
@@ -103,7 +108,6 @@ abstract class DirectSource extends Source {
     long toLong(IndexInput input) throws IOException {
       return input.readByte();
     }
-
   }
 
   private static final class ShortToLong extends ToNumeric {
@@ -118,11 +122,30 @@ abstract class DirectSource extends Source {
     long toLong(IndexInput input) throws IOException {
       return input.readInt();
     }
+  }
+  
+  private static final class BytesToFloat extends ToNumeric {
+    @Override
+    long toLong(IndexInput input) {
+      throw new UnsupportedOperationException("ints are not supported");
+    }
 
     double toDouble(IndexInput input) throws IOException {
       return Float.intBitsToFloat(input.readInt());
     }
   }
+  
+  private static final class BytesToDouble extends ToNumeric {
+    @Override
+    long toLong(IndexInput input) {
+      throw new UnsupportedOperationException("ints are not supported");
+    }
+
+    double toDouble(IndexInput input) throws IOException {
+      return Double.longBitsToDouble(input.readLong());
+    }
+  }
+
 
   private static final class LongToLong extends ToNumeric {
     @Override
@@ -130,8 +153,8 @@ abstract class DirectSource extends Source {
       return input.readLong();
     }
 
-    double toDouble(IndexInput input) throws IOException {
-      return Double.longBitsToDouble(input.readLong());
+    double toDouble(IndexInput input) {
+      throw new UnsupportedOperationException("doubles are not supported");
     }
   }
 

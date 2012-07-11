@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -93,7 +93,7 @@ public class PrefixAwareTokenFilter extends TokenStream {
       } else {
         previousPrefixToken.reinit(nextToken);
         // Make it a deep copy
-        Payload p = previousPrefixToken.getPayload();
+        BytesRef p = previousPrefixToken.getPayload();
         if (p != null) {
           previousPrefixToken.setPayload(p.clone());
         }
@@ -153,8 +153,8 @@ public class PrefixAwareTokenFilter extends TokenStream {
    * @return consumer token
    */
   public Token updateSuffixToken(Token suffixToken, Token lastPrefixToken) {
-    suffixToken.setStartOffset(lastPrefixToken.endOffset() + suffixToken.startOffset());
-    suffixToken.setEndOffset(lastPrefixToken.endOffset() + suffixToken.endOffset());
+    suffixToken.setOffset(lastPrefixToken.endOffset() + suffixToken.startOffset(),
+                          lastPrefixToken.endOffset() + suffixToken.endOffset());
     return suffixToken;
   }
 

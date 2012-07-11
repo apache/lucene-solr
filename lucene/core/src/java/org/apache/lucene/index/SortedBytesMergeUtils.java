@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -81,7 +81,8 @@ public final class SortedBytesMergeUtils {
     }
   }
 
-  public static List<SortedSourceSlice> buildSlices(int[] docBases, int[][] docMaps,
+  public static List<SortedSourceSlice> buildSlices(
+      int[] docBases, MergeState.DocMap[] docMaps,
       DocValues[] docValues, MergeContext ctx) throws IOException {
     final List<SortedSourceSlice> slices = new ArrayList<SortedSourceSlice>();
     for (int i = 0; i < docValues.length; i++) {
@@ -111,15 +112,15 @@ public final class SortedBytesMergeUtils {
    * mapping in docIDToRelativeOrd. After the merge SortedSourceSlice#ordMapping
    * contains the new global ordinals for the relative index.
    */
-  private static void createOrdMapping(int[] docBases, int[][] docMaps,
+  private static void createOrdMapping(int[] docBases, MergeState.DocMap[] docMaps,
       SortedSourceSlice currentSlice) {
     final int readerIdx = currentSlice.readerIdx;
-    final int[] currentDocMap = docMaps[readerIdx];
+    final MergeState.DocMap currentDocMap = docMaps[readerIdx];
     final int docBase = currentSlice.docToOrdStart;
     assert docBase == docBases[readerIdx];
-    if (currentDocMap != null) { // we have deletes
-      for (int i = 0; i < currentDocMap.length; i++) {
-        final int doc = currentDocMap[i];
+    if (currentDocMap != null && currentDocMap.hasDeletions()) { // we have deletes
+      for (int i = 0; i < currentDocMap.maxDoc(); i++) {
+        final int doc = currentDocMap.get(i);
         if (doc != -1) { // not deleted
           final int ord = currentSlice.source.ord(i); // collect ords strictly
                                                       // increasing
@@ -217,7 +218,7 @@ public final class SortedBytesMergeUtils {
       current = top[0].current;
     }
 
-    private void pushTop() throws IOException {
+    private void pushTop() {
       // call next() on each top, and put back into queue
       for (int i = 0; i < numTop; i++) {
         top[i].current = top[i].next();

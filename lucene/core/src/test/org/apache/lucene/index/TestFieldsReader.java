@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -78,7 +78,7 @@ public class TestFieldsReader extends LuceneTestCase {
   public void test() throws IOException {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     Document doc = reader.document(0);
     assertTrue(doc != null);
     assertTrue(doc.getField(DocHelper.TEXT_FIELD_1_KEY) != null);
@@ -115,7 +115,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
     Directory fsDir;
     
-    public FaultyFSDirectory(File dir) throws IOException {
+    public FaultyFSDirectory(File dir) {
       fsDir = newFSDirectory(dir);
       lockFactory = fsDir.getLockFactory();
     }
@@ -203,7 +203,7 @@ public class TestFieldsReader extends LuceneTestCase {
       writer.forceMerge(1);
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = DirectoryReader.open(dir);
 
       FaultyIndexInput.doFail = true;
 
@@ -249,13 +249,13 @@ public class TestFieldsReader extends LuceneTestCase {
         if (random().nextBoolean()) {
           final float f = random().nextFloat();
           answer = Float.valueOf(f);
-          nf = new FloatField("nf", f);
+          nf = new FloatField("nf", f, Field.Store.NO);
           sf = new StoredField("nf", f);
           typeAnswer = NumericType.FLOAT;
         } else {
           final double d = random().nextDouble();
           answer = Double.valueOf(d);
-          nf = new DoubleField("nf", d);
+          nf = new DoubleField("nf", d, Field.Store.NO);
           sf = new StoredField("nf", d);
           typeAnswer = NumericType.DOUBLE;
         }
@@ -264,13 +264,13 @@ public class TestFieldsReader extends LuceneTestCase {
         if (random().nextBoolean()) {
           final int i = random().nextInt();
           answer = Integer.valueOf(i);
-          nf = new IntField("nf", i);
+          nf = new IntField("nf", i, Field.Store.NO);
           sf = new StoredField("nf", i);
           typeAnswer = NumericType.INT;
         } else {
           final long l = random().nextLong();
           answer = Long.valueOf(l);
-          nf = new LongField("nf", l);
+          nf = new LongField("nf", l, Field.Store.NO);
           sf = new StoredField("nf", l);
           typeAnswer = NumericType.LONG;
         }
@@ -279,7 +279,7 @@ public class TestFieldsReader extends LuceneTestCase {
       doc.add(sf);
       answers[id] = answer;
       typeAnswers[id] = typeAnswer;
-      FieldType ft = new FieldType(IntField.TYPE);
+      FieldType ft = new FieldType(IntField.TYPE_NOT_STORED);
       ft.setNumericPrecisionStep(Integer.MAX_VALUE);
       doc.add(new IntField("id", id, ft));
       w.addDocument(doc);
@@ -309,7 +309,7 @@ public class TestFieldsReader extends LuceneTestCase {
     FieldType onlyStored = new FieldType();
     onlyStored.setStored(true);
     doc.add(new Field("field", "value", onlyStored));
-    doc.add(new Field("field2", "value", StringField.TYPE_STORED));
+    doc.add(new StringField("field2", "value", Field.Store.YES));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();

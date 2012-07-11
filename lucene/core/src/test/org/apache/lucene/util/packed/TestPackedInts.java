@@ -1,6 +1,6 @@
 package org.apache.lucene.util.packed;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,15 +17,21 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.*;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.packed.PackedInts.Reader;
-
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
-import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.*;
+import org.apache.lucene.util.LongsRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.packed.PackedInts.Reader;
+
+@Slow
 public class TestPackedInts extends LuceneTestCase {
   public void testBitsRequired() throws Exception {
     assertEquals(61, PackedInts.bitsRequired((long)Math.pow(2, 61)-1));
@@ -50,69 +56,96 @@ public class TestPackedInts extends LuceneTestCase {
   public void testPackedInts() throws IOException {
     int num = atLeast(5);
     for (int iter = 0; iter < num; iter++) {
-      long ceil = 2;
-      for(int nbits=1;nbits<63;nbits++) {
+      for(int nbits=1;nbits<=64;nbits++) {
+        final long maxValue = PackedInts.maxValue(nbits);
         final int valueCount = 100+random().nextInt(500);
+        final int bufferSize = random().nextBoolean()
+            ? _TestUtil.nextInt(random(), 0, 48)
+            : _TestUtil.nextInt(random(), 0, 4096);
         final Directory d = newDirectory();
         
         IndexOutput out = d.createOutput("out.bin", newIOContext(random()));
         PackedInts.Writer w = PackedInts.getWriter(
-                                out, valueCount, nbits, random().nextFloat()*PackedInts.FASTEST);
+                                out, valueCount, nbits, random().nextFloat());
+        final long startFp = out.getFilePointer();
 
+        final int actualValueCount = random().nextBoolean() ? valueCount : _TestUtil.nextInt(random(), 0, valueCount);
         final long[] values = new long[valueCount];
-        for(int i=0;i<valueCount;i++) {
-          long v = random().nextLong() % ceil;
-          if (v < 0) {
-            v = -v;
-          }
-          values[i] = v;
+        for(int i=0;i<actualValueCount;i++) {
+          values[i] = _TestUtil.nextLong(random(), 0, maxValue);
           w.add(values[i]);
         }
         w.finish();
         final long fp = out.getFilePointer();
         out.close();
+
+        // packed writers should only write longs
+        assertEquals(0, (fp - startFp) % 8);
+        // ensure that finish() added the (valueCount-actualValueCount) missing values
+        final long bytes;
+        switch (w.getFormat()) {
+          case PACKED:
+            bytes = (long) Math.ceil((double) valueCount * w.bitsPerValue / 64) << 3;
+            break;
+          case PACKED_SINGLE_BLOCK:
+            final int valuesPerBlock = 64 / w.bitsPerValue;
+            bytes = (long) Math.ceil((double) valueCount / valuesPerBlock) << 3;
+            break;
+          default:
+            bytes = -1;
+        }
+        assertEquals(bytes, fp - startFp);
+
+        {// test header
+          IndexInput in = d.openInput("out.bin", newIOContext(random()));
+          // header = codec header | bitsPerValue | valueCount | format
+          CodecUtil.checkHeader(in, PackedInts.CODEC_NAME, PackedInts.VERSION_START, PackedInts.VERSION_CURRENT); // codec header
+          assertEquals(w.bitsPerValue, in.readVInt());
+          assertEquals(valueCount, in.readVInt());
+          assertEquals(w.getFormat().getId(), in.readVInt());
+          assertEquals(startFp, in.getFilePointer());
+          in.close();
+        }
+
         {// test reader
           IndexInput in = d.openInput("out.bin", newIOContext(random()));
           PackedInts.Reader r = PackedInts.getReader(in);
           assertEquals(fp, in.getFilePointer());
           for(int i=0;i<valueCount;i++) {
-            assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
+            assertEquals("index=" + i + " valueCount="
                     + valueCount + " nbits=" + nbits + " for "
                     + r.getClass().getSimpleName(), values[i], r.get(i));
           }
           in.close();
         }
+
         { // test reader iterator next
           IndexInput in = d.openInput("out.bin", newIOContext(random()));
-          PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in);
+          PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in, bufferSize);
           for(int i=0;i<valueCount;i++) {
-            assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
+            assertEquals("index=" + i + " valueCount="
                     + valueCount + " nbits=" + nbits + " for "
                     + r.getClass().getSimpleName(), values[i], r.next());
+            assertEquals(i, r.ord());
           }
           assertEquals(fp, in.getFilePointer());
           in.close();
         }
-        { // test reader iterator next vs. advance
+
+        { // test reader iterator bulk next
           IndexInput in = d.openInput("out.bin", newIOContext(random()));
-          PackedInts.ReaderIterator intsEnum = PackedInts.getReaderIterator(in);
-          for (int i = 0; i < valueCount; i += 
-            1 + ((valueCount - i) <= 20 ? random().nextInt(valueCount - i)
-              : random().nextInt(20))) {
-            final String msg = "index=" + i + " ceil=" + ceil + " valueCount="
-                + valueCount + " nbits=" + nbits + " for "
-                + intsEnum.getClass().getSimpleName();
-            if (i - intsEnum.ord() == 1 && random().nextBoolean()) {
-              assertEquals(msg, values[i], intsEnum.next());
-            } else {
-              assertEquals(msg, values[i], intsEnum.advance(i));
+          PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in, bufferSize);
+          int i = 0;
+          while (i < valueCount) {
+            final int count = _TestUtil.nextInt(random(), 1, 95);
+            final LongsRef next = r.next(count);
+            for (int k = 0; k < next.length; ++k) {
+              assertEquals("index=" + i + " valueCount="
+                  + valueCount + " nbits=" + nbits + " for "
+                  + r.getClass().getSimpleName(), values[i + k], next.longs[next.offset + k]);
             }
-            assertEquals(msg, i, intsEnum.ord());
+            i += next.length;
           }
-          if (intsEnum.ord() < valueCount - 1)
-            assertEquals(values[valueCount - 1], intsEnum
-                .advance(valueCount - 1));
-          assertEquals(valueCount - 1, intsEnum.ord());
           assertEquals(fp, in.getFilePointer());
           in.close();
         }
@@ -121,7 +154,7 @@ public class TestPackedInts extends LuceneTestCase {
           IndexInput in = d.openInput("out.bin", newIOContext(random()));
           PackedInts.Reader intsEnum = PackedInts.getDirectReader(in);
           for (int i = 0; i < valueCount; i++) {
-            final String msg = "index=" + i + " ceil=" + ceil + " valueCount="
+            final String msg = "index=" + i + " valueCount="
                 + valueCount + " nbits=" + nbits + " for "
                 + intsEnum.getClass().getSimpleName();
             final int index = random().nextInt(valueCount);
@@ -130,7 +163,6 @@ public class TestPackedInts extends LuceneTestCase {
           }
           in.close();
         }
-        ceil *= 2;
         d.close();
       }
     }
@@ -148,6 +180,71 @@ public class TestPackedInts extends LuceneTestCase {
       }
     }
     assertListEquality(packedInts);
+  }
+
+  public void testRandomBulkCopy() {
+    final int numIters = atLeast(10);
+    for(int iter=0;iter<numIters;iter++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter);
+      }
+      final int valueCount = atLeast(100000);
+      int bits1 = _TestUtil.nextInt(random(), 1, 64);
+      int bits2 = _TestUtil.nextInt(random(), 1, 64);
+      if (bits1 > bits2) {
+        int tmp = bits1;
+        bits1 = bits2;
+        bits2 = tmp;
+      }
+      if (VERBOSE) {
+        System.out.println("  valueCount=" + valueCount + " bits1=" + bits1 + " bits2=" + bits2);
+      }
+
+      final PackedInts.Mutable packed1 = PackedInts.getMutable(valueCount, bits1, PackedInts.COMPACT);
+      final PackedInts.Mutable packed2 = PackedInts.getMutable(valueCount, bits2, PackedInts.COMPACT);
+
+      final long maxValue = PackedInts.maxValue(bits1);
+      for(int i=0;i<valueCount;i++) {
+        final long val = _TestUtil.nextLong(random(), 0, maxValue);
+        packed1.set(i, val);
+        packed2.set(i, val);
+      }
+
+      final long[] buffer = new long[valueCount];
+
+      // Copy random slice over, 100 times:
+      for(int iter2=0;iter2<100;iter2++) {
+        int start = random().nextInt(valueCount-1);
+        int len = _TestUtil.nextInt(random(), 1, valueCount-start);
+        int offset;
+        if (VERBOSE) {
+          System.out.println("  copy " + len + " values @ " + start);
+        }
+        if (len == valueCount) {
+          offset = 0;
+        } else {
+          offset = random().nextInt(valueCount - len);
+        }
+        if (random().nextBoolean()) {
+          int got = packed1.get(start, buffer, offset, len);
+          assertTrue(got <= len);
+          int sot = packed2.set(start, buffer, offset, got);
+          assertTrue(sot <= got);
+        } else {
+          PackedInts.copy(packed1, offset, packed2, offset, len, random().nextInt(10 * len));
+        }
+
+        /*
+        for(int i=0;i<valueCount;i++) {
+          assertEquals("value " + i, packed1.get(i), packed2.get(i));
+        }
+        */
+      }
+
+      for(int i=0;i<valueCount;i++) {
+        assertEquals("value " + i, packed1.get(i), packed2.get(i));
+      }
+    }
   }
 
   public void testRandomEquality() {
@@ -168,10 +265,10 @@ public class TestPackedInts extends LuceneTestCase {
     List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bitsPerValue);
     for (PackedInts.Mutable packedInt: packedInts) {
       try {
-        fill(packedInt, (long)(Math.pow(2, bitsPerValue)-1), randomSeed);
+        fill(packedInt, PackedInts.maxValue(bitsPerValue), randomSeed);
       } catch (Exception e) {
         e.printStackTrace(System.err);
-        fail(String.format(
+        fail(String.format(Locale.ROOT,
                 "Exception while filling %s: valueCount=%d, bitsPerValue=%s",
                 packedInt.getClass().getSimpleName(),
                 valueCount, bitsPerValue));
@@ -202,7 +299,7 @@ public class TestPackedInts extends LuceneTestCase {
       packedInts.add(new Packed64(valueCount, bitsPerValue));
     }
     packedInts.add(new Direct64(valueCount));
-    for (int bpv = bitsPerValue; bpv <= 64; ++bpv) {
+    for (int bpv = bitsPerValue; bpv <= Packed64SingleBlock.MAX_SUPPORTED_BITS_PER_VALUE; ++bpv) {
       if (Packed64SingleBlock.isSupported(bpv)) {
         packedInts.add(Packed64SingleBlock.create(valueCount, bpv));
       }
@@ -212,11 +309,10 @@ public class TestPackedInts extends LuceneTestCase {
 
   private void fill(PackedInts.Mutable packedInt, long maxValue, long randomSeed) {
     Random rnd2 = new Random(randomSeed);
-    maxValue++;
     for (int i = 0 ; i < packedInt.size() ; i++) {
-      long value = Math.abs(rnd2.nextLong() % maxValue);
+      long value = _TestUtil.nextLong(rnd2, 0, maxValue);
       packedInt.set(i, value);
-      assertEquals(String.format(
+      assertEquals(String.format(Locale.ROOT,
               "The set/get of the value at index %d should match for %s",
               i, packedInt.getClass().getSimpleName()),
               value, packedInt.get(i));
@@ -241,7 +337,7 @@ public class TestPackedInts extends LuceneTestCase {
     }
     for (int i = 0 ; i < valueCount ; i++) {
       for (int j = 1 ; j < packedInts.size() ; j++) {
-        assertEquals(String.format(
+        assertEquals(String.format(Locale.ROOT,
                 "%s. The value at index %d should be the same for %s and %s",
                 message, i, base.getClass().getSimpleName(),
                 packedInts.get(j).getClass().getSimpleName()),
@@ -291,16 +387,33 @@ public class TestPackedInts extends LuceneTestCase {
     int INDEX = (int)Math.pow(2, 30)+1;
     int BITS = 2;
 
-    Packed64 p64 = new Packed64(INDEX, BITS);
-    p64.set(INDEX-1, 1);
-    assertEquals("The value at position " + (INDEX-1)
-        + " should be correct for Packed64", 1, p64.get(INDEX-1));
-    p64 = null;
+    Packed64 p64 = null;
+    try {
+      p64 = new Packed64(INDEX, BITS);
+    } catch (OutOfMemoryError oome) {
+      // This can easily happen: we're allocating a
+      // long[] that needs 256-273 MB.  Heap is 512 MB,
+      // but not all of that is available for large
+      // objects ... empirical testing shows we only
+      // have ~ 67 MB free.
+    }
+    if (p64 != null) {
+      p64.set(INDEX-1, 1);
+      assertEquals("The value at position " + (INDEX-1)
+                   + " should be correct for Packed64", 1, p64.get(INDEX-1));
+      p64 = null;
+    }
 
     for (int bits = 1; bits <=64; ++bits) {
       if (Packed64SingleBlock.isSupported(bits)) {
         int index = Integer.MAX_VALUE / bits + (bits == 1 ? 0 : 1);
-        Packed64SingleBlock p64sb = Packed64SingleBlock.create(index, bits);
+        Packed64SingleBlock p64sb = null;
+        try {
+          p64sb = Packed64SingleBlock.create(index, bits);
+        } catch (OutOfMemoryError oome) {
+          // Ignore: see comment above
+          continue;
+        }
         p64sb.set(index - 1, 1);
         assertEquals("The value at position " + (index-1)
             + " should be correct for " + p64sb.getClass().getSimpleName(),
@@ -309,18 +422,209 @@ public class TestPackedInts extends LuceneTestCase {
     }
 
     int index = Integer.MAX_VALUE / 24 + 1;
-    Packed8ThreeBlocks p8 = new Packed8ThreeBlocks(index);
-    p8.set(index - 1, 1);
-    assertEquals("The value at position " + (index-1)
-        + " should be correct for Packed8ThreeBlocks", 1, p8.get(index-1));
-    p8 = null;
+    Packed8ThreeBlocks p8 = null;
+    try {
+      p8 = new Packed8ThreeBlocks(index);
+    } catch (OutOfMemoryError oome) {
+      // Ignore: see comment above
+    }
+    if (p8 != null) {
+      p8.set(index - 1, 1);
+      assertEquals("The value at position " + (index-1)
+                   + " should be correct for Packed8ThreeBlocks", 1, p8.get(index-1));
+      p8 = null;
+    }
 
     index = Integer.MAX_VALUE / 48 + 1;
-    Packed16ThreeBlocks p16 = new Packed16ThreeBlocks(index);
-    p16.set(index - 1, 1);
-    assertEquals("The value at position " + (index-1)
-        + " should be correct for Packed16ThreeBlocks", 1, p16.get(index-1));
-    p16 = null;
+    Packed16ThreeBlocks p16 = null;
+    try {
+      p16 = new Packed16ThreeBlocks(index);
+    } catch (OutOfMemoryError oome) {
+      // Ignore: see comment above
+    }
+    if (p16 != null) {
+      p16.set(index - 1, 1);
+      assertEquals("The value at position " + (index-1)
+                   + " should be correct for Packed16ThreeBlocks", 1, p16.get(index-1));
+      p16 = null;
+    }
+  }
+
+  public void testFill() {
+    final int valueCount = 1111;
+    final int from = random().nextInt(valueCount + 1);
+    final int to = from + random().nextInt(valueCount + 1 - from);
+    for (int bpv = 1; bpv <= 64; ++bpv) {
+      final long val = _TestUtil.nextLong(random(), 0, PackedInts.maxValue(bpv));
+      List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bpv);
+      for (PackedInts.Mutable ints : packedInts) {
+        String msg = ints.getClass().getSimpleName() + " bpv=" + bpv + ", from=" + from + ", to=" + to + ", val=" + val;
+        ints.fill(0, ints.size(), 1);
+        ints.fill(from, to, val);
+        for (int i = 0; i < ints.size(); ++i) {
+          if (i >= from && i < to) {
+            assertEquals(msg + ", i=" + i, val, ints.get(i));
+          } else {
+            assertEquals(msg + ", i=" + i, 1, ints.get(i));
+          }
+        }
+      }
+    }
+  }
+
+  public void testBulkGet() {
+    final int valueCount = 1111;
+    final int index = random().nextInt(valueCount);
+    final int len = _TestUtil.nextInt(random(), 1, valueCount * 2);
+    final int off = random().nextInt(77);
+
+    for (int bpv = 1; bpv <= 64; ++bpv) {
+      long mask = PackedInts.maxValue(bpv);
+      List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bpv);
+
+      for (PackedInts.Mutable ints : packedInts) {
+        for (int i = 0; i < ints.size(); ++i) {
+          ints.set(i, (31L * i - 1099) & mask);
+        }
+        long[] arr = new long[off+len];
+
+        String msg = ints.getClass().getSimpleName() + " valueCount=" + valueCount
+            + ", index=" + index + ", len=" + len + ", off=" + off;
+        final int gets = ints.get(index, arr, off, len);
+        assertTrue(msg, gets > 0);
+        assertTrue(msg, gets <= len);
+        assertTrue(msg, gets <= ints.size() - index);
+
+        for (int i = 0; i < arr.length; ++i) {
+          String m = msg + ", i=" + i;
+          if (i >= off && i < off + gets) {
+            assertEquals(m, ints.get(i - off + index), arr[i]);
+          } else {
+            assertEquals(m, 0, arr[i]);
+          }
+        }
+      }
+    }
+  }
+
+  public void testBulkSet() {
+    final int valueCount = 1111;
+    final int index = random().nextInt(valueCount);
+    final int len = _TestUtil.nextInt(random(), 1, valueCount * 2);
+    final int off = random().nextInt(77);
+    long[] arr = new long[off+len];
+
+    for (int bpv = 1; bpv <= 64; ++bpv) {
+      long mask = PackedInts.maxValue(bpv);
+      List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bpv);
+      for (int i = 0; i < arr.length; ++i) {
+        arr[i] = (31L * i + 19) & mask;
+      }
+
+      for (PackedInts.Mutable ints : packedInts) {
+        String msg = ints.getClass().getSimpleName() + " valueCount=" + valueCount
+            + ", index=" + index + ", len=" + len + ", off=" + off;
+        final int sets = ints.set(index, arr, off, len);
+        assertTrue(msg, sets > 0);
+        assertTrue(msg, sets <= len);
+
+        for (int i = 0; i < ints.size(); ++i) {
+          String m = msg + ", i=" + i;
+          if (i >= index && i < index + sets) {
+            assertEquals(m, arr[off - index + i], ints.get(i));
+          } else {
+            assertEquals(m, 0, ints.get(i));
+          }
+        }
+      }
+    }
+  }
+
+  public void testCopy() {
+    final int valueCount = 689;
+    final int off1 = random().nextInt(valueCount);
+    final int off2 = random().nextInt(valueCount);
+    final int len = random().nextInt(Math.min(valueCount - off1, valueCount - off2));
+    final int mem = random().nextInt(1024);
+
+    for (int bpv = 1; bpv <= 64; ++bpv) {
+      long mask = PackedInts.maxValue(bpv);
+      for (PackedInts.Mutable r1 : createPackedInts(valueCount, bpv)) {
+        for (int i = 0; i < r1.size(); ++i) {
+          r1.set(i, (31L * i - 1023) & mask);
+        }
+        for (PackedInts.Mutable r2 : createPackedInts(valueCount, bpv)) {
+          String msg = "src=" + r1 + ", dest=" + r2 + ", srcPos=" + off1
+              + ", destPos=" + off2 + ", len=" + len + ", mem=" + mem;
+          PackedInts.copy(r1, off1, r2, off2, len, mem);
+          for (int i = 0; i < r2.size(); ++i) {
+            String m = msg + ", i=" + i;
+            if (i >= off2 && i < off2 + len) {
+              assertEquals(m, r1.get(i - off2 + off1), r2.get(i));
+            } else {
+              assertEquals(m, 0, r2.get(i));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  public void testGrowableWriter() {
+    final int valueCount = 113 + random().nextInt(1111);
+    GrowableWriter wrt = new GrowableWriter(1, valueCount, PackedInts.DEFAULT);
+    wrt.set(4, 2);
+    wrt.set(7, 10);
+    wrt.set(valueCount - 10, 99);
+    wrt.set(99, 999);
+    wrt.set(valueCount - 1, 1 << 10);
+    assertEquals(1 << 10, wrt.get(valueCount - 1));
+    wrt.set(99, (1 << 23) - 1);
+    assertEquals(1 << 10, wrt.get(valueCount - 1));
+    wrt.set(1, Long.MAX_VALUE);
+    assertEquals(1 << 10, wrt.get(valueCount - 1));
+    assertEquals(Long.MAX_VALUE, wrt.get(1));
+    assertEquals(2, wrt.get(4));
+    assertEquals((1 << 23) - 1, wrt.get(99));
+    assertEquals(10, wrt.get(7));
+    assertEquals(99, wrt.get(valueCount - 10));
+    assertEquals(1 << 10, wrt.get(valueCount - 1));
+  }
+
+  public void testSave() throws IOException {
+    final int valueCount = _TestUtil.nextInt(random(), 1, 2048);
+    for (int bpv = 1; bpv <= 64; ++bpv) {
+      final int maxValue = (int) Math.min(PackedInts.maxValue(31), PackedInts.maxValue(bpv));
+      final RAMDirectory directory = new RAMDirectory();
+      List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bpv);
+      for (PackedInts.Mutable mutable : packedInts) {
+        for (int i = 0; i < mutable.size(); ++i) {
+          mutable.set(i, random().nextInt(maxValue));
+        }
+
+        IndexOutput out = directory.createOutput("packed-ints.bin", IOContext.DEFAULT);
+        mutable.save(out);
+        out.close();
+
+        IndexInput in = directory.openInput("packed-ints.bin", IOContext.DEFAULT);
+        PackedInts.Reader reader = PackedInts.getReader(in);
+        assertEquals(mutable.getBitsPerValue(), reader.getBitsPerValue());
+        assertEquals(valueCount, reader.size());
+        if (mutable instanceof Packed64SingleBlock) {
+          // make sure that we used the right format so that the reader has
+          // the same performance characteristics as the mutable that has been
+          // serialized
+          assertTrue(reader instanceof Packed64SingleBlock);
+        } else {
+          assertFalse(reader instanceof Packed64SingleBlock);
+        }
+        for (int i = 0; i < valueCount; ++i) {
+          assertEquals(mutable.get(i), reader.get(i));
+        }
+        in.close();
+        directory.deleteFile("packed-ints.bin");
+      }
+    }
   }
 
 }

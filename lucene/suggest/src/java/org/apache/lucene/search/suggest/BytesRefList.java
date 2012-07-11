@@ -1,6 +1,6 @@
 package org.apache.lucene.search.suggest;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
  * work for additional information regarding copyright ownership. The ASF
@@ -17,7 +17,6 @@ package org.apache.lucene.search.suggest;
  * the License.
  */
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -190,7 +189,7 @@ public final class BytesRefList {
       int pos = 0;
       
       @Override
-      public BytesRef next() throws IOException {
+      public BytesRef next() {
         if (pos < size) {
           return get(spare, ords == null ? pos++ : ords[pos++]);
         }

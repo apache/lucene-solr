@@ -1,6 +1,6 @@
 package org.apache.lucene.queryparser.flexible.standard;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -88,10 +88,13 @@ public class TestNumericQueryParser extends LuceneTestCase {
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
   
-  private static boolean checkDateFormatSanity(DateFormat dateFormat, long date)
-      throws ParseException {
-    return date == dateFormat.parse(dateFormat.format(new Date(date)))
+  private static boolean checkDateFormatSanity(DateFormat dateFormat, long date) {
+    try {
+      return date == dateFormat.parse(dateFormat.format(new Date(date)))
         .getTime();
+    } catch (ParseException e) {
+      return false;
+    }
   }
   
   @BeforeClass
@@ -199,7 +202,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
       numericConfigMap.put(type.name(), new NumericConfig(PRECISION_STEP,
           NUMBER_FORMAT, type));
 
-      FieldType ft = new FieldType(IntField.TYPE);
+      FieldType ft = new FieldType(IntField.TYPE_NOT_STORED);
       ft.setNumericType(type);
       ft.setStored(true);
       ft.setNumericPrecisionStep(PRECISION_STEP);
@@ -229,7 +232,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     numericConfigMap.put(DATE_FIELD_NAME, new NumericConfig(PRECISION_STEP,
         DATE_FORMAT, NumericType.LONG));
-    FieldType ft = new FieldType(LongField.TYPE);
+    FieldType ft = new FieldType(LongField.TYPE_NOT_STORED);
     ft.setStored(true);
     ft.setNumericPrecisionStep(PRECISION_STEP);
     LongField dateField = new LongField(DATE_FIELD_NAME, 0l, ft);

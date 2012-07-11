@@ -1,6 +1,6 @@
 package org.apache.lucene.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,19 +17,20 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
-
 import java.io.*;
 import java.lang.annotation.*;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.search.*;
@@ -42,11 +43,13 @@ import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
-
 import com.carrotsearch.randomizedtesting.*;
 import com.carrotsearch.randomizedtesting.annotations.*;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
+
+import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -113,9 +116,20 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
 @ThreadLeaks(failTestIfLeaking = false)
 public abstract class LuceneTestCase extends Assert {
 
-  // -----------------------------------------------------------------
-  // Test groups and other annotations modifying tests' behavior.
-  // -----------------------------------------------------------------
+  // --------------------------------------------------------------------
+  // Test groups, system properties and other annotations modifying tests
+  // --------------------------------------------------------------------
+
+  public static final String SYSPROP_NIGHTLY = "tests.nightly";
+  public static final String SYSPROP_WEEKLY = "tests.weekly";
+  public static final String SYSPROP_AWAITSFIX = "tests.awaitsfix";
+  public static final String SYSPROP_SLOW = "tests.slow";
+
+  /** @see #ignoreAfterMaxFailures*/
+  private static final String SYSPROP_MAXFAILURES = "tests.maxfailures";
+
+  /** @see #ignoreAfterMaxFailures*/
+  private static final String SYSPROP_FAILFAST = "tests.failfast";
 
   /**
    * Annotation for tests that should only be run during nightly builds.
@@ -123,7 +137,7 @@ public abstract class LuceneTestCase extends Assert {
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = "tests.nightly")
+  @TestGroup(enabled = false, sysProperty = SYSPROP_NIGHTLY)
   public @interface Nightly {}
 
   /**
@@ -132,7 +146,7 @@ public abstract class LuceneTestCase extends Assert {
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = "tests.weekly")
+  @TestGroup(enabled = false, sysProperty = SYSPROP_WEEKLY)
   public @interface Weekly {}
 
   /**
@@ -141,22 +155,22 @@ public abstract class LuceneTestCase extends Assert {
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = "tests.awaitsfix")
+  @TestGroup(enabled = false, sysProperty = SYSPROP_AWAITSFIX)
   public @interface AwaitsFix {
     /** Point to JIRA entry. */
     public String bugUrl();
   }
 
   /**
-   * Annotation for tests that are really slow and should be run only when specifically 
-   * asked to run.
+   * Annotation for tests that are slow. Slow tests do run by default but can be
+   * disabled if a quick run is needed.
    */
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = false, sysProperty = "tests.slow")
+  @TestGroup(enabled = true, sysProperty = SYSPROP_SLOW)
   public @interface Slow {}
-
+  
   /**
    * Annotation for test classes that should avoid certain codec types
    * (because they are expensive, for example).
@@ -179,7 +193,7 @@ public abstract class LuceneTestCase extends Assert {
    * Use this constant when creating Analyzers and any other version-dependent stuff.
    * <p><b>NOTE:</b> Change this when development starts for new Lucene version:
    */
-  public static final Version TEST_VERSION_CURRENT = Version.LUCENE_40;
+  public static final Version TEST_VERSION_CURRENT = Version.LUCENE_50;
 
   /**
    * True if and only if tests are run in verbose mode. If this flag is false
@@ -214,8 +228,17 @@ public abstract class LuceneTestCase extends Assert {
   /** the line file used by LineFileDocs */
   public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", DEFAULT_LINE_DOCS_FILE);
 
-  /** Whether or not @nightly tests should run. */
-  public static final boolean TEST_NIGHTLY = systemPropertyAsBoolean("tests.nightly", false);
+  /** Whether or not {@link Nightly} tests should run. */
+  public static final boolean TEST_NIGHTLY = systemPropertyAsBoolean(SYSPROP_NIGHTLY, false);
+
+  /** Whether or not {@link Weekly} tests should run. */
+  public static final boolean TEST_WEEKLY = systemPropertyAsBoolean(SYSPROP_WEEKLY, false);
+  
+  /** Whether or not {@link AwaitsFix} tests should run. */
+  public static final boolean TEST_AWAITSFIX = systemPropertyAsBoolean(SYSPROP_AWAITSFIX, false);
+
+  /** Whether or not {@link Slow} tests should run. */
+  public static final boolean TEST_SLOW = systemPropertyAsBoolean(SYSPROP_SLOW, false);
 
   /** Throttling, see {@link MockDirectoryWrapper#setThrottling(Throttling)}. */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
@@ -282,8 +305,30 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * Suite failure marker (any error in the test or suite scope).
    */
-  public static TestRuleMarkFailure suiteFailureMarker;
-  
+  public final static TestRuleMarkFailure suiteFailureMarker = 
+      new TestRuleMarkFailure();
+
+  /**
+   * Ignore tests after hitting a designated number of initial failures.
+   */
+  final static TestRuleIgnoreAfterMaxFailures ignoreAfterMaxFailures; 
+  static {
+    int maxFailures = systemPropertyAsInt(SYSPROP_MAXFAILURES, Integer.MAX_VALUE);
+    boolean failFast = systemPropertyAsBoolean(SYSPROP_FAILFAST, false);
+
+    if (failFast) {
+      if (maxFailures == Integer.MAX_VALUE) {
+        maxFailures = 1;
+      } else {
+        Logger.getLogger(LuceneTestCase.class.getSimpleName()).warning(
+            "Property '" + SYSPROP_MAXFAILURES + "'=" + maxFailures + ", 'failfast' is" +
+            		" ignored.");
+      }
+    }
+
+    ignoreAfterMaxFailures = new TestRuleIgnoreAfterMaxFailures(maxFailures);
+  }
+
   /**
    * This controls how suite-level rules are nested. It is important that _all_ rules declared
    * in {@link LuceneTestCase} are executed in proper order if they depend on each 
@@ -292,7 +337,8 @@ public abstract class LuceneTestCase extends Assert {
   @ClassRule
   public static TestRule classRules = RuleChain
     .outerRule(new TestRuleIgnoreTestSuites())
-    .around(suiteFailureMarker = new TestRuleMarkFailure())
+    .around(ignoreAfterMaxFailures)
+    .around(suiteFailureMarker)
     .around(new TestRuleAssertionsRequired())
     .around(new TestRuleNoStaticHooksShadowing())
     .around(new TestRuleNoInstanceHooksOverrides())
@@ -313,7 +359,7 @@ public abstract class LuceneTestCase extends Assert {
   /** Save test thread and name. */
   private TestRuleThreadAndTestName threadAndTestNameRule = new TestRuleThreadAndTestName();
 
-  /** Taint test failures. */
+  /** Taint suite result with individual test failures. */
   private TestRuleMarkFailure testFailureMarker = new TestRuleMarkFailure(suiteFailureMarker); 
   
   /**
@@ -324,6 +370,7 @@ public abstract class LuceneTestCase extends Assert {
   @Rule
   public final TestRule ruleChain = RuleChain
     .outerRule(testFailureMarker)
+    .around(ignoreAfterMaxFailures)
     .around(threadAndTestNameRule)
     .around(new TestRuleReportUncaughtExceptions())
     .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
@@ -419,11 +466,12 @@ public abstract class LuceneTestCase extends Assert {
    * do tests on that segment's reader. This is an utility method to help them.
    */
   public static SegmentReader getOnlySegmentReader(DirectoryReader reader) {
-    IndexReader[] subReaders = reader.getSequentialSubReaders();
-    if (subReaders.length != 1)
-      throw new IllegalArgumentException(reader + " has " + subReaders.length + " segments instead of exactly one");
-    assertTrue(subReaders[0] instanceof SegmentReader);
-    return (SegmentReader) subReaders[0];
+    List<? extends IndexReader> subReaders = reader.getSequentialSubReaders();
+    if (subReaders.size() != 1)
+      throw new IllegalArgumentException(reader + " has " + subReaders.size() + " segments instead of exactly one");
+    final IndexReader r = subReaders.get(0);
+    assertTrue(r instanceof SegmentReader);
+    return (SegmentReader) r;
   }
 
   /**
@@ -625,8 +673,11 @@ public abstract class LuceneTestCase extends Assert {
 
       try {
         if (rarely(r)) {
+          Class<?> clazz = Class.forName("org.apache.lucene.index.RandomDocumentsWriterPerThreadPool");
+          Constructor<?> ctor = clazz.getConstructor(int.class, Random.class);
+          ctor.setAccessible(true);
           // random thread pool
-          setIndexerThreadPoolMethod.invoke(c, new RandomDocumentsWriterPerThreadPool(maxNumThreadStates, r));
+          setIndexerThreadPoolMethod.invoke(c, ctor.newInstance(maxNumThreadStates, r));
         } else {
           // random thread pool
           c.setMaxThreadStates(maxNumThreadStates);
@@ -735,7 +786,7 @@ public abstract class LuceneTestCase extends Assert {
    * some features of Windows, such as not allowing open files to be
    * overwritten.
    */
-  public static MockDirectoryWrapper newDirectory() throws IOException {
+  public static MockDirectoryWrapper newDirectory() {
     return newDirectory(random());
   }
 
@@ -743,7 +794,7 @@ public abstract class LuceneTestCase extends Assert {
    * Returns a new Directory instance, using the specified random.
    * See {@link #newDirectory()} for more information.
    */
-  public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
+  public static MockDirectoryWrapper newDirectory(Random r) {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
     closeAfterSuite(new CloseableDirectory(dir, suiteFailureMarker));
@@ -765,12 +816,12 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static MockDirectoryWrapper newFSDirectory(File f) throws IOException {
+  public static MockDirectoryWrapper newFSDirectory(File f) {
     return newFSDirectory(f, null);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) throws IOException {
+  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
@@ -822,6 +873,22 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       return directory;
     }
+  }
+  
+  public static Field newStringField(String name, String value, Store stored) {
+    return newField(random(), name, value, stored == Store.YES ? StringField.TYPE_STORED : StringField.TYPE_NOT_STORED);
+  }
+
+  public static Field newTextField(String name, String value, Store stored) {
+    return newField(random(), name, value, stored == Store.YES ? TextField.TYPE_STORED : TextField.TYPE_NOT_STORED);
+  }
+  
+  public static Field newStringField(Random random, String name, String value, Store stored) {
+    return newField(random, name, value, stored == Store.YES ? StringField.TYPE_STORED : StringField.TYPE_NOT_STORED);
+  }
+  
+  public static Field newTextField(Random random, String name, String value, Store stored) {
+    return newField(random, name, value, stored == Store.YES ? TextField.TYPE_STORED : TextField.TYPE_NOT_STORED);
   }
   
   public static Field newField(String name, String value, FieldType type) {
@@ -894,10 +961,6 @@ public abstract class LuceneTestCase extends Assert {
       case 1: return new Locale(elements[0]);
       default: throw new IllegalArgumentException("Invalid Locale: " + localeName);
     }
-  }
-
-  public static boolean defaultCodecSupportsDocValues() {
-    return !Codec.getDefault().getName().equals("Lucene3x");
   }
 
   private static Directory newFSDirectoryImpl(
@@ -1087,12 +1150,5 @@ public abstract class LuceneTestCase extends Assert {
     } catch (Exception e) {
       throw new IOException("Cannot find resource: " + name);
     }
-  }
-
-  /**
-   * @see SuppressCodecs 
-   */
-  static boolean shouldAvoidCodec(String codec) {
-    return classEnvRule.shouldAvoidCodec(codec);
   }
 }

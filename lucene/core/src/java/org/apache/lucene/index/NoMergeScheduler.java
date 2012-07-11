@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,6 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.IOException;
 
 /**
  * A {@link MergeScheduler} which never executes any merges. It is also a
@@ -42,5 +40,5 @@ public final class NoMergeScheduler extends MergeScheduler {
   public void close() {}
 
   @Override
-  public void merge(IndexWriter writer) throws CorruptIndexException, IOException {}
+  public void merge(IndexWriter writer) {}
 }

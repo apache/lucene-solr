@@ -1,6 +1,6 @@
 package org.apache.solr.analysis;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,20 +31,6 @@ import org.apache.lucene.analysis.Tokenizer;
  * Simple tests to ensure the Arabic filter Factories are working.
  */
 public class TestArabicFilters extends BaseTokenStreamTestCase {
-  /**
-   * Test ArabicLetterTokenizerFactory
-   * @deprecated (3.1) Remove in Lucene 5.0
-   */
-  @Deprecated
-  public void testTokenizer() throws Exception {
-    Reader reader = new StringReader("الذين مَلكت أيمانكم");
-    ArabicLetterTokenizerFactory factory = new ArabicLetterTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
-    assertTokenStreamContents(stream, new String[] {"الذين", "مَلكت", "أيمانكم"});
-  }
   
   /**
    * Test ArabicNormalizationFilterFactory

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,16 +19,18 @@ package org.apache.solr.client.solrj;
 
 import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -45,21 +47,22 @@ import java.util.Set;
  *
  * @since solr 1.4
  */
+@Slow
 public class TestLBHttpSolrServer extends LuceneTestCase {
   SolrInstance[] solr = new SolrInstance[3];
-  DefaultHttpClient httpClient;
+  HttpClient httpClient;
 
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {
@@ -70,11 +73,10 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    httpClient = new DefaultHttpClient(new ThreadSafeClientConnManager());
-
-    httpClient.getParams().setParameter("http.connection.timeout", new Integer(1000));
+    httpClient = HttpClientUtil.createClient(null);
+    HttpClientUtil.setConnectionTimeout(httpClient,  1000);
     for (int i = 0; i < solr.length; i++) {
-      solr[i] = new SolrInstance("solr" + i, 0);
+      solr[i] = new SolrInstance("solr/collection1" + i, 0);
       solr[i].setUp();
       solr[i].startJetty();
       addDocs(solr[i]);
@@ -156,10 +158,10 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     solr[0].jetty = null;
     resp = lbHttpSolrServer.query(solrQuery);
     String name = resp.getResults().get(0).getFieldValue("name").toString();
-    Assert.assertEquals("solr1", name);
+    Assert.assertEquals("solr/collection11", name);
     resp = lbHttpSolrServer.query(solrQuery);
     name = resp.getResults().get(0).getFieldValue("name").toString();
-    Assert.assertEquals("solr1", name);
+    Assert.assertEquals("solr/collection11", name);
     solr[1].jetty.stop();
     solr[1].jetty = null;
     solr[0].startJetty();
@@ -172,7 +174,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
       resp = lbHttpSolrServer.query(solrQuery);
     }
     name = resp.getResults().get(0).getFieldValue("name").toString();
-    Assert.assertEquals("solr0", name);
+    Assert.assertEquals("solr/collection10", name);
   }
 
   public void testReliability() throws Exception {
@@ -180,10 +182,11 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     for (int i = 0; i < solr.length; i++) {
       s[i] = solr[i].getUrl();
     }
-    DefaultHttpClient myHttpClient = new DefaultHttpClient(new ThreadSafeClientConnManager());
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 250);
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 250);
+    HttpClient myHttpClient = HttpClientUtil.createClient(params);
 
-    myHttpClient.getParams().setParameter("http.connection.timeout", new Integer(250));
-    myHttpClient.getParams().setParameter("http.socket.timeout", new Integer(250));
     LBHttpSolrServer lbHttpSolrServer = new LBHttpSolrServer(myHttpClient, s);
     lbHttpSolrServer.setAliveCheckInterval(500);
 
@@ -255,8 +258,8 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
 
 
       homeDir = new File(home, name);
-      dataDir = new File(homeDir, "data");
-      confDir = new File(homeDir, "conf");
+      dataDir = new File(homeDir + "/collection1", "data");
+      confDir = new File(homeDir + "/collection1", "conf");
 
       homeDir.mkdirs();
       dataDir.mkdirs();

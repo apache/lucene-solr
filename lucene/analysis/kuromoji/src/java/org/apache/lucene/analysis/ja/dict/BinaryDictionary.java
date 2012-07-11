@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.ja.dict;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,9 +26,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IOUtils;
 

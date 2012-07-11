@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
@@ -29,7 +30,6 @@ import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
@@ -180,7 +180,7 @@ public class QueryComponent extends SearchComponent
     try {
        responseFormat = Grouping.Format.valueOf(formatStr);
     } catch (IllegalArgumentException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format("Illegal %s parameter", GroupParams.GROUP_FORMAT));
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Illegal %s parameter", GroupParams.GROUP_FORMAT));
     }
     groupingSpec.setResponseFormat(responseFormat);
 
@@ -386,7 +386,7 @@ public class QueryComponent extends SearchComponent
         if (grouping.isSignalCacheWarning()) {
           rsp.add(
               "cacheWarning",
-              String.format("Cache limit of %d percent relative to maxdoc has exceeded. Please increase cache size or disable caching.", maxDocsPercentageToCache)
+              String.format(Locale.ROOT, "Cache limit of %d percent relative to maxdoc has exceeded. Please increase cache size or disable caching.", maxDocsPercentageToCache)
           );
         }
         rb.setResult(result);
@@ -435,13 +435,13 @@ public class QueryComponent extends SearchComponent
       Sort sort = searcher.weightSort(rb.getSortSpec().getSort());
       SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       NamedList<Object[]> sortVals = new NamedList<Object[]>(); // order is important for the sort fields
-      Field field = new StringField("dummy", ""); // a dummy Field
+      Field field = new StringField("dummy", "", Field.Store.NO); // a dummy Field
       IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
+      List<AtomicReaderContext> leaves = topReaderContext.leaves();
       AtomicReaderContext currentLeaf = null;
-      if (leaves.length==1) {
+      if (leaves.size()==1) {
         // if there is a single segment, use that subReader and avoid looking up each time
-        currentLeaf = leaves[0];
+        currentLeaf = leaves.get(0);
         leaves=null;
       }
 
@@ -478,7 +478,7 @@ public class QueryComponent extends SearchComponent
 
           if (leaves != null) {
             idx = ReaderUtil.subIndex(doc, leaves);
-            currentLeaf = leaves[idx];
+            currentLeaf = leaves.get(idx);
             if (idx != lastIdx) {
               // we switched segments.  invalidate comparator.
               comparator = null;
@@ -652,7 +652,7 @@ public class QueryComponent extends SearchComponent
     GroupingSpecification groupSpec = rb.getGroupingSpec();
     if (rb.mergedTopGroups.isEmpty()) {
       for (String field : groupSpec.getFields()) {
-        rb.mergedTopGroups.put(field, new TopGroups(null, null, 0, 0, new GroupDocs[]{}));
+        rb.mergedTopGroups.put(field, new TopGroups(null, null, 0, 0, new GroupDocs[]{}, Float.NaN));
       }
       rb.resultIds = new HashMap<Object, ShardDoc>();
     }

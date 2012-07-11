@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.de;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   public void testReusableTokenStream() throws Exception {
@@ -58,14 +57,10 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     // a/o/u + e is equivalent to the umlaut form
     checkOneTermReuse(a, "Schaltflächen", "schaltflach");
     checkOneTermReuse(a, "Schaltflaechen", "schaltflach");
-    // here they are with the old stemmer
-    a = new GermanAnalyzer(Version.LUCENE_30);
-    checkOneTermReuse(a, "Schaltflächen", "schaltflach");
-    checkOneTermReuse(a, "Schaltflaechen", "schaltflaech");
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new GermanAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new GermanAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

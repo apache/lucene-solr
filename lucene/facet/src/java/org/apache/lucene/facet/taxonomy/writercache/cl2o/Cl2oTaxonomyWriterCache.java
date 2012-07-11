@@ -6,7 +6,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -34,21 +34,37 @@ import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {  
 
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
-  private CompactLabelToOrdinal cache;
+  private final int initialCapcity, numHashArrays;
+  private final float loadFactor;
+  
+  private volatile CompactLabelToOrdinal cache;
 
   public Cl2oTaxonomyWriterCache(int initialCapcity, float loadFactor, int numHashArrays) {
     this.cache = new CompactLabelToOrdinal(initialCapcity, loadFactor, numHashArrays);
+    this.initialCapcity = initialCapcity;
+    this.numHashArrays = numHashArrays;
+    this.loadFactor = loadFactor;
   }
 
+  @Override
+  public void clear() {
+    lock.writeLock().lock();
+    try {
+      cache = new CompactLabelToOrdinal(initialCapcity, loadFactor, numHashArrays);
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+  
   @Override
   public synchronized void close() {
     cache = null;
   }
 
   @Override
-  public boolean hasRoom(int n) {
-    // This cache is unlimited, so we always have room for remembering more:
-    return true;
+  public boolean isFull() {
+    // This cache is never full
+    return false;
   }
 
   @Override

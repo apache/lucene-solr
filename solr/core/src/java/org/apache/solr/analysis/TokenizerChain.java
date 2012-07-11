@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,17 +22,12 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
-import java.io.IOException;
 import java.io.Reader;
 
 /**
- *
+ * An analyzer that uses a tokenizer and a list of token filters to
+ * create a TokenStream.
  */
-
-//
-// An analyzer that uses a tokenizer and a list of token filters to
-// create a TokenStream.
-//
 public final class TokenizerChain extends SolrAnalyzer {
   final private CharFilterFactory[] charFilters;
   final private TokenizerFactory tokenizer;
@@ -52,23 +47,8 @@ public final class TokenizerChain extends SolrAnalyzer {
   public TokenizerFactory getTokenizerFactory() { return tokenizer; }
   public TokenFilterFactory[] getTokenFilterFactories() { return filters; }
 
-  class SolrTokenStreamComponents extends TokenStreamComponents {
-    public SolrTokenStreamComponents(final Tokenizer source, final TokenStream result) {
-      super(source, result);
-    }
-
-    @Override
-    protected void reset(Reader reader) throws IOException {
-      // the tokenizers are currently reset by the indexing process, so only
-      // the tokenizer needs to be reset.
-      Reader r = initReader(reader);
-      super.reset(r);
-    }
-  }
-  
-  
   @Override
-  public Reader initReader(Reader reader) {
+  public Reader initReader(String fieldName, Reader reader) {
     if (charFilters != null && charFilters.length > 0) {
       CharStream cs = CharReader.get( reader );
       for (CharFilterFactory charFilter : charFilters) {
@@ -81,12 +61,12 @@ public final class TokenizerChain extends SolrAnalyzer {
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
-    Tokenizer tk = tokenizer.create( initReader(aReader) );
+    Tokenizer tk = tokenizer.create( aReader );
     TokenStream ts = tk;
     for (TokenFilterFactory filter : filters) {
       ts = filter.create(ts);
     }
-    return new SolrTokenStreamComponents(tk, ts);
+    return new TokenStreamComponents(tk, ts);
   }
 
   @Override

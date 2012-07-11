@@ -3,7 +3,7 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,7 +32,7 @@ public class TestMockCharFilter extends BaseTokenStreamTestCase {
       }
 
       @Override
-      protected Reader initReader(Reader reader) {
+      protected Reader initReader(String fieldName, Reader reader) {
         return new MockCharFilter(CharReader.get(reader), 7);
       }
     };

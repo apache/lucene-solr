@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -129,8 +129,8 @@ public class TestThreadedForceMerge extends LuceneTestCase {
           TEST_VERSION_CURRENT, ANALYZER).setOpenMode(
           OpenMode.APPEND).setMaxBufferedDocs(2));
       
-      DirectoryReader reader = IndexReader.open(directory);
-      assertEquals("reader=" + reader, 1, reader.getSequentialSubReaders().length);
+      DirectoryReader reader = DirectoryReader.open(directory);
+      assertEquals("reader=" + reader, 1, reader.getSequentialSubReaders().size());
       assertEquals(expectedDocCount, reader.numDocs());
       reader.close();
     }

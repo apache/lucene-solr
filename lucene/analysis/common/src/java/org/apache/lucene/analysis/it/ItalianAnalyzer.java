@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.it;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -36,19 +36,9 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
-import org.tartarus.snowball.ext.ItalianStemmer;
 
 /**
  * {@link Analyzer} for Italian.
- * <p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating ItalianAnalyzer:
- * <ul>
- *   <li> As of 3.6, ItalianLightStemFilter is used for less aggressive stemming.
- *   <li> As of 3.2, ElisionFilter with a set of Italian 
- *        contractions is used by default.
- * </ul>
  */
 public final class ItalianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -139,18 +129,12 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
-    if (matchVersion.onOrAfter(Version.LUCENE_32)) {
-      result = new ElisionFilter(matchVersion, result, DEFAULT_ARTICLES);
-    }
+    result = new ElisionFilter(matchVersion, result, DEFAULT_ARTICLES);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new KeywordMarkerFilter(result, stemExclusionSet);
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-      result = new ItalianLightStemFilter(result);
-    } else {
-      result = new SnowballFilter(result, new ItalianStemmer());
-    }
+    result = new ItalianLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
 }

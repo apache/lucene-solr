@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.SetOnce;
 
@@ -57,7 +56,7 @@ import org.apache.lucene.util.SetOnce;
  * @lucene.experimental
  */
 
-public abstract class MergePolicy implements java.io.Closeable {
+public abstract class MergePolicy implements java.io.Closeable, Cloneable {
 
   /** OneMerge provides the information necessary to perform
    *  an individual primitive merge operation, resulting in
@@ -74,7 +73,6 @@ public abstract class MergePolicy implements java.io.Closeable {
     int maxNumSegments = -1;        // used by IndexWriter
     public long estimatedMergeBytes;       // used by IndexWriter
     List<SegmentReader> readers;        // used by IndexWriter
-    List<Bits> readerLiveDocs;      // used by IndexWriter
     public final List<SegmentInfoPerCommit> segments;
     public final int totalDocCount;
     boolean aborted;
@@ -254,7 +252,20 @@ public abstract class MergePolicy implements java.io.Closeable {
     }
   }
 
-  protected final SetOnce<IndexWriter> writer;
+  protected SetOnce<IndexWriter> writer;
+
+  @Override
+  public MergePolicy clone() {
+    MergePolicy clone;
+    try {
+      clone = (MergePolicy) super.clone();
+    } catch (CloneNotSupportedException e) {
+      // should not happen
+      throw new RuntimeException(e);
+    }
+    clone.writer = new SetOnce<IndexWriter>();
+    return clone;
+  }
 
   /**
    * Creates a new merge policy instance. Note that if you intend to use it
@@ -286,7 +297,7 @@ public abstract class MergePolicy implements java.io.Closeable {
    *          the total set of segments in the index
    */
   public abstract MergeSpecification findMerges(SegmentInfos segmentInfos)
-      throws CorruptIndexException, IOException;
+      throws IOException;
 
   /**
    * Determine what set of merge operations is necessary in
@@ -311,7 +322,7 @@ public abstract class MergePolicy implements java.io.Closeable {
    */
   public abstract MergeSpecification findForcedMerges(
           SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
-      throws CorruptIndexException, IOException;
+      throws IOException;
 
   /**
    * Determine what set of merge operations is necessary in order to expunge all
@@ -321,7 +332,7 @@ public abstract class MergePolicy implements java.io.Closeable {
    *          the total set of segments in the index
    */
   public abstract MergeSpecification findForcedDeletesMerges(
-      SegmentInfos segmentInfos) throws CorruptIndexException, IOException;
+      SegmentInfos segmentInfos) throws IOException;
 
   /**
    * Release all resources for the policy.

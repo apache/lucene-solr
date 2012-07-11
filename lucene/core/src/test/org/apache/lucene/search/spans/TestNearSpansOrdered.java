@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spans;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,7 +19,7 @@ package org.apache.lucene.search.spans;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -62,7 +62,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(newField(FIELD, docFields[i], TextField.TYPE_UNSTORED));
+      doc.add(newTextField(FIELD, docFields[i], Field.Store.NO));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -196,8 +196,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     SpanQuery q = makeQuery();
     Weight w = searcher.createNormalizedWeight(q);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    AtomicReaderContext[] leaves = topReaderContext.leaves();
-    Scorer s = w.scorer(leaves[0], true, false, leaves[0].reader().getLiveDocs());
+    AtomicReaderContext leave = topReaderContext.leaves().get(0);
+    Scorer s = w.scorer(leave, true, false, leave.reader().getLiveDocs());
     assertEquals(1, s.advance(1));
   }
   

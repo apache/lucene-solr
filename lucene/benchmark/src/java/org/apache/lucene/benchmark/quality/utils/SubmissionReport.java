@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.lucene.benchmark.quality.utils;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
+import java.util.Locale;
 
 import org.apache.lucene.benchmark.quality.QualityQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -45,7 +46,7 @@ public class SubmissionReport {
   public SubmissionReport (PrintWriter logger, String name) {
     this.logger = logger;
     this.name = name;
-    nf = NumberFormat.getInstance();
+    nf = NumberFormat.getInstance(Locale.ROOT);
     nf.setMaximumFractionDigits(4);
     nf.setMinimumFractionDigits(4);
   }

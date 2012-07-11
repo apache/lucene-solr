@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,13 +26,10 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
 
 public class TestIndexWriterUnicode extends LuceneTestCase {
@@ -237,10 +234,10 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
-    doc.add(newField("field", "a a\uffffb", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "a a\uffffb", Field.Store.NO));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newField("field", "a", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "a", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     assertEquals(1, r.docFreq(new Term("field", "a\uffffb")));
@@ -257,11 +254,11 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
     final int count = utf8Data.length/2;
     for(int i=0;i<count;i++)
-      doc.add(newField("f" + i, utf8Data[2*i], TextField.TYPE_STORED));
+      doc.add(newTextField("f" + i, utf8Data[2*i], Field.Store.YES));
     w.addDocument(doc);
     w.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = DirectoryReader.open(dir);
     Document doc2 = ir.document(0);
     for(int i=0;i<count;i++) {
       assertEquals("field " + i + " was not indexed correctly", 1, ir.docFreq(new Term("f"+i, utf8Data[2*i+1])));
@@ -279,7 +276,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(rnd, dir);
     Document d = new Document();
     // Single segment
-    Field f = newField("f", "", StringField.TYPE_UNSTORED);
+    Field f = newStringField("f", "", Field.Store.NO);
     d.add(f);
     char[] chars = new char[2];
     final Set<String> allTerms = new HashSet<String>();
@@ -318,12 +315,9 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     IndexReader r = writer.getReader();
 
     // Test each sub-segment
-    new ReaderUtil.Gather(r) {
-      @Override
-      protected void add(int base, AtomicReader r) throws IOException {
-        checkTermsOrder(r, allTerms, false);
-      }
-    }.run();
+    for (AtomicReaderContext ctx : r.getTopReaderContext().leaves()) {
+      checkTermsOrder(ctx.reader(), allTerms, false);
+    }
     checkTermsOrder(r, allTerms, true);
 
     // Test multi segment

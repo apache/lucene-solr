@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -58,7 +58,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  was hit. */
   public static enum SeekStatus {END, FOUND, NOT_FOUND};
 
-  /** Attemps to seek to the exact term, returning
+  /** Attempts to seek to the exact term, returning
    *  true if the term is found.  If this returns false, the
    *  enum is unpositioned.  For some codecs, seekExact may
    *  be substantially faster than {@link #seekCeil}. */
@@ -240,12 +240,12 @@ public abstract class TermsEnum implements BytesRefIterator {
     }
 
     @Override
-    public TermState termState() throws IOException {
+    public TermState termState() {
       throw new IllegalStateException("this method should never be called");
     }
 
     @Override
-    public void seekExact(BytesRef term, TermState state) throws IOException {
+    public void seekExact(BytesRef term, TermState state) {
       throw new IllegalStateException("this method should never be called");
     }
   };

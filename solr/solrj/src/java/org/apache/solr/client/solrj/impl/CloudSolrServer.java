@@ -1,6 +1,6 @@
 package org.apache.solr.client.solrj.impl;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,8 +28,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -60,16 +59,16 @@ public class CloudSolrServer extends SolrServer {
   private int zkClientTimeout = 10000;
   private volatile String defaultCollection;
   private LBHttpSolrServer lbServer;
+  private HttpClient myClient;
   Random rand = new Random();
-  private ThreadSafeClientConnManager connManager;
   /**
    * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
    * in the form HOST:PORT.
    */
   public CloudSolrServer(String zkHost) throws MalformedURLException {
-      connManager = new ThreadSafeClientConnManager();
       this.zkHost = zkHost;
-      this.lbServer = new LBHttpSolrServer(new DefaultHttpClient(connManager));
+      this.myClient = HttpClientUtil.createClient(null);
+      this.lbServer = new LBHttpSolrServer(myClient);
   }
 
   /**
@@ -105,9 +104,6 @@ public class CloudSolrServer extends SolrServer {
    * Connect to the zookeeper ensemble.
    * This is an optional method that may be used to force a connect before any other requests are sent.
    *
-   * @throws IOException
-   * @throws TimeoutException
-   * @throws InterruptedException
    */
   public void connect() {
     if (zkStateReader == null) {
@@ -198,7 +194,8 @@ public class CloudSolrServer extends SolrServer {
     return rsp.getResponse();
   }
 
-  public void close() {
+  @Override
+  public void shutdown() {
     if (zkStateReader != null) {
       synchronized(this) {
         if (zkStateReader!= null)
@@ -206,8 +203,8 @@ public class CloudSolrServer extends SolrServer {
         zkStateReader = null;
       }
     }
-    if (connManager != null) {
-      connManager.shutdown();
+    if (myClient!=null) {
+      myClient.getConnectionManager().shutdown();
     }
   }
 

@@ -18,11 +18,10 @@ package org.apache.solr.handler.dataimport;
  */
 
 import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -70,7 +69,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   private int rows = ROWS_DEFAULT;
   private String[] filterQueries;
   private String[] fields;
-  private String queryType;
+  private String requestHandler;// 'qt' param
   private int timeout = TIMEOUT_SECS;
   
   private boolean initDone = false;
@@ -83,7 +82,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
    * @return a {@link HttpClient} instance used for interfacing with a source Solr service
    */
   protected HttpClient getHttpClient() {
-    return new DefaultHttpClient(new ThreadSafeClientConnManager());
+    return HttpClientUtil.createClient(null);
   }
 
   @Override
@@ -170,7 +169,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     if (fieldsAsString != null) {
       this.fields = fieldsAsString.split(",");
     }
-    this.queryType = context.getResolvedEntityAttribute(CommonParams.QT);
+    this.requestHandler = context.getResolvedEntityAttribute(CommonParams.QT);
     String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
     if (timeoutAsString != null) {
       this.timeout = Integer.parseInt(timeoutAsString);
@@ -184,7 +183,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
         solrQuery.addField(field);
       }
     }
-    solrQuery.setQueryType(queryType);
+    solrQuery.setRequestHandler(requestHandler);
     solrQuery.setFilterQueries(filterQueries);
     solrQuery.setTimeAllowed(timeout * 1000);
     

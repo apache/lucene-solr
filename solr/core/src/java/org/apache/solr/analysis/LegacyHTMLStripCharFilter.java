@@ -1,6 +1,6 @@
 package org.apache.solr.analysis;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -71,7 +72,7 @@ public class LegacyHTMLStripCharFilter extends BaseCharFilter {
 
   public static void main(String[] args) throws IOException {
     Reader in = new LegacyHTMLStripCharFilter(
-            CharReader.get(new InputStreamReader(System.in)));
+            CharReader.get(new InputStreamReader(System.in, Charset.defaultCharset())));
     int ch;
     while ( (ch=in.read()) != -1 ) System.out.print((char)ch);
   }

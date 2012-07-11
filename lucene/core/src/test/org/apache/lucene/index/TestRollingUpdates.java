@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,11 +37,11 @@ public class TestRollingUpdates extends LuceneTestCase {
     Random random = new Random(random().nextLong());
     final MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
-    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random, true);
 
     //provider.register(new MemoryCodec());
-    if ( (!"Lucene3x".equals(Codec.getDefault().getName())) && random().nextBoolean()) {
-      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean())));
+    if (random().nextBoolean()) {
+      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
     }
 
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -110,7 +110,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       w.close();
     }
 
-    IndexReader open = IndexReader.open(dir);
+    IndexReader open = DirectoryReader.open(dir);
     assertEquals(1, open.numDocs());
     open.close();
     docs.close();
@@ -134,11 +134,11 @@ public class TestRollingUpdates extends LuceneTestCase {
         DirectoryReader open = null;
         for (int i = 0; i < num; i++) {
           Document doc = new Document();// docs.nextDoc();
-          doc.add(newField("id", "test", StringField.TYPE_UNSTORED));
+          doc.add(newStringField("id", "test", Field.Store.NO));
           writer.updateDocument(new Term("id", "test"), doc);
           if (random().nextInt(3) == 0) {
             if (open == null) {
-              open = IndexReader.open(writer, true);
+              open = DirectoryReader.open(writer, true);
             }
             DirectoryReader reader = DirectoryReader.openIfChanged(open);
             if (reader != null) {

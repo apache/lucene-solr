@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -201,7 +201,7 @@ final class ExactPhraseScorer extends Scorer {
   }
   
   @Override
-  public float score() throws IOException {
+  public float score() {
     return docScorer.score(docID, freq);
   }
   

@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,8 +29,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
@@ -52,7 +50,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
-    Field field = newField("field", "", TextField.TYPE_UNSTORED);
+    Field field = newTextField("field", "", Field.Store.NO);
     doc.add(field);
     field.setStringValue("a b c");
     w.addDocument(doc);
@@ -124,7 +122,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      doc.add(new IntField("id", id));
+      doc.add(new IntField("id", id, Field.Store.NO));
       
       final int termCount = _TestUtil.nextInt(random(), 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -137,7 +135,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newField("field", termsArray[ord].utf8ToString(), StringField.TYPE_UNSTORED);
+        Field field = newStringField("field", termsArray[ord].utf8ToString(), Field.Store.NO);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
@@ -221,7 +219,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      doc.add(new IntField("id", id));
+      doc.add(new IntField("id", id, Field.Store.NO));
       
       final int termCount = _TestUtil.nextInt(random(), 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -234,7 +232,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newField("field", termsArray[ord].utf8ToString(), StringField.TYPE_UNSTORED);
+        Field field = newStringField("field", termsArray[ord].utf8ToString(), Field.Store.NO);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -62,6 +62,7 @@ import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
 import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
+import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -103,6 +104,7 @@ public class CoreContainer
   protected String hostContext;
   protected String host;
   protected CoreAdminHandler coreAdminHandler = null;
+  protected CollectionsHandler collectionsHandler = null;
   protected File configFile = null;
   protected String libDir = null;
   protected ClassLoader libLoader = null;
@@ -219,9 +221,17 @@ public class CoreContainer
             }
             return descriptors;
           }
-        });
-        
+        });        
+
         String confDir = System.getProperty("bootstrap_confdir");
+        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+        
+        if (zkRun != null && zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
+          // we are part of an ensemble and we are not uploading the config - pause to give the config time
+          // to get up
+          Thread.sleep(10000);
+        }
+        
         if(confDir != null) {
           File dir = new File(confDir);
           if(!dir.isDirectory()) {
@@ -230,8 +240,9 @@ public class CoreContainer
           String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
           zkController.uploadConfigDir(dir, confName);
         }
+
+
         
-        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
         if(boostrapConf) {
           ZkController.bootstrapConf(zkController.getZkClient(), cfg, solrHome);
         }
@@ -453,6 +464,8 @@ public class CoreContainer
       }
     }
 
+    collectionsHandler = new CollectionsHandler(this);
+    
     try {
       containerProperties = readProperties(cfg, ((NodeList) cfg.evaluate(DEFAULT_HOST_CONTEXT, XPathConstants.NODESET)).item(0));
     } catch (Throwable e) {
@@ -629,7 +642,18 @@ public class CoreContainer
 
     if (zkController != null) {
       // this happens before we can receive requests
-      zkController.preRegister(core.getCoreDescriptor());
+      try {
+        zkController.preRegister(core.getCoreDescriptor());
+      } catch (KeeperException e) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      }
     }
     
     SolrCore old = null;
@@ -662,7 +686,6 @@ public class CoreContainer
     }
   }
 
-
   private void registerInZk(SolrCore core) {
     if (zkController != null) {
       try {
@@ -676,7 +699,18 @@ public class CoreContainer
       } catch (Exception e) {
         // if register fails, this is really bad - close the zkController to
         // minimize any damage we can cause
-        zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+        try {
+          zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+        } catch (KeeperException e1) {
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        } catch (InterruptedException e1) {
+          Thread.currentThread().interrupt();
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        }
         SolrException.log(log, "", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
@@ -756,7 +790,7 @@ public class CoreContainer
         if (schemaFile.exists()) {
           String key = schemaFile.getAbsolutePath()
               + ":"
-              + new SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(new Date(
+              + new SimpleDateFormat("yyyyMMddHHmmss", Locale.ROOT).format(new Date(
                   schemaFile.lastModified()));
           schema = indexSchemaCache.get(key);
           if (schema == null) {
@@ -1000,6 +1034,10 @@ public class CoreContainer
 
   public CoreAdminHandler getMultiCoreHandler() {
     return coreAdminHandler;
+  }
+  
+  public CollectionsHandler getCollectionsHandler() {
+    return collectionsHandler;
   }
   
   /**
@@ -1300,7 +1338,7 @@ public class CoreContainer
   private static final String DEF_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
           "<solr persistent=\"false\">\n" +
           "  <cores adminPath=\"/admin/cores\" defaultCoreName=\"" + DEFAULT_DEFAULT_CORE_NAME + "\">\n" +
-          "    <core name=\""+ DEFAULT_DEFAULT_CORE_NAME + "\" shard=\"${shard:}\" instanceDir=\".\" />\n" +
+          "    <core name=\""+ DEFAULT_DEFAULT_CORE_NAME + "\" shard=\"${shard:}\" instanceDir=\"collection1\" />\n" +
           "  </cores>\n" +
           "</solr>";
 }

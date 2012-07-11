@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.byTask.tasks;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +16,8 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.stats.Points;
@@ -266,7 +268,7 @@ public abstract class PerfTask implements Cloneable {
   public void tearDown() throws Exception {
     if (++logStepCount % logStep == 0) {
       double time = (System.currentTimeMillis() - runData.getStartTimeMillis()) / 1000.0;
-      System.out.println(String.format("%7.2f",time) + " sec --> "
+      System.out.println(String.format(Locale.ROOT, "%7.2f",time) + " sec --> "
           + Thread.currentThread().getName() + " " + getLogMessage(logStepCount));
     }
   }

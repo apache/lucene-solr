@@ -1,6 +1,6 @@
 package org.apache.solr.cloud;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,22 +17,18 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.net.ConnectException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -43,11 +39,11 @@ import org.junit.Ignore;
 public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
 
   @BeforeClass
-  public static void beforeSuperClass() throws Exception {
+  public static void beforeSuperClass() {
   }
   
   @AfterClass
-  public static void afterSuperClass() throws Exception {
+  public static void afterSuperClass() {
   }
   
   @Before
@@ -159,8 +155,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     }
   }
 
-  private void waitForThingsToLevelOut() throws KeeperException,
-      InterruptedException, Exception, IOException, URISyntaxException {
+  private void waitForThingsToLevelOut() throws Exception {
     int cnt = 0;
     boolean retry = false;
     do {
@@ -203,15 +198,14 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   }
 
   class FullThrottleStopableIndexingThread extends StopableIndexingThread {
-    ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager();
-    private DefaultHttpClient httpClient = new DefaultHttpClient(cm) ;
+    private HttpClient httpClient = HttpClientUtil.createClient(null);
     private volatile boolean stop = false;
     int clientIndex = 0;
     private ConcurrentUpdateSolrServer suss;
     private List<SolrServer> clients;  
     
     public FullThrottleStopableIndexingThread(List<SolrServer> clients,
-        int startI, boolean doDeletes) throws MalformedURLException {
+        int startI, boolean doDeletes) {
       super(startI, doDeletes);
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
@@ -283,25 +277,21 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
         if (clientIndex > clients.size() - 1) {
           clientIndex = 0;
         }
-        try {
-          suss.shutdownNow();
-          suss = new ConcurrentUpdateSolrServer(
-              ((HttpSolrServer) clients.get(clientIndex)).getBaseURL(),
-              httpClient, 30, 3) {
-            public void handleError(Throwable ex) {
-              log.warn("suss error", ex);
-            }
-          };
-        } catch (MalformedURLException e1) {
-          e1.printStackTrace();
-        }
+        suss.shutdownNow();
+        suss = new ConcurrentUpdateSolrServer(
+            ((HttpSolrServer) clients.get(clientIndex)).getBaseURL(),
+            httpClient, 30, 3) {
+          public void handleError(Throwable ex) {
+            log.warn("suss error", ex);
+          }
+        };
       }
     }
     
     public void safeStop() {
       stop = true;
       suss.shutdownNow();
-      cm.shutdown();
+      httpClient.getConnectionManager().shutdown();
     }
 
     public int getFails() {

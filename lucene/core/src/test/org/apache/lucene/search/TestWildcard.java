@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,11 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -68,7 +69,7 @@ public class TestWildcard
    */
   public void testTermWithoutWildcard() throws IOException {
       Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
-      IndexReader reader = IndexReader.open(indexStore);
+      IndexReader reader = DirectoryReader.open(indexStore);
       IndexSearcher searcher = new IndexSearcher(reader);
 
       MultiTermQuery wq = new WildcardQuery(new Term("field", "nowildcard"));
@@ -106,7 +107,7 @@ public class TestWildcard
    */
   public void testEmptyTerm() throws IOException {
     Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
-    IndexReader reader = IndexReader.open(indexStore);
+    IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", ""));
@@ -126,7 +127,7 @@ public class TestWildcard
    */
   public void testPrefixTerm() throws IOException {
     Directory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
-    IndexReader reader = IndexReader.open(indexStore);
+    IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
@@ -149,7 +150,7 @@ public class TestWildcard
       throws IOException {
     Directory indexStore = getIndexStore("body", new String[]
     {"metal", "metals"});
-    IndexReader reader = IndexReader.open(indexStore);
+    IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
     Query query1 = new TermQuery(new Term("body", "metal"));
     Query query2 = new WildcardQuery(new Term("body", "metal*"));
@@ -191,7 +192,7 @@ public class TestWildcard
       throws IOException {
     Directory indexStore = getIndexStore("body", new String[]
     {"metal", "metals", "mXtals", "mXtXls"});
-    IndexReader reader = IndexReader.open(indexStore);
+    IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
     Query query1 = new WildcardQuery(new Term("body", "m?tal"));
     Query query2 = new WildcardQuery(new Term("body", "metal?"));
@@ -216,7 +217,7 @@ public class TestWildcard
   public void testEscapes() throws Exception {
     Directory indexStore = getIndexStore("field", 
         new String[]{"foo*bar", "foo??bar", "fooCDbar", "fooSOMETHINGbar", "foo\\"});
-    IndexReader reader = IndexReader.open(indexStore);
+    IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     // without escape: matches foo??bar, fooCDbar, foo*bar, and fooSOMETHINGbar
@@ -249,7 +250,7 @@ public class TestWildcard
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
-      doc.add(newField(field, contents[i], TextField.TYPE_STORED));
+      doc.add(newTextField(field, contents[i], Field.Store.YES));
       writer.addDocument(doc);
     }
     writer.close();
@@ -349,12 +350,12 @@ public class TestWildcard
         .setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
-      doc.add(newField(field,docs[i],TextField.TYPE_UNSTORED));
+      doc.add(newTextField(field, docs[i], Field.Store.NO));
       iw.addDocument(doc);
     }
     iw.close();
     
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     
     // test queries that must find all

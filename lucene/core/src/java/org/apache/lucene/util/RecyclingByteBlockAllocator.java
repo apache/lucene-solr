@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -44,8 +44,6 @@ public final class RecyclingByteBlockAllocator extends ByteBlockPool.Allocator {
    *          maximum number of buffered byte block
    * @param bytesUsed
    *          {@link AtomicLong} reference counting internally allocated bytes
-   * 
-   * @see DummyConcurrentLock
    */
   public RecyclingByteBlockAllocator(int blockSize, int maxBufferedBlocks,
       AtomicLong bytesUsed) {
@@ -56,8 +54,7 @@ public final class RecyclingByteBlockAllocator extends ByteBlockPool.Allocator {
   }
 
   /**
-   * Creates a new {@link RecyclingByteBlockAllocator} with a
-   * {@link DummyConcurrentLock} instance.
+   * Creates a new {@link RecyclingByteBlockAllocator}.
    * 
    * @param blockSize
    *          the block size in bytes
@@ -71,8 +68,7 @@ public final class RecyclingByteBlockAllocator extends ByteBlockPool.Allocator {
   /**
    * Creates a new {@link RecyclingByteBlockAllocator} with a block size of
    * {@link ByteBlockPool#BYTE_BLOCK_SIZE}, upper buffered docs limit of
-   * {@link #DEFAULT_BUFFERED_BLOCKS} ({@value #DEFAULT_BUFFERED_BLOCKS}) and a
-   * {@link DummyConcurrentLock} instance.
+   * {@link #DEFAULT_BUFFERED_BLOCKS} ({@value #DEFAULT_BUFFERED_BLOCKS}).
    * 
    */
   public RecyclingByteBlockAllocator() {

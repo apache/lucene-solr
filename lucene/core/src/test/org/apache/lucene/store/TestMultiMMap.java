@@ -1,6 +1,6 @@
 package org.apache.lucene.store;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,13 +18,11 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.util.BytesRef;
@@ -154,8 +152,8 @@ public class TestMultiMMap extends LuceneTestCase {
     MockDirectoryWrapper dir = new MockDirectoryWrapper(random, mmapDir);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
-    Field docid = newField("docid", "0", StringField.TYPE_STORED);
-    Field junk = newField("junk", "", StringField.TYPE_STORED);
+    Field docid = newStringField("docid", "0", Field.Store.YES);
+    Field junk = newStringField("junk", "", Field.Store.YES);
     doc.add(docid);
     doc.add(junk);
     

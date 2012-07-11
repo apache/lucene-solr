@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -30,40 +30,6 @@ import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
 
 /**
  * An abstract base class for simple, character-oriented tokenizers. 
- * <p>
- * <a name="version">You must specify the required {@link Version} compatibility
- * when creating {@link CharTokenizer}:
- * <ul>
- * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
- * detect token codepoints. See {@link #isTokenChar(int)} and
- * {@link #normalize(int)} for details.</li>
- * </ul>
- * <p>
- * A new {@link CharTokenizer} API has been introduced with Lucene 3.1. This API
- * moved from UTF-16 code units to UTF-32 codepoints to eventually add support
- * for <a href=
- * "http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Character.html#supplementary"
- * >supplementary characters</a>. The old <i>char</i> based API has been
- * deprecated and should be replaced with the <i>int</i> based methods
- * {@link #isTokenChar(int)} and {@link #normalize(int)}.
- * </p>
- * <p>
- * As of Lucene 3.1 each {@link CharTokenizer} - constructor expects a
- * {@link Version} argument. Based on the given {@link Version} either the new
- * API or a backwards compatibility layer is used at runtime. For
- * {@link Version} < 3.1 the backwards compatibility layer ensures correct
- * behavior even for indexes build with previous versions of Lucene. If a
- * {@link Version} >= 3.1 is used {@link CharTokenizer} requires the new API to
- * be implemented by the instantiated class. Yet, the old <i>char</i> based API
- * is not required anymore even if backwards compatibility must be preserved.
- * {@link CharTokenizer} subclasses implementing the new API are fully backwards
- * compatible if instantiated with {@link Version} < 3.1.
- * </p>
- * <p>
- * <strong>Note:</strong> If you use a subclass of {@link CharTokenizer} with {@link Version} >=
- * 3.1 on an index build with a version < 3.1, created tokens might not be
- * compatible with the terms in your index.
- * </p>
  **/
 public abstract class CharTokenizer extends Tokenizer {
   
@@ -71,7 +37,7 @@ public abstract class CharTokenizer extends Tokenizer {
    * Creates a new {@link CharTokenizer} instance
    * 
    * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
+   *          Lucene version to match
    * @param input
    *          the input to split up into tokens
    */
@@ -84,7 +50,7 @@ public abstract class CharTokenizer extends Tokenizer {
    * Creates a new {@link CharTokenizer} instance
    * 
    * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
+   *          Lucene version to match
    * @param source
    *          the attribute source to use for this {@link Tokenizer}
    * @param input
@@ -100,7 +66,7 @@ public abstract class CharTokenizer extends Tokenizer {
    * Creates a new {@link CharTokenizer} instance
    * 
    * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
+   *          Lucene version to match
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    * @param input

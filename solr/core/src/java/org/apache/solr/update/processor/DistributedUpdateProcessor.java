@@ -1,6 +1,6 @@
 package org.apache.solr.update.processor;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -443,6 +443,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // realtime-get to work reliably.
         // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
         // there may be other reasons in the future for a version on the commands
+
+        boolean checkDeleteByQueries = false;
+
         if (versionsStored) {
 
           long bucketVersion = bucket.highest;
@@ -484,7 +487,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // if we aren't the leader, then we need to check that updates were not re-ordered
             if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
               // we're OK... this update has a version higher than anything we've seen
-              // in this bucket so far, so we know that no reordering has yet occured.
+              // in this bucket so far, so we know that no reordering has yet occurred.
               bucket.updateHighest(versionOnUpdate);
             } else {
               // there have been updates higher than the current update.  we need to check
@@ -494,11 +497,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 // This update is a repeat, or was reordered.  We need to drop this update.
                 return true;
               }
+
+              // also need to re-apply newer deleteByQuery commands
+              checkDeleteByQueries = true;
             }
           }
         }
 
+        // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
+
       }  // end synchronized (bucket)
     } finally {
       vinfo.unlockForUpdate();
@@ -654,7 +662,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // FROM: we are a replica receiving a DBQ from our leader
     //       - log + execute the local DBQ
     DistribPhase phase = 
-      DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+    DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
     if (zkEnabled && DistribPhase.NONE == phase) {
       boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
@@ -772,8 +780,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
 
-
-    // TODO: need to handle reorders to replicas somehow
     // forward to all replicas
     if (leaderLogic && replicas != null) {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());

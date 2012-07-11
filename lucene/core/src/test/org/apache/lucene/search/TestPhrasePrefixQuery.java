@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,9 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -47,11 +47,11 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
     Document doc3 = new Document();
     Document doc4 = new Document();
     Document doc5 = new Document();
-    doc1.add(newField("body", "blueberry pie", TextField.TYPE_STORED));
-    doc2.add(newField("body", "blueberry strudel", TextField.TYPE_STORED));
-    doc3.add(newField("body", "blueberry pizza", TextField.TYPE_STORED));
-    doc4.add(newField("body", "blueberry chewing gum", TextField.TYPE_STORED));
-    doc5.add(newField("body", "piccadilly circus", TextField.TYPE_STORED));
+    doc1.add(newTextField("body", "blueberry pie", Field.Store.YES));
+    doc2.add(newTextField("body", "blueberry strudel", Field.Store.YES));
+    doc3.add(newTextField("body", "blueberry pizza", Field.Store.YES));
+    doc4.add(newTextField("body", "blueberry chewing gum", Field.Store.YES));
+    doc5.add(newTextField("body", "piccadilly circus", Field.Store.YES));
     writer.addDocument(doc1);
     writer.addDocument(doc2);
     writer.addDocument(doc3);

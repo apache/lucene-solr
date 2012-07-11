@@ -1,6 +1,6 @@
 package org.apache.lucene.queries.function;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -98,23 +97,23 @@ public class TestValueSources extends LuceneTestCase {
     iwConfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
     Document document = new Document();
-    Field idField = new StringField("id", "");
+    Field idField = new StringField("id", "", Field.Store.NO);
     document.add(idField);
-    Field byteField = new StringField("byte", "");
+    Field byteField = new StringField("byte", "", Field.Store.NO);
     document.add(byteField);
-    Field doubleField = new StringField("double", "");
+    Field doubleField = new StringField("double", "", Field.Store.NO);
     document.add(doubleField);
-    Field floatField = new StringField("float", "");
+    Field floatField = new StringField("float", "", Field.Store.NO);
     document.add(floatField);
-    Field intField = new StringField("int", "");
+    Field intField = new StringField("int", "", Field.Store.NO);
     document.add(intField);
-    Field longField = new StringField("long", "");
+    Field longField = new StringField("long", "", Field.Store.NO);
     document.add(longField);
-    Field shortField = new StringField("short", "");
+    Field shortField = new StringField("short", "", Field.Store.NO);
     document.add(shortField);
-    Field stringField = new StringField("string", "");
+    Field stringField = new StringField("string", "", Field.Store.NO);
     document.add(stringField);
-    Field textField = new TextField("text", "");
+    Field textField = new TextField("text", "", Field.Store.NO);
     document.add(textField);
     
     for (String [] doc : documents) {
@@ -311,13 +310,8 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testSumTotalTermFreq() throws Exception {
-    if (Codec.getDefault().getName().equals("Lucene3x")) {
-      assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
-          new float[] { -1f, -1f });
-    } else {
-      assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
+    assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
           new float[] { 8f, 8f });
-    }
   }
   
   public void testTermFreq() throws Exception {
@@ -346,15 +340,9 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testTotalTermFreq() throws Exception {
-    if (Codec.getDefault().getName().equals("Lucene3x")) {
-      assertHits(new FunctionQuery(
-          new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-          new float[] { -1f, -1f });
-    } else {
-      assertHits(new FunctionQuery(
-          new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-          new float[] { 4f, 4f });
-    }
+    assertHits(new FunctionQuery(
+        new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
+        new float[] { 4f, 4f });
   }
   
   void assertHits(Query q, float scores[]) throws Exception {

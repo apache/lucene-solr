@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -39,8 +39,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -60,8 +58,8 @@ public class QueryParsing {
   public static final String OP = "q.op";  // the SolrParam used to override the QueryParser "default operator"
   public static final String V = "v";      // value of this parameter
   public static final String F = "f";      // field that a query or command pertains to
-  public static final String TYPE = "type";// type of this query or command
-  public static final String DEFTYPE = "defType"; // default type for any direct subqueries
+  public static final String TYPE = "type";// parser for this query or command
+  public static final String DEFTYPE = "defType"; // default parser for any direct subqueries
   public static final String LOCALPARAM_START = "{!";
   public static final char LOCALPARAM_END = '}';
   public static final String DOCID = "_docid_";
@@ -72,7 +70,7 @@ public class QueryParsing {
 
 
   /**
-   * Returns the "prefered" default operator for use by Query Parsers, 
+   * Returns the "preferred" default operator for use by Query Parsers,
    * based on the settings in the IndexSchema which may be overridden using 
    * an optional String override value.
    *
@@ -86,6 +84,15 @@ public class QueryParsing {
     return "AND".equals(val) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
   }
 
+  /**
+   * Returns the effective default field based on the 'df' param or
+   * hardcoded schema default.  May be null if either exists specified.
+   * @see org.apache.solr.common.params.CommonParams#DF
+   * @see org.apache.solr.schema.IndexSchema#getDefaultSearchFieldName
+   */
+  public static String getDefaultField(final IndexSchema s, final String df) {
+    return df != null ? df : s.getDefaultSearchFieldName();
+  }
 
   // note to self: something needs to detect infinite recursion when parsing queries
   public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params) throws ParseException {
@@ -630,7 +637,7 @@ public class QueryParsing {
       }
     }
 
-    float getFloat() throws ParseException {
+    float getFloat() {
       eatws();
       char[] arr = new char[end - pos];
       int i;
@@ -650,7 +657,7 @@ public class QueryParsing {
       return Float.parseFloat(new String(arr, 0, i));
     }
 
-    Number getNumber() throws ParseException {
+    Number getNumber() {
       eatws();
       int start = pos;
       boolean flt = false;
@@ -675,7 +682,7 @@ public class QueryParsing {
       }
     }
 
-    double getDouble() throws ParseException {
+    double getDouble() {
       eatws();
       char[] arr = new char[end - pos];
       int i;
@@ -695,7 +702,7 @@ public class QueryParsing {
       return Double.parseDouble(new String(arr, 0, i));
     }
 
-    int getInt() throws ParseException {
+    int getInt() {
       eatws();
       char[] arr = new char[end - pos];
       int i;

@@ -63,6 +63,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.util.Locale;
 import java.util.StringTokenizer;
 
 /**
@@ -89,7 +90,7 @@ public class Compile {
       return;
     }
     
-    args[0].toUpperCase();
+    args[0].toUpperCase(Locale.ROOT);
     
     backward = args[0].charAt(0) == '-';
     int qq = (backward) ? 1 : 0;
@@ -127,7 +128,7 @@ public class Compile {
             new FileInputStream(args[i]), charset)));
         for (String line = in.readLine(); line != null; line = in.readLine()) {
           try {
-            line = line.toLowerCase();
+            line = line.toLowerCase(Locale.ROOT);
             StringTokenizer st = new StringTokenizer(line);
             String stem = st.nextToken();
             if (storeorig) {

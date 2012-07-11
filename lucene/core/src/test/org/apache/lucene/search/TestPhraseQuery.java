@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -72,19 +72,19 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, analyzer);
     
     Document doc = new Document();
-    doc.add(newField("field", "one two three four five", TextField.TYPE_STORED));
-    doc.add(newField("repeated", "this is a repeated field - first part", TextField.TYPE_STORED));
-    IndexableField repeatedField = newField("repeated", "second part of a repeated field", TextField.TYPE_STORED);
+    doc.add(newTextField("field", "one two three four five", Field.Store.YES));
+    doc.add(newTextField("repeated", "this is a repeated field - first part", Field.Store.YES));
+    IndexableField repeatedField = newTextField("repeated", "second part of a repeated field", Field.Store.YES);
     doc.add(repeatedField);
-    doc.add(newField("palindrome", "one two three two one", TextField.TYPE_STORED));
+    doc.add(newTextField("palindrome", "one two three two one", Field.Store.YES));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(newField("nonexist", "phrase exist notexist exist found", TextField.TYPE_STORED));
+    doc.add(newTextField("nonexist", "phrase exist notexist exist found", Field.Store.YES));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(newField("nonexist", "phrase exist notexist exist found", TextField.TYPE_STORED));
+    doc.add(newTextField("nonexist", "phrase exist notexist exist found", Field.Store.YES));
     writer.addDocument(doc);
 
     reader = writer.getReader();
@@ -226,7 +226,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
         newIndexWriterConfig( Version.LUCENE_40, stopAnalyzer));
     Document doc = new Document();
-    doc.add(newField("field", "the stop words are here", TextField.TYPE_STORED));
+    doc.add(newTextField("field", "the stop words are here", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -260,12 +260,12 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     
     Document doc = new Document();
-    doc.add(newField("source", "marketing info", TextField.TYPE_STORED));
+    doc.add(newTextField("source", "marketing info", Field.Store.YES));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(newField("contents", "foobar", TextField.TYPE_STORED));
-    doc.add(newField("source", "marketing info", TextField.TYPE_STORED)); 
+    doc.add(newTextField("contents", "foobar", Field.Store.YES));
+    doc.add(newTextField("source", "marketing info", Field.Store.YES)); 
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
@@ -295,15 +295,15 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer = new RandomIndexWriter(random(), directory, 
         newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     doc = new Document();
-    doc.add(newField("contents", "map entry woo", TextField.TYPE_STORED));
+    doc.add(newTextField("contents", "map entry woo", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("contents", "woo map entry", TextField.TYPE_STORED));
+    doc.add(newTextField("contents", "woo map entry", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("contents", "map foobarword entry woo", TextField.TYPE_STORED));
+    doc.add(newTextField("contents", "map foobarword entry woo", Field.Store.YES));
     writer.addDocument(doc);
 
     reader = writer.getReader();
@@ -348,15 +348,15 @@ public class TestPhraseQuery extends LuceneTestCase {
           .setSimilarity(new DefaultSimilarity()));
 
     Document doc = new Document();
-    doc.add(newField("field", "foo firstname lastname foo", TextField.TYPE_STORED));
+    doc.add(newTextField("field", "foo firstname lastname foo", Field.Store.YES));
     writer.addDocument(doc);
     
     Document doc2 = new Document();
-    doc2.add(newField("field", "foo firstname zzz lastname foo", TextField.TYPE_STORED));
+    doc2.add(newTextField("field", "foo firstname zzz lastname foo", Field.Store.YES));
     writer.addDocument(doc2);
     
     Document doc3 = new Document();
-    doc3.add(newField("field", "foo firstname zzz yyy lastname foo", TextField.TYPE_STORED));
+    doc3.add(newTextField("field", "foo firstname zzz yyy lastname foo", Field.Store.YES));
     writer.addDocument(doc3);
     
     IndexReader reader = writer.getReader();
@@ -611,7 +611,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter w  = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMergePolicy(newLogMergePolicy()));
     List<List<String>> docs = new ArrayList<List<String>>();
     Document d = new Document();
-    Field f = newField("f", "", TextField.TYPE_UNSTORED);
+    Field f = newTextField("f", "", Field.Store.NO);
     d.add(f);
 
     Random r = random();

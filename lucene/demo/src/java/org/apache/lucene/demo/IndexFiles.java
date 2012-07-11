@@ -1,6 +1,6 @@
 package org.apache.lucene.demo;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -174,7 +174,7 @@ public class IndexFiles {
           // field that is indexed (i.e. searchable), but don't tokenize 
           // the field into separate words and don't index term frequency
           // or positional information:
-          Field pathField = new Field("path", file.getPath(), StringField.TYPE_STORED);
+          Field pathField = new StringField("path", file.getPath(), Field.Store.YES);
           doc.add(pathField);
 
           // Add the last modified date of the file a field named "modified".
@@ -184,13 +184,13 @@ public class IndexFiles {
           // year/month/day/hour/minutes/seconds, down the resolution you require.
           // For example the long value 2011021714 would mean
           // February 17, 2011, 2-3 PM.
-          doc.add(new LongField("modified", file.lastModified()));
+          doc.add(new LongField("modified", file.lastModified(), Field.Store.NO));
 
           // Add the contents of the file to a field named "contents".  Specify a Reader,
           // so that the text of the file is tokenized and indexed, but not stored.
           // Note that FileReader expects the file to be in UTF-8 encoding.
           // If that's not the case searching for special characters will fail.
-          doc.add(new TextField("contents", new BufferedReader(new InputStreamReader(fis, "UTF-8"))));
+          doc.add(new TextField("contents", new BufferedReader(new InputStreamReader(fis, "UTF-8")), Field.Store.NO));
 
           if (writer.getConfig().getOpenMode() == OpenMode.CREATE) {
             // New index, so we just add the document (no old document can be there):

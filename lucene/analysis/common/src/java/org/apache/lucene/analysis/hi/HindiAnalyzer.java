@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.hi;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,18 +29,10 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.in.IndicNormalizationFilter;
-import org.apache.lucene.analysis.in.IndicTokenizer;
 import org.apache.lucene.util.Version;
 
 /**
  * Analyzer for Hindi.
- * <p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating HindiAnalyzer:
- * <ul>
- *   <li> As of 3.6, StandardTokenizer is used for tokenization
- * </ul>
  */
 public final class HindiAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -126,12 +118,7 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source;
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-      source = new StandardTokenizer(matchVersion, reader);
-    } else {
-      source = new IndicTokenizer(matchVersion, reader);
-    }
+    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     if (!stemExclusionSet.isEmpty())
       result = new KeywordMarkerFilter(result, stemExclusionSet);

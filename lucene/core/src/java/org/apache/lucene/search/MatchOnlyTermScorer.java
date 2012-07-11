@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -43,7 +43,7 @@ final class MatchOnlyTermScorer extends Scorer {
    *          The </code>Similarity.ExactSimScorer</code> implementation 
    *          to be used for score computations.
    */
-  MatchOnlyTermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer) throws IOException {
+  MatchOnlyTermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer) {
     super(weight);
     this.docScorer = docScorer;
     this.docsEnum = td;

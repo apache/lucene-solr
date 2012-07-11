@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -87,10 +87,10 @@ final class NormsConsumer extends InvertedDocEndConsumer {
   }
 
   @Override
-  void finishDocument() throws IOException {}
+  void finishDocument() {}
 
   @Override
-  void startDocument() throws IOException {}
+  void startDocument() {}
 
   @Override
   InvertedDocEndConsumerPerField addField(DocInverterPerField docInverterPerField,

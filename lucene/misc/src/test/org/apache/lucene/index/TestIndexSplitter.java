@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -59,7 +59,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     }
     iw.commit();
     DirectoryReader iwReader = iw.getReader();
-    assertEquals(3, iwReader.getSequentialSubReaders().length);
+    assertEquals(3, iwReader.getSequentialSubReaders().size());
     iwReader.close();
     iw.close();
     // we should have 2 segments now
@@ -87,7 +87,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     // now remove the copied segment from src
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), "-d", splitSegName});
     r = DirectoryReader.open(fsDir);
-    assertEquals(2, r.getSequentialSubReaders().length);
+    assertEquals(2, r.getSequentialSubReaders().size());
     r.close();
     fsDir.close();
   }

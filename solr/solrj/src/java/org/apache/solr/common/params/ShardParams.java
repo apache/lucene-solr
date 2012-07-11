@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,7 +37,7 @@ public interface ShardParams {
   /** The requested URL for this shard */
   public static final String SHARD_URL = "shard.url";
   
-  /** query type for shard requests */
+  /** The Request Handler for shard requests */
   public static final String SHARDS_QT = "shards.qt";
   
   /** Request detailed match info for each shard (true/false) */

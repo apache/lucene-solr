@@ -1,6 +1,6 @@
 package org.apache.solr.cloud;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,13 +29,13 @@ import java.util.regex.Pattern;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreContainer.Initializer;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+@Slow
 public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
@@ -67,7 +68,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   private ZkStateReader reader;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
   
@@ -245,7 +246,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     //Thread.sleep(100000);
   }
   
-  private String getLeader() throws InterruptedException, KeeperException {
+  private String getLeader() throws InterruptedException {
     
     ZkNodeProps props = reader.getLeaderProps("collection1", "shard1", 30000);
     String leader = props.get(ZkStateReader.NODE_NAME_PROP);

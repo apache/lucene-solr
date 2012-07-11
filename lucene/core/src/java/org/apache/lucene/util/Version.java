@@ -1,6 +1,6 @@
 package org.apache.lucene.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,62 +32,20 @@ import java.util.Locale;
 // remove me when java 5 is no longer supported
 // this is a workaround for a JDK bug that wrongly emits a warning.
 @SuppressWarnings("dep-ann")
-public enum Version {
+public enum Version { 
   /**
-   * Match settings and bugs in Lucene's 3.0 release.
-   * @deprecated (4.0) Use latest
+   * Match settings and bugs in Lucene's 4.0 release.
+   * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_30,
+  LUCENE_40,
 
-  /**
-   * Match settings and bugs in Lucene's 3.1 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_31,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.2 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_32,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.3 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_33,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.4 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_34,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.5 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_35,
-  
-  /**
-   * Match settings and bugs in Lucene's 3.6 release.
-   * @deprecated (4.0) Use latest
-   */
-  @Deprecated
-  LUCENE_36,
-
-  /** Match settings and bugs in Lucene's 4.0 release. 
+  /** Match settings and bugs in Lucene's 5.0 release. 
    *  <p>
    *  Use this to get the latest &amp; greatest settings, bug
    *  fixes, etc, for Lucene.
    */
-  LUCENE_40,
+  LUCENE_50,
   
   /* Add new constants for later versions **here** to respect order! */
 
@@ -115,7 +73,7 @@ public enum Version {
   }
   
   public static Version parseLeniently(String version) {
-    String parsedMatchVersion = version.toUpperCase(Locale.ENGLISH);
+    String parsedMatchVersion = version.toUpperCase(Locale.ROOT);
     return Version.valueOf(parsedMatchVersion.replaceFirst("^(\\d)\\.(\\d)$", "LUCENE_$1$2"));
   }
 }

@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.core;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,8 +26,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.Payload;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.BytesRef;
 
 public class TestAnalyzers extends BaseTokenStreamTestCase {
 
@@ -86,7 +85,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
       if (!hasNext) break;
       // System.out.println("id="+System.identityHashCode(nextToken) + " " + t);
       // System.out.println("payload=" + (int)nextToken.getPayload().toByteArray()[0]);
-      assertEquals(b, payloadAtt.getPayload().toByteArray()[0]);
+      assertEquals(b, payloadAtt.getPayload().bytes[0]);
     }
   }
 
@@ -182,15 +181,6 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
         "\ud801\udc44test" });
   }
 
-  /** @deprecated (3.1) */
-  @Deprecated
-  public void testLowerCaseTokenizerBWCompat() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_30,
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "tokenizer", "test" });
-  }
-
   public void testWhitespaceTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
     WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
@@ -198,30 +188,20 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
         "\ud801\udc1ctest" });
   }
-
-  /** @deprecated (3.1) */
-  @Deprecated
-  public void testWhitespaceTokenizerBWCompat() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_30,
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
-        "\ud801\udc1ctest" });
-  }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), new SimpleAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), new StopAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new SimpleAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new StopAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, new SimpleAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, new StopAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new SimpleAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new StopAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
   } 
 }
 
@@ -233,7 +213,7 @@ final class PayloadSetter extends TokenFilter {
   }
 
   byte[] data = new byte[1];
-  Payload p = new Payload(data,0,1);
+  BytesRef p = new BytesRef(data,0,1);
 
   @Override
   public boolean incrementToken() throws IOException {

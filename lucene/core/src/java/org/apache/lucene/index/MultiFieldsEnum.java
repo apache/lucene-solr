@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -47,7 +46,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
 
   /** The subs array must be newly initialized FieldsEnum
    *  (ie, {@link FieldsEnum#next} has not been called. */
-  public MultiFieldsEnum(MultiFields fields, FieldsEnum[] subs, ReaderUtil.Slice[] subSlices) throws IOException {
+  public MultiFieldsEnum(MultiFields fields, FieldsEnum[] subs, ReaderSlice[] subSlices) throws IOException {
     this.fields = fields;
     queue = new FieldMergeQueue(subs.length);
     top = new FieldsEnumWithSlice[subs.length];
@@ -107,11 +106,11 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   public final static class FieldsEnumWithSlice {
     public static final FieldsEnumWithSlice[] EMPTY_ARRAY = new FieldsEnumWithSlice[0];
     final FieldsEnum fields;
-    final ReaderUtil.Slice slice;
+    final ReaderSlice slice;
     final int index;
     String current;
 
-    public FieldsEnumWithSlice(FieldsEnum fields, ReaderUtil.Slice slice, int index) throws IOException {
+    public FieldsEnumWithSlice(FieldsEnum fields, ReaderSlice slice, int index) {
       this.slice = slice;
       this.index = index;
       assert slice.length >= 0: "length=" + slice.length;

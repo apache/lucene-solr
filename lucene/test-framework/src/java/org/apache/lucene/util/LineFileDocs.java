@@ -1,6 +1,6 @@
 package org.apache.lucene.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -162,7 +162,7 @@ public class LineFileDocs implements Closeable {
     public DocState(boolean useDocValues) {
       doc = new Document();
       
-      title = new StringField("title", "");
+      title = new StringField("title", "", Field.Store.NO);
       doc.add(title);
 
       FieldType ft = new FieldType(TextField.TYPE_STORED);
@@ -176,10 +176,10 @@ public class LineFileDocs implements Closeable {
       body = new Field("body", "", ft);
       doc.add(body);
 
-      id = new Field("docid", "", StringField.TYPE_STORED);
+      id = new StringField("docid", "", Field.Store.YES);
       doc.add(id);
 
-      date = new Field("date", "", StringField.TYPE_STORED);
+      date = new StringField("date", "", Field.Store.YES);
       doc.add(date);
 
       if (useDocValues) {

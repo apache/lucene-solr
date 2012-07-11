@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.FieldInfo;
@@ -27,7 +28,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.CodecUtil;
 
 /**
  * Lucene 4.0 FieldInfos writer.
@@ -61,18 +61,20 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
         IndexOptions indexOptions = fi.getIndexOptions();
-        assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
         byte bits = 0x0;
-        if (fi.isIndexed()) bits |= IS_INDEXED;
         if (fi.hasVectors()) bits |= STORE_TERMVECTOR;
         if (fi.omitsNorms()) bits |= OMIT_NORMS;
         if (fi.hasPayloads()) bits |= STORE_PAYLOADS;
-        if (indexOptions == IndexOptions.DOCS_ONLY) {
-          bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-        } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
-          bits |= STORE_OFFSETS_IN_POSTINGS;
-        } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
-          bits |= OMIT_POSITIONS;
+        if (fi.isIndexed()) {
+          bits |= IS_INDEXED;
+          assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
+          if (indexOptions == IndexOptions.DOCS_ONLY) {
+            bits |= OMIT_TERM_FREQ_AND_POSITIONS;
+          } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
+            bits |= STORE_OFFSETS_IN_POSTINGS;
+          } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
+            bits |= OMIT_POSITIONS;
+          }
         }
         output.writeString(fi.name);
         output.writeVInt(fi.number);

@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,6 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -55,9 +54,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
       this.minR = minR;
       this.maxR = maxR;
       this.allowNegativeRandomInts = allowNegativeRandomInts;
-      try {
-        index = newDirectory(random);
-      } catch (IOException e) { throw new RuntimeException(e); }
+      index = newDirectory(random);
     }
   }
   
@@ -117,9 +114,9 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     /* build an index */
     
     Document doc = new Document();
-    Field idField = newField(random, "id", "", StringField.TYPE_STORED);
-    Field randField = newField(random, "rand", "", StringField.TYPE_STORED);
-    Field bodyField = newField(random, "body", "", StringField.TYPE_UNSTORED);
+    Field idField = newStringField(random, "id", "", Field.Store.YES);
+    Field randField = newStringField(random, "rand", "", Field.Store.YES);
+    Field bodyField = newStringField(random, "body", "", Field.Store.NO);
     doc.add(idField);
     doc.add(randField);
     doc.add(bodyField);

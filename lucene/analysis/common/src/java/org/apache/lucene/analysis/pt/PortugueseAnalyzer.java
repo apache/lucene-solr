@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.pt;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -34,17 +34,9 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
-import org.tartarus.snowball.ext.PortugueseStemmer;
 
 /**
  * {@link Analyzer} for Portuguese.
- * <p>
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating PortugueseAnalyzer:
- * <ul>
- *   <li> As of 3.6, PortugueseLightStemFilter is used for less aggressive stemming.
- * </ul>
  */
 public final class PortugueseAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -132,11 +124,7 @@ public final class PortugueseAnalyzer extends StopwordAnalyzerBase {
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new KeywordMarkerFilter(result, stemExclusionSet);
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-      result = new PortugueseLightStemFilter(result);
-    } else {
-      result = new SnowballFilter(result, new PortugueseStemmer());
-    }
+    result = new PortugueseLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
 }

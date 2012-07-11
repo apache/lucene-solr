@@ -23,7 +23,7 @@ import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -172,8 +172,8 @@ public class MultiCLIndexer {
       // create a plain Lucene document and add some regular Lucene fields
       // to it
       Document doc = new Document();
-      doc.add(new Field(SimpleUtils.TITLE, docTitles[docNum], TextField.TYPE_STORED));
-      doc.add(new TextField(SimpleUtils.TEXT, docTexts[docNum]));
+      doc.add(new TextField(SimpleUtils.TITLE, docTitles[docNum], Field.Store.YES));
+      doc.add(new TextField(SimpleUtils.TEXT, docTexts[docNum], Field.Store.NO));
 
       // finally add the document to the index
       categoryDocBuilder.build(doc);

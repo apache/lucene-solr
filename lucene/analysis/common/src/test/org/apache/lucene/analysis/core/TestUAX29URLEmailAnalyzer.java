@@ -209,16 +209,6 @@ public class TestUAX29URLEmailAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "壹゙", "壹゙"); // ideographic
     checkOneTerm(a, "아゙",  "아゙"); // hangul
   }
-  
-  /** @deprecated remove this and sophisticated backwards layer in 5.0 */
-  @Deprecated
-  public void testCombiningMarksBackwards() throws Exception {
-    Analyzer a = new UAX29URLEmailAnalyzer(Version.LUCENE_33);
-    checkOneTerm(a, "ざ", "さ"); // hiragana Bug
-    checkOneTerm(a, "ザ", "ザ"); // katakana Works
-    checkOneTerm(a, "壹゙", "壹"); // ideographic Bug
-    checkOneTerm(a, "아゙",  "아゙"); // hangul Works
-  }
 
   public void testBasicEmails() throws Exception {
     BaseTokenStreamTestCase.assertAnalyzesTo(a,
@@ -262,6 +252,6 @@ public class TestUAX29URLEmailAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new UAX29URLEmailAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new UAX29URLEmailAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

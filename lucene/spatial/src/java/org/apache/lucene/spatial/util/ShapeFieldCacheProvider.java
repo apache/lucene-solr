@@ -26,6 +26,9 @@ import java.io.IOException;
 import java.util.WeakHashMap;
 import java.util.logging.Logger;
 
+/**
+ * @lucene.internal
+ */
 public abstract class ShapeFieldCacheProvider<T extends Shape> {
   private Logger log = Logger.getLogger(getClass().getName());
 

@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.byTask.tasks;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,6 +33,7 @@ import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils.Type;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 
 /** Tests the functionality of {@link WriteLineDocTask}. */
@@ -44,9 +45,9 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new StringField(BODY_FIELD, "body"));
-      doc.add(new StringField(TITLE_FIELD, "title"));
-      doc.add(new StringField(DATE_FIELD, "date"));
+      doc.add(new StringField(BODY_FIELD, "body", Field.Store.NO));
+      doc.add(new StringField(TITLE_FIELD, "title", Field.Store.NO));
+      doc.add(new StringField(DATE_FIELD, "date", Field.Store.NO));
       return doc;
     }
     
@@ -58,9 +59,9 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new StringField(BODY_FIELD, "body\r\ntext\ttwo"));
-      doc.add(new StringField(TITLE_FIELD, "title\r\ntext"));
-      doc.add(new StringField(DATE_FIELD, "date\r\ntext"));
+      doc.add(new StringField(BODY_FIELD, "body\r\ntext\ttwo", Field.Store.NO));
+      doc.add(new StringField(TITLE_FIELD, "title\r\ntext", Field.Store.NO));
+      doc.add(new StringField(DATE_FIELD, "date\r\ntext", Field.Store.NO));
       return doc;
     }
     
@@ -71,8 +72,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new StringField(TITLE_FIELD, "title"));
-      doc.add(new StringField(DATE_FIELD, "date"));
+      doc.add(new StringField(TITLE_FIELD, "title", Field.Store.NO));
+      doc.add(new StringField(DATE_FIELD, "date", Field.Store.NO));
       return doc;
     }
   }
@@ -82,8 +83,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new StringField(BODY_FIELD, "body"));
-      doc.add(new StringField(DATE_FIELD, "date"));
+      doc.add(new StringField(BODY_FIELD, "body", Field.Store.NO));
+      doc.add(new StringField(DATE_FIELD, "date", Field.Store.NO));
       return doc;
     }
   }
@@ -93,7 +94,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new StringField(DATE_FIELD, "date"));
+      doc.add(new StringField(DATE_FIELD, "date", Field.Store.NO));
       return doc;
     }
   }
@@ -104,7 +105,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new StringField(DATE_FIELD, "date"));
+      doc.add(new StringField(DATE_FIELD, "date", Field.Store.NO));
       return doc;
     }
   }
@@ -124,9 +125,9 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       String name = Thread.currentThread().getName();
-      doc.add(new StringField(BODY_FIELD, "body_" + name));
-      doc.add(new StringField(TITLE_FIELD, "title_" + name));
-      doc.add(new StringField(DATE_FIELD, "date_" + name));
+      doc.add(new StringField(BODY_FIELD, "body_" + name, Field.Store.NO));
+      doc.add(new StringField(TITLE_FIELD, "title_" + name, Field.Store.NO));
+      doc.add(new StringField(DATE_FIELD, "date_" + name, Field.Store.NO));
       return doc;
     }
     

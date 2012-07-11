@@ -1,6 +1,6 @@
 package org.apache.solr.handler.component;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,12 +20,14 @@ package org.apache.solr.handler.component;
 import junit.framework.Assert;
 import junit.framework.TestCase;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
+import org.junit.BeforeClass;
 
 /**
  * Test for SpellCheckComponent's distributed querying
@@ -34,9 +36,11 @@ import org.apache.solr.common.util.NamedList;
  *
  * @see org.apache.solr.handler.component.SpellCheckComponent
  */
+@Slow
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
   
   private String requestHandlerName;
+  private String reqHandlerWithWordbreak;
   
 	public DistributedSpellCheckComponentTest()
 	{
@@ -44,25 +48,27 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
 		//shardCount=2;
 		//stress=0;
 	}
-	
-  private String saveProp;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    useFactory(null); // need an FS factory
+  }
 
   @Override
   public void setUp() throws Exception {
-    // this test requires FSDir
-    saveProp = System.getProperty("solr.directoryFactory");
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");    
-    requestHandlerName = random().nextBoolean() ? "spellCheckCompRH" : "spellCheckCompRH_Direct"; 
+    if(random().nextBoolean()) {
+      requestHandlerName = "spellCheckCompRH";
+      reqHandlerWithWordbreak = "spellCheckWithWordbreak";      
+    } else {
+      requestHandlerName = "spellCheckCompRH_Direct";
+      reqHandlerWithWordbreak = "spellCheckWithWordbreak_Direct";
+    }  
     super.setUp();
   }
   
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    if (saveProp == null)
-      System.clearProperty("solr.directoryFactory");
-    else
-      System.setProperty("solr.directoryFactory", saveProp);
   }
   
   private void q(Object... q) throws Exception {
@@ -141,5 +147,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   
     query("q", "lowerfilt:(\"quote red fox\")", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "5", SpellCheckComponent.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "10");
     query("q", "lowerfilt:(\"rod fix\")", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "5", SpellCheckComponent.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "10");
+  
+    query("q", "lowerfilt:(+quock +redfox +jum +ped)", "fl", "id,lowerfilt", "spellcheck", "true", "qt", reqHandlerWithWordbreak, "shards.qt", reqHandlerWithWordbreak, SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "0", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true");
   }
 }

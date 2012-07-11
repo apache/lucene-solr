@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,7 +31,7 @@ import java.util.Locale;
 public class DateFieldTest extends LuceneTestCase {
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
   protected DateField f = null;
-  protected DateMathParser p = new DateMathParser(UTC, Locale.US);
+  protected DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
 
   @Override
   public void setUp()  throws Exception {

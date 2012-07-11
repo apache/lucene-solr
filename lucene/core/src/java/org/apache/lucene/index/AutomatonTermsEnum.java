@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -75,7 +75,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
    * <p>
    * @param compiled CompiledAutomaton
    */
-  public AutomatonTermsEnum(TermsEnum tenum, CompiledAutomaton compiled) throws IOException {
+  public AutomatonTermsEnum(TermsEnum tenum, CompiledAutomaton compiled) {
     super(tenum);
     this.finite = compiled.finite;
     this.runAutomaton = compiled.runAutomaton;

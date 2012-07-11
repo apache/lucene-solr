@@ -1,6 +1,6 @@
 package org.apache.lucene.search.highlight;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -39,6 +39,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -1370,7 +1371,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // now an ugly built of XML parsing to test the snippet is encoded OK
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     DocumentBuilder db = dbf.newDocumentBuilder();
-    org.w3c.dom.Document doc = db.parse(new ByteArrayInputStream(xhtml.getBytes()));
+    org.w3c.dom.Document doc = db.parse(new ByteArrayInputStream(xhtml.getBytes("UTF-8")));
     Element root = doc.getDocumentElement();
     NodeList nodes = root.getElementsByTagName("body");
     Element body = (Element) nodes.item(0);
@@ -1457,7 +1458,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       }
 
       @Override
-      public boolean incrementToken() throws IOException {
+      public boolean incrementToken() {
         if(iter.hasNext()) {
           Token token = iter.next();
           clearAttributes();
@@ -1508,7 +1509,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       }
 
       @Override
-      public boolean incrementToken() throws IOException {
+      public boolean incrementToken() {
         if(iter.hasNext()) {
           Token token = iter.next();
           clearAttributes();
@@ -1621,7 +1622,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private Document doc( String f, String v ){
     Document doc = new Document();
-    doc.add( new Field( f, v, TextField.TYPE_STORED));
+    doc.add( new TextField( f, v, Field.Store.YES));
     return doc;
   }
   
@@ -1645,7 +1646,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private void searchIndex() throws IOException, InvalidTokenOffsetsException {
     Query query = new TermQuery(new Term("t_text1", "random"));
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     // This scorer can return negative idf -> null fragment
     Scorer scorer = new QueryTermScorer( query, searcher.getIndexReader(), "t_text1" );
@@ -1672,7 +1673,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    * writer = new IndexWriter(ramDir,bigramAnalyzer , true); Document d = new
    * Document(); Field f = new Field(FIELD_NAME, "java abc def", true, true,
    * true); d.add(f); writer.addDocument(d); writer.close(); IndexReader reader =
-   * IndexReader.open(ramDir);
+   * DirectoryReader.open(ramDir);
    * 
    * IndexSearcher searcher=new IndexSearcher(reader); query =
    * QueryParser.parse("abc", FIELD_NAME, bigramAnalyzer);
@@ -1739,28 +1740,28 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       addDoc(writer, text);
     }
     Document doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 1));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 1, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 1));
     writer.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 3));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 3, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 3));
     writer.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 5));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 5, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 5));
     writer.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 7));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 7, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 7));
     writer.addDocument(doc, analyzer);
 
     writer.forceMerge(1);
     writer.close();
-    reader = IndexReader.open(ramDir);
+    reader = DirectoryReader.open(ramDir);
     numHighlights = 0;
   }
 
@@ -1774,7 +1775,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   private void addDoc(IndexWriter writer, String text) throws IOException {
     Document d = new Document();
 
-    Field f = new Field(FIELD_NAME, text, TextField.TYPE_STORED);
+    Field f = new TextField(FIELD_NAME, text, Field.Store.YES);
     d.add(f);
     writer.addDocument(d);
 

@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spell;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -114,4 +114,25 @@ public class JaroWinklerDistance implements StringDistance {
   public float getThreshold() {
     return threshold;
   }
+
+  @Override
+  public int hashCode() {
+    return 113 * Float.floatToIntBits(threshold) * getClass().hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (null == obj || getClass() != obj.getClass()) return false;
+    
+    JaroWinklerDistance o = (JaroWinklerDistance)obj;
+    return (Float.floatToIntBits(o.threshold) 
+            == Float.floatToIntBits(this.threshold));
+  }
+
+  @Override
+  public String toString() {
+    return "jarowinkler(" + threshold + ")";
+  }
+
 }

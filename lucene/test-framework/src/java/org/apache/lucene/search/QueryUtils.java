@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 
 import junit.framework.Assert;
@@ -140,7 +141,7 @@ public class QueryUtils {
   public static class FCInvisibleMultiReader extends MultiReader {
     private final Object cacheKey = new Object();
   
-    public FCInvisibleMultiReader(IndexReader... readers) throws IOException {
+    public FCInvisibleMultiReader(IndexReader... readers) {
       super(readers);
     }
     
@@ -233,7 +234,7 @@ public class QueryUtils {
    */
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
-    final AtomicReaderContext[] readerContextArray = s.getTopReaderContext().leaves();
+    final List<AtomicReaderContext> readerContextArray = s.getTopReaderContext().leaves();
     if (s.createNormalizedWeight(q).scoresDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
 
     final int skip_op = 0;
@@ -267,7 +268,7 @@ public class QueryUtils {
           private int leafPtr;
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorer scorer) {
             this.sc = scorer;
           }
 
@@ -278,7 +279,7 @@ public class QueryUtils {
             try {
               if (scorer == null) {
                 Weight w = s.createNormalizedWeight(q);
-                AtomicReaderContext context = readerContextArray[leafPtr];
+                AtomicReaderContext context = readerContextArray.get(leafPtr);
                 scorer = w.scorer(context, true, false, context.reader().getLiveDocs());
               }
               
@@ -334,7 +335,7 @@ public class QueryUtils {
               leafPtr++;
             }
             lastReader[0] = context.reader();
-            assert readerContextArray[leafPtr].reader() == context.reader();
+            assert readerContextArray.get(leafPtr).reader() == context.reader();
             this.scorer = null;
             lastDoc[0] = -1;
           }
@@ -368,13 +369,13 @@ public class QueryUtils {
     final float maxDiff = 1e-3f;
     final int lastDoc[] = {-1};
     final AtomicReader lastReader[] = {null};
-    final AtomicReaderContext[] context = s.getTopReaderContext().leaves();
+    final List<AtomicReaderContext> context = s.getTopReaderContext().leaves();
     s.search(q,new Collector() {
       private Scorer scorer;
       private int leafPtr;
       private Bits liveDocs;
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorer scorer) {
         this.scorer = scorer;
       }
       @Override
@@ -384,7 +385,7 @@ public class QueryUtils {
           long startMS = System.currentTimeMillis();
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = s.createNormalizedWeight(q);
-            Scorer scorer = w.scorer(context[leafPtr], true, false, liveDocs);
+            Scorer scorer = w.scorer(context.get(leafPtr), true, false, liveDocs);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
             float skipToScore = scorer.score();

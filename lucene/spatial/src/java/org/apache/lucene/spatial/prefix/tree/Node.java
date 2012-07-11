@@ -28,6 +28,8 @@ import java.util.List;
 
 /**
  * Represents a grid cell. These are not necessarily threadsafe, although new Cell("") (world cell) must be.
+ *
+ * @lucene.experimental
  */
 public abstract class Node implements Comparable<Node> {
   public static final byte LEAF_BYTE = '+';//NOTE: must sort before letters & numbers

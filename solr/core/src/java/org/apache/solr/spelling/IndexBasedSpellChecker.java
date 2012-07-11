@@ -1,5 +1,5 @@
 package org.apache.solr.spelling;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +16,7 @@ package org.apache.solr.spelling;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.FSDirectory;
@@ -64,7 +65,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     if (sourceLocation != null) {
       try {
         FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation));
-        this.reader = IndexReader.open(luceneIndexDir);
+        this.reader = DirectoryReader.open(luceneIndexDir);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

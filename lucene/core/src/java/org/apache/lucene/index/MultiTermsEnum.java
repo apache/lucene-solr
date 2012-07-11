@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,9 +20,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BitsSlice;
-import org.apache.lucene.util.MultiBits;
-import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -71,7 +68,7 @@ public final class MultiTermsEnum extends TermsEnum {
     return top;
   }
 
-  public MultiTermsEnum(ReaderUtil.Slice[] slices) {
+  public MultiTermsEnum(ReaderSlice[] slices) {
     queue = new TermMergeQueue(slices.length);
     top = new TermsEnumWithSlice[slices.length];
     subs = new TermsEnumWithSlice[slices.length];
@@ -261,12 +258,12 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public void seekExact(long ord) throws IOException {
+  public void seekExact(long ord) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public long ord() throws IOException {
+  public long ord() {
     throw new UnsupportedOperationException();
   }
 
@@ -494,12 +491,12 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   private final static class TermsEnumWithSlice {
-    private final ReaderUtil.Slice subSlice;
+    private final ReaderSlice subSlice;
     private TermsEnum terms;
     public BytesRef current;
     final int index;
 
-    public TermsEnumWithSlice(int index, ReaderUtil.Slice subSlice) {
+    public TermsEnumWithSlice(int index, ReaderSlice subSlice) {
       this.subSlice = subSlice;
       this.index = index;
       assert subSlice.length >= 0: "length=" + subSlice.length;

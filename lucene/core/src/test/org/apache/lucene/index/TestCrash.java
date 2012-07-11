@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,12 +20,12 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Random;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 
 public class TestCrash extends LuceneTestCase {
 
@@ -44,8 +44,8 @@ public class TestCrash extends LuceneTestCase {
     }
     
     Document doc = new Document();
-    doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
-    doc.add(newField("id", "0", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("content", "aaa", Field.Store.NO));
+    doc.add(newTextField("id", "0", Field.Store.NO));
     for(int i=0;i<157;i++)
       writer.addDocument(doc);
 
@@ -68,7 +68,7 @@ public class TestCrash extends LuceneTestCase {
     IndexWriter writer = initIndex(random(), true);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     crash(writer);
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     assertTrue(reader.numDocs() < 157);
     reader.close();
     dir.close();
@@ -85,7 +85,7 @@ public class TestCrash extends LuceneTestCase {
     writer = initIndex(random(), dir, false);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     assertTrue(reader.numDocs() < 314);
     reader.close();
     dir.close();
@@ -108,7 +108,7 @@ public class TestCrash extends LuceneTestCase {
     dir.fileLength(l[i]) + " bytes");
     */
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     assertTrue(reader.numDocs() >= 157);
     reader.close();
     dir.close();
@@ -129,7 +129,7 @@ public class TestCrash extends LuceneTestCase {
       System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
     */
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     assertEquals(157, reader.numDocs());
     reader.close();
     dir.close();
@@ -150,7 +150,7 @@ public class TestCrash extends LuceneTestCase {
     for(int i=0;i<l.length;i++)
       System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
     */
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     assertEquals(157, reader.numDocs());
     reader.close();
     dir.close();

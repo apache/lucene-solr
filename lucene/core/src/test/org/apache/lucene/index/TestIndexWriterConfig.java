@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,10 +25,13 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -111,18 +114,70 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   @Test
   public void testSettersChaining() throws Exception {
-    // Ensures that every setter returns IndexWriterConfig to enable easy
-    // chaining.
+    // Ensures that every setter returns IndexWriterConfig to allow chaining.
+    HashSet<String> liveSetters = new HashSet<String>();
+    HashSet<String> allSetters = new HashSet<String>();
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
-      if (m.getDeclaringClass() == IndexWriterConfig.class
-          && m.getName().startsWith("set")
-          && !Modifier.isStatic(m.getModifiers())) {
-        assertEquals("method " + m.getName() + " does not return IndexWriterConfig",
-            IndexWriterConfig.class, m.getReturnType());
+      if (m.getName().startsWith("set") && !Modifier.isStatic(m.getModifiers())) {
+        allSetters.add(m.getName());
+        // setters overridden from LiveIndexWriterConfig are returned twice, once with 
+        // IndexWriterConfig return type and second with LiveIndexWriterConfig. The ones
+        // from LiveIndexWriterConfig are marked 'synthetic', so just collect them and
+        // assert in the end that we also received them from IWC.
+        if (m.isSynthetic()) {
+          liveSetters.add(m.getName());
+        } else {
+          assertEquals("method " + m.getName() + " does not return IndexWriterConfig",
+              IndexWriterConfig.class, m.getReturnType());
+        }
       }
+    }
+    for (String setter : liveSetters) {
+      assertTrue("setter method not overridden by IndexWriterConfig: " + setter, allSetters.contains(setter));
     }
   }
 
+  @Test
+  public void testReuse() throws Exception {
+    Directory dir = newDirectory();
+    // test that if the same IWC is reused across two IWs, it is cloned by each.
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, conf);
+    LiveIndexWriterConfig liveConf1 = iw.w.getConfig();
+    iw.close();
+    
+    iw = new RandomIndexWriter(random(), dir, conf);
+    LiveIndexWriterConfig liveConf2 = iw.w.getConfig();
+    iw.close();
+    
+    // LiveIndexWriterConfig's "copy" constructor doesn't clone objects.
+    assertNotSame("IndexWriterConfig should have been cloned", liveConf1.getMergePolicy(), liveConf2.getMergePolicy());
+    
+    dir.close();
+  }
+  
+  @Test
+  public void testOverrideGetters() throws Exception {
+    // Test that IndexWriterConfig overrides all getters, so that javadocs
+    // contain all methods for the users. Also, ensures that IndexWriterConfig
+    // doesn't declare getters that are not declared on LiveIWC.
+    HashSet<String> liveGetters = new HashSet<String>();
+    for (Method m : LiveIndexWriterConfig.class.getDeclaredMethods()) {
+      if (m.getName().startsWith("get") && !Modifier.isStatic(m.getModifiers())) {
+        liveGetters.add(m.getName());
+      }
+    }
+    
+    for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
+      if (m.getName().startsWith("get") && !Modifier.isStatic(m.getModifiers())) {
+        assertEquals("method " + m.getName() + " not overrided by IndexWriterConfig", 
+            IndexWriterConfig.class, m.getDeclaringClass());
+        assertTrue("method " + m.getName() + " not declared on LiveIndexWriterConfig", 
+            liveGetters.contains(m.getName()));
+      }
+    }
+  }
+  
   @Test
   public void testConstants() throws Exception {
     // Tests that the values of the constants does not change
@@ -147,6 +202,9 @@ public class TestIndexWriterConfig extends LuceneTestCase {
       } else if ("indexingChain".equals(f.getName())) {
         // indexingChain is a package-private setting and thus is not output by
         // toString.
+        continue;
+      }
+      if (f.getName().equals("inUseByIndexWriter")) {
         continue;
       }
       assertTrue(f.getName() + " not found in toString", str.indexOf(f.getName()) != -1);
@@ -269,4 +327,31 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     conf.setMergePolicy(null);
     assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
   }
+
+  public void testLiveChangeToCFS() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+
+    // Start false:
+    ((LogMergePolicy) iwc.getMergePolicy()).setUseCompoundFile(false); 
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    // Change to true:
+    ((LogMergePolicy) w.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
+    ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundFile(true);
+
+    Document doc = new Document();
+    doc.add(newStringField("field", "foo", Store.NO));
+    w.addDocument(doc);
+    w.commit();
+
+    for(String file : dir.listAll()) {
+      // frq file should be stuck into CFS
+      assertFalse(file.endsWith(".frq"));
+    }
+    w.close();
+    dir.close();
+  }
+
 }

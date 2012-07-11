@@ -35,7 +35,7 @@ public class FieldType implements IndexableFieldType {
 
   private boolean indexed;
   private boolean stored;
-  private boolean tokenized;
+  private boolean tokenized = true;
   private boolean storeTermVectors;
   private boolean storeTermVectorOffsets;
   private boolean storeTermVectorPositions;

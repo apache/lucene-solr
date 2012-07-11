@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import java.io.File;
 import java.util.*;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -39,6 +40,7 @@ import org.junit.Test;
 /**
  * @since solr 1.3
  */
+@Slow
 public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   static String rh = "spellCheckCompRH";
 

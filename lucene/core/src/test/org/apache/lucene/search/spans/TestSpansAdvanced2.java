@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spans;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -75,7 +76,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
    * @throws Exception
    */
   public void testVerifyIndex() throws Exception {
-    final IndexReader reader = IndexReader.open(mDirectory);
+    final IndexReader reader = DirectoryReader.open(mDirectory);
     assertEquals(8, reader.numDocs());
     reader.close();
   }

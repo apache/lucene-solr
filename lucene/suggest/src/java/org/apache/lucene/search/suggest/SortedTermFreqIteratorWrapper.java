@@ -1,6 +1,6 @@
 package org.apache.lucene.search.suggest;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -128,13 +128,13 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   }
   
   private void close() throws IOException {
+    IOUtils.close(reader);
     if (tempInput != null) {
       tempInput.delete();
     }
     if (tempSorted != null) {
       tempSorted.delete();
     }
-    IOUtils.close(reader);
   }
   
   private final static class BytesOnlyComparator implements Comparator<BytesRef> {

@@ -38,8 +38,8 @@ public class TestSystemIdResolver extends LuceneTestCase {
   }
   
   public void testResolving() throws Exception {
-    final String testHome = SolrTestCaseJ4.getFile("solr/conf").getParent();
-    final ResourceLoader loader = new SolrResourceLoader(testHome, this.getClass().getClassLoader());
+    final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
+    final ResourceLoader loader = new SolrResourceLoader(testHome + "/collection1", this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     final String fileUri = new File(testHome+"/crazy-path-to-config.xml").toURI().toASCIIString();
     
@@ -61,8 +61,8 @@ public class TestSystemIdResolver extends LuceneTestCase {
     assertEntityResolving(resolver, "solrres:/schema.xml", "solrres:/solrconfig.xml", "schema.xml");
     assertEntityResolving(resolver, "solrres:/org/apache/solr/util/TestSystemIdResolver.class",
       "solrres:/org/apache/solr/util/RTimer.class", "TestSystemIdResolver.class");
-    assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/conf/schema.xml"),
-      SystemIdResolver.createSystemIdFromResourceName(testHome+"/conf/solrconfig.xml"), "schema.xml");
+    assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/collection1/conf/schema.xml"),
+      SystemIdResolver.createSystemIdFromResourceName(testHome+"/collection1/conf/solrconfig.xml"), "schema.xml");
     assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-schema.xml"),
       SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");
     

@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,8 +25,7 @@ import java.util.Random;
  * @lucene.internal
  * @lucene.experimental
  */
-public class RandomDocumentsWriterPerThreadPool extends
-    DocumentsWriterPerThreadPool {
+class RandomDocumentsWriterPerThreadPool extends DocumentsWriterPerThreadPool {
   private final ThreadState[] states;
   private final Random random;
   private final int maxRetry;

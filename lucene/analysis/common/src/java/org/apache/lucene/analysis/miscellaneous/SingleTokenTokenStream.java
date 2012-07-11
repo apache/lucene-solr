@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,6 @@ package org.apache.lucene.analysis.miscellaneous;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.IOException;
 
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.analysis.Token;
@@ -46,7 +44,7 @@ public final class SingleTokenTokenStream extends TokenStream {
   }
 
   @Override
-  public final boolean incrementToken() throws IOException {
+  public final boolean incrementToken() {
     if (exhausted) {
       return false;
     } else {
@@ -58,7 +56,7 @@ public final class SingleTokenTokenStream extends TokenStream {
   }
 
   @Override
-  public void reset() throws IOException {
+  public void reset() {
     exhausted = false;
   }
 

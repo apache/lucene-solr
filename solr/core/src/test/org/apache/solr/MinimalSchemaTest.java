@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,7 +37,7 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
    */
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solr/conf/solrconfig.xml","solr/conf/schema-minimal.xml");
+    initCore("solr/collection1/conf/solrconfig.xml","solr/collection1/conf/schema-minimal.xml");
 
     /* make sure some misguided soul doesn't inadvertently give us 
        a uniqueKey field and defeat the point of the tests

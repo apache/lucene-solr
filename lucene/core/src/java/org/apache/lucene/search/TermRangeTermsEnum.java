@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -58,11 +58,9 @@ public class TermRangeTermsEnum extends FilteredTermsEnum {
    *          If true, the <code>lowerTerm</code> is included in the range.
    * @param includeUpper
    *          If true, the <code>upperTerm</code> is included in the range.
-   * 
-   * @throws IOException
    */
   public TermRangeTermsEnum(TermsEnum tenum, BytesRef lowerTerm, BytesRef upperTerm, 
-    boolean includeLower, boolean includeUpper) throws IOException {
+    boolean includeLower, boolean includeUpper) {
     super(tenum);
 
     // do a little bit of normalization...

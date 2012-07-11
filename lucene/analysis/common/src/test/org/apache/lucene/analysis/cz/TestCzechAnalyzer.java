@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.cz;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,28 +31,10 @@ import org.apache.lucene.util.Version;
  *
  */
 public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
-  /**
-   * @deprecated (3.1) Remove this test when support for 3.0 indexes is no longer needed.
-   */
-  @Deprecated
-  public void testStopWordLegacy() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_30), "Pokud mluvime o volnem", 
-        new String[] { "mluvime", "volnem" });
-  }
   
   public void testStopWord() throws Exception {
     assertAnalyzesTo(new CzechAnalyzer(TEST_VERSION_CURRENT), "Pokud mluvime o volnem", 
         new String[] { "mluvim", "voln" });
-  }
-  
-  /**
-   * @deprecated (3.1) Remove this test when support for 3.0 indexes is no longer needed.
-   */
-  @Deprecated
-  public void testReusableTokenStreamLegacy() throws Exception {
-    Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_30);
-    assertAnalyzesToReuse(analyzer, "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
-    assertAnalyzesToReuse(analyzer, "Česká Republika", new String[] { "česká", "republika" });
   }
   
   public void testReusableTokenStream() throws Exception {
@@ -70,6 +52,6 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new CzechAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new CzechAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
 }

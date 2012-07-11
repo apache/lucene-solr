@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.mocksep;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,8 @@ package org.apache.lucene.codecs.mocksep;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.sep.IntIndexOutput;
 
 import java.io.IOException;

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,7 +38,7 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestC
     args.put(DelimitedPayloadTokenFilterFactory.ENCODER_ATTR, "float");
     DelimitedPayloadTokenFilterFactory factory = new DelimitedPayloadTokenFilterFactory();
     factory.init(args);
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     factory.inform(loader);
 
     TokenStream input = new MockTokenizer(new StringReader("the|0.1 quick|0.1 red|0.1"), MockTokenizer.WHITESPACE, false);
@@ -47,7 +47,7 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestC
     while (tf.incrementToken()){
       PayloadAttribute payAttr = tf.getAttribute(PayloadAttribute.class);
       assertTrue("payAttr is null and it shouldn't be", payAttr != null);
-      byte[] payData = payAttr.getPayload().getData();
+      byte[] payData = payAttr.getPayload().bytes;
       assertTrue("payData is null and it shouldn't be", payData != null);
       assertTrue("payData is null and it shouldn't be", payData != null);
       float payFloat = PayloadHelper.decodeFloat(payData);
@@ -61,7 +61,7 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestC
     args.put(DelimitedPayloadTokenFilterFactory.DELIMITER_ATTR, "*");
     DelimitedPayloadTokenFilterFactory factory = new DelimitedPayloadTokenFilterFactory();
     factory.init(args);
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     factory.inform(loader);
 
     TokenStream input = new MockTokenizer(new StringReader("the*0.1 quick*0.1 red*0.1"), MockTokenizer.WHITESPACE, false);
@@ -70,7 +70,7 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestC
     while (tf.incrementToken()){
       PayloadAttribute payAttr = tf.getAttribute(PayloadAttribute.class);
       assertTrue("payAttr is null and it shouldn't be", payAttr != null);
-      byte[] payData = payAttr.getPayload().getData();
+      byte[] payData = payAttr.getPayload().bytes;
       assertTrue("payData is null and it shouldn't be", payData != null);
       float payFloat = PayloadHelper.decodeFloat(payData);
       assertTrue(payFloat + " does not equal: " + 0.1f, payFloat == 0.1f);

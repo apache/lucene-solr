@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -380,7 +380,7 @@ class FieldCacheImpl implements FieldCache {
               }
             }
           }
-        } catch (StopFillCacheException stop) {
+        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
       if (setDocsWithField) {
@@ -453,7 +453,7 @@ class FieldCacheImpl implements FieldCache {
               }
             }
           }
-        } catch (StopFillCacheException stop) {
+        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
       if (setDocsWithField) {
@@ -557,7 +557,7 @@ class FieldCacheImpl implements FieldCache {
               }
             }
           }
-        } catch (StopFillCacheException stop) {
+        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
 
@@ -707,7 +707,7 @@ class FieldCacheImpl implements FieldCache {
               }
             }
           }
-        } catch (StopFillCacheException stop) {
+        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
 
@@ -795,7 +795,7 @@ class FieldCacheImpl implements FieldCache {
               }
             }
           }
-        } catch (StopFillCacheException stop) {
+        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
 
@@ -884,7 +884,7 @@ class FieldCacheImpl implements FieldCache {
               }
             }
           }
-        } catch (StopFillCacheException stop) {
+        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
       if (retArray == null) { // no values

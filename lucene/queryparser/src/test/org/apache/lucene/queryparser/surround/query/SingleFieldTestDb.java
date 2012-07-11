@@ -1,6 +1,6 @@
 package org.apache.lucene.queryparser.surround.query;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.surround.query;
 
 import java.util.Random;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -44,7 +45,7 @@ public class SingleFieldTestDb {
           new MockAnalyzer(random)));
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
-        d.add(new TextField(fieldName, docs[j]));
+        d.add(new TextField(fieldName, docs[j], Field.Store.NO));
         writer.addDocument(d);
       }
       writer.close();

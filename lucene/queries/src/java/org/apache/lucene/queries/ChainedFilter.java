@@ -1,6 +1,6 @@
 package org.apache.lucene.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -53,7 +53,7 @@ public class ChainedFilter extends Filter {
   /**
    * Logical operation when none is declared. Defaults to OR.
    */
-  public static int DEFAULT = OR;
+  public static final int DEFAULT = OR;
 
   /**
    * The filter chain

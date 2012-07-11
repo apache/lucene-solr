@@ -1,6 +1,6 @@
 package org.apache.solr.analysis;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -39,7 +39,7 @@ public class TestHunspellStemFilterFactory extends BaseTokenStreamTestCase {
     args.put("affix", "hunspell-test.aff");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new SolrResourceLoader("solr"));
+    factory.inform(new SolrResourceLoader("solr/collection1"));
     
     Reader reader = new StringReader("abc");
     TokenStream stream = factory.create(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));

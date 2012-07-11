@@ -8,7 +8,6 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -41,7 +40,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.SlowRAMDirectory;
 import org.apache.lucene.util._TestUtil;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -140,8 +139,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
   }
 
   private void doTestGeneralSynchronization(int numThreads, int sleepMillis,
-      int cacheSize) throws Exception, CorruptIndexException, IOException,
-      InterruptedException {
+      int cacheSize) throws Exception {
     TFC.setCacheSize(cacheSize);
     SlowRAMDirectory slowIndexDir = new SlowRAMDirectory(-1, random());
     MockDirectoryWrapper indexDir = new MockDirectoryWrapper(random(), slowIndexDir);
@@ -156,7 +154,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     slowTaxoDir.setSleepMillis(sleepMillis);
     
     // Open the slow readers
-    IndexReader slowIndexReader = IndexReader.open(indexDir);
+    IndexReader slowIndexReader = DirectoryReader.open(indexDir);
     TaxonomyReader slowTaxoReader = new DirectoryTaxonomyReader(taxoDir);
 
     // Class to perform search and return results as threads
@@ -421,7 +419,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     indexDir.setSleepMillis(1);
     taxoDir.setSleepMillis(1);
 
-    IndexReader r = IndexReader.open(indexDir);
+    IndexReader r = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
 
     // Create and start threads. Thread1 should lock the cache and calculate

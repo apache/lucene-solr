@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40.values;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -64,8 +64,7 @@ class VarStraightBytesImpl {
     private final ByteBlockPool pool;
     private IndexOutput datOut;
     private boolean merge = false;
-    public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
-        throws IOException {
+    public Writer(Directory dir, String id, Counter bytesUsed, IOContext context) {
       super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, Type.BYTES_VAR_STRAIGHT);
       pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
       docToAddress = new long[1];
@@ -122,7 +121,7 @@ class VarStraightBytesImpl {
           final IndexInput cloneIdx = reader.cloneIndex();
           try {
             numDataBytes = cloneIdx.readVLong();
-            final ReaderIterator iter = PackedInts.getReaderIterator(cloneIdx);
+            final ReaderIterator iter = PackedInts.getReaderIterator(cloneIdx, PackedInts.DEFAULT_BUFFER_SIZE);
             for (int i = 0; i < maxDocs; i++) {
               long offset = iter.next();
               ++lastDocID;
@@ -231,6 +230,11 @@ class VarStraightBytesImpl {
 
     public long ramBytesUsed() {
       return bytesUsed.get();
+    }
+
+    @Override
+    public int getValueSize() {
+      return -1;
     }
   }
 

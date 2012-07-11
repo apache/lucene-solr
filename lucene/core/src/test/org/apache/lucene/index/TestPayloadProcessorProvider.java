@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
@@ -49,7 +50,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     }
 
     @Override
-    public ReaderPayloadProcessor getReaderProcessor(AtomicReader reader) throws IOException {
+    public ReaderPayloadProcessor getReaderProcessor(AtomicReader reader) {
       if (reader instanceof SegmentReader) {
         return processors.get(((SegmentReader) reader).directory());
       } else {
@@ -62,7 +63,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
   private static final class PerTermPayloadProcessor extends ReaderPayloadProcessor {
 
     @Override
-    public PayloadProcessor getProcessor(String field, BytesRef text) throws IOException {
+    public PayloadProcessor getProcessor(String field, BytesRef text) {
       // don't process payloads of terms other than "p:p1"
       if (!field.equals("p") || !text.bytesEquals(new BytesRef("p1"))) {
         return null;
@@ -78,7 +79,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
   private static final class DeletePayloadProcessor extends PayloadProcessor {
 
     @Override
-    public void processPayload(BytesRef payload) throws IOException {
+    public void processPayload(BytesRef payload) {
       payload.length = 0;      
     }
 
@@ -97,14 +98,14 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     }
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       if (called) {
         return false;
       }
 
       called = true;
       byte[] p = new byte[] { 1 };
-      payload.setPayload(new Payload(p));
+      payload.setPayload(new BytesRef(p));
       term.append(t);
       return true;
     }
@@ -138,12 +139,12 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     );
     TokenStream payloadTS1 = new PayloadTokenStream("p1");
     TokenStream payloadTS2 = new PayloadTokenStream("p2");
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     for (int i = 0; i < NUM_DOCS; i++) {
       Document doc = new Document();
       doc.add(newField("id", "doc" + i, customType));
-      doc.add(newField("content", "doc content " + i, TextField.TYPE_UNSTORED));
+      doc.add(newTextField("content", "doc content " + i, Field.Store.NO));
       doc.add(new TextField("p", payloadTS1));
       doc.add(new TextField("p", payloadTS2));
       writer.addDocument(doc);
@@ -156,7 +157,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
   private void verifyPayloadExists(Directory dir, String field, BytesRef text, int numExpected)
       throws IOException {
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     try {
       int numPayloads = 0;
       DocsAndPositionsEnum tpe = MultiFields.getTermPositionsEnum(reader, null, field, text, false);
@@ -198,7 +199,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
     IndexReader[] readers = new IndexReader[dirs.length];
     for (int i = 0; i < readers.length; i++) {
-      readers[i] = IndexReader.open(dirs[i]);
+      readers[i] = DirectoryReader.open(dirs[i]);
     }
     try {
       writer.addIndexes(readers);

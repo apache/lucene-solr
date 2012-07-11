@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
@@ -14,9 +15,8 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.CodecUtil;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -63,7 +63,9 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         boolean omitNorms = (bits & Lucene40FieldInfosWriter.OMIT_NORMS) != 0;
         boolean storePayloads = (bits & Lucene40FieldInfosWriter.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
-        if ((bits & Lucene40FieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        if (!isIndexed) {
+          indexOptions = null;
+        } else if ((bits & Lucene40FieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_ONLY;
         } else if ((bits & Lucene40FieldInfosWriter.OMIT_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS;
@@ -76,7 +78,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         // LUCENE-3027: past indices were able to write
         // storePayloads=true when omitTFAP is also true,
         // which is invalid.  We correct that, here:
-        if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+        if (isIndexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           storePayloads = false;
         }
         // DV Types are packed in one byte

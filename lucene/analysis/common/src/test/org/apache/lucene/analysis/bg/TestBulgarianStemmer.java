@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.bg;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -217,7 +217,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
   }
 
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_31, 1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("строеве");
     MockTokenizer tokenStream = new MockTokenizer(new StringReader("строевете строеве"), MockTokenizer.WHITESPACE, false);
 

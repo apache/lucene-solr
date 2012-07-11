@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.tokenattributes;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,20 +17,20 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.BytesRef;
 
 /**
- * The payload of a Token. See also {@link Payload}.
+ * The payload of a Token. 
  */
 public interface PayloadAttribute extends Attribute {
   /**
    * Returns this Token's payload.
    */ 
-  public Payload getPayload();
+  public BytesRef getPayload();
 
   /** 
    * Sets this Token's payload.
    */
-  public void setPayload(Payload payload);
+  public void setPayload(BytesRef payload);
 }

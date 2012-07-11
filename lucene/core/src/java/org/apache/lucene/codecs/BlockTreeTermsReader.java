@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,10 @@ package org.apache.lucene.codecs;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -41,7 +43,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
@@ -346,7 +347,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
     @Override
     public String toString() {
       final ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-      final PrintStream out = new PrintStream(bos);
+      PrintStream out;
+      try {
+        out = new PrintStream(bos, false, "UTF-8");
+      } catch (UnsupportedEncodingException bogus) {
+        throw new RuntimeException(bogus);
+      }
       
       out.println("  index FST:");
       out.println("    " + indexNodeCount + " nodes");
@@ -354,7 +360,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       out.println("    " + indexNumBytes + " bytes");
       out.println("  terms:");
       out.println("    " + totalTermCount + " terms");
-      out.println("    " + totalTermBytes + " bytes" + (totalTermCount != 0 ? " (" + String.format("%.1f", ((double) totalTermBytes)/totalTermCount) + " bytes/term)" : ""));
+      out.println("    " + totalTermBytes + " bytes" + (totalTermCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalTermBytes)/totalTermCount) + " bytes/term)" : ""));
       out.println("  blocks:");
       out.println("    " + totalBlockCount + " blocks");
       out.println("    " + termsOnlyBlockCount + " terms-only blocks");
@@ -363,9 +369,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
       out.println("    " + floorBlockCount + " floor blocks");
       out.println("    " + (totalBlockCount-floorSubBlockCount) + " non-floor blocks");
       out.println("    " + floorSubBlockCount + " floor sub-blocks");
-      out.println("    " + totalBlockSuffixBytes + " term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format("%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
-      out.println("    " + totalBlockStatsBytes + " term stats bytes" + (totalBlockCount != 0 ? " (" + String.format("%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
-      out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format("%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
+      out.println("    " + totalBlockSuffixBytes + " term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
+      out.println("    " + totalBlockStatsBytes + " term stats bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
+      out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
       if (totalBlockCount != 0) {
         out.println("    by prefix length:");
         int total = 0;
@@ -373,13 +379,17 @@ public class BlockTreeTermsReader extends FieldsProducer {
           final int blockCount = blockCountByPrefixLen[prefix];
           total += blockCount;
           if (blockCount != 0) {
-            out.println("      " + String.format("%2d", prefix) + ": " + blockCount);
+            out.println("      " + String.format(Locale.ROOT, "%2d", prefix) + ": " + blockCount);
           }
         }
         assert totalBlockCount == total;
       }
 
-      return bos.toString();
+      try {
+        return bos.toString("UTF-8");
+      } catch (UnsupportedEncodingException bogus) {
+        throw new RuntimeException(bogus);
+      }
     }
   }
 
@@ -467,7 +477,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
 
     @Override
-    public int getDocCount() throws IOException {
+    public int getDocCount() {
       return docCount;
     }
 
@@ -864,7 +874,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public BytesRef term() throws IOException {
+      public BytesRef term() {
         return term;
       }
 
@@ -885,6 +895,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
       @Override
       public DocsEnum docs(Bits skipDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
         currentFrame.decodeMetaData();
+        if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
+          return null;
+        }
         return postingsReader.docs(fieldInfo, currentFrame.termState, skipDocs, reuse, needsFreqs);
       }
 
@@ -1154,22 +1167,22 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+      public boolean seekExact(BytesRef text, boolean useCache) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public void seekExact(long ord) throws IOException {
+      public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public long ord() throws IOException {
+      public long ord() {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+      public SeekStatus seekCeil(BytesRef text, boolean useCache) {
         throw new UnsupportedOperationException();
       }
     }
@@ -2109,6 +2122,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       @Override
       public DocsEnum docs(Bits skipDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+        if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
+          return null;
+        }
         assert !eof;
         //if (DEBUG) {
         //System.out.println("BTTR.docs seg=" + segment);
@@ -2139,7 +2155,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public void seekExact(BytesRef target, TermState otherState) throws IOException {
+      public void seekExact(BytesRef target, TermState otherState) {
         // if (DEBUG) {
         //   System.out.println("BTTR.seekExact termState seg=" + segment + " target=" + target.utf8ToString() + " " + target + " state=" + otherState);
         // }
@@ -2169,7 +2185,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public void seekExact(long ord) throws IOException {
+      public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
 
@@ -2346,7 +2362,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // }
         }
 
-        void rewind() throws IOException {
+        void rewind() {
 
           // Force reload:
           fp = fpOrig;

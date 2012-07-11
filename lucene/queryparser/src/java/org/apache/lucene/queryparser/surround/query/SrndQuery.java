@@ -1,5 +1,5 @@
 package org.apache.lucene.queryparser.surround.query;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -73,7 +73,7 @@ public abstract class SrndQuery implements Cloneable {
   /** For subclasses of {@link SrndQuery} within the package
    *  {@link org.apache.lucene.queryparser.surround.query}
    *  it is not necessary to override this method,
-   *  @see #toString().
+   *  @see #toString()
    */
   @Override
   public int hashCode() {
@@ -83,7 +83,7 @@ public abstract class SrndQuery implements Cloneable {
   /** For subclasses of {@link SrndQuery} within the package
    *  {@link org.apache.lucene.queryparser.surround.query}
    *  it is not necessary to override this method,
-   *  @see #toString().
+   *  @see #toString()
    */
   @Override
   public boolean equals(Object obj) {

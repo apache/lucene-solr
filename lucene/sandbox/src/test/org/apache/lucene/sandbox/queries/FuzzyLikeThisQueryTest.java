@@ -1,6 +1,6 @@
 package org.apache.lucene.sandbox.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ package org.apache.lucene.sandbox.queries;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -69,8 +69,8 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter writer, String name, String id) throws IOException {
     Document doc = new Document();
-    doc.add(newField("name", name, TextField.TYPE_STORED));
-    doc.add(newField("id", id, TextField.TYPE_STORED));
+    doc.add(newTextField("name", name, Field.Store.YES));
+    doc.add(newTextField("id", id, Field.Store.YES));
     writer.addDocument(doc);
   }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -178,7 +178,7 @@ public class DocumentObjectBinder {
         } else {
           String setterName = setter.getName();
           if (setterName.startsWith("set") && setterName.length() > 3) {
-            name = setterName.substring(3, 4).toLowerCase(Locale.ENGLISH) + setterName.substring(4);
+            name = setterName.substring(3, 4).toLowerCase(Locale.ROOT) + setterName.substring(4);
           } else {
             name = setter.getName();
           }

@@ -1,12 +1,10 @@
 package org.apache.lucene.sandbox.queries;
 
-import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.*;
@@ -17,7 +15,7 @@ import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -58,7 +56,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       String value = _TestUtil.randomUnicodeString(random());
-      Field field = newField("field", value, StringField.TYPE_STORED);
+      Field field = newStringField("field", value, Field.Store.YES);
       doc.add(field);
       iw.addDocument(doc);
     }
@@ -91,7 +89,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
   public void testSort() throws Exception {
     SortField sf = new SortField("field", new FieldComparatorSource() {
       @Override
-      public FieldComparator<String> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) throws IOException {
+      public FieldComparator<String> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
         return new SlowCollatedStringComparator(numHits, fieldname, collator);
       }
     });

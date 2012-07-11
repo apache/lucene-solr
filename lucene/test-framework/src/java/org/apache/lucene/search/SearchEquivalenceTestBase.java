@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -62,8 +62,8 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, stopset, true);
     RandomIndexWriter iw = new RandomIndexWriter(random, directory, analyzer);
     Document doc = new Document();
-    Field id = new StringField("id", "");
-    Field field = new TextField("field", "");
+    Field id = new StringField("id", "", Field.Store.NO);
+    Field field = new TextField("field", "", Field.Store.NO);
     doc.add(id);
     doc.add(field);
     

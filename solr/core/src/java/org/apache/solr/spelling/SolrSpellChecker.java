@@ -1,5 +1,5 @@
 package org.apache.solr.spelling;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -92,7 +92,12 @@ public abstract class SolrSpellChecker {
       //just use .5 as a default
     }
     
-    StringDistance sd = getStringDistance() == null ? new LevensteinDistance() : getStringDistance();    
+    StringDistance sd = null;
+    try {
+      sd = getStringDistance() == null ? new LevensteinDistance() : getStringDistance();    
+    } catch(UnsupportedOperationException uoe) {
+      sd = new LevensteinDistance();
+    }
     
     SpellingResult result = new SpellingResult();
     for (Map.Entry<String, HashSet<String>> entry : mergeData.origVsSuggested.entrySet()) {
@@ -190,4 +195,8 @@ public abstract class SolrSpellChecker {
    * @throws IOException if there is an error producing suggestions
    */
   public abstract SpellingResult getSuggestions(SpellingOptions options) throws IOException;
+  
+  public boolean isSuggestionsMayOverlap() {
+    return false;
+  }
 }

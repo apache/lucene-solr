@@ -1,6 +1,6 @@
 package org.apache.lucene.queries;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,16 @@ package org.apache.lucene.queries;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionTestSetup;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.TopDocs;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import java.io.IOException;
@@ -29,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
@@ -177,7 +186,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       final int[] values = FieldCache.DEFAULT.getInts(context.reader(), INT_FIELD, false);
       return new CustomScoreProvider(context) {
         @Override
-        public float customScore(int doc, float subScore, float valSrcScore) throws IOException {
+        public float customScore(int doc, float subScore, float valSrcScore) {
           assertTrue(doc <= context.reader().maxDoc());
           return values[doc];
         }
@@ -199,7 +208,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     final Query q = new CustomExternalQuery(q1);
     log(q);
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
     TopDocs hits = s.search(q, 1000);
     assertEquals(N_DOCS, hits.totalHits);
@@ -213,7 +222,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   
   @Test
   public void testRewrite() throws Exception {
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     final IndexSearcher s = new IndexSearcher(r);
 
     Query q = new TermQuery(new Term(TEXT_FIELD, "first"));
@@ -238,7 +247,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   private void doTestCustomScore(ValueSource valueSource, double dboost) throws Exception {
     float boost = (float) dboost;
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
 
     // regular (boolean) query.

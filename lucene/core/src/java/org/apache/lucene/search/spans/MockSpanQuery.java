@@ -17,17 +17,21 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.TermContext;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
+import org.apache.lucene.util.Bits;
 
 public class MockSpanQuery extends SpanQuery {
 

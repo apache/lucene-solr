@@ -1,5 +1,5 @@
 package org.apache.solr.handler.component;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -161,7 +161,7 @@ public class HttpShardHandler extends ShardHandler {
           if (urls.size() <= 1) {
             String url = urls.get(0);
             srsp.setShardAddress(url);
-            SolrServer server = new HttpSolrServer(url, httpClient == null ? httpShardHandlerFactory.client : httpClient);
+            SolrServer server = new HttpSolrServer(url, httpClient);
             ssr.nl = server.request(req);
           } else {
             LBHttpSolrServer.Rsp rsp = httpShardHandlerFactory.loadbalancer.request(new LBHttpSolrServer.Req(req, urls));

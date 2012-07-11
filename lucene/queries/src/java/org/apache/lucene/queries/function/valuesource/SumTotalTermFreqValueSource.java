@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -34,7 +34,7 @@ import java.util.Map;
  * @lucene.internal
  */
 public class SumTotalTermFreqValueSource extends ValueSource {
-  protected String indexedField;
+  protected final String indexedField;
 
   public SumTotalTermFreqValueSource(String indexedField) {
     this.indexedField = indexedField;

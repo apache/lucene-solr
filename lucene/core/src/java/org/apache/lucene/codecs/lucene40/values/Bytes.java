@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40.values;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
@@ -41,7 +42,6 @@ import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.TrackingDirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
@@ -121,14 +121,11 @@ public final class Bytes {
    *          {@link Type#BYTES_VAR_SORTED}.
    * @param context I/O Context
    * @return a new {@link Writer} instance
-   * @throws IOException
-   *           if the files for the writer can not be created.
    * @see PackedInts#getReader(org.apache.lucene.store.DataInput)
    */
   public static DocValuesConsumer getWriter(Directory dir, String id, Mode mode,
       boolean fixedSize, Comparator<BytesRef> sortComparator,
-      Counter bytesUsed, IOContext context, float acceptableOverheadRatio)
-      throws IOException {
+      Counter bytesUsed, IOContext context, float acceptableOverheadRatio) {
     // TODO -- i shouldn't have to specify fixed? can
     // track itself & do the write thing at write time?
     if (sortComparator == null) {
@@ -244,7 +241,7 @@ public final class Bytes {
     private final IOContext context;
 
     protected BytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat,
-        int version, Counter bytesUsed, IOContext context, Type type) throws IOException {
+        int version, Counter bytesUsed, IOContext context, Type type) {
       super(bytesUsed, type);
       this.id = id;
       this.dir = dir;
@@ -388,21 +385,19 @@ public final class Bytes {
     protected long maxBytes = 0;
     
     protected DerefBytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat,
-        int codecVersion, Counter bytesUsed, IOContext context, Type type)
-        throws IOException {
+        int codecVersion, Counter bytesUsed, IOContext context, Type type) {
       this(dir, id, codecNameIdx, codecNameDat, codecVersion, new DirectTrackingAllocator(
           ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, PackedInts.DEFAULT, type);
     }
 
     protected DerefBytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat,
-                                   int codecVersion, Counter bytesUsed, IOContext context, float acceptableOverheadRatio, Type type)
-        throws IOException {
+                                   int codecVersion, Counter bytesUsed, IOContext context, float acceptableOverheadRatio, Type type) {
       this(dir, id, codecNameIdx, codecNameDat, codecVersion, new DirectTrackingAllocator(
           ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, acceptableOverheadRatio, type);
     }
 
     protected DerefBytesWriterBase(Directory dir, String id, String codecNameIdx, String codecNameDat, int codecVersion, Allocator allocator,
-        Counter bytesUsed, IOContext context, float acceptableOverheadRatio, Type type) throws IOException {
+        Counter bytesUsed, IOContext context, float acceptableOverheadRatio, Type type) {
       super(dir, id, codecNameIdx, codecNameDat, codecVersion, bytesUsed, context, type);
       hash = new BytesRefHash(new ByteBlockPool(allocator),
           BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
@@ -471,6 +466,10 @@ public final class Bytes {
         throw new IllegalArgumentException("expected bytes size=" + size
             + " but got " + bytes.length);
       }
+    }
+    
+    public int getValueSize() {
+      return size;
     }
     
     // Important that we get docCount, in case there were

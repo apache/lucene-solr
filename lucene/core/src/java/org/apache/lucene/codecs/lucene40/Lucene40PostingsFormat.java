@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -32,7 +33,6 @@ import org.apache.lucene.index.FieldInfos; // javadocs
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput; // javadocs
-import org.apache.lucene.util.CodecUtil; // javadocs
 import org.apache.lucene.util.fst.FST; // javadocs
 
 /** 
@@ -159,7 +159,8 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * with the frequency of the term in that document (except when frequencies are
  * omitted: {@link IndexOptions#DOCS_ONLY}).</p>
  * <ul>
- *   <li>FreqFile (.frq) --&gt; &lt;TermFreqs, SkipData&gt; <sup>TermCount</sup></li>
+ *   <li>FreqFile (.frq) --&gt; Header, &lt;TermFreqs, SkipData&gt; <sup>TermCount</sup></li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermFreqs --&gt; &lt;TermFreq&gt; <sup>DocFreq</sup></li>
  *   <li>TermFreq --&gt; DocDelta[, Freq?]</li>
  *   <li>SkipData --&gt; &lt;&lt;SkipLevelLength, SkipLevel&gt;
@@ -232,7 +233,8 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * anything into this file, and if all fields in the index omit positional data
  * then the .prx file will not exist.</p>
  * <ul>
- *   <li>ProxFile (.prx) --&gt; &lt;TermPositions&gt; <sup>TermCount</sup></li>
+ *   <li>ProxFile (.prx) --&gt; Header, &lt;TermPositions&gt; <sup>TermCount</sup></li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermPositions --&gt; &lt;Positions&gt; <sup>DocFreq</sup></li>
  *   <li>Positions --&gt; &lt;PositionDelta,PayloadLength?,OffsetDelta?,OffsetLength?,PayloadData?&gt; <sup>Freq</sup></li>
  *   <li>PositionDelta,OffsetDelta,OffsetLength,PayloadLength --&gt; {@link DataOutput#writeVInt VInt}</li>
@@ -254,8 +256,8 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * <p>4, 5, 4</p>
  * <p>PayloadData is metadata associated with the current term position. If
  * PayloadLength is stored at the current position, then it indicates the length
- * of this Payload. If PayloadLength is not stored, then this Payload has the same
- * length as the Payload at the previous position.</p>
+ * of this payload. If PayloadLength is not stored, then this payload has the same
+ * length as the payload at the previous position.</p>
  * <p>OffsetDelta/2 is the difference between this position's startOffset from the
  * previous occurrence (or zero, if this is the first occurrence in this document).
  * If OffsetDelta is odd, then the length (endOffset-startOffset) differs from the

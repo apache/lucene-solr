@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.cjk;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -215,7 +215,7 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
       }
 
       @Override
-      protected Reader initReader(Reader reader) {
+      protected Reader initReader(String fieldName, Reader reader) {
         return new MappingCharFilter(norm, CharReader.get(reader));
       }
     };
@@ -272,13 +272,13 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new CJKAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new CJKAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, new CJKAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new CJKAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
   }
   
   public void testEmptyTerm() throws IOException {

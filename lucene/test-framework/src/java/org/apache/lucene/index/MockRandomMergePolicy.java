@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -60,7 +60,7 @@ public class MockRandomMergePolicy extends MergePolicy {
   @Override
   public MergeSpecification findForcedMerges(
        SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
-    throws CorruptIndexException, IOException {
+    throws IOException {
 
     final List<SegmentInfoPerCommit> eligibleSegments = new ArrayList<SegmentInfoPerCommit>();
     for(SegmentInfoPerCommit info : segmentInfos) {
@@ -96,9 +96,7 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(
-      SegmentInfos segmentInfos)
-    throws CorruptIndexException, IOException {
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) throws IOException {
     return findMerges(segmentInfos);
   }
 

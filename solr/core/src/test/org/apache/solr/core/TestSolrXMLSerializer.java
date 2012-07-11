@@ -1,6 +1,6 @@
 package org.apache.solr.core;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,6 +39,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
 import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
 import org.junit.Test;
@@ -82,16 +82,16 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
     assertResults(((StringWriter) w).getBuffer().toString().getBytes("UTF-8"));
     
     // again with default file
-    File tmpFile = File.createTempFile("solr", ".xml", TEMP_DIR);
+    File tmpFile = _TestUtil.getTempDir("solr.xml");
     
     serializer.persistFile(tmpFile, solrXMLDef);
 
     assertResults(FileUtils.readFileToString(tmpFile, "UTF-8").getBytes("UTF-8"));
+    tmpFile.delete();
   }
 
   private void assertResults(byte[] bytes)
-      throws ParserConfigurationException, UnsupportedEncodingException,
-      IOException, SAXException, XPathExpressionException {
+      throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     BufferedInputStream is = new BufferedInputStream(new ByteArrayInputStream(bytes));
     Document document;

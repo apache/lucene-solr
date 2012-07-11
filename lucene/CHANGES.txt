@@ -4,19 +4,97 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
-For "contrib" changes prior to 4.0, please see:
-http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
+======================= Lucene 5.0.0 =======================
 
-======================= Trunk (not yet released) =======================
+
+======================= Lucene 4.0.0-BETA =======================
+
+New features
+
+* LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
+  iteration marks. (Robert Muir, Christian Moen)
+
+* LUCENE-3832: Added BasicAutomata.makeStringUnion method to efficiently
+  create automata from a fixed collection of UTF-8 encoded BytesRef
+  (Dawid Weiss, Robert Muir)
+
+API Changes
+
+* LUCENE-4138: update of morfologik (Polish morphological analyzer) to 1.5.3.
+  The tag attribute class has been renamed to MorphosyntacticTagsAttribute and
+  has a different API (carries a list of tags instead of a compound tag). Upgrade
+  of embedded morfologik dictionaries to version 1.9. (Dawid Weiss)
+
+* LUCENE-4178: set 'tokenized' to true on FieldType by default, so that if you
+  make a custom FieldType and set indexed = true, its analyzed by the analyzer.
+  (Robert Muir)
+
+Optimizations
+
+* LUCENE-4171: Performance improvements to Packed64.
+  (Toke Eskildsen via Adrien Grand)
+
+* LUCENE-4184: Performance improvements to the aligned packed bits impl.
+  (Toke Eskildsen, Adrien Grand)
+
+Bug Fixes
+
+* LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,
+  so that it works correctly with Analyzers that produce binary non-UTF-8 terms
+  such as CollationAnalyzer. (Nattapong Sirilappanich via Robert Muir) 
+
+* LUCENE-4209: Fix FSTCompletionLookup to close its sorter, so that it won't
+  leave temp files behind in /tmp. Fix SortedTermFreqIteratorWrapper to not
+  leave temp files behind in /tmp on Windows. Fix Sort to not leave
+  temp files behind when /tmp is a separate volume. (Uwe Schindler, Robert Muir)
+
+Build
+
+* LUCENE-4094: Support overriding file.encoding on forked test JVMs
+  (force via -Drandomized.file.encoding=XXX). (Dawid Weiss)
+
+* LUCENE-4189: Test output should include timestamps (start/end for each 
+  test/ suite). Added -Dtests.timestamps=[off by default]. (Dawid Weiss)
+
+* LUCENE-4110: Report long periods of forked jvm inactivity (hung tests/ suites).
+  Added -Dtests.heartbeat=[seconds] with the default of 60 seconds.
+  (Dawid Weiss)
+
+* LUCENE-4160: Added a property to quit the tests after a given
+  number of failures has occurred. This is useful in combination
+  with -Dtests.iters=N (you can start N iterations and wait for M
+  failures, in particular M = 1). -Dtests.maxfailures=M. Alternatively,
+  specify -Dtests.failfast=true to skip all tests after the first failure.
+  (Dawid Weiss)
+
+* LUCENE-4115: JAR resolution/ cleanup should be done automatically for ant 
+  clean/ eclipse/ resolve (Dawid Weiss)
+
+* LUCENE-4199, LUCENE-4202, LUCENE-4206: Add a new target "check-forbidden-apis"
+  that parses all generated .class files for use of APIs that use default
+  charset, default locale, or default timezone and fail build if violations
+  found. This ensures, that Lucene / Solr is independent on local configuration
+  options.  (Uwe Schindler, Robert Muir, Dawid Weiss)
+
+Documentation
+
+* LUCENE-4195: Added package documentation and examples for 
+  org.apache.lucene.codecs (Alan Woodward via Robert Muir)
+
+======================= Lucene 4.0.0-ALPHA =======================
+
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
    https://wiki.apache.org/lucene-java/Lucene4.0
+
+For "contrib" changes prior to 4.0, please see:
+http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
 
 Changes in backwards compatibility policy
 
 * LUCENE-1458, LUCENE-2111, LUCENE-2354: Changes from flexible indexing:
 
-  - On upgrading to 3.1, if you do not fully reindex your documents,
+  - On upgrading to 4.0, if you do not fully reindex your documents,
     Lucene will emulate the new flex API on top of the old index,
     incurring some performance cost (up to ~10% slowdown, typically).
     To prevent this slowdown, use oal.index.IndexUpgrader
@@ -25,7 +103,7 @@ Changes in backwards compatibility policy
     Mixed flex/pre-flex indexes are perfectly fine -- the two
     emulation layers (flex API on pre-flex index, and pre-flex API on
     flex index) will remap the access as required.  So on upgrading to
-    3.1 you can start indexing new documents into an existing index.
+    4.0 you can start indexing new documents into an existing index.
     To get optimal performance, use oal.index.IndexUpgrader
     to upgrade your indexes to latest file format (LUCENE-3082).
 
@@ -274,6 +352,16 @@ Changes in backwards compatibility policy
 
 * LUCENE-4055: You can't put foreign files into the index dir anymore.
 
+* LUCENE-3866: CompositeReader.getSequentialSubReaders() now returns
+  unmodifiable List<? extends IndexReader>. ReaderUtil.Gather was
+  removed, as IndexReaderContext.leaves() is now the preferred way
+  to access sub-readers.  (Uwe Schindler)
+
+* LUCENE-4155: oal.util.ReaderUtil, TwoPhaseCommit, TwoPhaseCommitTool
+  classes were moved to oal.index package. oal.util.CodecUtil class was moved
+  to oal.codecs package. oal.util.DummyConcurrentLock was removed
+  (no longer used in Lucene 4.0).  (Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -384,6 +472,13 @@ Changes in Runtime Behavior
 * LUCENE-3455: QueryParserBase.newFieldQuery() will throw a ParseException if
   any of the calls to the Analyzer throw an IOException.  QueryParseBase.analyzeRangePart()
   will throw a RuntimException if an IOException is thrown by the Analyzer.
+
+* LUCENE-4127: IndexWriter will now throw IllegalArgumentException if
+  the first token of an indexed field has 0 positionIncrement
+  (previously it silently corrected it to 1, possibly masking bugs).
+  OffsetAttributeImpl will throw IllegalArgumentException if startOffset
+  is less than endOffset, or if offsets are negative.
+  (Robert Muir, Mike McCandless)
 
 API Changes
 
@@ -519,10 +614,23 @@ API Changes
 * LUCENE-4063: FrenchLightStemmer no longer deletes repeated digits.
   (Tanguy Moal via Steve Rowe)
 
+* LUCENE-4122: Replace Payload with BytesRef. (Andrzej Bialecki)
+
+* LUCENE-4132: IndexWriter.getConfig() now returns a LiveIndexWriterConfig object 
+  which can be used to change the IndexWriter's live settings. IndexWriterConfig 
+  is used only for initializing the IndexWriter. (Shai Erera)
+
+* LUCENE-3866: IndexReaderContext.leaves() is now the preferred way to access
+  atomic sub-readers of any kind of IndexReader (for AtomicReaders it returns
+  itsself as only leaf with docBase=0).  (Uwe Schindler)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
-  are directly supported by the standard queryparser.
+  are directly supported by the standard queryparser via 
+     fieldName:/expression/ OR /expression against default field/
+  Users who wish to search for literal "/" characters are advised to 
+  backslash-escape or quote those characters as needed. 
   (Simon Willnauer, Robert Muir)
 
 * LUCENE-1606, LUCENE-2089: Adds AutomatonQuery, a MultiTermQuery that 
@@ -753,8 +861,8 @@ New features
   value, custom similarities can now set a integer, float or byte value to the
   given Norm object. (Simon Willnauer)  
 
-* LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
-  (Simon Willnauer, Robert Muir)
+* LUCENE-2604, LUCENE-4103: Added RegexpQuery support to contrib/queryparser.
+  (Simon Willnauer, Robert Muir, Daniel Truemper)
 
 * LUCENE-2373: Added a Codec implementation that works with append-only
   filesystems (such as e.g. Hadoop DFS). SegmentInfos writing/reading
@@ -872,6 +980,27 @@ New features
   returning results after a specified FieldDoc for deep
   paging.  (Mike McCandless)
 
+* LUCENE-4043: Added scoring support via score mode for query time joining.
+  (Martijn van Groningen, Mike McCandless)
+  
+* LUCENE-3523: Added oal.search.spell.WordBreakSpellChecker, which 
+    generates suggestions by combining two or more terms and/or 
+    breaking terms into multiple words.  See Javadocs for usage. (James Dyer)
+
+* LUCENE-4019: Added improved parsing of Hunspell Dictionaries so those
+  rules missing the required number of parameters either ignored or 
+  cause a ParseException (depending on whether strict parsing is enabled).
+  (Luca Cavanna via Chris Male) 
+
+* LUCENE-3440: Add ordered fragments feature with IDF-weighted terms for FVH.
+  (Sebastian Lutze via Koji Sekiguchi)
+
+* LUCENE-4082: Added explain to ToParentBlockJoinQuery.
+  (Christoph Kaser, Martijn van Groningen)
+
+* LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
+  the taxonomy in place with the given one. (Shai Erera)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
@@ -929,7 +1058,21 @@ Optimizations
   performance; add float acceptableOverheadRatio to getWriter and
   getMutable API to give packed ints freedom to pick faster
   implementations (Adrien Grand via Mike McCandless)
+
+* LUCENE-2357: Reduce transient RAM usage when merging segments in
+  IndexWriter. (Adrien Grand)
+
+* LUCENE-4098: Add bulk get/set methods to PackedInts (Adrien Grand
+  via Mike McCandless)
   
+* LUCENE-4156: DirectoryTaxonomyWriter.getSize is no longer synchronized.
+  (Shai Erera, Sivan Yogev)
+
+* LUCENE-4163: Improve concurrency of MMapIndexInput.clone() by using
+  the new WeakIdentityMap on top of a ConcurrentHashMap to manage
+  the cloned instances. WeakIdentityMap was extended to support
+  iterating over its keys.  (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
@@ -981,6 +1124,30 @@ Bug fixes
   DirectoryTaxonomyWriter.addTaxonomies(). Also, the method has been renamed to
   addTaxonomy and now takes only one Directory and one OrdinalMap.
   (Shai Erera, Gilad Barkai)
+
+* LUCENE-3590: Fix AIOOBE in BytesRef/CharsRef copyBytes/copyChars when 
+  offset is nonzero, fix off-by-one in CharsRef.subSequence, and fix
+  CharsRef's CharSequence methods to throw exceptions in boundary cases
+  to properly meet the specification.  (Robert Muir)
+
+* LUCENE-4084: Attempting to reuse a single IndexWriterConfig instance
+  across more than one IndexWriter resulted in a cryptic exception.
+  This is now fixed, but requires that certain members of
+  IndexWriterConfig (MergePolicy, FlushPolicy,
+  DocumentsWriterThreadPool) implement clone.  (Robert Muir, Simon
+  Willnauer, Mike McCandless)
+
+* LUCENE-4079: Fixed loading of Hunspell dictionaries that use aliasing (AF rules)
+  (Ludovic Boutros via Chris Male)
+
+* LUCENE-4077: Expose the max score and per-group scores from
+  ToParentBlockJoinCollector (Christoph Kaser, Mike McCandless)
+
+* LUCENE-4114: Fix int overflow bugs in BYTES_FIXED_STRAIGHT and
+  BYTES_FIXED_DEREF doc values implementations (Walt Elder via Mike McCandless).
+
+* LUCENE-4147: Fixed thread safety issues when rollback() and commit()
+  are called simultaneously.  (Simon Willnauer, Mike McCandless)
 
 Documentation
 
@@ -1147,7 +1314,7 @@ API Changes
   using external norms, too.  (Uwe Schindler, Robert Muir)
 
 * LUCENE-3735: PayloadProcessorProvider was changed to return a
-  ReaderPayloadProcessor instead of DirPayloadProcessor. The selction
+  ReaderPayloadProcessor instead of DirPayloadProcessor. The selection
   of the provider to return for the factory is now based on the IndexReader
   to be merged. To mimic the old behaviour, just use IndexReader.directory()
   for choosing the provider by Directory.  (Uwe Schindler)
@@ -4118,7 +4285,7 @@ New features
     ValueSource, but takes care when composite (multi-segment) are
     passed to not double RAM usage in the FieldCache.  (Chris
     Hostetter, Mark Miller, Mike McCandless)
-   
+    
 Optimizations
 
  * LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

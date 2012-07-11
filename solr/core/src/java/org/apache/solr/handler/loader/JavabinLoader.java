@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -96,9 +96,6 @@ public class JavabinLoader extends ContentStreamLoader {
         update = new JavaBinUpdateRequestCodec().unmarshal(in, handler);
       } catch (EOFException e) {
         break; // this is expected
-      } catch (Exception e) {
-        log.error("Exception while processing update request", e);
-        break;
       }
       if (update.getDeleteById() != null || update.getDeleteQuery() != null) {
         delete(req, update, processor);

@@ -1,6 +1,6 @@
 package org.apache.lucene.search.similarities;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
@@ -48,7 +48,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * items in the list. If a test case fails, the name of the Similarity that
  * caused the failure is returned as part of the assertion error message.</p>
  * <p>Unit testing is performed by constructing statistics manually and calling
- * the {@link SimilarityBase#score(BasicStats, float, int)} method of the
+ * the {@link SimilarityBase#score(BasicStats, float, float)} method of the
  * Similarities. The statistics represent corner cases of corpus distributions.
  * </p>
  * <p>For the integration tests, a small (8-document) collection is indexed. The
@@ -112,7 +112,7 @@ public class TestSimilarityBase extends LuceneTestCase {
       FieldType ft = new FieldType(TextField.TYPE_STORED);
       ft.setIndexed(false);
       d.add(newField(FIELD_ID, Integer.toString(i), ft));
-      d.add(newField(FIELD_BODY, docs[i], TextField.TYPE_STORED));
+      d.add(newTextField(FIELD_BODY, docs[i], Field.Store.YES));
       writer.addDocument(d);
     }
     
@@ -181,12 +181,11 @@ public class TestSimilarityBase extends LuceneTestCase {
   }
   /**
    * The generic test core called by all unit test methods. It calls the
-   * {@link SimilarityBase#score(BasicStats, float, int)} method of all
+   * {@link SimilarityBase#score(BasicStats, float, float)} method of all
    * Similarities in {@link #sims} and checks if the score is valid; i.e. it
    * is a finite positive real number.
    */
-  private void unitTestCore(BasicStats stats, float freq, int docLen)
-      throws IOException { 
+  private void unitTestCore(BasicStats stats, float freq, int docLen) {
     for (SimilarityBase sim : sims) {
       BasicStats realStats = (BasicStats) sim.computeWeight(stats.getTotalBoost(),
           toCollectionStats(stats), 
@@ -514,12 +513,11 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   /**
    * The generic test core called by all correctness test methods. It calls the
-   * {@link SimilarityBase#score(BasicStats, float, int)} method of all
+   * {@link SimilarityBase#score(BasicStats, float, float)} method of all
    * Similarities in {@link #sims} and compares the score against the manually
    * computed {@code gold}.
    */
-  private void correctnessTestCore(SimilarityBase sim, float gold)
-      throws IOException {
+  private void correctnessTestCore(SimilarityBase sim, float gold) {
     BasicStats stats = createStats();
     BasicStats realStats = (BasicStats) sim.computeWeight(stats.getTotalBoost(),
         toCollectionStats(stats), 
@@ -559,9 +557,6 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   /** Test whether all similarities return document 3 before documents 7 and 8. */
   public void testHeartRanking() throws IOException {
-    assumeFalse("PreFlex codec does not support the stats necessary for this test!", 
-        "Lucene3x".equals(Codec.getDefault().getName()));
-
     Query q = new TermQuery(new Term(FIELD_BODY, "heart"));
     
     for (SimilarityBase sim : sims) {

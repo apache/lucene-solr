@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -86,6 +86,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     // which should apply the delete id:2
     writer.deleteDocuments(new Term("id", "2"));
     writer.flush(false, false);
+    fsmp = (RangeMergePolicy) writer.getConfig().getMergePolicy();
     fsmp.doMerge = true;
     fsmp.start = 0;
     fsmp.length = 2;
@@ -257,7 +258,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     @Override
     public MergeSpecification findMerges(SegmentInfos segmentInfos)
-        throws CorruptIndexException, IOException {
+        throws IOException {
       MergeSpecification ms = new MergeSpecification();
       if (doMerge) {
         OneMerge om = new OneMerge(segmentInfos.asList().subList(start, start + length));
@@ -271,13 +272,13 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     @Override
     public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
         int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
-        throws CorruptIndexException, IOException {
+        throws IOException {
       return null;
     }
 
     @Override
     public MergeSpecification findForcedDeletesMerges(
-        SegmentInfos segmentInfos) throws CorruptIndexException, IOException {
+        SegmentInfos segmentInfos) throws IOException {
       return null;
     }
 

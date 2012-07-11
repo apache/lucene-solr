@@ -1,6 +1,6 @@
 package org.apache.solr.core;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,7 +29,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml", "schema_codec.xml");
+    initCore("solrconfig_codec.xml", "schema_codec.xml");
   }
 
   public void testPostingsFormats() {

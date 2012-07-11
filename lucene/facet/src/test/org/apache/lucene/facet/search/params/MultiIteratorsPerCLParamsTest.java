@@ -7,7 +7,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -36,7 +36,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.util.ScoredDocIdsUtils;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -83,8 +83,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
     doTestCLParamMultiIteratorsByRequest(true);
   }
 
-  private void doTestCLParamMultiIteratorsByRequest(boolean cacheCLI) throws Exception,
-      CorruptIndexException, IOException {
+  private void doTestCLParamMultiIteratorsByRequest(boolean cacheCLI) throws Exception {
     // Create a CLP which generates different CLIs according to the
     // FacetRequest's dimension
     CategoryListParams clp = new CategoryListParams();
@@ -94,7 +93,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
     populateIndex(iParams, indexDir, taxoDir);
 
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-    IndexReader reader = IndexReader.open(indexDir);
+    IndexReader reader = DirectoryReader.open(indexDir);
 
     CategoryListCache clCache = null;
     if (cacheCLI) {

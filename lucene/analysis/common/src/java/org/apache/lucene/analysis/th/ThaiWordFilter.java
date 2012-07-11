@@ -23,7 +23,6 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -34,10 +33,6 @@ import org.apache.lucene.util.Version;
 /**
  * {@link TokenFilter} that use {@link java.text.BreakIterator} to break each 
  * Token that is Thai into separate Token(s) for each Thai word.
- * <p>Please note: Since matchVersion 3.1 on, this filter no longer lowercases non-thai text.
- * {@link ThaiAnalyzer} will insert a {@link LowerCaseFilter} before this filter
- * so the behaviour of the Analyzer does not change. With version 3.1, the filter handles
- * position increments correctly.
  * <p>WARNING: this filter may not be supported by all JREs.
  *    It is known to work with Sun/Oracle and Harmony JREs.
  *    If your application needs to be fully portable, consider using ICUTokenizer instead,
@@ -58,8 +53,6 @@ public final class ThaiWordFilter extends TokenFilter {
   private final BreakIterator breaker = (BreakIterator) proto.clone();
   private final CharArrayIterator charIterator = CharArrayIterator.newWordInstance();
   
-  private final boolean handlePosIncr;
-  
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
@@ -72,11 +65,9 @@ public final class ThaiWordFilter extends TokenFilter {
 
   /** Creates a new ThaiWordFilter with the specified match version. */
   public ThaiWordFilter(Version matchVersion, TokenStream input) {
-    super(matchVersion.onOrAfter(Version.LUCENE_31) ?
-      input : new LowerCaseFilter(matchVersion, input));
+    super(input);
     if (!DBBI_AVAILABLE)
       throw new UnsupportedOperationException("This JRE does not have support for Thai segmentation");
-    handlePosIncr = matchVersion.onOrAfter(Version.LUCENE_31);
   }
   
   @Override
@@ -92,7 +83,7 @@ public final class ThaiWordFilter extends TokenFilter {
         } else {
           offsetAtt.setOffset(clonedOffsetAtt.startOffset() + start, clonedOffsetAtt.startOffset() + end);
         }
-        if (handlePosIncr) posAtt.setPositionIncrement(1);
+        posAtt.setPositionIncrement(1);
         return true;
       }
       hasMoreTokensInClone = false;

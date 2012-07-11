@@ -39,6 +39,8 @@ import java.util.LinkedList;
  * This filter recursively traverses each grid length and uses methods on {@link Shape} to efficiently know
  * that all points at a prefix fit in the shape or not to either short-circuit unnecessary traversals or to efficiently
  * load all enclosed points.
+ *
+ * @lucene.internal
  */
 public class RecursivePrefixTreeFilter extends Filter {
 

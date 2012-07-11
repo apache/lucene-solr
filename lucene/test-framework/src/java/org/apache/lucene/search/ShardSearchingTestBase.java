@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,11 +31,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TermContext;
 
 // TODO
 //   - doc blocks?  so we can test joins/grouping...
@@ -518,7 +518,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     @Override
     public void run() {
       try {
-        final LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
+        final LineFileDocs docs = new LineFileDocs(random(), true);
         int numDocs = 0;
         while (System.nanoTime() < endTimeNanos) {
           final int what = random().nextInt(3);

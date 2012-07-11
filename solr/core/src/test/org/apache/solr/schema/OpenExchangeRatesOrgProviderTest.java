@@ -1,5 +1,5 @@
 package org.apache.solr.schema;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -41,7 +41,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     mockParams = new HashMap<String,String>();;
     mockParams.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, "open-exchange-rates.json");  
     oerp = new OpenExchangeRatesOrgProvider();
-    loader = new SolrResourceLoader("solr");
+    loader = new SolrResourceLoader("solr/collection1");
   }
   
   @Test

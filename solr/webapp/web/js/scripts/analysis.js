@@ -15,7 +15,7 @@
  limitations under the License.
 */
 
-var cookie_name = 'analysis_verbose';
+var cookie_analysis_verbose = 'analysis_verbose';
 
 // #/:core/analysis
 sammy.get
@@ -217,14 +217,14 @@ sammy.get
             'click',
             function( event )
             {
-              $.cookie( cookie_name, $.cookie( cookie_name ) ? null : true );
+              $.cookie( cookie_analysis_verbose, $.cookie( cookie_analysis_verbose ) ? null : true );
 
               $( this )
                 .trigger( 'toggle' );
             }
           );
 
-        if( $.cookie( cookie_name ) )
+        if( $.cookie( cookie_analysis_verbose ) )
         {
           verbose_link
             .trigger( 'toggle' );

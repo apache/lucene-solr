@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.pulsing;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,6 +22,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -36,7 +37,6 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 
 /** Concrete class that reads the current doc/freq/skip
  *  postings format 
@@ -52,7 +52,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   final PostingsReaderBase wrappedPostingsReader;
   int maxPositions;
 
-  public PulsingPostingsReader(PostingsReaderBase wrappedPostingsReader) throws IOException {
+  public PulsingPostingsReader(PostingsReaderBase wrappedPostingsReader) {
     this.wrappedPostingsReader = wrappedPostingsReader;
   }
 
@@ -179,9 +179,6 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsEnum docs(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-    if (needsFreqs && field.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-      return null;
-    }
     PulsingTermState termState = (PulsingTermState) _termState;
     if (termState.postingsSize != -1) {
       PulsingDocsEnum postings;
@@ -217,11 +214,6 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse,
                                                boolean needsOffsets) throws IOException {
-    if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-      return null;
-    } else if (needsOffsets && field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
-      return null;
-    }
 
     final PulsingTermState termState = (PulsingTermState) _termState;
 

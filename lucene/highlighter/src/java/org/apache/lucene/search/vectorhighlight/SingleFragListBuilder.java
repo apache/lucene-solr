@@ -1,6 +1,6 @@
 package org.apache.lucene.search.vectorhighlight;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,7 +38,7 @@ public class SingleFragListBuilder implements FragListBuilder {
   public FieldFragList createFieldFragList(FieldPhraseList fieldPhraseList,
       int fragCharSize) {
 
-    FieldFragList ffl = new FieldFragList( fragCharSize );
+    FieldFragList ffl = new SimpleFieldFragList( fragCharSize );
 
     List<WeightedPhraseInfo> wpil = new ArrayList<WeightedPhraseInfo>();
     Iterator<WeightedPhraseInfo> ite = fieldPhraseList.phraseList.iterator();

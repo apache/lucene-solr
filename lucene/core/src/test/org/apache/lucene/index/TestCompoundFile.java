@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,11 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.File;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -803,5 +806,51 @@ public class TestCompoundFile extends LuceneTestCase
     }
     cfr.close();
     d.close();
+  }
+  
+  public void testListAll() throws Exception {
+    Directory dir = newDirectory();
+    // riw should sometimes create docvalues fields, etc
+    RandomIndexWriter riw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    // these fields should sometimes get term vectors, etc
+    Field idField = newStringField("id", "", Field.Store.NO);
+    Field bodyField = newTextField("body", "", Field.Store.NO);
+    doc.add(idField);
+    doc.add(bodyField);
+    for (int i = 0; i < 100; i++) {
+      idField.setStringValue(Integer.toString(i));
+      bodyField.setStringValue(_TestUtil.randomUnicodeString(random()));
+      riw.addDocument(doc);
+      if (random().nextInt(7) == 0) {
+        riw.commit();
+      }
+    }
+    riw.close();
+    checkFiles(dir);
+    dir.close();
+  }
+  
+  // checks that we can open all files returned by listAll!
+  private void checkFiles(Directory dir) throws IOException {
+    for (String file : dir.listAll()) {
+      if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
+        CompoundFileDirectory cfsDir = new CompoundFileDirectory(dir, file, newIOContext(random()), false);
+        checkFiles(cfsDir); // recurse into cfs
+        cfsDir.close();
+      }
+      IndexInput in = null;
+      boolean success = false;
+      try {
+        in = dir.openInput(file, newIOContext(random()));
+        success = true;
+      } finally {
+        if (success) {
+          IOUtils.close(in);
+        } else {
+          IOUtils.closeWhileHandlingException(in);
+        }
+      }
+    }
   }
 }

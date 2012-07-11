@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spans;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,9 +29,9 @@ import java.util.Set;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.Query;
 

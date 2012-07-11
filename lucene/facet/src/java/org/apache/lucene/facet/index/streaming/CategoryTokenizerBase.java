@@ -6,13 +6,13 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 
 import org.apache.lucene.facet.index.CategoryDocumentBuilder;
 import org.apache.lucene.facet.index.attributes.CategoryAttribute;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -49,7 +49,7 @@ public abstract class CategoryTokenizerBase extends TokenFilter {
   protected CharTermAttribute termAttribute;
 
   /** The object used for constructing payloads. */
-  protected Payload payload = new Payload();
+  protected BytesRef payload = new BytesRef();
 
   /** Indexing params for creating term text **/
   protected FacetIndexingParams indexingParams;

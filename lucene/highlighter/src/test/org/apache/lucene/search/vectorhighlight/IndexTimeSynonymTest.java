@@ -1,6 +1,6 @@
 package org.apache.lucene.search.vectorhighlight;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -303,7 +303,7 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
         int p = 0;
         
         @Override
-        public boolean incrementToken() throws IOException {
+        public boolean incrementToken() {
           if( p >= tokens.length ) return false;
           clearAttributes();
           tokens[p++].copyTo(reusableToken);

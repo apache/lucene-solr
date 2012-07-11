@@ -7,7 +7,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -39,7 +39,7 @@ final class TestRuleIcuHack implements TestRule {
         if (!icuTested.getAndSet(true)) {
           Locale previous = Locale.getDefault();
           try {
-            Locale.setDefault(Locale.US);
+            Locale.setDefault(Locale.ROOT);
             Class.forName("com.ibm.icu.util.ULocale");
           } catch (ClassNotFoundException cnfe) {
             // ignore if no ICU is in classpath

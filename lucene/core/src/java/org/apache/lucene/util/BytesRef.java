@@ -1,6 +1,6 @@
 package org.apache.lucene.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,13 @@ import java.util.Comparator;
  *  existing byte[].  The {@link #bytes} member should never be null;
  *  use {@link #EMPTY_BYTES} if necessary.
  *
- *  @lucene.experimental */
+ * <p><b>Important note:</b> Unless otherwise noted, Lucene uses this class to
+ * represent terms that are encoded as <b>UTF8</b> bytes in the index. To
+ * convert them to a Java {@link String} (which is UTF16), use {@link #utf8ToString}.
+ * Using code like {@code new String(bytes, offset, length)} to do this
+ * is <b>wrong</b>, as it does not respect the correct character set
+ * and may return wrong results (depending on the platform's defaults)!
+ */
 public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /** An empty byte array for convenience */
   public static final byte[] EMPTY_BYTES = new byte[0]; 
@@ -47,6 +53,9 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    */
   public BytesRef(byte[] bytes, int offset, int length) {
     assert bytes != null;
+    assert offset >= 0;
+    assert length >= 0;
+    assert bytes.length >= offset + length;
     this.bytes = bytes;
     this.offset = offset;
     this.length = length;
@@ -84,8 +93,8 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * @param text Must be well-formed unicode text, with no
    * unpaired surrogates or invalid UTF16 code units.
    */
-  // TODO broken if offset != 0
   public void copyChars(CharSequence text) {
+    assert offset == 0;   // TODO broken if offset != 0
     UnicodeUtil.UTF16toUTF8(text, 0, text.length(), this);
   }
   
@@ -180,7 +189,7 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * new reference array.
    */
   public void copyBytes(BytesRef other) {
-    if (bytes.length < other.length) {
+    if (bytes.length - offset < other.length) {
       bytes = new byte[other.length];
       offset = 0;
     }
@@ -196,7 +205,7 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    */
   public void append(BytesRef other) {
     int newLen = length + other.length;
-    if (bytes.length < newLen) {
+    if (bytes.length - offset < newLen) {
       byte[] newBytes = new byte[newLen];
       System.arraycopy(bytes, offset, newBytes, 0, length);
       offset = 0;
@@ -206,9 +215,13 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     length = newLen;
   }
 
-  // TODO: stupid if existing offset is non-zero.
-  /** @lucene.internal */
+  /** 
+   * Used to grow the reference array. 
+   * 
+   * In general this should not be used as it does not take the offset into account.
+   * @lucene.internal */
   public void grow(int newLength) {
+    assert offset == 0; // NOTE: senseless if offset != 0
     bytes = ArrayUtil.grow(bytes, newLength);
   }
 

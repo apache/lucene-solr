@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,48 +17,44 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix;
-
-import com.spatial4j.core.exception.UnsupportedSpatialOperation;
-import com.spatial4j.core.query.SpatialArgs;
-import com.spatial4j.core.query.SpatialOperation;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.lucene.spatial.SimpleSpatialFieldInfo;
+import org.apache.lucene.queries.TermsFilter;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Node;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 
 import java.util.List;
 
+/**
+ * A basic implementation using a large {@link TermsFilter} of all the nodes from
+ * {@link SpatialPrefixTree#getNodes(com.spatial4j.core.shape.Shape, int, boolean)}.
+ *
+ * @lucene.experimental
+ */
 public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
 
-  public TermQueryPrefixTreeStrategy(SpatialPrefixTree grid) {
-    super(grid);
+  public TermQueryPrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
+    super(grid, fieldName);
   }
 
   @Override
-  public Filter makeFilter(SpatialArgs args, SimpleSpatialFieldInfo fieldInfo) {
-    return new QueryWrapperFilter( makeQuery(args, fieldInfo) );
-  }
+  public Filter makeFilter(SpatialArgs args) {
+    final SpatialOperation op = args.getOperation();
+    if (! SpatialOperation.is(op, SpatialOperation.IsWithin, SpatialOperation.Intersects, SpatialOperation.BBoxWithin, SpatialOperation.BBoxIntersects))
+      throw new UnsupportedSpatialOperation(op);
 
-  @Override
-  public Query makeQuery(SpatialArgs args, SimpleSpatialFieldInfo fieldInfo) {
-    if (args.getOperation() != SpatialOperation.Intersects &&
-        args.getOperation() != SpatialOperation.IsWithin &&
-        args.getOperation() != SpatialOperation.Overlaps ){
-      // TODO -- can translate these other query types
-      throw new UnsupportedSpatialOperation(args.getOperation());
-    }
-    Shape qshape = args.getShape();
-    int detailLevel = grid.getMaxLevelForPrecision(qshape, args.getDistPrecision());
-    List<Node> cells = grid.getNodes(qshape, detailLevel, false);
-
-    BooleanQuery booleanQuery = new BooleanQuery();
+    Shape shape = args.getShape();
+    int detailLevel = grid.getMaxLevelForPrecision(shape, args.getDistPrecision());
+    List<Node> cells = grid.getNodes(shape, detailLevel, false);
+    TermsFilter filter = new TermsFilter();
     for (Node cell : cells) {
-      booleanQuery.add(new TermQuery(new Term(fieldInfo.getFieldName(), cell.getTokenString())), BooleanClause.Occur.SHOULD);
+      filter.addTerm(new Term(getFieldName(), cell.getTokenString()));
     }
-    return booleanQuery;
+    return filter;
   }
 
 }

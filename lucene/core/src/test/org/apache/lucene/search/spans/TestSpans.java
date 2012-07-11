@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spans;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,17 +18,19 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -47,7 +49,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ReaderUtil;
 
 public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -63,7 +64,7 @@ public class TestSpans extends LuceneTestCase {
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(newField(field, docFields[i], TextField.TYPE_STORED));
+      doc.add(newTextField(field, docFields[i], Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -429,10 +430,10 @@ public class TestSpans extends LuceneTestCase {
     boolean ordered = true;
     int slop = 1;
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    AtomicReaderContext[] leaves = topReaderContext.leaves();
+    List<AtomicReaderContext> leaves = topReaderContext.leaves();
     int subIndex = ReaderUtil.subIndex(11, leaves);
-    for (int i = 0; i < leaves.length; i++) {
-      
+    for (int i = 0, c = leaves.size(); i < c; i++) {
+      final AtomicReaderContext ctx = leaves.get(i);
      
       final Similarity sim = new DefaultSimilarity() {
         @Override
@@ -452,13 +453,13 @@ public class TestSpans extends LuceneTestCase {
                                 slop,
                                 ordered);
   
-        spanScorer = searcher.createNormalizedWeight(snq).scorer(leaves[i], true, false, leaves[i].reader().getLiveDocs());
+        spanScorer = searcher.createNormalizedWeight(snq).scorer(ctx, true, false, ctx.reader().getLiveDocs());
       } finally {
         searcher.setSimilarity(oldSim);
       }
       if (i == subIndex) {
         assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-        assertEquals("first doc number", spanScorer.docID() + leaves[i].docBase, 11);
+        assertEquals("first doc number", spanScorer.docID() + ctx.docBase, 11);
         float score = spanScorer.score();
         assertTrue("first doc score should be zero, " + score, score == 0.0f);
       }  else {
@@ -470,8 +471,8 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   private void addDoc(IndexWriter writer, String id, String text) throws IOException {
     final Document doc = new Document();
-    doc.add( newField("id", id, StringField.TYPE_STORED) );
-    doc.add( newField("text", text, TextField.TYPE_STORED) );
+    doc.add( newStringField("id", id, Field.Store.YES) );
+    doc.add( newTextField("text", text, Field.Store.YES) );
     writer.addDocument(doc);
   }
 
@@ -509,7 +510,7 @@ public class TestSpans extends LuceneTestCase {
     writer.close();
 
     // Get searcher
-    final IndexReader reader = IndexReader.open(dir);
+    final IndexReader reader = DirectoryReader.open(dir);
     final IndexSearcher searcher = newSearcher(reader);
 
     // Control (make sure docs indexed)

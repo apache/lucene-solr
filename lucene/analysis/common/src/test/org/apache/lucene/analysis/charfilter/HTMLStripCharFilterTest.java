@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.charfilter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -45,7 +45,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
       }
 
       @Override
-      protected Reader initReader(Reader reader) {
+      protected Reader initReader(String fieldName, Reader reader) {
         return new HTMLStripCharFilter(CharReader.get(reader));
       }
     };
@@ -508,12 +508,12 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numRounds = RANDOM_MULTIPLIER * 10000;
+    int numRounds = RANDOM_MULTIPLIER * 1000;
     checkRandomData(random(), newTestAnalyzer(), numRounds);
   }
   
   public void testRandomHugeStrings() throws Exception {
-    int numRounds = RANDOM_MULTIPLIER * 200;
+    int numRounds = RANDOM_MULTIPLIER * 100;
     checkRandomData(random(), newTestAnalyzer(), numRounds, 8192);
   }
 

@@ -1,6 +1,6 @@
 package org.apache.lucene;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -82,14 +82,14 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       for (int j = 0; j < MAX_DOCS; j++) {
         Document d = new Document();
-        d.add(newField(PRIORITY_FIELD, HIGH_PRIORITY, TextField.TYPE_STORED));
-        d.add(newField(ID_FIELD, Integer.toString(j), TextField.TYPE_STORED));
+        d.add(newTextField(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES));
+        d.add(newTextField(ID_FIELD, Integer.toString(j), Field.Store.YES));
         writer.addDocument(d);
       }
       writer.close();
 
       // try a search without OR
-      IndexReader reader = IndexReader.open(directory);
+      IndexReader reader = DirectoryReader.open(directory);
       IndexSearcher searcher = new IndexSearcher(reader);
 
       Query query = new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY));

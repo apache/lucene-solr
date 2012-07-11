@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,8 +21,6 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -37,7 +35,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("field", "value", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "value", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -100,9 +98,9 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
       } else {
         v = "b";
       }
-      final Field f = newField("field", v, StringField.TYPE_UNSTORED);
+      final Field f = newStringField("field", v, Field.Store.NO);
       doc.add(f);
-      doc.add(newField("id", ""+i, StringField.TYPE_STORED));
+      doc.add(newStringField("id", ""+i, Field.Store.YES));
       w.addDocument(doc);
     }
 
@@ -131,7 +129,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(newField("field", English.intToEnglish(i), StringField.TYPE_UNSTORED));
+      doc.add(newStringField("field", English.intToEnglish(i), Field.Store.NO));
       writer.addDocument(doc);
     }
     

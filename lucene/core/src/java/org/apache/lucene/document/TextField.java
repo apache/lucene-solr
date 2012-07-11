@@ -1,6 +1,6 @@
 package org.apache.lucene.document;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,45 +23,41 @@ import org.apache.lucene.analysis.TokenStream;
 
 /** A field that is indexed and tokenized, without term
  *  vectors.  For example this would be used on a 'body'
- *  field, that contains the bulk of a document's text.
- * 
- *  This field's value is not stored by default; use the
- *  {@link TextField#TYPE_STORED} type (pass it to <code>new
- *  Field</code>) to store the value. */
+ *  field, that contains the bulk of a document's text. */
 
 public final class TextField extends Field {
 
   /* Indexed, tokenized, not stored. */
-  public static final FieldType TYPE_UNSTORED = new FieldType();
+  public static final FieldType TYPE_NOT_STORED = new FieldType();
 
   /* Indexed, tokenized, stored. */
   public static final FieldType TYPE_STORED = new FieldType();
 
   static {
-    TYPE_UNSTORED.setIndexed(true);
-    TYPE_UNSTORED.setTokenized(true);
-    TYPE_UNSTORED.freeze();
+    TYPE_NOT_STORED.setIndexed(true);
+    TYPE_NOT_STORED.setTokenized(true);
+    TYPE_NOT_STORED.freeze();
 
     TYPE_STORED.setIndexed(true);
-    TYPE_STORED.setStored(true);
     TYPE_STORED.setTokenized(true);
+    TYPE_STORED.setStored(true);
     TYPE_STORED.freeze();
   }
 
   // TODO: add sugar for term vectors...?
 
-  /** Creates a new un-stored TextField */
-  public TextField(String name, Reader reader) {
-    super(name, reader, TextField.TYPE_UNSTORED);
+  /** Creates a new TextField with Reader value. */
+  public TextField(String name, Reader reader, Store store) {
+    super(name, reader, store == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
   }
 
-  /** Creates a new un-stored TextField */
-  public TextField(String name, String value) {
-    super(name, value, TextField.TYPE_UNSTORED);
+  /** Creates a new TextField with String value. */
+  public TextField(String name, String value, Store store) {
+    super(name, value, store == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
   }
   
-  /** Creates a new un-stored TextField */
+  /** Creates a new un-stored TextField with TokenStream value. */
   public TextField(String name, TokenStream stream) {
-    super(name, stream, TextField.TYPE_UNSTORED);
+    super(name, stream, TYPE_NOT_STORED);
   }
 }

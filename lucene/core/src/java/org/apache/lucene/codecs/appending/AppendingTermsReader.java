@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.appending;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,12 +20,12 @@ package org.apache.lucene.codecs.appending;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.CodecUtil;
 
 /**
  * Reads append-only terms from {@link AppendingTermsWriter}

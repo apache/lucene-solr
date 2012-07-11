@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
@@ -316,10 +315,10 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           try {
             // Subsample the index terms
             clone1.seek(packedIndexStart);
-            final PackedInts.ReaderIterator termsDictOffsetsIter = PackedInts.getReaderIterator(clone1);
+            final PackedInts.ReaderIterator termsDictOffsetsIter = PackedInts.getReaderIterator(clone1, PackedInts.DEFAULT_BUFFER_SIZE);
 
             clone2.seek(packedOffsetsStart);
-            final PackedInts.ReaderIterator termOffsetsIter = PackedInts.getReaderIterator(clone2);
+            final PackedInts.ReaderIterator termOffsetsIter = PackedInts.getReaderIterator(clone2,  PackedInts.DEFAULT_BUFFER_SIZE);
 
             // TODO: often we can get by w/ fewer bits per
             // value, below.. .but this'd be more complex:

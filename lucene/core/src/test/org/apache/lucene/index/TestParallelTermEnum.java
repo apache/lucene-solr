@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -44,8 +44,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     doc = new Document();
-    doc.add(newField("field1", "the quick brown fox jumps", TextField.TYPE_STORED));
-    doc.add(newField("field2", "the quick brown fox jumps", TextField.TYPE_STORED));
+    doc.add(newTextField("field1", "the quick brown fox jumps", Field.Store.YES));
+    doc.add(newTextField("field2", "the quick brown fox jumps", Field.Store.YES));
     iw1.addDocument(doc);
 
     iw1.close();
@@ -54,8 +54,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     doc = new Document();
-    doc.add(newField("field1", "the fox jumps over the lazy dog", TextField.TYPE_STORED));
-    doc.add(newField("field3", "the fox jumps over the lazy dog", TextField.TYPE_STORED));
+    doc.add(newTextField("field1", "the fox jumps over the lazy dog", Field.Store.YES));
+    doc.add(newTextField("field3", "the fox jumps over the lazy dog", Field.Store.YES));
     iw2.addDocument(doc);
 
     iw2.close();

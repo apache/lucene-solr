@@ -1,6 +1,6 @@
 package org.apache.lucene.collation;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,13 +22,10 @@ import com.ibm.icu.text.Collator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CollationTestBase;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import java.util.Locale;
 
-@SuppressCodecs("Lucene3x")
 public class TestICUCollationKeyAnalyzer extends CollationTestBase {
 
   private Collator collator = Collator.getInstance(new Locale("fa"));
@@ -67,7 +64,7 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
   //  
   public void testCollationKeySort() throws Exception {
     Analyzer usAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.US));
+      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.ROOT));
     Analyzer franceAnalyzer = new ICUCollationKeyAnalyzer
       (TEST_VERSION_CURRENT, Collator.getInstance(Locale.FRANCE));
     Analyzer swedenAnalyzer = new ICUCollationKeyAnalyzer
@@ -76,7 +73,7 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
       (TEST_VERSION_CURRENT, Collator.getInstance(new Locale("da", "dk")));
 
     // The ICU Collator and java.text.Collator implementations differ in their
-    // orderings - "BFJHD" is the ordering for the ICU Collator for Locale.US.
+    // orderings - "BFJHD" is the ordering for the ICU Collator for Locale.ROOT.
     testCollationKeySort
     (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, 
      "BFJHD", "ECAGI", "BJDFH", "BJDHF");

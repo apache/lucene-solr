@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,7 +38,7 @@ class ConjunctionTermScorer extends Scorer {
   private DocsAndFreqs[] origDocsAndFreqs;
 
   ConjunctionTermScorer(Weight weight, float coord,
-      DocsAndFreqs[] docsAndFreqs) throws IOException {
+      DocsAndFreqs[] docsAndFreqs) {
     super(weight);
     this.coord = coord;
     this.docsAndFreqs = docsAndFreqs;

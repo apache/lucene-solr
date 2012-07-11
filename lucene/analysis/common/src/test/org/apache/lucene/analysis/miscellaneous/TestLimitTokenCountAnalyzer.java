@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -57,11 +58,11 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
     for(int i=0;i<10000;i++)
       b.append(" a");
     b.append(" x");
-    doc.add(newField("field", b.toString(), TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", b.toString(), Field.Store.NO));
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     Term t = new Term("field", "x");
     assertEquals(1, reader.docFreq(t));
     reader.close();

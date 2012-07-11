@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,8 +22,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -50,7 +50,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     for (int i = 0; i < 39; i++) {
       Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setOmitNorms(true);
       doc.add(newField(fieldName, "1 2 3 4 5 6 7 8 9 10 "
           + "1 2 3 4 5 6 7 8 9 10 " + "1 2 3 4 5 6 7 8 9 10 "
@@ -64,8 +64,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("1");
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
-      for (AtomicReaderContext atomicReaderContext : leaves) {
+      for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
@@ -110,7 +109,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int max = 1051;
     int term = random().nextInt(max);
     Integer[][] positionsInDoc = new Integer[numDocs][];
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -140,8 +139,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
-      for (AtomicReaderContext atomicReaderContext : leaves) {
+      for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
@@ -193,7 +191,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int max = 15678;
     int term = random().nextInt(max);
     int[] freqInDoc = new int[numDocs];
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -216,8 +214,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
-      for (AtomicReaderContext context : leaves) {
+      for (AtomicReaderContext context : topReaderContext.leaves()) {
         int maxDoc = context.reader().maxDoc();
         DocsEnum docsEnum = _TestUtil.docs(random(), context.reader(), fieldName, bytes, null, null, true);
         if (findNext(freqInDoc, context.docBase, context.docBase + maxDoc) == Integer.MAX_VALUE) {
@@ -270,7 +267,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     int howMany = 1000;
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     for (int i = 0; i < 39; i++) {
       Document doc = new Document();
@@ -295,8 +292,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       BytesRef bytes = new BytesRef("even");
 
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
-      AtomicReaderContext[] leaves = topReaderContext.leaves();
-      for (AtomicReaderContext atomicReaderContext : leaves) {
+      for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
@@ -326,7 +322,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("foo", "bar", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("foo", "bar", Field.Store.NO));
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     AtomicReader r = getOnlySegmentReader(reader);
@@ -351,7 +347,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("foo", "bar", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("foo", "bar", Field.Store.NO));
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     AtomicReader r = getOnlySegmentReader(reader);

@@ -141,4 +141,22 @@ public class NGramDistance implements StringDistance {
     return 1.0f - (p[sl] / Math.max(tl, sl));
   }
 
+  @Override
+  public int hashCode() {
+    return 1427 * n * getClass().hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (null == obj || getClass() != obj.getClass()) return false;
+
+    NGramDistance o = (NGramDistance)obj;
+    return o.n == this.n;
+  }
+
+  @Override
+  public String toString() {
+    return "ngram(" + n + ")";
+  }
 }

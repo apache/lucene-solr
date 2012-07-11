@@ -1,6 +1,6 @@
 package org.apache.lucene.search.similarities;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +16,8 @@ package org.apache.lucene.search.similarities;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.Locale;
 
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -91,9 +93,9 @@ public abstract class LMSimilarity extends SimilarityBase {
   public String toString() {
     String coll = collectionModel.getName();
     if (coll != null) {
-      return String.format("LM %s - %s", getName(), coll);
+      return String.format(Locale.ROOT, "LM %s - %s", getName(), coll);
     } else {
-      return String.format("LM %s", getName());
+      return String.format(Locale.ROOT, "LM %s", getName());
     }
   }
 

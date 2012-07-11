@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40.values;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -60,7 +60,7 @@ final class VarSortedBytesImpl {
     private final Comparator<BytesRef> comp;
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
-        Counter bytesUsed, IOContext context, float acceptableOverheadRatio) throws IOException {
+        Counter bytesUsed, IOContext context, float acceptableOverheadRatio) {
       super(dir, id, CODEC_NAME_IDX, CODEC_NAME_DAT, VERSION_CURRENT, bytesUsed, context, acceptableOverheadRatio, Type.BYTES_VAR_SORTED);
       this.comp = comp;
       size = 0;
@@ -239,10 +239,10 @@ final class VarSortedBytesImpl {
         final long nextOffset = ordToOffsetIndex.get(1+ord);
         datIn.seek(basePointer + offset);
         final int length = (int) (nextOffset - offset);
+        bytesRef.offset = 0;
         bytesRef.grow(length);
         datIn.readBytes(bytesRef.bytes, 0, length);
         bytesRef.length = length;
-        bytesRef.offset = 0;
         return bytesRef;
       } catch (IOException ex) {
         throw new IllegalStateException("failed", ex);

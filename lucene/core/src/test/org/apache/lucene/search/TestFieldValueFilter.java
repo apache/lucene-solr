@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -46,7 +46,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
       }
     }
 
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(new Term("all", "test")),
         new FieldValueFilter("some", true), docs);
@@ -73,7 +73,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
         numDocsWithValue++;
       }
     }
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(new Term("all", "test")),
         new FieldValueFilter("some"), docs);
@@ -89,16 +89,16 @@ public class TestFieldValueFilter extends LuceneTestCase {
   }
 
   private int[] buildIndex(RandomIndexWriter writer, int docs)
-      throws IOException, CorruptIndexException {
+      throws IOException {
     int[] docStates = new int[docs];
     for (int i = 0; i < docs; i++) {
       Document doc = new Document();
       if (random().nextBoolean()) {
         docStates[i] = 1;
-        doc.add(newField("some", "value", TextField.TYPE_STORED));
+        doc.add(newTextField("some", "value", Field.Store.YES));
       }
-      doc.add(newField("all", "test", TextField.TYPE_UNSTORED));
-      doc.add(newField("id", "" + i, TextField.TYPE_STORED));
+      doc.add(newTextField("all", "test", Field.Store.NO));
+      doc.add(newTextField("id", "" + i, Field.Store.YES));
       writer.addDocument(doc);
     }
     writer.commit();

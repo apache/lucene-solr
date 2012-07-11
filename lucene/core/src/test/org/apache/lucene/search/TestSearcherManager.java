@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -91,8 +91,8 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       writer.commit();
       mgr = new SearcherManager(dir, factory);
       isNRT = false;
+      assertMergedSegmentsWarmed = false;
     }
-    
 
     lifetimeMGR = new SearcherLifetimeManager();
   }
@@ -208,7 +208,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     final ExecutorService es = random().nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory("testIntermediateClose"));
     final SearcherFactory factory = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader r) throws IOException {
+      public IndexSearcher newSearcher(IndexReader r) {
         try {
           if (triedReopen.get()) {
             awaitEnterWarm.countDown();
@@ -334,7 +334,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
     final SearcherFactory theEvilOne = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader ignored) throws IOException {
+      public IndexSearcher newSearcher(IndexReader ignored) {
         return new IndexSearcher(other);
       }
       };

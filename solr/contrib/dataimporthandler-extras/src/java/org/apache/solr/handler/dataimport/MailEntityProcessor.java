@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -82,7 +82,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     }
     batchSize = getIntFromContext("batchSize", 20);
     customFilter = getStringFromContext("customFilter", "");
-    String s = getStringFromContext("fetchMailsSince", "");
+    String s = getStringFromContext("fetchMailsSince", null);
     if (s != null)
       try {
         fetchMailsSince = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s);
@@ -171,7 +171,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       InputStream is = part.getInputStream();
       String fileName = part.getFileName();
       Metadata md = new Metadata();
-      md.set(HttpHeaders.CONTENT_TYPE, ctype.getBaseType().toLowerCase(Locale.ENGLISH));
+      md.set(HttpHeaders.CONTENT_TYPE, ctype.getBaseType().toLowerCase(Locale.ROOT));
       md.set(TikaMetadataKeys.RESOURCE_NAME_KEY, fileName);
       String content = tika.parseToString(is, md);
       if (disp != null && disp.equalsIgnoreCase(Part.ATTACHMENT)) {

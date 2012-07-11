@@ -1,6 +1,6 @@
 package org.apache.solr.update;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
@@ -64,7 +63,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   }
 
   @Override
-  public  void decref(IndexWriterCloser closer) throws IOException {
+  public  void decref(IndexWriterCloser closer) {
     synchronized (this) {
       refCnt--;
       if (refCnt == 0) {

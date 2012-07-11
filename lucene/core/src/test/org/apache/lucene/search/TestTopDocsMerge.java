@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,32 +19,32 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util._TestUtil;
 
 public class TestTopDocsMerge extends LuceneTestCase {
 
   private static class ShardSearcher extends IndexSearcher {
-    private final AtomicReaderContext[] ctx;
+    private final List<AtomicReaderContext> ctx;
 
     public ShardSearcher(AtomicReaderContext ctx, IndexReaderContext parent) {
       super(parent);
-      this.ctx = new AtomicReaderContext[] {ctx};
+      this.ctx = Collections.singletonList(ctx);
     }
 
     public void search(Weight weight, Collector collector) throws IOException {
@@ -57,7 +57,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
     @Override
     public String toString() {
-      return "ShardSearcher(" + ctx[0] + ")";
+      return "ShardSearcher(" + ctx.get(0) + ")";
     }
   }
 
@@ -95,9 +95,9 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
       for(int docIDX=0;docIDX<numDocs;docIDX++) {
         final Document doc = new Document();
-        doc.add(newField("string", _TestUtil.randomRealisticUnicodeString(random()), StringField.TYPE_UNSTORED));
-        doc.add(newField("text", content[random().nextInt(content.length)], TextField.TYPE_UNSTORED));
-        doc.add(new FloatField("float", random().nextFloat()));
+        doc.add(newStringField("string", _TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
+        doc.add(newTextField("text", content[random().nextInt(content.length)], Field.Store.NO));
+        doc.add(new FloatField("float", random().nextFloat(), Field.Store.NO));
         final int intValue;
         if (random().nextInt(100) == 17) {
           intValue = Integer.MIN_VALUE;
@@ -106,7 +106,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         } else {
           intValue = random().nextInt();
         }
-        doc.add(new IntField("int", intValue));
+        doc.add(new IntField("int", intValue, Field.Store.NO));
         if (VERBOSE) {
           System.out.println("  doc=" + doc);
         }
@@ -132,13 +132,15 @@ public class TestTopDocsMerge extends LuceneTestCase {
       docStarts[0] = 0;
     } else {
       final CompositeReaderContext compCTX = (CompositeReaderContext) ctx;
-      subSearchers = new ShardSearcher[compCTX.leaves().length];
-      docStarts = new int[compCTX.leaves().length];
+      final int size = compCTX.leaves().size();
+      subSearchers = new ShardSearcher[size];
+      docStarts = new int[size];
       int docBase = 0;
-      for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) { 
-        subSearchers[searcherIDX] = new ShardSearcher(compCTX.leaves()[searcherIDX], compCTX);
+      for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) {
+        final AtomicReaderContext leave = compCTX.leaves().get(searcherIDX);
+        subSearchers[searcherIDX] = new ShardSearcher(leave, compCTX);
         docStarts[searcherIDX] = docBase;
-        docBase += compCTX.leaves()[searcherIDX].reader().maxDoc();
+        docBase += leave.reader().maxDoc();
       }
     }
 

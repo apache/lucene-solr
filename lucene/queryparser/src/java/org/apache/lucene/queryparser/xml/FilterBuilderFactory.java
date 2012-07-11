@@ -7,7 +7,7 @@ import org.apache.lucene.search.Filter;
 import org.w3c.dom.Element;
 
 import java.util.HashMap;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.

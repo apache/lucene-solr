@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -44,7 +44,7 @@ public abstract class SolrAnalyzer extends Analyzer {
   }
 
   @Override
-  protected Reader initReader(Reader reader) {
+  protected Reader initReader(String fieldName, Reader reader) {
     return charStream(reader);
   }
 }

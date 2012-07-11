@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.lucene40;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,13 +17,13 @@ package org.apache.lucene.codecs.lucene40;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.SegmentInfos; // javadocs
 import org.apache.lucene.store.DataOutput; // javadocs
-import org.apache.lucene.util.CodecUtil; // javadocs
 
 /**
  * Lucene 4.0 Segment info format.
@@ -72,12 +72,12 @@ public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
   private final SegmentInfoWriter writer = new Lucene40SegmentInfoWriter();
   
   @Override
-  public SegmentInfoReader getSegmentInfosReader() {
+  public SegmentInfoReader getSegmentInfoReader() {
     return reader;
   }
 
   @Override
-  public SegmentInfoWriter getSegmentInfosWriter() {
+  public SegmentInfoWriter getSegmentInfoWriter() {
     return writer;
   }
 

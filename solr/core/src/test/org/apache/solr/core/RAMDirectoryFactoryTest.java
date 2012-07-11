@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,7 +37,7 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
     final Directory directory = new RAMDirectory();
     RAMDirectoryFactory factory = new RAMDirectoryFactory()  {
       @Override
-      protected Directory create(String path) throws IOException {
+      protected Directory create(String path) {
         return directory;
       }
     };

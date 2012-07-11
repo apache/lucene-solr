@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,11 +23,11 @@ import java.util.Map;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 
@@ -102,7 +102,7 @@ public class RandomSortField extends FieldType {
 
   private static FieldComparatorSource randomComparatorSource = new FieldComparatorSource() {
     @Override
-    public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
+    public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) {
       return new FieldComparator<Integer>() {
         int seed;
         private final int[] values = new int[numHits];
@@ -119,17 +119,17 @@ public class RandomSortField extends FieldType {
         }
 
         @Override
-        public int compareBottom(int doc) throws IOException {
+        public int compareBottom(int doc) {
           return bottomVal - hash(doc+seed);
         }
 
         @Override
-        public void copy(int slot, int doc) throws IOException {
+        public void copy(int slot, int doc) {
           values[slot] = hash(doc+seed);
         }
 
         @Override
-        public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+        public FieldComparator setNextReader(AtomicReaderContext context) {
           seed = getSeed(fieldname, context);
           return this;
         }

@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -78,7 +79,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newField("field", "a b c d", TextField.TYPE_UNSTORED));
+    doc.add(newTextField("field", "a b c d", Field.Store.NO));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -142,7 +143,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir1 = newDirectory();
     RandomIndexWriter iw1 = new RandomIndexWriter(random(), dir1);
     Document doc1 = new Document();
-    doc1.add(newField("field", "foo bar", TextField.TYPE_UNSTORED));
+    doc1.add(newTextField("field", "foo bar", Field.Store.NO));
     iw1.addDocument(doc1);
     IndexReader reader1 = iw1.getReader();
     iw1.close();
@@ -150,7 +151,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir2 = newDirectory();
     RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2);
     Document doc2 = new Document();
-    doc2.add(newField("field", "foo baz", TextField.TYPE_UNSTORED));
+    doc2.add(newTextField("field", "foo baz", Field.Store.NO));
     iw2.addDocument(doc2);
     IndexReader reader2 = iw2.getReader();
     iw2.close();
@@ -202,7 +203,7 @@ public class TestBooleanQuery extends LuceneTestCase {
         contents += " f";
       }
       Document doc = new Document();
-      doc.add(new TextField("field", contents));
+      doc.add(new TextField("field", contents, Field.Store.NO));
       w.addDocument(doc);
     }
     w.forceMerge(1);
@@ -231,7 +232,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
       Weight weight = s.createNormalizedWeight(q);
 
-      Scorer scorer = weight.scorer(s.leafContexts[0],
+      Scorer scorer = weight.scorer(s.leafContexts.get(0),
                                           true, false, null);
 
       // First pass: just use .nextDoc() to gather all hits
@@ -249,7 +250,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       for(int iter2=0;iter2<10;iter2++) {
 
         weight = s.createNormalizedWeight(q);
-        scorer = weight.scorer(s.leafContexts[0],
+        scorer = weight.scorer(s.leafContexts.get(0),
                                true, false, null);
 
         if (VERBOSE) {

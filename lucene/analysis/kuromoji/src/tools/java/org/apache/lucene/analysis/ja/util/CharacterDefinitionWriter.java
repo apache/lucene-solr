@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.ja.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,9 +26,9 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.ja.dict.CharacterDefinition;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.util.CodecUtil;
 
 public final class CharacterDefinitionWriter {
 

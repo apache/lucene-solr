@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.pt;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -134,7 +134,7 @@ public abstract class RSLPStemmerBase {
         if (!exceptions[i].endsWith(suffix))
           System.err.println("warning: useless exception '" + exceptions[i] + "' does not end with '" + suffix + "'");
       }
-      this.exceptions = new CharArraySet(Version.LUCENE_31,
+      this.exceptions = new CharArraySet(Version.LUCENE_50,
            Arrays.asList(exceptions), false);
     }
 

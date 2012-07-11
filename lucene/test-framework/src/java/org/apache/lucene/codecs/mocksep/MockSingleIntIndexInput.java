@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.mocksep;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,12 +19,12 @@ package org.apache.lucene.codecs.mocksep;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.sep.IntIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.CodecUtil;
 
 /** Reads IndexInputs written with {@link
  *  MockSingleIntIndexOutput}.  NOTE: this class is just for

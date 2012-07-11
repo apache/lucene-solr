@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -158,7 +158,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   }
 
   @Override
-  void startDocument() throws IOException {
+  void startDocument() {
     assert clearLastVectorFieldName();
     reset();
   }

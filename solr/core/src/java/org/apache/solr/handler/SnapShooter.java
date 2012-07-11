@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -53,7 +53,7 @@ public class SnapShooter {
   private SolrCore solrCore;
   private SimpleFSLockFactory lockFactory;
   
-  public SnapShooter(SolrCore core, String location) throws IOException {
+  public SnapShooter(SolrCore core, String location) {
     solrCore = core;
     if (location == null) snapDir = core.getDataDir();
     else  {
@@ -91,7 +91,7 @@ public class SnapShooter {
       if(numberToKeep<Integer.MAX_VALUE) {
         deleteOldBackups(numberToKeep);
       }
-      SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.US);
+      SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.ROOT);
       directoryName = "snapshot." + fmt.format(new Date());
       lock = lockFactory.makeLock(directoryName + ".lock");
       if (lock.isLocked()) return;
@@ -151,7 +151,7 @@ public class SnapShooter {
         if(m.find()) {
           try {
             this.dir = dir;
-            this.timestamp = new SimpleDateFormat(DATE_FMT).parse(m.group(1));
+            this.timestamp = new SimpleDateFormat(DATE_FMT, Locale.ROOT).parse(m.group(1));
           } catch(Exception e) {
             this.dir = null;
             this.timestamp = null;
@@ -165,7 +165,7 @@ public class SnapShooter {
   }
 
   public static final String SNAP_DIR = "snapDir";
-  public static final String DATE_FMT = "yyyyMMddHHmmss";
+  public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
   
 
   private class FileCopier {

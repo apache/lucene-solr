@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,13 +19,16 @@ package org.apache.solr.handler.admin;
 
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Date;
 import java.util.Locale;
 
@@ -81,8 +84,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   /**
    * Get system info
    */
-  private SimpleOrderedMap<Object> getCoreInfo( SolrCore core ) throws Exception 
-  {
+  private SimpleOrderedMap<Object> getCoreInfo( SolrCore core ) {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     
     IndexSchema schema = core.getSchema();
@@ -110,8 +112,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   /**
    * Get system info
    */
-  public static SimpleOrderedMap<Object> getSystemInfo() throws Exception 
-  {
+  public static SimpleOrderedMap<Object> getSystemInfo() {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
@@ -133,7 +134,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     addGetterIfAvaliable( os, "maxFileDescriptorCount", info );
 
     try { 
-      if( !os.getName().toLowerCase(Locale.ENGLISH).startsWith( "windows" ) ) {
+      if( !os.getName().toLowerCase(Locale.ROOT).startsWith( "windows" ) ) {
         // Try some command line things
         info.add( "uname",  execute( "uname -a" ) );
         info.add( "uptime", execute( "uptime" ) );
@@ -182,7 +183,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       process = Runtime.getRuntime().exec(cmd);
       in = new DataInputStream( process.getInputStream() );
       // use default charset from locale here, because the command invoked also uses the default locale:
-      return IOUtils.toString(in);
+      return IOUtils.toString(new InputStreamReader(in, Charset.defaultCharset()));
     }
     catch( Exception ex ) {
       // ignore - log.warn("Error executing command", ex);
@@ -210,7 +211,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     jvm.add( "processors", runtime.availableProcessors() );
     
     // not thread safe, but could be thread local
-    DecimalFormat df = new DecimalFormat("#.#");
+    DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ROOT));
 
     SimpleOrderedMap<Object> mem = new SimpleOrderedMap<Object>();
     SimpleOrderedMap<Object> raw = new SimpleOrderedMap<Object>();
@@ -255,8 +256,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     return jvm;
   }
   
-  private static SimpleOrderedMap<Object> getLuceneInfo() throws Exception 
-  {
+  private static SimpleOrderedMap<Object> getLuceneInfo() {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
 
     Package p = SolrCore.class.getPackage();

@@ -1,5 +1,6 @@
 package org.apache.lucene.search;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -8,6 +9,7 @@ import java.util.BitSet;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -15,9 +17,8 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -51,7 +52,7 @@ public class TestScorerPerf extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     iw.addDocument(new Document());
     iw.close();
-    r = IndexReader.open(d);
+    r = DirectoryReader.open(d);
     s = new IndexSearcher(r);
   }
 
@@ -69,7 +70,7 @@ public class TestScorerPerf extends LuceneTestCase {
       Document d = new Document();
       for (int j=0; j<nTerms; j++) {
         if (random().nextInt(freq[j]) == 0) {
-          d.add(newField("f", terms[j].text(), StringField.TYPE_UNSTORED));
+          d.add(newStringField("f", terms[j].text(), Field.Store.NO));
           //System.out.println(d);
         }
       }

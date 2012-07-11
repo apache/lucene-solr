@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,6 +31,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -38,7 +39,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -224,7 +225,7 @@ public class FileFloatSource extends ValueSource {
       return vals;
     }
 
-    BufferedReader r = new BufferedReader(new InputStreamReader(is));
+    BufferedReader r = new BufferedReader(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
 
     String idName = ffs.keyField.getName();
     FieldType idType = ffs.keyField.getType();

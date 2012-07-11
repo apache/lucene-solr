@@ -1,6 +1,6 @@
 package org.apache.lucene.document;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -30,14 +30,14 @@ import org.apache.lucene.util.NumericUtils;
  * for efficient range filtering and sorting. Here's an example usage:
  * 
  * <pre>
- * document.add(new IntField(name, 6));
+ * document.add(new IntField(name, 6, Field.Store.NO));
  * </pre>
  * 
  * For optimal performance, re-use the <code>IntField</code> and
  * {@link Document} instance for more than one document:
  * 
  * <pre>
- *  IntField field = new IntField(name, 6);
+ *  IntField field = new IntField(name, 6, Field.Store.NO);
  *  Document document = new Document();
  *  document.add(field);
  * 
@@ -58,10 +58,6 @@ import org.apache.lucene.util.NumericUtils;
  * <code>IntField</code>, use the normal numeric sort types, eg
  * {@link org.apache.lucene.search.SortField.Type#INT}. <code>IntField</code> 
  * values can also be loaded directly from {@link FieldCache}.</p>
- *
- * <p>By default, a <code>IntField</code>'s value is not stored but
- * is indexed for range filtering and sorting.  You can use
- * {@link StoredField} to also store the value.
  *
  * <p>You may add the same field name as an <code>IntField</code> to
  * the same document more than once.  Range querying and
@@ -118,21 +114,32 @@ import org.apache.lucene.util.NumericUtils;
 
 public final class IntField extends Field {
   
-  public static final FieldType TYPE = new FieldType();
+  public static final FieldType TYPE_NOT_STORED = new FieldType();
   static {
-    TYPE.setIndexed(true);
-    TYPE.setTokenized(true);
-    TYPE.setOmitNorms(true);
-    TYPE.setIndexOptions(IndexOptions.DOCS_ONLY);
-    TYPE.setNumericType(FieldType.NumericType.INT);
-    TYPE.freeze();
+    TYPE_NOT_STORED.setIndexed(true);
+    TYPE_NOT_STORED.setTokenized(true);
+    TYPE_NOT_STORED.setOmitNorms(true);
+    TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
+    TYPE_NOT_STORED.setNumericType(FieldType.NumericType.INT);
+    TYPE_NOT_STORED.freeze();
   }
 
-  /** Creates an IntField with the provided value
+  public static final FieldType TYPE_STORED = new FieldType();
+  static {
+    TYPE_STORED.setIndexed(true);
+    TYPE_STORED.setTokenized(true);
+    TYPE_STORED.setOmitNorms(true);
+    TYPE_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
+    TYPE_STORED.setNumericType(FieldType.NumericType.INT);
+    TYPE_STORED.setStored(true);
+    TYPE_STORED.freeze();
+  }
+
+  /** Creates a stored or un-stored IntField with the provided value
    *  and default <code>precisionStep</code> {@link
    *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
-  public IntField(String name, int value) {
-    super(name, TYPE);
+  public IntField(String name, int value, Store stored) {
+    super(name, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
     fieldsData = Integer.valueOf(value);
   }
   

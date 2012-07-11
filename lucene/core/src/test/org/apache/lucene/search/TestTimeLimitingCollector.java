@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,7 @@ import java.util.BitSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -116,7 +116,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
 
   private void add(String value, RandomIndexWriter iw) throws IOException {
     Document d = new Document();
-    d.add(newField(FIELD_NAME, value, TextField.TYPE_UNSTORED));
+    d.add(newTextField(FIELD_NAME, value, Field.Store.NO));
     iw.addDocument(d);
   }
 

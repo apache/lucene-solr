@@ -1,6 +1,6 @@
 package org.apache.lucene.util.junitcompat;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -293,7 +293,7 @@ public class TestReproduceMessage extends WithNestedTests {
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
   }
 
-  private String runAndReturnSyserr() throws Exception {
+  private String runAndReturnSyserr() {
     JUnitCore.runClasses(Nested.class);
 
     String err = getSysErr();

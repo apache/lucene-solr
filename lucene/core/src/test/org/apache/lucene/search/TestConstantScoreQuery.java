@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -90,7 +90,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       RandomIndexWriter writer = new RandomIndexWriter (random(), directory);
 
       Document doc = new Document();
-      doc.add(newField("field", "term", StringField.TYPE_UNSTORED));
+      doc.add(newStringField("field", "term", Field.Store.NO));
       writer.addDocument(doc);
 
       reader = writer.getReader();
@@ -134,10 +134,10 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
-    doc.add(newField("field", "a", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("field", "a", Field.Store.NO));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newField("field", "b", StringField.TYPE_UNSTORED));
+    doc.add(newStringField("field", "b", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();

@@ -3,7 +3,7 @@ package org.apache.lucene.facet.taxonomy.writercache.lru;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -61,10 +61,15 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
-  public synchronized boolean hasRoom(int n) {
-    return n <= (cache.getMaxSize() - cache.getSize());
+  public synchronized boolean isFull() {
+    return cache.getSize() == cache.getMaxSize();
   }
 
+  @Override
+  public synchronized void clear() {
+    cache.clear();
+  }
+  
   @Override
   public synchronized void close() {
     cache.clear();

@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.synonym;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -92,7 +92,7 @@ public class WordnetSynonymParser extends SynonymMap.Builder {
     return analyze(analyzer, text, reuse);
   }
   
-  private void addInternal(CharsRef synset[], int size) throws IOException {
+  private void addInternal(CharsRef synset[], int size) {
     if (size <= 1) {
       return; // nothing to do
     }

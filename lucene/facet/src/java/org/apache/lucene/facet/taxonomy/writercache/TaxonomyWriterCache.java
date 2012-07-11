@@ -3,7 +3,7 @@ package org.apache.lucene.facet.taxonomy.writercache;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -97,19 +97,18 @@ public interface TaxonomyWriterCache {
    * If the given length is negative or bigger than the path's actual
    * length, the full path is taken. 
    */
-  public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal);  
+  public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal);
+  
+  /**
+   * Returns true if the cache is full, such that the next {@link #put} will
+   * evict entries from it, false otherwise.
+   */
+  public boolean isFull();
 
   /**
-   * Sometimes the cache is either unlimited in size, or limited by a very
-   * big size, and in that case when we add a lot of categories it might
-   * make sense to pre-load the cache with all the existing categories.
-   * However, this pre-load does not make sense when the allowed cache
-   * size is small. The hasRoom() method allows to differentiate between
-   * these cases.
-   * <P>  
-   * After hasRoom(n) returned <code>true</code>, the following n put()
-   * should return false (meaning that the cache was not cleared).
+   * Clears the content of the cache. Unlike {@link #close()}, the caller can
+   * assume that the cache is still operable after this method returns.
    */
-  public boolean hasRoom(int numberOfEntries);
-
+  public void clear();
+  
 }

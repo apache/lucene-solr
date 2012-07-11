@@ -43,10 +43,17 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
     // make sure it loaded the factories
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain( "standard" );
     
-    // Make sure it got 3 items and configured the Log chain ok
-    assertEquals( 3, chained.getFactories().length );
-    LogUpdateProcessorFactory log = (LogUpdateProcessorFactory)chained.getFactories()[0];
-    assertEquals( 100, log.maxNumToLog );
+    // Make sure it got 3 items (4 configured, 1 is enable=false)
+    assertEquals("wrong number of (enabled) factories in chain",
+                 3, chained.getFactories().length );
+
+    // first one should be log, and it should be configured properly
+    UpdateRequestProcessorFactory first = chained.getFactories()[0];
+    assertEquals("wrong factory at front of chain",
+                 LogUpdateProcessorFactory.class, first.getClass());
+    LogUpdateProcessorFactory log = (LogUpdateProcessorFactory)first;
+    assertEquals("wrong config for LogUpdateProcessorFactory",
+                 100, log.maxNumToLog );
     
     
     UpdateRequestProcessorChain custom = core.getUpdateProcessingChain( null );

@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -30,13 +30,11 @@ import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.Version;
 
 /**
- * Holds all the configuration of {@link IndexWriter}.  You
- * should instantiate this class, call the setters to set
- * your configuration, then pass it to {@link IndexWriter}.
- * Note that {@link IndexWriter} makes a private clone; if
- * you need to subsequently change settings use {@link
- * IndexWriter#getConfig}.
- *
+ * Holds all the configuration that is used to create an {@link IndexWriter}.
+ * Once {@link IndexWriter} has been created with this object, changes to this
+ * object will not affect the {@link IndexWriter} instance. For that, use
+ * {@link LiveIndexWriterConfig} that is returned from {@link IndexWriter#getConfig()}.
+ * 
  * <p>
  * All setter methods return {@link IndexWriterConfig} to allow chaining
  * settings conveniently, for example:
@@ -45,10 +43,12 @@ import org.apache.lucene.util.Version;
  * IndexWriterConfig conf = new IndexWriterConfig(analyzer);
  * conf.setter1().setter2();
  * </pre>
- *
+ * 
+ * @see IndexWriter#getConfig()
+ * 
  * @since 3.1
  */
-public final class IndexWriterConfig implements Cloneable {
+public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cloneable {
 
   /**
    * Specifies the open mode for {@link IndexWriter}.
@@ -129,88 +129,39 @@ public final class IndexWriterConfig implements Cloneable {
     return WRITE_LOCK_TIMEOUT;
   }
 
-  private final Analyzer analyzer;
-  private volatile IndexDeletionPolicy delPolicy;
-  private volatile IndexCommit commit;
-  private volatile OpenMode openMode;
-  private volatile Similarity similarity;
-  private volatile int termIndexInterval; // TODO: this should be private to the codec, not settable here
-  private volatile MergeScheduler mergeScheduler;
-  private volatile long writeLockTimeout;
-  private volatile int maxBufferedDeleteTerms;
-  private volatile double ramBufferSizeMB;
-  private volatile int maxBufferedDocs;
-  private volatile IndexingChain indexingChain;
-  private volatile IndexReaderWarmer mergedSegmentWarmer;
-  private volatile Codec codec;
-  private volatile InfoStream infoStream;
-  private volatile MergePolicy mergePolicy;
-  private volatile DocumentsWriterPerThreadPool indexerThreadPool;
-  private volatile boolean readerPooling;
-  private volatile int readerTermsIndexDivisor;
-  private volatile FlushPolicy flushPolicy;
-  private volatile int perThreadHardLimitMB;
-
-  private Version matchVersion;
-
   /**
    * Creates a new config that with defaults that match the specified
    * {@link Version} as well as the default {@link
-   * Analyzer}. If matchVersion is >= {@link
-   * Version#LUCENE_32}, {@link TieredMergePolicy} is used
-   * for merging; else {@link LogByteSizeMergePolicy}.
+   * Analyzer}. By default, {@link TieredMergePolicy} is used
+   * for merging;
    * Note that {@link TieredMergePolicy} is free to select
    * non-contiguous merges, which means docIDs may not
-   * remain montonic over time.  If this is a problem you
+   * remain monotonic over time.  If this is a problem you
    * should switch to {@link LogByteSizeMergePolicy} or
    * {@link LogDocMergePolicy}.
    */
   public IndexWriterConfig(Version matchVersion, Analyzer analyzer) {
-    this.matchVersion = matchVersion;
-    this.analyzer = analyzer;
-    delPolicy = new KeepOnlyLastCommitDeletionPolicy();
-    commit = null;
-    openMode = OpenMode.CREATE_OR_APPEND;
-    similarity = IndexSearcher.getDefaultSimilarity();
-    termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL; // TODO: this should be private to the codec, not settable here
-    mergeScheduler = new ConcurrentMergeScheduler();
-    writeLockTimeout = WRITE_LOCK_TIMEOUT;
-    maxBufferedDeleteTerms = DEFAULT_MAX_BUFFERED_DELETE_TERMS;
-    ramBufferSizeMB = DEFAULT_RAM_BUFFER_SIZE_MB;
-    maxBufferedDocs = DEFAULT_MAX_BUFFERED_DOCS;
-    indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
-    mergedSegmentWarmer = null;
-    codec = Codec.getDefault();
-    infoStream = InfoStream.getDefault();
-    if (matchVersion.onOrAfter(Version.LUCENE_32)) {
-      mergePolicy = new TieredMergePolicy();
-    } else {
-      mergePolicy = new LogByteSizeMergePolicy();
-    }
-    flushPolicy = new FlushByRamOrCountsPolicy();
-    readerPooling = DEFAULT_READER_POOLING;
-    indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(DEFAULT_MAX_THREAD_STATES);
-    readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;
-    perThreadHardLimitMB = DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
+    super(analyzer, matchVersion);
   }
 
   @Override
   public IndexWriterConfig clone() {
-    // Shallow clone is the only thing that's possible, since parameters like
-    // analyzer, index commit etc. do not implement Cloneable.
     try {
-      return (IndexWriterConfig)super.clone();
+      IndexWriterConfig clone = (IndexWriterConfig) super.clone();
+      
+      // Mostly shallow clone, but do a deepish clone of
+      // certain objects that have state that cannot be shared
+      // across IW instances:
+      clone.flushPolicy = flushPolicy.clone();
+      clone.indexerThreadPool = indexerThreadPool.clone();
+      clone.mergePolicy = mergePolicy.clone();
+      
+      return clone;
     } catch (CloneNotSupportedException e) {
-      // should not happen
       throw new RuntimeException(e);
     }
   }
-
-  /** Returns the default analyzer to use for indexing documents. */
-  public Analyzer getAnalyzer() {
-    return analyzer;
-  }
-
+  
   /** Specifies {@link OpenMode} of the index.
    * 
    * <p>Only takes effect when IndexWriter is first created. */
@@ -219,7 +170,7 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /** Returns the {@link OpenMode} set by {@link #setOpenMode(OpenMode)}. */
+  @Override
   public OpenMode getOpenMode() {
     return openMode;
   }
@@ -246,11 +197,7 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /**
-   * Returns the {@link IndexDeletionPolicy} specified in
-   * {@link #setIndexDeletionPolicy(IndexDeletionPolicy)} or the default
-   * {@link KeepOnlyLastCommitDeletionPolicy}/
-   */
+  @Override
   public IndexDeletionPolicy getIndexDeletionPolicy() {
     return delPolicy;
   }
@@ -265,11 +212,7 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /**
-   * Returns the {@link IndexCommit} as specified in
-   * {@link #setIndexCommit(IndexCommit)} or the default, <code>null</code>
-   * which specifies to open the latest index commit point.
-   */
+  @Override
   public IndexCommit getIndexCommit() {
     return commit;
   }
@@ -286,50 +229,9 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /**
-   * Expert: returns the {@link Similarity} implementation used by this
-   * IndexWriter.
-   */
+  @Override
   public Similarity getSimilarity() {
     return similarity;
-  }
-
-  /**
-   * Expert: set the interval between indexed terms. Large values cause less
-   * memory to be used by IndexReader, but slow random-access to terms. Small
-   * values cause more memory to be used by an IndexReader, and speed
-   * random-access to terms.
-   * <p>
-   * This parameter determines the amount of computation required per query
-   * term, regardless of the number of documents that contain that term. In
-   * particular, it is the maximum number of other terms that must be scanned
-   * before a term is located and its frequency and position information may be
-   * processed. In a large index with user-entered query terms, query processing
-   * time is likely to be dominated not by term lookup but rather by the
-   * processing of frequency and positional data. In a small index or when many
-   * uncommon query terms are generated (e.g., by wildcard queries) term lookup
-   * may become a dominant cost.
-   * <p>
-   * In particular, <code>numUniqueTerms/interval</code> terms are read into
-   * memory by an IndexReader, and, on average, <code>interval/2</code> terms
-   * must be scanned for each random term access.
-   *
-   * @see #DEFAULT_TERM_INDEX_INTERVAL
-   *
-   * <p>Takes effect immediately, but only applies to newly
-   *  flushed/merged segments. */
-  public IndexWriterConfig setTermIndexInterval(int interval) { // TODO: this should be private to the codec, not settable here
-    this.termIndexInterval = interval;
-    return this;
-  }
-
-  /**
-   * Returns the interval between indexed terms.
-   *
-   * @see #setTermIndexInterval(int)
-   */
-  public int getTermIndexInterval() { // TODO: this should be private to the codec, not settable here
-    return termIndexInterval;
   }
 
   /**
@@ -345,10 +247,7 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /**
-   * Returns the {@link MergeScheduler} that was set by
-   * {@link #setMergeScheduler(MergeScheduler)}
-   */
+  @Override
   public MergeScheduler getMergeScheduler() {
     return mergeScheduler;
   }
@@ -364,171 +263,9 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /**
-   * Returns allowed timeout when acquiring the write lock.
-   *
-   * @see #setWriteLockTimeout(long)
-   */
+  @Override
   public long getWriteLockTimeout() {
     return writeLockTimeout;
-  }
-
-  /**
-   * Determines the minimal number of delete terms required before the buffered
-   * in-memory delete terms and queries are applied and flushed.
-   * <p>Disabled by default (writer flushes by RAM usage).</p>
-   * <p>
-   * NOTE:  This setting won't trigger a segment flush.
-   * </p>
-   * 
-   * @throws IllegalArgumentException if maxBufferedDeleteTerms
-   * is enabled but smaller than 1
-   * @see #setRAMBufferSizeMB
-   * @see #setFlushPolicy(FlushPolicy)
-   *
-   * <p>Takes effect immediately, but only the next time a
-   * document is added, updated or deleted.
-   */
-  public IndexWriterConfig setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
-    if (maxBufferedDeleteTerms != DISABLE_AUTO_FLUSH
-        && maxBufferedDeleteTerms < 1)
-      throw new IllegalArgumentException(
-          "maxBufferedDeleteTerms must at least be 1 when enabled");
-    this.maxBufferedDeleteTerms = maxBufferedDeleteTerms;
-    return this;
-  }
-
-  /**
-   * Returns the number of buffered deleted terms that will trigger a flush of all
-   * buffered deletes if enabled.
-   *
-   * @see #setMaxBufferedDeleteTerms(int)
-   */
-  public int getMaxBufferedDeleteTerms() {
-    return maxBufferedDeleteTerms;
-  }
-
-  /**
-   * Determines the amount of RAM that may be used for buffering added documents
-   * and deletions before they are flushed to the Directory. Generally for
-   * faster indexing performance it's best to flush by RAM usage instead of
-   * document count and use as large a RAM buffer as you can.
-   * <p>
-   * When this is set, the writer will flush whenever buffered documents and
-   * deletions use this much RAM. Pass in {@link #DISABLE_AUTO_FLUSH} to prevent
-   * triggering a flush due to RAM usage. Note that if flushing by document
-   * count is also enabled, then the flush will be triggered by whichever comes
-   * first.
-   * <p>
-   * The maximum RAM limit is inherently determined by the JVMs available memory.
-   * Yet, an {@link IndexWriter} session can consume a significantly larger amount
-   * of memory than the given RAM limit since this limit is just an indicator when
-   * to flush memory resident documents to the Directory. Flushes are likely happen
-   * concurrently while other threads adding documents to the writer. For application
-   * stability the available memory in the JVM should be significantly larger than
-   * the RAM buffer used for indexing.
-   * <p>
-   * <b>NOTE</b>: the account of RAM usage for pending deletions is only
-   * approximate. Specifically, if you delete by Query, Lucene currently has no
-   * way to measure the RAM usage of individual Queries so the accounting will
-   * under-estimate and you should compensate by either calling commit()
-   * periodically yourself, or by using {@link #setMaxBufferedDeleteTerms(int)}
-   * to flush and apply buffered deletes by count instead of RAM usage
-   * (for each buffered delete Query a constant number of bytes is used to estimate
-   * RAM usage). Note that enabling {@link #setMaxBufferedDeleteTerms(int)} will
-   * not trigger any segment flushes.
-   * <p>
-   * <b>NOTE</b>: It's not guaranteed that all memory resident documents are flushed 
-   * once this limit is exceeded. Depending on the configured {@link FlushPolicy} only a
-   * subset of the buffered documents are flushed and therefore only parts of the RAM
-   * buffer is released.    
-   * <p>
-   * 
-   * The default value is {@link #DEFAULT_RAM_BUFFER_SIZE_MB}.
-   * @see #setFlushPolicy(FlushPolicy)
-   * @see #setRAMPerThreadHardLimitMB(int)
-   *
-   * <p>Takes effect immediately, but only the next time a
-   * document is added, updated or deleted.
-   *
-   * @throws IllegalArgumentException
-   *           if ramBufferSize is enabled but non-positive, or it disables
-   *           ramBufferSize when maxBufferedDocs is already disabled
-   *           
-   */
-  public IndexWriterConfig setRAMBufferSizeMB(double ramBufferSizeMB) {
-    if (ramBufferSizeMB != DISABLE_AUTO_FLUSH && ramBufferSizeMB <= 0.0)
-      throw new IllegalArgumentException(
-          "ramBufferSize should be > 0.0 MB when enabled");
-    if (ramBufferSizeMB == DISABLE_AUTO_FLUSH && maxBufferedDocs == DISABLE_AUTO_FLUSH)
-      throw new IllegalArgumentException(
-          "at least one of ramBufferSize and maxBufferedDocs must be enabled");
-    this.ramBufferSizeMB = ramBufferSizeMB;
-    return this;
-  }
-
-  /** Returns the value set by {@link #setRAMBufferSizeMB(double)} if enabled. */
-  public double getRAMBufferSizeMB() {
-    return ramBufferSizeMB;
-  }
-
-  /**
-   * Determines the minimal number of documents required before the buffered
-   * in-memory documents are flushed as a new Segment. Large values generally
-   * give faster indexing.
-   *
-   * <p>
-   * When this is set, the writer will flush every maxBufferedDocs added
-   * documents. Pass in {@link #DISABLE_AUTO_FLUSH} to prevent triggering a
-   * flush due to number of buffered documents. Note that if flushing by RAM
-   * usage is also enabled, then the flush will be triggered by whichever comes
-   * first.
-   *
-   * <p>
-   * Disabled by default (writer flushes by RAM usage).
-   *
-   * <p>Takes effect immediately, but only the next time a
-   * document is added, updated or deleted.
-   *
-   * @see #setRAMBufferSizeMB(double)
-   * @see #setFlushPolicy(FlushPolicy)
-   * @throws IllegalArgumentException
-   *           if maxBufferedDocs is enabled but smaller than 2, or it disables
-   *           maxBufferedDocs when ramBufferSize is already disabled
-   */
-  public IndexWriterConfig setMaxBufferedDocs(int maxBufferedDocs) {
-    if (maxBufferedDocs != DISABLE_AUTO_FLUSH && maxBufferedDocs < 2)
-      throw new IllegalArgumentException(
-          "maxBufferedDocs must at least be 2 when enabled");
-    if (maxBufferedDocs == DISABLE_AUTO_FLUSH
-        && ramBufferSizeMB == DISABLE_AUTO_FLUSH)
-      throw new IllegalArgumentException(
-          "at least one of ramBufferSize and maxBufferedDocs must be enabled");
-    this.maxBufferedDocs = maxBufferedDocs;
-    return this;
-  }
-
-  /**
-   * Returns the number of buffered added documents that will trigger a flush if
-   * enabled.
-   *
-   * @see #setMaxBufferedDocs(int)
-   */
-  public int getMaxBufferedDocs() {
-    return maxBufferedDocs;
-  }
-
-  /** Set the merged segment warmer. See {@link IndexReaderWarmer}.
-   *
-   * <p>Takes effect on the next merge. */
-  public IndexWriterConfig setMergedSegmentWarmer(IndexReaderWarmer mergeSegmentWarmer) {
-    this.mergedSegmentWarmer = mergeSegmentWarmer;
-    return this;
-  }
-
-  /** Returns the current merged segment warmer. See {@link IndexReaderWarmer}. */
-  public IndexReaderWarmer getMergedSegmentWarmer() {
-    return mergedSegmentWarmer;
   }
 
   /**
@@ -544,25 +281,24 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /** Set the Codec. See {@link Codec}.
-   *
-   * <p>Only takes effect when IndexWriter is first created. */
+  /**
+   * Set the {@link Codec}.
+   * 
+   * <p>
+   * Only takes effect when IndexWriter is first created.
+   */
   public IndexWriterConfig setCodec(Codec codec) {
     this.codec = codec;
     return this;
   }
 
-  /** Returns the current Codec. See {@link Codec}. */
+  @Override
   public Codec getCodec() {
     return codec;
   }
 
 
-  /**
-   * Returns the current MergePolicy in use by this writer.
-   *
-   * @see #setMergePolicy(MergePolicy)
-   */
+  @Override
   public MergePolicy getMergePolicy() {
     return mergePolicy;
   }
@@ -583,17 +319,15 @@ public final class IndexWriterConfig implements Cloneable {
    * NOTE: This only takes effect when IndexWriter is first created.</p>*/
   IndexWriterConfig setIndexerThreadPool(DocumentsWriterPerThreadPool threadPool) {
     if (threadPool == null) {
-      throw new IllegalArgumentException("DocumentsWriterPerThreadPool must not be nul");
+      throw new IllegalArgumentException("threadPool must not be null");
     }
     this.indexerThreadPool = threadPool;
     return this;
   }
 
-  /** Returns the configured {@link DocumentsWriterPerThreadPool} instance.
-   * @see #setIndexerThreadPool(DocumentsWriterPerThreadPool)
-   * @return the configured {@link DocumentsWriterPerThreadPool} instance.*/
+  @Override
   DocumentsWriterPerThreadPool getIndexerThreadPool() {
-    return this.indexerThreadPool;
+    return indexerThreadPool;
   }
 
   /**
@@ -608,8 +342,7 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /** Returns the max number of simultaneous threads that
-   *  may be indexing documents at once in IndexWriter. */
+  @Override
   public int getMaxThreadStates() {
     try {
       return ((ThreadAffinityDocumentsWriterThreadPool) indexerThreadPool).getMaxThreadStates();
@@ -633,8 +366,7 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /** Returns true if IndexWriter should pool readers even
-   *  if {@link DirectoryReader#open(IndexWriter, boolean)} has not been called. */
+  @Override
   public boolean getReaderPooling() {
     return readerPooling;
   }
@@ -647,34 +379,11 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /** Returns the indexing chain set on {@link #setIndexingChain(IndexingChain)}. */
+  @Override
   IndexingChain getIndexingChain() {
     return indexingChain;
   }
 
-  /** Sets the termsIndexDivisor passed to any readers that
-   *  IndexWriter opens, for example when applying deletes
-   *  or creating a near-real-time reader in {@link
-   *  DirectoryReader#open(IndexWriter, boolean)}. If you pass -1, the terms index 
-   *  won't be loaded by the readers. This is only useful in 
-   *  advanced situations when you will only .next() through 
-   *  all terms; attempts to seek will hit an exception.
-   *
-   * <p>Takes effect immediately, but only applies to
-   * readers opened after this call */
-  public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
-    if (divisor <= 0 && divisor != -1) {
-      throw new IllegalArgumentException("divisor must be >= 1, or -1 (got " + divisor + ")");
-    }
-    readerTermsIndexDivisor = divisor;
-    return this;
-  }
-
-  /** @see #setReaderTermsIndexDivisor(int) */
-  public int getReaderTermsIndexDivisor() {
-    return readerTermsIndexDivisor;
-  }
-  
   /**
    * Expert: Controls when segments are flushed to disk during indexing.
    * The {@link FlushPolicy} initialized during {@link IndexWriter} instantiation and once initialized
@@ -707,26 +416,54 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /**
-   * Returns the max amount of memory each {@link DocumentsWriterPerThread} can
-   * consume until forcefully flushed.
-   * @see #setRAMPerThreadHardLimitMB(int) 
-   */
+  @Override
   public int getRAMPerThreadHardLimitMB() {
     return perThreadHardLimitMB;
   }
-  /**
-   * @see #setFlushPolicy(FlushPolicy)
-   */
+  
+  @Override
   public FlushPolicy getFlushPolicy() {
     return flushPolicy;
   }
   
-  /**
-   * @see #setInfoStream(InfoStream)
-   */
+  @Override
   public InfoStream getInfoStream() {
     return infoStream;
+  }
+  
+  @Override
+  public Analyzer getAnalyzer() {
+    return super.getAnalyzer();
+  }
+  
+  @Override
+  public int getMaxBufferedDeleteTerms() {
+    return super.getMaxBufferedDeleteTerms();
+  }
+  
+  @Override
+  public int getMaxBufferedDocs() {
+    return super.getMaxBufferedDocs();
+  }
+  
+  @Override
+  public IndexReaderWarmer getMergedSegmentWarmer() {
+    return super.getMergedSegmentWarmer();
+  }
+  
+  @Override
+  public double getRAMBufferSizeMB() {
+    return super.getRAMBufferSizeMB();
+  }
+  
+  @Override
+  public int getReaderTermsIndexDivisor() {
+    return super.getReaderTermsIndexDivisor();
+  }
+  
+  @Override
+  public int getTermIndexInterval() {
+    return super.getTermIndexInterval();
   }
   
   /** If non-null, information about merges, deletes and a
@@ -742,40 +479,39 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
   
-  /**
-   * Convenience method that uses {@link PrintStreamInfoStream}
-   */
+  /** Convenience method that uses {@link PrintStreamInfoStream} */
   public IndexWriterConfig setInfoStream(PrintStream printStream) {
     return setInfoStream(printStream == null ? InfoStream.NO_OUTPUT : new PrintStreamInfoStream(printStream));
   }
-
+  
   @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("matchVersion=").append(matchVersion).append("\n");
-    sb.append("analyzer=").append(analyzer == null ? "null" : analyzer.getClass().getName()).append("\n");
-    sb.append("delPolicy=").append(delPolicy.getClass().getName()).append("\n");
-    sb.append("commit=").append(commit == null ? "null" : commit).append("\n");
-    sb.append("openMode=").append(openMode).append("\n");
-    sb.append("similarity=").append(similarity.getClass().getName()).append("\n");
-    sb.append("termIndexInterval=").append(termIndexInterval).append("\n"); // TODO: this should be private to the codec, not settable here
-    sb.append("mergeScheduler=").append(mergeScheduler.getClass().getName()).append("\n");
-    sb.append("default WRITE_LOCK_TIMEOUT=").append(WRITE_LOCK_TIMEOUT).append("\n");
-    sb.append("writeLockTimeout=").append(writeLockTimeout).append("\n");
-    sb.append("maxBufferedDeleteTerms=").append(maxBufferedDeleteTerms).append("\n");
-    sb.append("ramBufferSizeMB=").append(ramBufferSizeMB).append("\n");
-    sb.append("maxBufferedDocs=").append(maxBufferedDocs).append("\n");
-    sb.append("mergedSegmentWarmer=").append(mergedSegmentWarmer).append("\n");
-    sb.append("codec=").append(codec).append("\n");
-    sb.append("infoStream=").append(infoStream.getClass().getName()).append("\n");
-    sb.append("mergePolicy=").append(mergePolicy).append("\n");
-    sb.append("indexerThreadPool=").append(indexerThreadPool).append("\n");
-    sb.append("readerPooling=").append(readerPooling).append("\n");
-    sb.append("readerTermsIndexDivisor=").append(readerTermsIndexDivisor).append("\n");
-    sb.append("flushPolicy=").append(flushPolicy).append("\n");
-    sb.append("perThreadHardLimitMB=").append(perThreadHardLimitMB).append("\n");
-
-    return sb.toString();
+  public IndexWriterConfig setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
+    return (IndexWriterConfig) super.setMaxBufferedDeleteTerms(maxBufferedDeleteTerms);
+  }
+  
+  @Override
+  public IndexWriterConfig setMaxBufferedDocs(int maxBufferedDocs) {
+    return (IndexWriterConfig) super.setMaxBufferedDocs(maxBufferedDocs);
+  }
+  
+  @Override
+  public IndexWriterConfig setMergedSegmentWarmer(IndexReaderWarmer mergeSegmentWarmer) {
+    return (IndexWriterConfig) super.setMergedSegmentWarmer(mergeSegmentWarmer);
+  }
+  
+  @Override
+  public IndexWriterConfig setRAMBufferSizeMB(double ramBufferSizeMB) {
+    return (IndexWriterConfig) super.setRAMBufferSizeMB(ramBufferSizeMB);
+  }
+  
+  @Override
+  public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
+    return (IndexWriterConfig) super.setReaderTermsIndexDivisor(divisor);
+  }
+  
+  @Override
+  public IndexWriterConfig setTermIndexInterval(int interval) {
+    return (IndexWriterConfig) super.setTermIndexInterval(interval);
   }
 
 }

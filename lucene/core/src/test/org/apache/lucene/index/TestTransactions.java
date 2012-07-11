@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,9 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -148,13 +148,13 @@ public class TestTransactions extends LuceneTestCase {
 
     public void update(IndexWriter writer) throws IOException {
       // Add 10 docs:
-      FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
+      FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
       customType.setStoreTermVectors(true);
       for(int j=0; j<10; j++) {
         Document d = new Document();
         int n = random().nextInt();
         d.add(newField("id", Integer.toString(nextID++), customType));
-        d.add(newField("contents", English.intToEnglish(n), TextField.TYPE_UNSTORED));
+        d.add(newTextField("contents", English.intToEnglish(n), Field.Store.NO));
         writer.addDocument(d);
       }
 
@@ -183,8 +183,8 @@ public class TestTransactions extends LuceneTestCase {
     public void doWork() throws Throwable {
       IndexReader r1, r2;
       synchronized(lock) {
-        r1 = IndexReader.open(dir1);
-        r2 = IndexReader.open(dir2);
+        r1 = DirectoryReader.open(dir1);
+        r2 = DirectoryReader.open(dir2);
       }
       if (r1.numDocs() != r2.numDocs())
         throw new RuntimeException("doc counts differ: r1=" + r1.numDocs() + " r2=" + r2.numDocs());
@@ -198,7 +198,7 @@ public class TestTransactions extends LuceneTestCase {
     for(int j=0; j<7; j++) {
       Document d = new Document();
       int n = random().nextInt();
-      d.add(newField("contents", English.intToEnglish(n), TextField.TYPE_UNSTORED));
+      d.add(newTextField("contents", English.intToEnglish(n), Field.Store.NO));
       writer.addDocument(d);
     }
     writer.close();

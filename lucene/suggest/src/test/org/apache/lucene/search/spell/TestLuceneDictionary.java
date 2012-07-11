@@ -1,6 +1,6 @@
 package org.apache.lucene.search.spell;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -54,23 +54,23 @@ public class TestLuceneDictionary extends LuceneTestCase {
     Document doc;
 
     doc = new  Document();
-    doc.add(newField("aaa", "foo", TextField.TYPE_STORED));
+    doc.add(newTextField("aaa", "foo", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(newField("aaa", "foo", TextField.TYPE_STORED));
+    doc.add(newTextField("aaa", "foo", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(newField("contents", "Tom", TextField.TYPE_STORED));
+    doc.add(newTextField("contents", "Tom", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(newField("contents", "Jerry", TextField.TYPE_STORED));
+    doc.add(newTextField("contents", "Jerry", Field.Store.YES));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("zzz", "bar", TextField.TYPE_STORED));
+    doc.add(newTextField("zzz", "bar", Field.Store.YES));
     writer.addDocument(doc);
 
     writer.forceMerge(1);

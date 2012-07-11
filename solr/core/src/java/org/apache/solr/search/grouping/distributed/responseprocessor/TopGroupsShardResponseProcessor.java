@@ -97,7 +97,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         }
 
         TopGroups<BytesRef>[] topGroupsArr = new TopGroups[topGroups.size()];
-        rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, sortWithinGroup, groupOffsetDefault, docsPerGroupDefault));
+        rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, sortWithinGroup, groupOffsetDefault, docsPerGroupDefault, TopGroups.ScoreMergeMode.None));
       }
 
       for (String query : commandTopDocs.keySet()) {

@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -93,7 +93,7 @@ class BufferedDeletes {
     } else {
       String s = "gen=" + gen;
       if (numTermDeletes.get() != 0) {
-        s += " " + numTermDeletes.get() + " deleted terms (unique count=" + terms.size() + ") terms=" + terms.keySet();
+        s += " " + numTermDeletes.get() + " deleted terms (unique count=" + terms.size() + ")";
       }
       if (queries.size() != 0) {
         s += " " + queries.size() + " deleted queries";

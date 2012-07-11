@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,21 +34,6 @@ import java.util.Map;
  * @since solr 1.4
  */
 public class TestMultiWordSynonyms extends BaseTokenStreamTestCase {
-
-  /**
-   * @deprecated Remove this test in 5.0
-   */
-  @Deprecated
-  public void testMultiWordSynonymsOld() throws IOException {
-    List<String> rules = new ArrayList<String>();
-    rules.add("a b c,d");
-    SlowSynonymMap synMap = new SlowSynonymMap(true);
-    SlowSynonymFilterFactory.parseRules(rules, synMap, "=>", ",", true, null);
-
-    SlowSynonymFilter ts = new SlowSynonymFilter(new MockTokenizer(new StringReader("a e"), MockTokenizer.WHITESPACE, false), synMap);
-    // This fails because ["e","e"] is the value of the token stream
-    assertTokenStreamContents(ts, new String[] { "a", "e" });
-  }
   
   public void testMultiWordSynonyms() throws IOException {
     SynonymFilterFactory factory = new SynonymFilterFactory();

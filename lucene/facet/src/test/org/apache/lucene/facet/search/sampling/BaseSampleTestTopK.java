@@ -1,6 +1,5 @@
 package org.apache.lucene.facet.search.sampling;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
@@ -19,7 +18,7 @@ import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -53,7 +52,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
    * Lots of randomly generated data is being indexed, and later on a "90% docs" faceted search
    * is performed. The results are compared to non-sampled ones.
    */
-  public void testCountUsingSamping() throws Exception, IOException {
+  public void testCountUsingSamping() throws Exception {
     boolean useRandomSampler = random().nextBoolean();
     for (int partitionSize : partitionSizes) {
       try {

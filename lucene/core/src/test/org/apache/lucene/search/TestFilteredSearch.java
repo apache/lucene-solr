@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,18 +19,17 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
@@ -43,7 +42,7 @@ public class TestFilteredSearch extends LuceneTestCase {
 
   private static final String FIELD = "category";
   
-  public void testFilteredSearch() throws CorruptIndexException, LockObtainFailedException, IOException {
+  public void testFilteredSearch() throws IOException {
     boolean enforceSingleSegment = true;
     Directory directory = newDirectory();
     int[] filterBits = {1, 36};
@@ -66,7 +65,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     try {
       for (int i = 0; i < 60; i++) {//Simple docs
         Document doc = new Document();
-        doc.add(newField(FIELD, Integer.toString(i), StringField.TYPE_STORED));
+        doc.add(newStringField(FIELD, Integer.toString(i), Field.Store.YES));
         writer.addDocument(doc);
       }
       if (fullMerge) {
@@ -78,7 +77,7 @@ public class TestFilteredSearch extends LuceneTestCase {
       booleanQuery.add(new TermQuery(new Term(FIELD, "36")), BooleanClause.Occur.SHOULD);
      
      
-      IndexReader reader = IndexReader.open(directory);
+      IndexReader reader = DirectoryReader.open(directory);
       IndexSearcher indexSearcher = new IndexSearcher(reader);
       ScoreDoc[] hits = indexSearcher.search(booleanQuery, filter, 1000).scoreDocs;
       assertEquals("Number of matched documents", 1, hits.length);

@@ -24,7 +24,7 @@
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
   
   <property name="Name" value="Solr" />
-  <property name="version" value="4.0-SNAPSHOT"/>
+  <property name="version" value="5.0-SNAPSHOT"/>
   <condition property="version.contains.SNAPSHOT">
     <contains casesensitive="true" string="${version}" substring="-SNAPSHOT"/>
   </condition>
@@ -76,7 +76,7 @@
        By default, this should be set to "X.Y.M.${dateversion}"
        where X.Y.M is the last version released (on this branch).
     -->
-  <property name="solr.spec.version" value="4.0.0.${dateversion}" />
+  <property name="solr.spec.version" value="5.0.0.${dateversion}" />
 
   <path id="solr.base.classpath">
   	<pathelement path="${analyzers-common.jar}"/>

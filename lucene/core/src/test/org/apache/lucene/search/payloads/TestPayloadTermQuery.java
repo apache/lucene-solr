@@ -1,5 +1,5 @@
 package org.apache.lucene.search.payloads;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,10 +33,10 @@ import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Norm;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -44,7 +44,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.apache.lucene.document.TextField;
 
 import java.io.Reader;
 import java.io.IOException;
@@ -93,12 +92,12 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       boolean hasNext = input.incrementToken();
       if (hasNext) {
         if (fieldName.equals("field")) {
-          payloadAtt.setPayload(new Payload(payloadField));
+          payloadAtt.setPayload(new BytesRef(payloadField));
         } else if (fieldName.equals("multiField")) {
           if (numSeen % 2 == 0) {
-            payloadAtt.setPayload(new Payload(payloadMultiField1));
+            payloadAtt.setPayload(new BytesRef(payloadMultiField1));
           } else {
-            payloadAtt.setPayload(new Payload(payloadMultiField2));
+            payloadAtt.setPayload(new BytesRef(payloadMultiField2));
           }
           numSeen++;
         }
@@ -124,11 +123,11 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      Field noPayloadField = newField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), TextField.TYPE_STORED);
+      Field noPayloadField = newTextField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES);
       //noPayloadField.setBoost(0);
       doc.add(noPayloadField);
-      doc.add(newField("field", English.intToEnglish(i), TextField.TYPE_STORED));
-      doc.add(newField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(newTextField("field", English.intToEnglish(i), Field.Store.YES));
+      doc.add(newTextField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -230,7 +229,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
             new MaxPayloadFunction(), false);
 
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher theSearcher = new IndexSearcher(reader);
     theSearcher.setSimilarity(new FullSimilarity());
     TopDocs hits = searcher.search(query, null, 100);

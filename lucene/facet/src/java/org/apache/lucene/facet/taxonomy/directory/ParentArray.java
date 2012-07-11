@@ -12,7 +12,7 @@ import org.apache.lucene.util.BytesRef;
 
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -147,7 +147,7 @@ class ParentArray {
    * NOTE: add() and refresh() CANNOT be used together. If you call add(),
    * this changes the arrays and refresh() can no longer be used.
    */
-  void add(int ordinal, int parentOrdinal) throws IOException {
+  void add(int ordinal, int parentOrdinal) {
     if (ordinal >= prefetchParentOrdinal.length) {
       // grow the array, if necessary.
       // In Java 6, we could just do Arrays.copyOf()...

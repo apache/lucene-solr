@@ -1,5 +1,5 @@
 package org.apache.solr.schema;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -602,6 +602,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     // don't bother making the hash expensive - the center latitude + min longitude will be very uinque 
     long hash = Double.doubleToLongBits(latCenter);
     hash = hash * 31 + Double.doubleToLongBits(lonMin);
+    hash = hash * 31 + (long)super.hashCode();
     return (int)(hash >> 32 + hash);
   }
 

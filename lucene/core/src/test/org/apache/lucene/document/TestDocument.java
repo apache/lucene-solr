@@ -1,6 +1,6 @@
 package org.apache.lucene.document;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,16 +22,12 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -55,8 +51,8 @@ public class TestDocument extends LuceneTestCase {
     FieldType ft = new FieldType();
     ft.setStored(true);
     IndexableField stringFld = new Field("string", binaryVal, ft);
-    IndexableField binaryFld = new StoredField("binary", binaryVal.getBytes());
-    IndexableField binaryFld2 = new StoredField("binary", binaryVal2.getBytes());
+    IndexableField binaryFld = new StoredField("binary", binaryVal.getBytes("UTF-8"));
+    IndexableField binaryFld2 = new StoredField("binary", binaryVal2.getBytes("UTF-8"));
     
     doc.add(stringFld);
     doc.add(binaryFld);
@@ -66,7 +62,6 @@ public class TestDocument extends LuceneTestCase {
     assertTrue(binaryFld.binaryValue() != null);
     assertTrue(binaryFld.fieldType().stored());
     assertFalse(binaryFld.fieldType().indexed());
-    assertFalse(binaryFld.fieldType().tokenized());
     
     String binaryTest = doc.getBinaryValue("binary").utf8ToString();
     assertTrue(binaryTest.equals(binaryVal));
@@ -134,7 +129,7 @@ public class TestDocument extends LuceneTestCase {
     FieldType ft = new FieldType();
     ft.setStored(true);
     new Field("name", "value", ft); // okay
-    new StringField("name", "value"); // okay
+    new StringField("name", "value", Field.Store.NO); // okay
     try {
       new Field("name", "value", new FieldType());
       fail();
@@ -206,16 +201,16 @@ public class TestDocument extends LuceneTestCase {
     Document doc = new Document();
     FieldType stored = new FieldType();
     stored.setStored(true);
-    doc.add(new Field("keyword", "test1", StringField.TYPE_STORED));
-    doc.add(new Field("keyword", "test2", StringField.TYPE_STORED));
-    doc.add(new Field("text", "test1", TextField.TYPE_STORED));
-    doc.add(new Field("text", "test2", TextField.TYPE_STORED));
+    doc.add(new StringField("keyword", "test1", Field.Store.YES));
+    doc.add(new StringField("keyword", "test2", Field.Store.YES));
+    doc.add(new TextField("text", "test1", Field.Store.YES));
+    doc.add(new TextField("text", "test2", Field.Store.YES));
     doc.add(new Field("unindexed", "test1", stored));
     doc.add(new Field("unindexed", "test2", stored));
     doc
-        .add(new TextField("unstored", "test1"));
+        .add(new TextField("unstored", "test1", Field.Store.NO));
     doc
-        .add(new TextField("unstored", "test2"));
+        .add(new TextField("unstored", "test2", Field.Store.NO));
     return doc;
   }
   
@@ -250,10 +245,10 @@ public class TestDocument extends LuceneTestCase {
   
   public void testFieldSetValue() throws Exception {
     
-    Field field = new Field("id", "id1", StringField.TYPE_STORED);
+    Field field = new StringField("id", "id1", Field.Store.YES);
     Document doc = new Document();
     doc.add(field);
-    doc.add(new Field("keyword", "test", StringField.TYPE_STORED));
+    doc.add(new StringField("keyword", "test", Field.Store.YES));
     
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -296,85 +291,20 @@ public class TestDocument extends LuceneTestCase {
     }
   }
 
-  // LUCENE-3682
-  public void testTransitionAPI() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-
-    Document doc = new Document();
-    doc.add(new Field("stored", "abc", Field.Store.YES, Field.Index.NO));
-    doc.add(new Field("stored_indexed", "abc xyz", Field.Store.YES, Field.Index.NOT_ANALYZED));
-    doc.add(new Field("stored_tokenized", "abc xyz", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("indexed", "abc xyz", Field.Store.NO, Field.Index.NOT_ANALYZED));
-    doc.add(new Field("tokenized", "abc xyz", Field.Store.NO, Field.Index.ANALYZED));
-    doc.add(new Field("tokenized_reader", new StringReader("abc xyz")));
-    doc.add(new Field("tokenized_tokenstream", w.w.getAnalyzer().tokenStream("tokenized_tokenstream", new StringReader("abc xyz"))));
-    doc.add(new Field("binary", new byte[10]));
-    doc.add(new Field("tv", "abc xyz", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
-    doc.add(new Field("tv_pos", "abc xyz", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
-    doc.add(new Field("tv_off", "abc xyz", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
-    doc.add(new Field("tv_pos_off", "abc xyz", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    w.addDocument(doc);
-    IndexReader r = w.getReader();
-    w.close();
-
-    doc = r.document(0);
-    // 4 stored fields
-    assertEquals(4, doc.getFields().size());
-    assertEquals("abc", doc.get("stored"));
-    assertEquals("abc xyz", doc.get("stored_indexed"));
-    assertEquals("abc xyz", doc.get("stored_tokenized"));
-    final BytesRef br = doc.getBinaryValue("binary");
-    assertNotNull(br);
-    assertEquals(10, br.length);
-
-    IndexSearcher s = new IndexSearcher(r);
-    assertEquals(1, s.search(new TermQuery(new Term("stored_indexed", "abc xyz")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("stored_tokenized", "abc")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("stored_tokenized", "xyz")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("indexed", "abc xyz")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("tokenized", "abc")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("tokenized", "xyz")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("tokenized_reader", "abc")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("tokenized_reader", "xyz")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("tokenized_tokenstream", "abc")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("tokenized_tokenstream", "xyz")), 1).totalHits);
-
-    for(String field : new String[] {"tv", "tv_pos", "tv_off", "tv_pos_off"}) {
-      Fields tvFields = r.getTermVectors(0);
-      Terms tvs = tvFields.terms(field);
-      assertNotNull(tvs);
-      assertEquals(2, tvs.size());
-      TermsEnum tvsEnum = tvs.iterator(null);
-      assertEquals(new BytesRef("abc"), tvsEnum.next());
-      final DocsAndPositionsEnum dpEnum = tvsEnum.docsAndPositions(null, null, false);
-      if (field.equals("tv")) {
-        assertNull(dpEnum);
-      } else {
-        assertNotNull(dpEnum);
-      }
-      assertEquals(new BytesRef("xyz"), tvsEnum.next());
-      assertNull(tvsEnum.next());
-    }
-
-    r.close();
-    dir.close();
-  }
-  
   public void testBoost() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iw = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new Field("field1", "sometext", StringField.TYPE_STORED));
-    doc.add(new TextField("field2", "sometext"));
-    doc.add(new StringField("foo", "bar"));
+    doc.add(new StringField("field1", "sometext", Field.Store.YES));
+    doc.add(new TextField("field2", "sometext", Field.Store.NO));
+    doc.add(new StringField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc); // add an 'ok' document
     try {
       doc = new Document();
       // try to boost with norms omitted
-      StringField field = new StringField("foo", "baz");
+      StringField field = new StringField("foo", "baz", Field.Store.NO);
       field.setBoost(5.0f);
       doc.add(field);
       iw.addDocument(doc);

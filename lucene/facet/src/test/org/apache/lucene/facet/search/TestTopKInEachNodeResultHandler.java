@@ -8,7 +8,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -33,7 +32,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.util.PartitionsUtils;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -321,14 +320,13 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
   }
 
   private void prvt_add(DefaultFacetIndexingParams iParams, RandomIndexWriter iw,
-                    TaxonomyWriter tw, String... strings) throws IOException,
-      CorruptIndexException {
+                    TaxonomyWriter tw, String... strings) throws IOException {
     ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();
     CategoryPath cp = new CategoryPath(strings);
     cps.add(cp);
     Document d = new Document();
     new CategoryDocumentBuilder(tw, iParams).setCategoryPaths(cps).build(d);
-    d.add(new Field("content", "alpha", TextField.TYPE_STORED));
+    d.add(new TextField("content", "alpha", Field.Store.YES));
     iw.addDocument(d);
   }
 

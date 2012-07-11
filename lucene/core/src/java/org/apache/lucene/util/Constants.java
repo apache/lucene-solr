@@ -1,6 +1,6 @@
 package org.apache.lucene.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -104,8 +104,14 @@ public final class Constants {
   // NOTE: we track per-segment version as a String with the "X.Y" format, e.g.
   // "4.0", "3.1", "3.0". Therefore when we change this constant, we should keep
   // the format.
-  public static final String LUCENE_MAIN_VERSION = ident("4.0");
+  /**
+   * This is the internal Lucene version, recorded into each segment.
+   */
+  public static final String LUCENE_MAIN_VERSION = ident("5.0");
 
+  /**
+   * This is the Lucene version for display purposes.
+   */
   public static final String LUCENE_VERSION;
   static {
     Package pkg = LucenePackage.get();

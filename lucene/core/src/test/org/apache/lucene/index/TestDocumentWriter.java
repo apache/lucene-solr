@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -119,8 +119,8 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     Document doc = new Document();
-    doc.add(newField("repeated", "repeated one", TextField.TYPE_STORED));
-    doc.add(newField("repeated", "repeated two", TextField.TYPE_STORED));
+    doc.add(newTextField("repeated", "repeated one", Field.Store.YES));
+    doc.add(newTextField("repeated", "repeated two", Field.Store.YES));
 
     writer.addDocument(doc);
     writer.commit();
@@ -165,7 +165,7 @@ public class TestDocumentWriter extends LuceneTestCase {
             }
             if (first) {
               // set payload on first position only
-              payloadAtt.setPayload(new Payload(new byte[]{100}));
+              payloadAtt.setPayload(new BytesRef(new byte[]{100}));
               first = false;
             }
 
@@ -192,7 +192,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     Document doc = new Document();
-    doc.add(newField("f1", "a 5 a a", TextField.TYPE_STORED));
+    doc.add(newTextField("f1", "a 5 a a", Field.Store.YES));
 
     writer.addDocument(doc);
     writer.commit();
@@ -226,7 +226,7 @@ public class TestDocumentWriter extends LuceneTestCase {
       private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
       
       @Override
-      public boolean incrementToken() throws IOException {
+      public boolean incrementToken() {
         if (index == tokens.length) {
           return false;
         } else {
@@ -235,8 +235,7 @@ public class TestDocumentWriter extends LuceneTestCase {
           return true;
         }        
       }
-      
-    }));
+      }));
     
     writer.addDocument(doc);
     writer.commit();
@@ -269,7 +268,7 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testMixedTermVectorSettingsSameField() throws Exception {
     Document doc = new Document();
     // f1 first without tv then with tv
-    doc.add(newField("f1", "v1", StringField.TYPE_STORED));
+    doc.add(newStringField("f1", "v1", Field.Store.YES));
     FieldType customType2 = new FieldType(StringField.TYPE_STORED);
     customType2.setStoreTermVectors(true);
     customType2.setStoreTermVectorOffsets(true);
@@ -277,7 +276,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(newField("f1", "v2", customType2));
     // f2 first with tv then without tv
     doc.add(newField("f2", "v1", customType2));
-    doc.add(newField("f2", "v2", StringField.TYPE_STORED));
+    doc.add(newStringField("f2", "v2", Field.Store.YES));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -286,7 +285,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     _TestUtil.checkIndex(dir);
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = DirectoryReader.open(dir);
     // f1
     Terms tfv1 = reader.getTermVectors(0).terms("f1");
     assertNotNull(tfv1);
@@ -306,14 +305,14 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testLUCENE_1590() throws Exception {
     Document doc = new Document();
     // f1 has no norms
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     FieldType customType2 = new FieldType();
     customType2.setStored(true);
     doc.add(newField("f1", "v1", customType));
     doc.add(newField("f1", "v2", customType2));
     // f2 has no TF
-    FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType3 = new FieldType(TextField.TYPE_NOT_STORED);
     customType3.setIndexOptions(IndexOptions.DOCS_ONLY);
     Field f = newField("f2", "v1", customType3);
     doc.add(f);
@@ -327,7 +326,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     _TestUtil.checkIndex(dir);
 
-    SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir));
+    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
     FieldInfos fi = reader.getFieldInfos();
     // f1
     assertFalse("f1 should have no norms", fi.fieldInfo("f1").hasNorms());

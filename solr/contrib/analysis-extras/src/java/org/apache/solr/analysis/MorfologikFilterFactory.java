@@ -1,6 +1,6 @@
 package org.apache.solr.analysis;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -69,7 +69,7 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
     String dictionaryName = args.get(DICTIONARY_SCHEMA_ATTRIBUTE);
     if (dictionaryName != null && !dictionaryName.isEmpty()) {
       try {
-        DICTIONARY dictionary = DICTIONARY.valueOf(dictionaryName.toUpperCase(Locale.ENGLISH));
+        DICTIONARY dictionary = DICTIONARY.valueOf(dictionaryName.toUpperCase(Locale.ROOT));
         assert dictionary != null;
         this.dictionary = dictionary;
       } catch (IllegalArgumentException e) {

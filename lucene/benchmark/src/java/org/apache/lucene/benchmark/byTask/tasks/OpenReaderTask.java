@@ -1,6 +1,6 @@
 package org.apache.lucene.benchmark.byTask.tasks;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -45,9 +45,9 @@ public class OpenReaderTask extends PerfTask {
     Directory dir = getRunData().getDirectory();
     DirectoryReader r = null;
     if (commitUserData != null) {
-      r = IndexReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData)); 
+      r = DirectoryReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData)); 
     } else {
-      r = IndexReader.open(dir); 
+      r = DirectoryReader.open(dir); 
     }
     getRunData().setIndexReader(r);
     // We transfer reference to the run data

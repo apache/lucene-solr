@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.ja.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -55,7 +55,7 @@ public class DictionaryBuilder {
     System.out.println("done");
   }
   
-  public static void main(String[] args) throws IOException, ClassNotFoundException {
+  public static void main(String[] args) throws IOException {
     DictionaryFormat format;
     if (args[0].equalsIgnoreCase("ipadic")) {
       format = DictionaryFormat.IPADIC;

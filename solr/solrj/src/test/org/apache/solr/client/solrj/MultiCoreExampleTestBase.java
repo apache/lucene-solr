@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -53,10 +53,11 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
     
-    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-"
+    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-core1-"
         + System.currentTimeMillis());
     dataDir2.mkdirs();
     
+    System.setProperty( "solr.core0.data.dir", this.dataDir.getCanonicalPath() ); 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() ); 
   }
   
@@ -69,7 +70,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
       System.err.println("NOTE: per solr.test.leavedatadir, dataDir2 will not be removed: " + dataDir2.getAbsolutePath());
     } else {
       if (!recurseDelete(dataDir2)) {
-        System.err.println("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
+        System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
   }
@@ -202,7 +203,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     catch( Exception ex ) {}
     assertEquals( 1, getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) ).getResults().size() );
 
-    NamedList<Object> response = getSolrCore("corefoo").query(new SolrQuery().setQueryType("/admin/system")).getResponse();
+    NamedList<Object> response = getSolrCore("corefoo").query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
     NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
     String indexDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("index");
     // test delete index on core

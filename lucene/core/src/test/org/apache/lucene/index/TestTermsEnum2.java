@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,10 +25,8 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.CheckHits;
@@ -37,13 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.AutomatonTestUtil;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
-import org.apache.lucene.util.automaton.RegExp;
-import org.apache.lucene.util.automaton.SpecialOperations;
+import org.apache.lucene.util.automaton.*;
 
 public class TestTermsEnum2 extends LuceneTestCase {
   private Directory dir;
@@ -55,16 +47,14 @@ public class TestTermsEnum2 extends LuceneTestCase {
 
   public void setUp() throws Exception {
     super.setUp();
-    // we generate aweful regexps: good for testing.
-    // but for preflex codec, the test can be very slow, so use less iterations.
-    numIterations = Codec.getDefault().getName().equals("Lucene3x") ? 10 * RANDOM_MULTIPLIER : atLeast(50);
+    numIterations = atLeast(50);
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
             .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
-    Field field = newField("field", "", StringField.TYPE_STORED);
+    Field field = newStringField("field", "", Field.Store.YES);
     doc.add(field);
     terms = new TreeSet<BytesRef>();
  
@@ -76,7 +66,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    termsAutomaton = DaciukMihovAutomatonBuilder.build(terms);
+    termsAutomaton = BasicAutomata.makeStringUnion(terms);
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
@@ -101,7 +91,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
         }
       }
 
-      Automaton alternate = DaciukMihovAutomatonBuilder.build(matchedTerms);
+      Automaton alternate = BasicAutomata.makeStringUnion(matchedTerms);
       //System.out.println("match " + matchedTerms.size() + " " + alternate.getNumberOfStates() + " states, sigma=" + alternate.getStartPoints().length);
       //AutomatonTestUtil.minimizeSimple(alternate);
       //System.out.println("minmize done");
@@ -168,7 +158,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
         found.add(BytesRef.deepCopyOf(te.term()));
       }
       
-      Automaton actual = DaciukMihovAutomatonBuilder.build(found);     
+      Automaton actual = BasicAutomata.makeStringUnion(found);     
       assertTrue(BasicOperations.sameLanguage(expected, actual));
     }
   }
