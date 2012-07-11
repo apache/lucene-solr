@@ -176,7 +176,7 @@
     <license-check-macro dir="${basedir}" />
   </target>
 
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-jdk-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
 
   <target name="-check-forbidden-jdk-apis">
     <forbidden-apis> 
@@ -185,6 +185,16 @@
         <include name="jdk-deprecated.txt" />
       </apiFileSet>
       <fileset dir="${basedir}/build" includes="**/*.class" />
+    </forbidden-apis>
+  </target>
+
+  <target name="-check-forbidden-test-apis">
+    <forbidden-apis> 
+      <classpath refid="junit-path"/>
+      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
+        <include name="tests.txt" />
+      </apiFileSet>
+      <fileset dir="${basedir}/build" includes="**/classes/test/**/*.class,test-framework/**/*.class" />
     </forbidden-apis>
   </target>
 

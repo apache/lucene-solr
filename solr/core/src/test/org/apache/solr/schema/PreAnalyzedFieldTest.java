@@ -21,13 +21,12 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 import org.junit.Test;
 
-import junit.framework.TestCase;
-
-public class PreAnalyzedFieldTest extends TestCase {
+public class PreAnalyzedFieldTest extends LuceneTestCase {
   
   private static final String[] valid = {
     "1 one two three",                       // simple parsing
