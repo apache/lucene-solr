@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.StringReader;
@@ -60,10 +59,9 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
   }
 
   @Test
-  @Ignore("Where is TestAggregatedSentenceAE.xml")
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new UIMATypeAwareAnalyzer("/uima/TestAggregateSentenceAE.xml",
-        "org.apache.lucene.uima.ts.TokenAnnotation", "pos"), 1000 * RANDOM_MULTIPLIER);
+        "org.apache.lucene.uima.ts.TokenAnnotation", "pos"), 100 * RANDOM_MULTIPLIER);
   }
 
 }
