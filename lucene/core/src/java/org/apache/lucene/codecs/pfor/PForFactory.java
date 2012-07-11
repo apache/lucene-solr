@@ -1,5 +1,5 @@
 package org.apache.lucene.codecs.pfor;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,11 +32,14 @@ import org.apache.lucene.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.codecs.intblock.FixedIntBlockIndexOutput;
 
 /** 
- * Stuff to pass to PostingsReader/WriterBase.
- * Things really make sense are: flushBlock() and readBlock()
+ * Used to plug to PostingsReader/WriterBase.
+ * Encoder and decoder in lower layers are called by 
+ * flushBlock() and readBlock()
  */
 
 public final class PForFactory extends IntStreamFactory {
+
+  /* number of ints for each block */
   private final int blockSize;
 
   public PForFactory() {
@@ -53,6 +56,8 @@ public final class PForFactory extends IntStreamFactory {
       return ret;
     } finally {
       if (!success) {
+        // For some cases (e.g. disk full), the IntIndexOutput may not be 
+        // properly created. So we should close those opened files. 
         IOUtils.closeWhileHandlingException(out);
       }
     }
@@ -63,7 +68,10 @@ public final class PForFactory extends IntStreamFactory {
     return new PForIndexInput(dir.openInput(fileName, context));
   }
 
-  // wrap input and output with buffer support
+  /**
+   * Here we'll hold both input buffer and output buffer for 
+   * encoder/decoder.
+   */
   private class PForIndexInput extends FixedIntBlockIndexInput {
 
     PForIndexInput(final IndexInput in) throws IOException {
@@ -77,6 +85,10 @@ public final class PForFactory extends IntStreamFactory {
       private final IntBuffer encodedBuffer;
 
       PForBlockReader(final IndexInput in, final int[] buffer) {
+        // upperbound for encoded value should include:
+        // 1. blockSize of normal value (4x bytes); 
+        // 2. blockSize of exception value (4x bytes);
+        // 3. header (4bytes);
         this.encoded = new byte[blockSize*8+4];
         this.in = in;
         this.buffer = buffer;

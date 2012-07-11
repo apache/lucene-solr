@@ -1,5 +1,5 @@
 package org.apache.lucene.codecs.pfor;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,12 +15,15 @@ package org.apache.lucene.codecs.pfor;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// nocommit: this is only a test verison, change from PForUtil.java
+
 import java.nio.IntBuffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-// Encode all values in normal area, based on the bit size for max value
+/**
+ * Encode all values in normal area with fixed bit width, 
+ * which is determined by the max value in this block.
+ */
 public class ForUtil {
   public static final int HEADER_INT_SIZE=1;
   protected static final int[] MASK = {   0x00000000,
@@ -31,26 +34,52 @@ public class ForUtil {
     0x01ffffff, 0x03ffffff, 0x07ffffff, 0x0fffffff, 0x1fffffff, 0x3fffffff,
     0x7fffffff, 0xffffffff};
 
+  /** Compress given int[] into Integer buffer, with For format
+   *
+   * @param data        uncompressed data
+   * @param size        num of ints to compress
+   * @param intBuffer   integer buffer to hold compressed data
+   */
   public static int compress(final int[] data, int size, IntBuffer intBuffer) {
     int numBits=getNumBits(data,size);
   
     for (int i=0; i<size; ++i) {
       encodeNormalValue(intBuffer,i,data[i], numBits);
     }
-    // encode header
     encodeHeader(intBuffer, size, numBits);
 
     return (HEADER_INT_SIZE+(size*numBits+31)/32)*4;
   }
-  
-  public static int decompress(IntBuffer intBuffer, int[] data) {
-    intBuffer.rewind();
-    int header = intBuffer.get();
 
+  /** Decompress given Integer buffer into int array.
+   *
+   * @param intBuffer   integer buffer to hold compressed data
+   * @param data        int array to hold uncompressed data
+   */
+  public static int decompress(IntBuffer intBuffer, int[] data) {
+
+    // since this buffer is reused at upper level, rewind first
+    intBuffer.rewind();
+
+    int header = intBuffer.get();
     int numInts = (header & MASK[8]) + 1;
     int numBits = ((header >> 8) & MASK[5]) + 1;
 
-    // TODO: PackedIntsDecompress is hardewired to size==128 only
+    decompressCore(intBuffer, data, numBits);
+
+    return numInts;
+  }
+
+  /**
+   * IntBuffer will not be rewinded in this method, therefore
+   * caller should ensure that the position is set to the first
+   * encoded int before decoding.
+   */
+  static void decompressCore(IntBuffer intBuffer, int[] data, int numBits) {
+    assert numBits<=32;
+    assert numBits>=1;
+
+    // TODO: PackedIntsDecompress is hardewired to size==129 only
     switch(numBits) {
       case 1: PackedIntsDecompress.decode1(intBuffer, data); break;
       case 2: PackedIntsDecompress.decode2(intBuffer, data); break;
@@ -84,10 +113,7 @@ public class ForUtil {
       case 30: PackedIntsDecompress.decode30(intBuffer, data); break;
       case 31: PackedIntsDecompress.decode31(intBuffer, data); break;
       case 32: PackedIntsDecompress.decode32(intBuffer, data); break;
-      default:
-        throw new IllegalStateException("Unknown numFrameBits " + numBits);
     }
-    return numInts;
   }
 
   static void encodeHeader(IntBuffer intBuffer, int numInts, int numBits) {
@@ -96,9 +122,9 @@ public class ForUtil {
   }
 
   static void encodeNormalValue(IntBuffer intBuffer, int pos, int value, int numBits) {
-    final int globalBitPos = numBits*pos;         // position in bit stream
-    final int localBitPos = globalBitPos & 31;    // position inside an int
-    int intPos = HEADER_INT_SIZE + globalBitPos/32;   // which integer to locate 
+    final int globalBitPos = numBits*pos;           // position in bit stream
+    final int localBitPos = globalBitPos & 31;      // position inside an int
+    int intPos = HEADER_INT_SIZE + globalBitPos/32; // which integer to locate 
     setBufferIntBits(intBuffer, intPos, localBitPos, numBits, value);
     if ((localBitPos + numBits) > 32) { // value does not fit in this int, fill tail
       setBufferIntBits(intBuffer, intPos+1, 0, 
@@ -115,7 +141,9 @@ public class ForUtil {
           | (value << firstBitPos));
   }
 
-  // TODO: shall we use 32 NumBits directly if it exceeds 28 bits?
+  /**
+   * Estimate best num of frame bits according to the largest value.
+   */
   static int getNumBits(final int[] data, int size) {
     int optBits=1;
     for (int i=0; i<size; ++i) {
@@ -125,51 +153,17 @@ public class ForUtil {
     }
     return optBits;
   }
-  /** The 4 byte header (32 bits) contains (from lsb to msb):
+
+  /** 
+   * Generate the 4 byte header, which contains (from lsb to msb):
    *
    * - 8 bits for uncompressed int num - 1 (use up to 7 bits i.e 128 actually)
-   *
    * - 5 bits for num of frame bits - 1
-   *
    * - other bits unused
    *
    */
   static int getHeader(int numInts, int numBits) {
     return  (numInts-1)
           | ((numBits-1) << 8);
-  }
-
-  static void println(String format, Object... args) {
-    System.out.println(String.format(format,args)); 
-  }
-  static void print(String format, Object... args) {
-    System.out.print(String.format(format,args)); 
-  }
-  static void eprintln(String format, Object... args) {
-    System.err.println(String.format(format,args)); 
-  }
-  public static String getHex( byte [] raw, int sz ) {
-    final String HEXES = "0123456789ABCDEF";
-    if ( raw == null ) return null;
-    final StringBuilder hex = new StringBuilder( 2 * raw.length );
-    for ( int i=0; i<sz; i++ ) {
-      if (i>0 && (i)%16 == 0)
-        hex.append("\n");
-      byte b=raw[i];
-      hex.append(HEXES.charAt((b & 0xF0) >> 4))
-         .append(HEXES.charAt((b & 0x0F)))
-         .append(" ");
-    }
-    return hex.toString();
-  }
-  public static String getHex( int [] raw, int sz ) {
-    if ( raw == null ) return null;
-    final StringBuilder hex = new StringBuilder( 4 * raw.length );
-    for ( int i=0; i<sz; i++ ) {
-      if (i>0 && i%8 == 0)
-        hex.append("\n");
-      hex.append(String.format("%08x ",raw[i]));
-    }
-    return hex.toString();
   }
 }

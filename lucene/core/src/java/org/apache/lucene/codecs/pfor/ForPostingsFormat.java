@@ -1,5 +1,6 @@
 package org.apache.lucene.codecs.pfor;
-/**
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,10 +38,10 @@ import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.sep.SepPostingsReader;
 import org.apache.lucene.codecs.sep.SepPostingsWriter;
+
 /**
- * This class actually only pass the ForFactory
- * to a PostingsWriter/ReaderBase, and get customized
- * format plugged.
+ * Pass ForFactory to a PostingsWriter/ReaderBase, and get 
+ * customized postings format plugged.
  */
 public final class ForPostingsFormat extends PostingsFormat {
   private final int blockSize;

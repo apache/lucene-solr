@@ -17,19 +17,14 @@
 """
 
 """
-Generate source code for java classes for FOR decompression.
+Generate source code for java classes for For or PFor decompression.
 """
-
-USE_SCRATCH = False
 
 def bitsExpr(i, numFrameBits):
   framePos = i * numFrameBits
   intValNum = (framePos / 32)
   bitPos = framePos % 32
-  if USE_SCRATCH:
-    bitsInInt = "inputInts[" + str(intValNum) + "]"
-  else:
-    bitsInInt = "intValue" + str(intValNum)
+  bitsInInt = "intValue" + str(intValNum)
   needBrackets = 0
   if bitPos > 0:
     bitsInInt +=  " >>> " + str(bitPos)
@@ -37,10 +32,7 @@ def bitsExpr(i, numFrameBits):
   if bitPos + numFrameBits > 32:
     if needBrackets:
       bitsInInt = "(" + bitsInInt + ")"
-    if USE_SCRATCH:
-      bitsInInt += " | (inputInts[" + str(intValNum+1) + "] << "+ str(32 - bitPos) + ")"
-    else:
-      bitsInInt += " | (intValue" + str(intValNum+1) + " << "+ str(32 - bitPos) + ")"
+    bitsInInt += " | (intValue" + str(intValNum+1) + " << "+ str(32 - bitPos) + ")"
     needBrackets = 1
   if bitPos + numFrameBits != 32:
     if needBrackets:
@@ -57,7 +49,7 @@ def genDecompress():
   w = f.write
   try:
     w("package org.apache.lucene.codecs.pfor;\n")
-    w("""/**
+    w("""/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -75,50 +67,36 @@ def genDecompress():
  */
  """)
 
-    w("/* This code is generated, do not modify. See gendecompress.py */\n\n")
+    w("\n/* This code is generated, do not modify. See gendecompress.py */\n\n")
 
     w("import java.nio.IntBuffer;\n\n")
 
     w("final class PackedIntsDecompress {\n")
 
     w('\n  // nocommit: assess perf of this to see if specializing is really needed\n')
+    w('\n  // NOTE: hardwired to blockSize == 128\n\n')
 
-    # previous version only handle int less(or equal) than 31 bits
-    # try to support 32 bits here
     for numFrameBits in xrange(1, 33):
-
-      w('\n  // NOTE: hardwired to blockSize == 128\n')
-      if USE_SCRATCH:
-        w('  public static void decode%d(final IntBuffer compressedBuffer, final int[] output, final int[] scratch) {\n' % numFrameBits)
-      else:
-        w('  public static void decode%d(final IntBuffer compressedBuffer, final int[] output) {\n' % numFrameBits)
-
+      w('  public static void decode%d(final IntBuffer compressedBuffer, final int[] output) {\n' % numFrameBits)
       w('    final int numFrameBits = %d;\n' % numFrameBits)
       w('    final int mask = (int) ((1L<<numFrameBits) - 1);\n')
       w('    int outputOffset = 0;\n')
-      
       w('    for(int step=0;step<4;step++) {\n')
 
-      if USE_SCRATCH:
-        w('      compressedBuffer.get(scratch, 0, %d);\n' % numFrameBits)
-      else:
-        for i in range(numFrameBits): # declare int vars and init from buffer
-          w("      int intValue" + str(i) + " = compressedBuffer.get();\n")
+      for i in range(numFrameBits): # declare int vars and init from buffer
+        w("      int intValue" + str(i) + " = compressedBuffer.get();\n")
 
       for i in range(32): # set output from int vars
         w("      output[" + str(i) + " + outputOffset] = " + bitsExpr(i, numFrameBits) + ";\n")
+
       w('      outputOffset += 32;\n')
       w('    }\n')
       w('  }\n')
+
     w('}\n')
       
   finally:
     f.close()
 
-def genSwitch():
-  for numFrameBits in xrange(1, 33):
-    print '      case %d: PackedIntsDecompress.decode%d(compressedBuffer, encoded); break;' % (numFrameBits, numFrameBits)
-
 if __name__ == "__main__":
   genDecompress()
-  #genSwitch()

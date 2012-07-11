@@ -1,6 +1,6 @@
 package org.apache.lucene.codecs.pfor;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,12 +17,21 @@ package org.apache.lucene.codecs.pfor;
  * limitations under the License.
  */
 
-import java.util.*;
-import java.io.*;
-import java.nio.*;
-import org.apache.lucene.codecs.pfor.*;
+import java.util.Collections;
+import java.util.Arrays;
+import java.util.Random;
+import java.nio.IntBuffer;
+import java.nio.ByteBuffer;
+import org.apache.lucene.codecs.pfor.PForUtil;
+import org.apache.lucene.codecs.pfor.ForPostingsFormat;
 import org.apache.lucene.util.LuceneTestCase;
 
+/**
+ * Test the core utility for PFor compress and decompress
+ * We don't provide test case for For encoder/decoder, since
+ * PFor is a extended version of For, and most methods will be reused 
+ * here.
+ */
 public class TestPForUtil extends LuceneTestCase {
   static final int[] MASK={ 0x00000000,
     0x00000001, 0x00000003, 0x00000007, 0x0000000f, 0x0000001f, 0x0000003f,
@@ -32,21 +41,18 @@ public class TestPForUtil extends LuceneTestCase {
     0x01ffffff, 0x03ffffff, 0x07ffffff, 0x0fffffff, 0x1fffffff, 0x3fffffff,
     0x7fffffff, 0xffffffff};
   Random gen;
-  long seed=System.currentTimeMillis();
-  //long seed=1338528171959L;
   public void initRandom() {
-  //  println("Seed: "+seed);
-    this.gen = new Random(seed);
-  }
-  public void testCompress() throws Exception {
-    initRandom();
-    tryForcedException();
-    tryAllDistribution();
+    this.gen = random();
   }
 
-  // Test correctness of ignored forced exception
-  public void tryForcedException() throws Exception {
-    int sz=128;
+  /**
+   * Test correctness of ignored forced exception.
+   * The trailing forced exceptions shouldn't be reverted
+   * since they're not necessary. 
+   */
+  public void testForcedException() throws Exception {
+    initRandom();
+    int sz=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
     Integer[] buff= new Integer[sz];
     int[] data = new int[sz];
     int[] copy = new int[sz];
@@ -56,16 +62,14 @@ public class TestPForUtil extends LuceneTestCase {
       buff[i]=gen.nextInt() & 1;
     buff[sz-1]=gen.nextInt() & 0xffffffff;   // create only one exception
 
-    Collections.shuffle(Arrays.asList(buff),new Random(seed));
+    Collections.shuffle(Arrays.asList(buff),gen);
     for (int i=0; i<sz; ++i)
       data[i] = buff[i];
 
     int ensz = PForUtil.compress(data,sz,resBuffer);
 
-    if (ensz > sz*8+4) {
-      println("Excceed? "+ensz+">"+(sz*8+4));
-      ensz=sz*8+4;
-    }
+    assert (ensz <= sz*8+4);  // must not exceed the loose upperbound
+
     resBuffer.rewind();
     PForUtil.decompress(resBuffer,copy);
 
@@ -76,12 +80,17 @@ public class TestPForUtil extends LuceneTestCase {
     assert cmp(data,sz,copy,sz)==true;
   }
 
-  // Test correctness of compressing and decompressing
-  public void tryAllDistribution() throws Exception {
+  /**
+   * Test correctness of compressing and decompressing.
+   * Here we randomly assign a rate of exception (i.e. 1-alpha), 
+   * and test different scale of normal/exception values.
+   */
+  public void testAllDistribution() throws Exception {
+    initRandom();
     for (int i=0; i<=32; ++i) { // try to test every kinds of distribution
       double alpha=gen.nextDouble(); // rate of normal value
       for (int j=0; j<=32; ++j) {
-        tryDistribution(128,alpha,MASK[i],MASK[j]);
+        tryDistribution(ForPostingsFormat.DEFAULT_BLOCK_SIZE,alpha,MASK[i],MASK[j]);
       }
     }
   }
@@ -95,16 +104,14 @@ public class TestPForUtil extends LuceneTestCase {
       buff[i]=gen.nextInt() & masknorm;
     for (; i<sz; ++i)
       buff[i]=gen.nextInt() & maskexc;
-    Collections.shuffle(Arrays.asList(buff),new Random(seed));
+    Collections.shuffle(Arrays.asList(buff),gen);
     for (i=0; i<sz; ++i)
       data[i] = buff[i];
 
     int ensz = PForUtil.compress(data,sz,resBuffer);
     
-    if (ensz > sz*8+4) {
-      println("Excceed? "+ensz+">"+(sz*8+4));
-      ensz=sz*8+4;
-    }
+    assert (ensz <= sz*8+4);  // must not exceed the loose upperbound
+
     int[] copy = new int[sz];
     PForUtil.decompress(resBuffer,copy);
 

@@ -1,5 +1,5 @@
 package org.apache.lucene.codecs.pfor;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,7 +15,8 @@ package org.apache.lucene.codecs.pfor;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- /* This code is generated, do not modify. See gendecompress.py */
+ 
+/* This code is generated, do not modify. See gendecompress.py */
 
 import java.nio.IntBuffer;
 
@@ -24,6 +25,7 @@ final class PackedIntsDecompress {
   // nocommit: assess perf of this to see if specializing is really needed
 
   // NOTE: hardwired to blockSize == 128
+
   public static void decode1(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 1;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -65,8 +67,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode2(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 2;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -109,8 +109,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode3(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 3;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -154,8 +152,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode4(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 4;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -200,8 +196,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode5(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 5;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -247,8 +241,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode6(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 6;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -295,8 +287,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode7(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 7;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -344,8 +334,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode8(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 8;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -394,8 +382,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode9(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 9;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -445,8 +431,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode10(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 10;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -497,8 +481,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode11(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 11;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -550,8 +532,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode12(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 12;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -604,8 +584,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode13(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 13;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -659,8 +637,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode14(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 14;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -715,8 +691,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode15(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 15;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -772,8 +746,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode16(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 16;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -830,8 +802,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode17(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 17;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -889,8 +859,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode18(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 18;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -949,8 +917,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode19(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 19;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1010,8 +976,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode20(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 20;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1072,8 +1036,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode21(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 21;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1135,8 +1097,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode22(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 22;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1199,8 +1159,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode23(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 23;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1264,8 +1222,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode24(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 24;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1330,8 +1286,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode25(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 25;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1397,8 +1351,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode26(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 26;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1465,8 +1417,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode27(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 27;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1534,8 +1484,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode28(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 28;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1604,8 +1552,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode29(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 29;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1675,8 +1621,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode30(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 30;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1747,8 +1691,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode31(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 31;
     final int mask = (int) ((1L<<numFrameBits) - 1);
@@ -1820,8 +1762,6 @@ final class PackedIntsDecompress {
       outputOffset += 32;
     }
   }
-
-  // NOTE: hardwired to blockSize == 128
   public static void decode32(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 32;
     final int mask = (int) ((1L<<numFrameBits) - 1);

@@ -1,5 +1,5 @@
 package org.apache.lucene.codecs.pfor;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,12 +32,15 @@ import org.apache.lucene.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.codecs.intblock.FixedIntBlockIndexOutput;
 
 /** 
- * Stuff to pass to PostingsReader/WriterBase.
- * Things really make sense are: flushBlock() and readBlock()
+ * Used to plug to PostingsReader/WriterBase.
+ * Encoder and decoder in lower layers are called by 
+ * flushBlock() and readBlock()
  */
 
 public final class ForFactory extends IntStreamFactory {
-  private final int blockSize;
+
+  /* number of ints for each block */
+  private final int blockSize; 
 
   public ForFactory() {
     this.blockSize = ForPostingsFormat.DEFAULT_BLOCK_SIZE;
@@ -53,6 +56,8 @@ public final class ForFactory extends IntStreamFactory {
       return ret;
     } finally {
       if (!success) {
+        // For some cases (e.g. disk full), the IntIndexOutput may not be 
+        // properly created. So we should close those opened files. 
         IOUtils.closeWhileHandlingException(out);
       }
     }
@@ -63,7 +68,10 @@ public final class ForFactory extends IntStreamFactory {
     return new ForIndexInput(dir.openInput(fileName, context));
   }
 
-  // wrap input and output with buffer support
+  /**
+   * Here we'll hold both input buffer and output buffer for 
+   * encoder/decoder.
+   */
   private class ForIndexInput extends FixedIntBlockIndexInput {
 
     ForIndexInput(final IndexInput in) throws IOException {
@@ -77,7 +85,10 @@ public final class ForFactory extends IntStreamFactory {
       private final IntBuffer encodedBuffer;
 
       ForBlockReader(final IndexInput in, final int[] buffer) {
-        this.encoded = new byte[blockSize*8+4];
+        // upperbound for encoded value should include:
+        // 1. blockSize of normal value when numFrameBits=32(4x bytes); 
+        // 2. header (4bytes);
+        this.encoded = new byte[blockSize*4+4]; 
         this.in = in;
         this.buffer = buffer;
         this.encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
@@ -87,7 +98,7 @@ public final class ForFactory extends IntStreamFactory {
       @Override
       public void readBlock() throws IOException {
         final int numBytes = in.readInt();
-        assert numBytes <= blockSize*8+4;
+        assert numBytes <= blockSize*4+4;
         in.readBytes(encoded,0,numBytes);
         ForUtil.decompress(encodedBuffer,buffer);
       }
@@ -105,7 +116,7 @@ public final class ForFactory extends IntStreamFactory {
 
     ForIndexOutput(IndexOutput out, int blockSize) throws IOException {
       super(out,blockSize);
-      this.encoded = new byte[blockSize*8+4];
+      this.encoded = new byte[blockSize*4+4];
       this.encodedBuffer=ByteBuffer.wrap(encoded).asIntBuffer();
     }
 
