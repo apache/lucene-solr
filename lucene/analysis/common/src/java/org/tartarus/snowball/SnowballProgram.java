@@ -435,7 +435,7 @@ public abstract class SnowballProgram {
 	    bra > ket ||
 	    ket > limit)
 	{
-	    System.err.println("faulty slice operation");
+	    throw new IllegalArgumentException("faulty slice operation: bra=" + bra + ",ket=" + ket + ",limit=" + limit);
 	// FIXME: report error somehow.
 	/*
 	    fprintf(stderr, "faulty slice operation:\n");

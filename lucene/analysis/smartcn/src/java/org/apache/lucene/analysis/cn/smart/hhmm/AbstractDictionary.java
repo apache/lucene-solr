@@ -118,9 +118,8 @@ abstract class AbstractDictionary {
       											// Therefore, each code page only has 16*6-2=94 characters.
       return (short) (b0 * 94 + b1);
     } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
-    return -1;
   }
 
   /**

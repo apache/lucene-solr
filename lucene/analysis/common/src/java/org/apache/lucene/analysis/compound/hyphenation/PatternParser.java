@@ -40,7 +40,7 @@ import javax.xml.parsers.SAXParserFactory;
  * 
  * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
  */
-public class PatternParser extends DefaultHandler implements PatternConsumer {
+public class PatternParser extends DefaultHandler {
 
   XMLReader parser;
 
@@ -402,25 +402,4 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
     return str.toString();
 
   } // getLocationString(SAXParseException):String
-
-  // PatternConsumer implementation for testing purposes
-  public void addClass(String c) {
-    System.out.println("class: " + c);
-  }
-
-  public void addException(String w, ArrayList<Object> e) {
-    System.out.println("exception: " + w + " : " + e.toString());
-  }
-
-  public void addPattern(String p, String v) {
-    System.out.println("pattern: " + p + " : " + v);
-  }
-
-  public static void main(String[] args) throws Exception {
-    if (args.length > 0) {
-      PatternParser pp = new PatternParser();
-      pp.setConsumer(pp);
-      pp.parse(args[0]);
-    }
-  }
 }

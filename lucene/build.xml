@@ -170,7 +170,7 @@
   </target>
 
   <!-- Validation (license/notice/api checks). -->
-  <target name="validate" depends="check-licenses,check-forbidden-apis" description="Validate stuff." />
+  <target name="validate" depends="check-licenses,check-forbidden-apis,check-system-out" description="Validate stuff." />
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" />
@@ -183,6 +183,41 @@
         <include name="jdk-deprecated.txt" />
       </apiFileSet>
       <fileset dir="${basedir}/build" includes="**/*.class" />
+    </forbidden-apis>
+  </target>
+
+  <target name="check-system-out" depends="compile-tools,compile-test,load-custom-tasks" description="Check for use of System.out, etc in non-test code.">
+    <forbidden-apis>
+      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
+        <include name="system-out.txt" />
+      </apiFileSet>
+      <fileset dir="${basedir}/build">
+        <include name="**/classes/java/**/*.class"/>
+        <!-- this is basically tests -->
+        <exclude name="test-framework/**"/>
+        <!-- exclude command line tools -->
+        <exclude name="core/classes/java/org/apache/lucene/index/CheckIndex.class"/>
+        <exclude name="core/classes/java/org/apache/lucene/index/IndexUpgrader.class"/>
+        <exclude name="core/classes/java/org/apache/lucene/store/LockVerifyServer.class"/>
+        <exclude name="core/classes/java/org/apache/lucene/store/LockStressTest.class"/>
+        <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/Compile.class"/>
+        <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/DiffIt.class"/>
+        <exclude name="benchmark/**"/>
+        <exclude name="demo/classes/java/org/apache/lucene/demo/IndexFiles.class"/>
+        <exclude name="demo/classes/java/org/apache/lucene/demo/SearchFiles.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/index/CompoundFileExtractor.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/index/IndexSplitter.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/index/MultiPassIndexSplitter.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/misc/GetTermInfo.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/misc/HighFreqTerms.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/misc/IndexMergeTool.class"/>
+        <!-- not printing, just checking if its a system stream -->
+        <exclude name="core/classes/java/org/apache/lucene/util/PrintStreamInfoStream.class"/>
+        <!-- not printing, just generated code from javacc -->
+        <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/classic/QueryParserTokenManager.class"/>
+        <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParserTokenManager.class"/>
+        <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/surround/parser/QueryParserTokenManager.class"/>
+      </fileset>
     </forbidden-apis>
   </target>
 

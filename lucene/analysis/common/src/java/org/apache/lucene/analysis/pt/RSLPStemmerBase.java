@@ -132,7 +132,7 @@ public abstract class RSLPStemmerBase {
       super(suffix, min, replacement);
       for (int i = 0; i < exceptions.length; i++) {
         if (!exceptions[i].endsWith(suffix))
-          System.err.println("warning: useless exception '" + exceptions[i] + "' does not end with '" + suffix + "'");
+          throw new RuntimeException("useless exception '" + exceptions[i] + "' does not end with '" + suffix + "'");
       }
       this.exceptions = new CharArraySet(Version.LUCENE_31,
            Arrays.asList(exceptions), false);
@@ -156,7 +156,7 @@ public abstract class RSLPStemmerBase {
       super(suffix, min, replacement);
       for (int i = 0; i < exceptions.length; i++) {
         if (!exceptions[i].endsWith(suffix))
-          System.err.println("warning: useless exception '" + exceptions[i] + "' does not end with '" + suffix + "'");
+          throw new RuntimeException("warning: useless exception '" + exceptions[i] + "' does not end with '" + suffix + "'");
       }
       this.exceptions = new char[exceptions.length][];
       for (int i = 0; i < exceptions.length; i++)

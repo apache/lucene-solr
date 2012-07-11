@@ -79,14 +79,9 @@ class BigramDictionary extends AbstractDictionary {
     try {
       loadFromInputStream(new FileInputStream(serialObj));
       return true;
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ClassNotFoundException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-    return false;
   }
 
   private void loadFromInputStream(InputStream serialObjectInputStream)

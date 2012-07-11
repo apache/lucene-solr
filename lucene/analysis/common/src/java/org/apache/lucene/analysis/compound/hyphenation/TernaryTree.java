@@ -17,6 +17,7 @@
 
 package org.apache.lucene.analysis.compound.hyphenation;
 
+import java.io.PrintStream;
 import java.util.Enumeration;
 import java.util.Stack;
 
@@ -633,11 +634,11 @@ public class TernaryTree implements Cloneable {
 
   }
 
-  public void printStats() {
-    System.out.println("Number of keys = " + Integer.toString(length));
-    System.out.println("Node count = " + Integer.toString(freenode));
+  public void printStats(PrintStream out) {
+    out.println("Number of keys = " + Integer.toString(length));
+    out.println("Node count = " + Integer.toString(freenode));
     // System.out.println("Array length = " + Integer.toString(eq.length));
-    System.out.println("Key Array length = " + Integer.toString(kv.length()));
+    out.println("Key Array length = " + Integer.toString(kv.length()));
 
     /*
      * for(int i=0; i<kv.length(); i++) if ( kv.get(i) != 0 )
@@ -647,7 +648,7 @@ public class TernaryTree implements Cloneable {
      */
 
   }
-
+/*
   public static void main(String[] args) {
     TernaryTree tt = new TernaryTree();
     tt.insert("Carlos", 'C');
@@ -658,7 +659,8 @@ public class TernaryTree implements Cloneable {
     System.out.println((char) tt.find("Car"));
     System.out.println((char) tt.find("Carlos"));
     System.out.println((char) tt.find("alto"));
-    tt.printStats();
+    tt.printStats(System.out);
   }
+  */
 
 }
