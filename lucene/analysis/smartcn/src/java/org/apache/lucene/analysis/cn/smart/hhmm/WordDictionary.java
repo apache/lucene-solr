@@ -145,14 +145,9 @@ class WordDictionary extends AbstractDictionary {
     try {
       loadFromObjectInputStream(new FileInputStream(serialObj));
       return true;
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ClassNotFoundException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-    return false;
   }
 
   private void loadFromObjectInputStream(InputStream serialObjectInputStream)
