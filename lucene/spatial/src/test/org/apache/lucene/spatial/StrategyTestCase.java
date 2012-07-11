@@ -24,6 +24,7 @@ import com.spatial4j.core.io.sample.SampleDataReader;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
@@ -90,7 +91,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
         }
       }
       if (storeShape)
-        document.add(strategy.createStoredField(shape));
+        document.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
 
       documents.add(document);
     }
