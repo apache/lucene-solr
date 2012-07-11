@@ -176,7 +176,7 @@
     </subant>
   </target>
 
-  <target name="jar-checksums" description="Recompute SHA1 checksums for all JAR files.">
+  <target name="jar-checksums" depends="resolve" description="Recompute SHA1 checksums for all JAR files.">
     <delete>
       <fileset dir="${basedir}">
         <include name="**/*.jar.sha1"/>
