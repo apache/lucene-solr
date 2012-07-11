@@ -564,6 +564,7 @@ public class TestCodecs extends LuceneTestCase {
             }
             assertNotNull(docs);
             int upto2 = -1;
+            boolean ended = false;
             while(upto2 < term.docs.length-1) {
               // Maybe skip:
               final int left = term.docs.length-upto2;
@@ -579,6 +580,7 @@ public class TestCodecs extends LuceneTestCase {
                   if (doc == DocIdSetIterator.NO_MORE_DOCS) {
                     // skipped past last doc
                     assert upto2 == term.docs.length-1;
+                    ended = true;
                     break;
                   } else {
                     // skipped to next doc
@@ -602,7 +604,9 @@ public class TestCodecs extends LuceneTestCase {
               }
             }
 
-            assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
+            if (!ended) {
+              assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
+            }
           }
           upto++;
 
