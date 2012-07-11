@@ -189,10 +189,7 @@
   </target>
 
   <target name="-check-system-out">
-    <forbidden-apis>
-      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
-        <include name="system-out.txt" />
-      </apiFileSet>
+    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/system-out.txt">
       <fileset dir="${basedir}/build">
         <include name="**/classes/java/**/*.class"/>
         <!-- this is basically tests -->
