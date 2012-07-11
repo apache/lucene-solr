@@ -83,7 +83,7 @@ Other Changes
   
 * SOLR-3355: Add shard and collection to SolrCore statistics. (Michael Garski, Mark Miller)
 
-* SOLR-3475: solr.xml should default to persist=true (Mark Miller)
+* SOLR-3575: solr.xml should default to persist=true (Mark Miller)
 
 * SOLR-3563: Unloading all cores in a SolrCloud collection will now cause the removal of
   that collection's meta data from ZooKeeper. (Mark Miller, Per Steffensen)
