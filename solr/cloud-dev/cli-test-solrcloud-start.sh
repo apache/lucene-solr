@@ -22,7 +22,15 @@ cp -r -f example example4
 cp -r -f example example5
 cp -r -f example example6
 
-java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkCLI -cmd upconf -zkhost 127.0.0.1:9983 -solrhome example/solr -runzk 8983
+# first try uploading a conf dir
+java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkCLI -cmd upconfig -zkhost 127.0.0.1:9983 -confdir example/solr/collection1/conf -confname conf1 -solrhome example/solr -runzk 8983
+
+# upload a second conf set so we avoid single conf auto linking
+java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkCLI -cmd upconfig -zkhost 127.0.0.1:9983 -confdir example/solr/collection1/conf -confname conf2 -solrhome example/solr -runzk 8983
+
+# now try linking a collection to a conf set
+java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkCLI -cmd linkconfig -zkhost 127.0.0.1:9983 -collection collection1 -confname conf1 -solrhome example/solr -runzk 8983
+
 
 cd example
 java -DzkRun -DnumShards=2 -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example.log 2>&1 &

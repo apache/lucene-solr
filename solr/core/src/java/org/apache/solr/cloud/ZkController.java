@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 
 import javax.xml.xpath.XPathConstants;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
@@ -50,8 +51,8 @@ import org.apache.solr.core.Config;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.DOMUtil;
@@ -63,7 +64,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 /**
  * Handle ZooKeeper interactions.
@@ -120,53 +120,6 @@ public final class ZkController {
   // for now, this can be null in tests, in which case recovery will be inactive, and other features
   // may accept defaults or use mocks rather than pulling things from a CoreContainer
   private CoreContainer cc;
-
-  /**
-   * Bootstraps the current configs for all collections in solr.xml.
-   * Takes two params - the zkhost to connect to and the solrhome location
-   * to find solr.xml.
-   *
-   * If you also pass a solrPort, it will be used to start
-   * an embedded zk useful for single machine, multi node tests.
-   * 
-   * @param args
-   * @throws Exception
-   */
-  public static void main(String[] args) throws Exception {
-    // start up a tmp zk server first
-    String zkServerAddress = args[0];
-    
-    String solrHome = args[1];
-   
-    String solrPort = null;
-    if (args.length > 2) {
-      solrPort = args[2];
-    }
-    
-
-    SolrZkServer zkServer = null;
-    if (solrPort != null) {
-      zkServer = new SolrZkServer("true", null, solrHome + "/zoo_data", solrHome, solrPort);
-      zkServer.parseConfig();
-      zkServer.start();
-    }
-    
-    SolrZkClient zkClient = new SolrZkClient(zkServerAddress, 15000, 5000,
-        new OnReconnect() {
-          @Override
-          public void command() {
-          }});
-    
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-    solrHome = loader.getInstanceDir();
-    
-    InputSource cfgis = new InputSource(new File(solrHome, "solr.xml").toURI().toASCIIString());
-    Config cfg = new Config(loader, null, cfgis , null, false);
-    bootstrapConf(zkClient, cfg, solrHome);
-    if (solrPort != null) {
-      zkServer.stop();
-    }
-  }
 
   /**
    * @param cc if null, recovery will not be enabled
@@ -898,9 +851,7 @@ public final class ZkController {
           
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
-         
-          // ping that there is a new collection
-          zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null, true);
+
         } catch (KeeperException e) {
           // its okay if the node already exists
           if (e.code() != KeeperException.Code.NODEEXISTS) {
@@ -1008,6 +959,24 @@ public final class ZkController {
     }
   }
   
+  public static void downloadFromZK(SolrZkClient zkClient, String zkPath,
+      File dir) throws IOException, KeeperException, InterruptedException {
+    List<String> files = zkClient.getChildren(zkPath, null, true);
+    
+    for (String file : files) {
+      List<String> children = zkClient.getChildren(zkPath + "/" + file, null, true);
+      if (children.size() == 0) {
+        byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
+        dir.mkdirs(); 
+        log.info("Write file " + new File(dir, file));
+        FileUtils.writeStringToFile(new File(dir, file), new String(data, "UTF-8"), "UTF-8");
+      } else {
+        downloadFromZK(zkClient, zkPath + "/" + file, new File(dir, file));
+      }
+    }
+  }
+  
+  
   private String getCoreNodeName(CoreDescriptor descriptor){
     return getNodeName() + "_"
         + descriptor.getName();
@@ -1015,6 +984,10 @@ public final class ZkController {
   
   public static void uploadConfigDir(SolrZkClient zkClient, File dir, String configName) throws IOException, KeeperException, InterruptedException {
     uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
+  }
+  
+  public static void downloadConfigDir(SolrZkClient zkClient, String configName, File dir) throws IOException, KeeperException, InterruptedException {
+    downloadFromZK(zkClient, ZkController.CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
   public void preRegister(CoreDescriptor cd) throws KeeperException, InterruptedException {
@@ -1100,6 +1073,50 @@ public final class ZkController {
     return leaderProps;
   }
   
+  public static void linkConfSet(SolrZkClient zkClient, String collection, String confSetName) throws KeeperException, InterruptedException {
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
+    if (log.isInfoEnabled()) {
+      log.info("Load collection config from:" + path);
+    }
+    byte[] data;
+    try {
+      data = zkClient.getData(path, null, null, true);
+    } catch (NoNodeException e) {
+      // if there is no node, we will try and create it
+      // first try to make in case we are pre configuring
+      ZkNodeProps props = new ZkNodeProps(CONFIGNAME_PROP, confSetName);
+      try {
+
+        zkClient.makePath(path, ZkStateReader.toJSON(props),
+            CreateMode.PERSISTENT, null, true);
+      } catch (KeeperException e2) {
+        // its okay if the node already exists
+        if (e2.code() != KeeperException.Code.NODEEXISTS) {
+          throw e;
+        }
+        // if we fail creating, setdata
+        // TODO: we should consider using version
+        zkClient.setData(path, ZkStateReader.toJSON(props), true);
+      }
+      return;
+    }
+    // we found existing data, let's update it
+    ZkNodeProps props = null;
+    if(data != null) {
+      props = ZkNodeProps.load(data);
+      Map<String,String> newProps = new HashMap<String,String>();
+      newProps.putAll(props.getProperties());
+      newProps.put(CONFIGNAME_PROP, confSetName);
+      props = new ZkNodeProps(newProps);
+    } else {
+      props = new ZkNodeProps(CONFIGNAME_PROP, confSetName);
+    }
+    
+    // TODO: we should consider using version
+    zkClient.setData(path, ZkStateReader.toJSON(props), true);
+
+  }
+  
   /**
    * If in SolrCloud mode, upload config sets for each SolrCore in solr.xml.
    * 
@@ -1114,18 +1131,20 @@ public final class ZkController {
 
     for (int i=0; i<nodes.getLength(); i++) {
       Node node = nodes.item(i);
-      String rawName = DOMUtil.getAttr(node, "name", null);
+      String rawName = DOMUtil.substituteProperty(DOMUtil.getAttr(node, "name", null), new Properties());
+
       String instanceDir = DOMUtil.getAttr(node, "instanceDir", null);
       File idir = new File(instanceDir);
       if (!idir.isAbsolute()) {
         idir = new File(solrHome, instanceDir);
       }
-      String confName = DOMUtil.getAttr(node, "collection", null);
+      String confName = DOMUtil.substituteProperty(DOMUtil.getAttr(node, "collection", null), new Properties());
       if (confName == null) {
         confName = rawName;
       }
-
-      ZkController.uploadConfigDir(zkClient, new File(idir, "conf"), confName);
+      File udir = new File(idir, "conf");
+      SolrException.log(log, "Uploading directory " + udir + " with name " + confName + " for SolrCore " + rawName);
+      ZkController.uploadConfigDir(zkClient, udir, confName);
     }
   }
 

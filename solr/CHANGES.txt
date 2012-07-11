@@ -56,6 +56,9 @@ New Features
   
 * SOLR-2616: Include a sample java util logging configuration file. 
   (David Smiley, Mark Miller)
+ 
+* SOLR-3460: Add cloud-scripts directory and a zkcli.sh|bat tool for easy scripting
+  and interaction with ZooKeeper. (Mark Miller)
 
 
 Bug Fixes
@@ -88,6 +91,8 @@ Other Changes
 * SOLR-3599: Add zkClientTimeout to solr.xml so that it's obvious how to change it and so 
   that you can change it with a system property. (Mark Miller)
 
+* SOLR-3609: Change Solr's expanded webapp directory to be at a consistent path called
+  solr-webapp rather than a temporary directory. (Mark Miller)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
