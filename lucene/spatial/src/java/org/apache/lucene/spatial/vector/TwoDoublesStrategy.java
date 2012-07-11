@@ -24,7 +24,6 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -83,20 +82,14 @@ public class TwoDoublesStrategy extends SpatialStrategy {
   }
 
   @Override
-  public IndexableField[] createFields(Shape shape, boolean index, boolean store) {
+  public IndexableField[] createFields(Shape shape) {
     if( shape instanceof Point ) {
       Point point = (Point)shape;
-
-      IndexableField[] f = new IndexableField[(index ? 2 : 0) + (store ? 1 : 0)];
-      if (index) {
-        f[0] = createDouble(fieldNameX, point.getX(), index, store);
-        f[1] = createDouble(fieldNameY, point.getY(), index, store);
-      }
-      if(store) {
-        FieldType customType = new FieldType();
-        customType.setStored(true);
-        f[f.length-1] = new Field( getFieldName(), ctx.toString( shape ), customType );
-      }
+      FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
+      doubleFieldType.setNumericPrecisionStep(precisionStep);
+      IndexableField[] f = new IndexableField[2];
+      f[0] = new DoubleField(fieldNameX, point.getX(), doubleFieldType);
+      f[1] = new DoubleField(fieldNameY, point.getY(), doubleFieldType);
       return f;
     }
     if( !ignoreIncompatibleGeometry ) {
@@ -105,20 +98,8 @@ public class TwoDoublesStrategy extends SpatialStrategy {
     return new IndexableField[0]; // nothing (solr does not support null)
   }
 
-  private IndexableField createDouble(String name, double v, boolean index, boolean store) {
-    if (!store && !index)
-      throw new IllegalArgumentException("field must be indexed or stored");
-
-    FieldType fieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
-    fieldType.setStored(store);
-    fieldType.setIndexed(index);
-    fieldType.setNumericPrecisionStep(precisionStep);
-    return new DoubleField(name,v,fieldType);
-  }
-
   @Override
-  public IndexableField createField(Shape shape,
-                                    boolean index, boolean store) {
+  public IndexableField createField(Shape shape) {
     throw new UnsupportedOperationException("Point is poly field");
   }
 

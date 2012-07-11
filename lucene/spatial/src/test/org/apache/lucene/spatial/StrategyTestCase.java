@@ -83,11 +83,14 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       document.add(new StringField("id", data.id, Field.Store.YES));
       document.add(new StringField("name", data.name, Field.Store.YES));
       Shape shape = ctx.readShape(data.shape);
-      for (IndexableField f : strategy.createFields(shape, true, storeShape)) {
+      for (IndexableField f : strategy.createFields(shape)) {
         if( f != null ) { // null if incompatibleGeometry && ignore
           document.add(f);
         }
       }
+      if (storeShape)
+        document.add(strategy.createStoredField(shape));
+
       documents.add(document);
     }
     return documents;
@@ -112,6 +115,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
 
       String msg = q.line; //"Query: " + q.args.toString(ctx);
       SearchResults got = executeQuery(strategy.makeQuery(q.args), 100);
+      if (storeShape && got.numFound > 0) {
+        //check stored value is there & parses
+        assertNotNull(ctx.readShape(got.results.get(0).document.get(strategy.getFieldName())));
+      }
       if (concern.orderIsImportant) {
         Iterator<String> ids = q.ids.iterator();
         for (SearchResult r : got.results) {
