@@ -210,11 +210,8 @@
   </target>
 
   <target name="-check-forbidden-test-apis">
-    <forbidden-apis>
+    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/tests.txt"> 
       <classpath refid="junit-path"/>
-      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
-        <include name="tests.txt" />
-      </apiFileSet>
       <fileset dir="${basedir}/build">
         <include name="**/classes/test/**/*.class"/>
         <include name="solr-test-framework/**/*.class"/>
