@@ -71,13 +71,22 @@ public class MockRandomPostingsFormat extends PostingsFormat {
   private final String SEED_EXT = "sd";
   
   public MockRandomPostingsFormat() {
-    // just for reading, we are gonna setSeed from the .seed file... right?
-    this(new Random());
+    // This ctor should *only* be used at read-time: get NPE if you use it!
+    this(null);
   }
   
   public MockRandomPostingsFormat(Random random) {
     super("MockRandom");
-    this.seedRandom = new Random(random.nextLong());
+    if (random == null) {
+      this.seedRandom = new Random(0L) {
+        @Override
+        protected int next(int arg0) {
+          throw new IllegalStateException("Please use MockRandomPostingsFormat(Random)");
+        }
+      };
+    } else {
+      this.seedRandom = new Random(random.nextLong());
+    }
   }
 
   // Chooses random IntStreamFactory depending on file's extension

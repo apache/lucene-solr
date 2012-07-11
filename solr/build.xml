@@ -190,7 +190,10 @@
     </license-check-macro>
   </target>
   
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks" description="Check forbidden API calls in compiled class files.">
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-java-apis,-check-forbidden-test-apis" 
+          description="Check forbidden API calls in compiled class files."/>
+
+  <target name="-check-forbidden-java-apis">
     <forbidden-apis>
       <classpath refid="additional.dependencies"/>
       <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
@@ -202,6 +205,23 @@
         <include name="**/*.class" />
         <!-- exclude DIH for now as it is broken with Locales and Encodings: SOLR-1916 -->
         <exclude name="contrib/solr-dataimporthandler*/**" />
+      </fileset>
+    </forbidden-apis>
+  </target>
+
+  <target name="-check-forbidden-test-apis">
+    <forbidden-apis>
+      <classpath refid="junit-path"/>
+      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
+        <include name="tests.txt" />
+      </apiFileSet>
+      <fileset dir="${basedir}/build">
+        <include name="**/classes/test/**/*.class"/>
+        <include name="solr-test-framework/**/*.class"/>
+        <!-- not actually a test -->
+        <exclude name="solr-core/classes/test/org/apache/solr/search/DocSetPerf.class"/>
+        <!-- imported code -->
+        <exclude name="solr-core/classes/test/org/apache/solr/internal/**/*.class"/>
       </fileset>
     </forbidden-apis>
   </target>

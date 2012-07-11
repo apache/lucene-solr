@@ -109,7 +109,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     input.close();
     
     reader = IndexReader.open(directory);
-    sampleTerms = sample(reader,1000);
+    sampleTerms = sample(random(),reader,1000);
   }
   
   @AfterClass
@@ -152,9 +152,8 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     }
   }
 
-  private static List<Term> sample(IndexReader reader, int size) throws IOException {
+  private static List<Term> sample(Random random, IndexReader reader, int size) throws IOException {
     List<Term> sample = new ArrayList<Term>();
-    Random random = new Random();
     FieldsEnum fieldsEnum = MultiFields.getFields(reader).iterator();
     String field;
     while((field = fieldsEnum.next()) != null) {
