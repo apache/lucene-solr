@@ -170,13 +170,15 @@
   </target>
 
   <!-- Validation (license/notice/api checks). -->
-  <target name="validate" depends="check-licenses,check-forbidden-apis,check-system-out" description="Validate stuff." />
+  <target name="validate" depends="check-licenses,check-forbidden-apis" description="Validate stuff." />
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" />
   </target>
 
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks" description="Check forbidden API calls in compiled class files.">
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-jdk-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
+
+  <target name="-check-forbidden-jdk-apis">
     <forbidden-apis> 
       <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
         <include name="jdk.txt" />
@@ -186,7 +188,7 @@
     </forbidden-apis>
   </target>
 
-  <target name="check-system-out" depends="compile-tools,compile-test,load-custom-tasks" description="Check for use of System.out, etc in non-test code.">
+  <target name="-check-system-out">
     <forbidden-apis>
       <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
         <include name="system-out.txt" />
