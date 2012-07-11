@@ -170,7 +170,7 @@
   </target>
 
   <!-- Validation (license/notice/api checks). -->
-  <target name="validate" depends="check-licenses,check-forbidden-apis" description="Validate stuff." />
+  <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" />
@@ -227,7 +227,7 @@
     </forbidden-apis>
   </target>
 
-  <target name="resolve">
+  <target name="resolve" depends="resolve-tools">
     <sequential>
       <ant dir="test-framework" target="resolve" inheritall="false">
          <propertyset refid="uptodate.and.compiled.properties"/>

@@ -655,6 +655,12 @@
     <ant dir="${common.dir}/tools" target="compile-core" inheritAll="false"/>
   </target>
 
+  <target name="resolve-tools">
+    <ant dir="${common.dir}/tools" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target> 
+
   <target name="compile-test" depends="compile-core,compile-test-framework">
   	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
   						test.classpath="test.classpath"/>
@@ -1260,10 +1266,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   </target>
 
   <!-- TODO: add cool detector like the ivy one? this requires you have rat -->
-  <target name="rat-sources-typedef">
-    <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:rat.anttasks">
+  <target name="rat-sources-typedef" depends="resolve-tools">
+    <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:org.apache.rat.anttasks">
       <classpath>
-        <fileset dir="." includes="rat*.jar"/>
+        <fileset dir="${common.dir}/tools/lib" includes="apache-rat-0.8.jar"/>
       </classpath>
     </typedef>
   </target>
