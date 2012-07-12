@@ -923,6 +923,8 @@
 
            See lang/userdict_ja.txt for a sample user dictionary file.
 
+           Punctuation characters are discarded by default.  Use discardPunctuation="false" to keep them.
+
            See http://wiki.apache.org/solr/JapaneseLanguageSupport for more on Japanese language support.
         -->
         <tokenizer class="solr.JapaneseTokenizerFactory" mode="search"/>

@@ -78,6 +78,10 @@ Bug Fixes
 
 Other Changes
 
+* SOLR-3524: Make discarding punctuation configurable in JapaneseTokenizerFactory.
+  The default is to discard punctuation, but this is overridable as an expert option.
+  (Kazuaki Hiraga, Jun Ohtani via Christian Moen)
+
 * SOLR-1770: Move the default core instance directory into a collection1 folder.
   (Mark Miller)
   
