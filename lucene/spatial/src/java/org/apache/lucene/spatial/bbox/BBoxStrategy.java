@@ -92,7 +92,7 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public IndexableField[] createFields(Shape shape) {
+  public IndexableField[] createIndexableFields(Shape shape) {
     Rectangle bbox = shape.getBoundingBox();
     FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
     doubleFieldType.setNumericPrecisionStep(precisionStep);
@@ -103,16 +103,6 @@ public class BBoxStrategy extends SpatialStrategy {
     fields[3] = new DoubleField(field_maxY, bbox.getMaxY(), doubleFieldType);
     fields[4] = new Field( field_xdl, bbox.getCrossesDateLine()?"T":"F", StringField.TYPE_NOT_STORED);
     return fields;
-  }
-
-  @Override
-  public IndexableField createField(Shape shape) {
-    throw new UnsupportedOperationException("BBOX is poly field");
-  }
-
-  @Override
-  public boolean isPolyField() {
-    return true;
   }
 
   //---------------------------------

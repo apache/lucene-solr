@@ -85,10 +85,8 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       document.add(new StringField("id", data.id, Field.Store.YES));
       document.add(new StringField("name", data.name, Field.Store.YES));
       Shape shape = ctx.readShape(data.shape);
-      for (IndexableField f : strategy.createFields(shape)) {
-        if( f != null ) { // null if incompatibleGeometry && ignore
-          document.add(f);
-        }
+      for (IndexableField f : strategy.createIndexableFields(shape)) {
+        document.add(f);
       }
       if (storeShape)
         document.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));

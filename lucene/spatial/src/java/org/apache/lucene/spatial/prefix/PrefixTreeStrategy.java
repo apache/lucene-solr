@@ -62,7 +62,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   @Override
-  public IndexableField createField(Shape shape) {
+  public IndexableField[] createIndexableFields(Shape shape) {
     int detailLevel = grid.getMaxLevelForPrecision(shape,distErrPct);
     List<Node> cells = grid.getNodes(shape, detailLevel, true);//true=intermediates cells
     //If shape isn't a point, add a full-resolution center-point so that
@@ -77,7 +77,8 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     //TODO is CellTokenStream supposed to be re-used somehow? see Uwe's comments:
     //  http://code.google.com/p/lucene-spatial-playground/issues/detail?id=4
 
-    return new Field(getFieldName(),new CellTokenStream(cells.iterator()), FIELD_TYPE);
+    Field field = new Field(getFieldName(), new CellTokenStream(cells.iterator()), FIELD_TYPE);
+    return new IndexableField[]{field};
   }
 
   /* Indexed, tokenized, not stored. */
