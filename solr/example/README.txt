@@ -43,10 +43,24 @@ UIMA, the clustering component, or other modules in "contrib",
 you will need to copy the required jars into solr/lib or update the paths to
 the jars in your solrconfig.xml.
 
+-SolrHome
+
 By default, start.jar starts Solr in Jetty using the default solr home
 directory of "./solr/" -- To run other example configurations, you can
 speciy the solr.solr.home system property when starting jetty...
 
   java -Dsolr.solr.home=multicore -jar start.jar
   java -Dsolr.solr.home=example-DIH -jar start.jar
+
+-Logging
+
+By default, Solr will log to the console. This can be convenient when first
+getting started, but eventually you will want to log to a file. To enable
+logging, you can just pass a system property to Jetty on startup:
+
+  java -Djava.util.logging.config.file=etc/logging.properties -jar start.jar
+ 
+ This will use Java Util Logging to log to a file based on the config in
+ etc/logging.properties. Logs will be written in the logs directory. It is
+ also possible to setup log4j or other popular logging frameworks.
 
