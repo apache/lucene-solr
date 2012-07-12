@@ -60,6 +60,10 @@ New Features
 * SOLR-3460: Add cloud-scripts directory and a zkcli.sh|bat tool for easy scripting
   and interaction with ZooKeeper. (Mark Miller)
 
+* SOLR-1725: StatelessScriptUpdateProcessorFactory allows users to implement
+  the full ScriptUpdateProcessor API using any scripting language with a 
+  javax.script.ScriptEngineFactory
+  (Uri Boness, ehatcher, Simon Rosenthal, hossman)
 
 Bug Fixes
 

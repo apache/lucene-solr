@@ -53,7 +53,7 @@ import org.junit.Test;
  * (mainly via TrimFieldUpdateProcessor) and the logic of other various 
  * subclasses.
  */
-public class FieldMutatingUpdateProcessorTest extends SolrTestCaseJ4 {
+public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -816,64 +816,4 @@ public class FieldMutatingUpdateProcessorTest extends SolrTestCaseJ4 {
                  3.0F, d.getField("foo_s").getBoost(), 0.0F);
   }
 
-  /** 
-   * Convenience method for building up SolrInputDocuments
-   */
-  SolrInputDocument doc(SolrInputField... fields) {
-    SolrInputDocument d = new SolrInputDocument();
-    for (SolrInputField f : fields) {
-      d.put(f.getName(), f);
-    }
-    return d;
-  }
-
-  /** 
-   * Convenience method for building up SolrInputFields
-   */
-  SolrInputField field(String name, float boost, Object... values) {
-    SolrInputField f = new SolrInputField(name);
-    for (Object v : values) {
-      f.addValue(v, 1.0F);
-    }
-    f.setBoost(boost);
-    return f;
-  }
-
-  /** 
-   * Convenience method for building up SolrInputFields with default boost
-   */
-  SolrInputField f(String name, Object... values) {
-    return field(name, 1.0F, values);
-  }
-
-
-  /**
-   * Runs a document through the specified chain, and returns the final 
-   * document used when the chain is completed (NOTE: some chains may 
-   * modify the document in place
-   */
-  SolrInputDocument processAdd(final String chain, 
-                               final SolrInputDocument docIn) 
-    throws IOException {
-
-    SolrCore core = h.getCore();
-    UpdateRequestProcessorChain pc = core.getUpdateProcessingChain(chain);
-    assertNotNull("No Chain named: " + chain, pc);
-
-    SolrQueryResponse rsp = new SolrQueryResponse();
-
-    SolrQueryRequest req = new LocalSolrQueryRequest
-      (core, new ModifiableSolrParams());
-    try {
-      AddUpdateCommand cmd = new AddUpdateCommand(req);
-      cmd.solrDoc = docIn;
-
-      UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
-      processor.processAdd(cmd);
-
-      return cmd.solrDoc;
-    } finally {
-      req.close();
-    }
-  }
 }
