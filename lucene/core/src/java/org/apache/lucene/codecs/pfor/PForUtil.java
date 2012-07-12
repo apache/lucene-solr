@@ -53,7 +53,9 @@ public final class PForUtil extends ForUtil {
 
     // the max value possible for current exception pointer, 
     // value of the first pointer is limited by header as 254
-    long maxChain = (1<<8) - 2;  
+    // (first exception ranges from -1 ~ 254)
+    long maxChainFirst = 254;
+    long maxChain = maxChainFirst + 1;  
 
     boolean conValue, conForce, conEnd;
     int i=0;
@@ -77,41 +79,35 @@ public final class PForUtil extends ForUtil {
     }
 
     /** encode normal area, record exception positions */
-    i=0;
     excNum = 0;
     if (excFirstPos < 0) { // no exception 
-      for (; i<size; ++i) {
+      for (i=0; i<size; ++i) {
         encodeNormalValue(intBuffer,i,data[i], numBits);
       }
       excLastPos = -1;
     } else {
-      for (; i<excFirstPos; ++i) {
+      for (i=0; i<excFirstPos; ++i) {
         encodeNormalValue(intBuffer,i,data[i], numBits);
       }
       maxChain = 1L<<numBits;
-      excLastPos = -1;
-      for (; i<size; ++i) {
+      excLastPos = excFirstPos;
+      excNum = i<size? 1:0;
+      for (i=excFirstPos+1; i<size; ++i) {
         conValue = ((data[i] & MASK[numBits]) != data[i]); // value exception
         conForce = (i >= maxChain + excLastPos);           // force exception
         conEnd = (excNum == excNumBase);                   // following forced ignored
         if ((!conValue && !conForce) || conEnd) {
           encodeNormalValue(intBuffer,i,data[i], numBits);
         } else {
-          if (excLastPos >= 0) {
-            encodeNormalValue(intBuffer, excLastPos, i-excLastPos-1, numBits); 
-          }
+          encodeNormalValue(intBuffer, excLastPos, i-excLastPos-1, numBits); 
           excNum++;
           excLastPos = i;
         }
       }
-      if (excLastPos >= 0) { 
-        encodeNormalValue(intBuffer, excLastPos, (i-excLastPos-1)&MASK[numBits], numBits); // mask out suppressed force exception
-      }
     }
   
     /** encode exception area */
-    i=0;
-    for (; i<excNum; ++i) {
+    for (i=0; i<excNum; ++i) {
       if (excBytes < 2 && (excValues[i] & ~MASK[8]) != 0) {
         excBytes=2;
       }
@@ -139,11 +135,11 @@ public final class PForUtil extends ForUtil {
     intBuffer.rewind();
 
     int header = intBuffer.get();
-    int numInts = (header & MASK[8]) + 1;
+    int numInts = (header & MASK[8]);
     int excNum = ((header >> 8) & MASK[8]) + 1;
     int excFirstPos = ((header >> 16) & MASK[8]) - 1;
-    int excBytes = PER_EXCEPTION_SIZE[(header >> 29) & MASK[2]];
-    int numBits = ((header >> 24) & MASK[5]) + 1;
+    int excBytes = PER_EXCEPTION_SIZE[(header >> 30) & MASK[2]];
+    int numBits = ((header >> 24) & MASK[6]);
 
     decompressCore(intBuffer, data, numBits);
 
@@ -157,6 +153,11 @@ public final class PForUtil extends ForUtil {
     intBuffer.put(0, header);
   }
 
+  /**
+   * Encode exception values into exception area.
+   * The width for each exception will be fixed as:
+   * 1, 2, or 4 byte(s).
+   */
   static void encodeExcValues(IntBuffer intBuffer, int[] values, int num, int perbytes, int byteOffset) {
     if (num == 0)
       return;
@@ -251,8 +252,10 @@ public final class PForUtil extends ForUtil {
    * It will run 32 times.
    */
   static int getNumBits(final int[] data, int size) {
+    if (isAllZero(data))
+      return 0;
     int optBits=1;
-    int optSize=estimateCompressedSize(data,size,1);
+    int optSize=estimateCompressedSize(data,size,optBits);
     for (int i=2; i<=32; ++i) {
       int curSize=estimateCompressedSize(data,size,i);
       if (curSize<optSize) {
@@ -261,6 +264,16 @@ public final class PForUtil extends ForUtil {
       }
     }
     return optBits;
+  }
+
+  static boolean isAllZero(final int[] data) {
+    int len=data.length;
+    for (int i=0; i<len; i++) {
+      if (data[i] != 0) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -303,16 +316,40 @@ public final class PForUtil extends ForUtil {
    *
    * 8 bits for the index of the first exception + 1 (when no exception, this is 0)
    *
-   * 5 bits for num of frame bits - 1
+   * 6 bits for num of frame bits
    * 2 bits for the exception code: 00: byte, 01: short, 10: int
-   * 1 bit unused
    *
    */
+  // TODO: exception num should never be equal with uncompressed int num!!!
+  // first exception ranges from -1 ~ 255
+  // the problem is that we don't need first exception to be -1 ...
+  // it is ok to range from 0~255, and judge exception for exception num (0~255)
+  // uncompressed int num: (1~256)
   static int getHeader(int numInts, int numBits, int excNum, int excFirstPos, int excBytes) {
     return  (numInts-1)
           | (((excNum-1) & MASK[8]) << 8)
           | ((excFirstPos+1) << 16)
-          | ((numBits-1) << 24)
-          | ((excBytes/2) << 29);
+          | ((numBits) << 24)
+          | ((excBytes/2) << 30);
+  }
+
+
+  /** 
+   * Expert: get metadata from header. 
+   */
+  public static int getNumInts(int header) {
+    return (header & MASK[8]) + 1;
+  }
+  public static int getExcNum(int header) {
+    return ((header >> 8) & MASK[8]) + 1;
+  }
+  public static int getFirstPos(int header) {
+    return ((header >> 16) & MASK[8]) - 1;
+  }
+  public static int getExcBytes(int header) {
+    return PER_EXCEPTION_SIZE[(header >> 30) & MASK[2]];
+  }
+  public static int getNumBits(int header) {
+    return ((header >> 24) & MASK[6]);
   }
 }

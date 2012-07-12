@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.pfor;
 /* This code is generated, do not modify. See gendecompress.py */
 
 import java.nio.IntBuffer;
+import java.util.Arrays;
 
 final class PackedIntsDecompress {
 
@@ -26,6 +27,9 @@ final class PackedIntsDecompress {
 
   // NOTE: hardwired to blockSize == 128
 
+  public static void decode0(final IntBuffer compressedBuffer, final int[] output) {
+    Arrays.fill(output, 0);
+  }
   public static void decode1(final IntBuffer compressedBuffer, final int[] output) {
     final int numFrameBits = 1;
     final int mask = (int) ((1L<<numFrameBits) - 1);

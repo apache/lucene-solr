@@ -69,12 +69,17 @@ def genDecompress():
 
     w("\n/* This code is generated, do not modify. See gendecompress.py */\n\n")
 
-    w("import java.nio.IntBuffer;\n\n")
+    w("import java.nio.IntBuffer;\n")
+    w("import java.util.Arrays;\n\n")
 
     w("final class PackedIntsDecompress {\n")
 
     w('\n  // nocommit: assess perf of this to see if specializing is really needed\n')
     w('\n  // NOTE: hardwired to blockSize == 128\n\n')
+
+    w('  public static void decode0(final IntBuffer compressedBuffer, final int[] output) {\n')
+    w('    Arrays.fill(output, 0);\n')
+    w('  }\n')
 
     for numFrameBits in xrange(1, 33):
       w('  public static void decode%d(final IntBuffer compressedBuffer, final int[] output) {\n' % numFrameBits)

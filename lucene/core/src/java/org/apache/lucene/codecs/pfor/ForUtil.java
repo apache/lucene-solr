@@ -63,7 +63,7 @@ public class ForUtil {
 
     int header = intBuffer.get();
     int numInts = (header & MASK[8]) + 1;
-    int numBits = ((header >> 8) & MASK[5]) + 1;
+    int numBits = ((header >> 8) & MASK[6]);
 
     decompressCore(intBuffer, data, numBits);
 
@@ -77,10 +77,11 @@ public class ForUtil {
    */
   static void decompressCore(IntBuffer intBuffer, int[] data, int numBits) {
     assert numBits<=32;
-    assert numBits>=1;
+    assert numBits>=0;
 
-    // TODO: PackedIntsDecompress is hardewired to size==129 only
+    // TODO: PackedIntsDecompress is hardewired to size==128 only
     switch(numBits) {
+      case 0: PackedIntsDecompress.decode0(intBuffer, data); break;
       case 1: PackedIntsDecompress.decode1(intBuffer, data); break;
       case 2: PackedIntsDecompress.decode2(intBuffer, data); break;
       case 3: PackedIntsDecompress.decode3(intBuffer, data); break;
@@ -145,7 +146,7 @@ public class ForUtil {
    * Estimate best num of frame bits according to the largest value.
    */
   static int getNumBits(final int[] data, int size) {
-    int optBits=1;
+    int optBits=0;
     for (int i=0; i<size; ++i) {
       while ((data[i] & ~MASK[optBits]) != 0) {
         optBits++;
@@ -158,12 +159,12 @@ public class ForUtil {
    * Generate the 4 byte header, which contains (from lsb to msb):
    *
    * - 8 bits for uncompressed int num - 1 (use up to 7 bits i.e 128 actually)
-   * - 5 bits for num of frame bits - 1
+   * - 6 bits for num of frame bits
    * - other bits unused
    *
    */
   static int getHeader(int numInts, int numBits) {
     return  (numInts-1)
-          | ((numBits-1) << 8);
+          | ((numBits) << 8);
   }
 }

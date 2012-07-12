@@ -28,7 +28,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test the core utility for PFor compress and decompress
- * We don't provide test case for For encoder/decoder, since
+ * We don't specially provide test case for For encoder/decoder, since
  * PFor is a extended version of For, and most methods will be reused 
  * here.
  */
@@ -46,37 +46,157 @@ public class TestPForUtil extends LuceneTestCase {
   }
 
   /**
-   * Test correctness of ignored forced exception.
-   * The trailing forced exceptions shouldn't be reverted
-   * since they're not necessary. 
+   * Should not encode extra information other than header
    */
-  public void testForcedException() throws Exception {
+  public void testPForAllZeros() throws Exception {
+    int sz=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
+    int ensz;
+    int[] data=new int[sz];
+    byte[] res = new byte[4+sz*8];
+    int[] copy = new int[sz];
+    IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
+
+    Arrays.fill(data,0);
+    ensz = ForUtil.compress(data,sz,resBuffer); // test For
+    ForUtil.decompress(resBuffer,copy);
+    assert ensz == 4;
+    assert cmp(data,sz,copy,sz)==true;
+
+    Arrays.fill(data,0);
+    ensz = PForUtil.compress(data,sz,resBuffer); // test PFor
+    PForUtil.decompress(resBuffer,copy);
+    assert ensz == 4;
+    assert cmp(data,sz,copy,sz)==true;
+  }
+
+  public void testForAllZeros() throws Exception {
+    int sz=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
+    int ensz;
+    int[] data=new int[sz];
+    byte[] res = new byte[4+sz*8];
+    int[] copy = new int[sz];
+    IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
+
+    ensz = ForUtil.compress(data,sz,resBuffer);
+
+  }
+
+  /**
+   * Test correctness of forced exception.
+   * the forced ones should exactly fit max chain 
+   */
+  public void testForcedExceptionDistance() throws Exception {
     initRandom();
     int sz=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
+    int[] data=new int[sz];
+    byte[] res = new byte[4+sz*8];
+    int[] copy = new int[sz];
+    IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
+    int numBits = gen.nextInt(5)+1;
+
+    int i,j;
+    int pace, ensz, header;
+    int expect, got;
+
+    // fill exception value with same pace, there should
+    // be no forced exceptions.
+    createDistribution(data, sz, 1, MASK[numBits], MASK[numBits]);
+    pace = 1<<numBits;
+    for (i=0,j=0; i<sz; i+=pace) {
+      int exc = gen.nextInt();
+      data[i] = (exc & 0xffff0000) == 0 ? exc | 0xffff0000 : exc;
+      j++;
+    }
+    ensz = PForUtil.compress(data,sz,resBuffer);
+    header = resBuffer.get(0);
+    expect = j; 
+    got = PForUtil.getExcNum(header);
+    assert expect == got: expect+" expected but got "+got;
+
+    // there should exactly one forced exception before each
+    // exception when i>0
+    createDistribution(data, sz, 1, MASK[numBits], MASK[numBits]);
+    pace = (1<<numBits)+1;
+    for (i=0,j=0; i<sz; i+=pace) {
+      int exc = gen.nextInt();
+      data[i] = (exc & 0xffff0000) == 0 ? exc | 0xffff0000 : exc;
+      j++;
+    }
+    ensz = PForUtil.compress(data,sz,resBuffer);
+    header = resBuffer.get(0);
+    expect = 2*(j-1)+1; 
+    got = PForUtil.getExcNum(header);
+    assert expect == got: expect+" expected but got "+got;
+
+
+    // two forced exception  
+    createDistribution(data, sz, 1, MASK[numBits], MASK[numBits]);
+    pace = (1<<numBits)*2+1;
+    for (i=0,j=0; i<sz; i+=pace) {
+      int exc = gen.nextInt();
+      data[i] = (exc & 0xffff0000) == 0 ? exc | 0xffff0000 : exc;
+      j++;
+    }
+    ensz = PForUtil.compress(data,sz,resBuffer);
+    header = resBuffer.get(0);
+    expect = 3*(j-1)+1; 
+    got = PForUtil.getExcNum(header);
+    assert expect == got: expect+" expected but got "+got;
+
+  }
+  /**
+   * Test correctness of ignored forced exception.
+   * The trailing forced exceptions should always be reverted
+   * since they're not necessary. 
+   */
+  public void testTrailingForcedException() throws Exception {
+    initRandom();
+    int sz=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
+    assert sz % 32 == 0;
     Integer[] buff= new Integer[sz];
     int[] data = new int[sz];
     int[] copy = new int[sz];
     byte[] res = new byte[4+sz*8];
     IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
-    for (int i=0; i<sz-1; ++i)
-      buff[i]=gen.nextInt() & 1;
-    buff[sz-1]=gen.nextInt() & 0xffffffff;   // create only one exception
 
-    Collections.shuffle(Arrays.asList(buff),gen);
+    int excIndex = gen.nextInt(sz/2);
+    int excValue = gen.nextInt();
+    if ((excValue & 0xffff0000) == 0) {
+      excValue |= 0xffff0000; // always prepare a 4 bytes exception
+    }
+
+    // make value of numFrameBits to be small, 
+    // thus easy to get forced exceptions
+    for (int i=0; i<sz; ++i) {
+      buff[i]=gen.nextInt() & 1;
+    }
+    // create only one value exception
+    buff[excIndex]=excValue;
+
     for (int i=0; i<sz; ++i)
       data[i] = buff[i];
 
     int ensz = PForUtil.compress(data,sz,resBuffer);
 
-    assert (ensz <= sz*8+4);  // must not exceed the loose upperbound
+    assert (ensz <= sz*8+4): ensz+" > "+sz*8+4;  // must not exceed the loose upperbound
+    assert (ensz >= 8);       // at least we have a header along with an exception, right?
 
     resBuffer.rewind();
     PForUtil.decompress(resBuffer,copy);
 
-    //println(getHex(data,sz)+"\n");
-    //println(getHex(res,ensz)+"\n");
-    //println(getHex(copy,sz)+"\n");
-    
+//    println(getHex(data,sz)+"\n");
+//    println(getHex(res,ensz)+"\n");
+//    println(getHex(copy,sz)+"\n");
+
+    // fetch the last int, i.e. last exception.
+    int lastExc = (res[ensz-4] << 24) | 
+         ((0xff & res[ensz-3]) << 16) | 
+         ((0xff & res[ensz-2]) << 8 ) | 
+          (0xff & res[ensz-1]);
+
+    // trailing forced exceptions are suppressed, 
+    // so the last exception should be what we assigned. 
+    assert lastExc==excValue;  
     assert cmp(data,sz,copy,sz)==true;
   }
 
@@ -87,18 +207,18 @@ public class TestPForUtil extends LuceneTestCase {
    */
   public void testAllDistribution() throws Exception {
     initRandom();
+    int sz = ForPostingsFormat.DEFAULT_BLOCK_SIZE;
+    int[] data = new int[sz];
     for (int i=0; i<=32; ++i) { // try to test every kinds of distribution
       double alpha=gen.nextDouble(); // rate of normal value
       for (int j=0; j<=32; ++j) {
-        tryDistribution(ForPostingsFormat.DEFAULT_BLOCK_SIZE,alpha,MASK[i],MASK[j]);
+        createDistribution(data,sz,alpha,MASK[i],MASK[j]);
+        tryCompressAndDecompress(data, sz);
       }
     }
   }
-  public void tryDistribution(int sz, double alpha, int masknorm, int maskexc) throws Exception {
+  public void createDistribution(int[] data, int sz, double alpha, int masknorm, int maskexc) {
     Integer[] buff= new Integer[sz];
-    int[] data = new int[sz];
-    byte[] res = new byte[4+sz*8];      // loosely upperbound
-    IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
     int i=0;
     for (; i<sz*alpha; ++i)
       buff[i]=gen.nextInt() & masknorm;
@@ -107,6 +227,10 @@ public class TestPForUtil extends LuceneTestCase {
     Collections.shuffle(Arrays.asList(buff),gen);
     for (i=0; i<sz; ++i)
       data[i] = buff[i];
+  }
+  public void tryCompressAndDecompress(final int[] data, int sz) throws Exception {
+    byte[] res = new byte[4+sz*8];      // loosely upperbound
+    IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
 
     int ensz = PForUtil.compress(data,sz,resBuffer);
     
@@ -159,6 +283,9 @@ public class TestPForUtil extends LuceneTestCase {
       hex.append(String.format("%08x ",raw[i]));
     }
     return hex.toString();
+  }
+  static void eprintln(String format, Object... args) {
+    System.err.println(String.format(format,args)); 
   }
   static void println(String format, Object... args) {
     System.out.println(String.format(format,args)); 
