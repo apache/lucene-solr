@@ -98,7 +98,7 @@
             <Set name="requestLog">
               <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
                 <Set name="filename">
-                   <SystemProperty name="lucidworksLogsHome"/>/request.yyyy_mm_dd.log
+                   logs/request.yyyy_mm_dd.log
                 </Set>
                 <Set name="filenameDateFormat">yyyy_mm_dd</Set>
                 <Set name="retainDays">90</Set>
