@@ -227,7 +227,7 @@
     </forbidden-apis>
   </target>
 
-  <target name="resolve" depends="resolve-tools">
+  <target name="resolve">
     <sequential>
       <ant dir="test-framework" target="resolve" inheritall="false">
          <propertyset refid="uptodate.and.compiled.properties"/>

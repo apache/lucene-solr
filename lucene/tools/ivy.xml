@@ -24,7 +24,6 @@
        It's not really debug, just not "stripped":
       -->
       <dependency org="org.ow2.asm" name="asm-debug-all" rev="4.0" transitive="false"/>
-      <dependency org="org.apache.rat" name="apache-rat" rev="0.8" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>
