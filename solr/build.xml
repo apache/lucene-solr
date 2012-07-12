@@ -51,7 +51,7 @@
       </manifest>
     </jar>
     <delete includeemptydirs="true">
-      <fileset dir="${example}/work" includes="**/*"/>
+      <fileset dir="${example}/solr-webapp" includes="**/*"/>
     </delete>
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
@@ -422,7 +422,7 @@
           depends="init-dist, dist, example, javadocs">
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
-      <fileset dir="${example}/work" includes="**/*"/>
+      <fileset dir="${example}/solr-webapp" includes="**/*"/>
       <fileset dir="${dest}/${fullnamever}" includes="**/*"/>
     </delete>
  
