@@ -77,12 +77,7 @@ public class TwoDoublesStrategy extends SpatialStrategy {
   }
 
   @Override
-  public boolean isPolyField() {
-    return true;
-  }
-
-  @Override
-  public IndexableField[] createFields(Shape shape) {
+  public IndexableField[] createIndexableFields(Shape shape) {
     if( shape instanceof Point ) {
       Point point = (Point)shape;
       FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
@@ -96,11 +91,6 @@ public class TwoDoublesStrategy extends SpatialStrategy {
       throw new IllegalArgumentException( "TwoDoublesStrategy can not index: "+shape );
     }
     return new IndexableField[0]; // nothing (solr does not support null)
-  }
-
-  @Override
-  public IndexableField createField(Shape shape) {
-    throw new UnsupportedOperationException("Point is poly field");
   }
 
   @Override
