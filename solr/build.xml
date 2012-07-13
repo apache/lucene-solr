@@ -379,11 +379,11 @@
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir="${svn.export.dir}"
                   prefix="${fullnamever}"
-                  excludes="example/**/*.sh example/**/bin/"/>
+                  excludes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/**"/>
       <tarfileset dir="${svn.export.dir}"
                   prefix="${fullnamever}"
                   filemode="755"
-                  includes="example/**/*.sh example/**/bin/"/>
+                  includes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/**"/>
       <tarfileset dir="${svn.export.dir}/solr" prefix="${fullnamever}"
                   includes="NOTICE.txt,LICENSE.txt"/>
     </tar>
