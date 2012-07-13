@@ -150,13 +150,22 @@ public class TestUpdate extends SolrTestCaseJ4 {
     version = deleteAndGetVersion("1", null);
     afterUpdate.call();
 
+
     try {
-      // Currently, there is an implicit _version_=1 for updates (doc must exist).  This is subject to change!
-      version2 = addAndGetVersion(sdoc("id","1", "val_is",map("add",-100)), null);
+      // test that updating a non-existing doc fails if we set _version_=1
+      version2 = addAndGetVersion(sdoc("id","1", "val_is",map("add",-101), "_version_","1"), null);
       fail();
     } catch (SolrException se) {
       assertEquals(409, se.code());
     }
+
+
+    // test that by default we can update a non-existing doc
+    version = addAndGetVersion(sdoc("id","1", "val_i",102, "val_is",map("add",-102)), null);
+    afterUpdate.call();
+    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
+        ,"=={'doc':{'id':'1', 'val_i':102, 'val_is':[-102]}}"
+    );
 
     version = addAndGetVersion(sdoc("id","1", "val_i",5), null);
     afterUpdate.call();

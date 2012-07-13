@@ -65,6 +65,11 @@ New Features
   javax.script.ScriptEngineFactory
   (Uri Boness, ehatcher, Simon Rosenthal, hossman)
 
+* SOLR-139: Change to updateable documents to create the document if it doesn't
+  already exist.  To assert that the document must exist, use the optimistic
+  concurrency feature by specifying a _version_ of 1.  (yonik)
+
+
 Bug Fixes
 
 * SOLR-3582: Our ZooKeeper watchers respond to session events as if they are change events, 
