@@ -137,9 +137,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     // setLoggingLevel(null);
 
     del("*:*");
-    CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
-    server.setDefaultCollection(DEFAULT_COLLECTION);
-    solrj = server;
+
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
             ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
     indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country."
@@ -292,21 +290,21 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
 
-//    // TODO: This test currently fails because debug info is obtained only
-//    // on shards with matches.
-//    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
-//
-//    // would be better if these where all separate tests - but much, much
-//    // slower
-//    doOptimisticLockingAndUpdating();
-//    testMultipleCollections();
-//    testANewCollectionInOneInstance();
-//    testSearchByCollectionName();
-//    testANewCollectionInOneInstanceWithManualShardAssignement();
-//    testNumberOfCommitsWithCommitAfterAdd();
-//
-//    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-explicit");
-//    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
+    // TODO: This test currently fails because debug info is obtained only
+    // on shards with matches.
+    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
+
+    // would be better if these where all separate tests - but much, much
+    // slower
+    doOptimisticLockingAndUpdating();
+    testMultipleCollections();
+    testANewCollectionInOneInstance();
+    testSearchByCollectionName();
+    testANewCollectionInOneInstanceWithManualShardAssignement();
+    testNumberOfCommitsWithCommitAfterAdd();
+
+    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-explicit");
+    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
 
     testCollectionsAPI();
     
@@ -325,7 +323,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     
     // create new collections rapid fire
     Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
-    int cnt = atLeast(9);
+    int cnt = atLeast(3);
     for (int i = 0; i < cnt; i++) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionAction.CREATE.toString());
@@ -530,7 +528,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   private void checkForCollection(String collectionName, int expectedSlices)
       throws Exception {
     // check for an expectedSlices new collection - we poll the state
-    long timeoutAt = System.currentTimeMillis() + 120000;
+    long timeoutAt = System.currentTimeMillis() + 60000;
     boolean found = false;
     boolean sliceMatch = false;
     while (System.currentTimeMillis() < timeoutAt) {
