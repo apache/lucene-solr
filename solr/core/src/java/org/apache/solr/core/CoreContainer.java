@@ -565,6 +565,8 @@ public class CoreContainer
    */
   public void shutdown() {
     log.info("Shutting down CoreContainer instance="+System.identityHashCode(this));
+    isShutDown = true;
+    
     if (isZooKeeperAware()) {
       cancelCoreRecoveries();
     }
@@ -589,7 +591,6 @@ public class CoreContainer
         if (shardHandlerFactory != null) {
           shardHandlerFactory.close();
         }
-        isShutDown = true;
       }
     }
   }

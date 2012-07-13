@@ -81,11 +81,10 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         } catch (Throwable t) {
           log.error("Error during shutdown of directory factory.", t);
         }
-        try {
-          cancelRecovery();
-        } catch (Throwable t) {
-          log.error("Error cancelling recovery", t);
-        }
+        
+        // TODO: we cannot cancel recovery here if its a CoreContainer shutdown
+        // it can cause deadlock - but perhaps we want to if we are stopping early
+        // and CoreContainer is not being shutdown?
 
         closed = true;
       }
@@ -122,6 +121,11 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   public void doRecovery(CoreContainer cc, String name) {
     if (SKIP_AUTO_RECOVERY) {
       log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
+      return;
+    }
+    
+    if (cc.isShutDown()) {
+      log.warn("Skipping recovery because Solr is shutdown");
       return;
     }
     
