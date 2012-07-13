@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.codecs.lucene40ords.Lucene40WithOrds;
@@ -99,6 +100,7 @@ public class RandomCodec extends Lucene40Codec {
         new NestedPulsingPostingsFormat(),
         new Lucene40WithOrds(),
         new SimpleTextPostingsFormat(),
+        new AssertingPostingsFormat(),
         new MemoryPostingsFormat(true, random.nextFloat()),
         new MemoryPostingsFormat(false, random.nextFloat()));
 
