@@ -90,7 +90,7 @@ public class CoreContainer
 {
   private static final String DEFAULT_HOST_CONTEXT = "solr";
   private static final String DEFAULT_HOST_PORT = "8983";
-  private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 10000;
+  private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 15000;
   public static final String DEFAULT_DEFAULT_CORE_NAME = "collection1";
   private static final boolean DEFAULT_SHARE_SCHEMA = false;
   

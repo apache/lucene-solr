@@ -105,6 +105,8 @@ Other Changes
 
 * SOLR-3609: Change Solr's expanded webapp directory to be at a consistent path called
   solr-webapp rather than a temporary directory. (Mark Miller)
+  
+* SOLR-3600: Raise the default zkClientTimeout from 10 seconds to 15 seconds. (Mark Miller)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
