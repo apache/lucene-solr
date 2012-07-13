@@ -80,6 +80,10 @@ Bug Fixes
 
 * SOLR-3610: After reloading a core, indexing would fail on any newly added fields to the schema. (Brent Mills, rmuir)
 
+* SOLR-3377: edismax fails to correctly parse a fielded query wrapped by parens.
+  This regression was introduced in 3.6.  (Bernd Fehling, Jan Høydahl, yonik)
+
+
 Other Changes
 
 * SOLR-3524: Make discarding punctuation configurable in JapaneseTokenizerFactory.
