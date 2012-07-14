@@ -95,7 +95,17 @@
   <property name="tests.asserts.gracious" value="false"/>
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
+  
+  <condition property="tests.heapsize" value="768M">
+    <isset property="run.clover"/>
+  </condition>
   <property name="tests.heapsize" value="512M"/>
+  
+  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m">
+    <isset property="run.clover"/>
+  </condition>
+  <property name="tests.clover.args" value=""/>
+  
   <property name="tests.tempDir" value="${build.dir}/test"/>
 
   <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
@@ -788,6 +798,7 @@
 
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>
+            <jvmarg line="${tests.clover.args}"/>
 
             <!-- set the number of times tests should run -->
             <sysproperty key="tests.iters" value="${tests.iters}"/>
