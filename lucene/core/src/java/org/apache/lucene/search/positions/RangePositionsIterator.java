@@ -1,5 +1,5 @@
 package org.apache.lucene.search.positions;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.lucene.search.positions;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.positions.PositionIntervalIterator.PositionCollector;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
 
 /**
@@ -36,7 +37,8 @@ public class RangePositionsIterator extends PositionIntervalIterator implements 
   }
   
   public RangePositionsIterator(int start, int end, PositionIntervalIterator iterator) {
-    super(iterator != null ? iterator.scorer : null);
+    super(iterator != null ? iterator.scorer : null,
+        iterator != null ? iterator.collectPositions : false);
     this.iterator = iterator;
     this.start = start;
     this.end = end;
@@ -64,9 +66,10 @@ public class RangePositionsIterator extends PositionIntervalIterator implements 
   }
 
   @Override
-  public void collect() {
+  public void collect(PositionCollector collector) {
+    assert collectPositions;
     collector.collectComposite(null, interval, iterator.docID());
-    iterator.collect();
+    iterator.collect(collector);
   }
 
   @Override

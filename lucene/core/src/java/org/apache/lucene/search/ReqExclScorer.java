@@ -17,10 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
-
-import java.io.IOException;
 
 
 /** A Scorer for queries with a required subscorer
@@ -122,7 +122,7 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
-    return new ConjunctionPositionIterator(this, new Scorer[] { reqScorer });
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    return new ConjunctionPositionIterator(this, collectPositions, reqScorer.positions(needsPayloads, needsOffsets, collectPositions));
   }
 }

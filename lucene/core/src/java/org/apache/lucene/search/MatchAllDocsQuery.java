@@ -75,7 +75,7 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       // nocommit this is tricky - I think we can't really provide positions here?
       throw new UnsupportedOperationException();
     }

@@ -118,7 +118,7 @@ public class TestBlockPositionsIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        PositionIntervalIterator positions = new BlockPositionIterator(scorer.positions(false, false));
+        PositionIntervalIterator positions = new BlockPositionIterator(false, scorer.positions(false, false, false));
         assertEquals(0, positions.advanceTo(0));
         PositionInterval interval = null;
         int[] start = new int[] {0, 31};
@@ -137,7 +137,7 @@ public class TestBlockPositionsIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        PositionIntervalIterator positions =  new BlockPositionIterator(scorer.positions(false, false));
+        PositionIntervalIterator positions =  new BlockPositionIterator(false, scorer.positions(false, false, false));
         assertEquals(1, positions.advanceTo(1));
         PositionInterval interval = null;
         int[] start = new int[] {3, 34};
@@ -165,7 +165,7 @@ public class TestBlockPositionsIterator extends LuceneTestCase {
 
     @Override
     public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-      return new BlockPositionIterator(iter);
+      return new BlockPositionIterator(false, iter);
     }
     
   }

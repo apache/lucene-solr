@@ -1,6 +1,6 @@
 package org.apache.lucene.search.positions;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -30,45 +30,21 @@ public abstract class PositionIntervalIterator {
   public static final PositionIntervalIterator[] EMPTY = new PositionIntervalIterator[0];
   public static final PositionIntervalIterator NO_MORE_POSITIONS = new NoPositionsIntervalIterator();
   public static final int NO_MORE_DOCS = Integer.MAX_VALUE;
-  public static final PositionCollector EMPTY_COLLECTOR = new PositionCollector() {
-
-    @Override
-    public void collectLeafPosition(Scorer scorer, PositionInterval interval,
-        int docID) {
-    }
-
-    @Override
-    public void collectComposite(Scorer scorer, PositionInterval interval,
-        int docID) {
-    }
-
-  };
 
   protected int currentDoc = -1;
   protected final Scorer scorer;
-  protected PositionCollector collector = EMPTY_COLLECTOR;
+  protected final boolean collectPositions;
 
-  public PositionIntervalIterator(Scorer scorer) {
+  public PositionIntervalIterator(Scorer scorer, boolean collectPositions) {
     this.scorer = scorer;
+    this.collectPositions = collectPositions;
   }
 
   public abstract int advanceTo(int docId) throws IOException;
 
   public abstract PositionInterval next() throws IOException;
 
-  public void setPositionCollector(PositionCollector collector) {
-    if (collector == null) {
-      throw new IllegalArgumentException("PositionCollector must not be null");
-    }
-    this.collector = collector;
-    PositionIntervalIterator[] subs = subs(false);
-    for (PositionIntervalIterator positionIntervalIterator : subs) {
-      positionIntervalIterator.setPositionCollector(collector);
-    }
-  }
-
-
-  public abstract void collect();
+  public abstract void collect(PositionCollector collector);
 
   public abstract PositionIntervalIterator[] subs(boolean inOrder);
   
@@ -102,6 +78,13 @@ public abstract class PositionIntervalIterator {
     public PositionInterval() {
       this(0, 0, -1, -1);
     }
+    
+    public void copy(PositionInterval other) {
+      begin = other.begin;
+      end = other.end;
+      offsetBegin = other.offsetBegin;
+      offsetEnd = other.offsetEnd;
+    }
 
     public boolean nextPayload(BytesRef ref) throws IOException {
       return false;
@@ -112,7 +95,7 @@ public abstract class PositionIntervalIterator {
     }
 
     public void reset() {
-      begin = end = -1;
+      offsetBegin = offsetEnd = begin = end = -1;
     }
 
     @Override
@@ -141,7 +124,7 @@ public abstract class PositionIntervalIterator {
   PositionIntervalIterator {
 
     public NoPositionsIntervalIterator() {
-      super(null);
+      super(null, false);
     }
 
     @Override
@@ -155,7 +138,7 @@ public abstract class PositionIntervalIterator {
     }
 
     @Override
-    public void collect() {}
+    public void collect(PositionCollector collectoc) {}
 
     @Override
     public PositionIntervalIterator[] subs(boolean inOrder) {

@@ -1,6 +1,6 @@
 package org.apache.lucene.search.positions;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
+import org.apache.lucene.search.positions.PositionIntervalIterator.PositionCollector;
 
 /**
  * DisjunctionPositionIterator based on minimal interval semantics for OR
@@ -34,9 +35,9 @@ import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
 // nocommit - javadoc
 public final class DisjunctionPositionIterator extends BooleanPositionIterator {
 
-  public DisjunctionPositionIterator(Scorer scorer, Scorer[] subScorers)
+  public DisjunctionPositionIterator(Scorer scorer, boolean collectPositions, PositionIntervalIterator... intervals)
       throws IOException {
-    super(scorer, subScorers, new IntervalQueueOr(subScorers.length));
+    super(scorer, intervals, new IntervalQueueOr(intervals.length), collectPositions);
   }
 
   void advance() throws IOException {
@@ -68,9 +69,10 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
   }
 
   @Override
-  public void collect() {
+  public void collect(PositionCollector collector) {
+    assert collectPositions;
     collector.collectComposite(scorer, queue.currentCandidate, currentDoc);
-    iterators[queue.top().index].collect();
+    iterators[queue.top().index].collect(collector);
   }
 
   @Override

@@ -325,11 +325,11 @@ final class ExactPhraseScorer extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     TermScorer.TermPositions[] posIters = new TermScorer.TermPositions[chunkStates.length];
     for (int i = 0; i < chunkStates.length; i++) {
-      posIters[i] = new TermScorer.TermPositions(this, chunkStates[i].factory.docsAndPositionsEnum(needsOffsets), needsPayloads);
+      posIters[i] = new TermScorer.TermPositions(this, chunkStates[i].factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
     }
-    return new BlockPositionIterator(this, posIters);
+    return new BlockPositionIterator(this, collectPositions, posIters);
   }
 }

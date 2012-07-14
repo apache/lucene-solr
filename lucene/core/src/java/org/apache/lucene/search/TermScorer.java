@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -97,8 +97,8 @@ final class TermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
   
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
-    return new TermPositions(this, factory.docsAndPositionsEnum(needsOffsets), needsPayloads);
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    return new TermPositions(this, factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
   }
 
  static final class TermPositions extends PositionIntervalIterator {
@@ -107,8 +107,8 @@ final class TermScorer extends Scorer {
     private final DocsAndPositionsEnum docsAndPos;
     private int docID = -1;
 
-    public TermPositions(Scorer scorer, DocsAndPositionsEnum docsAndPos, boolean doPayloads) {
-      super(scorer);
+    public TermPositions(Scorer scorer, DocsAndPositionsEnum docsAndPos, boolean doPayloads,  boolean collectPositions) {
+      super(scorer, collectPositions);
       this.docsAndPos = docsAndPos;
       this.interval = doPayloads ? new PayloadPosInterval(docsAndPos, this)
           : new PositionInterval();
@@ -137,7 +137,7 @@ final class TermScorer extends Scorer {
     }
 
     @Override
-    public void collect() {
+    public void collect(PositionCollector collector) {
       collector.collectLeafPosition(scorer, interval, docID);
     }
 

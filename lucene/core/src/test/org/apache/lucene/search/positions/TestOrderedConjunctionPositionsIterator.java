@@ -112,7 +112,7 @@ public class TestOrderedConjunctionPositionsIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        PositionIntervalIterator positions = new OrderedConjunctionPositionIterator(scorer.positions(false, false));
+        PositionIntervalIterator positions = new OrderedConjunctionPositionIterator(false, scorer.positions(false, false, false));
         assertEquals(0, positions.advanceTo(nextDoc));
         PositionInterval interval = null;
         int[] start = new int[] {0, 31};
@@ -133,7 +133,7 @@ public class TestOrderedConjunctionPositionsIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        PositionIntervalIterator positions = new OrderedConjunctionPositionIterator(scorer.positions(false, false));
+        PositionIntervalIterator positions = new OrderedConjunctionPositionIterator(false, scorer.positions(false, false, false));
         assertEquals(1, positions.advanceTo(nextDoc));
         PositionInterval interval = null;
         int[] start = new int[] {3, 34};
@@ -158,7 +158,7 @@ public class TestOrderedConjunctionPositionsIterator extends LuceneTestCase {
 
     @Override
     public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-      return new OrderedConjunctionPositionIterator(iter);
+      return new OrderedConjunctionPositionIterator(false, iter);
     }
     
   }

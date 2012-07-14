@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.positions.BooleanPositionIterator;
 import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.DisjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
@@ -140,7 +141,7 @@ final class BooleanScorer extends Scorer {
     public float score() { return score; }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       return PositionIntervalIterator.NO_MORE_POSITIONS;
     }
     
@@ -326,7 +327,7 @@ final class BooleanScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     final List<Scorer> scorers = new ArrayList<Scorer>();
     SubScorer sub = this.scorers;
     while(sub != null) {
@@ -337,9 +338,9 @@ final class BooleanScorer extends Scorer {
     }
     if (this.minNrShouldMatch > 1) {
       return new ConjunctionPositionIterator(this,
-          scorers.toArray(new Scorer[0]), this.minNrShouldMatch);
+          collectPositions, this.minNrShouldMatch, BooleanPositionIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorers));
     }
-    return new DisjunctionPositionIterator(this, scorers.toArray(new Scorer[0]));
+    return new DisjunctionPositionIterator(this, collectPositions,  BooleanPositionIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorers));
   }
 
   @Override

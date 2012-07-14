@@ -1,6 +1,6 @@
 package org.apache.lucene.search.poshighlight;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,7 +32,7 @@ public class PositionIntervalArrayIterator extends PositionIntervalIterator {
   private PositionInterval[] positions;
   
   public PositionIntervalArrayIterator (PositionInterval[] positions, int count) {
-    super(null);
+    super(null, false);
     this.positions = positions;
     this.count = count;
   }
@@ -50,7 +50,8 @@ public class PositionIntervalArrayIterator extends PositionIntervalIterator {
   }
 
   @Override
-  public void collect() {
+  public void collect(PositionCollector collector) {
+    assert collectPositions;
   }
 
   @Override

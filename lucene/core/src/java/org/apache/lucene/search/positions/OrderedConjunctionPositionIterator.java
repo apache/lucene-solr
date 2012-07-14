@@ -1,6 +1,6 @@
 package org.apache.lucene.search.positions;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,8 @@ package org.apache.lucene.search.positions;
  */
 import java.io.IOException;
 
+import org.apache.lucene.search.Scorer;
+
 /**
  * @lucene.experimental
  */ // nocommit - javadoc
@@ -33,10 +35,18 @@ public final class OrderedConjunctionPositionIterator extends
       Integer.MAX_VALUE, Integer.MAX_VALUE, -1, -1);
   private int index = 1;
 
-  public OrderedConjunctionPositionIterator(PositionIntervalIterator other) {
-    super(other.scorer);
+  public OrderedConjunctionPositionIterator(boolean collectPositions, PositionIntervalIterator other) {
+    super(other.scorer, collectPositions);
     assert other.subs(true) != null;
     iterators = other.subs(true);
+    assert iterators.length > 1;
+    intervals = new PositionInterval[iterators.length];
+    lastIter = iterators.length - 1;
+  }
+  
+  public OrderedConjunctionPositionIterator(Scorer scorer, boolean collectPositions, PositionIntervalIterator... iterators) throws IOException {
+    super(scorer, collectPositions);
+    this.iterators = iterators;
     assert iterators.length > 1;
     intervals = new PositionInterval[iterators.length];
     lastIter = iterators.length - 1;
@@ -44,12 +54,9 @@ public final class OrderedConjunctionPositionIterator extends
 
   @Override
   public PositionInterval next() throws IOException {
-    
-    
     if(intervals[0] == null) {
       return null;
     }
-      
     interval.begin = Integer.MAX_VALUE;
     interval.end = Integer.MAX_VALUE;
     interval.offsetBegin = -1;
@@ -94,10 +101,11 @@ public final class OrderedConjunctionPositionIterator extends
   }
 
   @Override
-  public void collect() {
+  public void collect(PositionCollector collector) {
+    assert collectPositions;
     collector.collectComposite(scorer, interval, currentDoc);
     for (PositionIntervalIterator iter : iterators) {
-      iter.collect();
+      iter.collect(collector);
     }
   }
 

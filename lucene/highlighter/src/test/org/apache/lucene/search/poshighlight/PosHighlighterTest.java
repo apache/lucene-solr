@@ -373,7 +373,7 @@ public class PosHighlighterTest extends LuceneTestCase {
 
     @Override
     public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-      return new BlockPositionIterator(iter);
+      return new BlockPositionIterator(true, iter);
     }
     
   }

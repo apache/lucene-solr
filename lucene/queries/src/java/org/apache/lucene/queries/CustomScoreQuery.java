@@ -337,8 +337,8 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
-      return subQueryScorer.positions(needsPayloads, needsOffsets);
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+      return subQueryScorer.positions(needsPayloads, needsOffsets, false);
     }
   }
 

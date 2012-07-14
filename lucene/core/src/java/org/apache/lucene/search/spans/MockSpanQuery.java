@@ -66,9 +66,8 @@ public class MockSpanQuery extends SpanQuery {
     if (scorer == null) {
       return EMPTY_SPANS;
     }
-    // nocommit - what about offsets here?
-    return new SpansScorerWrapper(scorer, filter == null ? scorer.positions(needsPayloads, false)
-                                                         : filter.filter(scorer.positions(needsPayloads, false)));
+    return new SpansScorerWrapper(scorer, filter == null ? scorer.positions(needsPayloads, false, false)
+                                                         : filter.filter(scorer.positions(needsPayloads, false, false)));
   }
   
 

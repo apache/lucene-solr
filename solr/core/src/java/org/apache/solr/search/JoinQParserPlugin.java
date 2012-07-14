@@ -540,9 +540,9 @@ class JoinQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       if (iter instanceof Scorer) {
-        return ((Scorer) iter).positions(needsPayloads, needsOffsets);
+        return ((Scorer) iter).positions(needsPayloads, needsOffsets, false);
       }
       throw new UnsupportedOperationException("Positions are only supported for Scorers");
 

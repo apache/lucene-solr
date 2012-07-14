@@ -1,5 +1,5 @@
 package org.apache.lucene.search.positions;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,11 +37,7 @@ final class IntervalQueueOr extends IntervalQueue {
   }
 
   public void updateCurrentCandidate() {
-    PositionInterval interval = top().interval;
-    currentCandidate.begin = interval.begin;
-    currentCandidate.offsetBegin = interval.offsetBegin;
-    currentCandidate.end = interval.end;
-    currentCandidate.offsetEnd = interval.offsetEnd;
+    currentCandidate.copy(top().interval);
   }
   
   @Override

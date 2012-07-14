@@ -94,7 +94,7 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       @Override
       public PositionIntervalIterator positions(boolean needsPayloads,
-          boolean needsOffsets) throws IOException {
+          boolean needsOffsets, boolean collectPositions) throws IOException {
         return null;
       }
       

@@ -1,6 +1,6 @@
 package org.apache.lucene.search.positions;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -117,8 +117,8 @@ public class PositionFilterQuery extends Query implements Cloneable {
       this.other = other;
       // nocommit - offsets and payloads?
       this.filter = PositionFilterQuery.this.filter != null
-          ? PositionFilterQuery.this.filter.filter(other.positions(false, false))
-          : other.positions(false, false);
+          ? PositionFilterQuery.this.filter.filter(other.positions(false, false, false))
+          : other.positions(false, false, false);
       filtered = new FilteredPositions(this, filter);
     }
 
@@ -128,9 +128,9 @@ public class PositionFilterQuery extends Query implements Cloneable {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       return PositionFilterQuery.this.filter != null ? PositionFilterQuery.this.filter
-          .filter(other.positions(needsPayloads, needsOffsets)) : other.positions(needsPayloads, needsOffsets);
+          .filter(other.positions(needsPayloads, needsOffsets, false)) : other.positions(needsPayloads, needsOffsets, false);
     }
 
     @Override
@@ -174,7 +174,7 @@ public class PositionFilterQuery extends Query implements Cloneable {
   
   private final class FilteredPositions extends PositionIntervalIterator {
     public FilteredPositions(Scorer scorer, PositionIntervalIterator other) {
-      super(scorer);
+      super(scorer, other.collectPositions);
       this.other = other;
     }
 
@@ -193,8 +193,9 @@ public class PositionFilterQuery extends Query implements Cloneable {
     }
 
     @Override
-    public void collect() {
-      other.collect();
+    public void collect(PositionCollector collector) {
+      assert this.collectPositions;
+      other.collect(collector);
       
     }
     @Override
@@ -202,12 +203,8 @@ public class PositionFilterQuery extends Query implements Cloneable {
       return EMPTY;
     }
 
-    public void setPositionCollector(PositionCollector collector) {
-      other.setPositionCollector(collector);
-    }
-
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -231,6 +228,5 @@ public class PositionFilterQuery extends Query implements Cloneable {
     } else if (!inner.equals(other.inner)) return false;
     return true;
   }
-
 
 }

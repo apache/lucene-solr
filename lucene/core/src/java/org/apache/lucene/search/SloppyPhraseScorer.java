@@ -480,7 +480,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     // nocommit implement this (and get a beer before you do so!)
     throw new UnsupportedOperationException();
   }

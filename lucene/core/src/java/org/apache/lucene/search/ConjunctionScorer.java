@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.positions.BooleanPositionIterator;
 import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
@@ -144,12 +145,12 @@ class ConjunctionScorer extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     if (scorersOrdered == null) {
       throw new IllegalStateException("no positions requested for this scorer");
     }
       // only created if needed for this scorer - no penalty for non-positional queries
-    return new ConjunctionPositionIterator(this, scorersOrdered);
+    return new ConjunctionPositionIterator(this, collectPositions, BooleanPositionIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorersOrdered));
   }
 
 }

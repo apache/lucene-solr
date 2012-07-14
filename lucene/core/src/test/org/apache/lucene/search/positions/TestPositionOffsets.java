@@ -112,7 +112,7 @@ public class TestPositionOffsets extends LuceneTestCase {
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);
-    PositionIntervalIterator positions = scorer.positions(false, true);
+    PositionIntervalIterator positions = scorer.positions(false, true, false);
     int[] startOffsets = new int[] { 6, 26, 47, 164, 184 };
     int[] endOffsets = new int[] { 14, 34, 55, 172, 192 };
 
@@ -148,7 +148,7 @@ public class TestPositionOffsets extends LuceneTestCase {
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);
-    PositionIntervalIterator positions = scorer.positions(false, false);
+    PositionIntervalIterator positions = scorer.positions(false, false, false);
     int[] startOffsets = new int[] { -1, -1, -1, -1, -1 };
     int[] endOffsets = new int[] { -1, -1, -1, -1, -1 };
 
@@ -186,7 +186,7 @@ public class TestPositionOffsets extends LuceneTestCase {
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);
-    PositionIntervalIterator positions = scorer.positions(false, true);
+    PositionIntervalIterator positions = scorer.positions(false, true, false);
     int[] startOffsetsConj = new int[] { 6, 26, 47, 67, 143};
     int[] endOffsetsConj = new int[] { 71, 71, 71, 172, 172};
     assertEquals(0, positions.advanceTo(nextDoc));

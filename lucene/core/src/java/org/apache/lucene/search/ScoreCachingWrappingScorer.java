@@ -81,8 +81,8 @@ public class ScoreCachingWrappingScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
-    return scorer.positions(needsPayloads, needsOffsets);
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    return scorer.positions(needsPayloads, needsOffsets, false);
   }
   
 }

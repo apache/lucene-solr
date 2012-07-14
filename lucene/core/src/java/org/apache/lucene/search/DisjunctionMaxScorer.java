@@ -16,6 +16,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.positions.BooleanPositionIterator;
 import org.apache.lucene.search.positions.DisjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 
@@ -190,10 +191,8 @@ class DisjunctionMaxScorer extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
-    final Scorer[] posScorers = new Scorer[numScorers];
-    System.arraycopy(subScorers, 0, posScorers, 0, numScorers);
-    return new DisjunctionPositionIterator(this, posScorers);
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    return new DisjunctionPositionIterator(this, collectPositions, BooleanPositionIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, subScorers));
   }
 
   @Override

@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.util.List;
 import java.io.IOException;
 
+import org.apache.lucene.search.positions.BooleanPositionIterator;
 import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.DisjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
@@ -243,11 +244,11 @@ class DisjunctionSumScorer extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     if (minimumNrMatchers > 1) {
       return new ConjunctionPositionIterator(this,
-          subScorers.toArray(new Scorer[0]), minimumNrMatchers);
+          collectPositions, minimumNrMatchers, BooleanPositionIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, subScorers));
     }
-    return new DisjunctionPositionIterator(this, subScorers.toArray(new Scorer[0]));
+    return new DisjunctionPositionIterator(this, collectPositions, BooleanPositionIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, subScorers));
   }
 }

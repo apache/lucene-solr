@@ -1,6 +1,6 @@
 package org.apache.lucene.search.positions;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.positions.PositionIntervalIterator.PositionCollector;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -38,12 +39,12 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
 
   private final int lastIter;
 
-  public BlockPositionIterator(PositionIntervalIterator other) {
-    this(other, defaultGaps(other.subs(true).length));
+  public BlockPositionIterator(boolean collectPositions, PositionIntervalIterator other) {
+    this(other, collectPositions, defaultGaps(other.subs(true).length));
   }
 
-  public BlockPositionIterator(PositionIntervalIterator other, int[] gaps) {
-    super(other.getScorer());
+  public BlockPositionIterator(PositionIntervalIterator other, boolean collectPositions, int[] gaps) {
+    super(other.getScorer(), collectPositions);
     assert other.subs(true) != null;
     iterators = other.subs(true);
     assert iterators.length > 1;
@@ -52,9 +53,9 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
     this.gaps = gaps;
   }
 
-  public BlockPositionIterator(Scorer scorer, Scorer... subScorers)
+  public BlockPositionIterator(Scorer scorer, boolean collectPositions, Scorer... subScorers)
       throws IOException {
-    this(scorer, defaultGaps(subScorers.length), subScorers);
+    this(scorer, collectPositions, defaultGaps(subScorers.length), subScorers);
   }
 
   private static int[] defaultGaps(int num) {
@@ -63,23 +64,23 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
     return gaps;
   }
 
-  public BlockPositionIterator(Scorer scorer, int[] gaps, Scorer... subScorers)
+  public BlockPositionIterator(Scorer scorer,  boolean collectPositions, int[] gaps, Scorer... subScorers)
       throws IOException {
-    super(scorer);
+    super(scorer, collectPositions);
     assert subScorers.length > 1;
     iterators = new PositionIntervalIterator[subScorers.length];
     intervals = new PositionInterval[subScorers.length];
     for (int i = 0; i < subScorers.length; i++) {
       // nocommit - offsets and payloads?
-      iterators[i] = subScorers[i].positions(false, false);
+      iterators[i] = subScorers[i].positions(false, false, false);
       assert iterators[i] != null;
     }
     lastIter = iterators.length - 1;
     this.gaps = gaps;
   }
 
-  public BlockPositionIterator(Scorer scorer, int[] gaps, PositionIntervalIterator[] iterators) {
-    super(scorer);
+  public BlockPositionIterator(Scorer scorer, int[] gaps, boolean collectPositions, PositionIntervalIterator... iterators) {
+    super(scorer, collectPositions);
     assert iterators.length > 1;
     this.iterators = iterators;
     intervals = new PositionInterval[iterators.length];
@@ -87,8 +88,8 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
     this.gaps = gaps;
   }
 
-  public BlockPositionIterator(Scorer scorer, PositionIntervalIterator[] iterators) {
-    this(scorer, defaultGaps(iterators.length), iterators);
+  public BlockPositionIterator(Scorer scorer, boolean collectPositions, PositionIntervalIterator... iterators) {
+    this(scorer, defaultGaps(iterators.length), collectPositions, iterators);
   }
 
   @Override
@@ -135,10 +136,11 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
   }
 
   @Override
-  public void collect() {
+  public void collect(PositionCollector collector) {
+    assert collectPositions;
     collector.collectComposite(scorer, interval, currentDoc);
     for (PositionIntervalIterator iter : iterators) {
-      iter.collect();
+      iter.collect(collector);
     }
   }
 

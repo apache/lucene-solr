@@ -212,7 +212,7 @@ class TermsIncludingScoreQuery extends Query {
 
     @Override
     public PositionIntervalIterator positions(boolean needsPayloads,
-        boolean needsOffsets) throws IOException {
+        boolean needsOffsets, boolean collectPositions) throws IOException {
       throw new UnsupportedOperationException();
     }
   }

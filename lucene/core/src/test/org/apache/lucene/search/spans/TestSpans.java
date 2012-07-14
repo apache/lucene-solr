@@ -234,7 +234,7 @@ public class TestSpans extends LuceneTestCase {
     }
     @Override
     public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-      return new WithinPositionIterator(slop, new OrderedConjunctionPositionIterator(iter));
+      return new WithinPositionIterator(slop, new OrderedConjunctionPositionIterator(false, iter));
 //      return new OrderedConjunctionPositionIterator(iter);
     }
     

@@ -1,5 +1,5 @@
 package org.apache.lucene.search.poshighlight;
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -52,7 +52,7 @@ public class PosCollector extends Collector implements PositionCollector {
     docs[count-1].score=scorer.score();
     positions.advanceTo(doc);
     while(positions.next() != null) {
-      positions.collect();
+      positions.collect(this);
     }    
   }
   
@@ -71,8 +71,7 @@ public class PosCollector extends Collector implements PositionCollector {
 
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
-    positions = scorer.positions(false, true);
-    positions.setPositionCollector(this);
+    positions = scorer.positions(false, true, true);
     // If we want to visit the other scorers, we can, here...
   }
   

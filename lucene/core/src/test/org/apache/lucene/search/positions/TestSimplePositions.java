@@ -194,7 +194,7 @@ public class TestSimplePositions extends LuceneTestCase {
    
    Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
        .nextBoolean(), true, r.getLiveDocs());
-   PositionIntervalIterator positions = scorer.positions(false, false);
+   PositionIntervalIterator positions = scorer.positions(false, false, false);
    positions.advanceTo(11);
    PositionInterval interval = positions.next();
    assertNotNull("first range", interval);
@@ -222,7 +222,7 @@ public class TestSimplePositions extends LuceneTestCase {
     @Override
     public PositionIntervalIterator filter(PositionIntervalIterator iter) {
       return new WithinPositionIterator(slop,
-          new OrderedConjunctionPositionIterator(iter));
+          new OrderedConjunctionPositionIterator(false, iter));
     }
     
   }
@@ -231,7 +231,7 @@ public class TestSimplePositions extends LuceneTestCase {
 
     @Override
     public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-      return new BlockPositionIterator(iter);
+      return new BlockPositionIterator(false, iter);
     }
     
   }
@@ -248,7 +248,7 @@ public class TestSimplePositions extends LuceneTestCase {
       
       Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
           .nextBoolean(), true, r.getLiveDocs());
-      PositionIntervalIterator positions = scorer.positions(false, false);
+      PositionIntervalIterator positions = scorer.positions(false, false, false);
       positions.advanceTo(4);
       PositionInterval interval = positions.next();
       assertNotNull("Does not have next and it should", interval);
@@ -306,7 +306,7 @@ public class TestSimplePositions extends LuceneTestCase {
       Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
           .nextBoolean(), true, r.getLiveDocs());
       
-      PositionIntervalIterator iterator = scorer.positions(false, false);
+      PositionIntervalIterator iterator = scorer.positions(false, false, false);
       iterator.advanceTo(4);
       PositionInterval interval = iterator.next();
       assertNotNull("Does not have next and it should", interval);
@@ -380,7 +380,7 @@ public class TestSimplePositions extends LuceneTestCase {
     
     Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
         .nextBoolean(), true, r.getLiveDocs());
-    return scorer.positions(false, false);
+    return scorer.positions(false, false, false);
   }
   
   private PositionIntervalIterator tstNextPosition(

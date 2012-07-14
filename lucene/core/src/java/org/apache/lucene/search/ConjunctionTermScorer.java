@@ -122,13 +122,13 @@ class ConjunctionTermScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     TermPositions[] positionIters = new TermPositions[origDocsAndFreqs.length];
     for (int i = 0; i < positionIters.length; i++) {
       DocsAndFreqs d = origDocsAndFreqs[i];
-      positionIters[i] = new TermPositions(this, d.factory.docsAndPositionsEnum(needsOffsets), needsPayloads);
+      positionIters[i] = new TermPositions(this, d.factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
     }
-    return new ConjunctionPositionIterator(this, positionIters);
+    return new ConjunctionPositionIterator(this, collectPositions, positionIters);
   }
 
 }

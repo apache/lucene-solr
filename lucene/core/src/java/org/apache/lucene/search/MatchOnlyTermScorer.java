@@ -94,7 +94,7 @@ final class MatchOnlyTermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     // nocommit is this ok here?
     throw new UnsupportedOperationException();
   }

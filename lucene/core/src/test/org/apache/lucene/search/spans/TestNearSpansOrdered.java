@@ -105,7 +105,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     @Override
     public PositionIntervalIterator filter(PositionIntervalIterator iter) {
       return new WithinPositionIterator(slop,
-          new OrderedConjunctionPositionIterator(iter));
+          new OrderedConjunctionPositionIterator(false, iter));
     }
     
   }

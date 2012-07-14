@@ -63,7 +63,7 @@ public abstract class Scorer extends DocIdSetIterator {
     }
   }
   
-  public abstract PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets) throws IOException;
+  public abstract PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException;
 
   /**
    * Expert: Collects matching documents in a range. Hook for optimization.
