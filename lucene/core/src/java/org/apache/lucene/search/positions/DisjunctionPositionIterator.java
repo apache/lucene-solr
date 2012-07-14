@@ -58,8 +58,8 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
     if (queue.size() == 0) {
       return null;
     }
-    queue.updateQueueInterval();
-    return queue.queueInterval; // TODO support payloads
+    queue.updateCurrentCandidate();
+    return queue.currentCandidate; // TODO support payloads
   }
 
   @Override
@@ -69,7 +69,7 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
 
   @Override
   public void collect() {
-    collector.collectComposite(scorer, queue.queueInterval, currentDoc);
+    collector.collectComposite(scorer, queue.currentCandidate, currentDoc);
     iterators[queue.top().index].collect();
   }
 

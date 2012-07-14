@@ -32,8 +32,8 @@ final class IntervalQueueAnd extends IntervalQueue {
 
   public void reset () {
     super.reset();
-    queueInterval.begin = Integer.MIN_VALUE;
-    queueInterval.end = Integer.MIN_VALUE;
+    currentCandidate.begin = Integer.MIN_VALUE;
+    currentCandidate.end = Integer.MIN_VALUE;
     rightExtreme = Integer.MIN_VALUE;
     rightExtremeOffset = Integer.MIN_VALUE;
   }
@@ -45,16 +45,16 @@ final class IntervalQueueAnd extends IntervalQueue {
   
   public boolean topContainsQueueInterval() {
     PositionInterval interval = top().interval;
-    return interval.begin <= queueInterval.begin
-        && queueInterval.end <= rightExtreme;
+    return interval.begin <= currentCandidate.begin
+        && currentCandidate.end <= rightExtreme;
   }
-
-  public void updateQueueInterval() {
+ 
+  public void updateCurrentCandidate() {
     PositionInterval interval = top().interval;
-    queueInterval.begin = interval.begin;
-    queueInterval.offsetBegin = interval.offsetBegin;
-    queueInterval.end = rightExtreme;
-    queueInterval.offsetEnd = rightExtremeOffset;
+    currentCandidate.begin = interval.begin;
+    currentCandidate.offsetBegin = interval.offsetBegin;
+    currentCandidate.end = rightExtreme;
+    currentCandidate.offsetEnd = rightExtremeOffset;
   }
   
   @Override

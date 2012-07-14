@@ -32,16 +32,16 @@ final class IntervalQueueOr extends IntervalQueue {
   
   public boolean topContainsQueueInterval() {
     PositionInterval interval = top().interval;
-    return interval.begin <= queueInterval.begin
-        && queueInterval.end <= interval.end;
+    return interval.begin <= currentCandidate.begin
+        && currentCandidate.end <= interval.end;
   }
 
-  public void updateQueueInterval() {
+  public void updateCurrentCandidate() {
     PositionInterval interval = top().interval;
-    queueInterval.begin = interval.begin;
-    queueInterval.offsetBegin = interval.offsetBegin;
-    queueInterval.end = interval.end;
-    queueInterval.offsetEnd = interval.offsetEnd;
+    currentCandidate.begin = interval.begin;
+    currentCandidate.offsetBegin = interval.offsetBegin;
+    currentCandidate.end = interval.end;
+    currentCandidate.offsetEnd = interval.offsetEnd;
   }
   
   @Override

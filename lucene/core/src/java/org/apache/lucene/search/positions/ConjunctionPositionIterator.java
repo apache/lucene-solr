@@ -64,27 +64,31 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
 
   @Override
   public PositionInterval next() throws IOException {
+    
+    while (queue.size() >= nrMustMatch && queue.top().interval.begin == queue.currentCandidate.begin) {
+      advance();
+    }
     if (queue.size() < nrMustMatch) {
       return null;
     }
-    while (queue.topContainsQueueInterval()) {
-      advance();
-      if (queue.size() < nrMustMatch)
-        return null;
-    }
+    
     do {
-      queue.updateQueueInterval();
+      queue.updateCurrentCandidate();
+      PositionInterval top = queue.top().interval;
+      if(queue.currentCandidate.begin == top.begin && queue.currentCandidate.end == top.end) {
+        return queue.currentCandidate;
+      }
       advance();
       if (queue.size() < nrMustMatch) {
         break;
       }
     } while (queue.topContainsQueueInterval());
-    return queue.queueInterval; // TODO support payloads
+    return queue.currentCandidate; // TODO support payloads
   }
 
   @Override
   public void collect() {
-    collector.collectComposite(scorer, queue.queueInterval, currentDoc);
+    collector.collectComposite(scorer, queue.currentCandidate, currentDoc);
     for (PositionIntervalIterator iter : iterators) {
       iter.collect();
     }

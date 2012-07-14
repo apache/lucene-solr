@@ -33,6 +33,7 @@ import java.util.Set;
  */ // nocommit - javadoc
 public class PositionFilterQuery extends Query implements Cloneable {
 
+  
   private Query inner;
   private PositionIntervalFilter filter;
 
@@ -206,5 +207,30 @@ public class PositionFilterQuery extends Query implements Cloneable {
     }
 
   }
+  
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((filter == null) ? 0 : filter.hashCode());
+    result = prime * result + ((inner == null) ? 0 : inner.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (!super.equals(obj)) return false;
+    if (getClass() != obj.getClass()) return false;
+    PositionFilterQuery other = (PositionFilterQuery) obj;
+    if (filter == null) {
+      if (other.filter != null) return false;
+    } else if (!filter.equals(other.filter)) return false;
+    if (inner == null) {
+      if (other.inner != null) return false;
+    } else if (!inner.equals(other.inner)) return false;
+    return true;
+  }
+
 
 }
