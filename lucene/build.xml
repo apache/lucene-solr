@@ -143,13 +143,9 @@
   <!--
    Run after Junit tests.
    -->
-  <target name="generate-clover-reports" depends="clover.check, clover">
+  <target name="generate-clover-reports" depends="clover">
+    <fail unless="run.clover">Clover not enabled!</fail>
     <mkdir dir="${clover.report.dir}"/>
-    <fileset dir="." id="clover.test.src.files">
-      <include name="**/src/test/**/*.java"/>
-      <include name="test-framework/src/java/**/*.java"/>
-      <exclude name="lucene/backwards/**"/>
-    </fileset>
     <fileset dir="build" id="clover.test.result.files">
       <include name="**/test/TEST-*.xml"/>
       <!-- do not include BW tests -->
@@ -158,12 +154,10 @@
     <clover-report>
       <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
         <format type="html" filter="assert"/>
-        <testsources refid="clover.test.src.files"/>
         <testresults refid="clover.test.result.files"/>
       </current>
       <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
         <format type="xml" filter="assert"/>
-        <testsources refid="clover.test.src.files"/>
         <testresults refid="clover.test.result.files"/>
       </current>
     </clover-report>
@@ -418,6 +412,8 @@
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
     <delete dir="${svn.export.dir}/tools/javadoc/java6"/>
+    <!-- Exclude clover license files incompatible with the ASL -->
+    <delete dir="${svn.export.dir}/tools/clover"/>
 
     <build-changes changes.src.dir="${svn.export.dir}/site/changes"
                    changes.target.dir="${svn.export.dir}/docs/changes"/>

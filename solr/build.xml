@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<project name="solr" default="usage">
+<project name="solr" default="usage" xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>Solr</description>
   
   <target name="usage" description="Prints out instructions">
@@ -258,64 +258,26 @@
     </delete>
   </target>
 
-  <!-- Clover targets -->
-  <target name="clover" depends="clover.setup, clover.info"
-          description="Instrument the Unit tests using Clover.  Requires a Clover license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
-
-  <target name="clover.setup" if="clover.enabled">
-    <taskdef resource="cloverlib.xml"/>
-    <mkdir dir="${clover.db.dir}"/>
-    <clover-setup initString="${clover.db.dir}/lucene_coverage.db">
-      <fileset dir="core/src/java"/>
-      <fileset dir="solrj/src/java"/>
-      <fileset dir="contrib/analysis-extras/src/java"/>
-      <fileset dir="contrib/clustering/src/java"/>
-      <fileset dir="contrib/dataimporthandler/src/java"/>
-      <fileset dir="contrib/dataimporthandler-extras/src/java"/>
-      <fileset dir="contrib/extraction/src/java"/>
-      <fileset dir="contrib/uima/src/java"/>
-      <testsources dir="test-framework/src/java"/>
-      <testsources dir="core/src/test"/>
-      <testsources dir="solrj/src/test"/>
-      <testsources dir="contrib/analysis-extras/src/test" />
-      <testsources dir="contrib/clustering/src/test" />
-      <testsources dir="contrib/dataimporthandler/src/test" />
-      <testsources dir="contrib/dataimporthandler-extras/src/test" />
-      <testsources dir="contrib/extraction/src/test" />
-      <testsources dir="contrib/uima/src/test" />
-    </clover-setup>
-  </target>
-
-  <target name="clover.info" unless="clover.present">
-  	<echo>
-      Clover not found. Code coverage reports disabled.
-  	</echo>
-  </target>
-
-  <target name="clover.check">
-	<fail unless="clover.present">
-	  ##################################################################
-      Clover not found.
-      Please make sure clover.jar is in ANT_HOME/lib, or made available
-      to Ant using other mechanisms like -lib or CLASSPATH.
-      ##################################################################
-  	</fail>
-  </target>
-
-  <!-- Run after Junit tests. -->
-  <target name="generate-clover-reports" depends="clover.check, clover">
+  <!--
+   Run after Junit tests.
+   -->
+  <target name="generate-clover-reports" depends="clover">
+    <fail unless="run.clover">Clover not enabled!</fail>
     <mkdir dir="${clover.report.dir}"/>
+    <fileset dir="build" id="clover.test.result.files">
+      <include name="**/test/TEST-*.xml"/>
+    </fileset>
     <clover-report>
-       <current outfile="${clover.report.dir}/clover.xml"
-                title="${fullnamever}">
-          <format type="xml"/>
-       </current>
-       <current outfile="${clover.report.dir}" title="${fullnamever}">
-          <format type="html"/>
-       </current>
+      <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
+        <format type="html" filter="assert"/>
+        <testresults refid="clover.test.result.files"/>
+      </current>
+      <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
+        <format type="xml" filter="assert"/>
+        <testresults refid="clover.test.result.files"/>
+      </current>
     </clover-report>
   </target>
-
   
   <!-- ========================================================================= -->
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
@@ -375,6 +337,8 @@
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
     <delete dir="${svn.export.dir}/lucene/tools/javadoc/java6"/>
+    <!-- Exclude clover license files incompatible with the ASL -->
+    <delete dir="${svn.export.dir}/lucene/tools/clover"/>
 
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir="${svn.export.dir}"
