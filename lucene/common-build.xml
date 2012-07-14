@@ -124,9 +124,6 @@
   <property name="javac.target" value="1.6"/>
   <property name="javac.source.backwards" value="1.6"/>
   <property name="javac.target.backwards" value="1.6"/>
-  <!-- clover wants to run with -lib, otherwise we prefer a repeatable
-       classpath -->
-  <property name="javac.includeAntRuntime" value="${run.clover}"/>
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
   <property name="bootclasspath" value=""/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
@@ -155,7 +152,6 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="tests.src.dir" location="src/test"/>
-  <property name="tests-framework.src.dir" location="${common.dir}/test-framework/src/java"/>
   <property name="build.dir" location="build"/>
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
@@ -213,23 +209,12 @@
 
   <property name="filtered.pom.templates.dir" location="${common.dir}/build/poms"/>
 
-  <property name="clover.db.dir" location="${common.dir}/build/test/clover/db"/>
-  <property name="clover.report.dir" location="${common.dir}/build/test/clover/reports"/>
+  <property name="clover.license.path" location="${common.dir}/tools/clover/clover.license"/>
+  <property name="clover.db.dir" location="${common.dir}/build/clover/db"/>
+  <property name="clover.report.dir" location="${common.dir}/build/clover/reports"/>
 
   <!-- a reasonable default exclusion set, can be overridden for special cases -->
   <property name="rat.excludes" value="**/TODO,**/*.txt"/>
-
-  <available
-            property="clover.present"
-            classname="com.cenqua.clover.tasks.CloverReportTask"
-  />
-   
-  <condition property="clover.enabled">
-    <and>
-     <isset property="run.clover"/>
-     <isset property="clover.present"/>
-    </and>
-  </condition>
 
   <propertyset id="uptodate.and.compiled.properties" dynamic="true">
     <propertyref regex=".*\.uptodate$$"/>
@@ -237,7 +222,7 @@
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
-              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,benchmark/work/**,benchmark/temp/**"
+              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,benchmark/work/**,benchmark/temp/**,tools/javadoc/java6/**,tools/clover/**"
   />
 
   <!-- Default exclude sources and javadoc jars from Ivy fetch to save time and bandwidth -->
@@ -793,6 +778,7 @@
         >
             <!-- Classpaths. -->
             <classpath refid="@{junit.classpath}"/>
+            <classpath refid="clover.classpath" />
 
             <!-- Assertions. -->
             <assertions>
@@ -1091,48 +1077,55 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <!-- note: order here is important, the taskdef depends on test-framework
        jars so we just order it after compile-test to ensure that -->
-  <target name="test" depends="compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
+  <target name="test" depends="compile-test,install-junit4-taskdef,clover,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.jvms}" />
   </target>
 
   <!--
-   If you want clover test code coverage, run this before the tests.  You need clover.jar and the license in your ANT classspath and you need to specify -Drun.clover=true on the command line.
-
    See http://issues.apache.org/jira/browse/LUCENE-721
    -->
-  <target name="clover" depends="clover.setup, clover.info" description="Instrument the Unit tests using Clover.  Requires a Clover 2.x license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
+  <target name="clover" depends="-clover.disable,-clover.setup" description="Instrument the Unit tests using Clover. To use, specify -Drun.clover=true on the command line."/>
+  
+  <target name="-clover.setup" if="run.clover" unless="clover.loaded">
+    <available file="${clover.license.path}" property="clover.license.available" />
+    <fail unless="clover.license.available"><![CDATA[.
 
-  <target name="clover.setup" if="clover.enabled">
-    <taskdef resource="cloverlib.xml"/>
+  #########################################################################
+  Atlassian Clover License not found!
+  
+  Current License path: ${clover.license.path}
+
+  To use Atlassian Clover with Lucene build, you need a proper license
+  and let the system property 'clover.license.path' point to it.
+  You can pass it to ANT with:
+  
+  $ ant -Dclover.license.path=/path/to/clover.license -Drun.clover=true ...
+  
+  Apache Lucene/Solr source checkouts from SVN already contain the
+  file, but source distributions cannot because of legal reasons.
+  #########################################################################
+  
+]]></fail>
+    <echo>Code coverage with Atlassian Clover enabled.</echo>
+    <ivy:cachepath organisation="com.cenqua.clover" module="clover" revision="2.6.3"
+      inline="true" conf="master" type="jar" pathid="clover.classpath"/>
+    <taskdef resource="cloverlib.xml" classpathref="clover.classpath" />
     <mkdir dir="${clover.db.dir}"/>
-    <clover-setup initString="${clover.db.dir}/lucene_coverage.db" encoding="${build.encoding}">
-      <fileset dir="${src.dir}">
+    <clover-setup initString="${clover.db.dir}/coverage.db" encoding="${build.encoding}">
+      <fileset dir="${src.dir}" erroronmissingdir="no">
         <include name="org/apache/**/*.java" />
       </fileset>
-      <testsources dir="${tests-framework.src.dir}">
-        <include name="org/apache/**/*.java" />
-      </testsources>
-      <testsources dir="${tests.src.dir}">
+      <testsources dir="${tests.src.dir}" erroronmissingdir="no">
         <include name="org/apache/**/*.java" />
       </testsources>
     </clover-setup>
+    <property name="clover.loaded" value="true"/>
   </target>
 
-  <target name="clover.info" unless="clover.present">
-  	<echo>
-      Clover not found. Code coverage reports disabled.
-  	</echo>
-  </target>
-
-  <target name="clover.check">
-	<fail unless="clover.present">
-	  ##################################################################
-      Clover not found.
-      Please make sure clover.jar is in ANT_HOME/lib, or made available
-      to Ant using other mechanisms like -lib or CLASSPATH.
-      ##################################################################
-  	</fail>
+  <target name="-clover.disable" unless="run.clover">
+    <!-- define dummy clover path used by junit -->
+    <path id="clover.classpath"/>
   </target>
 
   <target name="generate-test-reports" description="Generates test reports">

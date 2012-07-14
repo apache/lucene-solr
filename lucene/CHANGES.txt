@@ -75,6 +75,10 @@ Build
   charset, default locale, or default timezone and fail build if violations
   found. This ensures, that Lucene / Solr is independent on local configuration
   options.  (Uwe Schindler, Robert Muir, Dawid Weiss)
+  
+* LUCENE-4217: Add the possibility to run tests with Atlassian Clover
+  loaded from IVY. A development License solely for Apache code was added in
+  the tools/ folder, but is not included in releases.  (Uwe Schindler)
 
 Documentation
 
