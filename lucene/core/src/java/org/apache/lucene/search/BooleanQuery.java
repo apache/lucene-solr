@@ -17,14 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.ConjunctionTermScorer.DocsAndFreqs;
 import org.apache.lucene.search.TermQuery.TermDocsEnumFactory;
@@ -33,6 +26,12 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /** A Query that matches documents matching boolean combinations of other
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
@@ -376,8 +375,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           // and fallback to full match-only scorer:
           return createMatchOnlyConjunctionTermScorer(context, acceptDocs);
         }
-        TermDocsEnumFactory factory = new TermDocsEnumFactory(termsEnum, docsAndFreqsEnum, docsAndFreqsEnum, acceptDocs);
-        docsAndFreqs[i] = new DocsAndFreqs(termsEnum.docFreq(), docScorer, factory);
+        TermDocsEnumFactory factory = new TermDocsEnumFactory(termsEnum, acceptDocs);
+        docsAndFreqs[i] = new DocsAndFreqs(termsEnum.docFreq(), docScorer, docsAndFreqsEnum, factory);
       }
       return new ConjunctionTermScorer(this, disableCoord ? 1.0f : coord(
           docsAndFreqs.length, docsAndFreqs.length), docsAndFreqs);
@@ -394,8 +393,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           return null;
         }
         final ExactSimScorer docScorer = weight.createDocScorer(context);
-        TermDocsEnumFactory factory = new TermDocsEnumFactory(termsEnum, termsEnum.docs(acceptDocs, null, false), null, acceptDocs);
-        docsAndFreqs[i] = new DocsAndFreqs(termsEnum.docFreq(), docScorer, factory);
+        TermDocsEnumFactory factory = new TermDocsEnumFactory(termsEnum, acceptDocs);
+        docsAndFreqs[i] = new DocsAndFreqs(termsEnum.docFreq(), docScorer, termsEnum.docs(acceptDocs, null, false), factory);
       }
 
       return new MatchOnlyConjunctionTermScorer(this, disableCoord ? 1.0f : coord(

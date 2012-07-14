@@ -17,6 +17,7 @@ package org.apache.lucene.search.poshighlight;
  */
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
@@ -48,6 +49,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 import java.io.IOException;
+import java.io.StringReader;
 
 /**
  * TODO: FIX THIS TEST Phrase and Span Queries positions callback API
@@ -146,8 +148,10 @@ public class PosHighlighterTest extends LuceneTestCase {
       InvalidTokenOffsetsException {
     return doSearch(q, maxFragSize, 0);
   }
-  
-  private String[] doSearch(Query q, int maxFragSize, int docIndex)
+  private String[] doSearch(Query q, int maxFragSize, int docIndex) throws IOException, InvalidTokenOffsetsException {
+    return doSearch(q, maxFragSize, docIndex, false);
+  }
+  private String[] doSearch(Query q, int maxFragSize, int docIndex, boolean analyze)
       throws IOException, InvalidTokenOffsetsException {
     // ConstantScorer is a fragment Scorer, not a search result (document)
     // Scorer
@@ -165,10 +169,18 @@ public class PosHighlighterTest extends LuceneTestCase {
     // FIXME: test error cases: for non-stored fields, and fields w/no term
     // vectors
     // searcher.getIndexReader().getTermFreqVector(doc.doc, F, pom);
-    
+    final TokenStream stream;
+    if (analyze) {
+      stream = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true,
+          MockTokenFilter.EMPTY_STOPSET, true).tokenStream(F,
+          new StringReader(text));
+    } else {
+      stream = new PosTokenStream(text, new PositionIntervalArrayIterator(
+          doc.sortedPositions(), doc.posCount));
+    }
+    //
     TextFragment[] fragTexts = highlighter.getBestTextFragments(
-        new PosTokenStream(text, new PositionIntervalArrayIterator(doc
-            .sortedPositions(), doc.posCount)), text, false, 10);
+         stream , text, false, 10);
     String[] frags = new String[fragTexts.length];
     for (int i = 0; i < frags.length; i++)
       frags[i] = fragTexts[i].toString();
@@ -367,6 +379,36 @@ public class PosHighlighterTest extends LuceneTestCase {
     assertEquals("This document has some <B>Pease</B> <B>porridge</B> in it",
         frags[0]);
     close();
+  }
+
+  public void testSloppyPhraseQuery() throws Exception {
+    assertSloppyPhrase( "a b c d a b c d e f", "a b <B>c</B> d <B>a</B> b c d e f", 2, "c", "a");
+    assertSloppyPhrase( "a c e b d e f a b","<B>a</B> c e <B>b</B> d e f <B>a</B> <B>b</B>", 2, "a", "b");
+    assertSloppyPhrase( "X A X B A","<B>X</B> <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A X B B A A X B A A","A A <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A A <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A", "A A <B>X</B> <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A Y A X B A", "A A Y <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A Y A X B A A", "A A Y <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A Y B A", "A A <B>X</B> <B>A</B> Y B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A Y B A", null , 1, "X", "A", "A");
+    close();
+  }
+  
+  private void assertSloppyPhrase(String doc, String expected, int slop, String...query) throws Exception {
+    insertDocs(analyzer, doc);
+    PhraseQuery pq = new PhraseQuery();
+    for (String string : query) {
+      pq.add(new Term(F, string));  
+    }
+    
+    pq.setSlop(slop);
+    String[] frags = doSearch(pq, 50);
+    if (expected == null) {
+      assertNull(frags);
+    } else {
+      assertEquals(expected, frags[0]);
+    }
   }
   
   public static class BlockPositionIteratorFilter implements PositionIntervalFilter {

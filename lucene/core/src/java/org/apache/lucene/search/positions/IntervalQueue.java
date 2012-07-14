@@ -43,12 +43,12 @@ abstract class IntervalQueue extends PriorityQueue<IntervalRef> {
 
   final static class IntervalRef {
     PositionInterval interval;
-    int index;
+    int ord; // the ordinal of this ref in the ordered case
 
     IntervalRef(PositionInterval interval, int index) {
       super();
       this.interval = interval;
-      this.index = index;
+      this.ord = index;
     }
   }
 

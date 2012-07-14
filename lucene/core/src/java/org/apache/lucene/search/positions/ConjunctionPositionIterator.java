@@ -1,4 +1,5 @@
 package org.apache.lucene.search.positions;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,30 +30,37 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <a href=
  * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
  * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
+ * 
  * @lucene.experimental
- */ // nocommit - javadoc
+ */
+// nocommit - javadoc
 public final class ConjunctionPositionIterator extends BooleanPositionIterator {
   private final IntervalQueueAnd queue;
   private final int nrMustMatch;
   private SnapshotPositionCollector snapshot;
+  private int matchDistance; // nocommit specialize for this or better move that
+                             // out of this class entirely
   
-  public ConjunctionPositionIterator(Scorer scorer, boolean collectPositions, PositionIntervalIterator... iterators) throws IOException {
+  public ConjunctionPositionIterator(Scorer scorer, boolean collectPositions,
+      PositionIntervalIterator... iterators) throws IOException {
     this(scorer, collectPositions, iterators.length, iterators);
   }
   
-  public ConjunctionPositionIterator(Scorer scorer, boolean collectPositions, int minimuNumShouldMatch, PositionIntervalIterator... iterators) throws IOException {
-    super(scorer, iterators, new IntervalQueueAnd(iterators.length), collectPositions);
+  public ConjunctionPositionIterator(Scorer scorer, boolean collectPositions,
+      int minimuNumShouldMatch, PositionIntervalIterator... iterators)
+      throws IOException {
+    super(scorer, iterators, new IntervalQueueAnd(iterators.length),
+        collectPositions);
     queue = (IntervalQueueAnd) super.queue; // avoid lots of casts?
     this.nrMustMatch = minimuNumShouldMatch;
-
   }
-
+  
   void advance() throws IOException {
     final IntervalRef top = queue.top();
     PositionInterval interval = null;
-    if ((interval = iterators[top.index].next()) != null) {
+    if ((interval = iterators[top.ord].next()) != null) {
       top.interval = interval;
-      queue.updateRightExtreme(interval);
+      queue.updateRightExtreme(top);
       queue.updateTop();
     } else {
       queue.pop();
@@ -62,21 +70,28 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
   @Override
   public PositionInterval next() throws IOException {
     
-    while (queue.size() >= nrMustMatch && queue.top().interval.begin == queue.currentCandidate.begin) {
+    while (queue.size() >= nrMustMatch
+        && queue.top().interval.begin == queue.currentCandidate.begin) {
       advance();
     }
     if (queue.size() < nrMustMatch) {
       return null;
     }
-    
     do {
       queue.updateCurrentCandidate();
-      PositionInterval top = queue.top().interval;
-      if(queue.currentCandidate.begin == top.begin && queue.currentCandidate.end == top.end) {
+      PositionInterval top = updateMatchDistance(queue.top()); // nocommit this
+                                                               // should be in a
+                                                               // specialized
+                                                               // class - used
+                                                               // for scoring in
+                                                               // sloppy phrase
+      if (queue.currentCandidate.begin == top.begin
+          && queue.currentCandidate.end == top.end) {
         return queue.currentCandidate;
       }
       if (collectPositions) {
-        snapShotSubPositions(); // oddity! see SnapShotCollector below for details!
+        snapShotSubPositions(); // this looks odd? -> see SnapShotCollector below for
+                                // details!
       }
       advance();
       if (queue.size() < nrMustMatch) {
@@ -85,7 +100,32 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     } while (queue.topContainsQueueInterval());
     return queue.currentCandidate; // TODO support payloads
   }
-
+  
+  private final PositionInterval updateMatchDistance(IntervalRef top) {
+    final int end = queue.rightExtreme - queue.rightExtremeOrd;
+    final int head = (top.interval.begin - top.ord);
+    matchDistance = end - head;
+    return top.interval;
+  }
+  
+  @Override
+  public int advanceTo(int docId) throws IOException {
+    queue.reset();
+    int advancedTo = -1;
+    for (int i = 0; i < iterators.length; i++) {
+      currentDoc = iterators[i].advanceTo(docId);
+      assert advancedTo == -1 || advancedTo == currentDoc;
+      
+      final PositionInterval interval = iterators[i].next();
+      if (interval != null) {
+        IntervalRef intervalRef = new IntervalRef(interval, i);
+        queue.updateRightExtreme(intervalRef);
+        queue.add(intervalRef);
+      }
+    }
+    return currentDoc;
+  }
+  
   private void snapShotSubPositions() {
     if (snapshot == null) {
       snapshot = new SnapshotPositionCollector(queue.size());
@@ -100,44 +140,34 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     for (PositionIntervalIterator iter : iterators) {
       iter.collect(collector);
     }
+    
   }
-
+  
   @Override
   public void collect(PositionCollector collector) {
     assert collectPositions;
-    if(snapshot==null) {
+    if (snapshot == null) {
       // we might not be initialized if the first interval matches
       collectInternal(collector);
-    } else { 
+    } else {
       snapshot.replay(collector);
     }
   }
-
-  @Override
-  public int advanceTo(int docId) throws IOException {
-    queue.reset();
-    int advancedTo = -1;
-    for (int i = 0; i < iterators.length; i++) {
-      currentDoc = iterators[i].advanceTo(docId);
-      assert advancedTo == -1 || advancedTo == currentDoc;
-      final PositionInterval interval = iterators[i].next();
-      if (interval != null) {
-        queue.updateRightExtreme(interval);
-        queue.add(new IntervalRef(interval, i));
-      }
-    }
-    return currentDoc;
+  
+  int matchDistance() { // nocommit move out!
+    return matchDistance;
   }
-
-
+  
   /*
    * Due to the laziness of this position iterator and the minimizing algorithm
    * we advance the underlying iterators before the consumer can call collect on
-   * the top level iterator. If we need to collect positions we need to record the
-   * last possible match in order to allow the consumer to get the right positions
-   * for the match. This is particularly important if leaf positions are required.
+   * the top level iterator. If we need to collect positions we need to record
+   * the last possible match in order to allow the consumer to get the right
+   * positions for the match. This is particularly important if leaf positions
+   * are required.
    */
-  private static final class SnapshotPositionCollector implements PositionCollector {
+  private static final class SnapshotPositionCollector implements
+      PositionCollector {
     private SingleSnapshot[] snapshots;
     private int index = 0;
     
@@ -151,8 +181,9 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
       collect(scorer, interval, docID, true);
       
     }
-
-    private void collect(Scorer scorer, PositionInterval interval, int docID, boolean isLeaf) {
+    
+    private void collect(Scorer scorer, PositionInterval interval, int docID,
+        boolean isLeaf) {
       if (snapshots.length <= index) {
         grow(ArrayUtil.oversize(index + 1,
             (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 2)
@@ -165,7 +196,7 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
       }
       snapshots[index++].set(scorer, interval, isLeaf, docID);
     }
-
+    
     @Override
     public void collectComposite(Scorer scorer, PositionInterval interval,
         int docID) {
@@ -176,9 +207,11 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
       for (int i = 0; i < index; i++) {
         SingleSnapshot singleSnapshot = snapshots[i];
         if (singleSnapshot.isLeaf) {
-          collector.collectLeafPosition(singleSnapshot.scorer, singleSnapshot.interval, singleSnapshot.docID);
+          collector.collectLeafPosition(singleSnapshot.scorer,
+              singleSnapshot.interval, singleSnapshot.docID);
         } else {
-          collector.collectComposite(singleSnapshot.scorer, singleSnapshot.interval, singleSnapshot.docID);
+          collector.collectComposite(singleSnapshot.scorer,
+              singleSnapshot.interval, singleSnapshot.docID);
         }
       }
     }
@@ -198,17 +231,14 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
       final PositionInterval interval = new PositionInterval();
       boolean isLeaf;
       int docID;
-     
       
       void set(Scorer scorer, PositionInterval interval, boolean isLeaf,
-          int docID)  {
+          int docID) {
         this.scorer = scorer;
         this.interval.copy(interval);
         this.isLeaf = isLeaf;
         this.docID = docID;
       }
-      
-      
     }
     
   }

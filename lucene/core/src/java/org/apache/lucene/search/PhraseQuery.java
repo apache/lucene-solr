@@ -263,7 +263,7 @@ public class PhraseQuery extends Query {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }
-        TermQuery.TermDocsEnumFactory factory = new TermQuery.TermDocsEnumFactory(BytesRef.deepCopyOf(t.bytes()), state, te, null, null, acceptDocs);
+        TermQuery.TermDocsEnumFactory factory = new TermQuery.TermDocsEnumFactory(BytesRef.deepCopyOf(t.bytes()), te, acceptDocs);
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, factory, te.docFreq(), positions.get(i).intValue(), t);
       }
 

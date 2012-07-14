@@ -17,9 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.search.similarities.Similarity;
+
+import java.io.IOException;
 
 /** Expert: Scoring functionality for phrase queries.
  * <br>A document is considered matching if it contains the phrase-query terms  
@@ -37,23 +37,31 @@ abstract class PhraseScorer extends Scorer {
   private float freq; //phrase frequency in current doc as computed by phraseFreq().
 
   final Similarity.SloppySimScorer docScorer;
+  protected final PhraseQuery.PostingsAndFreq[] postings;
 
   PhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      Similarity.SloppySimScorer docScorer) {
+      Similarity.SloppySimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
-
+    this.postings = postings;
+    reset(false);
+  }
+  protected PhrasePositions[] _THEPOS;
+  void reset(boolean needsOffsets) throws IOException {
     // convert tps to a list of phrase positions.
     // note: phrase-position differs from term-position in that its position
     // reflects the phrase offset: pp.pos = tp.pos - offset.
     // this allows to easily identify a matching (exact) phrase 
     // when all PhrasePositions have exactly the same position.
     if (postings.length > 0) {
+      _THEPOS = new PhrasePositions[postings.length];
       min = new PhrasePositions(postings[0].postings, postings[0].position, 0, postings[0].terms);
+      _THEPOS[0] = min;
       max = min;
       max.doc = -1;
       for (int i = 1; i < postings.length; i++) {
         PhrasePositions pp = new PhrasePositions(postings[i].postings, postings[i].position, i, postings[i].terms);
+        _THEPOS[i] = pp;
         max.next = pp;
         max = pp;
         max.doc = -1;
@@ -77,7 +85,7 @@ abstract class PhraseScorer extends Scorer {
     return docScorer.score(max.doc, freq);
   }
 
-  private boolean advanceMin(int target) throws IOException {
+  protected boolean advanceMin(int target) throws IOException {
     if (!min.skipTo(target)) { 
       max.doc = NO_MORE_DOCS; // for further calls to docID() 
       return false;

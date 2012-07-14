@@ -94,7 +94,7 @@ public class TermQuery extends Query {
       }
       DocsEnum docs = termsEnum.docs(acceptDocs, null, true);
       if (docs != null) {
-        return new TermScorer(this, new TermDocsEnumFactory(termsEnum, docs, docs, acceptDocs), createDocScorer(context));
+        return new TermScorer(this, docs, new TermDocsEnumFactory(termsEnum, acceptDocs), createDocScorer(context));
       } else {
         // Index does not store freq info
         docs = termsEnum.docs(acceptDocs, null, false);
@@ -248,43 +248,29 @@ public class TermQuery extends Query {
   }
   
   static class TermDocsEnumFactory {
-    private final TermsEnum termsEnum;
-    private final Bits liveDocs;
-    private final DocsEnum docs;
-    private final DocsEnum docsAndFreqs;
-    private final TermState state;
-    private BytesRef term;
+    protected final TermsEnum termsEnum;
+    protected final Bits liveDocs;
+    protected final BytesRef term;
     
-    TermDocsEnumFactory(TermsEnum termsEnum, DocsEnum docs, DocsEnum docsAndFreqs, Bits liveDocs) {
-      this(null, null, termsEnum, docs, docsAndFreqs, liveDocs);
-
+    TermDocsEnumFactory(TermsEnum termsEnum, Bits liveDocs) {
+      this(null, termsEnum, liveDocs);
     }
     
-    TermDocsEnumFactory(BytesRef term, TermState state, TermsEnum termsEnum,
-        DocsEnum docs, DocsEnum docsAndFreqs, Bits liveDocs) {
+    TermDocsEnumFactory(BytesRef term, TermsEnum termsEnum, Bits liveDocs) {
       this.termsEnum = termsEnum;
       this.liveDocs = liveDocs;
-      this.docs = docs;
-      this.docsAndFreqs = docsAndFreqs;
-      this.state = state;
       this.term = term;
     }
     
-    public DocsEnum docsEnum() throws IOException {
-      return docs;
-    }
     
     public DocsAndPositionsEnum docsAndPositionsEnum(boolean offsets)
         throws IOException {
-      if (state != null) {
+      if (term != null) {
         assert term != null;
-        termsEnum.seekExact(term, state);
+        termsEnum.seekExact(term, false);
       }
       return termsEnum.docsAndPositions(liveDocs, null, offsets);
     }
-    
-    public DocsEnum docsAndFreqsEnum() throws IOException{
-      return docsAndFreqs;
-    }
+
   }
 }

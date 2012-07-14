@@ -17,8 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.Term;
+
 import java.io.IOException;
-import org.apache.lucene.index.*;
 
 /**
  * Position of a term in a document that takes into account the term offset within the phrase. 
@@ -44,6 +46,7 @@ final class PhrasePositions {
 
   final boolean next() throws IOException {	  // increments to next doc
     doc = postings.nextDoc();
+    
     if (doc == DocIdSetIterator.NO_MORE_DOCS) {
       return false;
     }
@@ -59,6 +62,7 @@ final class PhrasePositions {
   }
 
   final void firstPosition() throws IOException {
+    
     count = postings.freq();				  // read first pos
     nextPosition();
   }
@@ -80,10 +84,14 @@ final class PhrasePositions {
   /** for debug purposes */
   @Override
   public String toString() {
-    String s = "d:"+doc+" o:"+offset+" p:"+position+" c:"+count;
+    String s = "d:"+doc+" offset:"+offset+" position:"+position+" c:"+count + " actualPos: " + (position + offset);
     if (rptGroup >=0 ) {
       s += " rpt:"+rptGroup+",i"+rptInd;
     }
+    s += " t: [" + terms[0];
+    for (int i = 1; i < terms.length; i++)
+      s += "," + terms[1];
+    s += "]";
     return s;
   }
 }

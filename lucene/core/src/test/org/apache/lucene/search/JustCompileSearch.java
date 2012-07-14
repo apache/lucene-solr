@@ -193,7 +193,7 @@ final class JustCompileSearch {
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
     JustCompilePhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-        Similarity.SloppySimScorer docScorer) {
+        Similarity.SloppySimScorer docScorer) throws IOException {
       super(weight, postings, docScorer);
     }
 

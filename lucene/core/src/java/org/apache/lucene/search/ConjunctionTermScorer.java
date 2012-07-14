@@ -105,16 +105,16 @@ class ConjunctionTermScorer extends Scorer {
   }
 
   static final class DocsAndFreqs {
-    final DocsEnum docsAndFreqs;
+    //final DocsEnum docsAndFreqs;
     final DocsEnum docs;
     final int docFreq;
     final ExactSimScorer docScorer;
     int doc = -1;
     private final TermDocsEnumFactory factory;
 
-    DocsAndFreqs( int docFreq, ExactSimScorer docScorer, TermDocsEnumFactory factory) throws IOException {
-      this.docsAndFreqs = factory.docsAndFreqsEnum();
-      this.docs = factory.docsEnum();
+    DocsAndFreqs( int docFreq, ExactSimScorer docScorer, DocsEnum docs, TermDocsEnumFactory factory) throws IOException {
+      //this.docsAndFreqs = factory.docsAndFreqsEnum();
+      this.docs = docs;
       this.docFreq = docFreq;
       this.docScorer = docScorer;
       this.factory = factory;

@@ -28,23 +28,13 @@ import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.index.*;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+
+import java.io.IOException;
 
 public class TestPositionOffsets extends LuceneTestCase {
 
@@ -93,15 +83,18 @@ public class TestPositionOffsets extends LuceneTestCase {
     writer.addDocument(doc);
   }
 
-  public void testTermQueryWithOffsets() throws IOException {
+  private void testQuery(Query query, int[][] expectedOffsets) throws IOException {
+    testQuery(query, expectedOffsets, true);
+  }
+
+  private void testQuery(Query query, int[][] expectedOffsets, boolean needsOffsets) throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, iwc);
-    addDocs(writer, true);
+    addDocs(writer, needsOffsets);
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = new IndexSearcher(reader);
     writer.close();
-    Query query = new TermQuery(new Term("field", "porridge"));
 
     Weight weight = query.createWeight(searcher);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
@@ -112,9 +105,9 @@ public class TestPositionOffsets extends LuceneTestCase {
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);
-    PositionIntervalIterator positions = scorer.positions(false, true, false);
-    int[] startOffsets = new int[] { 6, 26, 47, 164, 184 };
-    int[] endOffsets = new int[] { 14, 34, 55, 172, 192 };
+    PositionIntervalIterator positions = scorer.positions(false, needsOffsets, false);
+    int startOffsets[] = expectedOffsets[0];
+    int endOffsets[] = expectedOffsets[1];
 
     assertEquals(0, positions.advanceTo(nextDoc));
     for (int i = 0; i < startOffsets.length; i++) {
@@ -130,78 +123,63 @@ public class TestPositionOffsets extends LuceneTestCase {
   }
 
   public void testTermQueryWithoutOffsets() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, iwc);
-    addDocs(writer, false);
-
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
     Query query = new TermQuery(new Term("field", "porridge"));
-
-    Weight weight = query.createWeight(searcher);
-    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    List<AtomicReaderContext> leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.size());
-    Scorer scorer = weight.scorer(leaves.get(0),
-        true, true, leaves.get(0).reader().getLiveDocs());
-
-    int nextDoc = scorer.nextDoc();
-    assertEquals(0, nextDoc);
-    PositionIntervalIterator positions = scorer.positions(false, false, false);
-    int[] startOffsets = new int[] { -1, -1, -1, -1, -1 };
-    int[] endOffsets = new int[] { -1, -1, -1, -1, -1 };
-
-    assertEquals(0, positions.advanceTo(nextDoc));
-    for (int i = 0; i < startOffsets.length; i++) {
-      PositionIntervalIterator.PositionInterval interval = positions.next();
-      assertEquals(startOffsets[i], interval.offsetBegin);
-      assertEquals(endOffsets[i], interval.offsetEnd);
-    }
-
-    assertNull(positions.next());
-
-    reader.close();
-    directory.close();
+       int[] startOffsets = new int[] { 6, 26, 47, 164, 184 };
+        int[] endOffsets = new int[] { 14, 34, 55, 172, 192 };
+        testQuery(query, new int[][] { startOffsets, endOffsets });
   }
 
   public void testBooleanQueryWithOffsets() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, iwc);
-    addDocs(writer, true);
-
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
+    
     BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), BooleanClause.Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "nine")), BooleanClause.Occur.MUST));
-
-    Weight weight = query.createWeight(searcher);
-    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    List<AtomicReaderContext> leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.size());
-    Scorer scorer = weight.scorer(leaves.get(0),
-        true, true, leaves.get(0).reader().getLiveDocs());
-
-    int nextDoc = scorer.nextDoc();
-    assertEquals(0, nextDoc);
-    PositionIntervalIterator positions = scorer.positions(false, true, false);
-    int[] startOffsetsConj = new int[] { 6, 26, 47, 67, 143};
-    int[] endOffsetsConj = new int[] { 71, 71, 71, 172, 172};
-    assertEquals(0, positions.advanceTo(nextDoc));
-    PositionIntervalIterator.PositionInterval interval;
-    int i = 0;
-    while((interval = positions.next()) != null) {
-      assertEquals(startOffsetsConj[i], interval.offsetBegin);
-      assertEquals(endOffsetsConj[i], interval.offsetEnd);
-      i++;
-    }
-    assertEquals(i, startOffsetsConj.length);
-    assertNull(positions.next());
-
-    reader.close();
-    directory.close();
+    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")),
+        BooleanClause.Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "nine")),
+        BooleanClause.Occur.MUST));
+    int[] startOffsetsConj = new int[] {6, 26, 47, 67, 143};
+    int[] endOffsetsConj = new int[] {71, 71, 71, 172, 172};
+    testQuery(query, new int[][] {startOffsetsConj, endOffsetsConj});
+  }
+   
+  public void testExactPhraseQuery() throws IOException {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "pease"));
+    query.add(new Term("field", "porridge"));
+    query.add(new Term("field", "hot!"));
+    int[] startOffsetsBlock = new int[] {0, 158};
+    int[] endOffsetsBlock = new int[] {19, 177};
+    testQuery(query, new int[][] {startOffsetsBlock, endOffsetsBlock});
   }
   
+  public void testSloppyPhraseQuery() throws IOException {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "pease"));
+    query.add(new Term("field", "hot!"));
+    query.setSlop(1);
+    int[] startOffsetsBlock = new int[] {0, 158};
+    int[] endOffsetsBlock = new int[] {19, 177};
+    testQuery(query, new int[][] {startOffsetsBlock, endOffsetsBlock});
+  }
+  
+  public void testManyTermSloppyPhraseQuery() throws IOException {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "pease"));
+    query.add(new Term("field", "porridge"));
+    query.add(new Term("field", "pot"));
+    query.setSlop(2);
+    int[] startOffsetsBlock = new int[] {41};
+    int[] endOffsetsBlock = new int[] {66};
+    testQuery(query, new int[][] {startOffsetsBlock, endOffsetsBlock});
+  }
+  
+  public void testMultiTermPhraseQuery() throws IOException {
+    MultiPhraseQuery query = new MultiPhraseQuery();
+    query.add(new Term("field", "pease"));
+    query.add(new Term("field", "porridge"));
+    query
+        .add(new Term[] {new Term("field", "hot!"), new Term("field", "cold!")});
+    int[] startOffsetsBlock = new int[] {0, 20, 158, 178};
+    int[] endOffsetsBlock = new int[] {19, 40, 177, 198};
+    testQuery(query, new int[][] {startOffsetsBlock, endOffsetsBlock});
+  }
 }

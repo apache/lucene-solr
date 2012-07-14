@@ -206,7 +206,7 @@ public class MultiPhraseQuery extends Query {
             // None of the terms are in this reader
             return null;
           }
-          factory = null; // nocommit - what to do here
+          factory = new MultiTermDocsEnumFactory(liveDocs, context, terms, termContexts, termsEnum);
         } else {
           final Term term = terms[0];
           TermState termState = termContexts.get(term).get(context.ord);
@@ -223,8 +223,7 @@ public class MultiPhraseQuery extends Query {
             throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
           }
 
-          docFreq = termsEnum.docFreq();
-          factory = new TermQuery.TermDocsEnumFactory(BytesRef.deepCopyOf(term.bytes()), termState, termsEnum, postingsEnum, postingsEnum, acceptDocs);
+          factory = new TermQuery.TermDocsEnumFactory(BytesRef.deepCopyOf(term.bytes()), termsEnum, acceptDocs);
         }
         
         postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, factory, termsEnum.docFreq() , positions.get(pos).intValue(), terms);
@@ -393,6 +392,27 @@ public class MultiPhraseQuery extends Query {
     }
     return true;
   }
+
+  private static class MultiTermDocsEnumFactory extends TermQuery.TermDocsEnumFactory {
+
+    AtomicReaderContext context;
+    Term[] terms;
+    Map<Term, TermContext> termContexts;
+
+    MultiTermDocsEnumFactory(Bits liveDocs, AtomicReaderContext context, Term[] terms,
+                             Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
+      super(termsEnum, liveDocs);
+      this.context = context;
+      this.terms = terms;
+      this.termContexts = termContexts;
+    }
+
+    @Override
+    public DocsAndPositionsEnum docsAndPositionsEnum(boolean offsets) throws IOException {
+      return new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum, offsets);
+    }
+
+  }
 }
 
 /**
@@ -421,25 +441,41 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     }
   }
 
-  private static final class IntQueue {
-    private int _arraySize = 16;
+  // TODO: Reimplement this as int[_arraySize * 3], storing position at i * 3,
+  // startOffset at i * 3 + 1 and endOffset at i * 3 + 2.  Will need to also
+  // implement a new SorterTemplate to sort the array.
+
+  private static final class PositionQueue {
+    private int _arraySize = 48;
     private int _index = 0;
     private int _lastIndex = 0;
     private int[] _array = new int[_arraySize];
     
-    final void add(int i) {
-      if (_lastIndex == _arraySize)
+    final void add(int pos, int start, int end) {
+      if (_lastIndex * 3 == _arraySize)
         growArray();
 
-      _array[_lastIndex++] = i;
+      _array[_lastIndex * 3] = pos;
+      _array[_lastIndex * 3 + 1] = start;
+      _array[_lastIndex * 3 + 2] = end;
+      _lastIndex += 1;
     }
 
     final int next() {
-      return _array[_index++];
+      return _array[_index++ * 3];
+    }
+
+    final int startOffset() {
+      return _array[(_index - 1) * 3 + 1];
+    }
+
+    final int endOffset() {
+      return _array[(_index - 1) * 3 + 2];
     }
 
     final void sort() {
-      Arrays.sort(_array, _index, _lastIndex);
+      //Arrays.sort(_array, _index, _lastIndex);
+      sorter.quickSort(_index, _lastIndex - 1);
     }
 
     final void clear() {
@@ -457,14 +493,52 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
       _array = newArray;
       _arraySize *= 2;
     }
+
+    private SorterTemplate sorter = new SorterTemplate() {
+      private int pivot;
+
+      @Override
+      protected void swap(int i, int j) {
+        int ti = _array[i * 3];
+        int ts = _array[i * 3 + 1];
+        int te = _array[i * 3 + 2];
+        _array[i * 3] = _array[j * 3];
+        _array[i * 3 + 1] = _array[j * 3 + 1];
+        _array[i * 3 + 2] = _array[j * 3 + 2];
+        _array[j * 3] = ti;
+        _array[j * 3 + 1] = ts;
+        _array[j * 3 + 2] = te;
+      }
+
+      @Override
+      protected int compare(int i, int j) {
+        return _array[i * 3] - _array[j * 3];
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        pivot = i;
+      }
+
+      @Override
+      protected int comparePivot(int j) {
+        return pivot - _array[j * 3];
+      }
+    };
   }
 
   private int _doc;
   private int _freq;
   private DocsQueue _queue;
-  private IntQueue _posList;
+  private PositionQueue _posList;
 
-  public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
+  public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms,
+                                   Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
+    this(liveDocs, context, terms, termContexts, termsEnum, false);
+  }
+
+  public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms,
+                                     Map<Term,TermContext> termContexts, TermsEnum termsEnum, boolean needsOffsets) throws IOException {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
     for (int i = 0; i < terms.length; i++) {
       final Term term = terms[i];
@@ -474,7 +548,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
         continue;
       }
       termsEnum.seekExact(term.bytes(), termState);
-      DocsAndPositionsEnum postings = termsEnum.docsAndPositions(liveDocs, null, false);
+      DocsAndPositionsEnum postings = termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
       if (postings == null) {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
@@ -483,7 +557,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     }
 
     _queue = new DocsQueue(docsEnums);
-    _posList = new IntQueue();
+    _posList = new PositionQueue();
   }
 
   @Override
@@ -505,7 +579,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
       final int freq = postings.freq();
       for (int i = 0; i < freq; i++) {
-        _posList.add(postings.nextPosition());
+        _posList.add(postings.nextPosition(), postings.startOffset(), postings.endOffset());
       }
 
       if (postings.nextDoc() != NO_MORE_DOCS) {
@@ -528,12 +602,12 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   @Override
   public int startOffset() {
-    return -1;
+    return _posList.startOffset();
   }
 
   @Override
   public int endOffset() {
-    return -1;
+    return _posList.endOffset();
   }
 
   @Override
