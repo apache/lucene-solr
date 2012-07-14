@@ -458,11 +458,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         break;
       }
 
-      String namea, nameb;
-      Object vala, valb = null;
+      String namea = null, nameb = null;
+      Object vala = null, valb = null;
 
-      int flagsa, flagsb;
-      for (; ;) {
+      int flagsa = 0, flagsb = 0;
+      while (posa < a.size()) {
         namea = a.getName(posa);
         vala = a.getVal(posa);
         posa++;
