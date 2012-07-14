@@ -63,7 +63,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   }
 
   @Override
-  public  void decref(IndexWriterCloser closer) {
+  public void decref(IndexWriterCloser closer) {
     synchronized (this) {
       refCnt--;
       if (refCnt == 0) {
@@ -81,10 +81,11 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         } catch (Throwable t) {
           log.error("Error during shutdown of directory factory.", t);
         }
-        
-        // TODO: we cannot cancel recovery here if its a CoreContainer shutdown
-        // it can cause deadlock - but perhaps we want to if we are stopping early
-        // and CoreContainer is not being shutdown?
+        try {
+          cancelRecovery();
+        } catch (Throwable t) {
+          log.error("Error cancelling recovery", t);
+        }
 
         closed = true;
       }
