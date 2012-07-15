@@ -138,6 +138,11 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         } catch (InterruptedException e) {
 
         }
+        // check again for those that were waiting
+        if (cc.isShutDown()) {
+          log.warn("Skipping recovery because Solr is shutdown");
+          return;
+        }
         if (closed) return;
       }
 
