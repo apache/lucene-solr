@@ -19,7 +19,6 @@ package org.apache.lucene.benchmark.byTask.feeds;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.text.DateFormat;
 import java.util.Date;
 
 /**
@@ -34,13 +33,11 @@ public interface HTMLParser {
    * @param docData result reused
    * @param name name of the result doc data.
    * @param date date of the result doc data. If null, attempt to set by parsed data.
-   * @param title title of the result doc data. If null, attempt to set by parsed data.
    * @param reader reader of html text to parse.
-   * @param dateFormat date formatter to use for extracting the date.   
+   * @param trecSrc the {@link TrecContentSource} used to parse dates.   
    * @return Parsed doc data.
    * @throws IOException
-   * @throws InterruptedException
    */
-  public DocData parse(DocData docData, String name, Date date, String title, Reader reader, DateFormat dateFormat) throws IOException, InterruptedException;
+  public DocData parse(DocData docData, String name, Date date, Reader reader, TrecContentSource trecSrc) throws IOException;
 
 }

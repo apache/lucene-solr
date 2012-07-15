@@ -29,6 +29,10 @@ API Changes
   make a custom FieldType and set indexed = true, its analyzed by the analyzer.
   (Robert Muir)
 
+* LUCENE-4220: Removed the buggy JavaCC-based HTML parser in the benchmark
+  module and replaced by NekoHTML. HTMLParser interface was cleaned up while
+  changing method signatures.  (Uwe Schindler, Robert Muir)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.
