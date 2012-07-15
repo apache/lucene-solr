@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.FullSolrCloudTest.CloudJettyRunner;
@@ -52,7 +53,6 @@ public class ChaosMonkey {
   private ZkTestServer zkServer;
   private ZkStateReader zkStateReader;
   private String collection;
-  private Random random;
   private volatile boolean stop = false;
   private AtomicInteger stops = new AtomicInteger();
   private AtomicInteger starts = new AtomicInteger();
@@ -71,7 +71,7 @@ public class ChaosMonkey {
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
       Map<String,List<SolrServer>> shardToClient,
       Map<String,SolrServer> shardToLeaderClient,
-      Map<String,CloudJettyRunner> shardToLeaderJetty, Random random) {
+      Map<String,CloudJettyRunner> shardToLeaderJetty) {
     this.shardToJetty = shardToJetty;
     this.shardToClient = shardToClient;
     this.shardToLeaderClient = shardToLeaderClient;
@@ -79,8 +79,7 @@ public class ChaosMonkey {
     this.zkServer = zkServer;
     this.zkStateReader = zkStateReader;
     this.collection = collection;
-    this.random = random;
-    
+    Random random = LuceneTestCase.random();
     expireSessions = random.nextBoolean();
     causeConnectionLoss = random.nextBoolean();
   }
@@ -227,7 +226,7 @@ public class ChaosMonkey {
     
     List<String> sliceKeyList = new ArrayList<String>(slices.size());
     sliceKeyList.addAll(slices.keySet());
-    String sliceName = sliceKeyList.get(random.nextInt(sliceKeyList.size()));
+    String sliceName = sliceKeyList.get(LuceneTestCase.random().nextInt(sliceKeyList.size()));
     return sliceName;
   }
   
@@ -291,7 +290,7 @@ public class ChaosMonkey {
       // we cannot kill anyone
       return null;
     }
-    
+    Random random = LuceneTestCase.random();
     int chance = random.nextInt(10);
     JettySolrRunner jetty;
     if (chance <= 5 && aggressivelyKillLeaders) {
@@ -327,7 +326,7 @@ public class ChaosMonkey {
 
     // get random shard
     List<SolrServer> clients = shardToClient.get(slice);
-    int index = random.nextInt(clients.size() - 1);
+    int index = LuceneTestCase.random().nextInt(clients.size() - 1);
     SolrServer client = clients.get(index);
 
     return client;
@@ -349,7 +348,7 @@ public class ChaosMonkey {
         while (!stop) {
           try {
             Thread.sleep(roundPause);
- 
+            Random random = LuceneTestCase.random();
             if (random.nextBoolean()) {
              if (!deadPool.isEmpty()) {
                int index = random.nextInt(deadPool.size());
