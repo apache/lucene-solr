@@ -33,7 +33,7 @@ public class TrecFTParser extends TrecDocParser {
 
   @Override
   public DocData parse(DocData docData, String name, TrecContentSource trecSrc, 
-      StringBuilder docBuf, ParsePathType pathType) throws IOException, InterruptedException {
+      StringBuilder docBuf, ParsePathType pathType) throws IOException {
     int mark = 0; // that much is skipped
 
     // date...

@@ -41,7 +41,7 @@ public class TrecFR94Parser extends TrecDocParser {
   
   @Override
   public DocData parse(DocData docData, String name, TrecContentSource trecSrc, 
-      StringBuilder docBuf, ParsePathType pathType) throws IOException, InterruptedException {
+      StringBuilder docBuf, ParsePathType pathType) throws IOException {
     int mark = 0; // that much is skipped
     // optionally skip some of the text, set date (no title?)
     Date date = null;
