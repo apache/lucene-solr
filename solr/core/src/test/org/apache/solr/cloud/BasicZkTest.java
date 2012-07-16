@@ -28,6 +28,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,10 +62,12 @@ public class BasicZkTest extends AbstractZkTestCase {
     // test merge factor picked up
     SolrCore core = h.getCore();
 
-    IndexWriter writer = ((DirectUpdateHandler2)core.getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
-
-    assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor());
-    
+    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2)core.getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
+    try {
+      assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy)iw.get().getConfig().getMergePolicy()).getMergeFactor());
+    } finally {
+      iw.decref();
+    }
     lrf.args.put(CommonParams.VERSION, "2.2");
     assertQ("test query on empty index", request("qlkciyopsbgzyvkylsjhchghjrdf"),
         "//result[@numFound='0']");

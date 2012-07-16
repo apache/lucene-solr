@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -276,7 +277,12 @@ public class SnapPuller {
         if (force && commit.getGeneration() != 0) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit
-          core.getUpdateHandler().getSolrCoreState().getIndexWriter(core).deleteAll();
+          RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+          try {
+            iw.get().deleteAll();
+          } finally {
+            iw.decref();
+          }
           SolrQueryRequest req = new LocalSolrQueryRequest(core,
               new ModifiableSolrParams());
           core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
