@@ -119,9 +119,19 @@ public class TestCheckIndex extends LuceneTestCase {
     // common-build.xml sets lucene.version
     final String version = System.getProperty("lucene.version");
     assertNotNull( "null version", version);
+    final String constantVersion;
+    String parts[] = Constants.LUCENE_MAIN_VERSION.split("\\.");
+    if (parts.length == 4) {
+      // alpha/beta version: pull the real portion
+      assert parts[2].equals("0");
+      constantVersion = parts[0] + "." + parts[1];
+    } else {
+      // normal version
+      constantVersion = Constants.LUCENE_MAIN_VERSION;
+    }
     assertTrue("Invalid version: "+version,
-               version.equals(Constants.LUCENE_MAIN_VERSION+"-SNAPSHOT") ||
-               version.equals(Constants.LUCENE_MAIN_VERSION));
+               version.equals(constantVersion+"-SNAPSHOT") ||
+               version.equals(constantVersion));
     assertTrue(Constants.LUCENE_VERSION + " should start with: "+version,
                Constants.LUCENE_VERSION.startsWith(version));
   }
