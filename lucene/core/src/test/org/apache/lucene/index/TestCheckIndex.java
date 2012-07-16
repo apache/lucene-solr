@@ -25,7 +25,9 @@ import java.util.ArrayList;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.Constants;
@@ -88,6 +90,21 @@ public class TestCheckIndex extends LuceneTestCase {
     
     assertTrue(checker.checkIndex(onlySegments).clean == true);
     dir.close();
+  }
+  
+  // LUCENE-4221: we have to let these thru, for now
+  public void testBogusTermVectors() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    Document doc = new Document();
+    Field field = new Field("foo", "", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS);
+    field.setTokenStream(new CannedTokenStream(
+        new Token("bar", 5, 10), new Token("bar", 1, 4)
+    ));
+    doc.add(field);
+    iw.addDocument(doc);
+    iw.close();
+    dir.close(); // checkindex
   }
 
   public void testLuceneConstantVersion() throws IOException {
