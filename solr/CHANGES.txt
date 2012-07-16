@@ -87,6 +87,9 @@ Bug Fixes
 
 * SOLR-3377: edismax fails to correctly parse a fielded query wrapped by parens.
   This regression was introduced in 3.6.  (Bernd Fehling, Jan Høydahl, yonik)
+  
+* SOLR-3621: fix rare concurrency issue when opening a new IndexWriter for replication or rollback.
+  (Mark Miller)
 
 
 Other Changes

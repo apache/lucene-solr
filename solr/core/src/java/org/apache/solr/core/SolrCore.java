@@ -1180,8 +1180,12 @@ public final class SolrCore implements SolrInfoMBean {
 
         if (updateHandlerReopens) {
           // SolrCore.verbose("start reopen from",previousSearcher,"writer=",writer);
-          IndexWriter writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
-          newReader = DirectoryReader.openIfChanged(currentReader, writer, true);
+          RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
+          try {
+            newReader = DirectoryReader.openIfChanged(currentReader, writer.get(), true);
+          } finally {
+            writer.decref();
+          }
 
         } else {
           // verbose("start reopen without writer, reader=", currentReader);
