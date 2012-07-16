@@ -168,7 +168,7 @@ public class TieredMergePolicy extends MergePolicy {
 
   /** @see #setFloorSegmentMB */
   public double getFloorSegmentMB() {
-    return floorSegmentBytes/1024*1024.;
+    return floorSegmentBytes/(1024*1024.);
   }
 
   /** When forceMergeDeletes is called, we only merge away a
