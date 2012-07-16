@@ -55,6 +55,9 @@ Bug Fixes
 * LUCENE-4221: Fix overeager CheckIndex validation for term vector offsets.
   (Robert Muir)
 
+* LUCENE-4222: TieredMergePolicy.getFloorSegmentMB was returning the
+  size in bytes not MB (Chris Fuller via Mike McCandless)
+
 Build
 
 * LUCENE-4094: Support overriding file.encoding on forked test JVMs
