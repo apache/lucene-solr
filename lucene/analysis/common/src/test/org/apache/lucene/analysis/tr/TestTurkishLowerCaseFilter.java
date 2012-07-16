@@ -68,6 +68,13 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
         "\u0131\u0316sparta",});
   }
   
+  public void testDecomposed3() throws Exception {
+    TokenStream stream = new MockTokenizer(new StringReader(
+        "\u0049\u0307"), MockTokenizer.WHITESPACE, false);
+    TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
+    assertTokenStreamContents(filter, new String[] {"i"});
+  }
+  
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override

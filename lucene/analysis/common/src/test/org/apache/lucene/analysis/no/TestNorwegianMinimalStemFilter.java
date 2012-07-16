@@ -25,8 +25,11 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
 
@@ -46,6 +49,19 @@ public class TestNorwegianMinimalStemFilter extends BaseTokenStreamTestCase {
   /** Test against a vocabulary file */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, new FileInputStream(getDataFile("nb_minimal.txt")));
+  }
+  
+  public void testKeyword() throws IOException {
+    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("sekretæren"), false);
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenStream sink = new KeywordMarkerFilter(source, exclusionSet);
+        return new TokenStreamComponents(source, new NorwegianMinimalStemFilter(sink));
+      }
+    };
+    checkOneTerm(a, "sekretæren", "sekretæren");
   }
 
   /** blast some random strings through the analyzer */
