@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
@@ -156,6 +157,12 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   public void testStemOverrides() throws IOException {
     DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
     checkOneTerm(a, "fiets", "fiets");
+  }
+  
+  public void testEmptyStemDictionary() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, 
+        CharArraySet.EMPTY_SET, CharArrayMap.<String>emptyMap());
+    checkOneTerm(a, "fiets", "fiet");
   }
   
   /**
