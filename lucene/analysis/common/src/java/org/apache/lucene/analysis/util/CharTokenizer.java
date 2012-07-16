@@ -196,8 +196,8 @@ public abstract class CharTokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
+  public void setReader(Reader input) throws IOException {
+    super.setReader(input);
     bufferIndex = 0;
     offset = 0;
     dataLen = 0;

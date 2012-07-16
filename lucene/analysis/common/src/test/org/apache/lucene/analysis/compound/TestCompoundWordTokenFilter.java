@@ -240,7 +240,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     assertEquals("Rindfleischüberwachungsgesetz", termAtt.toString());
     assertTrue(tf.incrementToken());
     assertEquals("Rind", termAtt.toString());
-    wsTokenizer.reset(new StringReader("Rindfleischüberwachungsgesetz"));
+    wsTokenizer.setReader(new StringReader("Rindfleischüberwachungsgesetz"));
     tf.reset();
     assertTrue(tf.incrementToken());
     assertEquals("Rindfleischüberwachungsgesetz", termAtt.toString());

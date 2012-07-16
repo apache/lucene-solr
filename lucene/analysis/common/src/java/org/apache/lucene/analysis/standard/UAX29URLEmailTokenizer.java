@@ -178,8 +178,8 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset(Reader reader) throws IOException {
-    super.reset(reader);
+  public void setReader(Reader reader) throws IOException {
+    super.setReader(reader);
     scanner.yyreset(reader);
   }
 }

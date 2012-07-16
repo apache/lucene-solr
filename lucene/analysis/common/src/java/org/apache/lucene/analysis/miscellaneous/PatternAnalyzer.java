@@ -376,8 +376,8 @@ public final class PatternAnalyzer extends Analyzer {
     }
 
     @Override
-    public void reset(Reader input) throws IOException {
-      super.reset(input);
+    public void setReader(Reader input) throws IOException {
+      super.setReader(input);
       this.str = PatternAnalyzer.toString(input);
       this.matcher = pattern.matcher(this.str);
     }
@@ -481,8 +481,8 @@ public final class PatternAnalyzer extends Analyzer {
     }
 
     @Override
-    public void reset(Reader input) throws IOException {
-      super.reset(input);
+    public void setReader(Reader input) throws IOException {
+      super.setReader(input);
       this.str = PatternAnalyzer.toString(input);
     }
 

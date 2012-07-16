@@ -143,7 +143,7 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
 
       public void reset(Reader input) {
         try {
-          sentenceTokenizer.reset(input);
+          sentenceTokenizer.setReader(input);
           wordTokenFilter = (TokenStream) tokenFilterClass.getConstructor(
               TokenStream.class).newInstance(sentenceTokenizer);
           term = wordTokenFilter.addAttribute(CharTermAttribute.class);

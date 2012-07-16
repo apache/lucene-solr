@@ -164,7 +164,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     filter.reset();
     String highSurEndingUpper = "BogustermBoguster\ud801";
     String highSurEndingLower = "bogustermboguster\ud801";
-    tokenizer.reset(new StringReader(highSurEndingUpper));
+    tokenizer.setReader(new StringReader(highSurEndingUpper));
     assertTokenStreamContents(filter, new String[] {highSurEndingLower});
     assertTrue(filter.hasAttribute(CharTermAttribute.class));
     char[] termBuffer = filter.getAttribute(CharTermAttribute.class).buffer();

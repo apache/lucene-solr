@@ -90,7 +90,7 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   public void testReset() throws Exception {
     NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
-    tokenizer.reset(new StringReader("abcde"));
+    tokenizer.setReader(new StringReader("abcde"));
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
   }
   
