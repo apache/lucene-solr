@@ -17,7 +17,9 @@
 
 package org.apache.lucene.util;
 
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.Executors;
@@ -42,9 +44,18 @@ public class TestWeakIdentityMap extends LuceneTestCase {
     assertNotSame(key2, key3);
     assertEquals(key2, key3);
 
+    // try null key & check its iterator also return null:
+    map.put(null, "null");
+    {
+      Iterator<String> it = map.keyIterator();
+      assertTrue(it.hasNext());
+      assertNull(it.next());
+      assertFalse(it.hasNext());
+      assertFalse(it.hasNext());
+    }
+    // 2 more keys:
     map.put(key1, "bar1");
     map.put(key2, "bar2");
-    map.put(null, "null");
     
     assertEquals(3, map.size());
 
@@ -84,6 +95,25 @@ public class TestWeakIdentityMap extends LuceneTestCase {
     map.put(key3, "bar3");
     assertEquals(3, map.size());
     
+    int c = 0, keysAssigned = 0;
+    for (Iterator<String> it = map.keyIterator(); it.hasNext();) {
+      assertTrue(it.hasNext()); // try again, should return same result!
+      final String k = it.next();
+      assertTrue(k == key1 || k == key2 | k == key3);
+      keysAssigned += (k == key1) ? 1 : ((k == key2) ? 2 : 4);
+      c++;
+    }
+    assertEquals(3, c);
+    assertEquals("all keys must have been seen", 1+2+4, keysAssigned);
+    
+    c = 0;
+    for (Iterator<String> it = map.valueIterator(); it.hasNext();) {
+      final String v = it.next();
+      assertTrue(v.startsWith("bar"));
+      c++;
+    }
+    assertEquals(3, c);
+    
     // clear strong refs
     key1 = key2 = key3 = null;
     
@@ -93,13 +123,27 @@ public class TestWeakIdentityMap extends LuceneTestCase {
       System.runFinalization();
       System.gc();
       Thread.sleep(100L);
-      assertTrue(size >= map.size());
+      c = 0;
+      for (Iterator<String> it = map.keyIterator(); it.hasNext();) {
+        assertNotNull(it.next());
+        c++;
+      }
+      assertTrue(size >= c);
+      assertTrue(c >= map.size());
       size = map.size();
     } catch (InterruptedException ie) {}
 
     map.clear();
     assertEquals(0, map.size());
     assertTrue(map.isEmpty());
+    
+    Iterator<String> it = map.keyIterator();
+    assertFalse(it.hasNext());
+    try {
+      it.next();
+      fail("Should throw NoSuchElementException");
+    } catch (NoSuchElementException nse) {
+    }
     
     key1 = new String("foo");
     key2 = new String("foo");
@@ -133,7 +177,7 @@ public class TestWeakIdentityMap extends LuceneTestCase {
             final int count = atLeast(rnd, 10000);
             for (int i = 0; i < count; i++) {
               final int j = rnd.nextInt(keyCount);
-              switch (rnd.nextInt(4)) {
+              switch (rnd.nextInt(5)) {
                 case 0:
                   map.put(keys.get(j), Integer.valueOf(j));
                   break;
@@ -149,6 +193,12 @@ public class TestWeakIdentityMap extends LuceneTestCase {
                 case 3:
                   // renew key, the old one will be GCed at some time:
                   keys.set(j, new Object());
+                  break;
+                case 4:
+                  // check iterator still working
+                  for (Iterator<Object> it = map.keyIterator(); it.hasNext();) {
+                    assertNotNull(it.next());
+                  }
                   break;
                 default:
                   fail("Should not get here.");
@@ -173,7 +223,13 @@ public class TestWeakIdentityMap extends LuceneTestCase {
       System.runFinalization();
       System.gc();
       Thread.sleep(100L);
-      assertTrue(size >= map.size());
+      int c = 0;
+      for (Iterator<Object> it = map.keyIterator(); it.hasNext();) {
+        assertNotNull(it.next());
+        c++;
+      }
+      assertTrue(size >= c);
+      assertTrue(c >= map.size());
       size = map.size();
     } catch (InterruptedException ie) {}
   }

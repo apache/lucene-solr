@@ -31,7 +31,14 @@ API Changes
 
 * LUCENE-4023: Changed the visibility of Scorer#visitSubScorers() to
   public, otherwise it's impossible to implement Scorers outside
-	the Lucene package.  (Uwe Schindler)
+  the Lucene package.  (Uwe Schindler)
+
+Optimizations
+
+* LUCENE-4163: Improve concurrency of MMapIndexInput.clone() by using
+  the new WeakIdentityMap on top of a ConcurrentHashMap to manage
+  the cloned instances. WeakIdentityMap was extended to support
+  iterating over its keys.  (Uwe Schindler)
 
 Tests:
 
