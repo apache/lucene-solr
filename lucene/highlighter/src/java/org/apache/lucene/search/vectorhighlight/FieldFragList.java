@@ -17,11 +17,11 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * FieldFragList has a list of "frag info" that is used by FragmentsBuilder class
@@ -116,7 +116,11 @@ public abstract class FieldFragList {
       public int getSeqnum(){
         return seqnum;
       }
-      
+
+      public String getText(){
+        return text;
+      }
+
       @Override
       public String toString(){
         StringBuilder sb = new StringBuilder();

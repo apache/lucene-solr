@@ -18,6 +18,9 @@ New features
   create automata from a fixed collection of UTF-8 encoded BytesRef
   (Dawid Weiss, Robert Muir)
 
+* LUCENE-4153: Added option to fast vector highlighting via BaseFragmentsBuilder to
+  respect field boundaries in the case of multivalued fields. (Martijn van Groningen)
+
 API Changes
 
 * LUCENE-4138: update of morfologik (Polish morphological analyzer) to 1.5.3.
