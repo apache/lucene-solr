@@ -65,10 +65,11 @@ public class HunspellDictionary {
 
   /**
    * Creates a new HunspellDictionary containing the information read from the provided InputStreams to hunspell affix
-   * and dictionary files
+   * and dictionary files.
+   * You have to close the provided InputStreams yourself.
    *
-   * @param affix InputStream for reading the hunspell affix file
-   * @param dictionary InputStream for reading the hunspell dictionary file
+   * @param affix InputStream for reading the hunspell affix file (won't be closed).
+   * @param dictionary InputStream for reading the hunspell dictionary file (won't be closed).
    * @param version Lucene Version
    * @throws IOException Can be thrown while reading from the InputStreams
    * @throws ParseException Can be thrown if the content of the files does not meet expected formats
@@ -79,10 +80,11 @@ public class HunspellDictionary {
 
   /**
    * Creates a new HunspellDictionary containing the information read from the provided InputStreams to hunspell affix
-   * and dictionary files
+   * and dictionary files.
+   * You have to close the provided InputStreams yourself.
    *
-   * @param affix InputStream for reading the hunspell affix file
-   * @param dictionary InputStream for reading the hunspell dictionary file
+   * @param affix InputStream for reading the hunspell affix file (won't be closed).
+   * @param dictionary InputStream for reading the hunspell dictionary file (won't be closed).
    * @param version Lucene Version
    * @param ignoreCase If true, dictionary matching will be case insensitive
    * @throws IOException Can be thrown while reading from the InputStreams
@@ -94,10 +96,11 @@ public class HunspellDictionary {
 
   /**
    * Creates a new HunspellDictionary containing the information read from the provided InputStreams to hunspell affix
-   * and dictionary files
+   * and dictionary files.
+   * You have to close the provided InputStreams yourself.
    *
-   * @param affix InputStream for reading the hunspell affix file
-   * @param dictionaries InputStreams for reading the hunspell dictionary file
+   * @param affix InputStream for reading the hunspell affix file (won't be closed).
+   * @param dictionaries InputStreams for reading the hunspell dictionary file (won't be closed).
    * @param version Lucene Version
    * @param ignoreCase If true, dictionary matching will be case insensitive
    * @throws IOException Can be thrown while reading from the InputStreams
@@ -177,7 +180,6 @@ public class HunspellDictionary {
         flagParsingStrategy = getFlagParsingStrategy(line);
       }
     }
-    reader.close();
   }
 
   /**

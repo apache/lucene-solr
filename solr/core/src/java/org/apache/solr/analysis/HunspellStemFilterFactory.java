@@ -17,6 +17,7 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -71,15 +73,25 @@ public class HunspellStemFilterFactory extends BaseTokenFilterFactory implements
       else if(pic.equalsIgnoreCase(FALSE)) ignoreCase = false;
       else throw new SolrException(ErrorCode.UNKNOWN, "Unknown value for "+PARAM_IGNORE_CASE+": "+pic+". Must be true or false");
     }
-
-    try {
-      List<InputStream> dictionaries = new ArrayList<InputStream>();
+    
+    InputStream affix = null;
+    List<InputStream> dictionaries = new ArrayList<InputStream>();
+    try {      
       for (String file : dictionaryFiles) {
         dictionaries.add(loader.openResource(file));
       }
-      this.dictionary = new HunspellDictionary(loader.openResource(affixFile), dictionaries, luceneMatchVersion, ignoreCase);
+      affix = loader.openResource(affixFile);
+      
+      this.dictionary = new HunspellDictionary(affix, dictionaries, luceneMatchVersion, ignoreCase);
     } catch (Exception e) {
       throw new RuntimeException("Unable to load hunspell data! [dictionary=" + args.get("dictionary") + ",affix=" + affixFile + "]", e);
+    } finally {
+      try {
+        IOUtils.closeWhileHandlingException(affix);
+      } catch(IOException e) { /* ignore */ }
+      try {
+        IOUtils.closeWhileHandlingException(dictionaries);
+      } catch(IOException e) { /* ignore */ }
     }
   }
 

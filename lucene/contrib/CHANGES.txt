@@ -42,6 +42,10 @@ Bug Fixes
    leave temp files behind in /tmp on Windows. Fix Sort to not leave
    temp files behind when /tmp is a separate volume. (Uwe Schindler, Robert Muir)
 
+ * LUCENE-4165: Removed closing of the Reader used to read the affix file in
+   HunspellDictionary.  Consumers are now responsible for closing all InputStreams
+   once the Dictionary has been instantiated. (Torsten Krah, Uwe Schindler, Chris Male)
+
 Tests
  
  * LUCENE-3919, LUCENE-3969, LUCENE-3990: more thorough testing of analysis 
