@@ -121,6 +121,7 @@ public final class PForFactory extends IntStreamFactory {
     protected void flushBlock() throws IOException {
       final int header = PForUtil.compress(buffer,encodedBuffer);
       final int numBytes = PForUtil.getEncodedSize(header);
+      // nocommit writeVInt instead?
       out.writeInt(header);
       out.writeBytes(encoded, numBytes);
     }

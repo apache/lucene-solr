@@ -120,6 +120,7 @@ public final class ForFactory extends IntStreamFactory {
     protected void flushBlock() throws IOException {
       final int header = ForUtil.compress(buffer,encodedBuffer);
       final int numBytes = ForUtil.getEncodedSize(header);
+      // nocommit writeVInt instead?
       out.writeInt(header);
       out.writeBytes(encoded, numBytes);
     }
