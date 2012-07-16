@@ -71,9 +71,9 @@ public class BoolField extends PrimitiveFieldType {
         boolean done = false;
 
         @Override
-        public void reset(Reader input) throws IOException {
+        public void setReader(Reader input) throws IOException {
           done = false;
-          super.reset(input);
+          super.setReader(input);
         }
 
         @Override

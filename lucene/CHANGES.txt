@@ -33,6 +33,11 @@ API Changes
   module and replaced by NekoHTML. HTMLParser interface was cleaned up while
   changing method signatures.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-2191: Rename Tokenizer.reset(Reader) to Tokenizer.setReader(Reader).
+  The purpose of this method was always to set a new Reader on the Tokenizer,
+  reusing the object. But the name was often confused with TokenStream.reset().
+  (Robert Muir)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.

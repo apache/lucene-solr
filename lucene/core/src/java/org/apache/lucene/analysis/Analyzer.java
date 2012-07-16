@@ -182,7 +182,7 @@ public abstract class Analyzer {
      *           if the component's reset method throws an {@link IOException}
      */
     protected void reset(final Reader reader) throws IOException {
-      source.reset(reader);
+      source.setReader(reader);
     }
 
     /**
