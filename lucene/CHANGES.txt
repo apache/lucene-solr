@@ -19,7 +19,8 @@ New features
   (Dawid Weiss, Robert Muir)
 
 * LUCENE-4153: Added option to fast vector highlighting via BaseFragmentsBuilder to
-  respect field boundaries in the case of multivalued fields. (Martijn van Groningen)
+  respect field boundaries in the case of highlighting for multivalued fields.
+  (Martijn van Groningen)
 
 API Changes
 
