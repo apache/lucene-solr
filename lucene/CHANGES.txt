@@ -24,6 +24,9 @@ Bug Fixes:
   CharsRef's CharSequence methods to throw exceptions in boundary cases
   to properly meet the specification.  (Robert Muir)
 
+* LUCENE-4222: TieredMergePolicy.getFloorSegmentMB was returning the
+  size in bytes not MB (Chris Fuller via Mike McCandless)
+
 API Changes
 
 * LUCENE-4023: Changed the visibility of Scorer#visitSubScorers() to
