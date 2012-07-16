@@ -45,20 +45,17 @@ import org.apache.lucene.util.IOUtils;
  * customized postings format plugged.
  */
 public final class PForPostingsFormat extends PostingsFormat {
-  private final int blockSize;
   private final int minBlockSize;
   private final int maxBlockSize;
   public final static int DEFAULT_BLOCK_SIZE = 128;
 
   public PForPostingsFormat() {
     super("PFor");
-    this.blockSize = DEFAULT_BLOCK_SIZE;
     this.minBlockSize = BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE;
     this.maxBlockSize = BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE;
   }
   public PForPostingsFormat(int minBlockSize, int maxBlockSize) {
     super("PFor");
-    this.blockSize = DEFAULT_BLOCK_SIZE;
     this.minBlockSize = minBlockSize;
     assert minBlockSize > 1;
     this.maxBlockSize = maxBlockSize;
@@ -67,7 +64,7 @@ public final class PForPostingsFormat extends PostingsFormat {
 
   @Override
   public String toString() {
-    return getName() + "(blocksize=" + blockSize + ")";
+    return getName() + "(blocksize=" + DEFAULT_BLOCK_SIZE+ ")";
   }
 
   @Override

@@ -25,7 +25,6 @@ import java.util.Arrays;
  * which is determined by the max value in this block.
  */
 public class ForUtil {
-  public static final int HEADER_INT_SIZE=1;
   protected static final int[] MASK = {   0x00000000,
     0x00000001, 0x00000003, 0x00000007, 0x0000000f, 0x0000001f, 0x0000003f,
     0x0000007f, 0x000000ff, 0x000001ff, 0x000003ff, 0x000007ff, 0x00000fff,
@@ -39,16 +38,30 @@ public class ForUtil {
    * @param data        uncompressed data
    * @param size        num of ints to compress
    * @param intBuffer   integer buffer to hold compressed data
+   * @return encoded block byte size
    */
-  public static int compress(final int[] data, int size, IntBuffer intBuffer) {
-    int numBits=getNumBits(data,size);
-  
+  public static int compress(final int[] data, IntBuffer intBuffer) {
+    int numBits=getNumBits(data);
+    if (numBits == 0) {
+      return compressDuplicateBlock(data,intBuffer);
+    }
+ 
+    int size=data.length;
+    int encodedSize = (size*numBits+31)/32;
+
     for (int i=0; i<size; ++i) {
       encodeNormalValue(intBuffer,i,data[i], numBits);
     }
-    encodeHeader(intBuffer, size, numBits);
 
-    return (HEADER_INT_SIZE+(size*numBits+31)/32)*4;
+    return getHeader(encodedSize, numBits);
+  }
+
+  /**
+   * Save only one int when the whole block equals to 1
+   */
+  static int compressDuplicateBlock(final int[] data, IntBuffer intBuffer) {
+    intBuffer.put(0,data[0]);
+    return getHeader(1, 0);
   }
 
   /** Decompress given Integer buffer into int array.
@@ -56,18 +69,13 @@ public class ForUtil {
    * @param intBuffer   integer buffer to hold compressed data
    * @param data        int array to hold uncompressed data
    */
-  public static int decompress(IntBuffer intBuffer, int[] data) {
-
+  public static void decompress(IntBuffer intBuffer, int[] data, int header) {
     // since this buffer is reused at upper level, rewind first
     intBuffer.rewind();
 
-    int header = intBuffer.get();
-    int numInts = (header & MASK[8]) + 1;
     int numBits = ((header >> 8) & MASK[6]);
 
     decompressCore(intBuffer, data, numBits);
-
-    return numInts;
   }
 
   /**
@@ -117,15 +125,10 @@ public class ForUtil {
     }
   }
 
-  static void encodeHeader(IntBuffer intBuffer, int numInts, int numBits) {
-    int header = getHeader(numInts,numBits);
-    intBuffer.put(0, header);
-  }
-
   static void encodeNormalValue(IntBuffer intBuffer, int pos, int value, int numBits) {
     final int globalBitPos = numBits*pos;           // position in bit stream
     final int localBitPos = globalBitPos & 31;      // position inside an int
-    int intPos = HEADER_INT_SIZE + globalBitPos/32; // which integer to locate 
+    int intPos = globalBitPos/32; // which integer to locate 
     setBufferIntBits(intBuffer, intPos, localBitPos, numBits, value);
     if ((localBitPos + numBits) > 32) { // value does not fit in this int, fill tail
       setBufferIntBits(intBuffer, intPos+1, 0, 
@@ -145,8 +148,12 @@ public class ForUtil {
   /**
    * Estimate best num of frame bits according to the largest value.
    */
-  static int getNumBits(final int[] data, int size) {
-    int optBits=0;
+  static int getNumBits(final int[] data) {
+    if (isAllEqual(data)) {
+      return 0;
+    }
+    int size=data.length;
+    int optBits=1;
     for (int i=0; i<size; ++i) {
       while ((data[i] & ~MASK[optBits]) != 0) {
         optBits++;
@@ -155,16 +162,37 @@ public class ForUtil {
     return optBits;
   }
 
+  protected static boolean isAllEqual(final int[] data) {
+    int len = data.length;
+    int v = data[0];
+    for (int i=1; i<len; i++) {
+      if (data[i] != v) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /** 
    * Generate the 4 byte header, which contains (from lsb to msb):
    *
-   * - 8 bits for uncompressed int num - 1 (use up to 7 bits i.e 128 actually)
-   * - 6 bits for num of frame bits
-   * - other bits unused
+   * 8 bits for encoded block int size (excluded header, this limits DEFAULT_BLOCK_SIZE <= 2^8)
+   * 6 bits for num of frame bits (when 0, values in this block are all the same)
+   * other bits unused
    *
    */
-  static int getHeader(int numInts, int numBits) {
-    return  (numInts-1)
+  static int getHeader(int encodedSize, int numBits) {
+    return  (encodedSize)
           | ((numBits) << 8);
+  }
+
+  /** 
+   * Expert: get metadata from header. 
+   */
+  public static int getEncodedSize(int header) {
+    return ((header & MASK[8]))*4;
+  }
+  public static int getNumBits(int header) {
+    return ((header >> 8) & MASK[6]);
   }
 }

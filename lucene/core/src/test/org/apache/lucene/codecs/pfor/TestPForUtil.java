@@ -46,39 +46,33 @@ public class TestPForUtil extends LuceneTestCase {
   }
 
   /**
-   * Should not encode extra information other than header
+   * Should not encode extra information other than single int
    */
-  public void testPForAllZeros() throws Exception {
+  public void testAllEqual() throws Exception {
+    initRandom();
     int sz=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
-    int ensz;
     int[] data=new int[sz];
-    byte[] res = new byte[4+sz*8];
+    byte[] res = new byte[sz*8];
     int[] copy = new int[sz];
     IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
-
-    Arrays.fill(data,0);
-    ensz = ForUtil.compress(data,sz,resBuffer); // test For
-    ForUtil.decompress(resBuffer,copy);
-    assert ensz == 4;
-    assert cmp(data,sz,copy,sz)==true;
-
-    Arrays.fill(data,0);
-    ensz = PForUtil.compress(data,sz,resBuffer); // test PFor
-    PForUtil.decompress(resBuffer,copy);
-    assert ensz == 4;
-    assert cmp(data,sz,copy,sz)==true;
-  }
-
-  public void testForAllZeros() throws Exception {
-    int sz=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
     int ensz;
-    int[] data=new int[sz];
-    byte[] res = new byte[4+sz*8];
-    int[] copy = new int[sz];
-    IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
+    int header;
 
-    ensz = ForUtil.compress(data,sz,resBuffer);
+    Arrays.fill(data,gen.nextInt());
+    header = ForUtil.compress(data,resBuffer); // test For
+    ensz = ForUtil.getEncodedSize(header);
+    assert ensz == 4;
 
+    ForUtil.decompress(resBuffer,copy,header);
+    assert cmp(data,sz,copy,sz)==true;
+
+    Arrays.fill(data,gen.nextInt());
+    header = PForUtil.compress(data,resBuffer); // test PFor
+    ensz = PForUtil.getEncodedSize(header);
+    assert ensz == 4;
+
+    PForUtil.decompress(resBuffer,copy,header);
+    assert cmp(data,sz,copy,sz)==true;
   }
 
   /**
@@ -89,7 +83,7 @@ public class TestPForUtil extends LuceneTestCase {
     initRandom();
     int sz=ForPostingsFormat.DEFAULT_BLOCK_SIZE;
     int[] data=new int[sz];
-    byte[] res = new byte[4+sz*8];
+    byte[] res = new byte[sz*8];
     int[] copy = new int[sz];
     IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
     int numBits = gen.nextInt(5)+1;
@@ -107,8 +101,8 @@ public class TestPForUtil extends LuceneTestCase {
       data[i] = (exc & 0xffff0000) == 0 ? exc | 0xffff0000 : exc;
       j++;
     }
-    ensz = PForUtil.compress(data,sz,resBuffer);
-    header = resBuffer.get(0);
+    header = PForUtil.compress(data,resBuffer);
+    ensz = PForUtil.getEncodedSize(header);
     expect = j; 
     got = PForUtil.getExcNum(header);
     assert expect == got: expect+" expected but got "+got;
@@ -122,8 +116,8 @@ public class TestPForUtil extends LuceneTestCase {
       data[i] = (exc & 0xffff0000) == 0 ? exc | 0xffff0000 : exc;
       j++;
     }
-    ensz = PForUtil.compress(data,sz,resBuffer);
-    header = resBuffer.get(0);
+    header = PForUtil.compress(data,resBuffer);
+    ensz = PForUtil.getEncodedSize(header);
     expect = 2*(j-1)+1; 
     got = PForUtil.getExcNum(header);
     assert expect == got: expect+" expected but got "+got;
@@ -137,8 +131,8 @@ public class TestPForUtil extends LuceneTestCase {
       data[i] = (exc & 0xffff0000) == 0 ? exc | 0xffff0000 : exc;
       j++;
     }
-    ensz = PForUtil.compress(data,sz,resBuffer);
-    header = resBuffer.get(0);
+    header = PForUtil.compress(data,resBuffer);
+    ensz = PForUtil.getEncodedSize(header);
     expect = 3*(j-1)+1; 
     got = PForUtil.getExcNum(header);
     assert expect == got: expect+" expected but got "+got;
@@ -156,7 +150,7 @@ public class TestPForUtil extends LuceneTestCase {
     Integer[] buff= new Integer[sz];
     int[] data = new int[sz];
     int[] copy = new int[sz];
-    byte[] res = new byte[4+sz*8];
+    byte[] res = new byte[sz*8];
     IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
 
     int excIndex = gen.nextInt(sz/2);
@@ -176,13 +170,13 @@ public class TestPForUtil extends LuceneTestCase {
     for (int i=0; i<sz; ++i)
       data[i] = buff[i];
 
-    int ensz = PForUtil.compress(data,sz,resBuffer);
+    int header = PForUtil.compress(data,resBuffer);
+    int ensz = PForUtil.getEncodedSize(header);
 
-    assert (ensz <= sz*8+4): ensz+" > "+sz*8+4;  // must not exceed the loose upperbound
-    assert (ensz >= 8);       // at least we have a header along with an exception, right?
+    assert (ensz <= sz*8): ensz+" > "+sz*8;  // must not exceed the loose upperbound
+    assert (ensz >= 4);       // at least we have an exception, right?
 
-    resBuffer.rewind();
-    PForUtil.decompress(resBuffer,copy);
+    PForUtil.decompress(resBuffer,copy,header);
 
 //    println(getHex(data,sz)+"\n");
 //    println(getHex(res,ensz)+"\n");
@@ -211,7 +205,7 @@ public class TestPForUtil extends LuceneTestCase {
     int[] data = new int[sz];
     for (int i=0; i<=32; ++i) { // try to test every kinds of distribution
       double alpha=gen.nextDouble(); // rate of normal value
-      for (int j=0; j<=32; ++j) {
+      for (int j=i; j<=32; ++j) {
         createDistribution(data,sz,alpha,MASK[i],MASK[j]);
         tryCompressAndDecompress(data, sz);
       }
@@ -229,15 +223,16 @@ public class TestPForUtil extends LuceneTestCase {
       data[i] = buff[i];
   }
   public void tryCompressAndDecompress(final int[] data, int sz) throws Exception {
-    byte[] res = new byte[4+sz*8];      // loosely upperbound
+    byte[] res = new byte[sz*8];      // loosely upperbound
     IntBuffer resBuffer = ByteBuffer.wrap(res).asIntBuffer();
 
-    int ensz = PForUtil.compress(data,sz,resBuffer);
+    int header = PForUtil.compress(data,resBuffer);
+    int ensz = PForUtil.getEncodedSize(header);
     
-    assert (ensz <= sz*8+4);  // must not exceed the loose upperbound
+    assert (ensz <= sz*8);  // must not exceed the loose upperbound
 
     int[] copy = new int[sz];
-    PForUtil.decompress(resBuffer,copy);
+    PForUtil.decompress(resBuffer,copy,header);
 
 //    println(getHex(data,sz)+"\n");
 //    println(getHex(res,ensz)+"\n");

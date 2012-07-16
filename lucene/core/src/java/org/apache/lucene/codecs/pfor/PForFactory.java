@@ -39,11 +39,7 @@ import org.apache.lucene.codecs.intblock.FixedIntBlockIndexOutput;
 
 public final class PForFactory extends IntStreamFactory {
 
-  /* number of ints for each block */
-  private final int blockSize;
-
   public PForFactory() {
-    this.blockSize=PForPostingsFormat.DEFAULT_BLOCK_SIZE;
   }
 
   @Override
@@ -51,7 +47,7 @@ public final class PForFactory extends IntStreamFactory {
     boolean success = false;
     IndexOutput out = dir.createOutput(fileName, context);
     try {
-      IntIndexOutput ret = new PForIndexOutput(out, blockSize);
+      IntIndexOutput ret = new PForIndexOutput(out);
       success = true;
       return ret;
     } finally {
@@ -85,11 +81,10 @@ public final class PForFactory extends IntStreamFactory {
       private final IntBuffer encodedBuffer;
 
       PForBlockReader(final IndexInput in, final int[] buffer) {
-        // upperbound for encoded value should include:
+        // upperbound for encoded value should include(here header is not buffered):
         // 1. blockSize of normal value (4x bytes); 
         // 2. blockSize of exception value (4x bytes);
-        // 3. header (4bytes);
-        this.encoded = new byte[blockSize*8+4];
+        this.encoded = new byte[PForPostingsFormat.DEFAULT_BLOCK_SIZE*8];
         this.in = in;
         this.buffer = buffer;
         this.encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
@@ -98,10 +93,11 @@ public final class PForFactory extends IntStreamFactory {
       // TODO: implement public void skipBlock() {} ?
       @Override
       public void readBlock() throws IOException {
-        final int numBytes = in.readInt();
-        assert numBytes <= blockSize*8+4;
+        final int header = in.readInt();
+        final int numBytes = PForUtil.getEncodedSize(header);
+        assert numBytes <= PForPostingsFormat.DEFAULT_BLOCK_SIZE*8;
         in.readBytes(encoded,0,numBytes);
-        PForUtil.decompress(encodedBuffer,buffer);
+        PForUtil.decompress(encodedBuffer,buffer,header);
       }
     }
 
@@ -115,16 +111,17 @@ public final class PForFactory extends IntStreamFactory {
     private final byte[] encoded;
     private final IntBuffer encodedBuffer;
 
-    PForIndexOutput(IndexOutput out, int blockSize) throws IOException {
-      super(out,blockSize);
-      this.encoded = new byte[blockSize*8+4];
+    PForIndexOutput(IndexOutput out) throws IOException {
+      super(out, PForPostingsFormat.DEFAULT_BLOCK_SIZE);
+      this.encoded = new byte[PForPostingsFormat.DEFAULT_BLOCK_SIZE*8];
       this.encodedBuffer=ByteBuffer.wrap(encoded).asIntBuffer();
     }
 
     @Override
     protected void flushBlock() throws IOException {
-      final int numBytes = PForUtil.compress(buffer,buffer.length,encodedBuffer);
-      out.writeInt(numBytes);
+      final int header = PForUtil.compress(buffer,encodedBuffer);
+      final int numBytes = PForUtil.getEncodedSize(header);
+      out.writeInt(header);
       out.writeBytes(encoded, numBytes);
     }
   }

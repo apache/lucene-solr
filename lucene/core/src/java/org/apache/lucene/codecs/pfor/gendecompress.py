@@ -78,7 +78,7 @@ def genDecompress():
     w('\n  // NOTE: hardwired to blockSize == 128\n\n')
 
     w('  public static void decode0(final IntBuffer compressedBuffer, final int[] output) {\n')
-    w('    Arrays.fill(output, 0);\n')
+    w('    Arrays.fill(output, compressedBuffer.get());\n')
     w('  }\n')
 
     for numFrameBits in xrange(1, 33):

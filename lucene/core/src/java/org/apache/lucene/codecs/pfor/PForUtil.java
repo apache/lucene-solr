@@ -32,13 +32,17 @@ public final class PForUtil extends ForUtil {
   /** Compress given int[] into Integer buffer, with PFor format
    *
    * @param data        uncompressed data
-   * @param size        num of ints to compress
    * @param intBuffer   integer buffer to hold compressed data
+   * @return block header
    */
-  public static int compress(final int[] data, int size, IntBuffer intBuffer) {
+  public static int compress(final int[] data, IntBuffer intBuffer) {
     /** estimate minimum compress size to determine numFrameBits */
-    int numBits=getNumBits(data,size);
-  
+    int numBits=getNumBits(data);
+    if (numBits == 0) {
+      return compressDuplicateBlock(data,intBuffer);
+    }
+ 
+    int size = data.length;
     int[] excValues = new int[size];
     int excNum = 0, excLastPos = -1, excFirstPos = -1, excLastNonForcePos = -1; 
 
@@ -115,13 +119,13 @@ public final class PForUtil extends ForUtil {
         excBytes=4;
       }
     }
-    excByteOffset = HEADER_INT_SIZE*4 + (size*numBits + 7)/8;
+    excByteOffset = (size*numBits + 7)/8;
     encodeExcValues(intBuffer, excValues, excNum, excBytes, excByteOffset);
 
     /** encode header */
-    encodeHeader(intBuffer, size, numBits, excNum, excFirstPos, excBytes);
+    int encodedSize = (excByteOffset + excBytes*excNum + 3)/4;
 
-    return (excByteOffset + excBytes*excNum + 3)/4*4;
+    return getHeader(encodedSize, numBits, excNum, excFirstPos, excBytes);
   }
   
   /** Decompress given Integer buffer into int array.
@@ -129,13 +133,10 @@ public final class PForUtil extends ForUtil {
    * @param intBuffer   integer buffer to hold compressed data
    * @param data        int array to hold uncompressed data
    */
-  public static int decompress(IntBuffer intBuffer, int[] data) {
-
+  public static void decompress(IntBuffer intBuffer, int[] data, int header) {
     // since this buffer is reused at upper level, rewind first
     intBuffer.rewind();
 
-    int header = intBuffer.get();
-    int numInts = (header & MASK[8]);
     int excNum = ((header >> 8) & MASK[8]) + 1;
     int excFirstPos = ((header >> 16) & MASK[8]) - 1;
     int excBytes = PER_EXCEPTION_SIZE[(header >> 30) & MASK[2]];
@@ -144,13 +145,6 @@ public final class PForUtil extends ForUtil {
     decompressCore(intBuffer, data, numBits);
 
     patchException(intBuffer,data,excNum,excFirstPos,excBytes);
-
-    return numInts;
-  }
-
-  static void encodeHeader(IntBuffer intBuffer, int numInts, int numBits, int excNum, int excFirstPos, int excBytes) {
-    int header = getHeader(numInts,numBits,excNum,excFirstPos,excBytes);
-    intBuffer.put(0, header);
   }
 
   /**
@@ -190,6 +184,14 @@ public final class PForUtil extends ForUtil {
   }
 
   /**
+   * Save only header when the whole block equals to 1
+   */
+  static int compressDuplicateBlock(final int[] data, IntBuffer intBuffer) {
+    intBuffer.put(0,data[0]);
+    return getHeader(1, 0, 0, -1, 0);
+  }
+
+  /**
    * Decode exception values base on the exception pointers in normal area,
    * and values in exception area.
    * As for current implementation, numInts is hardwired as 128, so the
@@ -200,7 +202,6 @@ public final class PForUtil extends ForUtil {
    * In this case we should preprocess patch several heading exceptions, 
    * before calling this method.
    *
-   * TODO: blockSize is hardewired to size==128 only
    */
   public static void patchException(IntBuffer intBuffer, int[] data, int excNum, int excFirstPos, int excBytes) {
     if (excFirstPos == -1) {
@@ -251,13 +252,14 @@ public final class PForUtil extends ForUtil {
    * Estimate best number of frame bits according to minimum compressed size.
    * It will run 32 times.
    */
-  static int getNumBits(final int[] data, int size) {
-    if (isAllZero(data))
+  static int getNumBits(final int[] data) {
+    if (isAllEqual(data)) {
       return 0;
+    }
     int optBits=1;
-    int optSize=estimateCompressedSize(data,size,optBits);
+    int optSize=estimateCompressedSize(data,optBits);
     for (int i=2; i<=32; ++i) {
-      int curSize=estimateCompressedSize(data,size,i);
+      int curSize=estimateCompressedSize(data,i);
       if (curSize<optSize) {
         optSize=curSize;
         optBits=i;
@@ -266,22 +268,13 @@ public final class PForUtil extends ForUtil {
     return optBits;
   }
 
-  static boolean isAllZero(final int[] data) {
-    int len=data.length;
-    for (int i=0; i<len; i++) {
-      if (data[i] != 0) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   /**
    * Iterate the whole block to get maximum exception bits, 
    * and estimate compressed size without forced exception.
    * TODO: foresee forced exception for better estimation
    */
-  static int estimateCompressedSize(final int[] data, int size, int numBits) {
+  static int estimateCompressedSize(final int[] data, int numBits) {
+    int size=data.length;
     int totalBytes=(numBits*size+7)/8;   // always round to byte
     int excNum=0;
     int curExcBytes=1;
@@ -304,29 +297,24 @@ public final class PForUtil extends ForUtil {
     }
     totalBytes+=excNum*curExcBytes;
 
-    return totalBytes/4*4+HEADER_INT_SIZE;  // round up to ints
+    return totalBytes/4*4;  // round up to ints
   }
 
   /** 
-   * Generate the 4 byte header, which contains (from lsb to msb):
+   * Generate the 4 byte header which contains (from lsb to msb):
    *
-   * 8 bits for uncompressed int num - 1 (use up to 7 bits i.e 128 actually)
+   * 8 bits for encoded block int size (excluding header, this limits DEFAULT_BLOCK_SIZE <= 2^(8-1))
    *
    * 8 bits for exception num - 1 (when no exceptions, this is undefined)
    *
    * 8 bits for the index of the first exception + 1 (when no exception, this is 0)
    *
-   * 6 bits for num of frame bits
+   * 6 bits for num of frame bits (when 0, values in this block are all the same)
    * 2 bits for the exception code: 00: byte, 01: short, 10: int
    *
    */
-  // TODO: exception num should never be equal with uncompressed int num!!!
-  // first exception ranges from -1 ~ 255
-  // the problem is that we don't need first exception to be -1 ...
-  // it is ok to range from 0~255, and judge exception for exception num (0~255)
-  // uncompressed int num: (1~256)
-  static int getHeader(int numInts, int numBits, int excNum, int excFirstPos, int excBytes) {
-    return  (numInts-1)
+  static int getHeader(int encodedSize, int numBits, int excNum, int excFirstPos, int excBytes) {
+    return  (encodedSize)
           | (((excNum-1) & MASK[8]) << 8)
           | ((excFirstPos+1) << 16)
           | ((numBits) << 24)
@@ -337,8 +325,8 @@ public final class PForUtil extends ForUtil {
   /** 
    * Expert: get metadata from header. 
    */
-  public static int getNumInts(int header) {
-    return (header & MASK[8]) + 1;
+  public static int getEncodedSize(int header) {
+    return ((header & MASK[8]))*4;
   }
   public static int getExcNum(int header) {
     return ((header >> 8) & MASK[8]) + 1;
