@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * TokenFilterFactory that creates instances of {@link org.apache.lucene.analysis.hunspell.HunspellStemFilter}.
@@ -76,7 +77,6 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
       else throw new InitializationException("Unknown value for " + PARAM_IGNORE_CASE + ": " + pic + ". Must be true or false");
     }
 
-
     String strictAffixParsingParam = args.get(PARAM_STRICT_AFFIX_PARSING);
     boolean strictAffixParsing = true;
     if(strictAffixParsingParam != null) {
@@ -85,14 +85,22 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
       else throw new InitializationException("Unknown value for " + PARAM_STRICT_AFFIX_PARSING + ": " + strictAffixParsingParam + ". Must be true or false");
     }
 
+    InputStream affix = null;
+    List<InputStream> dictionaries = new ArrayList<InputStream>();
+
     try {
-      List<InputStream> dictionaries = new ArrayList<InputStream>();
+      dictionaries = new ArrayList<InputStream>();
       for (String file : dictionaryFiles) {
         dictionaries.add(loader.openResource(file));
       }
-      this.dictionary = new HunspellDictionary(loader.openResource(affixFile), dictionaries, luceneMatchVersion, ignoreCase, strictAffixParsing);
+      affix = loader.openResource(affixFile);
+
+      this.dictionary = new HunspellDictionary(affix, dictionaries, luceneMatchVersion, ignoreCase, strictAffixParsing);
     } catch (Exception e) {
       throw new InitializationException("Unable to load hunspell data! [dictionary=" + args.get("dictionary") + ",affix=" + affixFile + "]", e);
+    } finally {
+      IOUtils.closeWhileHandlingException(affix);
+      IOUtils.closeWhileHandlingException(dictionaries);
     }
   }
 

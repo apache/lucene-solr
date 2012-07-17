@@ -17,19 +17,98 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.Arrays;
 
-import static junit.framework.Assert.assertEquals;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HunspellDictionaryTest extends LuceneTestCase {
+  
+  private class CloseCheckInputStream extends InputStream {
+    private InputStream delegate;
+    
+    private boolean closed = false;
+
+    public CloseCheckInputStream(InputStream delegate) {
+      super();
+      this.delegate = delegate;
+    }
+
+    public int read() throws IOException {
+      return delegate.read();
+    }
+
+    public int hashCode() {
+      return delegate.hashCode();
+    }
+
+    public int read(byte[] b) throws IOException {
+      return delegate.read(b);
+    }
+
+    public boolean equals(Object obj) {
+      return delegate.equals(obj);
+    }
+
+    public int read(byte[] b, int off, int len) throws IOException {
+      return delegate.read(b, off, len);
+    }
+
+    public long skip(long n) throws IOException {
+      return delegate.skip(n);
+    }
+
+    public String toString() {
+      return delegate.toString();
+    }
+
+    public int available() throws IOException {
+      return delegate.available();
+    }
+
+    public void close() throws IOException {
+      this.closed = true;
+      delegate.close();
+    }
+
+    public void mark(int readlimit) {
+      delegate.mark(readlimit);
+    }
+
+    public void reset() throws IOException {
+      delegate.reset();
+    }
+
+    public boolean markSupported() {
+      return delegate.markSupported();
+    }
+    
+    public boolean isClosed() {
+      return this.closed;
+    }
+    
+  }
+
+  @Test
+  public void testResourceCleanup() throws IOException, ParseException {
+    CloseCheckInputStream affixStream = new CloseCheckInputStream(getClass().getResourceAsStream("testCompressed.aff"));
+    CloseCheckInputStream dictStream = new CloseCheckInputStream(getClass().getResourceAsStream("testCompressed.dic"));
+    
+    new HunspellDictionary(affixStream, dictStream, TEST_VERSION_CURRENT);
+    
+    assertFalse(affixStream.isClosed());
+    assertFalse(dictStream.isClosed());
+    
+    affixStream.close();
+    dictStream.close();
+    
+    assertTrue(affixStream.isClosed());
+    assertTrue(dictStream.isClosed());
+  }
 
   @Test
   public void testHunspellDictionary_loadDicAff() throws IOException, ParseException {
@@ -40,7 +119,7 @@ public class HunspellDictionaryTest extends LuceneTestCase {
     assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).size());
     assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).size());
     assertEquals(1, dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3).size());
-
+    
     affixStream.close();
     dictStream.close();
   }
@@ -54,7 +133,7 @@ public class HunspellDictionaryTest extends LuceneTestCase {
     assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).size());
     assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).size());
     assertEquals(1, dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3).size());
-
+    
     affixStream.close();
     dictStream.close();
   }
@@ -69,7 +148,9 @@ public class HunspellDictionaryTest extends LuceneTestCase {
     assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).size());
     assertEquals(1, dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3).size());
     //strict parsing disabled: malformed rule is not loaded
-    assertNull(dictionary.lookupPrefix(new char[]{'a'}, 0, 1));
+    assertNull(dictionary.lookupPrefix(new char[]{'a'}, 0, 1));    
+    affixStream.close();
+    dictStream.close();
 
     affixStream = getClass().getResourceAsStream("testWrongAffixRule.aff");
     dictStream = getClass().getResourceAsStream("test.dic");
@@ -81,7 +162,7 @@ public class HunspellDictionaryTest extends LuceneTestCase {
       Assert.assertEquals("The affix file contains a rule with less than five elements", e.getMessage());
       Assert.assertEquals(23, e.getErrorOffset());
     }
-
+    
     affixStream.close();
     dictStream.close();
   }
