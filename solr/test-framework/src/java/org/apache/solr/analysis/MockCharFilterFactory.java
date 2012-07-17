@@ -17,9 +17,10 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.util.Map;
 
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockCharFilter;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 
@@ -40,7 +41,7 @@ public class MockCharFilterFactory extends CharFilterFactory {
   }
 
   @Override
-  public CharStream create(CharStream input) {
+  public CharFilter create(Reader input) {
     return new MockCharFilter(input, remainder);
   }
 }

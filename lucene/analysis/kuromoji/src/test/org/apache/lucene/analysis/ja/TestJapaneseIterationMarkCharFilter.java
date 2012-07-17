@@ -19,11 +19,9 @@ package org.apache.lucene.analysis.ja;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.charfilter.CharFilter;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -40,7 +38,7 @@ public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase
 
     @Override
     protected Reader initReader(String fieldName, Reader reader) {
-      return new JapaneseIterationMarkCharFilter(CharReader.get(reader));
+      return new JapaneseIterationMarkCharFilter(reader);
     }
   };
 
@@ -53,7 +51,7 @@ public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase
 
     @Override
     protected Reader initReader(String fieldName, Reader reader) {
-      return new JapaneseIterationMarkCharFilter(CharReader.get(reader));
+      return new JapaneseIterationMarkCharFilter(reader);
     }
   };
   
@@ -138,7 +136,7 @@ public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase
   public void testKanjiOnly() throws IOException {
     // Test kanji only repetition marks
     CharFilter filter = new JapaneseIterationMarkCharFilter(
-        CharReader.get(new StringReader("時々、おゝのさんと一緒にお寿司が食べたいです。abcところゞゝゝ。")),
+        new StringReader("時々、おゝのさんと一緒にお寿司が食べたいです。abcところゞゝゝ。"),
         true, // kanji
         false // no kana
     );
@@ -148,7 +146,7 @@ public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase
   public void testKanaOnly() throws IOException {
     // Test kana only repetition marks
     CharFilter filter = new JapaneseIterationMarkCharFilter(
-        CharReader.get(new StringReader("時々、おゝのさんと一緒にお寿司が食べたいです。abcところゞゝゝ。")),
+        new StringReader("時々、おゝのさんと一緒にお寿司が食べたいです。abcところゞゝゝ。"),
         false, // no kanji
         true   // kana
     );
@@ -158,7 +156,7 @@ public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase
   public void testNone() throws IOException {
     // Test no repetition marks
     CharFilter filter = new JapaneseIterationMarkCharFilter(
-        CharReader.get(new StringReader("時々、おゝのさんと一緒にお寿司が食べたいです。abcところゞゝゝ。")),
+        new StringReader("時々、おゝのさんと一緒にお寿司が食べたいです。abcところゞゝゝ。"),
         false, // no kanji
         false  // no kana
     );
@@ -210,7 +208,7 @@ public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase
     assertEquals(expected, actual);
   }
 
-  private String readFully(CharStream stream) throws IOException {
+  private String readFully(Reader stream) throws IOException {
     StringBuffer buffer = new StringBuffer();
     int ch;
     while ((ch = stream.read()) != -1) {

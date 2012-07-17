@@ -23,7 +23,6 @@ import java.io.StringReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.charfilter.BaseCharFilter;
 
 /**
@@ -56,7 +55,7 @@ public class PatternReplaceCharFilter extends BaseCharFilter {
   private final String replacement;
   private Reader transformedInput;
 
-  public PatternReplaceCharFilter(Pattern pattern, String replacement, CharStream in) {
+  public PatternReplaceCharFilter(Pattern pattern, String replacement, Reader in) {
     super(in);
     this.pattern = pattern;
     this.replacement = replacement;
@@ -64,7 +63,7 @@ public class PatternReplaceCharFilter extends BaseCharFilter {
 
   @Deprecated
   public PatternReplaceCharFilter(Pattern pattern, String replacement, 
-      int maxBlockChars, String blockDelimiter, CharStream in) {
+      int maxBlockChars, String blockDelimiter, Reader in) {
     this(pattern, replacement, in);
   }
 
@@ -72,15 +71,28 @@ public class PatternReplaceCharFilter extends BaseCharFilter {
   public int read(char[] cbuf, int off, int len) throws IOException {
     // Buffer all input on the first call.
     if (transformedInput == null) {
-      StringBuilder buffered = new StringBuilder();
-      char [] temp = new char [1024];
-      for (int cnt = input.read(temp); cnt > 0; cnt = input.read(temp)) {
-        buffered.append(temp, 0, cnt);
-      }
-      transformedInput = new StringReader(processPattern(buffered).toString());
+      fill();
     }
 
     return transformedInput.read(cbuf, off, len);
+  }
+  
+  private void fill() throws IOException {
+    StringBuilder buffered = new StringBuilder();
+    char [] temp = new char [1024];
+    for (int cnt = in.read(temp); cnt > 0; cnt = in.read(temp)) {
+      buffered.append(temp, 0, cnt);
+    }
+    transformedInput = new StringReader(processPattern(buffered).toString());
+  }
+
+  @Override
+  public int read() throws IOException {
+    if (transformedInput == null) {
+      fill();
+    }
+    
+    return transformedInput.read();
   }
 
   @Override

@@ -17,7 +17,9 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.CharStream;
+import java.io.Reader;
+
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.fa.PersianCharFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
@@ -37,7 +39,7 @@ import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 public class PersianCharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
 
   @Override
-  public CharStream create(CharStream input) {
+  public CharFilter create(Reader input) {
     return new PersianCharFilter(input);
   }
 

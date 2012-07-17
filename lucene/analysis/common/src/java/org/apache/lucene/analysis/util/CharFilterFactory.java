@@ -17,13 +17,15 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.CharStream;
+import java.io.Reader;
+
+import org.apache.lucene.analysis.CharFilter;
 
 /**
- * Abstract parent class for analysis factories that create {@link CharStream}
+ * Abstract parent class for analysis factories that create {@link CharFilter}
  * instances.
  */
 public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
-  public abstract CharStream create(CharStream input);
+  public abstract CharFilter create(Reader input);
 }

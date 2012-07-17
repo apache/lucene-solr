@@ -39,8 +39,8 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamTestCase
     args.put("pattern", "(aa)\\s+(bb)\\s+(cc)");
     args.put("replacement", "$1$2$3");
     factory.init(args);
-    CharStream cs = factory.create(
-          CharReader.get( new StringReader( BLOCK ) ) );
+    CharFilter cs = factory.create(
+          new StringReader( BLOCK ) );
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "test." },
@@ -56,8 +56,8 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamTestCase
     Map<String,String> args = new HashMap<String,String>();
     args.put("pattern", "(aa)\\s+(bb)\\s+(cc)");
     factory.init(args);
-    CharStream cs = factory.create(
-          CharReader.get( new StringReader( BLOCK ) ) );
+    CharFilter cs = factory.create(
+          new StringReader( BLOCK ) );
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     ts.reset();
     assertFalse(ts.incrementToken());
@@ -75,8 +75,8 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamTestCase
     args.put("pattern", "(aa)\\s+(bb)\\s+(cc)");
     args.put("replacement", "$1#$2#$3");
     factory.init(args);
-    CharStream cs = factory.create(
-          CharReader.get( new StringReader( BLOCK ) ) );
+    CharFilter cs = factory.create(
+          new StringReader( BLOCK ) );
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa#bb#cc" },

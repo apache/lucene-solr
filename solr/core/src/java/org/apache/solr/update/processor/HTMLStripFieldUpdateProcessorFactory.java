@@ -21,7 +21,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 
 import org.apache.commons.io.IOUtils;
@@ -69,7 +68,7 @@ public final class HTMLStripFieldUpdateProcessorFactory extends FieldMutatingUpd
           Reader in = null;
           try {
             in = new HTMLStripCharFilter
-              (CharReader.get(new StringReader(s.toString())));
+              (new StringReader(s.toString()));
             IOUtils.copy(in, result);
             return result.toString();
           } catch (IOException e) {

@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
@@ -92,7 +91,7 @@ public class TestArabicFilters extends BaseTokenStreamTestCase {
     tokenizerFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     Map<String, String> args = Collections.emptyMap();
     tokenizerFactory.init(args);
-    TokenStream stream = tokenizerFactory.create(charfilterFactory.create(CharReader.get(reader)));
+    TokenStream stream = tokenizerFactory.create(charfilterFactory.create(reader));
     assertTokenStreamContents(stream, new String[] { "می", "خورد" });
   }
 }

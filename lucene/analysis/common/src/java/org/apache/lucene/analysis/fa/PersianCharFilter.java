@@ -18,9 +18,9 @@ package org.apache.lucene.analysis.fa;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.charfilter.CharFilter;
+import org.apache.lucene.analysis.CharFilter;
 
 /**
  * CharFilter that replaces instances of Zero-width non-joiner with an
@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.charfilter.CharFilter;
  */
 public class PersianCharFilter extends CharFilter {
 
-  public PersianCharFilter(CharStream in) {
+  public PersianCharFilter(Reader in) {
     super(in);
   }
   
@@ -44,5 +44,10 @@ public class PersianCharFilter extends CharFilter {
       }
     }
     return charsRead;
+  }
+
+  @Override
+  protected int correct(int currentOff) {
+    return currentOff; // we don't change the length of the string
   }
 }

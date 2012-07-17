@@ -24,7 +24,6 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -327,7 +326,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
       @Override
       protected Reader initReader(String fieldName, Reader reader) {
-        return new MappingCharFilter(normMap, CharReader.get(reader));
+        return new MappingCharFilter(normMap, reader);
       }
     };
 

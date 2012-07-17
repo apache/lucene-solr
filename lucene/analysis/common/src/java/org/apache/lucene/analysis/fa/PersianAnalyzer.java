@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
@@ -141,7 +140,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected Reader initReader(String fieldName, Reader reader) {
     return matchVersion.onOrAfter(Version.LUCENE_31) ? 
-       new PersianCharFilter(CharReader.get(reader)) :
+       new PersianCharFilter(reader) :
        reader;
   }
 }
