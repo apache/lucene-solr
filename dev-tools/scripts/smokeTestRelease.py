@@ -440,7 +440,7 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     run('%s; ant validate' % javaExe('1.7'), '%s/validate.log' % unpackPath)
 
     print '    run "ant rat-sources"'
-    run('%s; ant -lib %s/apache-rat-0.8.jar rat-sources' % (javaExe('1.7'), tmpDir), '%s/rat-sources.log' % unpackPath)
+    run('%s; ant -lib %s/apache-rat-0.8.jar/apache-rat-0.8/apache-rat-0.8.jar rat-sources' % (javaExe('1.7'), tmpDir), '%s/rat-sources.log' % unpackPath)
     
     if project == 'lucene':
       print '    run tests w/ Java 5...'
