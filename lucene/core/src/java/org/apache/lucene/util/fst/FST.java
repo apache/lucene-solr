@@ -669,6 +669,8 @@ public final class FST<T> {
       // 2nd pass just "expands" all arcs to take up a fixed
       // byte size
       final int sizeNeeded = fixedArrayStart + nodeIn.numArcs * maxBytesPerArc;
+      assert ((long) fixedArrayStart) + ((long) nodeIn.numArcs) * maxBytesPerArc < Integer.MAX_VALUE: "FST too large (> 2.1 GB)";
+
       bytes = ArrayUtil.grow(bytes, sizeNeeded);
       // TODO: we could make this a vInt instead
       bytes[fixedArrayStart-4] = (byte) (maxBytesPerArc >> 24);
@@ -685,7 +687,7 @@ public final class FST<T> {
         destPos -= maxBytesPerArc;
         srcPos -= bytesPerArc[arcIdx];
         if (srcPos != destPos) {
-          assert destPos > srcPos;
+          assert destPos > srcPos: "destPos=" + destPos + " srcPos=" + srcPos + " arcIdx=" + arcIdx + " maxBytesPerArc=" + maxBytesPerArc + " bytesPerArc[arcIdx]=" + bytesPerArc[arcIdx] + " nodeIn.numArcs=" + nodeIn.numArcs;
           System.arraycopy(bytes, srcPos, bytes, destPos, bytesPerArc[arcIdx]);
         }
       }
@@ -1194,6 +1196,7 @@ public final class FST<T> {
     public void writeByte(byte b) {
       assert posWrite <= bytes.length;
       if (bytes.length == posWrite) {
+        assert bytes.length < Integer.MAX_VALUE: "FST too large (> 2.1 GB)";
         bytes = ArrayUtil.grow(bytes);
       }
       assert posWrite < bytes.length: "posWrite=" + posWrite + " bytes.length=" + bytes.length;
@@ -1203,6 +1206,7 @@ public final class FST<T> {
     public void setPosWrite(int posWrite) {
       this.posWrite = posWrite;
       if (bytes.length < posWrite) {
+        assert bytes.length < Integer.MAX_VALUE: "FST too large (> 2.1 GB)";
         bytes = ArrayUtil.grow(bytes, posWrite);
       }
     }
@@ -1210,6 +1214,7 @@ public final class FST<T> {
     @Override
     public void writeBytes(byte[] b, int offset, int length) {
       final int size = posWrite + length;
+      assert bytes.length < Integer.MAX_VALUE: "FST too large (> 2.1 GB)";
       bytes = ArrayUtil.grow(bytes, size);
       System.arraycopy(b, offset, bytes, posWrite, length);
       posWrite += length;
