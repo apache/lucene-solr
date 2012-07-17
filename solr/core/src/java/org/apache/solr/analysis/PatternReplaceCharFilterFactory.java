@@ -17,10 +17,11 @@
 
 package org.apache.solr.analysis;
 
+import java.io.Reader;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilter;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 
@@ -53,7 +54,7 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
     // TODO: throw exception if you set maxBlockChars or blockDelimiters ?
   }
 
-  public CharStream create(CharStream input) {
+  public CharFilter create(Reader input) {
     return new PatternReplaceCharFilter( p, replacement, input );
   }
 }

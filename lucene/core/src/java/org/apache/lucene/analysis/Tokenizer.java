@@ -65,15 +65,15 @@ public abstract class Tokenizer extends TokenStream {
     }
   }
   
-  /** Return the corrected offset. If {@link #input} is a {@link CharStream} subclass
-   * this method calls {@link CharStream#correctOffset}, else returns <code>currentOff</code>.
+  /** Return the corrected offset. If {@link #input} is a {@link CharFilter} subclass
+   * this method calls {@link CharFilter#correctOffset}, else returns <code>currentOff</code>.
    * @param currentOff offset as seen in the output
    * @return corrected offset based on the input
-   * @see CharStream#correctOffset
+   * @see CharFilter#correctOffset
    */
   protected final int correctOffset(int currentOff) {
     assert input != null: "this tokenizer is closed";
-    return (input instanceof CharStream) ? ((CharStream) input).correctOffset(currentOff) : currentOff;
+    return (input instanceof CharFilter) ? ((CharFilter) input).correctOffset(currentOff) : currentOff;
   }
 
   /** Expert: Reset the tokenizer to a new reader.  Typically, an

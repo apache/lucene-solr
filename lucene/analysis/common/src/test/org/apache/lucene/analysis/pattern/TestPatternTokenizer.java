@@ -26,8 +26,7 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
@@ -83,7 +82,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
     builder.add("&uuml;", "ü");
     NormalizeCharMap normMap = builder.build();
-    CharStream charStream = new MappingCharFilter( normMap, CharReader.get( new StringReader( INPUT ) ) );
+    CharFilter charStream = new MappingCharFilter( normMap, new StringReader( INPUT ) );
 
     // create PatternTokenizer
     TokenStream stream = new PatternTokenizer(charStream, Pattern.compile("[,;/\\s]+"), -1);
@@ -93,7 +92,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
         new int[] { 12, 25, 28, 33 },
         INPUT.length());
     
-    charStream = new MappingCharFilter( normMap, CharReader.get( new StringReader( INPUT ) ) );
+    charStream = new MappingCharFilter( normMap, new StringReader( INPUT ) );
     stream = new PatternTokenizer(charStream, Pattern.compile("Günther"), 0);
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther" },

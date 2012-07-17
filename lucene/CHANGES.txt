@@ -42,6 +42,10 @@ API Changes
   reusing the object. But the name was often confused with TokenStream.reset().
   (Robert Muir)
 
+* LUCENE-4228: Refactored CharFilter to extend java.io.FilterReader. CharFilters
+  filter another reader and you override correct() for offset correction.
+  (Robert Muir)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.

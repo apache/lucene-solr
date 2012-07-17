@@ -44,8 +44,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.MockRandomLookaheadTokenFilter;
@@ -101,7 +100,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
 
   static List<Constructor<? extends Tokenizer>> tokenizers;
   static List<Constructor<? extends TokenFilter>> tokenfilters;
-  static List<Constructor<? extends CharStream>> charfilters;
+  static List<Constructor<? extends CharFilter>> charfilters;
 
   // TODO: fix those and remove
   private static final Set<Class<?>> brokenComponents = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
@@ -170,7 +169,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     getClassesForPackage("org.apache.lucene.analysis", analysisClasses);
     tokenizers = new ArrayList<Constructor<? extends Tokenizer>>();
     tokenfilters = new ArrayList<Constructor<? extends TokenFilter>>();
-    charfilters = new ArrayList<Constructor<? extends CharStream>>();
+    charfilters = new ArrayList<Constructor<? extends CharFilter>>();
     for (final Class<?> c : analysisClasses) {
       final int modifiers = c.getModifiers();
       if (
@@ -179,7 +178,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         || c.isSynthetic() || c.isAnonymousClass() || c.isMemberClass() || c.isInterface()
         || brokenComponents.contains(c)
         || c.isAnnotationPresent(Deprecated.class)
-        || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharStream.class.isAssignableFrom(c))
+        || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharFilter.class.isAssignableFrom(c))
       ) {
         continue;
       }
@@ -197,10 +196,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           assertTrue(ctor.toGenericString() + " has unsupported parameter types",
             allowedTokenFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
           tokenfilters.add(castConstructor(TokenFilter.class, ctor));
-        } else if (CharStream.class.isAssignableFrom(c)) {
+        } else if (CharFilter.class.isAssignableFrom(c)) {
           assertTrue(ctor.toGenericString() + " has unsupported parameter types",
             allowedCharFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
-          charfilters.add(castConstructor(CharStream.class, ctor));
+          charfilters.add(castConstructor(CharFilter.class, ctor));
         } else {
           fail("Cannot get here");
         }
@@ -524,7 +523,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     allowedCharFilterArgs = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
     allowedCharFilterArgs.addAll(argProducers.keySet());
     allowedCharFilterArgs.add(Reader.class);
-    allowedCharFilterArgs.add(CharStream.class);
   }
   
   @SuppressWarnings("unchecked")
@@ -560,8 +558,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       Class<?> paramType = paramTypes[i];
       if (paramType == Reader.class) {
         args[i] = reader;
-      } else if (paramType == CharStream.class) {
-        args[i] = CharReader.get(reader);
       } else {
         args[i] = newRandomArg(random, paramType);
       }
@@ -701,7 +697,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       int numFilters = random.nextInt(3);
       for (int i = 0; i < numFilters; i++) {
         while (true) {
-          final Constructor<? extends CharStream> ctor = charfilters.get(random.nextInt(charfilters.size()));
+          final Constructor<? extends CharFilter> ctor = charfilters.get(random.nextInt(charfilters.size()));
           final Object args[] = newCharFilterArgs(random, spec.reader, ctor.getParameterTypes());
           reader = createComponent(ctor, args, descr);
           if (reader != null) {
@@ -760,24 +756,16 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
   }
   
-  // wants charfilter to be a filterreader...
-  // do *NOT*, do *NOT* refactor me to be a charfilter: LUCENE-3990
-  static class CheckThatYouDidntReadAnythingReaderWrapper extends CharStream {
+  static class CheckThatYouDidntReadAnythingReaderWrapper extends CharFilter {
     boolean readSomething;
-    CharStream in;
     
     CheckThatYouDidntReadAnythingReaderWrapper(Reader in) {
-      this.in = CharReader.get(in);
+      super(in);
     }
     
     @Override
-    public int correctOffset(int currentOff) {
-      return in.correctOffset(currentOff);
-    }
-
-    @Override
-    public void close() throws IOException {
-      in.close();
+    public int correct(int currentOff) {
+      return currentOff; // we don't change any offsets
     }
 
     @Override
@@ -799,29 +787,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public void mark(int readAheadLimit) throws IOException {
-      in.mark(readAheadLimit);
-    }
-
-    @Override
-    public boolean markSupported() {
-      return in.markSupported();
-    }
-
-    @Override
     public int read(char[] cbuf) throws IOException {
       readSomething = true;
       return in.read(cbuf);
-    }
-
-    @Override
-    public boolean ready() throws IOException {
-      return in.ready();
-    }
-
-    @Override
-    public void reset() throws IOException {
-      in.reset();
     }
 
     @Override

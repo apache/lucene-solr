@@ -17,12 +17,13 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.ja.JapaneseIterationMarkCharFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 
+import java.io.Reader;
 import java.util.Map;
 
 /**
@@ -46,7 +47,7 @@ public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory im
   private boolean normalizeKana = true;
 
   @Override
-  public CharStream create(CharStream input) {
+  public CharFilter create(Reader input) {
     return new JapaneseIterationMarkCharFilter(input, normalizeKanji, normalizeKana);
   }
 

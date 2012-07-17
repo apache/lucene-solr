@@ -1,3 +1,5 @@
+package org.apache.lucene.analysis;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,68 +17,39 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.charfilter;
-
-import java.io.IOException;
-
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.Tokenizer;
+import java.io.FilterReader;
+import java.io.Reader;
 
 /**
- * Subclasses of CharFilter can be chained to filter CharStream.
+ * Subclasses of CharFilter can be chained to filter a Reader
  * They can be used as {@link java.io.Reader} with additional offset
  * correction. {@link Tokenizer}s will automatically use {@link #correctOffset}
- * if a CharFilter/CharStream subclass is used.
+ * if a CharFilter subclass is used.
  */
-public abstract class CharFilter extends CharStream {
-
-  protected CharStream input;
-
-  protected CharFilter(CharStream in) {
-    input = in;
-  }
+public abstract class CharFilter extends FilterReader {
 
   /**
-   * Subclass may want to override to correct the current offset.
+   * Create a new CharFilter wrapping the provided reader.
+   * @param in a Reader, can also be a CharFilter for chaining.
+   */
+  public CharFilter(Reader in) {
+    super(in);
+  }
+  
+  /**
+   * Subclasses override to correct the current offset.
    *
    * @param currentOff current offset
    * @return corrected offset
    */
-  protected int correct(int currentOff) {
-    return currentOff;
-  }
-
+  protected abstract int correct(int currentOff);
+  
   /**
    * Chains the corrected offset through the input
-   * CharFilter.
+   * CharFilter(s).
    */
-  @Override
   public final int correctOffset(int currentOff) {
-    return input.correctOffset(correct(currentOff));
-  }
-
-  @Override
-  public void close() throws IOException {
-    input.close();
-  }
-
-  @Override
-  public int read(char[] cbuf, int off, int len) throws IOException {
-    return input.read(cbuf, off, len);
-  }
-
-  @Override
-  public boolean markSupported(){
-    return input.markSupported();
-  }
-
-  @Override
-  public void mark( int readAheadLimit ) throws IOException {
-    input.mark(readAheadLimit);
-  }
-
-  @Override
-  public void reset() throws IOException {
-    input.reset();
+    final int corrected = correct(currentOff);
+    return (in instanceof CharFilter) ? ((CharFilter) in).correctOffset(corrected) : corrected;
   }
 }

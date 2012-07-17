@@ -1,3 +1,5 @@
+package org.apache.lucene.analysis;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,40 +17,36 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.charfilter;
-
+import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.charfilter.CharFilter;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCharFilter extends LuceneTestCase {
 
   public void testCharFilter1() throws Exception {
-    CharStream cs = new CharFilter1( CharReader.get( new StringReader("") ) );
-    assertEquals( "corrected offset is invalid", 1, cs.correctOffset( 0 ) );
+    CharFilter cs = new CharFilter1(new StringReader(""));
+    assertEquals("corrected offset is invalid", 1, cs.correctOffset(0));
   }
 
   public void testCharFilter2() throws Exception {
-    CharStream cs = new CharFilter2( CharReader.get( new StringReader("") ) );
-    assertEquals( "corrected offset is invalid", 2, cs.correctOffset( 0 ) );
+    CharFilter cs = new CharFilter2(new StringReader(""));
+    assertEquals("corrected offset is invalid", 2, cs.correctOffset(0));
   }
 
   public void testCharFilter12() throws Exception {
-    CharStream cs = new CharFilter2( new CharFilter1( CharReader.get( new StringReader("") ) ) );
-    assertEquals( "corrected offset is invalid", 3, cs.correctOffset( 0 ) );
+    CharFilter cs = new CharFilter2(new CharFilter1(new StringReader("")));
+    assertEquals( "corrected offset is invalid", 3, cs.correctOffset(0));
   }
 
   public void testCharFilter11() throws Exception {
-    CharStream cs = new CharFilter1( new CharFilter1( CharReader.get( new StringReader("") ) ) );
-    assertEquals( "corrected offset is invalid", 2, cs.correctOffset( 0 ) );
+    CharFilter cs = new CharFilter1(new CharFilter1(new StringReader("")));
+    assertEquals( "corrected offset is invalid", 2, cs.correctOffset(0));
   }
 
   static class CharFilter1 extends CharFilter {
 
-    protected CharFilter1(CharStream in) {
+    protected CharFilter1(Reader in) {
       super(in);
     }
 
@@ -60,7 +58,7 @@ public class TestCharFilter extends LuceneTestCase {
 
   static class CharFilter2 extends CharFilter {
 
-    protected CharFilter2(CharStream in) {
+    protected CharFilter2(Reader in) {
       super(in);
     }
 
