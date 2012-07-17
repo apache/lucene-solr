@@ -1213,6 +1213,10 @@ Build
   tasks) to correctly encode build file names as URIs for later processing by
   XSL.  (Greg Bowyer, Uwe Schindler)
 
+* LUCENE-4165: Removed closing of the Reader used to read the affix file in
+   HunspellDictionary.  Consumers are now responsible for closing all InputStreams
+   once the Dictionary has been instantiated. (Torsten Krah, Uwe Schindler, Chris Male)
+
 ======================= Lucene 3.6.0 =======================
 
 Changes in backwards compatibility policy
