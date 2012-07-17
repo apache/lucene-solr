@@ -5,7 +5,7 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 3.6.1 =======================
 
-Bug Fixes:
+Bug Fixes
 
 * LUCENE-3969: Throw IAE on bad arguments that could cause confusing 
   errors in KeywordTokenizer. 
