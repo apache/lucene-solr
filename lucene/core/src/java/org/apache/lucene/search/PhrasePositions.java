@@ -84,7 +84,7 @@ final class PhrasePositions {
   /** for debug purposes */
   @Override
   public String toString() {
-    String s = "d:"+doc+" offset:"+offset+" position:"+position+" c:"+count + " actualPos: " + (position + offset);
+    String s = "d:"+doc+" offset:"+offset+" position:"+position+" c:"+count;
     if (rptGroup >=0 ) {
       s += " rpt:"+rptGroup+",i"+rptInd;
     }

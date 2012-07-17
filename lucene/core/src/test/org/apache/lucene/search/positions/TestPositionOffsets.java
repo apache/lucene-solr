@@ -34,8 +34,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-import java.io.IOException;
-
 public class TestPositionOffsets extends LuceneTestCase {
 
   // What am I testing here?
@@ -112,8 +110,8 @@ public class TestPositionOffsets extends LuceneTestCase {
     assertEquals(0, positions.advanceTo(nextDoc));
     for (int i = 0; i < startOffsets.length; i++) {
       PositionIntervalIterator.PositionInterval interval = positions.next();
-      assertEquals(startOffsets[i], interval.offsetBegin);
-      assertEquals(endOffsets[i], interval.offsetEnd);
+      assertEquals("i: " + i, startOffsets[i], interval.offsetBegin);
+      assertEquals("i: " + i, endOffsets[i], interval.offsetEnd);
     }
 
     assertNull(positions.next());

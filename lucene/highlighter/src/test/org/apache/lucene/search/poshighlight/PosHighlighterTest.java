@@ -47,6 +47,7 @@ import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInter
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -380,17 +381,65 @@ public class PosHighlighterTest extends LuceneTestCase {
         frags[0]);
     close();
   }
+  
+  public void testMultiPhraseQuery() throws Exception {
+    MultiPhraseQuery query = new MultiPhraseQuery();
+    insertDocs(analyzer, "pease porridge hot but not too hot or otherwise pease porridge cold");
+
+    query.add(terms(F, "pease"), 0);
+    query.add(terms(F, "porridge"), 1);
+    query.add(terms(F, "hot", "cold"), 2);
+    query.setSlop(1);
+    
+    String[] frags = doSearch(query, Integer.MAX_VALUE);
+    assertEquals("<B>pease</B> <B>porridge</B> <B>hot</B> but not too hot or otherwise <B>pease</B> <B>porridge</B> <B>cold</B>", frags[0]);
+
+    close();
+  }
+  
+  @Ignore("not implemented yet")
+  public void testMultiPhraseQueryCollisions() throws Exception {
+    MultiPhraseQuery query = new MultiPhraseQuery();
+    insertDocs(analyzer, "pease porridge hot not too hot or otherwise pease porridge porridge");
+
+    query.add(terms(F, "pease"), 0);
+    query.add(terms(F, "porridge"), 1);
+    query.add(terms(F, "coldasice", "porridge" ), 2);
+    query.setSlop(1);
+    
+    String[] frags = doSearch(query, Integer.MAX_VALUE);
+    assertEquals("pease porridge hot but not too hot or otherwise <B>pease</B> <B>porridge</B> <B>porridge</B>", frags[0]);
+
+    close();
+  }
+    
+    private Term[] terms(String field, String...tokens) {
+      Term[] terms = new Term[tokens.length];
+      for (int i = 0; i < tokens.length; i++) {
+        terms[i] = new Term(field, tokens[i]);
+      }
+      return terms;
+    }
 
   public void testSloppyPhraseQuery() throws Exception {
     assertSloppyPhrase( "a b c d a b c d e f", "a b <B>c</B> d <B>a</B> b c d e f", 2, "c", "a");
     assertSloppyPhrase( "a c e b d e f a b","<B>a</B> c e <B>b</B> d e f <B>a</B> <B>b</B>", 2, "a", "b");
-    assertSloppyPhrase( "X A X B A","<B>X</B> <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A X B A X B B A A X B A A","A A <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A A <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A X B A", "A A <B>X</B> <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "Y A X B A", "Y <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
+
+    assertSloppyPhrase( "X A X B A","<B>X</B> <B>A</B> X B <B>A</B>", 2, "X", "A", "A"); // non overlapping minmal!!
+    assertSloppyPhrase( "A A A X",null, 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A",  "A <B>A</B> <B>X</B> <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A Y B A", "A <B>A</B> <B>X</B> <B>A</B> Y B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X", null, 2, "X", "A", "A");
+    assertSloppyPhrase( "A X A", null, 1, "X", "A", "A");
+
+    assertSloppyPhrase( "A X B A", "<B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> X B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> X B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
+
+    assertSloppyPhrase( "A A X A X B A", "A <B>A</B> <B>X</B> <B>A</B> X B <B>A</B>", 2, "X", "A", "A");
     assertSloppyPhrase( "A A Y A X B A", "A A Y <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
     assertSloppyPhrase( "A A Y A X B A A", "A A Y <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A Y B A", "A A <B>X</B> <B>A</B> Y B <B>A</B>", 2, "X", "A", "A");
     assertSloppyPhrase( "A A X A Y B A", null , 1, "X", "A", "A");
     close();
   }
@@ -403,9 +452,10 @@ public class PosHighlighterTest extends LuceneTestCase {
     }
     
     pq.setSlop(slop);
+//    System.out.println(doc);
     String[] frags = doSearch(pq, 50);
     if (expected == null) {
-      assertNull(frags);
+      assertNull(frags != null ? frags[0] : "", frags);
     } else {
       assertEquals(expected, frags[0]);
     }

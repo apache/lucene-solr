@@ -25,7 +25,6 @@ final class IntervalQueueAnd extends IntervalQueue {
 
   int rightExtreme = Integer.MIN_VALUE;
   int rightExtremeOffset = Integer.MIN_VALUE;
-  int rightExtremeOrd = Integer.MIN_VALUE; // the ord of the queues right extreme - ordered case! 
   
   public IntervalQueueAnd(int size) {
     super(size);
@@ -37,22 +36,17 @@ final class IntervalQueueAnd extends IntervalQueue {
     currentCandidate.end = Integer.MIN_VALUE;
     rightExtreme = Integer.MIN_VALUE;
     rightExtremeOffset = Integer.MIN_VALUE;
-    rightExtremeOrd = Integer.MIN_VALUE;
   }
 
-  public void updateRightExtreme(IntervalRef ref) {
-    if (rightExtreme < ref.interval.end) {
-      rightExtreme = ref.interval.end;
-      rightExtremeOrd = ref.ord;
-    }
-    
-    rightExtremeOffset = Math.max(rightExtremeOffset, ref.interval.offsetEnd);
+  public void updateRightExtreme(PositionInterval interval) {
+    rightExtreme = Math.max(rightExtreme, interval.end);
+    rightExtremeOffset = Math.max(rightExtremeOffset, interval.offsetEnd);
   }
   
   public boolean topContainsQueueInterval() {
     PositionInterval interval = top().interval;
-    return interval.begin <= currentCandidate.begin
-        && currentCandidate.end <= rightExtreme;
+    return interval.begin < currentCandidate.begin
+        && currentCandidate.end < rightExtreme;
   }
  
   public void updateCurrentCandidate() {
@@ -67,6 +61,6 @@ final class IntervalQueueAnd extends IntervalQueue {
   protected boolean lessThan(IntervalRef left, IntervalRef right) {
     final PositionInterval a = left.interval;
     final PositionInterval b = right.interval;
-    return a.begin < b.begin || (a.begin == b.begin && a.end >= b.end);
+    return a.begin < b.begin || (a.begin == b.begin && a.end > b.end) || a.offsetBegin < b.offsetBegin;
   }
 }

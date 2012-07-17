@@ -38,9 +38,7 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
   private final IntervalQueueAnd queue;
   private final int nrMustMatch;
   private SnapshotPositionCollector snapshot;
-  private int matchDistance; // nocommit specialize for this or better move that
-                             // out of this class entirely
-  
+
   public ConjunctionPositionIterator(Scorer scorer, boolean collectPositions,
       PositionIntervalIterator... iterators) throws IOException {
     this(scorer, collectPositions, iterators.length, iterators);
@@ -51,16 +49,16 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
       throws IOException {
     super(scorer, iterators, new IntervalQueueAnd(iterators.length),
         collectPositions);
-    queue = (IntervalQueueAnd) super.queue; // avoid lots of casts?
+    this.queue = (IntervalQueueAnd) super.queue; // avoid lots of casts?
     this.nrMustMatch = minimuNumShouldMatch;
   }
   
   void advance() throws IOException {
     final IntervalRef top = queue.top();
     PositionInterval interval = null;
-    if ((interval = iterators[top.ord].next()) != null) {
+    if ((interval = iterators[top.index].next()) != null) {
       top.interval = interval;
-      queue.updateRightExtreme(top);
+      queue.updateRightExtreme(interval);
       queue.updateTop();
     } else {
       queue.pop();
@@ -79,20 +77,16 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     }
     do {
       queue.updateCurrentCandidate();
-      PositionInterval top = updateMatchDistance(queue.top()); // nocommit this
-                                                               // should be in a
-                                                               // specialized
-                                                               // class - used
-                                                               // for scoring in
-                                                               // sloppy phrase
-      if (queue.currentCandidate.begin == top.begin
-          && queue.currentCandidate.end == top.end) {
-        return queue.currentCandidate;
-      }
+      PositionInterval top = queue.top().interval; 
       if (collectPositions) {
         snapShotSubPositions(); // this looks odd? -> see SnapShotCollector below for
                                 // details!
       }
+      if (queue.currentCandidate.begin == top.begin
+          && queue.currentCandidate.end == top.end) {
+        return queue.currentCandidate;
+      }
+     
       advance();
       if (queue.size() < nrMustMatch) {
         break;
@@ -101,12 +95,6 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     return queue.currentCandidate; // TODO support payloads
   }
   
-  private final PositionInterval updateMatchDistance(IntervalRef top) {
-    final int end = queue.rightExtreme - queue.rightExtremeOrd;
-    final int head = (top.interval.begin - top.ord);
-    matchDistance = end - head;
-    return top.interval;
-  }
   
   @Override
   public int advanceTo(int docId) throws IOException {
@@ -118,13 +106,14 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
       
       final PositionInterval interval = iterators[i].next();
       if (interval != null) {
-        IntervalRef intervalRef = new IntervalRef(interval, i);
-        queue.updateRightExtreme(intervalRef);
+        IntervalRef intervalRef = new IntervalRef(interval, i); // TODO maybe reuse?
+        queue.updateRightExtreme(intervalRef.interval);
         queue.add(intervalRef);
       }
     }
     return currentDoc;
   }
+  
   
   private void snapShotSubPositions() {
     if (snapshot == null) {
@@ -152,10 +141,6 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     } else {
       snapshot.replay(collector);
     }
-  }
-  
-  int matchDistance() { // nocommit move out!
-    return matchDistance;
   }
   
   /*

@@ -20,10 +20,12 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -35,7 +37,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.OpenBitSet;
 
 final class SloppyPhraseScorer extends PhraseScorer {
-  
+//  private MaxLengthPositionIntervalIterator iter;
   private final int slop;
   private final int numPostings;
   private final PhraseQueue pq; // for advancing min position
@@ -54,15 +56,17 @@ final class SloppyPhraseScorer extends PhraseScorer {
     this.slop = slop;
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
+//    iter = (MaxLengthPositionIntervalIterator) positions(false, false, false);
   }
   
-  String current() {
-    StringBuilder b = new StringBuilder();
-    for (PhrasePositions phrasePositions : _THEPOS) {
-      b.append(phrasePositions).append("\n");
-    }
-    return b.toString();
-  }
+//  String current() {
+//    StringBuilder b = new StringBuilder();
+//    int i = 0;
+//    for (PhrasePositions phrasePositions : postings) {
+//      b.append(i++).append(phrasePositions).append("\n");
+//    }
+//    return b.toString();
+//  }
 
   /**
    * Score a candidate doc for all slop-valid position-combinations (matches) 
@@ -84,53 +88,74 @@ final class SloppyPhraseScorer extends PhraseScorer {
    */
   @Override
   protected float phraseFreq() throws IOException {
+//    float freq = 0.0f;
+//
+//    if (1 ==1) {
+//    if (iter.docID() != this.docID()) {
+//      iter.advanceTo(this.docID());
+//    }
+//    while(iter.next() != null) {
+//      freq += docScorer.computeSlopFactor(iter.matchLength()); // score match
+//    }
+//    
+//    return freq;
+//    }
+//    freq = 0.0f;
+
     if (!initPhrasePositions()) {
       return 0.0f;
     }
+   
     float freq = 0.0f;
     PhrasePositions pp = pq.pop();
     int matchLength = end - pp.position;
     int next = pq.top().position; 
     
-    int _lPos = pp.position;
-    int _lend = end;
-    String _s = current();
-    Term[] _lTerms = pp.terms;
+//    int _lPos = pp.position;
+//    int _lend = end;
+//    String _s = current();
+//    Term[] _lTerms = pp.terms;
     while (advancePP(pp)) {
       if (hasRpts && !advanceRpts(pp)) {
         break; // pps exhausted
       }
       if (pp.position > next) { // done minimizing current match-length 
         if (matchLength <= slop) {
-          System.out.println(_s);
-          System.out.println("match: " + _lPos + " " + _lend + " " + Arrays.toString(_lTerms));
+//          System.out.println("match: " + _lPos + " " + _lend + " " + Arrays.toString(_lTerms)  + " " + matchLength);
+//          System.out.println(_s);
+//          System.out.println( docScorer.computeSlopFactor(matchLength));
           freq += docScorer.computeSlopFactor(matchLength); // score match
         }      
         pq.add(pp);
         pp = pq.pop();
         next = pq.top().position;
         matchLength = end - pp.position;
-        _lPos = pp.position;
-        _lend = end;
-        _lTerms = pp.terms;
-        _s = current();
+//        _lPos = pp.position;
+//        _lend = end;
+//        _lTerms = pp.terms;
+//        _s = current();
       } else {
         int matchLength2 = end - pp.position;
         
         if (matchLength2 < matchLength) {
-          _lPos = pp.position;
-          _lend = end;
-          _lTerms = pp.terms;
-          _s = current();
+//          _lPos = pp.position;
+//          _lend = end;
+//          _lTerms = pp.terms;
+//          _s = current();
           matchLength = matchLength2;
         }
       }
     }
     if (matchLength <= slop) {
-      System.out.println(_s);
-      System.out.println("match: " + _lPos + " " + _lend + " " + Arrays.toString(_lTerms));
+//      System.out.println("match: " + _lPos + " " + _lend + " " + Arrays.toString(_lTerms) + " " + matchLength);
+//      System.out.println(_s);
+//      System.out.println( docScorer.computeSlopFactor(matchLength));
+
       freq += docScorer.computeSlopFactor(matchLength); // score match
+
     }    
+//    System.out.println("res: " + freq + " doc: " + this.docID());
+    
     return freq;
   }
 
@@ -518,11 +543,12 @@ final class SloppyPhraseScorer extends PhraseScorer {
   public PositionIntervalIterator positions(boolean needsPayloads,
       boolean needsOffsets, boolean collectPositions) throws IOException {
     // nocommit - payloads?
-    PositionIntervalIterator[] termIters = new PositionIntervalIterator[postings.length];
-    Map<Term, MinPosition> map = new HashMap<Term, MinPosition>();
+    Map<Term, IterAndOffsets> map = new HashMap<Term, IterAndOffsets>();
+
     for (int i = 0; i < postings.length; i++) {
-      MinPosition minPositions;
       Term term = postings[i].terms[0];
+//      System.out.println(Arrays.toString(postings[i].terms));
+      IterAndOffsets iterAndOffset;
       /*
        * NOCOMMIT This currently only works if there is only one term per position.
        * For multiple terms we need to extend the MaxLengthPI. and specialize 
@@ -531,68 +557,43 @@ final class SloppyPhraseScorer extends PhraseScorer {
        * ords to them internally everything else should just work as before
        */
       if (!map.containsKey(term)) {
-        minPositions = new MinPosition();
-        map.put(term, minPositions);
+        DocsAndPositionsEnum docsAndPosEnum = postings[i].factory
+            .docsAndPositionsEnum(needsOffsets);
+        iterAndOffset = new IterAndOffsets(new TermScorer.TermPositions(this, docsAndPosEnum, needsPayloads,
+            collectPositions));
+        map.put(term, iterAndOffset);
       } else {
-        minPositions = map.get(term);
+        iterAndOffset = map.get(term);
       }
-      DocsAndPositionsEnum docsAndPosEnum = postings[i].factory
-          .docsAndPositionsEnum(needsOffsets);
-      termIters[i] = new GapEnforcingPositionIterator(this, collectPositions, minPositions,
-          new TermScorer.TermPositions(this, docsAndPosEnum, needsPayloads,
-              collectPositions), 0);
+      iterAndOffset.offsets.add(postings[i].position);
+//      System.out.println("POS: " + postings[i].position + " " + term);
     }
-    ConjunctionPositionIterator iter = new ConjunctionPositionIterator(this,
-        collectPositions, termIters);
-    return new MaxLengthPositionIntervalIterator(this, slop, iter);
+    Collection<IterAndOffsets> values = map.values();
+    PositionIntervalIterator[] iters = new PositionIntervalIterator[values.size()];
+    int i = 0;
+    for (IterAndOffsets iterAndOffsets : values) {
+      iters[i++] = MaxLengthPositionIntervalIterator.create(this, collectPositions, iterAndOffsets.iter, iterAndOffsets.toIntArray());
+    }
+    return new MaxLengthPositionIntervalIterator(this, slop, collectPositions, new ConjunctionPositionIterator(this, collectPositions, iters));
   }
   
-  private static final class MinPosition {
-    int position = -1;
-  }
-  
-  private static class GapEnforcingPositionIterator extends PositionIntervalIterator {
-
-    private final MinPosition minPosition;
-    private final PositionIntervalIterator other;
-    private final int delta;
-
-    public GapEnforcingPositionIterator(Scorer scorer, boolean collectPositions, MinPosition minPosition, PositionIntervalIterator other, int delta) {
-      super(scorer, collectPositions);
-      this.other = other;
-      this.minPosition = minPosition;
-      this.delta = delta;
-    }
-
-    @Override
-    public int advanceTo(int docId) throws IOException {
-      return other.advanceTo(docId);
-    }
-
-    @Override
-    public PositionInterval next() throws IOException {
-      PositionInterval i = null;
-      while((i = other.next()) != null) {
-        assert i.end == i.begin;
-        if (i.begin > minPosition.position - delta) {
-          minPosition.position = i.begin;
-          break;
-        }
-      }
-      
-      return i;
-    }
-
-    @Override
-    public void collect(PositionCollector collector) {
-      assert collectPositions;
-      other.collect(collector);
-    }
-
-    @Override
-    public PositionIntervalIterator[] subs(boolean inOrder) {
-      return other.subs(inOrder);
+  private static class IterAndOffsets {
+    final List<Integer> offsets = new ArrayList<Integer>();
+    final PositionIntervalIterator iter;
+    IterAndOffsets(PositionIntervalIterator iter) {
+      this.iter = iter;
     }
     
+    public int[] toIntArray() {
+      int[] array = new int[offsets.size()];
+      for (int i = 0; i < array.length; i++) {
+        array[i] = offsets.get(i).intValue();
+      }
+      return array;
+    }
+    
+    
   }
+  
+
 }

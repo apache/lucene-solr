@@ -46,7 +46,6 @@ abstract class PhraseScorer extends Scorer {
     this.postings = postings;
     reset(false);
   }
-  protected PhrasePositions[] _THEPOS;
   void reset(boolean needsOffsets) throws IOException {
     // convert tps to a list of phrase positions.
     // note: phrase-position differs from term-position in that its position
@@ -54,14 +53,11 @@ abstract class PhraseScorer extends Scorer {
     // this allows to easily identify a matching (exact) phrase 
     // when all PhrasePositions have exactly the same position.
     if (postings.length > 0) {
-      _THEPOS = new PhrasePositions[postings.length];
       min = new PhrasePositions(postings[0].postings, postings[0].position, 0, postings[0].terms);
-      _THEPOS[0] = min;
       max = min;
       max.doc = -1;
       for (int i = 1; i < postings.length; i++) {
         PhrasePositions pp = new PhrasePositions(postings[i].postings, postings[i].position, i, postings[i].terms);
-        _THEPOS[i] = pp;
         max.next = pp;
         max = pp;
         max.doc = -1;

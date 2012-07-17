@@ -43,7 +43,7 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
   void advance() throws IOException {
     final IntervalRef top = queue.top();
     PositionInterval interval = null;
-    if ((interval = iterators[top.ord].next()) != null) {
+    if ((interval = iterators[top.index].next()) != null) {
       top.interval = interval;
       queue.updateTop();
     } else {
@@ -72,7 +72,7 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
   public void collect(PositionCollector collector) {
     assert collectPositions;
     collector.collectComposite(scorer, queue.currentCandidate, currentDoc);
-    iterators[queue.top().ord].collect(collector);
+    iterators[queue.top().index].collect(collector);
   }
 
   @Override

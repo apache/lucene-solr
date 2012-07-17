@@ -84,7 +84,7 @@ public class TestSimplePositions extends LuceneTestCase {
       "u2 xx u1 u2",//8
       "u1 u2 xx u2",//9
       "u2 u1 xx u2",//10
-      "t1 t2 t1 t3 t2 t3"};//10
+      "t1 t2 t1 t3 t2 t3"};//11
   
   public TermQuery makeTermQuery(String text) {
     return new TermQuery(new Term(field, text));
@@ -253,7 +253,7 @@ public class TestSimplePositions extends LuceneTestCase {
       PositionInterval interval = positions.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 4, positions.docID());
-      assertEquals("start", 1, interval.begin);
+      assertEquals("start " + interval, 1, interval.begin);
       assertEquals("end", 2, interval.end);
       
       positions.advanceTo(5);
@@ -353,6 +353,13 @@ public class TestSimplePositions extends LuceneTestCase {
       assertEquals("doc", 9, iterator.docID());
       assertEquals("start", 0, interval.begin);
       assertEquals("end", 1, interval.end);
+      
+      // this on is tricky since the two terms are overlapping - need to find a solution for this ie. dedicated query?
+//      interval = iterator.next(); 
+//      assertNotNull("Does not have next and it should", interval);
+//      assertEquals("doc", 9, iterator.docID());
+//      assertEquals("start", 0, interval.begin);
+//      assertEquals("end", 3, interval.end);
       interval = iterator.next();
       assertNull("Has next and it shouldn't", interval);
       
