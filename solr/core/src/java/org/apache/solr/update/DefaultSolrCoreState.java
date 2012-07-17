@@ -92,16 +92,18 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         wait();
       } catch (InterruptedException e) {}
     }
-    
-    if (indexWriter != null) {
-      indexWriter.close();
+    try {
+      if (indexWriter != null) {
+        indexWriter.close();
+      }
+      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false,
+          true);
+      // we need to null this so it picks up the new writer next get call
+      refCntWriter = null;
+    } finally {
+      pauseWriter = false;
+      notifyAll();
     }
-    indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2",
-        false, true);
-    // we need to null this so it picks up the new writer next get call
-    refCntWriter = null;
-    pauseWriter = false;
-    notifyAll();
   }
 
   @Override
