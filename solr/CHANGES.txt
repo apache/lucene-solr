@@ -21,6 +21,9 @@ See README.txt and http://lucene.apache.org/solr for more information
 on how to get started.
 
 ==================  3.6.1  ==================
+More information about this release, including any errata related to the 
+release notes, upgrade instructions, or other changes may be found online at:
+   https://wiki.apache.org/solr/Solr3.6.1
 
 Bug Fixes:
 

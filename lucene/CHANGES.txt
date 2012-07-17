@@ -4,6 +4,9 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 3.6.1 =======================
+More information about this release, including any errata related to the 
+release notes, upgrade instructions, or other changes may be found online at:
+   https://wiki.apache.org/lucene-java/Lucene3.6.1
 
 Bug Fixes
 
@@ -40,7 +43,7 @@ Optimizations
   the cloned instances. WeakIdentityMap was extended to support
   iterating over its keys.  (Uwe Schindler)
 
-Tests:
+Tests
 
 * LUCENE-3873: add MockGraphTokenFilter, testing analyzers with
   random graph tokens.  (Mike McCandless)
