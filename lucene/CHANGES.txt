@@ -1172,6 +1172,10 @@ Bug fixes
 * LUCENE-4147: Fixed thread safety issues when rollback() and commit()
   are called simultaneously.  (Simon Willnauer, Mike McCandless)
 
+* LUCENE-4165: Removed closing of the Reader used to read the affix file in
+  HunspellDictionary.  Consumers are now responsible for closing all InputStreams
+  once the Dictionary has been instantiated. (Torsten Krah, Uwe Schindler, Chris Male)
+
 Documentation
 
 * LUCENE-3958: Javadocs corrections for IndexWriter.
@@ -1212,10 +1216,6 @@ Build
 * LUCENE-4059: Improve ANT task prepare-webpages (used by documentation
   tasks) to correctly encode build file names as URIs for later processing by
   XSL.  (Greg Bowyer, Uwe Schindler)
-
-* LUCENE-4165: Removed closing of the Reader used to read the affix file in
-   HunspellDictionary.  Consumers are now responsible for closing all InputStreams
-   once the Dictionary has been instantiated. (Torsten Krah, Uwe Schindler, Chris Male)
 
 ======================= Lucene 3.6.0 =======================
 
