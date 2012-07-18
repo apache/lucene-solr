@@ -532,6 +532,11 @@ class JoinQuery extends Query {
     public float score() throws IOException {
       return score;
     }
+    
+    @Override
+    public float freq() throws IOException {
+      return 1;
+    }
 
     @Override
     public int advance(int target) throws IOException {

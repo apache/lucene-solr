@@ -358,49 +358,17 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       final DocsAndFreqs[] docsAndFreqs = new DocsAndFreqs[weights.size()];
       for (int i = 0; i < docsAndFreqs.length; i++) {
         final TermWeight weight = (TermWeight) weights.get(i);
-        final TermsEnum termsEnum = weight.getTermsEnum(context);
-        if (termsEnum == null) {
+        final Scorer scorer = weight.scorer(context, true, false, acceptDocs);
+        if (scorer == null) {
           return null;
         }
-        final ExactSimScorer docScorer = weight.createDocScorer(context);
-        final DocsEnum docsAndFreqsEnum = termsEnum.docs(acceptDocs, null, true);
-        if (docsAndFreqsEnum == null) {
-          // TODO: we could carry over TermState from the
-          // terms we already seek'd to, to save re-seeking
-          // to make the match-only scorer, but it's likely
-          // rare that BQ mixes terms from omitTf and
-          // non-omitTF fields:
-
-          // At least one sub cannot provide freqs; abort
-          // and fallback to full match-only scorer:
-          return createMatchOnlyConjunctionTermScorer(context, acceptDocs);
+        if (scorer instanceof TermScorer) {
+          docsAndFreqs[i] = new DocsAndFreqs((TermScorer) scorer);
+        } else {
+          docsAndFreqs[i] = new DocsAndFreqs((MatchOnlyTermScorer) scorer);
         }
-
-        docsAndFreqs[i] = new DocsAndFreqs(docsAndFreqsEnum,
-                                           docsAndFreqsEnum,
-                                           termsEnum.docFreq(), docScorer);
       }
       return new ConjunctionTermScorer(this, disableCoord ? 1.0f : coord(
-          docsAndFreqs.length, docsAndFreqs.length), docsAndFreqs);
-    }
-
-    private Scorer createMatchOnlyConjunctionTermScorer(AtomicReaderContext context, Bits acceptDocs)
-        throws IOException {
-
-      final DocsAndFreqs[] docsAndFreqs = new DocsAndFreqs[weights.size()];
-      for (int i = 0; i < docsAndFreqs.length; i++) {
-        final TermWeight weight = (TermWeight) weights.get(i);
-        final TermsEnum termsEnum = weight.getTermsEnum(context);
-        if (termsEnum == null) {
-          return null;
-        }
-        final ExactSimScorer docScorer = weight.createDocScorer(context);
-        docsAndFreqs[i] = new DocsAndFreqs(null,
-                                           termsEnum.docs(acceptDocs, null, false),
-                                           termsEnum.docFreq(), docScorer);
-      }
-
-      return new MatchOnlyConjunctionTermScorer(this, disableCoord ? 1.0f : coord(
           docsAndFreqs.length, docsAndFreqs.length), docsAndFreqs);
     }
     

@@ -131,6 +131,11 @@ class BooleanScorer2 extends Scorer {
     }
 
     @Override
+    public float freq() throws IOException {
+      return 1;
+    }
+
+    @Override
     public int docID() {
       return scorer.docID();
     }
@@ -310,8 +315,8 @@ class BooleanScorer2 extends Scorer {
   }
 
   @Override
-  public float freq() {
-    return coordinator.nrMatchers;
+  public float freq() throws IOException {
+    return countingSumScorer.freq();
   }
 
   @Override
@@ -323,13 +328,13 @@ class BooleanScorer2 extends Scorer {
   public Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<ChildScorer>();
     for (Scorer s : optionalScorers) {
-      children.add(new ChildScorer(s, Occur.SHOULD.toString()));
+      children.add(new ChildScorer(s, "SHOULD"));
     }
     for (Scorer s : prohibitedScorers) {
-      children.add(new ChildScorer(s, Occur.MUST_NOT.toString()));
+      children.add(new ChildScorer(s, "MUST_NOT"));
     }
     for (Scorer s : requiredScorers) {
-      children.add(new ChildScorer(s, Occur.MUST.toString()));
+      children.add(new ChildScorer(s, "MUST"));
     }
     return children;
   }

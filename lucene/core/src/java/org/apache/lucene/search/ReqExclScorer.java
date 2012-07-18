@@ -18,7 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-
+import java.util.Collection;
+import java.util.Collections;
 
 /** A Scorer for queries with a required subscorer
  * and an excluding (prohibited) sub DocIdSetIterator.
@@ -103,6 +104,16 @@ class ReqExclScorer extends Scorer {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
   }
   
+  @Override
+  public float freq() throws IOException {
+    return reqScorer.freq();
+  }
+
+  @Override
+  public Collection<ChildScorer> getChildren() {
+    return Collections.singleton(new ChildScorer(reqScorer, "FILTERED"));
+  }
+
   @Override
   public int advance(int target) throws IOException {
     if (reqScorer == null) {

@@ -225,6 +225,11 @@ final class JustCompileSearch {
     public float score() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+    
+    @Override
+    public float freq() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
 
     @Override
     public int docID() {

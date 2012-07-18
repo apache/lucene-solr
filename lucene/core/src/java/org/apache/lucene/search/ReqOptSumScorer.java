@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /** A Scorer for queries with a required part and an optional part.
  * Delays skipTo() on the optional part until a score() is needed.
@@ -39,6 +41,8 @@ class ReqOptSumScorer extends Scorer {
       Scorer optScorer)
   {
     super(reqScorer.weight);
+    assert reqScorer != null;
+    assert optScorer != null;
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
   }
@@ -80,5 +84,19 @@ class ReqOptSumScorer extends Scorer {
     return optScorerDoc == curDoc ? reqScore + optScorer.score() : reqScore;
   }
 
+  @Override
+  public float freq() throws IOException {
+    // we might have deferred advance()
+    score();
+    return (optScorer != null && optScorer.docID() == reqScorer.docID()) ? 2 : 1;
+  }
+
+  @Override
+  public Collection<ChildScorer> getChildren() {
+    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>(2);
+    children.add(new ChildScorer(reqScorer, "MUST"));
+    children.add(new ChildScorer(optScorer, "SHOULD"));
+    return children;
+  }
 }
 

@@ -18,6 +18,8 @@ package org.apache.lucene.queries;
  */
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.Arrays;
 
@@ -322,6 +324,16 @@ public class CustomScoreQuery extends Query {
         vScores[i] = valSrcScorers[i].score();
       }
       return qWeight * provider.customScore(subQueryScorer.docID(), subQueryScorer.score(), vScores);
+    }
+
+    @Override
+    public float freq() throws IOException {
+      return subQueryScorer.freq();
+    }
+
+    @Override
+    public Collection<ChildScorer> getChildren() {
+      return Collections.singleton(new ChildScorer(subQueryScorer, "CUSTOM"));
     }
 
     @Override

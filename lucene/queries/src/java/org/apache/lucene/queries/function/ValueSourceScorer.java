@@ -82,4 +82,9 @@ public class ValueSourceScorer extends Scorer {
   public float score() throws IOException {
     return values.floatVal(doc);
   }
+
+  @Override
+  public float freq() throws IOException {
+    return 1;
+  }
 }

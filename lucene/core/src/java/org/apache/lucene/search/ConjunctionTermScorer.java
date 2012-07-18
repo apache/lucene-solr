@@ -18,10 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
 import org.apache.lucene.util.ArrayUtil;
 
 /** Scorer for conjunctions, sets of terms, all of which are required. */
@@ -91,23 +92,43 @@ class ConjunctionTermScorer extends Scorer {
   public float score() throws IOException {
     float sum = 0.0f;
     for (DocsAndFreqs docs : docsAndFreqs) {
-      sum += docs.docScorer.score(lastDoc, docs.docs.freq());
+      sum += docs.scorer.score();
     }
     return sum * coord;
   }
+  
+  @Override
+  public float freq() {
+    return docsAndFreqs.length;
+  }
+
+  @Override
+  public Collection<ChildScorer> getChildren() {
+    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>(docsAndFreqs.length);
+    for (DocsAndFreqs docs : docsAndFreqs) {
+      children.add(new ChildScorer(docs.scorer, "MUST"));
+    }
+    return children;
+  }
 
   static final class DocsAndFreqs {
-    final DocsEnum docsAndFreqs;
     final DocsEnum docs;
     final int docFreq;
-    final ExactSimScorer docScorer;
+    final Scorer scorer;
     int doc = -1;
 
-    DocsAndFreqs(DocsEnum docsAndFreqs, DocsEnum docs, int docFreq, ExactSimScorer docScorer) {
-      this.docsAndFreqs = docsAndFreqs;
+    DocsAndFreqs(TermScorer termScorer) {
+      this(termScorer, termScorer.getDocsEnum(), termScorer.getDocFreq());
+    }
+    
+    DocsAndFreqs(MatchOnlyTermScorer termScorer) {
+      this(termScorer, termScorer.getDocsEnum(), termScorer.getDocFreq());
+    }
+    
+    DocsAndFreqs(Scorer scorer, DocsEnum docs, int docFreq) {
       this.docs = docs;
       this.docFreq = docFreq;
-      this.docScorer = docScorer;
+      this.scorer = scorer;
     }
   }
 }

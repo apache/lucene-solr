@@ -74,6 +74,16 @@ Bug Fixes
 * LUCENE-4222: TieredMergePolicy.getFloorSegmentMB was returning the
   size in bytes not MB (Chris Fuller via Mike McCandless)
 
+* LUCENE-3505: Fix bug (Lucene 4.0alpha only) where boolean conjunctions
+  were sometimes scored incorrectly. Conjunctions of only termqueries where
+  at least one term omitted term frequencies (IndexOptions.DOCS_ONLY) would 
+  be scored as if all terms omitted term frequencies.  (Robert Muir)
+
+* LUCENE-2686, LUCENE-3505: Fixed BooleanQuery scorers to return correct 
+  freq().  Added support for scorer navigation API (Scorer.getChildren) to 
+  all queries.  Made Scorer.freq() abstract. 
+  (Koji Sekiguchi, Mike McCandless, Robert Muir)
+
 Build
 
 * LUCENE-4094: Support overriding file.encoding on forked test JVMs

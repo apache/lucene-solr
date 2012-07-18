@@ -161,6 +161,7 @@ public class ToChildBlockJoinQuery extends Query {
     private final Bits acceptDocs;
 
     private float parentScore;
+    private float parentFreq = 1;
 
     private int childDoc = -1;
     private int parentDoc;
@@ -175,7 +176,7 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public Collection<ChildScorer> getChildren() {
-      return Collections.singletonList(new ChildScorer(parentScorer, "BLOCK_JOIN"));
+      return Collections.singleton(new ChildScorer(parentScorer, "BLOCK_JOIN"));
     }
 
     @Override
@@ -218,6 +219,7 @@ public class ToChildBlockJoinQuery extends Query {
             if (childDoc < parentDoc) {
               if (doScores) {
                 parentScore = parentScorer.score();
+                parentFreq = parentScorer.freq();
               }
               //System.out.println("  " + childDoc);
               return childDoc;
@@ -248,6 +250,11 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
+    public float freq() throws IOException {
+      return parentFreq;
+    }
+
+    @Override
     public int advance(int childTarget) throws IOException {
       assert childTarget >= parentBits.length() || !parentBits.get(childTarget);
       
@@ -269,6 +276,7 @@ public class ToChildBlockJoinQuery extends Query {
         }
         if (doScores) {
           parentScore = parentScorer.score();
+          parentFreq = parentScorer.freq();
         }
         final int firstChild = parentBits.prevSetBit(parentDoc-1);
         //System.out.println("  firstChild=" + firstChild);
