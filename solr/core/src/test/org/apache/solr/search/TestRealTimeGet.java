@@ -112,60 +112,6 @@ public class TestRealTimeGet extends TestRTGBase {
 
 
   @Test
-  public void testGetRealtimeReload() throws Exception {
-    clearIndex();
-    assertU(commit());
-    long version = addAndGetVersion(sdoc("id","1") , null);
-
-   //  h.getCoreContainer().reload(h.getCore().getName());
-
-    assertU(commit("openSearcher","false"));   // should cause a RTG searcher to be opened
-
-    // should also use the RTG searcher (commit should have cleared the translog cache)
-    assertJQ(req("qt","/get","id","1")
-        ,"=={'doc':{'id':'1','_version_':" + version + "}}"
-    );
-
-    assertU(commit("softCommit","true"));   // open a normal (caching) NRT searcher
-
-    h.getCoreContainer().reload(h.getCore().getName());
-
-    Random rand = random();
-    for (int i=0; i<10; i++) {
-      if (rand.nextBoolean()) {
-        version = addAndGetVersion(sdoc("id","1") , null);
-      }
-
-      if (rand.nextBoolean()) {
-        if (rand.nextBoolean()) {
-          assertU(commit("openSearcher","false"));   // should cause a RTG searcher to be opened as well
-        } else {
-          assertU(commit("softCommit", ""+rand.nextBoolean()));
-        }
-      }
-
-      if (rand.nextBoolean()) {
-        // RTG should always be able to see the last version
-        assertJQ(req("qt","/get","id","1")
-            ,"=={'doc':{'id':'1','_version_':" + version + "}}"
-        );
-      }
-
-      if (rand.nextBoolean()) {
-        // a normal search should always find 1 doc
-        assertJQ(req("q","id:1")
-            ,"/response/numFound==1"
-        );
-      }
-    }
-
-
-
-    // test framework should ensure that all searchers opened have been closed.
-  }
-
-
-  @Test
   public void testVersions() throws Exception {
     clearIndex();
     assertU(commit());
