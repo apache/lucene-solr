@@ -117,6 +117,9 @@ Other Changes
   
 * SOLR-3600: Raise the default zkClientTimeout from 10 seconds to 15 seconds. (Mark Miller)
 
+* SOLR-3215: Clone SolrInputDocument when distrib indexing so that update processors after
+  the distrib update process do not process the document twice. (Mark Miller)
+
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:

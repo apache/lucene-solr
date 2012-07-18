@@ -199,4 +199,19 @@ public class SolrInputField implements Iterable<Object>, Serializable
   {
     return name + ((boost == 1.0) ? "=" : ("("+boost+")=")) + value;
   }
+
+  public SolrInputField deepCopy() {
+    SolrInputField clone = new SolrInputField(name);
+    clone.boost = boost;
+    // We can't clone here, so we rely on simple primitives
+    if (value instanceof Collection) {
+      Collection<Object> values = (Collection<Object>) value;
+      Collection<Object> cloneValues = new ArrayList<Object>(values.size());
+      cloneValues.addAll(values);
+      clone.value = cloneValues;
+    } else {
+      clone.value = value;
+    }
+    return clone;
+  }
 }
