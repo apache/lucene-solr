@@ -211,7 +211,6 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   @Test
   public void testOneMatchQuery() throws Exception {
     NumericRangeQuery<Integer> q = NumericRangeQuery.newIntRange("ascfield8", 8, 1000, 1000, true, true);
-    assertSame(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE, q.getRewriteMethod());
     TopDocs topDocs = searcher.search(q, noDocs);
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);

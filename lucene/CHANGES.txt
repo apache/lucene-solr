@@ -54,6 +54,9 @@ Optimizations
 * LUCENE-4184: Performance improvements to the aligned packed bits impl.
   (Toke Eskildsen, Adrien Grand)
 
+* LUCENE-4235: Remove enforcing of Filter rewrite for NRQ queries.
+  (Uwe Schindler)
+
 Bug Fixes
 
 * LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,

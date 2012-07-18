@@ -173,35 +173,6 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     this.max = max;
     this.minInclusive = minInclusive;
     this.maxInclusive = maxInclusive;
-
-    // For bigger precisionSteps this query likely
-    // hits too many terms, so set to CONSTANT_SCORE_FILTER right off
-    // (especially as the FilteredTermsEnum is costly if wasted only for AUTO tests because it
-    // creates new enums from IndexReader for each sub-range)
-    switch (dataType) {
-      case LONG:
-      case DOUBLE:
-        setRewriteMethod( (precisionStep > 6) ?
-          CONSTANT_SCORE_FILTER_REWRITE : 
-          CONSTANT_SCORE_AUTO_REWRITE_DEFAULT
-        );
-        break;
-      case INT:
-      case FLOAT:
-        setRewriteMethod( (precisionStep > 8) ?
-          CONSTANT_SCORE_FILTER_REWRITE : 
-          CONSTANT_SCORE_AUTO_REWRITE_DEFAULT
-        );
-        break;
-      default:
-        // should never happen
-        throw new IllegalArgumentException("Invalid numeric NumericType");
-    }
-    
-    // shortcut if upper bound == lower bound
-    if (min != null && min.equals(max)) {
-      setRewriteMethod(CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
-    }
   }
   
   /**
@@ -319,9 +290,10 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   @Override @SuppressWarnings("unchecked")
   protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
     // very strange: java.lang.Number itsself is not Comparable, but all subclasses used here are
-    return (min != null && max != null && ((Comparable<T>) min).compareTo(max) > 0) ?
-      TermsEnum.EMPTY :
-      new NumericRangeTermsEnum(terms.iterator(null));
+    if (min != null && max != null && ((Comparable<T>) min).compareTo(max) > 0) {
+      return TermsEnum.EMPTY;
+    }
+    return new NumericRangeTermsEnum(terms.iterator(null));
   }
 
   /** Returns <code>true</code> if the lower endpoint is inclusive */
