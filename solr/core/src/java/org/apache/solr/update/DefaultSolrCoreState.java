@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.cloud.RecoveryStrategy;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
@@ -92,10 +93,16 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         wait();
       } catch (InterruptedException e) {}
     }
-    try {
-      if (indexWriter != null) {
+    
+    if (indexWriter != null) {
+      try {
         indexWriter.close();
+      } catch (Exception e) {
+        SolrException.log(log, "Error closing old IndexWriter", e);
       }
+    }
+    
+    try {
       indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false,
           true);
       // we need to null this so it picks up the new writer next get call

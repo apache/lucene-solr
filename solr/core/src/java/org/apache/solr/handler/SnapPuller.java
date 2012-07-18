@@ -20,6 +20,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -32,6 +33,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import static org.apache.solr.handler.ReplicationHandler.*;
@@ -321,9 +323,10 @@ public class SnapPuller {
       LOG.info("Starting download to " + tmpIndexDir + " fullCopy=" + isFullCopyNeeded);
       successfulInstall = false;
       boolean deleteTmpIdxDir = true;
-      File indexDir = null ;
+
+      final File indexDir = new File(core.getIndexDir());
+      Directory oldDirectory = null;
       try {
-        indexDir = new File(core.getIndexDir());
         downloadIndexFiles(isFullCopyNeeded, tmpIndexDir, latestGeneration);
         LOG.info("Total time taken for download : " + ((System.currentTimeMillis() - replicationStartTime) / 1000) + " secs");
         Collection<Map<String, Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
@@ -345,14 +348,42 @@ public class SnapPuller {
           if (isFullCopyNeeded) {
             successfulInstall = modifyIndexProps(tmpIndexDir.getName());
             deleteTmpIdxDir =  false;
+            RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+            try {
+               oldDirectory = iw.get().getDirectory();
+            } finally {
+              iw.decref();
+            }
           } else {
             successfulInstall = copyIndexFiles(tmpIndexDir, indexDir);
           }
           if (successfulInstall) {
             logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);
-            doCommit();
           }
         }
+        
+        if (isFullCopyNeeded) {
+          // we have to do this before commit
+          core.getDirectoryFactory().addCloseListener(oldDirectory, new CloseListener(){
+
+            @Override
+            public void onClose() {
+              LOG.info("removing old index directory " + indexDir);
+              delTree(indexDir);
+            }
+            
+          });
+        }
+        
+        if (successfulInstall) {
+          if (isFullCopyNeeded) {
+            // let the system know we are changing dir's and the old one
+            // may be closed
+            core.getDirectoryFactory().doneWithDirectory(oldDirectory);
+          }
+          doCommit();
+        }
+        
         replicationStartTime = 0;
         return successfulInstall;
       } catch (ReplicationHandlerException e) {
@@ -368,10 +399,7 @@ public class SnapPuller {
         if (deleteTmpIdxDir) {
           LOG.info("removing temporary index download directory " + tmpIndexDir);
           delTree(tmpIndexDir);
-        } else {
-          LOG.info("removing old index directory " + indexDir);
-          delTree(indexDir);
-        }
+        } 
       }
     } finally {
       if (!successfulInstall) {
