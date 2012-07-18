@@ -18,10 +18,10 @@
 package org.apache.solr.common;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -182,6 +182,15 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
     return "SolrInputDocument" + _fields.values();
   }
   
+  public SolrInputDocument deepCopy() {
+    SolrInputDocument clone = new SolrInputDocument();
+    Set<Entry<String,SolrInputField>> entries = _fields.entrySet();
+    for (Map.Entry<String,SolrInputField> fieldEntry : entries) {
+      clone._fields.put(fieldEntry.getKey(), fieldEntry.getValue().deepCopy());
+    }
+    clone._documentBoost = _documentBoost;
+    return clone;
+  }
 
   //---------------------------------------------------
   // MAP interface

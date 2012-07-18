@@ -285,7 +285,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     boolean dropCmd = false;
     if (!forwardToLeader) {
-      dropCmd = versionAdd(cmd);
+      // clone the original doc
+      SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
+      dropCmd = versionAdd(cmd, clonedDoc);
+      cmd.solrDoc = clonedDoc;
     }
 
     if (dropCmd) {
@@ -393,10 +396,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   /**
    * @param cmd
+   * @param cloneDoc needs the version if it's assigned
    * @return whether or not to drop this cmd
    * @throws IOException
    */
-  private boolean versionAdd(AddUpdateCommand cmd) throws IOException {
+  private boolean versionAdd(AddUpdateCommand cmd, SolrInputDocument cloneDoc) throws IOException {
     BytesRef idBytes = cmd.getIndexedId();
 
     if (vinfo == null || idBytes == null) {
@@ -469,6 +473,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             long version = vinfo.getNewClock();
             cmd.setVersion(version);
             cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
+            cloneDoc.setField(VersionInfo.VERSION_FIELD, version);
             bucket.updateHighest(version);
           } else {
             // The leader forwarded us this update.
