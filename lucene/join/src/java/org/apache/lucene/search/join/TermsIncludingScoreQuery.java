@@ -208,6 +208,11 @@ class TermsIncludingScoreQuery extends Query {
       } while (docId != DocIdSetIterator.NO_MORE_DOCS);
       return docId;
     }
+
+    @Override
+    public float freq() {
+      return 1;
+    }
   }
 
   // This impl that tracks whether a docid has already been emitted. This check makes sure that docs aren't emitted
