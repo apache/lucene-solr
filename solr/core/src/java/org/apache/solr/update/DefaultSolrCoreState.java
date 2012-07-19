@@ -94,15 +94,15 @@ public final class DefaultSolrCoreState extends SolrCoreState {
       } catch (InterruptedException e) {}
     }
     
-    if (indexWriter != null) {
-      try {
-        indexWriter.close();
-      } catch (Exception e) {
-        SolrException.log(log, "Error closing old IndexWriter", e);
-      }
-    }
-    
     try {
+      if (indexWriter != null) {
+        try {
+          indexWriter.close();
+        } catch (Throwable t) {
+          SolrException.log(log, "Error closing old IndexWriter", t);
+        }
+      }
+      
       indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false,
           true);
       // we need to null this so it picks up the new writer next get call
