@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
@@ -46,8 +46,8 @@ public class TestCachingCollector extends LuceneTestCase {
     public int advance(int target) throws IOException { return 0; }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-      return PositionIntervalIterator.NO_MORE_POSITIONS;
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+      return IntervalIterator.NO_MORE_POSITIONS;
     }
     
   }

@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;
@@ -94,7 +94,7 @@ final class MatchOnlyTermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     // nocommit is this ok here?
     throw new UnsupportedOperationException();
   }

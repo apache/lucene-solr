@@ -1,4 +1,4 @@
-package org.apache.lucene.search.poshighlight;
+package org.apache.lucene.search.highlight.positions;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,9 +21,9 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionCollector;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
+import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator.IntervalCollector;
+import org.apache.lucene.search.positions.Interval;
 
 /**
  * Collects the first maxDocs docs and their positions matching the query
@@ -31,17 +31,17 @@ import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInter
  * @lucene.experimental
  */
 
-public class PosCollector extends Collector implements PositionCollector {
+public class HighlightingIntervalCollector extends Collector implements IntervalCollector {
   
   int count;
-  ScorePosDoc docs[];
+  DocAndPositions docs[];
   
-  public PosCollector (int maxDocs) {
-    docs = new ScorePosDoc[maxDocs];
+  public HighlightingIntervalCollector (int maxDocs) {
+    docs = new DocAndPositions[maxDocs];
   }
   
   protected Scorer scorer;
-  private PositionIntervalIterator positions;
+  private IntervalIterator positions;
 
   @Override
   public void collect(int doc) throws IOException {
@@ -58,7 +58,7 @@ public class PosCollector extends Collector implements PositionCollector {
   
   private boolean addDoc (int doc) {
     if (count <= 0 || docs[count-1].doc != doc) {
-      ScorePosDoc spdoc = new ScorePosDoc (doc);
+      DocAndPositions spdoc = new DocAndPositions (doc);
       docs[count++] = spdoc;
       return true;
     }
@@ -79,8 +79,8 @@ public class PosCollector extends Collector implements PositionCollector {
     return scorer;
   }
   
-  public ScorePosDoc[] getDocs () {
-    ScorePosDoc ret[] = new ScorePosDoc[count];
+  public DocAndPositions[] getDocs () {
+    DocAndPositions ret[] = new DocAndPositions[count];
     System.arraycopy(docs, 0, ret, 0, count);
     return ret;
   }
@@ -92,14 +92,14 @@ public class PosCollector extends Collector implements PositionCollector {
   public boolean needsPositions() { return true; }
 
   @Override
-  public void collectLeafPosition(Scorer scorer, PositionInterval interval,
+  public void collectLeafPosition(Scorer scorer, Interval interval,
       int docID) {
     addDoc(docID);      
     docs[count - 1].storePosition(interval);
   }
 
   @Override
-  public void collectComposite(Scorer scorer, PositionInterval interval,
+  public void collectComposite(Scorer scorer, Interval interval,
       int docID) {
   }
 

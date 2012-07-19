@@ -27,8 +27,8 @@ import org.apache.lucene.util.BytesRef;
  * 
  */
 //nocommmit javadocs
-public final class TermIntervalIterator extends PositionIntervalIterator {
-  private final PositionInterval interval;
+public final class TermIntervalIterator extends IntervalIterator {
+  private final Interval interval;
   int positionsPending;
   private final DocsAndPositionsEnum docsAndPos;
   private int docID = -1;
@@ -37,11 +37,11 @@ public final class TermIntervalIterator extends PositionIntervalIterator {
     super(scorer, collectPositions);
     this.docsAndPos = docsAndPos;
     this.interval = doPayloads ? new PayloadPosInterval(docsAndPos, this)
-        : new PositionInterval();
+        : new Interval();
   }
 
   @Override
-  public PositionInterval next() throws IOException {
+  public Interval next() throws IOException {
     if (--positionsPending >= 0) {
       interval.begin = interval.end = docsAndPos.nextPosition();
       interval.offsetBegin = docsAndPos.startOffset();
@@ -58,12 +58,12 @@ public final class TermIntervalIterator extends PositionIntervalIterator {
   }
 
   @Override
-  public PositionIntervalIterator[] subs(boolean inOrder) {
+  public IntervalIterator[] subs(boolean inOrder) {
     return EMPTY;
   }
 
   @Override
-  public void collect(PositionCollector collector) {
+  public void collect(IntervalCollector collector) {
     collector.collectLeafPosition(scorer, interval, docID);
   }
 
@@ -88,7 +88,7 @@ public final class TermIntervalIterator extends PositionIntervalIterator {
     return 0;
   }
   
-  private static final class PayloadPosInterval extends PositionInterval {
+  private static final class PayloadPosInterval extends Interval {
     private int pos = -1;
     private final DocsAndPositionsEnum payloads;
     private final TermIntervalIterator termPos;

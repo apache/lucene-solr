@@ -1,4 +1,4 @@
-package org.apache.lucene.search.poshighlight;
+package org.apache.lucene.search.highlight.positions;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -40,11 +40,15 @@ import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.SimpleFragmenter;
 import org.apache.lucene.search.highlight.TextFragment;
-import org.apache.lucene.search.positions.BlockPositionIterator;
+import org.apache.lucene.search.highlight.positions.HighlightingIntervalCollector;
+import org.apache.lucene.search.highlight.positions.IntervalTokenStream;
+import org.apache.lucene.search.highlight.positions.ArrayIntervalIterator;
+import org.apache.lucene.search.highlight.positions.DocAndPositions;
+import org.apache.lucene.search.positions.BlockIntervalIterator;
 import org.apache.lucene.search.positions.BrouwerianQuery;
-import org.apache.lucene.search.positions.PositionFilterQuery;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
+import org.apache.lucene.search.positions.IntervalFilterQuery;
+import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -56,7 +60,7 @@ import java.io.StringReader;
 /**
  * TODO: FIX THIS TEST Phrase and Span Queries positions callback API
  */
-public class PosHighlighterTest extends LuceneTestCase {
+public class IntervalHighlighterTest extends LuceneTestCase {
   
   protected final static String F = "f";
   protected Analyzer analyzer;
@@ -159,13 +163,13 @@ public class PosHighlighterTest extends LuceneTestCase {
     // Scorer
     Highlighter highlighter = new Highlighter(new ConstantScorer());
     highlighter.setTextFragmenter(new SimpleFragmenter(maxFragSize));
-    PosCollector collector = new PosCollector(10);
+    HighlightingIntervalCollector collector = new HighlightingIntervalCollector(10);
     if (q instanceof MultiTermQuery) {
       ((MultiTermQuery) q)
           .setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
     }
     searcher.search(q, collector);
-    ScorePosDoc doc = collector.docs[docIndex];
+    DocAndPositions doc = collector.docs[docIndex];
     if (doc == null) return null;
     String text = searcher.getIndexReader().document(doc.doc).get(F);
     // FIXME: test error cases: for non-stored fields, and fields w/no term
@@ -177,7 +181,7 @@ public class PosHighlighterTest extends LuceneTestCase {
           MockTokenFilter.EMPTY_STOPSET, true).tokenStream(F,
           new StringReader(text));
     } else {
-      stream = new PosTokenStream(text, new PositionIntervalArrayIterator(
+      stream = new IntervalTokenStream(text, new ArrayIntervalIterator(
           doc.sortedPositions(), doc.posCount));
     }
     //
@@ -279,7 +283,7 @@ public class PosHighlighterTest extends LuceneTestCase {
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "is")), Occur.MUST));
     bq.add(new BooleanClause(new TermQuery(new Term(F, "a")), Occur.MUST));
-    PositionFilterQuery pfq = new PositionFilterQuery(bq,
+    IntervalFilterQuery pfq = new IntervalFilterQuery(bq,
         new BlockPositionIteratorFilter());
     String frags[] = doSearch(pfq);
     // make sure we highlight the phrase, and not the terms outside the phrase
@@ -478,11 +482,11 @@ public class PosHighlighterTest extends LuceneTestCase {
     }
   }
   
-  public static class BlockPositionIteratorFilter implements PositionIntervalFilter {
+  public static class BlockPositionIteratorFilter implements IntervalFilter {
 
     @Override
-    public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-      return new BlockPositionIterator(true, iter);
+    public IntervalIterator filter(IntervalIterator iter) {
+      return new BlockIntervalIterator(true, iter);
     }
     
   }

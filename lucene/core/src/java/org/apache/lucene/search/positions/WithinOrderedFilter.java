@@ -17,7 +17,7 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-public class WithinOrderedFilter implements PositionIntervalIterator.PositionIntervalFilter {
+public class WithinOrderedFilter implements IntervalIterator.IntervalFilter {
 
   private int slop;
 
@@ -26,9 +26,9 @@ public class WithinOrderedFilter implements PositionIntervalIterator.PositionInt
   }
 
   @Override
-  public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-    return new WithinPositionIterator(slop,
-        new OrderedConjunctionPositionIterator(false, iter));
+  public IntervalIterator filter(IntervalIterator iter) {
+    return new WithinIntervalIterator(slop,
+        new OrderedConjunctionIntervalIterator(false, iter));
   }
 
   @Override

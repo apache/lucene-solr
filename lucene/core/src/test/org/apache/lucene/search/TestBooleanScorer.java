@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -93,7 +93,7 @@ public class TestBooleanScorer extends LuceneTestCase
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
       }
       @Override
-      public PositionIntervalIterator positions(boolean needsPayloads,
+      public IntervalIterator positions(boolean needsPayloads,
           boolean needsOffsets, boolean collectPositions) throws IOException {
         return null;
       }

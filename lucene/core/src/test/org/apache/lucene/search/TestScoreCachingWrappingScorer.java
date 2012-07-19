@@ -21,7 +21,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -57,7 +57,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       throw new UnsupportedOperationException(); 
     }
   }

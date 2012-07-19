@@ -23,7 +23,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
 
 import java.io.IOException;
@@ -345,7 +345,7 @@ public class ToParentBlockJoinCollector extends Collector {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       throw new UnsupportedOperationException();
     }
   }

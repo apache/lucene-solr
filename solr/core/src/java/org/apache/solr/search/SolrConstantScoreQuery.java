@@ -2,7 +2,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -194,7 +194,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       if (docIdSetIterator instanceof Scorer) {
         return ((Scorer) docIdSetIterator).positions(needsPayloads, needsOffsets, false);
       }

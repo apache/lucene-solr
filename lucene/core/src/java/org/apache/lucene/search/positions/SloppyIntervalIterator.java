@@ -23,23 +23,22 @@ import org.apache.lucene.search.Scorer;
 /**
  * An interval iterator that has the semantics of sloppy phrase query.
  */
-public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator {
-  //TODO rename to sloppy iter?
+public class SloppyIntervalIterator extends IntervalIterator {
   private final int maxLen;
   private int matchDistance;
-  private final PositionIntervalIterator iterator;
+  private final IntervalIterator iterator;
   
-  public MaxLengthPositionIntervalIterator(Scorer scorer, int maxLength,
-      boolean collectPositions, PositionIntervalIterator iterator)
+  public SloppyIntervalIterator(Scorer scorer, int maxLength,
+      boolean collectPositions, IntervalIterator... iterators)
       throws IOException {
     super(scorer, collectPositions);
     this.maxLen = maxLength;
-    this.iterator = iterator;
+    this.iterator = new ConjunctionIntervalIterator(scorer, collectPositions, iterators);
   }
   
   @Override
-  public PositionInterval next() throws IOException {
-    PositionInterval current;
+  public Interval next() throws IOException {
+    Interval current;
     do {
       if ((current = iterator.next()) != null) {
         matchDistance = current.end - current.begin;
@@ -63,8 +62,8 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
     return matchDistance;
   }
   
-  public static PositionIntervalIterator create(Scorer scorer, boolean collectPositions,
-        PositionIntervalIterator iterator, int... offsets) {
+  public static IntervalIterator create(Scorer scorer, boolean collectPositions,
+        IntervalIterator iterator, int... offsets) {
     if (offsets.length == 1) {
       return new SingleSlopplyIntervalIterator(scorer, collectPositions, iterator, offsets[0]);
     } else {
@@ -74,14 +73,14 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
   }
   
   private final static class SingleSlopplyIntervalIterator extends
-      PositionIntervalIterator {
-    private PositionInterval realInterval;
-    private final PositionInterval sloppyInterval = new PositionInterval();
-    private final PositionIntervalIterator iterator;
+      IntervalIterator {
+    private Interval realInterval;
+    private final Interval sloppyInterval = new Interval();
+    private final IntervalIterator iterator;
     private int offset;
     
     public SingleSlopplyIntervalIterator(Scorer scorer,
-        boolean collectPositions, PositionIntervalIterator iterator, int offset) {
+        boolean collectPositions, IntervalIterator iterator, int offset) {
       super(scorer, collectPositions);
       this.iterator = iterator;
       this.offset = offset;
@@ -93,7 +92,7 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
     }
     
     @Override
-    public PositionInterval next() throws IOException {
+    public Interval next() throws IOException {
       if ((realInterval = iterator.next()) != null) {
         sloppyInterval.begin = sloppyInterval.end = realInterval.begin - offset;
         sloppyInterval.offsetBegin = realInterval.offsetBegin;
@@ -104,13 +103,13 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
     }
     
     @Override
-    public void collect(PositionCollector collector) {
+    public void collect(IntervalCollector collector) {
       collector.collectLeafPosition(scorer, realInterval, currentDoc);
       
     }
     
     @Override
-    public PositionIntervalIterator[] subs(boolean inOrder) {
+    public IntervalIterator[] subs(boolean inOrder) {
       return null;
     }
 
@@ -122,23 +121,23 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
   }
   
   private final static class SloppyGroupIntervalIterator extends
-      PositionIntervalIterator {
+      IntervalIterator {
     
-    private final PositionInterval sloppyGroupInterval = new PositionInterval();
+    private final Interval sloppyGroupInterval = new Interval();
     private final int[] offsets;
-    private final PositionInterval[] intervalPositions;
-    private final PositionIntervalIterator groupIterator;
+    private final Interval[] intervalPositions;
+    private final IntervalIterator groupIterator;
     private int currentIndex;
     private boolean initialized;
     
     public SloppyGroupIntervalIterator(Scorer scorer, boolean collectPositions,
-        PositionIntervalIterator groupIterator, int... offsets) {
+        IntervalIterator groupIterator, int... offsets) {
       super(scorer, collectPositions);
       this.offsets = offsets;
       this.groupIterator = groupIterator;
-      this.intervalPositions = new PositionInterval[offsets.length];
+      this.intervalPositions = new Interval[offsets.length];
       for (int i = 0; i < intervalPositions.length; i++) {
-        intervalPositions[i] = new PositionInterval();
+        intervalPositions[i] = new Interval();
       }
     }
     
@@ -149,7 +148,7 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
     }
     
     @Override
-    public PositionInterval next() throws IOException {
+    public Interval next() throws IOException {
       sloppyGroupInterval.begin = Integer.MAX_VALUE;
       sloppyGroupInterval.end = Integer.MIN_VALUE;
       if (!initialized) {
@@ -157,7 +156,7 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
         
         currentIndex = 0;
         for (int i = 0; i < offsets.length; i++) {
-          PositionInterval current;
+          Interval current;
           if ((current = groupIterator.next()) != null) {
             intervalPositions[i].copy(current);
 
@@ -172,7 +171,7 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
         sloppyGroupInterval.offsetEnd = intervalPositions[intervalPositions.length-1].offsetEnd;
         return sloppyGroupInterval;
       }
-      PositionInterval current;
+      Interval current;
       if ((current = groupIterator.next()) != null) {
         final int currentFirst = currentIndex++ % intervalPositions.length;
         intervalPositions[currentFirst].copy(current);
@@ -191,7 +190,7 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
     }
     
     @Override
-    public void collect(PositionCollector collector) {
+    public void collect(IntervalCollector collector) {
       int currentIdx = currentIndex+1;
       for (int i = 0; i < intervalPositions.length; i++) { // find min / max
         int idx = currentIdx++ % intervalPositions.length;
@@ -202,8 +201,8 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
     }
     
     @Override
-    public PositionIntervalIterator[] subs(boolean inOrder) {
-      return new PositionIntervalIterator[] {groupIterator};
+    public IntervalIterator[] subs(boolean inOrder) {
+      return new IntervalIterator[] {groupIterator};
     }
 
     @Override
@@ -214,14 +213,14 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
   }
   
   @Override
-  public void collect(PositionCollector collector) {
+  public void collect(IntervalCollector collector) {
     assert collectPositions;
     this.iterator.collect(collector);
     
   }
   
   @Override
-  public PositionIntervalIterator[] subs(boolean inOrder) {
+  public IntervalIterator[] subs(boolean inOrder) {
     return null;
   }
 }

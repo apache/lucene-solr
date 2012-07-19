@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -256,7 +256,7 @@ public class ConstantScoreQuery extends Query {
     }
         
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       if (docIdSetIterator instanceof Scorer) {
         return ((Scorer) docIdSetIterator).positions(needsPayloads, needsOffsets, false);
       } else {

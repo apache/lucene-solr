@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 
 import java.io.IOException;
 
@@ -81,7 +81,7 @@ public class ScoreCachingWrappingScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     return scorer.positions(needsPayloads, needsOffsets, false);
   }
   

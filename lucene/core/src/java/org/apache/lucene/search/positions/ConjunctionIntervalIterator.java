@@ -34,20 +34,20 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @lucene.experimental
  */
 // nocommit - javadoc
-public final class ConjunctionPositionIterator extends BooleanPositionIterator {
+public final class ConjunctionIntervalIterator extends BooleanIntervalIterator {
   private final IntervalQueueAnd queue;
   private final int nrMustMatch;
   private SnapshotPositionCollector snapshot;
   private int rightExtremeBegin;
   
 
-  public ConjunctionPositionIterator(Scorer scorer, boolean collectPositions,
-      PositionIntervalIterator... iterators) throws IOException {
+  public ConjunctionIntervalIterator(Scorer scorer, boolean collectPositions,
+      IntervalIterator... iterators) throws IOException {
     this(scorer, collectPositions, iterators.length, iterators);
   }
   
-  public ConjunctionPositionIterator(Scorer scorer, boolean collectPositions,
-      int minimuNumShouldMatch, PositionIntervalIterator... iterators)
+  public ConjunctionIntervalIterator(Scorer scorer, boolean collectPositions,
+      int minimuNumShouldMatch, IntervalIterator... iterators)
       throws IOException {
     super(scorer, iterators, new IntervalQueueAnd(iterators.length),
         collectPositions);
@@ -57,7 +57,7 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
   
   void advance() throws IOException {
     final IntervalRef top = queue.top();
-    PositionInterval interval = null;
+    Interval interval = null;
     if ((interval = iterators[top.index].next()) != null) {
       top.interval = interval;
       queue.updateRightExtreme(top);
@@ -68,7 +68,7 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
   }
   
   @Override
-  public PositionInterval next() throws IOException {
+  public Interval next() throws IOException {
     
     while (queue.size() >= nrMustMatch
         && queue.top().interval.begin == queue.currentCandidate.begin) {
@@ -79,7 +79,7 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     }
     do {
       queue.updateCurrentCandidate();
-      PositionInterval top = queue.top().interval; 
+      Interval top = queue.top().interval; 
       if (collectPositions) {
         snapShotSubPositions(); // this looks odd? -> see SnapShotCollector below for
                                 // details!
@@ -114,7 +114,7 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
           continue;
         }
         advancedTo = currentDoc;
-        final PositionInterval interval = iterators[i].next();
+        final Interval interval = iterators[i].next();
         if (interval != null) {
           IntervalRef intervalRef = new IntervalRef(interval, i); // TODO maybe
                                                                   // reuse?
@@ -135,17 +135,17 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     collectInternal(snapshot);
   }
   
-  private void collectInternal(PositionCollector collector) {
+  private void collectInternal(IntervalCollector collector) {
     assert collectPositions;
     collector.collectComposite(scorer, queue.currentCandidate, currentDoc);
-    for (PositionIntervalIterator iter : iterators) {
+    for (IntervalIterator iter : iterators) {
       iter.collect(collector);
     }
     
   }
   
   @Override
-  public void collect(PositionCollector collector) {
+  public void collect(IntervalCollector collector) {
     assert collectPositions;
     if (snapshot == null) {
       // we might not be initialized if the first interval matches
@@ -164,7 +164,7 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
    * are required.
    */
   private static final class SnapshotPositionCollector implements
-      PositionCollector {
+      IntervalCollector {
     private SingleSnapshot[] snapshots;
     private int index = 0;
     
@@ -173,13 +173,13 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     }
     
     @Override
-    public void collectLeafPosition(Scorer scorer, PositionInterval interval,
+    public void collectLeafPosition(Scorer scorer, Interval interval,
         int docID) {
       collect(scorer, interval, docID, true);
       
     }
     
-    private void collect(Scorer scorer, PositionInterval interval, int docID,
+    private void collect(Scorer scorer, Interval interval, int docID,
         boolean isLeaf) {
       if (snapshots.length <= index) {
         grow(ArrayUtil.oversize(index + 1,
@@ -195,12 +195,12 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     }
     
     @Override
-    public void collectComposite(Scorer scorer, PositionInterval interval,
+    public void collectComposite(Scorer scorer, Interval interval,
         int docID) {
       collect(scorer, interval, docID, false);
     }
     
-    void replay(PositionCollector collector) {
+    void replay(IntervalCollector collector) {
       for (int i = 0; i < index; i++) {
         SingleSnapshot singleSnapshot = snapshots[i];
         if (singleSnapshot.isLeaf) {
@@ -225,11 +225,11 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     
     private static final class SingleSnapshot {
       Scorer scorer;
-      final PositionInterval interval = new PositionInterval();
+      final Interval interval = new Interval();
       boolean isLeaf;
       int docID;
       
-      void set(Scorer scorer, PositionInterval interval, boolean isLeaf,
+      void set(Scorer scorer, Interval interval, boolean isLeaf,
           int docID) {
         this.scorer = scorer;
         this.interval.copy(interval);

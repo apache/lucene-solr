@@ -21,7 +21,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
+import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -31,13 +31,13 @@ import java.util.Set;
  *
  * @lucene.experimental
  */ // nocommit - javadoc
-public class PositionFilterQuery extends Query implements Cloneable {
+public class IntervalFilterQuery extends Query implements Cloneable {
 
   
   private Query inner;
-  private PositionIntervalFilter filter;
+  private IntervalFilter filter;
 
-  public PositionFilterQuery(Query inner, PositionIntervalFilter filter) {
+  public IntervalFilterQuery(Query inner, IntervalFilter filter) {
     this.inner = inner;
     this.filter = filter;
   }
@@ -49,11 +49,11 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    PositionFilterQuery clone = null;
+    IntervalFilterQuery clone = null;
 
     Query rewritten =  inner.rewrite(reader);
     if (rewritten != inner) {
-      clone = (PositionFilterQuery) this.clone();
+      clone = (IntervalFilterQuery) this.clone();
       clone.inner = rewritten;
     }
 
@@ -101,7 +101,7 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
     @Override
     public Query getQuery() {
-      return PositionFilterQuery.this;
+      return IntervalFilterQuery.this;
     }
     
     @Override
@@ -118,14 +118,14 @@ public class PositionFilterQuery extends Query implements Cloneable {
   class PositionFilterScorer extends Scorer {
 
     private final Scorer other;
-    private PositionIntervalIterator filter;
+    private IntervalIterator filter;
 
     public PositionFilterScorer(Weight weight, Scorer other) throws IOException {
       super(weight);
       this.other = other;
       // nocommit - offsets and payloads?
-      this.filter = PositionFilterQuery.this.filter != null
-          ? PositionFilterQuery.this.filter.filter(other.positions(false, false, false))
+      this.filter = IntervalFilterQuery.this.filter != null
+          ? IntervalFilterQuery.this.filter.filter(other.positions(false, false, false))
           : other.positions(false, false, false);
     }
 
@@ -135,8 +135,8 @@ public class PositionFilterQuery extends Query implements Cloneable {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-      return PositionFilterQuery.this.filter != null ? PositionFilterQuery.this.filter
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+      return IntervalFilterQuery.this.filter != null ? IntervalFilterQuery.this.filter
           .filter(other.positions(needsPayloads, needsOffsets, false)) : other.positions(needsPayloads, needsOffsets, false);
     }
 
@@ -193,7 +193,7 @@ public class PositionFilterQuery extends Query implements Cloneable {
     if (this == obj) return true;
     if (!super.equals(obj)) return false;
     if (getClass() != obj.getClass()) return false;
-    PositionFilterQuery other = (PositionFilterQuery) obj;
+    IntervalFilterQuery other = (IntervalFilterQuery) obj;
     if (filter == null) {
       if (other.filter != null) return false;
     } else if (!filter.equals(other.filter)) return false;

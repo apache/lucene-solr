@@ -29,7 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
-public class TestPositionFilterQueries extends LuceneTestCase {
+public class TestIntervalFilterQueries extends LuceneTestCase {
 
   private IndexSearcher searcher;
   private IndexReader reader;

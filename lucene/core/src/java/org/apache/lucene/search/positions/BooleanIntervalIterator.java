@@ -26,12 +26,12 @@ import java.util.List;
  * @lucene.experimental
  */
 // nocommit - javadoc
-public abstract class BooleanPositionIterator extends PositionIntervalIterator {
+public abstract class BooleanIntervalIterator extends IntervalIterator {
 
-  protected final PositionIntervalIterator[] iterators;
+  protected final IntervalIterator[] iterators;
   protected final IntervalQueue queue;
 
-  protected BooleanPositionIterator(Scorer scorer, PositionIntervalIterator[] iterators,
+  protected BooleanIntervalIterator(Scorer scorer, IntervalIterator[] iterators,
       IntervalQueue queue, boolean collectPositions) throws IOException {
     super(scorer, collectPositions);
     this.queue = queue;
@@ -39,16 +39,16 @@ public abstract class BooleanPositionIterator extends PositionIntervalIterator {
   }
 
   @Override
-  public PositionIntervalIterator[] subs(boolean inOrder) {
+  public IntervalIterator[] subs(boolean inOrder) {
     return iterators;
   }
 
   abstract void advance() throws IOException;
   
-  public static PositionIntervalIterator[] pullIterators(boolean needsPayloads,
+  public static IntervalIterator[] pullIterators(boolean needsPayloads,
       boolean needsOffsets, boolean collectPositions, Scorer... scorers)
       throws IOException {
-    PositionIntervalIterator[] iterators = new PositionIntervalIterator[scorers.length];
+    IntervalIterator[] iterators = new IntervalIterator[scorers.length];
     for (int i = 0; i < scorers.length; i++) {
       iterators[i] = scorers[i].positions(needsPayloads, needsOffsets,
           collectPositions);
@@ -56,10 +56,10 @@ public abstract class BooleanPositionIterator extends PositionIntervalIterator {
     return iterators;
   }
   
-  public static PositionIntervalIterator[] pullIterators(boolean needsPayloads,
+  public static IntervalIterator[] pullIterators(boolean needsPayloads,
       boolean needsOffsets, boolean collectPositions, List<Scorer> scorers)
       throws IOException {
-    PositionIntervalIterator[] iterators = new PositionIntervalIterator[scorers.size()];
+    IntervalIterator[] iterators = new IntervalIterator[scorers.size()];
     for (int i = 0; i < iterators.length; i++) {
       iterators[i] = scorers.get(i).positions(needsPayloads, needsOffsets,
           collectPositions);

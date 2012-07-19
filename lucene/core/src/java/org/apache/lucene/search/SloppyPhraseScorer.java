@@ -30,9 +30,9 @@ import java.util.Map;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.positions.ConjunctionPositionIterator;
-import org.apache.lucene.search.positions.MaxLengthPositionIntervalIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
+import org.apache.lucene.search.positions.SloppyIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.OpenBitSet;
@@ -541,7 +541,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads,
+  public IntervalIterator positions(boolean needsPayloads,
       boolean needsOffsets, boolean collectPositions) throws IOException {
     // nocommit - payloads?
     Map<Term, IterAndOffsets> map = new HashMap<Term, IterAndOffsets>();
@@ -570,18 +570,18 @@ final class SloppyPhraseScorer extends PhraseScorer {
 //      System.out.println("POS: " + postings[i].position + " " + term);
     }
     Collection<IterAndOffsets> values = map.values();
-    PositionIntervalIterator[] iters = new PositionIntervalIterator[values.size()];
+    IntervalIterator[] iters = new IntervalIterator[values.size()];
     int i = 0;
     for (IterAndOffsets iterAndOffsets : values) {
-      iters[i++] = MaxLengthPositionIntervalIterator.create(this, collectPositions, iterAndOffsets.iter, iterAndOffsets.toIntArray());
+      iters[i++] = SloppyIntervalIterator.create(this, collectPositions, iterAndOffsets.iter, iterAndOffsets.toIntArray());
     }
-    return new MaxLengthPositionIntervalIterator(this, slop, collectPositions, new ConjunctionPositionIterator(this, collectPositions, iters));
+    return new SloppyIntervalIterator(this, slop, collectPositions, iters);
   }
   
   private static class IterAndOffsets {
     final List<Integer> offsets = new ArrayList<Integer>();
-    final PositionIntervalIterator iter;
-    IterAndOffsets(PositionIntervalIterator iter) {
+    final IntervalIterator iter;
+    IterAndOffsets(IntervalIterator iter) {
       this.iter = iter;
     }
     

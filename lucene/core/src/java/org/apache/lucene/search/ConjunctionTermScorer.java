@@ -22,8 +22,8 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.TermQuery.TermDocsEnumFactory;
-import org.apache.lucene.search.positions.ConjunctionPositionIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
 import org.apache.lucene.util.ArrayUtil;
@@ -122,13 +122,13 @@ class ConjunctionTermScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     TermIntervalIterator[] positionIters = new TermIntervalIterator[origDocsAndFreqs.length];
     for (int i = 0; i < positionIters.length; i++) {
       DocsAndFreqs d = origDocsAndFreqs[i];
       positionIters[i] = new TermIntervalIterator(this, d.factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
     }
-    return new ConjunctionPositionIterator(this, collectPositions, positionIters);
+    return new ConjunctionIntervalIterator(this, collectPositions, positionIters);
   }
 
 }

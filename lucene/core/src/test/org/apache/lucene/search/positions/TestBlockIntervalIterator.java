@@ -21,14 +21,14 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
+import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.util.List;
 
-public class TestConjunctionPositionsIterator extends LuceneTestCase {
+public class TestBlockIntervalIterator extends LuceneTestCase {
   
   private static final void addDocs(RandomIndexWriter writer) throws CorruptIndexException, IOException {
     {
@@ -47,56 +47,67 @@ public class TestConjunctionPositionsIterator extends LuceneTestCase {
           "field",
           "Pease porridge cold! Pease porridge hot! Pease porridge in the pot nine days old! Some like it cold, some"
               + " like it hot, Some like it in the pot nine days old! Pease porridge cold! Pease porridge hot!",
-              TextField.TYPE_STORED));
+          TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
   }
-  public void testConjunctionPositionsBooleanQuery() throws IOException {
+  public void testExactPhraseBooleanConjunction() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     addDocs(writer);
-    
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = new IndexSearcher(reader);
     writer.close();
     BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
     {
-      PositionFilterQuery filter = new PositionFilterQuery(query, new RangePositionsIterator(0,3));
-      TopDocs search = searcher.search(filter, 10);
-      ScoreDoc[] scoreDocs = search.scoreDocs;
-      assertEquals(1, search.totalHits);
-      assertEquals(0, scoreDocs[0].doc);
-    }
-    {
-      PositionFilterQuery filter = new PositionFilterQuery(query, new WithinPositionIterator(3));
+      IntervalFilterQuery filter = new IntervalFilterQuery(query, new BlockPositionIteratorFilter());
       TopDocs search = searcher.search(filter, 10);
       ScoreDoc[] scoreDocs = search.scoreDocs;
       assertEquals(2, search.totalHits);
       assertEquals(0, scoreDocs[0].doc);
       assertEquals(1, scoreDocs[1].doc);
     }
+    query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "cold!")), Occur.MUST));
     
+    {
+      IntervalFilterQuery filter = new IntervalFilterQuery(query, new BlockPositionIteratorFilter());
+      TopDocs search = searcher.search(filter, 10);
+      ScoreDoc[] scoreDocs = search.scoreDocs;
+      assertEquals(1, search.totalHits);
+      assertEquals(0, scoreDocs[0].doc);
+    }
+    
+    query = new BooleanQuery();
+    query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
+    {
+      IntervalFilterQuery filter = new IntervalFilterQuery(query, new BlockPositionIteratorFilter());
+      TopDocs search = searcher.search(filter, 10);
+      assertEquals(0, search.totalHits);
+    }
     reader.close();
     directory.close();
   }
   
-  public void testConjuctionPositionIterator() throws IOException {
+  public void testBlockPositionIterator() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     addDocs(writer);
-    
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = new IndexSearcher(reader);
     writer.close();
     BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
+    
     Weight weight = query.createWeight(searcher);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
@@ -106,17 +117,17 @@ public class TestConjunctionPositionsIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        PositionIntervalIterator positions = scorer.positions(false, false, false);
-        assertEquals(0, positions.advanceTo(nextDoc));
-        PositionInterval interval = null;
-        int[] start = new int[] {0, 1, 2, 3, 4, 6, 7, 31, 32, 33};
-        int[] end = new int[] {2, 3, 4, 33, 33, 33, 33, 33, 34, 35};
+        IntervalIterator positions = new BlockIntervalIterator(false, scorer.positions(false, false, false));
+        assertEquals(0, positions.advanceTo(0));
+        Interval interval = null;
+        int[] start = new int[] {0, 31};
+        int[] end = new int[] {2, 33};
         // {start}term{end} - end is pos+1 
-        // {0}Pease {1}porridge {2}hot!{0} {3}Pease{1} {4}porridge{2} cold! {5}Pease {6}porridge in the pot nine days old! Some like it hot, some"
-        // like it cold, Some like it in the pot nine days old! {7}Pease {8}porridge {9}hot!{3,4,5,6,7} Pease{8} porridge{9} cold!",
+        // {0}Pease porridge hot!{0} Pease porridge cold! Pease porridge in the pot nine days old! Some like it hot, some"
+        // like it cold, Some like it in the pot nine days old! {1}Pease porridge hot!{1} Pease porridge cold!",
         for (int j = 0; j < end.length; j++) {
           interval = positions.next();
-          assertNotNull("" + j, interval);
+          assertNotNull(interval);
           assertEquals(start[j], interval.begin);
           assertEquals(end[j], interval.end);
         }
@@ -125,14 +136,14 @@ public class TestConjunctionPositionsIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        PositionIntervalIterator positions = scorer.positions(false, false, false);
-        assertEquals(1, positions.advanceTo(nextDoc));
-        PositionInterval interval = null;
-        int[] start = new int[] {0, 1, 3, 4, 5, 6, 7, 31, 32, 34 };
-        int[] end = new int[] {5, 5, 5, 6, 7, 36, 36, 36, 36, 36 };
+        IntervalIterator positions =  new BlockIntervalIterator(false, scorer.positions(false, false, false));
+        assertEquals(1, positions.advanceTo(1));
+        Interval interval = null;
+        int[] start = new int[] {3, 34};
+        int[] end = new int[] {5, 36};
         // {start}term{end} - end is pos+1
-        // {0}Pease {1}porridge cold! {2}Pease {3}porridge {4}hot!{0, 1, 2, 3} {5}Pease {4, 6}porridge in the pot nine days old! Some like it cold, some
-        // like it hot, Some like it in the pot nine days old! {7}Pease {8}porridge cold! {9}Pease porridge hot{5, 6, 7, 8, 9}!
+        // Pease porridge cold! {0}Pease porridge hot!{0} Pease porridge in the pot nine days old! Some like it cold, some
+        // like it hot, Some like it in the pot nine days old! Pease porridge cold! {1}Pease porridge hot{1}!
         for (int j = 0; j < end.length; j++) {
           interval = positions.next();
           assertNotNull(interval);
@@ -142,7 +153,19 @@ public class TestConjunctionPositionsIterator extends LuceneTestCase {
         assertNull(positions.next());
       }
     }
+    
+
     reader.close();
     directory.close();
+  }
+  
+  
+  public static class BlockPositionIteratorFilter implements IntervalFilter {
+
+    @Override
+    public IntervalIterator filter(IntervalIterator iter) {
+      return new BlockIntervalIterator(false, iter);
+    }
+    
   }
 }

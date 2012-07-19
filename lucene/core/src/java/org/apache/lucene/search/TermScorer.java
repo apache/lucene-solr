@@ -22,9 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.TermQuery.TermDocsEnumFactory;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.TermIntervalIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
@@ -98,7 +97,7 @@ final class TermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
   
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     return new TermIntervalIterator(this, factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
   }
 }

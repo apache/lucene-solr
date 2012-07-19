@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 /* See the description in BooleanScorer.java, comparing
@@ -147,7 +147,7 @@ class BooleanScorer2 extends Scorer {
     }
     
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       return scorer.positions(needsPayloads, needsOffsets, false);
     }
   }
@@ -326,7 +326,7 @@ class BooleanScorer2 extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     return countingSumScorer.positions(needsPayloads, needsOffsets, collectPositions);
   }
 

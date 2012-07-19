@@ -121,7 +121,7 @@ public final class BrouwerianQuery extends Query implements Cloneable {
   class PositionFilterScorer extends Scorer {
 
     private final Scorer other;
-    private PositionIntervalIterator filter;
+    private IntervalIterator filter;
     private final Scorer substracted;
 
     public PositionFilterScorer(Weight weight, Scorer other, Scorer substacted) throws IOException {
@@ -137,7 +137,7 @@ public final class BrouwerianQuery extends Query implements Cloneable {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       return new BrouwerianIntervalIterator(other, collectPositions, other.positions(needsPayloads, needsOffsets, collectPositions), substracted.positions(needsPayloads, needsOffsets, collectPositions));
     }
 

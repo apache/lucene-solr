@@ -1,4 +1,4 @@
-package org.apache.lucene.search.poshighlight;
+package org.apache.lucene.search.highlight.positions;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,38 +19,39 @@ package org.apache.lucene.search.poshighlight;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.positions.Interval;
 
 /**
  * Present an array of PositionIntervals as an Iterator.
  * @lucene.experimental
  */
-public class PositionIntervalArrayIterator extends PositionIntervalIterator {
+public class ArrayIntervalIterator extends IntervalIterator {
 
   private int next = 0;
   private int count;
-  private PositionInterval[] positions;
+  private Interval[] positions;
   
-  public PositionIntervalArrayIterator (PositionInterval[] positions, int count) {
+  public ArrayIntervalIterator (Interval[] positions, int count) {
     super(null, false);
     this.positions = positions;
     this.count = count;
   }
   
   @Override
-  public PositionInterval next() {
+  public Interval next() {
     if (next >= count)
       return null;
     return positions[next++];
   }
 
   @Override
-  public PositionIntervalIterator[] subs(boolean inOrder) {
+  public IntervalIterator[] subs(boolean inOrder) {
     return EMPTY;
   }
 
   @Override
-  public void collect(PositionCollector collector) {
+  public void collect(IntervalCollector collector) {
     assert collectPositions;
   }
 

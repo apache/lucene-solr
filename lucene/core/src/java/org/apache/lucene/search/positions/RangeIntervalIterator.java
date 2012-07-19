@@ -15,32 +15,44 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
-
+import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
 
 /**
+ * 
  * @lucene.experimental
  */ // nocommit - javadoc
-public class WithinPositionIterator extends PositionIntervalIterator implements PositionIntervalFilter {
-  private int howMany;
-  private PositionIntervalIterator iterator;
-  private PositionInterval interval;
+public class RangeIntervalIterator extends IntervalIterator implements IntervalFilter {
+
+  private final IntervalIterator iterator;
+  private Interval interval;
+  private int start;
+  private int end;
   
-  public WithinPositionIterator(int howMany, PositionIntervalIterator iterator) {
-    super(iterator != null ? iterator.scorer : null, iterator != null ? iterator.collectPositions : false);
-    this.howMany = howMany;
+  public RangeIntervalIterator(int start, int end) {
+    this(start, end, null);
+  }
+  
+  public RangeIntervalIterator(int start, int end, IntervalIterator iterator) {
+    super(iterator != null ? iterator.scorer : null,
+        iterator != null ? iterator.collectPositions : false);
     this.iterator = iterator;
+    this.start = start;
+    this.end = end;
   }
+
+  public IntervalIterator filter(IntervalIterator iter) {
+    return new RangeIntervalIterator(start, end, iter);
+  }  
   
-  public WithinPositionIterator(int howMany) {
-    this(howMany, null); // use this instance as a filter template
-  }
   @Override
-  public PositionInterval next() throws IOException {
+  public Interval next() throws IOException {
     while ((interval = iterator.next()) != null) {
-      if((iterator.matchDistance()) <= howMany){
+      if(interval.end > end) {
+        return null;
+      } else if (interval.begin >= start) {
         return interval;
       }
     }
@@ -48,16 +60,12 @@ public class WithinPositionIterator extends PositionIntervalIterator implements 
   }
 
   @Override
-  public PositionIntervalIterator[] subs(boolean inOrder) {
-    return new PositionIntervalIterator[] {iterator};
-  }
-
-  public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-    return new WithinPositionIterator(howMany, iter);
+  public IntervalIterator[] subs(boolean inOrder) {
+    return new IntervalIterator[] { iterator };
   }
 
   @Override
-  public void collect(PositionCollector collector) {
+  public void collect(IntervalCollector collector) {
     assert collectPositions;
     collector.collectComposite(null, interval, iterator.docID());
     iterator.collect(collector);
@@ -72,5 +80,7 @@ public class WithinPositionIterator extends PositionIntervalIterator implements 
   public int matchDistance() {
     return iterator.matchDistance();
   }
+  
+  
 
 }

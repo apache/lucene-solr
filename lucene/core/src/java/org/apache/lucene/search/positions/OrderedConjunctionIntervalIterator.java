@@ -23,40 +23,40 @@ import org.apache.lucene.search.Scorer;
 /**
  * @lucene.experimental
  */ // nocommit - javadoc
-public final class OrderedConjunctionPositionIterator extends
-    PositionIntervalIterator {
+public final class OrderedConjunctionIntervalIterator extends
+    IntervalIterator {
 
-  private final PositionIntervalIterator[] iterators;
-  private static final PositionInterval INFINITE_INTERVAL = new PositionInterval(
+  private final IntervalIterator[] iterators;
+  private static final Interval INFINITE_INTERVAL = new Interval(
       Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
-  private final PositionInterval[] intervals;
+  private final Interval[] intervals;
   private final int lastIter;
-  private final PositionInterval interval = new PositionInterval(
+  private final Interval interval = new Interval(
       Integer.MAX_VALUE, Integer.MAX_VALUE, -1, -1);
   private int index = 1;
   private int lastTopEnd;
   private int lastEndBegin;
   
   
-  public OrderedConjunctionPositionIterator(boolean collectPositions, PositionIntervalIterator other) {
+  public OrderedConjunctionIntervalIterator(boolean collectPositions, IntervalIterator other) {
     super(other.scorer, collectPositions);
     assert other.subs(true) != null;
     iterators = other.subs(true);
     assert iterators.length > 1;
-    intervals = new PositionInterval[iterators.length];
+    intervals = new Interval[iterators.length];
     lastIter = iterators.length - 1;
   }
   
-  public OrderedConjunctionPositionIterator(Scorer scorer, boolean collectPositions, PositionIntervalIterator... iterators) throws IOException {
+  public OrderedConjunctionIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator... iterators) throws IOException {
     super(scorer, collectPositions);
     this.iterators = iterators;
     assert iterators.length > 1;
-    intervals = new PositionInterval[iterators.length];
+    intervals = new Interval[iterators.length];
     lastIter = iterators.length - 1;
   }
 
   @Override
-  public PositionInterval next() throws IOException {
+  public Interval next() throws IOException {
     if(intervals[0] == null) {
       return null;
     }
@@ -67,16 +67,16 @@ public final class OrderedConjunctionPositionIterator extends
     int b = Integer.MAX_VALUE;
     while (true) {
       while (true) {
-        final PositionInterval previous = intervals[index - 1];
+        final Interval previous = intervals[index - 1];
         if (previous.end >= b) {
           return interval.begin == Integer.MAX_VALUE ? null : interval;
         }
         if (index == intervals.length || intervals[index].begin > previous.end) {
           break;
         }
-        PositionInterval current = intervals[index];
+        Interval current = intervals[index];
         do {
-          final PositionInterval next;
+          final Interval next;
           if (current.end >= b || (next = iterators[index].next()) == null) {
             return interval.begin == Integer.MAX_VALUE ? null : interval;
           }
@@ -101,15 +101,15 @@ public final class OrderedConjunctionPositionIterator extends
   }
 
   @Override
-  public PositionIntervalIterator[] subs(boolean inOrder) {
+  public IntervalIterator[] subs(boolean inOrder) {
     return iterators;
   }
 
   @Override
-  public void collect(PositionCollector collector) {
+  public void collect(IntervalCollector collector) {
     assert collectPositions;
     collector.collectComposite(scorer, interval, currentDoc);
-    for (PositionIntervalIterator iter : iterators) {
+    for (IntervalIterator iter : iterators) {
       iter.collect(collector);
     }
   }

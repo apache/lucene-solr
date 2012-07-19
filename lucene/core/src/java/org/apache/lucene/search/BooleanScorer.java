@@ -20,10 +20,10 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
-import org.apache.lucene.search.positions.BooleanPositionIterator;
-import org.apache.lucene.search.positions.ConjunctionPositionIterator;
-import org.apache.lucene.search.positions.DisjunctionPositionIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.BooleanIntervalIterator;
+import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
+import org.apache.lucene.search.positions.DisjunctionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -141,8 +141,8 @@ final class BooleanScorer extends Scorer {
     public float score() { return score; }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-      return PositionIntervalIterator.NO_MORE_POSITIONS;
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+      return IntervalIterator.NO_MORE_POSITIONS;
     }
     
   }
@@ -327,7 +327,7 @@ final class BooleanScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     final List<Scorer> scorers = new ArrayList<Scorer>();
     SubScorer sub = this.scorers;
     while(sub != null) {
@@ -337,10 +337,10 @@ final class BooleanScorer extends Scorer {
       sub = sub.next;
     }
     if (this.minNrShouldMatch > 1) {
-      return new ConjunctionPositionIterator(this,
-          collectPositions, this.minNrShouldMatch, BooleanPositionIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorers));
+      return new ConjunctionIntervalIterator(this,
+          collectPositions, this.minNrShouldMatch, BooleanIntervalIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorers));
     }
-    return new DisjunctionPositionIterator(this, collectPositions,  BooleanPositionIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorers));
+    return new DisjunctionIntervalIterator(this, collectPositions,  BooleanIntervalIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorers));
   }
 
   @Override

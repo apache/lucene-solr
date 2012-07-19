@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
 
@@ -75,7 +75,7 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       // nocommit this is tricky - I think we can't really provide positions here?
       throw new UnsupportedOperationException();
     }

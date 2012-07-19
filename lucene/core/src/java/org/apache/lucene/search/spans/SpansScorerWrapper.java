@@ -20,18 +20,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.apache.lucene.search.positions.PositionIntervalIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
+import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.positions.Interval;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 
 public class SpansScorerWrapper extends Spans {
   private final Scorer scorer;
-  private final PositionIntervalIterator positions;
-  private PositionInterval current;
+  private final IntervalIterator positions;
+  private Interval current;
   private int doc = -1;
 
-  public SpansScorerWrapper(Scorer scorer, PositionIntervalIterator positions) {
+  public SpansScorerWrapper(Scorer scorer, IntervalIterator positions) {
     this.scorer = scorer;
     this.positions = positions;
   }
@@ -103,7 +103,7 @@ public class SpansScorerWrapper extends Spans {
     return current != null && current.payloadAvailable();
   }
 
-  public PositionInterval current() {
+  public Interval current() {
     return current;
   }
 

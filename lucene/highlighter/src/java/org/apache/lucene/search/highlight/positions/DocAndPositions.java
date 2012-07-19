@@ -1,4 +1,4 @@
-package org.apache.lucene.search.poshighlight;
+package org.apache.lucene.search.highlight.positions;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,38 +20,38 @@ package org.apache.lucene.search.poshighlight;
 import java.util.Comparator;
 
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
+import org.apache.lucene.search.positions.Interval;
 import org.apache.lucene.util.ArrayUtil;
 
 /** Used to accumulate position intervals while scoring 
  * @lucene.experimental
  */
-public class ScorePosDoc extends ScoreDoc {
+public final class DocAndPositions extends ScoreDoc {
   
   public int posCount = 0;
-  public PositionInterval[] positions;
+  public Interval[] positions;
   
-  public ScorePosDoc(int doc) {
+  public DocAndPositions(int doc) {
     super(doc, 0);
-    positions = new PositionInterval[32];
+    positions = new Interval[32];
   }
   
-  public void storePosition (PositionInterval pos) {
+  public void storePosition (Interval pos) {
     ensureStorage();
-    positions[posCount++] = (PositionInterval) pos.clone();
+    positions[posCount++] = (Interval) pos.clone();
   }
   
   private void ensureStorage () {
     if (posCount >= positions.length) {
-      PositionInterval temp[] = new PositionInterval[positions.length * 2];
+      Interval temp[] = new Interval[positions.length * 2];
       System.arraycopy(positions, 0, temp, 0, positions.length);
       positions = temp;
     }
   }
   
-  public PositionInterval[] sortedPositions() {
-    ArrayUtil.mergeSort(positions, 0, posCount, new Comparator<PositionInterval>() {
-      public int compare(PositionInterval o1, PositionInterval o2) {
+  public Interval[] sortedPositions() {
+    ArrayUtil.mergeSort(positions, 0, posCount, new Comparator<Interval>() {
+      public int compare(Interval o1, Interval o2) {
         return 
           o1.begin < o2.begin ? -1 : 
             (o1.begin > o2.begin ? 1 :

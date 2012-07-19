@@ -17,7 +17,6 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -26,7 +25,7 @@ import org.apache.lucene.util.PriorityQueue;
  */
 // nocommit - javadoc
 abstract class IntervalQueue extends PriorityQueue<IntervalRef> {
-  final PositionInterval currentCandidate = new PositionInterval(
+  final Interval currentCandidate = new Interval(
       Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
 
   public void reset() {
@@ -46,10 +45,10 @@ abstract class IntervalQueue extends PriorityQueue<IntervalRef> {
   }
 
   final static class IntervalRef {
-    PositionInterval interval;
+    Interval interval;
     int index;
 
-    IntervalRef(PositionInterval interval, int index) {
+    IntervalRef(Interval interval, int index) {
       super();
       this.interval = interval;
       this.index = index;

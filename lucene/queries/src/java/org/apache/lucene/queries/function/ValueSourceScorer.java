@@ -20,7 +20,7 @@ package org.apache.lucene.queries.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -85,7 +85,7 @@ public class ValueSourceScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {    
+  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {    
     throw new UnsupportedOperationException();
     //nocommit - is that correct here?
   }

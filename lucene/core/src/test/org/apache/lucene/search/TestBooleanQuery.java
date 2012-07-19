@@ -34,9 +34,9 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.positions.PositionFilterQuery;
-import org.apache.lucene.search.positions.RangePositionsIterator;
-import org.apache.lucene.search.positions.WithinPositionIterator;
+import org.apache.lucene.search.positions.IntervalFilterQuery;
+import org.apache.lucene.search.positions.RangeIntervalIterator;
+import org.apache.lucene.search.positions.WithinIntervalIterator;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -323,14 +323,14 @@ public class TestBooleanQuery extends LuceneTestCase {
      query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
      
      {
-       PositionFilterQuery filter = new PositionFilterQuery(query, new RangePositionsIterator(0,3));
+       IntervalFilterQuery filter = new IntervalFilterQuery(query, new RangeIntervalIterator(0,3));
        TopDocs search = searcher.search(filter, 10);
        ScoreDoc[] scoreDocs = search.scoreDocs;
        assertEquals(1, search.totalHits);
        assertEquals(0, scoreDocs[0].doc);
      }
      {
-       PositionFilterQuery filter = new PositionFilterQuery(query, new WithinPositionIterator(3));
+       IntervalFilterQuery filter = new IntervalFilterQuery(query, new WithinIntervalIterator(3));
        TopDocs search = searcher.search(filter, 10);
        ScoreDoc[] scoreDocs = search.scoreDocs;
        assertEquals(2, search.totalHits);

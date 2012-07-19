@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
 
-import org.apache.lucene.search.positions.BooleanPositionIterator;
-import org.apache.lucene.search.positions.ConjunctionPositionIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.BooleanIntervalIterator;
+import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
@@ -145,12 +145,12 @@ class ConjunctionScorer extends Scorer {
   }
   
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
     if (scorersOrdered == null) {
       throw new IllegalStateException("no positions requested for this scorer");
     }
       // only created if needed for this scorer - no penalty for non-positional queries
-    return new ConjunctionPositionIterator(this, collectPositions, BooleanPositionIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorersOrdered));
+    return new ConjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorersOrdered));
   }
 
 }

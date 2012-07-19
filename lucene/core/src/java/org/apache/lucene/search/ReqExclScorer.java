@@ -19,8 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.positions.ConjunctionPositionIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 
 
 /** A Scorer for queries with a required subscorer
@@ -122,7 +122,7 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-    return new ConjunctionPositionIterator(this, collectPositions, reqScorer.positions(needsPayloads, needsOffsets, collectPositions));
+  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    return new ConjunctionIntervalIterator(this, collectPositions, reqScorer.positions(needsPayloads, needsOffsets, collectPositions));
   }
 }

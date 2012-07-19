@@ -37,7 +37,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -402,7 +402,7 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads,
+    public IntervalIterator positions(boolean needsPayloads,
         boolean needsOffsets, boolean collectPositions) throws IOException {
       throw new UnsupportedOperationException();
     }

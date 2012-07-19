@@ -21,15 +21,15 @@ import org.apache.lucene.search.Scorer;
  * limitations under the License.
  */
 
-public class BrouwerianIntervalIterator extends PositionIntervalIterator {
+public class BrouwerianIntervalIterator extends IntervalIterator {
   
-  private final PositionIntervalIterator minuted;
-  private final PositionIntervalIterator subtracted;
-  private PositionInterval subtractedInterval = new PositionInterval();
-  private PositionInterval currentInterval = new PositionInterval();
+  private final IntervalIterator minuted;
+  private final IntervalIterator subtracted;
+  private Interval subtractedInterval = new Interval();
+  private Interval currentInterval = new Interval();
   private int secondDoc = -1;
 
-  public BrouwerianIntervalIterator(Scorer scorer, boolean collectPositions, PositionIntervalIterator minuted, PositionIntervalIterator subtracted) {
+  public BrouwerianIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator minuted, IntervalIterator subtracted) {
     super(scorer, collectPositions);
     this.minuted = minuted;
     this.subtracted = subtracted;
@@ -45,7 +45,7 @@ public class BrouwerianIntervalIterator extends PositionIntervalIterator {
   }
   
   @Override
-  public PositionInterval next() throws IOException {
+  public Interval next() throws IOException {
     if (secondDoc != currentDoc) {
       return currentInterval = minuted.next();
     }
@@ -60,7 +60,7 @@ public class BrouwerianIntervalIterator extends PositionIntervalIterator {
   }
   
   @Override
-  public void collect(PositionCollector collector) {
+  public void collect(IntervalCollector collector) {
     assert collectPositions;
     collector.collectComposite(scorer, currentInterval, currentDoc);
     minuted.collect(collector);
@@ -68,8 +68,8 @@ public class BrouwerianIntervalIterator extends PositionIntervalIterator {
   }
   
   @Override
-  public PositionIntervalIterator[] subs(boolean inOrder) {
-    return new PositionIntervalIterator[] {minuted, subtracted};
+  public IntervalIterator[] subs(boolean inOrder) {
+    return new IntervalIterator[] {minuted, subtracted};
   }
 
 

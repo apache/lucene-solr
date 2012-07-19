@@ -21,7 +21,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
-public class OrderedConjunctionQuery extends PositionFilterQuery {
+public class OrderedConjunctionQuery extends IntervalFilterQuery {
 
   public OrderedConjunctionQuery(int slop, Query... queries) {
     super(buildBooleanQuery(queries), new WithinOrderedFilter(slop + queries.length - 1));

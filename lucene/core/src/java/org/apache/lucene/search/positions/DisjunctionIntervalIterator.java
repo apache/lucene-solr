@@ -32,16 +32,16 @@ import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
  * @lucene.experimental
  */
 // nocommit - javadoc
-public final class DisjunctionPositionIterator extends BooleanPositionIterator {
+public final class DisjunctionIntervalIterator extends BooleanIntervalIterator {
 
-  public DisjunctionPositionIterator(Scorer scorer, boolean collectPositions, PositionIntervalIterator... intervals)
+  public DisjunctionIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator... intervals)
       throws IOException {
     super(scorer, intervals, new IntervalQueueOr(intervals.length), collectPositions);
   }
 
   void advance() throws IOException {
     final IntervalRef top = queue.top();
-    PositionInterval interval = null;
+    Interval interval = null;
     if ((interval = iterators[top.index].next()) != null) {
       top.interval = interval;
       queue.updateTop();
@@ -51,7 +51,7 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
   }
 
   @Override
-  public PositionInterval next() throws IOException {
+  public Interval next() throws IOException {
     while (queue.size() > 0 && queue.top().interval.begin <= queue.currentCandidate.begin) {
       advance();
     }
@@ -63,12 +63,12 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
   }
 
   @Override
-  public PositionIntervalIterator[] subs(boolean inOrder) {
+  public IntervalIterator[] subs(boolean inOrder) {
     return iterators;
   }
 
   @Override
-  public void collect(PositionCollector collector) {
+  public void collect(IntervalCollector collector) {
     assert collectPositions;
     collector.collectComposite(scorer, queue.currentCandidate, currentDoc);
     iterators[queue.top().index].collect(collector);

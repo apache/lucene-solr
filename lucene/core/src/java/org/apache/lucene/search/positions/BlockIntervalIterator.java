@@ -26,33 +26,33 @@ import org.apache.lucene.search.Scorer;
  * @lucene.experimental
  */
 // nocommit - javadoc
-public final class BlockPositionIterator extends PositionIntervalIterator {
-  private final PositionIntervalIterator[] iterators;
+public final class BlockIntervalIterator extends IntervalIterator {
+  private final IntervalIterator[] iterators;
 
-  private static final PositionInterval INFINITE_INTERVAL = new PositionInterval(
+  private static final Interval INFINITE_INTERVAL = new Interval(
       Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
-  private final PositionInterval[] intervals;
-  private final PositionInterval interval = new PositionInterval(
+  private final Interval[] intervals;
+  private final Interval interval = new Interval(
       Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
   private final int[] gaps;
 
   private final int lastIter;
 
-  public BlockPositionIterator(boolean collectPositions, PositionIntervalIterator other) {
+  public BlockIntervalIterator(boolean collectPositions, IntervalIterator other) {
     this(other, collectPositions, defaultGaps(other.subs(true).length));
   }
 
-  public BlockPositionIterator(PositionIntervalIterator other, boolean collectPositions, int[] gaps) {
+  public BlockIntervalIterator(IntervalIterator other, boolean collectPositions, int[] gaps) {
     super(other.getScorer(), collectPositions);
     assert other.subs(true) != null;
     iterators = other.subs(true);
     assert iterators.length > 1;
-    intervals = new PositionInterval[iterators.length];
+    intervals = new Interval[iterators.length];
     lastIter = iterators.length - 1;
     this.gaps = gaps;
   }
 
-  public BlockPositionIterator(Scorer scorer, boolean collectPositions, Scorer... subScorers)
+  public BlockIntervalIterator(Scorer scorer, boolean collectPositions, Scorer... subScorers)
       throws IOException {
     this(scorer, collectPositions, defaultGaps(subScorers.length), subScorers);
   }
@@ -63,12 +63,12 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
     return gaps;
   }
 
-  public BlockPositionIterator(Scorer scorer,  boolean collectPositions, int[] gaps, Scorer... subScorers)
+  public BlockIntervalIterator(Scorer scorer,  boolean collectPositions, int[] gaps, Scorer... subScorers)
       throws IOException {
     super(scorer, collectPositions);
     assert subScorers.length > 1;
-    iterators = new PositionIntervalIterator[subScorers.length];
-    intervals = new PositionInterval[subScorers.length];
+    iterators = new IntervalIterator[subScorers.length];
+    intervals = new Interval[subScorers.length];
     for (int i = 0; i < subScorers.length; i++) {
       // nocommit - offsets and payloads?
       iterators[i] = subScorers[i].positions(false, false, false);
@@ -78,21 +78,21 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
     this.gaps = gaps;
   }
 
-  public BlockPositionIterator(Scorer scorer, int[] gaps, boolean collectPositions, PositionIntervalIterator... iterators) {
+  public BlockIntervalIterator(Scorer scorer, int[] gaps, boolean collectPositions, IntervalIterator... iterators) {
     super(scorer, collectPositions);
     assert iterators.length > 1;
     this.iterators = iterators;
-    intervals = new PositionInterval[iterators.length];
+    intervals = new Interval[iterators.length];
     lastIter = iterators.length - 1;
     this.gaps = gaps;
   }
 
-  public BlockPositionIterator(Scorer scorer, boolean collectPositions, PositionIntervalIterator... iterators) {
+  public BlockIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator... iterators) {
     this(scorer, defaultGaps(iterators.length), collectPositions, iterators);
   }
 
   @Override
-  public PositionInterval next() throws IOException {
+  public Interval next() throws IOException {
     if ((intervals[0] = iterators[0].next()) == null) {
       return null;
     }
@@ -130,15 +130,15 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
   }
 
   @Override
-  public PositionIntervalIterator[] subs(boolean inOrder) {
+  public IntervalIterator[] subs(boolean inOrder) {
     return iterators;
   }
 
   @Override
-  public void collect(PositionCollector collector) {
+  public void collect(IntervalCollector collector) {
     assert collectPositions;
     collector.collectComposite(scorer, interval, currentDoc);
-    for (PositionIntervalIterator iter : iterators) {
+    for (IntervalIterator iter : iterators) {
       iter.collect(collector);
     }
   }

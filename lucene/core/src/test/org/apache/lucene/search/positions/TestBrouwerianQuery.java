@@ -36,7 +36,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -138,9 +137,9 @@ public class TestBrouwerianQuery extends LuceneTestCase {
       Scorer scorer = weight.scorer(atomicReaderContext, true, true, atomicReaderContext.reader().getLiveDocs());
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        PositionIntervalIterator positions = scorer.positions(false, false, false);
+        IntervalIterator positions = scorer.positions(false, false, false);
         assertEquals(1, positions.advanceTo(nextDoc));
-        PositionInterval interval = null;
+        Interval interval = null;
         int[] start = new int[] {0, 1, 4};
         int[] end = new int[] {4, 6, 11};
         for (int j = 0; j < end.length; j++) {

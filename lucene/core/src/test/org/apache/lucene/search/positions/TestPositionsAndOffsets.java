@@ -34,7 +34,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-public class TestPositionOffsets extends LuceneTestCase {
+public class TestPositionsAndOffsets extends LuceneTestCase {
 
   // What am I testing here?
   // - can get offsets out of a basic TermQuery, and a more complex BooleanQuery
@@ -103,13 +103,13 @@ public class TestPositionOffsets extends LuceneTestCase {
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);
-    PositionIntervalIterator positions = scorer.positions(false, needsOffsets, false);
+    IntervalIterator positions = scorer.positions(false, needsOffsets, false);
     int startOffsets[] = expectedOffsets[0];
     int endOffsets[] = expectedOffsets[1];
 
     assertEquals(0, positions.advanceTo(nextDoc));
     for (int i = 0; i < startOffsets.length; i++) {
-      PositionIntervalIterator.PositionInterval interval = positions.next();
+      Interval interval = positions.next();
       assertEquals("i: " + i, startOffsets[i], interval.offsetBegin);
       assertEquals("i: " + i, endOffsets[i], interval.offsetEnd);
     }

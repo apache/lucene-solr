@@ -1,4 +1,4 @@
-package org.apache.lucene.search.poshighlight;
+package org.apache.lucene.search.highlight.positions;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,8 +23,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
+import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.positions.Interval;
 
 /**
  * A TokenStream constructed from a stream of positions and their offsets.
@@ -36,7 +36,7 @@ import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInter
  * 
  * @lucene.experimental
  */
-public class PosTokenStream extends TokenStream {
+public class IntervalTokenStream extends TokenStream {
 
   //this tokenizer generates four attributes:
   // term, offset, positionIncrement? and type?
@@ -45,12 +45,12 @@ public class PosTokenStream extends TokenStream {
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   //private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final String text;
-  private final PositionIntervalIterator positions;
+  private final IntervalIterator positions;
   
   // the index of the current position interval
-  private PositionInterval pos = null;
+  private Interval pos = null;
   
-  public PosTokenStream (String text, PositionIntervalIterator positions) {
+  public IntervalTokenStream (String text, IntervalIterator positions) {
     this.text = text;
     this.positions = positions;
   }

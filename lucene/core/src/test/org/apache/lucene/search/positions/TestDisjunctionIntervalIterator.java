@@ -6,14 +6,13 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.util.List;
 
-public class TestDisjunctionPositionIterator extends LuceneTestCase {
+public class TestDisjunctionIntervalIterator extends LuceneTestCase {
   private static final void addDocs(RandomIndexWriter writer)
       throws CorruptIndexException, IOException {
     {
@@ -54,16 +53,16 @@ public class TestDisjunctionPositionIterator extends LuceneTestCase {
     query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")),
         Occur.SHOULD));
     {
-      PositionFilterQuery filter = new PositionFilterQuery(query,
-          new RangePositionsIterator(0, 3));
+      IntervalFilterQuery filter = new IntervalFilterQuery(query,
+          new RangeIntervalIterator(0, 3));
       TopDocs search = searcher.search(filter, 10);
       ScoreDoc[] scoreDocs = search.scoreDocs;
       assertEquals(2, search.totalHits);
       assertEquals(0, scoreDocs[0].doc);
     }
     {
-      PositionFilterQuery filter = new PositionFilterQuery(query,
-          new WithinPositionIterator(3));
+      IntervalFilterQuery filter = new IntervalFilterQuery(query,
+          new WithinIntervalIterator(3));
       TopDocs search = searcher.search(filter, 10);
       ScoreDoc[] scoreDocs = search.scoreDocs;
       assertEquals(2, search.totalHits);
@@ -111,9 +110,9 @@ public class TestDisjunctionPositionIterator extends LuceneTestCase {
 
       int nextDoc = scorer.nextDoc();
       assertEquals(i, nextDoc);
-      PositionIntervalIterator positions = scorer.positions(false, false, false);
+      IntervalIterator positions = scorer.positions(false, false, false);
       assertEquals(i, positions.advanceTo(nextDoc));
-      PositionInterval interval = positions.next();
+      Interval interval = positions.next();
       assertEquals(1, interval.begin);
       assertEquals(1, interval.end);
 
@@ -165,9 +164,9 @@ public class TestDisjunctionPositionIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        PositionIntervalIterator positions = scorer.positions(false, false, false);
+        IntervalIterator positions = scorer.positions(false, false, false);
         assertEquals(0, positions.advanceTo(nextDoc));
-        PositionInterval interval = null;
+        Interval interval = null;
         int[] start = new int[] { 0, 1, 2, 3, 4, 6, 7, 31, 32, 33 };
         int[] end = new int[] { 2, 3, 4, 33, 33, 33, 33, 33, 34, 35 };
         // {start}term{end} - end is pos+1
@@ -187,9 +186,9 @@ public class TestDisjunctionPositionIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        PositionIntervalIterator positions = scorer.positions(false, false, false);
+        IntervalIterator positions = scorer.positions(false, false, false);
         assertEquals(1, positions.advanceTo(nextDoc));
-        PositionInterval interval = null;
+        Interval interval = null;
         int[] start = new int[] { 0, 1, 3, 4, 5, 6, 7, 31, 32, 34 };
         int[] end = new int[] { 5, 5, 5, 6, 7, 36, 36, 36, 36, 36 };
         // {start}term{end} - end is pos+1

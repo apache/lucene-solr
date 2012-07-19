@@ -18,7 +18,7 @@ package org.apache.lucene.queries.function;
  */
 
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -179,7 +179,7 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
       return scorer.positions(needsPayloads, needsOffsets, false);
     }
   }

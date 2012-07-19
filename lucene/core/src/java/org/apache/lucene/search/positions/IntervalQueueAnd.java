@@ -16,7 +16,6 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 /**
  * 
  * @lucene.experimental
@@ -40,7 +39,7 @@ final class IntervalQueueAnd extends IntervalQueue {
   }
 
   public void updateRightExtreme(IntervalRef intervalRef) {
-    final PositionInterval interval = intervalRef.interval;
+    final Interval interval = intervalRef.interval;
     if (rightExtreme <= interval.end) {
       rightExtreme = interval.end;
       rightExtremeOffset = interval.offsetEnd;
@@ -49,14 +48,14 @@ final class IntervalQueueAnd extends IntervalQueue {
   }
   
   public boolean topContainsQueueInterval() {
-    PositionInterval interval = top().interval;
+    Interval interval = top().interval;
     return interval.begin < currentCandidate.begin
         && currentCandidate.end < rightExtreme;
   }
  
   public void updateCurrentCandidate() {
     final IntervalRef top = top();
-    PositionInterval interval = top.interval;
+    Interval interval = top.interval;
     currentCandidate.begin = interval.begin;
     currentCandidate.offsetBegin = interval.offsetBegin;
     currentCandidate.end = rightExtreme;
@@ -67,8 +66,8 @@ final class IntervalQueueAnd extends IntervalQueue {
   
   @Override
   protected boolean lessThan(IntervalRef left, IntervalRef right) {
-    final PositionInterval a = left.interval;
-    final PositionInterval b = right.interval;
+    final Interval a = left.interval;
+    final Interval b = right.interval;
     return a.begin < b.begin || (a.begin == b.begin && a.end > b.end) || a.offsetBegin < b.offsetBegin;
   }
   
