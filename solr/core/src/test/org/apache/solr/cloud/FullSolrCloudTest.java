@@ -1027,6 +1027,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         if (verbose) System.err.println("error contacting client: "
             + e.getMessage() + "\n");
         continue;
+      } catch (SolrException e) {
+        if (verbose) System.err.println("error contacting client: "
+            + e.getMessage() + "\n");
+        continue;
       }
       
       boolean live = false;
@@ -1274,6 +1278,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           } catch (Exception e) {
             System.err.println("REQUEST FAILED:");
             e.printStackTrace();
+            if (e instanceof SolrServerException) {
+              System.err.println("ROOT CAUSE:");
+              ((SolrServerException) e).getRootCause().printStackTrace();
+            }
             fails.incrementAndGet();
           }
         }
@@ -1285,6 +1293,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         } catch (Exception e) {
           System.err.println("REQUEST FAILED:");
           e.printStackTrace();
+          if (e instanceof SolrServerException) {
+            System.err.println("ROOT CAUSE:");
+            ((SolrServerException) e).getRootCause().printStackTrace();
+          }
           fails.incrementAndGet();
         }
         
