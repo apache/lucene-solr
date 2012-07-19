@@ -112,6 +112,8 @@ Bug Fixes
   file name using the "config" attribute prevented the override file from being
   used. (Ryan Zezeski, hossman)
 
+* SOLR-3642: Correct broken check for multivalued fields in stats.facet
+  (Yandong Yao, hossman)
 
 Other Changes
 ----------------------
