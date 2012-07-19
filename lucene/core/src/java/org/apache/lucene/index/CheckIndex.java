@@ -1603,8 +1603,9 @@ public class CheckIndex {
           }
         }
       }
+      float vectorAvg = status.docCount == 0 ? 0 : status.totVectors / (float)status.docCount;
       msg("OK [" + status.totVectors + " total vector count; avg " + 
-          format.format((((float) status.totVectors) / status.docCount)) + " term/freq vector fields per doc]");
+          format.format(vectorAvg) + " term/freq vector fields per doc]");
     } catch (Throwable e) {
       msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
