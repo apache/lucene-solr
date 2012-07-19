@@ -24,7 +24,8 @@
     </subant>
   </target>
 
-  <target name="test" description="Test both Lucene and Solr" depends="validate">
+  <!-- nocommit put depends="validate" back -->
+  <target name="test" description="Test both Lucene and Solr">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />

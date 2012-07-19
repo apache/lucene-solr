@@ -20,3 +20,4 @@ org.apache.lucene.codecs.memory.MemoryPostingsFormat
 org.apache.lucene.codecs.pfor.ForPostingsFormat
 org.apache.lucene.codecs.pfor.PForPostingsFormat
 org.apache.lucene.codecs.bulkvint.BulkVIntPostingsFormat
+org.apache.lucene.codecs.block.BlockPostingsFormat

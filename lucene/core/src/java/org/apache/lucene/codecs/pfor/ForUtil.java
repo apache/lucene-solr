@@ -17,8 +17,6 @@ package org.apache.lucene.codecs.pfor;
  */
 
 import java.nio.IntBuffer;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * Encode all values in normal area with fixed bit width, 
@@ -72,6 +70,9 @@ public class ForUtil {
   public static void decompress(IntBuffer intBuffer, int[] data, int header) {
     // since this buffer is reused at upper level, rewind first
     intBuffer.rewind();
+
+    // nocommit assert header isn't "malformed", ie besides
+    // numBytes / bit-width there is nothing else!
 
     int numBits = ((header >> 8) & MASK[6]);
 
