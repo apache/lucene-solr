@@ -256,13 +256,12 @@ class SimpleStats {
     FieldCache.DocTermsIndex facetTermsIndex;
     for( String facetField : facet ) {
       SchemaField fsf = searcher.getSchema().getField(facetField);
-      FieldType facetFieldType = fsf.getType();
 
-      if (facetFieldType.isTokenized() || facetFieldType.isMultiValued()) {
+      if ( fsf.multiValued()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Stats can only facet on single-valued fields, not: " + facetField
-          + "[" + facetFieldType + "]");
-        }
+          "Stats can only facet on single-valued fields, not: " + facetField );
+      }
+
       try {
         facetTermsIndex = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), facetField);
       }
