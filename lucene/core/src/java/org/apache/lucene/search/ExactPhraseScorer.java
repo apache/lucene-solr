@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.search.positions.BlockPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;
@@ -326,9 +327,9 @@ final class ExactPhraseScorer extends Scorer {
   
   @Override
   public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-    TermScorer.TermPositions[] posIters = new TermScorer.TermPositions[chunkStates.length];
+    TermIntervalIterator[] posIters = new TermIntervalIterator[chunkStates.length];
     for (int i = 0; i < chunkStates.length; i++) {
-      posIters[i] = new TermScorer.TermPositions(this, chunkStates[i].factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
+      posIters[i] = new TermIntervalIterator(this, chunkStates[i].factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
     }
     return new BlockPositionIterator(this, collectPositions, posIters);
   }

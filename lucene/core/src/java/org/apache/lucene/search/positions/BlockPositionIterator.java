@@ -16,11 +16,10 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionCollector;
-
 import java.io.IOException;
 import java.util.Arrays;
+
+import org.apache.lucene.search.Scorer;
 
 /**
  * 
@@ -152,5 +151,10 @@ public final class BlockPositionIterator extends PositionIntervalIterator {
     assert iterators[1].docID() == docId;
     Arrays.fill(intervals, INFINITE_INTERVAL);
     return currentDoc = docId;
+  }
+
+  @Override
+  public int matchDistance() {
+    return intervals[lastIter].begin - intervals[0].end;
   }
 }

@@ -19,13 +19,12 @@ package org.apache.lucene.search.positions;
 import java.io.IOException;
 
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
 
 /**
  * An interval iterator that has the semantics of sloppy phrase query.
  */
 public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator {
-  
+  //TODO rename to sloppy iter?
   private final int maxLen;
   private int matchDistance;
   private final PositionIntervalIterator iterator;
@@ -60,7 +59,7 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
     return currentDoc = iterator.advanceTo(docId);
   }
   
-  public int matchLength() {
+  public int matchDistance() {
     return matchDistance;
   }
   
@@ -113,6 +112,11 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
     @Override
     public PositionIntervalIterator[] subs(boolean inOrder) {
       return null;
+    }
+
+    @Override
+    public int matchDistance() {
+      return sloppyInterval.end - sloppyInterval.begin;
     }
     
   }
@@ -200,6 +204,11 @@ public class MaxLengthPositionIntervalIterator extends PositionIntervalIterator 
     @Override
     public PositionIntervalIterator[] subs(boolean inOrder) {
       return new PositionIntervalIterator[] {groupIterator};
+    }
+
+    @Override
+    public int matchDistance() {
+      return sloppyGroupInterval.end - sloppyGroupInterval.begin;
     }
     
   }

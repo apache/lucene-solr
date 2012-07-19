@@ -25,6 +25,9 @@ final class IntervalQueueAnd extends IntervalQueue {
 
   int rightExtreme = Integer.MIN_VALUE;
   int rightExtremeOffset = Integer.MIN_VALUE;
+  int rightExtremeBegin;  
+  int currentTopEnd;
+  
   
   public IntervalQueueAnd(int size) {
     super(size);
@@ -32,15 +35,17 @@ final class IntervalQueueAnd extends IntervalQueue {
 
   public void reset () {
     super.reset();
-    currentCandidate.begin = Integer.MIN_VALUE;
-    currentCandidate.end = Integer.MIN_VALUE;
     rightExtreme = Integer.MIN_VALUE;
     rightExtremeOffset = Integer.MIN_VALUE;
   }
 
-  public void updateRightExtreme(PositionInterval interval) {
-    rightExtreme = Math.max(rightExtreme, interval.end);
-    rightExtremeOffset = Math.max(rightExtremeOffset, interval.offsetEnd);
+  public void updateRightExtreme(IntervalRef intervalRef) {
+    final PositionInterval interval = intervalRef.interval;
+    if (rightExtreme <= interval.end) {
+      rightExtreme = interval.end;
+      rightExtremeOffset = interval.offsetEnd;
+      rightExtremeBegin = interval.begin;
+    }
   }
   
   public boolean topContainsQueueInterval() {
@@ -50,11 +55,14 @@ final class IntervalQueueAnd extends IntervalQueue {
   }
  
   public void updateCurrentCandidate() {
-    PositionInterval interval = top().interval;
+    final IntervalRef top = top();
+    PositionInterval interval = top.interval;
     currentCandidate.begin = interval.begin;
     currentCandidate.offsetBegin = interval.offsetBegin;
     currentCandidate.end = rightExtreme;
     currentCandidate.offsetEnd = rightExtremeOffset;
+    currentTopEnd = interval.end;
+        
   }
   
   @Override
@@ -63,4 +71,5 @@ final class IntervalQueueAnd extends IntervalQueue {
     final PositionInterval b = right.interval;
     return a.begin < b.begin || (a.begin == b.begin && a.end > b.end) || a.offsetBegin < b.offsetBegin;
   }
+  
 }

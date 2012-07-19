@@ -19,15 +19,19 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
-import org.apache.lucene.search.spans.SpanScorer;
+import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
-import org.apache.lucene.search.spans.SpansScorerWrapper;
+import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -76,17 +80,17 @@ public class PayloadTermQuery extends SpanTermQuery {
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
-      return new PayloadTermSpanScorer((SpansScorerWrapper) query.getSpans(context, acceptDocs, termContexts),
+      return new PayloadTermSpanScorer((TermSpans) query.getSpans(context, acceptDocs, termContexts),
           this, similarity.sloppySimScorer(stats, context));
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
-      protected BytesRef payload = new BytesRef();
+      protected BytesRef payload;
       protected float payloadScore;
       protected int payloadsSeen;
-      private final SpansScorerWrapper termSpans;
+      private final TermSpans termSpans;
 
-      public PayloadTermSpanScorer(SpansScorerWrapper spans, Weight weight, Similarity.SloppySimScorer docScorer) throws IOException {
+      public PayloadTermSpanScorer(TermSpans spans, Weight weight, Similarity.SloppySimScorer docScorer) throws IOException {
         super(spans, weight, docScorer);
         termSpans = spans;
       }
@@ -113,19 +117,19 @@ public class PayloadTermQuery extends SpanTermQuery {
       }
 
       protected void processPayload(Similarity similarity) throws IOException {
-        if (termSpans.isPayloadAvailable()) {
-          
-          final PositionInterval current = termSpans.current();
-          if (current.nextPayload(payload) && payload.length != 0) {
+        final DocsAndPositionsEnum postings = termSpans.getPostings();
+        if (postings.hasPayload()) {
+          payload = postings.getPayload();
+          if (payload != null) {
             payloadScore = function.currentScore(doc, term.field(),
-                spans.start(), spans.end(), payloadsSeen, payloadScore,
-                docScorer.computePayloadFactor(doc, spans.start(), spans.end(), payload));
+                                                 spans.start(), spans.end(), payloadsSeen, payloadScore,
+                                                 docScorer.computePayloadFactor(doc, spans.start(), spans.end(), payload));
           } else {
             payloadScore = function.currentScore(doc, term.field(),
-                spans.start(), spans.end(), payloadsSeen, payloadScore, 1F);
+                                                 spans.start(), spans.end(), payloadsSeen, payloadScore, 1F);
           }
           payloadsSeen++;
-          
+
         } else {
           // zero out the payload?
         }

@@ -31,6 +31,10 @@ abstract class IntervalQueue extends PriorityQueue<IntervalRef> {
 
   public void reset() {
     clear();
+    currentCandidate.begin = Integer.MIN_VALUE;
+    currentCandidate.end = Integer.MIN_VALUE;
+    currentCandidate.offsetBegin = -1;
+    currentCandidate.offsetEnd = -1;
   }
 
   abstract public boolean topContainsQueueInterval();
@@ -43,7 +47,6 @@ abstract class IntervalQueue extends PriorityQueue<IntervalRef> {
 
   final static class IntervalRef {
     PositionInterval interval;
-    int ord;
     int index;
 
     IntervalRef(PositionInterval interval, int index) {

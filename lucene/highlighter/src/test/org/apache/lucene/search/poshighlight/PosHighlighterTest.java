@@ -41,6 +41,7 @@ import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.SimpleFragmenter;
 import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.positions.BlockPositionIterator;
+import org.apache.lucene.search.positions.BrouwerianQuery;
 import org.apache.lucene.search.positions.PositionFilterQuery;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
@@ -379,6 +380,22 @@ public class PosHighlighterTest extends LuceneTestCase {
     frags = doSearch(bq, 50, 1);
     assertEquals("This document has some <B>Pease</B> <B>porridge</B> in it",
         frags[0]);
+    close();
+  }
+  
+  public void testBrouwerianQuery() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new BooleanClause(new TermQuery(new Term(F, "the")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term(F, "quick")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term(F, "jumps")), Occur.MUST));
+    BooleanQuery sub = new BooleanQuery();
+    sub.add(new BooleanClause(new TermQuery(new Term(F, "fox")), Occur.MUST));
+    insertDocs(analyzer, "the quick brown duck jumps over the lazy dog with the quick brown fox");
+
+    BrouwerianQuery q = new BrouwerianQuery(query, sub);
+    String[] frags = doSearch(q, Integer.MAX_VALUE);
+    assertEquals("<B>the</B> <B>quick</B> brown duck <B>jumps</B> over <B>the</B> lazy dog with the <B>quick</B> brown fox", frags[0]);
+
     close();
   }
   

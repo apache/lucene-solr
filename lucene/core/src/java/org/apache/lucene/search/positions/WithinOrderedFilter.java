@@ -1,4 +1,5 @@
 package org.apache.lucene.search.positions;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,32 +16,24 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
-/**
- * 
- * @lucene.experimental
- */ // nocommit - javadoc
-final class IntervalQueueOr extends IntervalQueue {
-  
-  public IntervalQueueOr(int size) {
-    super(size);
-  }
-  
-  public boolean topContainsQueueInterval() {
-    PositionInterval interval = top().interval;
-    return interval.begin <= currentCandidate.begin
-        && currentCandidate.end <= interval.end;
+
+public class WithinOrderedFilter implements PositionIntervalIterator.PositionIntervalFilter {
+
+  private int slop;
+
+  public WithinOrderedFilter(int slop) {
+    this.slop = slop;
   }
 
-  public void updateCurrentCandidate() {
-    currentCandidate.copy(top().interval);
-  }
-  
   @Override
-  protected boolean lessThan(IntervalRef left, IntervalRef right) {
-    final PositionInterval a = left.interval;
-    final PositionInterval b = right.interval;
-    return a.end < b.end || (a.end == b.end && a.begin >= b.begin);
+  public PositionIntervalIterator filter(PositionIntervalIterator iter) {
+    return new WithinPositionIterator(slop,
+        new OrderedConjunctionPositionIterator(false, iter));
+  }
+
+  @Override
+  public String toString() {
+    return "WithinOrderedFilter[" + slop + "]";
   }
 
 }

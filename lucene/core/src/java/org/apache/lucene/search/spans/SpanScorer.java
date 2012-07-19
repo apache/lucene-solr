@@ -17,12 +17,12 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.Scorer;
+import java.io.IOException;
+
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
-
-import java.io.IOException;
 
 /**
  * Public for extension only.
@@ -100,7 +100,8 @@ public class SpanScorer extends Scorer {
   }
 
   @Override
-  public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public PositionIntervalIterator positions(boolean needsPayloads,
+      boolean needsOffsets, boolean collectPositions) throws IOException {
     return null;
   }
 }

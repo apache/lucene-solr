@@ -17,44 +17,50 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Set;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Set;
 
 /**
  *
  * @lucene.experimental
  */ // nocommit - javadoc
-public class PositionFilterQuery extends Query implements Cloneable {
-
+public final class BrouwerianQuery extends Query implements Cloneable {
   
-  private Query inner;
-  private PositionIntervalFilter filter;
+  private Query minuted;
+  private Query subtracted;
 
-  public PositionFilterQuery(Query inner, PositionIntervalFilter filter) {
-    this.inner = inner;
-    this.filter = filter;
+
+  public BrouwerianQuery(Query minuted, Query subtracted) {
+    this.minuted = minuted;
+    this.subtracted = subtracted;
   }
 
   @Override
   public void extractTerms(Set<Term> terms) {
-    inner.extractTerms(terms);
+    minuted.extractTerms(terms);
+    subtracted.extractTerms(terms);
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    PositionFilterQuery clone = null;
+    BrouwerianQuery clone = null;
 
-    Query rewritten =  inner.rewrite(reader);
-    if (rewritten != inner) {
-      clone = (PositionFilterQuery) this.clone();
-      clone.inner = rewritten;
+    Query rewritten =  minuted.rewrite(reader);
+    Query subRewritten =  subtracted.rewrite(reader);
+    if (rewritten != minuted || subRewritten != subtracted) {
+      clone = (BrouwerianQuery) this.clone();
+      clone.minuted = rewritten;
+      clone.subtracted = subRewritten;
     }
 
     if (clone != null) {
@@ -66,52 +72,49 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new PositionFilterWeight(inner.createWeight(searcher));
+    return new BrouwerianQueryWeight(minuted.createWeight(searcher), subtracted.createWeight(searcher));
   }
 
-  class PositionFilterWeight extends Weight {
+  class BrouwerianQueryWeight extends Weight {
 
-    private final Weight other;
+    private final Weight minuted;
+    private final Weight subtracted;
 
-    public PositionFilterWeight(Weight other) {
-      this.other = other;
+    public BrouwerianQueryWeight(Weight minuted, Weight subtracted) {
+      this.minuted = minuted;
+      this.subtracted = subtracted;
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
         throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader()
-          .getLiveDocs());
-      if (scorer != null) {
-        int newDoc = scorer.advance(doc);
-        if (newDoc == doc) {
-          return other.explain(context, doc);
-        }
-      }
-      return new ComplexExplanation(false, 0.0f,
-          "No matching term within position filter");
+      return minuted.explain(context, doc);
     }
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
-      final Scorer scorer = other.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
-      return scorer == null ? null : new PositionFilterScorer(this, scorer);
+      final Scorer scorer = minuted.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
+      final Scorer subScorer = subtracted.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
+      if (subScorer == null) {
+        return scorer;
+      }
+      return scorer == null ? null : new PositionFilterScorer(this, scorer, subScorer);
     }
 
     @Override
     public Query getQuery() {
-      return PositionFilterQuery.this;
+      return BrouwerianQuery.this;
     }
     
     @Override
     public float getValueForNormalization() throws IOException {
-      return other.getValueForNormalization();
+      return minuted.getValueForNormalization();
     }
 
     @Override
     public void normalize(float norm, float topLevelBoost) {
-      other.normalize(norm, topLevelBoost);
+      minuted.normalize(norm, topLevelBoost);
     }
   }
 
@@ -119,14 +122,13 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
     private final Scorer other;
     private PositionIntervalIterator filter;
+    private final Scorer substracted;
 
-    public PositionFilterScorer(Weight weight, Scorer other) throws IOException {
+    public PositionFilterScorer(Weight weight, Scorer other, Scorer substacted) throws IOException {
       super(weight);
       this.other = other;
-      // nocommit - offsets and payloads?
-      this.filter = PositionFilterQuery.this.filter != null
-          ? PositionFilterQuery.this.filter.filter(other.positions(false, false, false))
-          : other.positions(false, false, false);
+      this.substracted = substacted;
+      this.filter = new BrouwerianIntervalIterator(other, false, other.positions(false, false, false), substacted.positions(false, false, false));
     }
 
     @Override
@@ -136,8 +138,7 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
     @Override
     public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-      return PositionFilterQuery.this.filter != null ? PositionFilterQuery.this.filter
-          .filter(other.positions(needsPayloads, needsOffsets, false)) : other.positions(needsPayloads, needsOffsets, false);
+      return new BrouwerianIntervalIterator(other, collectPositions, other.positions(needsPayloads, needsOffsets, collectPositions), substracted.positions(needsPayloads, needsOffsets, collectPositions));
     }
 
     @Override
@@ -176,30 +177,38 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
   @Override
   public String toString(String field) {
-    return filter.toString() + "(" + inner.toString() + ")";
+    //nocommit TODO
+    return minuted.toString();
   }
-  
+
+  /* 
+   *
+   */
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((filter == null) ? 0 : filter.hashCode());
-    result = prime * result + ((inner == null) ? 0 : inner.hashCode());
+    result = prime * result + ((minuted == null) ? 0 : minuted.hashCode());
+    result = prime * result
+        + ((subtracted == null) ? 0 : subtracted.hashCode());
     return result;
   }
 
+  /* 
+   *
+   */
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (!super.equals(obj)) return false;
     if (getClass() != obj.getClass()) return false;
-    PositionFilterQuery other = (PositionFilterQuery) obj;
-    if (filter == null) {
-      if (other.filter != null) return false;
-    } else if (!filter.equals(other.filter)) return false;
-    if (inner == null) {
-      if (other.inner != null) return false;
-    } else if (!inner.equals(other.inner)) return false;
+    BrouwerianQuery other = (BrouwerianQuery) obj;
+    if (minuted == null) {
+      if (other.minuted != null) return false;
+    } else if (!minuted.equals(other.minuted)) return false;
+    if (subtracted == null) {
+      if (other.subtracted != null) return false;
+    } else if (!subtracted.equals(other.subtracted)) return false;
     return true;
   }
 

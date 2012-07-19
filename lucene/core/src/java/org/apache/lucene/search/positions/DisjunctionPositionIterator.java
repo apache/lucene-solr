@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionCollector;
 
 /**
  * DisjunctionPositionIterator based on minimal interval semantics for OR
@@ -53,7 +52,7 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
 
   @Override
   public PositionInterval next() throws IOException {
-    while (queue.size() > 0 && queue.topContainsQueueInterval()) {
+    while (queue.size() > 0 && queue.top().interval.begin <= queue.currentCandidate.begin) {
       advance();
     }
     if (queue.size() == 0) {
@@ -77,7 +76,7 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
 
   @Override
   public int advanceTo(int docId) throws IOException {
-    queue.clear();
+    queue.reset();
     int minAdvance = NO_MORE_DOCS;
     for (int i = 0; i < iterators.length; i++) {
       if (iterators[i].docID() < docId) {
@@ -95,6 +94,11 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
       }
     }
     return currentDoc = minAdvance;
+  }
+
+  @Override
+  public int matchDistance() {
+    return iterators[queue.top().index].matchDistance();
   }
 
 }

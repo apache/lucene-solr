@@ -17,16 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.TermQuery.TermDocsEnumFactory;
-import org.apache.lucene.search.TermScorer.TermPositions;
-import org.apache.lucene.search.positions.ConjunctionPositionIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
-import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
-import org.apache.lucene.util.ArrayUtil;
-
 import java.io.IOException;
 import java.util.Comparator;
+
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.TermQuery.TermDocsEnumFactory;
+import org.apache.lucene.search.positions.ConjunctionPositionIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.TermIntervalIterator;
+import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
+import org.apache.lucene.util.ArrayUtil;
 
 
 /** Scorer for conjunctions, sets of terms, all of which are required. */
@@ -123,10 +123,10 @@ class ConjunctionTermScorer extends Scorer {
 
   @Override
   public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-    TermPositions[] positionIters = new TermPositions[origDocsAndFreqs.length];
+    TermIntervalIterator[] positionIters = new TermIntervalIterator[origDocsAndFreqs.length];
     for (int i = 0; i < positionIters.length; i++) {
       DocsAndFreqs d = origDocsAndFreqs[i];
-      positionIters[i] = new TermPositions(this, d.factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
+      positionIters[i] = new TermIntervalIterator(this, d.factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
     }
     return new ConjunctionPositionIterator(this, collectPositions, positionIters);
   }

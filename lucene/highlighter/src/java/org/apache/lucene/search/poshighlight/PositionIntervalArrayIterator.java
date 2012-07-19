@@ -58,5 +58,10 @@ public class PositionIntervalArrayIterator extends PositionIntervalIterator {
   public int advanceTo(int docId) throws IOException {
     return 0;
   }
+
+  @Override
+  public int matchDistance() {
+    return 0;
+  }
   
 }

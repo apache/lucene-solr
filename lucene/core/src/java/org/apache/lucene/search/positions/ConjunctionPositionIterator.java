@@ -38,6 +38,8 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
   private final IntervalQueueAnd queue;
   private final int nrMustMatch;
   private SnapshotPositionCollector snapshot;
+  private int rightExtremeBegin;
+  
 
   public ConjunctionPositionIterator(Scorer scorer, boolean collectPositions,
       PositionIntervalIterator... iterators) throws IOException {
@@ -58,7 +60,7 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     PositionInterval interval = null;
     if ((interval = iterators[top.index].next()) != null) {
       top.interval = interval;
-      queue.updateRightExtreme(interval);
+      queue.updateRightExtreme(top);
       queue.updateTop();
     } else {
       queue.pop();
@@ -86,7 +88,7 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
           && queue.currentCandidate.end == top.end) {
         return queue.currentCandidate;
       }
-     
+      rightExtremeBegin = queue.rightExtremeBegin;
       advance();
       if (queue.size() < nrMustMatch) {
         break;
@@ -97,21 +99,31 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
   
   
   @Override
-  public int advanceTo(int docId) throws IOException {
-    queue.reset();
-    int advancedTo = -1;
-    for (int i = 0; i < iterators.length; i++) {
-      currentDoc = iterators[i].advanceTo(docId);
-      assert advancedTo == -1 || advancedTo == currentDoc;
-      
-      final PositionInterval interval = iterators[i].next();
-      if (interval != null) {
-        IntervalRef intervalRef = new IntervalRef(interval, i); // TODO maybe reuse?
-        queue.updateRightExtreme(intervalRef.interval);
-        queue.add(intervalRef);
+  public int advanceTo(final int docId) throws IOException {
+    int advancedTo = docId;
+    while (true) {
+      queue.reset();
+      for (int i = 0; i < iterators.length; i++) {
+        currentDoc = iterators[i].advanceTo(advancedTo);
+        if (currentDoc == NO_MORE_DOCS) {
+          return NO_MORE_DOCS;
+        }
+        
+        if (i != 0 && currentDoc != advancedTo) {
+          advancedTo = currentDoc;
+          continue;
+        }
+        advancedTo = currentDoc;
+        final PositionInterval interval = iterators[i].next();
+        if (interval != null) {
+          IntervalRef intervalRef = new IntervalRef(interval, i); // TODO maybe
+                                                                  // reuse?
+          queue.updateRightExtreme(intervalRef);
+          queue.add(intervalRef);
+        }
       }
+      return currentDoc;
     }
-    return currentDoc;
   }
   
   
@@ -226,5 +238,10 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
       }
     }
     
+  }
+
+  @Override
+  public int matchDistance() {
+    return (rightExtremeBegin) - (queue.currentTopEnd) -1; // align the match if pos are adjacent
   }
 }

@@ -63,6 +63,7 @@ public abstract class Scorer extends DocIdSetIterator {
     }
   }
   
+  //nocommit javadocs
   public abstract PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException;
 
   /**

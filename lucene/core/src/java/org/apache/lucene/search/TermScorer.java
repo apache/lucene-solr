@@ -23,6 +23,7 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.TermQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.TermIntervalIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
@@ -98,100 +99,6 @@ final class TermScorer extends Scorer {
   
   @Override
   public PositionIntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-    return new TermPositions(this, factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
-  }
-
- static final class TermPositions extends PositionIntervalIterator {
-    private final PositionInterval interval;
-    int positionsPending;
-    private final DocsAndPositionsEnum docsAndPos;
-    private int docID = -1;
-
-    public TermPositions(Scorer scorer, DocsAndPositionsEnum docsAndPos, boolean doPayloads,  boolean collectPositions) {
-      super(scorer, collectPositions);
-      this.docsAndPos = docsAndPos;
-      this.interval = doPayloads ? new PayloadPosInterval(docsAndPos, this)
-          : new PositionInterval();
-    }
-
-    @Override
-    public PositionInterval next() throws IOException {
-      if (--positionsPending >= 0) {
-        interval.begin = interval.end = docsAndPos.nextPosition();
-        interval.offsetBegin = docsAndPos.startOffset();
-        interval.offsetEnd = docsAndPos.endOffset();
-        return interval;
-      }
-      positionsPending = 0;
-      return null;
-    }
-
-    @Override
-    public int docID() {
-      return docID;
-    }
-
-    @Override
-    public PositionIntervalIterator[] subs(boolean inOrder) {
-      return EMPTY;
-    }
-
-    @Override
-    public void collect(PositionCollector collector) {
-      collector.collectLeafPosition(scorer, interval, docID);
-    }
-
-    @Override
-    public int advanceTo(int docId) throws IOException {
-      int advance = docsAndPos.advance(docId);
-      if (advance != NO_MORE_DOCS) {
-        positionsPending = docsAndPos.freq();
-      }
-      interval.reset();
-      return docID = docsAndPos.docID();
-    }
-    
-    @Override
-    public String toString() {
-      return "TermPositions [interval=" + interval + ", positionsPending="
-          + positionsPending + ", docID=" + docID + "]";
-    }
-  }
-
-  private static final class PayloadPosInterval extends PositionInterval {
-    private int pos = -1;
-    private final DocsAndPositionsEnum payloads;
-    private final TermPositions termPos;
-
-    public PayloadPosInterval(DocsAndPositionsEnum payloads, TermPositions pos) {
-      this.payloads = payloads;
-      this.termPos = pos;
-    }
-
-    @Override
-    public boolean payloadAvailable() {
-      return payloads.hasPayload();
-    }
-
-    @Override
-    public boolean nextPayload(BytesRef ref) throws IOException {
-      if (pos == termPos.positionsPending) {
-        return false;
-      } else {
-        pos = termPos.positionsPending;
-        final BytesRef payload = payloads.getPayload();
-        ref.bytes = payload.bytes;
-        ref.length = payload.length;
-        ref.offset = payload.offset;
-        return true;
-      }
-    }
-
-    @Override
-    public void reset() {
-      super.reset();
-      pos = -1;
-    }
-
+    return new TermIntervalIterator(this, factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
   }
 }

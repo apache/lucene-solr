@@ -1,4 +1,5 @@
 package org.apache.lucene.search.positions;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,32 +16,23 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
-/**
- * 
- * @lucene.experimental
- */ // nocommit - javadoc
-final class IntervalQueueOr extends IntervalQueue {
-  
-  public IntervalQueueOr(int size) {
-    super(size);
-  }
-  
-  public boolean topContainsQueueInterval() {
-    PositionInterval interval = top().interval;
-    return interval.begin <= currentCandidate.begin
-        && currentCandidate.end <= interval.end;
+
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+
+public class OrderedConjunctionQuery extends PositionFilterQuery {
+
+  public OrderedConjunctionQuery(int slop, Query... queries) {
+    super(buildBooleanQuery(queries), new WithinOrderedFilter(slop + queries.length - 1));
   }
 
-  public void updateCurrentCandidate() {
-    currentCandidate.copy(top().interval);
-  }
-  
-  @Override
-  protected boolean lessThan(IntervalRef left, IntervalRef right) {
-    final PositionInterval a = left.interval;
-    final PositionInterval b = right.interval;
-    return a.end < b.end || (a.end == b.end && a.begin >= b.begin);
+  private static BooleanQuery buildBooleanQuery(Query... queries) {
+    BooleanQuery bq = new BooleanQuery();
+    for (Query q : queries) {
+      bq.add(q, BooleanClause.Occur.MUST);
+    }
+    return bq;
   }
 
 }

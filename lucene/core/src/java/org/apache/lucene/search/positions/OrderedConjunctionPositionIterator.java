@@ -34,7 +34,10 @@ public final class OrderedConjunctionPositionIterator extends
   private final PositionInterval interval = new PositionInterval(
       Integer.MAX_VALUE, Integer.MAX_VALUE, -1, -1);
   private int index = 1;
-
+  private int lastTopEnd;
+  private int lastEndBegin;
+  
+  
   public OrderedConjunctionPositionIterator(boolean collectPositions, PositionIntervalIterator other) {
     super(other.scorer, collectPositions);
     assert other.subs(true) != null;
@@ -85,6 +88,8 @@ public final class OrderedConjunctionPositionIterator extends
       interval.end = intervals[lastIter].end;
       interval.offsetBegin = intervals[0].offsetBegin;
       interval.offsetEnd = intervals[lastIter].offsetEnd;
+      lastTopEnd = intervals[0].end;
+      lastEndBegin = intervals[lastIter].begin;
       b = intervals[lastIter].begin;
       index = 1;
       intervals[0] = iterators[0].next();
@@ -122,6 +127,11 @@ public final class OrderedConjunctionPositionIterator extends
     intervals[0] = iterators[0].next();
     index = 1;
     return currentDoc = docId;
+  }
+
+  @Override
+  public int matchDistance() {
+    return (lastEndBegin-lastIter) - lastTopEnd;
   }
 
 }

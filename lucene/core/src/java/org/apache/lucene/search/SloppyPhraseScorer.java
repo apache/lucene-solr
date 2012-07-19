@@ -33,6 +33,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.MaxLengthPositionIntervalIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -559,7 +560,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
       if (!map.containsKey(term)) {
         DocsAndPositionsEnum docsAndPosEnum = postings[i].factory
             .docsAndPositionsEnum(needsOffsets);
-        iterAndOffset = new IterAndOffsets(new TermScorer.TermPositions(this, docsAndPosEnum, needsPayloads,
+        iterAndOffset = new IterAndOffsets(new TermIntervalIterator(this, docsAndPosEnum, needsPayloads,
             collectPositions));
         map.put(term, iterAndOffset);
       } else {

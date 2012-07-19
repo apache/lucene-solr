@@ -17,14 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Comparator;
+
 import org.apache.lucene.search.positions.BooleanPositionIterator;
 import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Comparator;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {

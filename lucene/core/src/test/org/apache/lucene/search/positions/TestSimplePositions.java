@@ -17,8 +17,6 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
@@ -26,19 +24,14 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CheckHits;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
 
 public class TestSimplePositions extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -100,8 +93,7 @@ public class TestSimplePositions extends LuceneTestCase {
     query.add(q1, Occur.MUST);
     query.add(q2, Occur.MUST);
     query.add(q3, Occur.MUST);
-    Query snq = new PositionFilterQuery(query, new WithinOrderedFilter(slop
-        + query.clauses().size() - 1));
+    Query snq = new PositionFilterQuery(query, new WithinOrderedFilter(slop));
     checkHits(snq, expectedDocs);
   }
   
@@ -211,22 +203,7 @@ public class TestSimplePositions extends LuceneTestCase {
   
    assertNull("third range", positions.next());
    }
-  public static class WithinOrderedFilter implements PositionIntervalFilter {
-    
-    private int slop;
-    
-    public WithinOrderedFilter(int slop) {
-      this.slop = slop;
-    }
-    
-    @Override
-    public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-      return new WithinPositionIterator(slop,
-          new OrderedConjunctionPositionIterator(false, iter));
-    }
-    
-  }
-  
+
   public static class BlockPositionIteratorFilter implements PositionIntervalFilter {
 
     @Override
@@ -241,7 +218,7 @@ public class TestSimplePositions extends LuceneTestCase {
       query.add(makeTermQuery("u1"), Occur.MUST);
       query.add(makeTermQuery("u2"), Occur.MUST);
       Query snq = new PositionFilterQuery(query, new WithinPositionIterator(
-          query.clauses().size() - 1));
+          0));
       Query rewrite = this.searcher.rewrite(snq);
       AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
       Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
@@ -283,6 +260,8 @@ public class TestSimplePositions extends LuceneTestCase {
       assertEquals("doc", 10, positions.docID());
       assertEquals("start", 0, interval.begin);
       assertEquals("end", 1, interval.end);
+      
+     
       assertNull("Has next and it shouldn't: " + positions.docID(), positions.next());
     }
     
@@ -292,7 +271,7 @@ public class TestSimplePositions extends LuceneTestCase {
       query.add(makeTermQuery("u1"), Occur.MUST);
       query.add(makeTermQuery("u2"), Occur.MUST);
       Query nearQuery = new PositionFilterQuery(query,
-          new WithinPositionIterator(1));
+          new WithinPositionIterator(0));
       
       BooleanQuery topLevel = new BooleanQuery();
       topLevel.add(nearQuery, Occur.MUST);
@@ -300,14 +279,14 @@ public class TestSimplePositions extends LuceneTestCase {
 
 
       Query rewrite = this.searcher.rewrite(new PositionFilterQuery(topLevel,
-          new WithinPositionIterator(3)));
+          new WithinPositionIterator(1)));
       AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
       Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
       Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
           .nextBoolean(), true, r.getLiveDocs());
       
       PositionIntervalIterator iterator = scorer.positions(false, false, false);
-      iterator.advanceTo(4);
+      assertEquals(4,iterator.advanceTo(4));
       PositionInterval interval = iterator.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 4, iterator.docID());
@@ -371,7 +350,7 @@ public class TestSimplePositions extends LuceneTestCase {
       assertEquals("end", 1, interval.end);
       
       interval = iterator.next();
-      assertNull("Has next and it shouldn't", interval);
+      assertNull("Has next and it shouldn't " + interval, interval);
     }
   }
   
