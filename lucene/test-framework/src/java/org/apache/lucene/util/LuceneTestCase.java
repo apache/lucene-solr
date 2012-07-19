@@ -1053,7 +1053,7 @@ public abstract class LuceneTestCase extends Assert {
             if (r instanceof AtomicReader) {
               r = new FCInvisibleMultiReader(new AssertingAtomicReader((AtomicReader)r));
             } else if (r instanceof DirectoryReader) {
-              r = new FCInvisibleMultiReader(new AssertingDirectoryReader((DirectoryReader)r));
+              r = new FCInvisibleMultiReader((DirectoryReader)r);
             }
             break;
           default:
