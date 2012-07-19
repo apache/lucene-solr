@@ -18,12 +18,12 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
@@ -237,7 +237,6 @@ class QueryDocValues extends FloatDocValues {
           // a match!
           mval.value = scorer.score();
           mval.exists = true;
-          return;
         } catch (IOException e) {
           throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
         }

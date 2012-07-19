@@ -17,7 +17,6 @@
 
 package org.apache.solr.search;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -144,7 +143,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     }
   }
 
-  public void warm(SolrIndexSearcher searcher, SolrCache<K,V> old) throws IOException {
+  public void warm(SolrIndexSearcher searcher, SolrCache<K,V> old) {
     if (regenerator==null) return;
     long warmingStartTime = System.currentTimeMillis();
     LRUCache<K,V> other = (LRUCache<K,V>)old;

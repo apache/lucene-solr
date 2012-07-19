@@ -24,10 +24,7 @@ import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
-
-import java.io.IOException;
 
 /**
  * <code>SortedIntDocSet</code> represents a sorted set of Lucene Document Ids.
@@ -658,7 +655,7 @@ public class SortedIntDocSet extends DocSetBase {
       int lastEndIdx = 0;
 
       @Override
-      public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) {
         AtomicReader reader = context.reader();
         // all Solr DocSets that are used as filters only include live docs
         final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
@@ -695,7 +692,7 @@ public class SortedIntDocSet extends DocSetBase {
 
         return BitsFilteredDocIdSet.wrap(new DocIdSet() {
           @Override
-          public DocIdSetIterator iterator() throws IOException {
+          public DocIdSetIterator iterator() {
             return new DocIdSetIterator() {
               int idx = startIdx;
               int adjustedDoc = -1;
@@ -706,12 +703,12 @@ public class SortedIntDocSet extends DocSetBase {
               }
 
               @Override
-              public int nextDoc() throws IOException {
+              public int nextDoc() {
                 return adjustedDoc = (idx > endIdx) ? NO_MORE_DOCS : (docs[idx++] - base);
               }
 
               @Override
-              public int advance(int target) throws IOException {
+              public int advance(int target) {
                 if (idx > endIdx || target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
                 target += base;
 
@@ -757,7 +754,7 @@ public class SortedIntDocSet extends DocSetBase {
           }
 
           @Override
-          public Bits bits() throws IOException {
+          public Bits bits() {
             // random access is expensive for this set
             return null;
           }

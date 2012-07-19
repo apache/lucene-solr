@@ -21,12 +21,12 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -53,7 +53,7 @@ import java.util.Map;
  */
 
 public class ReverseOrdFieldSource extends ValueSource {
-  public String field;
+  public final String field;
 
   public ReverseOrdFieldSource(String field) {
     this.field = field;
@@ -95,6 +95,6 @@ public class ReverseOrdFieldSource extends ValueSource {
   @Override
   public int hashCode() {
     return hcode + field.hashCode();
-  };
+  }
 
 }

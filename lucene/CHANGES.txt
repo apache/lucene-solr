@@ -7,6 +7,120 @@ http://s.apache.org/luceneversions
 ======================= Lucene 5.0.0 =======================
 
 
+======================= Lucene 4.0.0-BETA =======================
+
+New features
+
+* LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
+  iteration marks. (Robert Muir, Christian Moen)
+
+* LUCENE-3832: Added BasicAutomata.makeStringUnion method to efficiently
+  create automata from a fixed collection of UTF-8 encoded BytesRef
+  (Dawid Weiss, Robert Muir)
+
+* LUCENE-4153: Added option to fast vector highlighting via BaseFragmentsBuilder to
+  respect field boundaries in the case of highlighting for multivalued fields.
+  (Martijn van Groningen)
+
+API Changes
+
+* LUCENE-4138: update of morfologik (Polish morphological analyzer) to 1.5.3.
+  The tag attribute class has been renamed to MorphosyntacticTagsAttribute and
+  has a different API (carries a list of tags instead of a compound tag). Upgrade
+  of embedded morfologik dictionaries to version 1.9. (Dawid Weiss)
+
+* LUCENE-4178: set 'tokenized' to true on FieldType by default, so that if you
+  make a custom FieldType and set indexed = true, its analyzed by the analyzer.
+  (Robert Muir)
+
+* LUCENE-4220: Removed the buggy JavaCC-based HTML parser in the benchmark
+  module and replaced by NekoHTML. HTMLParser interface was cleaned up while
+  changing method signatures.  (Uwe Schindler, Robert Muir)
+
+* LUCENE-2191: Rename Tokenizer.reset(Reader) to Tokenizer.setReader(Reader).
+  The purpose of this method was always to set a new Reader on the Tokenizer,
+  reusing the object. But the name was often confused with TokenStream.reset().
+  (Robert Muir)
+
+* LUCENE-4228: Refactored CharFilter to extend java.io.FilterReader. CharFilters
+  filter another reader and you override correct() for offset correction.
+  (Robert Muir)
+
+Optimizations
+
+* LUCENE-4171: Performance improvements to Packed64.
+  (Toke Eskildsen via Adrien Grand)
+
+* LUCENE-4184: Performance improvements to the aligned packed bits impl.
+  (Toke Eskildsen, Adrien Grand)
+
+* LUCENE-4235: Remove enforcing of Filter rewrite for NRQ queries.
+  (Uwe Schindler)
+
+Bug Fixes
+
+* LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,
+  so that it works correctly with Analyzers that produce binary non-UTF-8 terms
+  such as CollationAnalyzer. (Nattapong Sirilappanich via Robert Muir) 
+
+* LUCENE-4209: Fix FSTCompletionLookup to close its sorter, so that it won't
+  leave temp files behind in /tmp. Fix SortedTermFreqIteratorWrapper to not
+  leave temp files behind in /tmp on Windows. Fix Sort to not leave
+  temp files behind when /tmp is a separate volume. (Uwe Schindler, Robert Muir)
+
+* LUCENE-4221: Fix overeager CheckIndex validation for term vector offsets.
+  (Robert Muir)
+
+* LUCENE-4222: TieredMergePolicy.getFloorSegmentMB was returning the
+  size in bytes not MB (Chris Fuller via Mike McCandless)
+
+* LUCENE-3505: Fix bug (Lucene 4.0alpha only) where boolean conjunctions
+  were sometimes scored incorrectly. Conjunctions of only termqueries where
+  at least one term omitted term frequencies (IndexOptions.DOCS_ONLY) would 
+  be scored as if all terms omitted term frequencies.  (Robert Muir)
+
+* LUCENE-2686, LUCENE-3505: Fixed BooleanQuery scorers to return correct 
+  freq().  Added support for scorer navigation API (Scorer.getChildren) to 
+  all queries.  Made Scorer.freq() abstract. 
+  (Koji Sekiguchi, Mike McCandless, Robert Muir)
+
+Build
+
+* LUCENE-4094: Support overriding file.encoding on forked test JVMs
+  (force via -Drandomized.file.encoding=XXX). (Dawid Weiss)
+
+* LUCENE-4189: Test output should include timestamps (start/end for each 
+  test/ suite). Added -Dtests.timestamps=[off by default]. (Dawid Weiss)
+
+* LUCENE-4110: Report long periods of forked jvm inactivity (hung tests/ suites).
+  Added -Dtests.heartbeat=[seconds] with the default of 60 seconds.
+  (Dawid Weiss)
+
+* LUCENE-4160: Added a property to quit the tests after a given
+  number of failures has occurred. This is useful in combination
+  with -Dtests.iters=N (you can start N iterations and wait for M
+  failures, in particular M = 1). -Dtests.maxfailures=M. Alternatively,
+  specify -Dtests.failfast=true to skip all tests after the first failure.
+  (Dawid Weiss)
+
+* LUCENE-4115: JAR resolution/ cleanup should be done automatically for ant 
+  clean/ eclipse/ resolve (Dawid Weiss)
+
+* LUCENE-4199, LUCENE-4202, LUCENE-4206: Add a new target "check-forbidden-apis"
+  that parses all generated .class files for use of APIs that use default
+  charset, default locale, or default timezone and fail build if violations
+  found. This ensures, that Lucene / Solr is independent on local configuration
+  options.  (Uwe Schindler, Robert Muir, Dawid Weiss)
+  
+* LUCENE-4217: Add the possibility to run tests with Atlassian Clover
+  loaded from IVY. A development License solely for Apache code was added in
+  the tools/ folder, but is not included in releases.  (Uwe Schindler)
+
+Documentation
+
+* LUCENE-4195: Added package documentation and examples for 
+  org.apache.lucene.codecs (Alan Woodward via Robert Muir)
+
 ======================= Lucene 4.0.0-ALPHA =======================
 
 More information about this release, including any errata related to the 
@@ -20,7 +134,7 @@ Changes in backwards compatibility policy
 
 * LUCENE-1458, LUCENE-2111, LUCENE-2354: Changes from flexible indexing:
 
-  - On upgrading to 3.1, if you do not fully reindex your documents,
+  - On upgrading to 4.0, if you do not fully reindex your documents,
     Lucene will emulate the new flex API on top of the old index,
     incurring some performance cost (up to ~10% slowdown, typically).
     To prevent this slowdown, use oal.index.IndexUpgrader
@@ -29,7 +143,7 @@ Changes in backwards compatibility policy
     Mixed flex/pre-flex indexes are perfectly fine -- the two
     emulation layers (flex API on pre-flex index, and pre-flex API on
     flex index) will remap the access as required.  So on upgrading to
-    3.1 you can start indexing new documents into an existing index.
+    4.0 you can start indexing new documents into an existing index.
     To get optimal performance, use oal.index.IndexUpgrader
     to upgrade your indexes to latest file format (LUCENE-3082).
 
@@ -282,6 +396,11 @@ Changes in backwards compatibility policy
   unmodifiable List<? extends IndexReader>. ReaderUtil.Gather was
   removed, as IndexReaderContext.leaves() is now the preferred way
   to access sub-readers.  (Uwe Schindler)
+
+* LUCENE-4155: oal.util.ReaderUtil, TwoPhaseCommit, TwoPhaseCommitTool
+  classes were moved to oal.index package. oal.util.CodecUtil class was moved
+  to oal.codecs package. oal.util.DummyConcurrentLock was removed
+  (no longer used in Lucene 4.0).  (Uwe Schindler)
 
 Changes in Runtime Behavior
 
@@ -989,6 +1108,11 @@ Optimizations
 * LUCENE-4156: DirectoryTaxonomyWriter.getSize is no longer synchronized.
   (Shai Erera, Sivan Yogev)
 
+* LUCENE-4163: Improve concurrency of MMapIndexInput.clone() by using
+  the new WeakIdentityMap on top of a ConcurrentHashMap to manage
+  the cloned instances. WeakIdentityMap was extended to support
+  iterating over its keys.  (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
@@ -1061,6 +1185,13 @@ Bug fixes
 
 * LUCENE-4114: Fix int overflow bugs in BYTES_FIXED_STRAIGHT and
   BYTES_FIXED_DEREF doc values implementations (Walt Elder via Mike McCandless).
+
+* LUCENE-4147: Fixed thread safety issues when rollback() and commit()
+  are called simultaneously.  (Simon Willnauer, Mike McCandless)
+
+* LUCENE-4165: Removed closing of the Reader used to read the affix file in
+  HunspellDictionary.  Consumers are now responsible for closing all InputStreams
+  once the Dictionary has been instantiated. (Torsten Krah, Uwe Schindler, Chris Male)
 
 Documentation
 

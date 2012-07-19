@@ -50,7 +50,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     }
 
     @Override
-    public ReaderPayloadProcessor getReaderProcessor(AtomicReader reader) throws IOException {
+    public ReaderPayloadProcessor getReaderProcessor(AtomicReader reader) {
       if (reader instanceof SegmentReader) {
         return processors.get(((SegmentReader) reader).directory());
       } else {
@@ -63,7 +63,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
   private static final class PerTermPayloadProcessor extends ReaderPayloadProcessor {
 
     @Override
-    public PayloadProcessor getProcessor(String field, BytesRef text) throws IOException {
+    public PayloadProcessor getProcessor(String field, BytesRef text) {
       // don't process payloads of terms other than "p:p1"
       if (!field.equals("p") || !text.bytesEquals(new BytesRef("p1"))) {
         return null;
@@ -79,7 +79,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
   private static final class DeletePayloadProcessor extends PayloadProcessor {
 
     @Override
-    public void processPayload(BytesRef payload) throws IOException {
+    public void processPayload(BytesRef payload) {
       payload.length = 0;      
     }
 
@@ -98,7 +98,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     }
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       if (called) {
         return false;
       }

@@ -53,7 +53,7 @@ public class ChainedFilter extends Filter {
   /**
    * Logical operation when none is declared. Defaults to OR.
    */
-  public static int DEFAULT = OR;
+  public static final int DEFAULT = OR;
 
   /**
    * The filter chain

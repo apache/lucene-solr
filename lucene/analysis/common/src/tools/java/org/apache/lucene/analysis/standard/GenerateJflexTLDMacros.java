@@ -123,11 +123,11 @@ public class GenerateJflexTLDMacros {
       while (null != (line = reader.readLine())) {
         Matcher matcher = TLD_PATTERN_1.matcher(line);
         if (matcher.matches()) {
-          TLDs.add(matcher.group(1).toLowerCase(Locale.US));
+          TLDs.add(matcher.group(1).toLowerCase(Locale.ROOT));
         } else {
           matcher = TLD_PATTERN_2.matcher(line);
           if (matcher.matches()) {
-            TLDs.add(matcher.group(1).toLowerCase(Locale.US));
+            TLDs.add(matcher.group(1).toLowerCase(Locale.ROOT));
           }
         }
       }
@@ -146,7 +146,7 @@ public class GenerateJflexTLDMacros {
    */
   private void writeOutput(SortedSet<String> ASCIITLDs) throws IOException {
     final DateFormat dateFormat = DateFormat.getDateTimeInstance
-      (DateFormat.FULL, DateFormat.FULL, Locale.US);
+      (DateFormat.FULL, DateFormat.FULL, Locale.ROOT);
     dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     final Writer writer = new OutputStreamWriter
       (new FileOutputStream(outputFile), "UTF-8");

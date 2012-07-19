@@ -18,11 +18,13 @@ package org.apache.solr.handler;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.util.regex.Matcher;
@@ -36,6 +38,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.TestDistributedSearch;
@@ -62,10 +65,13 @@ import org.junit.BeforeClass;
  * @since 1.4
  */
 // TODO: can this test be sped up? it used to not be so slow...
+@Slow
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
-  private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
+  private static final String CONF_DIR = "." + File.separator + "solr"
+      + File.separator + "collection1" + File.separator + "conf"
+      + File.separator;
 
   static JettySolrRunner masterJetty, slaveJetty;
   static SolrServer masterClient, slaveClient;
@@ -77,12 +83,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   // index from previous test method
   static int nDocs = 500;
 
-  // TODO: fix this test to not require FSDirectory.. doesnt even work with MockFSDirectory... wtf?
-  static String savedFactory;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    useFactory(null); // need an FS factory
     master = new SolrInstance("master", null);
     master.setUp();
     masterJetty = createJetty(master);
@@ -112,11 +116,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveJetty.stop();
     master.tearDown();
     slave.tearDown();
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
   }
 
   private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {
@@ -932,8 +931,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
   private static void copyFile(File src, File dst, Integer port) throws IOException {
-    BufferedReader in = new BufferedReader(new FileReader(src));
-    Writer out = new FileWriter(dst);
+    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), "UTF-8"));
+    Writer out = new OutputStreamWriter(new FileOutputStream(dst), "UTF-8");
 
     for (String line = in.readLine(); null != line; line = in.readLine()) {
 
@@ -1000,8 +999,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                            
 
       homeDir = new File(home, name);
-      dataDir = new File(homeDir, "data");
-      confDir = new File(homeDir, "conf");
+      dataDir = new File(homeDir + "/collection1", "data");
+      confDir = new File(homeDir + "/collection1", "conf");
 
       homeDir.mkdirs();
       dataDir.mkdirs();

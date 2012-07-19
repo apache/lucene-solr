@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -24,7 +25,6 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.util.Properties;
@@ -37,7 +37,7 @@ import java.util.Properties;
  * @since solr 1.4
  */
 public class TestSolrCoreProperties extends LuceneTestCase {
-  private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
+  private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
   JettySolrRunner solrJetty;
   SolrServer client;
 
@@ -106,8 +106,8 @@ public class TestSolrCoreProperties extends LuceneTestCase {
             getClass().getName() + "-" + System.currentTimeMillis());
 
 
-    dataDir = new File(homeDir, "data");
-    confDir = new File(homeDir, "conf");
+    dataDir = new File(homeDir + "/collection1", "data");
+    confDir = new File(homeDir + "/collection1", "conf");
 
 
     homeDir.mkdirs();
@@ -115,29 +115,15 @@ public class TestSolrCoreProperties extends LuceneTestCase {
     confDir.mkdirs();
 
     File f = new File(confDir, "solrconfig.xml");
-    copyFile(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
+    IOUtils.copy(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
 
     f = new File(confDir, "schema.xml");
-    copyFile(SolrTestCaseJ4.getFile(getSchemaFile()), f);
+    IOUtils.copy(SolrTestCaseJ4.getFile(getSchemaFile()), f);
     Properties p = new Properties();
     p.setProperty("foo.foo1", "f1");
     p.setProperty("foo.foo2", "f2");
     FileOutputStream fos = new FileOutputStream(confDir + File.separator + "solrcore.properties");
     p.store(fos, null);
-    fos.close();
-    IOUtils.closeQuietly(fos);
-
-  }
-
-
-  private void copyFile(File src, File dst) throws IOException {
-    BufferedReader in = new BufferedReader(new FileReader(src));
-    Writer out = new FileWriter(dst);
-
-    for (String line = in.readLine(); null != line; line = in.readLine()) {
-      out.write(line);
-    }
-    in.close();
-    out.close();
+    IOUtils.close(fos);
   }
 }

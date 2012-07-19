@@ -84,7 +84,7 @@ public final class PatternTokenizer extends Tokenizer {
   }
 
   @Override
-  public boolean incrementToken() throws IOException {
+  public boolean incrementToken() {
     if (index >= str.length()) return false;
     clearAttributes();
     if (group >= 0) {
@@ -130,14 +130,14 @@ public final class PatternTokenizer extends Tokenizer {
   }
 
   @Override
-  public void end() throws IOException {
+  public void end() {
     final int ofs = correctOffset(str.length());
     offsetAtt.setOffset(ofs, ofs);
   }
 
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
+  public void setReader(Reader input) throws IOException {
+    super.setReader(input);
     fillBuffer(str, input);
     matcher.reset(str);
     index = 0;

@@ -1,3 +1,5 @@
+// This file has been automatically generated, DO NOT EDIT
+
 package org.apache.lucene.util.packed;
 
 /*
@@ -28,72 +30,13 @@ import org.apache.lucene.util.RamUsageEstimator;
  * speed by ensuring that a single block needs to be read/written in order to
  * read/write a value.
  */
-final class Packed64SingleBlock extends PackedInts.MutableImpl {
+abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
 
-  private static final int[] SUPPORTED_BITS_PER_VALUE = new int[] {1, 2, 3, 4,
-      5, 6, 7, 8, 9, 10, 12, 16, 21, 32};
-  static final int MAX_SUPPORTED_BITS_PER_VALUE = 32;
-  private static final long[][] WRITE_MASKS = new long[MAX_SUPPORTED_BITS_PER_VALUE+1][];
-  private static final int[][] SHIFTS = new int[MAX_SUPPORTED_BITS_PER_VALUE+1][];
-  static {
-    for (int bpv : SUPPORTED_BITS_PER_VALUE) {
-      initMasks(bpv);
-    }
-  }
-
-  protected static void initMasks(int bpv) {
-    int valuesPerBlock = Long.SIZE / bpv;
-    long[] writeMasks = new long[valuesPerBlock];
-    int[] shifts = new int[valuesPerBlock];
-    long bits = (1L << bpv) - 1;
-    for (int i = 0; i < valuesPerBlock; ++i) {
-      shifts[i] = bpv * i;
-      writeMasks[i] = ~(bits << shifts[i]);
-    }
-    WRITE_MASKS[bpv] = writeMasks;
-    SHIFTS[bpv] = shifts;
-  }
-
-  public static Packed64SingleBlock create(int valueCount, int bitsPerValue) {
-    if (isSupported(bitsPerValue)) {
-      return new Packed64SingleBlock(valueCount, bitsPerValue);
-    }
-    throw new IllegalArgumentException("Unsupported bitsPerValue: " + bitsPerValue);
-  }
-
-  public static Packed64SingleBlock create(DataInput in,
-      int valueCount, int bitsPerValue) throws IOException {
-    Packed64SingleBlock reader = create(valueCount, bitsPerValue);
-    for (int i = 0; i < reader.blocks.length; ++i) {
-      reader.blocks[i] = in.readLong();
-    }
-    return reader;
-  }
+  public static final int MAX_SUPPORTED_BITS_PER_VALUE = 32;
+  private static final int[] SUPPORTED_BITS_PER_VALUE = new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 21, 32};
 
   public static boolean isSupported(int bitsPerValue) {
     return Arrays.binarySearch(SUPPORTED_BITS_PER_VALUE, bitsPerValue) >= 0;
-  }
-
-  public static float overheadPerValue(int bitsPerValue) {
-    int valuesPerBlock = 64 / bitsPerValue;
-    int overhead = 64 % bitsPerValue;
-    return (float) overhead / valuesPerBlock;
-  }
-
-  final long[] blocks;
-  final int valuesPerBlock;
-  final int[] shifts;
-  final long[] writeMasks;
-  final long readMask;
-
-  Packed64SingleBlock(int valueCount, int bitsPerValue) {
-    super(valueCount, bitsPerValue);
-    assert isSupported(bitsPerValue);
-    valuesPerBlock = Long.SIZE / bitsPerValue;
-    blocks = new long[requiredCapacity(valueCount, valuesPerBlock)];
-    shifts = SHIFTS[bitsPerValue];
-    writeMasks = WRITE_MASKS[bitsPerValue];
-    readMask = ~writeMasks[0];
   }
 
   private static int requiredCapacity(int valueCount, int valuesPerBlock) {
@@ -101,20 +44,22 @@ final class Packed64SingleBlock extends PackedInts.MutableImpl {
         + (valueCount % valuesPerBlock == 0 ? 0 : 1);
   }
 
-  private int blockOffset(int offset) {
-    return offset / valuesPerBlock;
-  }
+  final long[] blocks;
 
-  private int offsetInBlock(int offset) {
-    return offset % valuesPerBlock;
+  Packed64SingleBlock(int valueCount, int bitsPerValue) {
+    super(valueCount, bitsPerValue);
+    assert isSupported(bitsPerValue);
+    final int valuesPerBlock = 64 / bitsPerValue;
+    blocks = new long[requiredCapacity(valueCount, valuesPerBlock)];
   }
 
   @Override
-  public long get(int index) {
-    final int o = blockOffset(index);
-    final int b = offsetInBlock(index);
+  public void clear() {
+    Arrays.fill(blocks, 0L);
+  }
 
-    return (blocks[o] >>> shifts[b]) & readMask;
+  public long ramBytesUsed() {
+    return RamUsageEstimator.sizeOf(blocks);
   }
 
   @Override
@@ -127,7 +72,8 @@ final class Packed64SingleBlock extends PackedInts.MutableImpl {
     final int originalIndex = index;
 
     // go to the next block boundary
-    final int offsetInBlock = offsetInBlock(index);
+    final int valuesPerBlock = 64 / bitsPerValue;
+    final int offsetInBlock = index % valuesPerBlock;
     if (offsetInBlock != 0) {
       for (int i = offsetInBlock; i < valuesPerBlock && len > 0; ++i) {
         arr[off++] = get(index++);
@@ -139,16 +85,15 @@ final class Packed64SingleBlock extends PackedInts.MutableImpl {
     }
 
     // bulk get
-    assert offsetInBlock(index) == 0;
-    final int startBlock = blockOffset(index);
-    final int endBlock = blockOffset(index + len);
-    final int diff = (endBlock - startBlock) * valuesPerBlock;
+    assert index % valuesPerBlock == 0;
+    final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
+    assert op.blocks() == 1;
+    assert op.values() == valuesPerBlock;
+    final int blockIndex = index / valuesPerBlock;
+    final int nblocks = (index + len) / valuesPerBlock - blockIndex;
+    op.get(blocks, blockIndex, arr, off, nblocks);
+    final int diff = nblocks * valuesPerBlock;
     index += diff; len -= diff;
-    for (int block = startBlock; block < endBlock; ++block) {
-      for (int i = 0; i < valuesPerBlock; ++i) {
-        arr[off++] = (blocks[block] >> shifts[i]) & readMask;
-      }
-    }
 
     if (index > originalIndex) {
       // stay at the block boundary
@@ -162,14 +107,6 @@ final class Packed64SingleBlock extends PackedInts.MutableImpl {
   }
 
   @Override
-  public void set(int index, long value) {
-    final int o = blockOffset(index);
-    final int b = offsetInBlock(index);
-
-    blocks[o] = (blocks[o] & writeMasks[b]) | (value << shifts[b]);
-  }
-
-  @Override
   public int set(int index, long[] arr, int off, int len) {
     assert len > 0 : "len must be > 0 (got " + len + ")";
     assert index >= 0 && index < valueCount;
@@ -179,7 +116,8 @@ final class Packed64SingleBlock extends PackedInts.MutableImpl {
     final int originalIndex = index;
 
     // go to the next block boundary
-    final int offsetInBlock = offsetInBlock(index);
+    final int valuesPerBlock = 64 / bitsPerValue;
+    final int offsetInBlock = index % valuesPerBlock;
     if (offsetInBlock != 0) {
       for (int i = offsetInBlock; i < valuesPerBlock && len > 0; ++i) {
         set(index++, arr[off++]);
@@ -191,18 +129,15 @@ final class Packed64SingleBlock extends PackedInts.MutableImpl {
     }
 
     // bulk set
-    assert offsetInBlock(index) == 0;
-    final int startBlock = blockOffset(index);
-    final int endBlock = blockOffset(index + len);
-    final int diff = (endBlock - startBlock) * valuesPerBlock;
+    assert index % valuesPerBlock == 0;
+    final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
+    assert op.blocks() == 1;
+    assert op.values() == valuesPerBlock;
+    final int blockIndex = index / valuesPerBlock;
+    final int nblocks = (index + len) / valuesPerBlock - blockIndex;
+    op.set(blocks, blockIndex, arr, off, nblocks);
+    final int diff = nblocks * valuesPerBlock;
     index += diff; len -= diff;
-    for (int block = startBlock; block < endBlock; ++block) {
-      long next = 0L;
-      for (int i = 0; i < valuesPerBlock; ++i) {
-        next |= (arr[off++] << shifts[i]);
-      }
-      blocks[block] = next;
-    }
 
     if (index > originalIndex) {
       // stay at the block boundary
@@ -219,8 +154,9 @@ final class Packed64SingleBlock extends PackedInts.MutableImpl {
   public void fill(int fromIndex, int toIndex, long val) {
     assert fromIndex >= 0;
     assert fromIndex <= toIndex;
-    assert (val & readMask) == val;
+    assert PackedInts.bitsRequired(val) <= bitsPerValue;
 
+    final int valuesPerBlock = 64 / bitsPerValue;
     if (toIndex - fromIndex <= valuesPerBlock << 1) {
       // there needs to be at least one full block to set for the block
       // approach to be worth trying
@@ -229,22 +165,22 @@ final class Packed64SingleBlock extends PackedInts.MutableImpl {
     }
 
     // set values naively until the next block start
-    int fromOffsetInBlock = offsetInBlock(fromIndex);
+    int fromOffsetInBlock = fromIndex % valuesPerBlock;
     if (fromOffsetInBlock != 0) {
       for (int i = fromOffsetInBlock; i < valuesPerBlock; ++i) {
         set(fromIndex++, val);
       }
-      assert offsetInBlock(fromIndex) == 0;
+      assert fromIndex % valuesPerBlock == 0;
     }
 
     // bulk set of the inner blocks
-    final int fromBlock = blockOffset(fromIndex);
-    final int toBlock = blockOffset(toIndex);
+    final int fromBlock = fromIndex / valuesPerBlock;
+    final int toBlock = toIndex / valuesPerBlock;
     assert fromBlock * valuesPerBlock == fromIndex;
 
     long blockValue = 0L;
     for (int i = 0; i < valuesPerBlock; ++i) {
-      blockValue = blockValue | (val << shifts[i]);
+      blockValue = blockValue | (val << (i * bitsPerValue));
     }
     Arrays.fill(blocks, fromBlock, toBlock, blockValue);
 
@@ -255,23 +191,394 @@ final class Packed64SingleBlock extends PackedInts.MutableImpl {
   }
 
   @Override
-  public void clear() {
-    Arrays.fill(blocks, 0L);
-  }
-
-  public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(blocks);
-  }
-
-  @Override
-  protected int getFormat() {
-    return PackedInts.PACKED_SINGLE_BLOCK;
+  protected PackedInts.Format getFormat() {
+    return PackedInts.Format.PACKED_SINGLE_BLOCK;
   }
 
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(bitsPerValue=" + bitsPerValue
         + ", size=" + size() + ", elements.length=" + blocks.length + ")";
+  }
+
+  public static Packed64SingleBlock create(DataInput in,
+      int valueCount, int bitsPerValue) throws IOException {
+    Packed64SingleBlock reader = create(valueCount, bitsPerValue);
+    for (int i = 0; i < reader.blocks.length; ++i) {
+      reader.blocks[i] = in.readLong();
+    }
+    return reader;
+  }
+
+  public static Packed64SingleBlock create(int valueCount, int bitsPerValue) {
+    switch (bitsPerValue) {
+      case 1:
+        return new Packed64SingleBlock1(valueCount);
+      case 2:
+        return new Packed64SingleBlock2(valueCount);
+      case 3:
+        return new Packed64SingleBlock3(valueCount);
+      case 4:
+        return new Packed64SingleBlock4(valueCount);
+      case 5:
+        return new Packed64SingleBlock5(valueCount);
+      case 6:
+        return new Packed64SingleBlock6(valueCount);
+      case 7:
+        return new Packed64SingleBlock7(valueCount);
+      case 8:
+        return new Packed64SingleBlock8(valueCount);
+      case 9:
+        return new Packed64SingleBlock9(valueCount);
+      case 10:
+        return new Packed64SingleBlock10(valueCount);
+      case 12:
+        return new Packed64SingleBlock12(valueCount);
+      case 16:
+        return new Packed64SingleBlock16(valueCount);
+      case 21:
+        return new Packed64SingleBlock21(valueCount);
+      case 32:
+        return new Packed64SingleBlock32(valueCount);
+      default:
+        throw new IllegalArgumentException("Unsupported number of bits per value: " + 32);
+    }
+  }
+
+  static class Packed64SingleBlock1 extends Packed64SingleBlock {
+
+    Packed64SingleBlock1(int valueCount) {
+      super(valueCount, 1);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index >>> 6;
+      final int b = index & 63;
+      final int shift = b << 0;
+      return (blocks[o] >>> shift) & 1L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index >>> 6;
+      final int b = index & 63;
+      final int shift = b << 0;
+      blocks[o] = (blocks[o] & ~(1L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock2 extends Packed64SingleBlock {
+
+    Packed64SingleBlock2(int valueCount) {
+      super(valueCount, 2);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index >>> 5;
+      final int b = index & 31;
+      final int shift = b << 1;
+      return (blocks[o] >>> shift) & 3L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index >>> 5;
+      final int b = index & 31;
+      final int shift = b << 1;
+      blocks[o] = (blocks[o] & ~(3L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock3 extends Packed64SingleBlock {
+
+    Packed64SingleBlock3(int valueCount) {
+      super(valueCount, 3);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index / 21;
+      final int b = index % 21;
+      final int shift = b * 3;
+      return (blocks[o] >>> shift) & 7L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index / 21;
+      final int b = index % 21;
+      final int shift = b * 3;
+      blocks[o] = (blocks[o] & ~(7L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock4 extends Packed64SingleBlock {
+
+    Packed64SingleBlock4(int valueCount) {
+      super(valueCount, 4);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index >>> 4;
+      final int b = index & 15;
+      final int shift = b << 2;
+      return (blocks[o] >>> shift) & 15L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index >>> 4;
+      final int b = index & 15;
+      final int shift = b << 2;
+      blocks[o] = (blocks[o] & ~(15L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock5 extends Packed64SingleBlock {
+
+    Packed64SingleBlock5(int valueCount) {
+      super(valueCount, 5);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index / 12;
+      final int b = index % 12;
+      final int shift = b * 5;
+      return (blocks[o] >>> shift) & 31L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index / 12;
+      final int b = index % 12;
+      final int shift = b * 5;
+      blocks[o] = (blocks[o] & ~(31L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock6 extends Packed64SingleBlock {
+
+    Packed64SingleBlock6(int valueCount) {
+      super(valueCount, 6);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index / 10;
+      final int b = index % 10;
+      final int shift = b * 6;
+      return (blocks[o] >>> shift) & 63L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index / 10;
+      final int b = index % 10;
+      final int shift = b * 6;
+      blocks[o] = (blocks[o] & ~(63L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock7 extends Packed64SingleBlock {
+
+    Packed64SingleBlock7(int valueCount) {
+      super(valueCount, 7);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index / 9;
+      final int b = index % 9;
+      final int shift = b * 7;
+      return (blocks[o] >>> shift) & 127L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index / 9;
+      final int b = index % 9;
+      final int shift = b * 7;
+      blocks[o] = (blocks[o] & ~(127L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock8 extends Packed64SingleBlock {
+
+    Packed64SingleBlock8(int valueCount) {
+      super(valueCount, 8);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index >>> 3;
+      final int b = index & 7;
+      final int shift = b << 3;
+      return (blocks[o] >>> shift) & 255L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index >>> 3;
+      final int b = index & 7;
+      final int shift = b << 3;
+      blocks[o] = (blocks[o] & ~(255L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock9 extends Packed64SingleBlock {
+
+    Packed64SingleBlock9(int valueCount) {
+      super(valueCount, 9);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index / 7;
+      final int b = index % 7;
+      final int shift = b * 9;
+      return (blocks[o] >>> shift) & 511L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index / 7;
+      final int b = index % 7;
+      final int shift = b * 9;
+      blocks[o] = (blocks[o] & ~(511L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock10 extends Packed64SingleBlock {
+
+    Packed64SingleBlock10(int valueCount) {
+      super(valueCount, 10);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index / 6;
+      final int b = index % 6;
+      final int shift = b * 10;
+      return (blocks[o] >>> shift) & 1023L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index / 6;
+      final int b = index % 6;
+      final int shift = b * 10;
+      blocks[o] = (blocks[o] & ~(1023L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock12 extends Packed64SingleBlock {
+
+    Packed64SingleBlock12(int valueCount) {
+      super(valueCount, 12);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index / 5;
+      final int b = index % 5;
+      final int shift = b * 12;
+      return (blocks[o] >>> shift) & 4095L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index / 5;
+      final int b = index % 5;
+      final int shift = b * 12;
+      blocks[o] = (blocks[o] & ~(4095L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock16 extends Packed64SingleBlock {
+
+    Packed64SingleBlock16(int valueCount) {
+      super(valueCount, 16);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index >>> 2;
+      final int b = index & 3;
+      final int shift = b << 4;
+      return (blocks[o] >>> shift) & 65535L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index >>> 2;
+      final int b = index & 3;
+      final int shift = b << 4;
+      blocks[o] = (blocks[o] & ~(65535L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock21 extends Packed64SingleBlock {
+
+    Packed64SingleBlock21(int valueCount) {
+      super(valueCount, 21);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index / 3;
+      final int b = index % 3;
+      final int shift = b * 21;
+      return (blocks[o] >>> shift) & 2097151L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index / 3;
+      final int b = index % 3;
+      final int shift = b * 21;
+      blocks[o] = (blocks[o] & ~(2097151L << shift)) | (value << shift);
+    }
+
+  }
+
+  static class Packed64SingleBlock32 extends Packed64SingleBlock {
+
+    Packed64SingleBlock32(int valueCount) {
+      super(valueCount, 32);
+    }
+
+    @Override
+    public long get(int index) {
+      final int o = index >>> 1;
+      final int b = index & 1;
+      final int shift = b << 5;
+      return (blocks[o] >>> shift) & 4294967295L;
+    }
+
+    @Override
+    public void set(int index, long value) {
+      final int o = index >>> 1;
+      final int b = index & 1;
+      final int shift = b << 5;
+      blocks[o] = (blocks[o] & ~(4294967295L << shift)) | (value << shift);
+    }
+
   }
 
 }

@@ -23,6 +23,8 @@ import java.text.Collator;
 import java.text.RuleBasedCollator;
 import java.util.Locale;
 
+import org.apache.lucene.util._TestUtil;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -61,18 +63,18 @@ public class TestCollationField extends SolrTestCaseJ4 {
    */
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpFile = _TestUtil.getTempDir("collation1");
     tmpFile.delete();
     tmpFile.mkdir();
     
     // make data and conf dirs
     new File(tmpFile, "data").mkdir();
-    File confDir = new File(tmpFile, "conf");
-    confDir.mkdir();
+    File confDir = new File(tmpFile + "/collection1", "conf");
+    confDir.mkdirs();
     
     // copy over configuration files
-    FileUtils.copyFile(getFile("solr/conf/solrconfig-basic.xml"), new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(getFile("solr/conf/schema-collate.xml"), new File(confDir, "schema.xml"));
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-basic.xml"), new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(getFile("solr/collection1/conf/schema-collate.xml"), new File(confDir, "schema.xml"));
     
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator = (RuleBasedCollator) Collator.getInstance(new Locale("de", "DE"));

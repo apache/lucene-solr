@@ -337,8 +337,7 @@ public class FuzzyTermsEnum extends TermsEnum {
     private final BoostAttribute boostAtt =
       attributes().addAttribute(BoostAttribute.class);
     
-    public AutomatonFuzzyTermsEnum(TermsEnum tenum, CompiledAutomaton compiled[]) 
-      throws IOException {
+    public AutomatonFuzzyTermsEnum(TermsEnum tenum, CompiledAutomaton compiled[]) {
       super(tenum, false);
       this.matchers = new ByteRunAutomaton[compiled.length];
       for (int i = 0; i < compiled.length; i++)

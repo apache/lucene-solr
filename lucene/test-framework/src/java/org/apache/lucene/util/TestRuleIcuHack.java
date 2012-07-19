@@ -39,7 +39,7 @@ final class TestRuleIcuHack implements TestRule {
         if (!icuTested.getAndSet(true)) {
           Locale previous = Locale.getDefault();
           try {
-            Locale.setDefault(Locale.US);
+            Locale.setDefault(Locale.ROOT);
             Class.forName("com.ibm.icu.util.ULocale");
           } catch (ClassNotFoundException cnfe) {
             // ignore if no ICU is in classpath

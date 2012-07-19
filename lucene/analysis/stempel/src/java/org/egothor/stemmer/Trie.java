@@ -57,6 +57,7 @@ package org.egothor.stemmer;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -375,8 +376,8 @@ public class Trie {
     return by.optimize(this);
   }
   
-  public void printInfo(CharSequence prefix) {
-    System.out.println(prefix + "nds " + rows.size() + " cmds " + cmds.size()
+  public void printInfo(PrintStream out, CharSequence prefix) {
+    out.println(prefix + "nds " + rows.size() + " cmds " + cmds.size()
         + " cells " + getCells() + " valcells " + getCellsVal() + " pntcells "
         + getCellsPnt());
   }

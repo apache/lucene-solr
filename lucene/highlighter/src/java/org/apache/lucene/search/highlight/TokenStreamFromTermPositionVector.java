@@ -105,7 +105,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
   };
   
   @Override
-  public boolean incrementToken() throws IOException {
+  public boolean incrementToken() {
     if (this.tokensAtCurrentPosition.hasNext()) {
       final Token next = this.tokensAtCurrentPosition.next();
       clearAttributes();
@@ -119,7 +119,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
   }
 
   @Override
-  public void reset() throws IOException {
+  public void reset() {
     this.tokensAtCurrentPosition = this.positionedTokens.iterator();
   }
 }

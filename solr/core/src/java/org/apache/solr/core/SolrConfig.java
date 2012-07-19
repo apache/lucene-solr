@@ -112,7 +112,7 @@ public class SolrConfig extends Config {
    *@param name the configuration name
    *@param is the configuration stream
    */
-  SolrConfig(SolrResourceLoader loader, String name, InputSource is)
+  public SolrConfig(SolrResourceLoader loader, String name, InputSource is)
   throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     initLibs();
@@ -221,7 +221,7 @@ public class SolrConfig extends Config {
 
      loadPluginInfo(DirectoryFactory.class,"directoryFactory",false, true);
      loadPluginInfo(IndexDeletionPolicy.class,indexConfigPrefix+"/deletionPolicy",false, true);
-     loadPluginInfo(CodecFactory.class,"mainIndex/codecFactory",false, false);
+     loadPluginInfo(CodecFactory.class,"codecFactory",false, false);
      loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
      loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
      loadPluginInfo(UpdateLog.class,"updateHandler/updateLog",false, false);
@@ -344,7 +344,7 @@ public class SolrConfig extends Config {
       /** Input must not be null */
       public static LastModFrom parse(final String s) {
         try {
-          return valueOf(s.toUpperCase(Locale.ENGLISH));
+          return valueOf(s.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
           log.warn( "Unrecognized value for lastModFrom: " + s, e);
           return BOGUS;

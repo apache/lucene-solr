@@ -84,8 +84,7 @@ public class StandardBooleanQueryNodeBuilder implements StandardQueryBuilder {
 
   }
 
-  private static BooleanClause.Occur getModifierValue(QueryNode node)
-      throws QueryNodeException {
+  private static BooleanClause.Occur getModifierValue(QueryNode node) {
 
     if (node instanceof ModifierQueryNode) {
       ModifierQueryNode mNode = ((ModifierQueryNode) node);

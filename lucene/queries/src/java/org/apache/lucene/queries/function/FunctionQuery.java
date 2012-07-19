@@ -38,7 +38,7 @@ import java.util.Map;
  *
  */
 public class FunctionQuery extends Query {
-  ValueSource func;
+  final ValueSource func;
 
   /**
    * @param func defines the function to be used for scoring
@@ -61,10 +61,10 @@ public class FunctionQuery extends Query {
   public void extractTerms(Set<Term> terms) {}
 
   protected class FunctionWeight extends Weight {
-    protected IndexSearcher searcher;
+    protected final IndexSearcher searcher;
     protected float queryNorm;
     protected float queryWeight;
-    protected Map context;
+    protected final Map context;
 
     public FunctionWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
@@ -156,6 +156,11 @@ public class FunctionQuery extends Query {
       // map to -Float.MAX_VALUE. This conditional handles both -infinity
       // and NaN since comparisons with NaN are always false.
       return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
+    }
+
+    @Override
+    public float freq() throws IOException {
+      return 1;
     }
 
     public Explanation explain(int doc) throws IOException {

@@ -47,7 +47,7 @@ public abstract class TrecDocParser {
   static final Map<String,ParsePathType> pathName2Type = new HashMap<String,ParsePathType>();
   static {
     for (ParsePathType ppt : ParsePathType.values()) {
-      pathName2Type.put(ppt.name().toUpperCase(Locale.ENGLISH),ppt);
+      pathName2Type.put(ppt.name().toUpperCase(Locale.ROOT),ppt);
     }
   }
   
@@ -60,7 +60,7 @@ public abstract class TrecDocParser {
   public static ParsePathType pathType(File f) {
     int pathLength = 0;
     while (f != null && ++pathLength < MAX_PATH_LENGTH) {
-      ParsePathType ppt = pathName2Type.get(f.getName().toUpperCase(Locale.ENGLISH));
+      ParsePathType ppt = pathName2Type.get(f.getName().toUpperCase(Locale.ROOT));
       if (ppt!=null) {
         return ppt;
       }
@@ -80,7 +80,7 @@ public abstract class TrecDocParser {
    * parsers to alter their behavior according to the file path type. 
    */  
   public abstract DocData parse(DocData docData, String name, TrecContentSource trecSrc, 
-      StringBuilder docBuf, ParsePathType pathType) throws IOException, InterruptedException;
+      StringBuilder docBuf, ParsePathType pathType) throws IOException;
   
   /** 
    * strip tags from <code>buf</code>: each tag is replaced by a single blank.

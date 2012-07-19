@@ -469,7 +469,7 @@ public class Field implements IndexableField {
         boolean used;
 
         @Override
-        public boolean incrementToken() throws IOException {
+        public boolean incrementToken() {
           if (used) {
             return false;
           }
@@ -480,7 +480,7 @@ public class Field implements IndexableField {
         }
 
         @Override
-        public void reset() throws IOException {
+        public void reset() {
           used = false;
         }
       };

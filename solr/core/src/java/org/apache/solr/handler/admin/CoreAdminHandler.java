@@ -21,17 +21,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
@@ -53,8 +49,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.handler.component.ShardRequest;
-import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -185,11 +179,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
         
         case REQUESTRECOVERY: {
           this.handleRequestRecoveryAction(req, rsp);
-          break;
-        }
-        
-        case DISTRIBURL: {
-          this.handleDistribUrlAction(req, rsp);
           break;
         }
         
@@ -461,58 +450,102 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @return true if a modification has resulted that requires persistance 
    *         of the CoreContainer configuration.
    */
-  protected boolean handleUnloadAction(SolrQueryRequest req, SolrQueryResponse rsp) throws SolrException {
+  protected boolean handleUnloadAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws SolrException {
     SolrParams params = req.getParams();
     String cname = params.get(CoreAdminParams.CORE);
     SolrCore core = coreContainer.remove(cname);
-    if(core == null){
-       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "No such core exists '" + cname + "'");
-    } else {
-      if (coreContainer.getZkController() != null) {
-        log.info("Unregistering core " + cname + " from cloudstate.");
-        try {
-          coreContainer.getZkController().unregister(cname, core.getCoreDescriptor().getCloudDescriptor());
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Could not unregister core " + cname + " from cloudstate: "
-                  + e.getMessage(), e);
-        } catch (KeeperException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Could not unregister core " + cname + " from cloudstate: "
-                  + e.getMessage(), e);
-        }
-      }
-    }
-    if (params.getBool(CoreAdminParams.DELETE_INDEX, false)) {
-      core.addCloseHook(new CloseHook() {
-        @Override
-        public void preClose(SolrCore core) {}
-
-        @Override
-        public void postClose(SolrCore core) {
-          File dataDir = new File(core.getIndexDir());
-          File[] files = dataDir.listFiles();
-          if (files != null) {
-            for (File file : files) {
-              if (!file.delete()) {
-                log.error(file.getAbsolutePath()
-                    + " could not be deleted on core unload");
-              }
-            }
-            if (!dataDir.delete()) log.error(dataDir.getAbsolutePath()
-                + " could not be deleted on core unload");
-          } else {
-            log.error(dataDir.getAbsolutePath()
-                + " could not be deleted on core unload");
+    try {
+      if (core == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "No such core exists '" + cname + "'");
+      } else {
+        if (coreContainer.getZkController() != null) {
+          log.info("Unregistering core " + core.getName() + " from cloudstate.");
+          try {
+            coreContainer.getZkController().unregister(cname,
+                core.getCoreDescriptor().getCloudDescriptor());
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Could not unregister core " + cname + " from cloudstate: "
+                    + e.getMessage(), e);
+          } catch (KeeperException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Could not unregister core " + cname + " from cloudstate: "
+                    + e.getMessage(), e);
           }
         }
-      });
+      }
+      if (params.getBool(CoreAdminParams.DELETE_INDEX, false)) {
+        core.addCloseHook(new CloseHook() {
+          @Override
+          public void preClose(SolrCore core) {}
+          
+          @Override
+          public void postClose(SolrCore core) {
+            File dataDir = new File(core.getIndexDir());
+            File[] files = dataDir.listFiles();
+            if (files != null) {
+              for (File file : files) {
+                if (!file.delete()) {
+                  log.error(file.getAbsolutePath()
+                      + " could not be deleted on core unload");
+                }
+              }
+              if (!dataDir.delete()) log.error(dataDir.getAbsolutePath()
+                  + " could not be deleted on core unload");
+            } else {
+              log.error(dataDir.getAbsolutePath()
+                  + " could not be deleted on core unload");
+            }
+          }
+        });
+      }
+      
+      if (params.getBool(CoreAdminParams.DELETE_DATA_DIR, false)) {
+        core.addCloseHook(new CloseHook() {
+          @Override
+          public void preClose(SolrCore core) {}
+          
+          @Override
+          public void postClose(SolrCore core) {
+            File dataDir = new File(core.getDataDir());
+            try {
+              FileUtils.deleteDirectory(dataDir);
+            } catch (IOException e) {
+              SolrException.log(log, "Failed to delete data dir for core:"
+                  + core.getName() + " dir:" + dataDir.getAbsolutePath());
+            }
+          }
+        });
+      }
+      
+      if (params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false)) {
+        core.addCloseHook(new CloseHook() {
+          @Override
+          public void preClose(SolrCore core) {}
+          
+          @Override
+          public void postClose(SolrCore core) {
+            CoreDescriptor cd = core.getCoreDescriptor();
+            if (cd != null) {
+              File instanceDir = new File(cd.getInstanceDir());
+              try {
+                FileUtils.deleteDirectory(instanceDir);
+              } catch (IOException e) {
+                SolrException.log(log, "Failed to delete instance dir for core:"
+                    + core.getName() + " dir:" + instanceDir.getAbsolutePath());
+              }
+            }
+          }
+        });
+      }
+    } finally {
+      if (core != null) core.close();
     }
-    core.close();
     return coreContainer.isPersistent();
-
+    
   }
 
   /**
@@ -741,64 +774,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
     // } catch (Exception e) {
     //
     // }
-    
-  }
-  
-  protected void handleDistribUrlAction(SolrQueryRequest req,
-      SolrQueryResponse rsp) throws IOException, InterruptedException, SolrServerException {
-    // TODO: finish this and tests
-    SolrParams params = req.getParams();
-    final ModifiableSolrParams newParams = new ModifiableSolrParams(params);
-    newParams.remove("action");
-    
-    SolrParams required = params.required();
-    final String subAction = required.get("subAction");
-
-    String collection = required.get("collection");
-    
-    newParams.set(CoreAdminParams.ACTION, subAction);
-
-    
-    SolrCore core = req.getCore();
-    ZkController zkController = core.getCoreDescriptor().getCoreContainer()
-        .getZkController();
-    
-    CloudState cloudState = zkController.getCloudState();
-    Map<String,Slice> slices = cloudState.getCollectionStates().get(collection);
-    for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-      Slice slice = entry.getValue();
-      Map<String,ZkNodeProps> shards = slice.getShards();
-      Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
-      for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
-        final ZkNodeProps node = shardEntry.getValue();
-        if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
-          newParams.set(CoreAdminParams.CORE, node.get(ZkStateReader.CORE_NAME_PROP));
-          String replica = node.get(ZkStateReader.BASE_URL_PROP);
-          ShardRequest sreq = new ShardRequest();
-          newParams.set("qt", "/admin/cores");
-          sreq.purpose = 1;
-          // TODO: this sucks
-          if (replica.startsWith("http://"))
-            replica = replica.substring(7);
-          sreq.shards = new String[]{replica};
-          sreq.actualShards = sreq.shards;
-          sreq.params = newParams;
-
-          shardHandler.submit(sreq, replica, sreq.params);
-        }
-      }
-    }
- 
-    ShardResponse srsp;
-    do {
-      srsp = shardHandler.takeCompletedOrError();
-      if (srsp != null) {
-        Throwable e = srsp.getException();
-        if (e != null) {
-          log.error("Error talking to shard: " + srsp.getShard(), e);
-        }
-      }
-    } while(srsp != null);
     
   }
 

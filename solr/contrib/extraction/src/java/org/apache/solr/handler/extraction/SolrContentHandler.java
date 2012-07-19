@@ -66,6 +66,9 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   protected String unknownFieldPrefix = "";
   protected String defaultField = "";
 
+  private boolean literalsOverride;
+  private Set<String> literalFieldNames;
+  
   public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
     this(metadata, params, schema, DateUtil.DEFAULT_DATE_FORMATS);
   }
@@ -81,6 +84,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
     this.lowerNames = params.getBool(LOWERNAMES, false);
     this.captureAttribs = params.getBool(CAPTURE_ATTRIBUTES, false);
+    this.literalsOverride = params.getBool(LITERALS_OVERRIDE, true);
     this.unknownFieldPrefix = params.get(UNKNOWN_FIELD_PREFIX, "");
     this.defaultField = params.get(DEFAULT_FIELD, "");
     String[] captureFields = params.getParams(CAPTURE_ELEMENTS);
@@ -107,13 +111,11 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    * @see #addLiterals()
    */
   public SolrInputDocument newDocument() {
-    float boost = 1.0f;
-    //handle the metadata extracted from the document
-    addMetadata();
-
-    //handle the literals from the params
+    //handle the literals from the params. NOTE: This MUST be called before the others in order for literals to override other values
     addLiterals();
 
+    //handle the metadata extracted from the document
+    addMetadata();
 
     //add in the content
     addContent();
@@ -134,8 +136,10 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   protected void addCapturedContent() {
     for (Map.Entry<String, StringBuilder> entry : fieldBuilders.entrySet()) {
       if (entry.getValue().length() > 0) {
-        addField(entry.getKey(), entry.getValue().toString(), null);
-      }
+        String fieldName = entry.getKey();
+        if (literalsOverride && literalFieldNames.contains(fieldName))
+          continue;
+        addField(fieldName, entry.getValue().toString(), null);      }
     }
   }
 
@@ -144,6 +148,8 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    * and the {@link #catchAllBuilder}
    */
   protected void addContent() {
+    if (literalsOverride && literalFieldNames.contains(contentFieldName))
+      return;
     addField(contentFieldName, catchAllBuilder.toString(), null);
   }
 
@@ -152,12 +158,14 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    */
   protected void addLiterals() {
     Iterator<String> paramNames = params.getParameterNamesIterator();
+    literalFieldNames = new HashSet<String>();
     while (paramNames.hasNext()) {
       String pname = paramNames.next();
       if (!pname.startsWith(LITERALS_PREFIX)) continue;
 
       String name = pname.substring(LITERALS_PREFIX.length());
       addField(name, null, params.getParams(pname));
+      literalFieldNames.add(name);
     }
   }
 
@@ -166,6 +174,8 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    */
   protected void addMetadata() {
     for (String name : metadata.names()) {
+      if (literalsOverride && literalFieldNames.contains(name))
+        continue;
       String[] vals = metadata.getValues(name);
       addField(name, null, vals);
     }

@@ -47,16 +47,26 @@ public final class TestRuleMarkFailure implements TestRule {
         try {
           s.evaluate();
         } catch (Throwable t) {
-          for (Throwable t2 : expandFromMultiple(t)) {
-            if (!(t2 instanceof AssumptionViolatedException)) {
-              markFailed();
-              break;
-            }
+          if (!isAssumption(t)) {
+            markFailed();
           }
           throw t;
         }
       }
     };
+  }
+
+  /**
+   * Is a given exception (or a MultipleFailureException) an 
+   * {@link AssumptionViolatedException}?
+   */
+  public static boolean isAssumption(Throwable t) {
+    for (Throwable t2 : expandFromMultiple(t)) {
+      if (!(t2 instanceof AssumptionViolatedException)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**

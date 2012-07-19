@@ -42,9 +42,10 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.JapaneseTokenizerFactory"
- *       mode=NORMAL
- *       userDictionary=user.txt
- *       userDictionaryEncoding=UTF-8
+ *       mode="NORMAL"
+ *       userDictionary="user.txt"
+ *       userDictionaryEncoding="UTF-8"
+ *       discardPunctuation="true"
  *     /&gt;
  *     &lt;filter class="solr.JapaneseBaseFormFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
@@ -58,9 +59,14 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   
   private static final String USER_DICT_ENCODING = "userDictionaryEncoding";
 
+  private static final String DISCARD_PUNCTUATION = "discardPunctuation"; // Expert option
+
   private UserDictionary userDictionary;
+
   private Mode mode;
-  
+
+  private boolean discardPunctuation;
+
   @Override
   public void inform(ResourceLoader loader) {
     mode = getMode(args);
@@ -83,17 +89,18 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
     } catch (Exception e) {
       throw new InitializationException("Exception thrown while loading dictionary", e);
     }
+    discardPunctuation = getBoolean(DISCARD_PUNCTUATION, true);
   }
   
   @Override
   public Tokenizer create(Reader input) {
-    return new JapaneseTokenizer(input, userDictionary, true, mode);
+    return new JapaneseTokenizer(input, userDictionary, discardPunctuation, mode);
   }
   
   private Mode getMode(Map<String, String> args) {
     String mode = args.get(MODE);
     if (mode != null) {
-      return Mode.valueOf(mode.toUpperCase(Locale.ENGLISH));
+      return Mode.valueOf(mode.toUpperCase(Locale.ROOT));
     } else {
       return JapaneseTokenizer.DEFAULT_MODE;
     }

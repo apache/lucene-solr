@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderSlice;
 
 import java.io.IOException;
 
@@ -47,7 +46,7 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
     return this.parent == parent;
   }
 
-  public MultiDocsAndPositionsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {
+  public MultiDocsAndPositionsEnum reset(final EnumWithSlice[] subs, final int numSubs) {
     this.numSubs = numSubs;
     this.subs = new EnumWithSlice[subs.length];
     for(int i=0;i<subs.length;i++) {
@@ -56,6 +55,7 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
       this.subs[i].slice = subs[i].slice;
     }
     upto = -1;
+    doc = -1;
     current = null;
     return this;
   }
@@ -70,6 +70,7 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   @Override
   public int freq() throws IOException {
+    assert current != null;
     return current.freq();
   }
 

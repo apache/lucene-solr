@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStreamReader;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -169,7 +170,7 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
       Document document = builder.parse(fis);
       fis.close();
       fis = new FileInputStream(new File(tempDir, SOLR_PERSIST_XML));
-      String solrPersistXml = IOUtils.toString(fis);
+      String solrPersistXml = IOUtils.toString(new InputStreamReader(fis, "UTF-8"));
       //System.out.println("xml:" + solrPersistXml);
       assertTrue("\"/solr/cores[@defaultCoreName='core0']\" doesn't match in:\n" + solrPersistXml,
                  exists("/solr/cores[@defaultCoreName='core0']", document));

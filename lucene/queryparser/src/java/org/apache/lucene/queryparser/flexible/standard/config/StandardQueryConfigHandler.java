@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.DateTools;
@@ -100,6 +101,8 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
      * @see StandardQueryParser#getLocale()
      */
     final public static ConfigurationKey<Locale> LOCALE = ConfigurationKey.newInstance();
+    
+    final public static ConfigurationKey<TimeZone> TIMEZONE = ConfigurationKey.newInstance();
     
     /**
      * Key used to set the {@link RewriteMethod} used when creating queries

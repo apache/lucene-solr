@@ -30,6 +30,8 @@ import java.util.List;
 
 /**
  * A SpatialPrefixGrid based on Geohashes.  Uses {@link GeohashUtils} to do all the geohash work.
+ *
+ * @lucene.experimental
  */
 public class GeohashPrefixTree extends SpatialPrefixTree {
 

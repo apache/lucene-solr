@@ -18,6 +18,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import java.text.NumberFormat;
+import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
@@ -61,7 +62,7 @@ public class AddDocTask extends PerfTask {
 
   @Override
   protected String getLogMessage(int recsCount) {
-    return String.format("added %9d docs",recsCount);
+    return String.format(Locale.ROOT, "added %9d docs",recsCount);
   }
   
   @Override

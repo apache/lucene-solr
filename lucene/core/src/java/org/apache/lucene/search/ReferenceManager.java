@@ -186,7 +186,7 @@ public abstract class ReferenceManager<G> implements Closeable {
    * will return a refreshed instance. Otherwise, consider using the
    * non-blocking {@link #maybeRefresh()}.
    */
-  public final void maybeRefreshBlocking() throws IOException, InterruptedException {
+  public final void maybeRefreshBlocking() throws IOException {
     ensureOpen();
 
     // Ensure only 1 thread does refresh at once

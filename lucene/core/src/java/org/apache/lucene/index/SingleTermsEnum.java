@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.search.MultiTermQuery;  // javadocs
 import org.apache.lucene.util.BytesRef;
 
@@ -39,7 +37,7 @@ public final class SingleTermsEnum extends FilteredTermsEnum {
    * After calling the constructor the enumeration is already pointing to the term,
    * if it exists.
    */
-  public SingleTermsEnum(TermsEnum tenum, BytesRef termText) throws IOException {
+  public SingleTermsEnum(TermsEnum tenum, BytesRef termText) {
     super(tenum);
     singleRef = termText;
     setInitialSeekTerm(termText);

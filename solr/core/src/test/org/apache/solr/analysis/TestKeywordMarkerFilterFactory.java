@@ -40,7 +40,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     KeywordMarkerFilterFactory factory = new KeywordMarkerFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     args.put("protected", "protwords.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
@@ -55,7 +55,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     KeywordMarkerFilterFactory factory = new KeywordMarkerFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     args.put("protected", "protwords.txt");
     args.put("ignoreCase", "true");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);

@@ -57,7 +57,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     private boolean exhausted = false;
     private CharTermAttribute term = addAttribute(CharTermAttribute.class);
 
-    public DataTokenStream(String text, IntEncoder encoder) throws IOException {
+    public DataTokenStream(String text, IntEncoder encoder) {
       this.encoder = encoder;
       term.setEmpty().append(text);
     }

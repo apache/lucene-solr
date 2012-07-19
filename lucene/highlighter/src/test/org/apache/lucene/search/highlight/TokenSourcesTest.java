@@ -19,7 +19,8 @@ package org.apache.lucene.search.highlight;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -27,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -40,7 +40,6 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 
 // LUCENE-2874
@@ -57,7 +56,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     private final PositionIncrementAttribute positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       this.i++;
       if (this.i >= this.tokens.length) {
         return false;
@@ -85,8 +84,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     }
   }
 
-  public void testOverlapWithOffset() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InvalidTokenOffsetsException {
+  public void testOverlapWithOffset() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
@@ -129,8 +127,8 @@ public class TokenSourcesTest extends LuceneTestCase {
     }
   }
 
-  public void testOverlapWithPositionsAndOffset() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InvalidTokenOffsetsException {
+  public void testOverlapWithPositionsAndOffset()
+      throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
@@ -174,8 +172,8 @@ public class TokenSourcesTest extends LuceneTestCase {
     }
   }
 
-  public void testOverlapWithOffsetExactPhrase() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InvalidTokenOffsetsException {
+  public void testOverlapWithOffsetExactPhrase()
+      throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
@@ -219,8 +217,7 @@ public class TokenSourcesTest extends LuceneTestCase {
   }
 
   public void testOverlapWithPositionsAndOffsetExactPhrase()
-      throws CorruptIndexException, LockObtainFailedException, IOException,
-      InvalidTokenOffsetsException {
+      throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,

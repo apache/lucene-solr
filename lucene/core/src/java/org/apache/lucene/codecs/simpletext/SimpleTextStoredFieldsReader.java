@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.lucene.codecs.StoredFieldsReader;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -88,7 +87,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   }
   
   @Override
-  public void visitDocument(int n, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  public void visitDocument(int n, StoredFieldVisitor visitor) throws IOException {
     in.seek(offsets.get(n));
     readLine();
     assert StringHelper.startsWith(scratch, NUM);
@@ -181,7 +180,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     SimpleTextUtil.readLine(in, scratch);
   }
   
-  private int parseIntAt(int offset) throws IOException {
+  private int parseIntAt(int offset) {
     UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+offset, scratch.length-offset, scratchUTF16);
     return ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
   }

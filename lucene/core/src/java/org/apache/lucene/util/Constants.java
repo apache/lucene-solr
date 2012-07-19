@@ -117,9 +117,14 @@ public final class Constants {
     Package pkg = LucenePackage.get();
     String v = (pkg == null) ? null : pkg.getImplementationVersion();
     if (v == null) {
-      v = LUCENE_MAIN_VERSION + "-SNAPSHOT";
-    } else if (!v.startsWith(LUCENE_MAIN_VERSION)) {
-      v = LUCENE_MAIN_VERSION + "-SNAPSHOT " + v;
+      String parts[] = LUCENE_MAIN_VERSION.split("\\.");
+      if (parts.length == 4) {
+        // alpha/beta
+        assert parts[2].equals("0");
+        v = parts[0] + "." + parts[1] + "-SNAPSHOT";
+      } else {
+        v = LUCENE_MAIN_VERSION + "-SNAPSHOT";
+      }
     }
     LUCENE_VERSION = ident(v);
   }

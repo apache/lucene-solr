@@ -89,7 +89,7 @@ public final class SegmentReader extends AtomicReader {
   // SegmentReader and using the provided in-memory
   // liveDocs.  Used by IndexWriter to provide a new NRT
   // reader:
-  SegmentReader(SegmentInfoPerCommit si, SegmentCoreReaders core, Bits liveDocs, int numDocs) throws IOException {
+  SegmentReader(SegmentInfoPerCommit si, SegmentCoreReaders core, Bits liveDocs, int numDocs) {
     this.si = si;
     this.core = core;
     core.incRef();
@@ -131,7 +131,7 @@ public final class SegmentReader extends AtomicReader {
   }
   
   @Override
-  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     if (docID < 0 || docID >= maxDoc()) {       
       throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
     }
@@ -139,7 +139,7 @@ public final class SegmentReader extends AtomicReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
+  public Fields fields() {
     ensureOpen();
     return core.fields;
   }

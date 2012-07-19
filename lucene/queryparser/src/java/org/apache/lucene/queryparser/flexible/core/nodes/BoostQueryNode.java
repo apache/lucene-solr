@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeError;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
@@ -43,10 +42,8 @@ public class BoostQueryNode extends QueryNodeImpl {
    *          the query to be boosted
    * @param value
    *          the boost value, it may vary from 0.0 to 1.0
-   * 
-   * @throws QueryNodeException
    */
-  public BoostQueryNode(QueryNode query, float value) throws QueryNodeException {
+  public BoostQueryNode(QueryNode query, float value) {
     if (query == null) {
       throw new QueryNodeError(new MessageImpl(
           QueryParserMessages.NODE_ACTION_NOT_SUPPORTED, "query", "null"));

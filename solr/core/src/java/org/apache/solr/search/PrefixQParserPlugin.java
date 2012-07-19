@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
@@ -40,7 +39,7 @@ public class PrefixQParserPlugin extends QParserPlugin {
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       @Override
-      public Query parse() throws ParseException {
+      public Query parse() {
         return new PrefixQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
       }
     };

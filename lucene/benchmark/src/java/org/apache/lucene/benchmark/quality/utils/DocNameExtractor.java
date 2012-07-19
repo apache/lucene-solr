@@ -22,9 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.StoredFieldVisitor.Status;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.IndexInput;
 
 /**
  * Utility: extract doc names from an index
@@ -52,12 +50,12 @@ public class DocNameExtractor {
     final List<String> name = new ArrayList<String>();
     searcher.getIndexReader().document(docid, new StoredFieldVisitor() {
         @Override
-        public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+        public void stringField(FieldInfo fieldInfo, String value) {
           name.add(value);
         }
 
         @Override
-        public Status needsField(FieldInfo fieldInfo) throws IOException {
+        public Status needsField(FieldInfo fieldInfo) {
           if (!name.isEmpty()) {
             return Status.STOP;
           } else if (fieldInfo.name.equals(docNameField)) {

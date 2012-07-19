@@ -24,6 +24,124 @@ $Id$
 
 (No changes)
 
+==================  4.0.0-BETA ===================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.1
+Carrot2 3.5.0
+Velocity 1.6.4 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.3.5
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* LUCENE-4201: Added JapaneseIterationMarkCharFilterFactory to normalize Japanese
+  iteration marks. (Robert Muir, Christian Moen)
+
+* SOLR-1856: In Solr Cell, literals should override Tika-parsed values.
+  Patch adds a param "literalsOverride" which defaults to true, but can be set 
+  to "false" to let Tika-parsed values be appended to literal values (Chris Harris, janhoy)
+  
+* SOLR-3488: Added a Collection management API for SolrCloud.
+  (Tommaso Teofili, Sami Siren, yonik, Mark Miller)
+
+* SOLR-3559: Full deleteByQuery support with SolrCloud distributed indexing.
+  All replicas of a shard will be consistent, even if updates arrive in a
+  different order on different replicas.  (yonik)
+
+* SOLR-1929: Index encrypted documents with ExtractingUpdateRequestHandler.
+  By supplying resource.password=<mypw> or specifying an external file with regular
+  expressions matching file names, Solr will decrypt and index PDFs and DOCX formats.
+  (janhoy, Yiannis Pericleous)
+
+* SOLR-3562: Add options to remove instance dir or data dir on core unload.
+  (Mark Miller, Per Steffensen)
+
+* SOLR-2702: The default directory factory was changed to NRTCachingDirectoryFactory 
+  which wraps the StandardDirectoryFactory and caches small files for improved
+  Near Real-time (NRT) performance. (Mark Miller, yonik)
+  
+* SOLR-2616: Include a sample java util logging configuration file. 
+  (David Smiley, Mark Miller)
+ 
+* SOLR-3460: Add cloud-scripts directory and a zkcli.sh|bat tool for easy scripting
+  and interaction with ZooKeeper. (Mark Miller)
+
+* SOLR-1725: StatelessScriptUpdateProcessorFactory allows users to implement
+  the full ScriptUpdateProcessor API using any scripting language with a 
+  javax.script.ScriptEngineFactory
+  (Uri Boness, ehatcher, Simon Rosenthal, hossman)
+
+* SOLR-139: Change to updateable documents to create the document if it doesn't
+  already exist.  To assert that the document must exist, use the optimistic
+  concurrency feature by specifying a _version_ of 1.  (yonik)
+
+
+Bug Fixes
+----------------------
+
+* SOLR-3582: Our ZooKeeper watchers respond to session events as if they are change events, 
+  creating undesirable side effects. (Trym R. Møller, Mark Miller)
+
+* SOLR-3467: ExtendedDismax escaping is missing several reserved characters
+  (Michael Dodsworth via janhoy)
+  
+* SOLR-3587: After reloading a SolrCore, the original Analyzer is still used rather than a new 
+  one. (Alexey Serba, yonik, rmuir, Mark Miller)
+  
+* LUCENE-4185: Fix a bug where CharFilters were wrongly being applied twice. (Michael Froh, rmuir)
+
+* SOLR-3610: After reloading a core, indexing would fail on any newly added fields to the schema. (Brent Mills, rmuir)
+
+* SOLR-3377: edismax fails to correctly parse a fielded query wrapped by parens.
+  This regression was introduced in 3.6.  (Bernd Fehling, Jan Høydahl, yonik)
+  
+* SOLR-3621: Fix rare concurrency issue when opening a new IndexWriter for replication or rollback.
+  (Mark Miller)
+
+* SOLR-1781: Replication index directories not always cleaned up. (Terje Sten Bjerkseth, Mark Miller)
+
+* SOLR-3639: Update ZooKeeper to 3.3.5 for a variety of bug fixes. (Mark Miller)
+
+* SOLR-3629: Typo in solr.xml persistence when overriding the solrconfig.xml 
+  file name using the "config" attribute prevented the override file from being
+  used. (Ryan Zezeski, hossman)
+
+
+Other Changes
+----------------------
+
+* SOLR-3524: Make discarding punctuation configurable in JapaneseTokenizerFactory.
+  The default is to discard punctuation, but this is overridable as an expert option.
+  (Kazuaki Hiraga, Jun Ohtani via Christian Moen)
+
+* SOLR-1770: Move the default core instance directory into a collection1 folder.
+  (Mark Miller)
+  
+* SOLR-3355: Add shard and collection to SolrCore statistics. (Michael Garski, Mark Miller)
+
+* SOLR-3575: solr.xml should default to persist=true (Mark Miller)
+
+* SOLR-3563: Unloading all cores in a SolrCloud collection will now cause the removal of
+  that collection's meta data from ZooKeeper. (Mark Miller, Per Steffensen)
+
+* SOLR-3599: Add zkClientTimeout to solr.xml so that it's obvious how to change it and so 
+  that you can change it with a system property. (Mark Miller)
+
+* SOLR-3609: Change Solr's expanded webapp directory to be at a consistent path called
+  solr-webapp rather than a temporary directory. (Mark Miller)
+  
+* SOLR-3600: Raise the default zkClientTimeout from 10 seconds to 15 seconds. (Mark Miller)
+
+* SOLR-3215: Clone SolrInputDocument when distrib indexing so that update processors after
+  the distrib update process do not process the document twice. (Mark Miller)
+  
+
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
@@ -91,7 +209,7 @@ Upgrading from Solr 3.6-dev
 
 * Due to low level changes to support SolrCloud, the uniqueKey field can no 
   longer be populated via <copyField/> or <field default=...> in the 
-  schema.xml.  Users wishing to have Solr automaticly generate a uniqueKey 
+  schema.xml.  Users wishing to have Solr automatically generate a uniqueKey 
   value when adding documents should instead use an instance of
   solr.UUIDUpdateProcessorFactory in their update processor chain.  See 
   SOLR-2796 for more details.
@@ -365,6 +483,8 @@ New Features
 * SOLR-2599: CloneFieldUpdateProcessorFactory provides similar functionality 
   to schema.xml's <copyField/> declaration but as an update processor that can 
   be combined with other processors in any order. (Jan Høydahl & hossman)
+
+* SOLR-3351: eDismax: ps2 and ps3 params (janhoy)
 
 * SOLR-3542: Add WeightedFragListBuilder for FVH and set it to default fragListBuilder
   in example solrconfig.xml. (Sebastian Lutze, koji)
@@ -668,7 +788,7 @@ Other Changes
 * SOLR-3534: The Dismax and eDismax query parsers will fall back on the 'df' parameter
   when 'qf' is absent.  And if neither is present nor the schema default search field
   then an exception will be thrown now. (dsmiley)
-
+  
 Documentation
 ----------------------
 

@@ -74,7 +74,10 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
         new String[] { "シニアソフトウェアエンジニア" }
     );
   }
-  
+
+  /**
+   * Test user dictionary
+   */
   public void testUserDict() throws IOException {
     String userDict = 
         "# Custom segmentation for long entries\n" +
@@ -90,6 +93,27 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
     TokenStream ts = factory.create(new StringReader("関西国際空港に行った"));
     assertTokenStreamContents(ts,
         new String[] { "関西", "国際", "空港", "に",  "行っ",  "た" }
+    );
+  }
+
+  /**
+   * Test preserving punctuation
+   */
+  public void testPreservePunctuation() throws IOException {
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("discardPunctuation", "false");
+    factory.init(args);
+    factory.inform(new SolrResourceLoader(null, null));
+    TokenStream ts = factory.create(
+        new StringReader("今ノルウェーにいますが、来週の頭日本に戻ります。楽しみにしています！お寿司が食べたいな。。。")
+    );
+    System.out.println(ts.toString());
+    assertTokenStreamContents(ts,
+        new String[] { "今", "ノルウェー", "に", "い", "ます", "が", "、",
+            "来週", "の", "頭", "日本", "に", "戻り", "ます", "。",
+            "楽しみ", "に", "し", "て", "い", "ます", "！",
+            "お", "寿司", "が", "食べ", "たい", "な", "。", "。", "。"}
     );
   }
 }

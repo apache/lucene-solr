@@ -178,7 +178,7 @@ public class DocumentObjectBinder {
         } else {
           String setterName = setter.getName();
           if (setterName.startsWith("set") && setterName.length() > 3) {
-            name = setterName.substring(3, 4).toLowerCase(Locale.ENGLISH) + setterName.substring(4);
+            name = setterName.substring(3, 4).toLowerCase(Locale.ROOT) + setterName.substring(4);
           } else {
             name = setter.getName();
           }

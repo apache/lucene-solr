@@ -101,7 +101,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   private static void putConfig(SolrZkClient zkClient, final String name)
       throws Exception {
-    zkClient.makePath("/configs/conf1/" + name, getFile("solr"
+    zkClient.makePath("/configs/conf1/" + name, getFile("solr" + File.separator + "collection1"
         + File.separator + "conf" + File.separator + name), false, true);  
   }
 
@@ -147,11 +147,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   static void tryCleanPath(String zkHost, String path) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, TIMEOUT);
     if (zkClient.exists(path, true)) {
-      List<String> children = zkClient.getChildren(path, null, true);
-      for (String string : children) {
-        tryCleanPath(zkHost, path+"/"+string);
-      }
-      zkClient.delete(path, -1, true);
+      zkClient.clean(path);
     }
     zkClient.close();
   }

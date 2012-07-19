@@ -42,7 +42,7 @@ public class TestElisionFilterFactory extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ElisionFilterFactory factory = new ElisionFilterFactory();
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     Map<String,String> args = new HashMap<String,String>();
     args.put("articles", "frenchArticles.txt");
     factory.init(args);
@@ -61,7 +61,7 @@ public class TestElisionFilterFactory extends BaseTokenStreamTestCase {
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     Map<String, String> args = Collections.emptyMap();
     factory.init(args);
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     factory.inform(loader);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "avion" });
@@ -75,7 +75,7 @@ public class TestElisionFilterFactory extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ElisionFilterFactory factory = new ElisionFilterFactory();
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     Map<String,String> args = new HashMap<String,String>();
     args.put("articles", "frenchArticles.txt");
     args.put("ignoreCase", "true");

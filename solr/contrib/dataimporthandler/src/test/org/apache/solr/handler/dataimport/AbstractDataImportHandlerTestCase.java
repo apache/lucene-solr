@@ -68,7 +68,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
   @After
   public void tearDown() throws Exception {
     // remove dataimport.properties
-    File f = new File("solr/conf/dataimport.properties");
+    File f = new File("solr/collection1/conf/dataimport.properties");
     log.info("Looking for dataimport.properties at: " + f.getAbsolutePath());
     if (f.exists()) {
       log.info("Deleting dataimport.properties");

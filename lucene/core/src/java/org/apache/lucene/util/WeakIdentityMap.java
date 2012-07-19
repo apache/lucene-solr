@@ -21,7 +21,9 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -38,9 +40,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * <p>This implementation was forked from <a href="http://cxf.apache.org/">Apache CXF</a>
  * but modified to <b>not</b> implement the {@link java.util.Map} interface and
- * without any set/iterator views on it, as those are error-prone
- * and inefficient, if not implemented carefully. Lucene's implementation also
- * supports {@code null} keys, but those are never weak!
+ * without any set views on it, as those are error-prone and inefficient,
+ * if not implemented carefully. The map only contains {@link Iterator} implementations
+ * on the values and not-GCed keys. Lucene's implementation also supports {@code null}
+ * keys, but those are never weak!
  *
  * @lucene.internal
  */
@@ -97,6 +100,70 @@ public final class WeakIdentityMap<K,V> {
     reap();
     return backingStore.size();
   }
+  
+  /** Returns an iterator over all weak keys of this map.
+   * Keys already garbage collected will not be returned.
+   * This Iterator does not support removals. */
+  public Iterator<K> keyIterator() {
+    reap();
+    final Iterator<IdentityWeakReference> iterator = backingStore.keySet().iterator();
+    return new Iterator<K>() {
+      // holds strong reference to next element in backing iterator:
+      private Object next = null;
+      // the backing iterator was already consumed:
+      private boolean nextIsSet = false;
+    
+      @Override
+      public boolean hasNext() {
+        return nextIsSet ? true : setNext();
+      }
+      
+      @Override @SuppressWarnings("unchecked")
+      public K next() {
+        if (nextIsSet || setNext()) {
+          try {
+            assert nextIsSet;
+            return (K) next;
+          } finally {
+             // release strong reference and invalidate current value:
+            nextIsSet = false;
+            next = null;
+          }
+        }
+        throw new NoSuchElementException();
+      }
+      
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+      
+      private boolean setNext() {
+        assert !nextIsSet;
+        while (iterator.hasNext()) {
+          next = iterator.next().get();
+          if (next == null) {
+            // already garbage collected!
+            continue;
+          }
+          // unfold "null" special value
+          if (next == NULL) {
+            next = null;
+          }
+          return nextIsSet = true;
+        }
+        return false;
+      }
+    };
+  }
+  
+  /** Returns an iterator over all values of this map.
+   * This iterator may return values whose key is already
+   * garbage collected while iterator is consumed. */
+  public Iterator<V> valueIterator() {
+    reap();
+    return backingStore.values().iterator();
+  }
 
   private void reap() {
     Reference<?> zombie;
@@ -104,6 +171,9 @@ public final class WeakIdentityMap<K,V> {
       backingStore.remove(zombie);
     }
   }
+  
+  // we keep a hard reference to our NULL key, so map supports null keys that never get GCed:
+  static final Object NULL = new Object();
 
   private static final class IdentityWeakReference extends WeakReference<Object> {
     private final int hash;
@@ -129,9 +199,6 @@ public final class WeakIdentityMap<K,V> {
       }
       return false;
     }
-  
-    // we keep a hard reference to our NULL key, so map supports null keys that never get GCed:
-    private static final Object NULL = new Object();
   }
 }
 

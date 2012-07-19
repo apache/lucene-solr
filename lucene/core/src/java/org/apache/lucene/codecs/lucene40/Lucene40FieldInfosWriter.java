@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.FieldInfo;
@@ -27,7 +28,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.CodecUtil;
 
 /**
  * Lucene 4.0 FieldInfos writer.

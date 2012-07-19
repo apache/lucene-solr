@@ -28,10 +28,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.SearcherManager; // javadocs
-import org.apache.lucene.store.*;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;         // for javadocs
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -53,7 +52,7 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  
  <p>IndexReader instances for indexes on disk are usually constructed
  with a call to one of the static <code>DirectoryReader.open()</code> methods,
- e.g. {@link DirectoryReader#open(Directory)}. {@link DirectoryReader} implements
+ e.g. {@link DirectoryReader#open(org.apache.lucene.store.Directory)}. {@link DirectoryReader} implements
  the {@link CompositeReader} interface, it is not possible to directly get postings.
 
  <p> For efficiency, in this API documents are often referred to via
@@ -317,7 +316,7 @@ public abstract class IndexReader implements Closeable {
    *  simply want to load all fields, use {@link
    *  #document(int)}.  If you want to load a subset, use
    *  {@link DocumentStoredFieldVisitor}.  */
-  public abstract void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException;
+  public abstract void document(int docID, StoredFieldVisitor visitor) throws IOException;
   
   /**
    * Returns the stored fields of the <code>n</code><sup>th</sup>
@@ -341,7 +340,7 @@ public abstract class IndexReader implements Closeable {
   // TODO: we need a separate StoredField, so that the
   // Document returned here contains that class not
   // IndexableField
-  public final Document document(int docID) throws CorruptIndexException, IOException {
+  public final Document document(int docID) throws IOException {
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
     document(docID, visitor);
     return visitor.getDocument();
@@ -352,7 +351,7 @@ public abstract class IndexReader implements Closeable {
    * fields.  Note that this is simply sugar for {@link
    * DocumentStoredFieldVisitor#DocumentStoredFieldVisitor(Set)}.
    */
-  public final Document document(int docID, Set<String> fieldsToLoad) throws CorruptIndexException, IOException {
+  public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(fieldsToLoad);
     document(docID, visitor);
     return visitor.getDocument();

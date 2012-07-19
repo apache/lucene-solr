@@ -29,7 +29,7 @@
     <!-- you might need to tweak this from china so it works -->
     <ibiblio name="working-chinese-mirror" root="http://mirror.netcologne.de/maven2" m2compatible="true" />
 
-    <chain name="default" returnFirst="true" checkmodified="true">
+    <chain name="default" returnFirst="true" checkmodified="true" changingPattern=".*SNAPSHOT">
       <resolver ref="local"/>
       <resolver ref="main"/>
       <resolver ref="sonatype-releases" />

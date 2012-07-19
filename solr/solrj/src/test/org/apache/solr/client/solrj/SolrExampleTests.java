@@ -540,8 +540,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
   }
   
   private static Field getCUSSExceptionField(Object cs)
-      throws SecurityException, NoSuchFieldException, IllegalArgumentException,
-      IllegalAccessException {
+      throws SecurityException, NoSuchFieldException, IllegalArgumentException {
     Field field = cs.getClass().getDeclaredField("lastError");
     field.setAccessible(true);
     return field;

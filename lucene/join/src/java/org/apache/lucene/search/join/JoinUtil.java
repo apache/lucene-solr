@@ -21,6 +21,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 import java.io.IOException;
+import java.util.Locale;
 
 /**
  * Utility for query time joining using TermsQuery and TermsCollector.
@@ -85,7 +86,7 @@ public final class JoinUtil {
             fromQuery
         );
       default:
-        throw new IllegalArgumentException(String.format("Score mode %s isn't supported.", scoreMode));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "Score mode %s isn't supported.", scoreMode));
     }
   }
 

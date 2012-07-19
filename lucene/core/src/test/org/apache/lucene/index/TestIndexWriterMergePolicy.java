@@ -227,7 +227,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     writer.addDocument(doc);
   }
 
-  private void checkInvariants(IndexWriter writer) throws IOException {
+  private void checkInvariants(IndexWriter writer) {
     writer.waitForMerges();
     int maxBufferedDocs = writer.getConfig().getMaxBufferedDocs();
     int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();

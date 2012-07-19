@@ -317,13 +317,13 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     }
     
     @Override
-    public void reset( Reader input ) throws IOException {
-      super.reset( input );
+    public void setReader( Reader input ) throws IOException {
+      super.setReader( input );
       reset();
     }
     
     @Override
-    public void reset() throws IOException {
+    public void reset() {
       startTerm = 0;
       nextStartOffset = 0;
       snippet = null;

@@ -172,5 +172,5 @@ public class IntFieldSource extends FieldCacheSource {
     int h = parser==null ? Integer.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();
     return h;
-  };
+  }
 }

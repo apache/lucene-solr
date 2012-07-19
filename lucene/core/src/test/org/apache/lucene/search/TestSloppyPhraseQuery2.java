@@ -184,7 +184,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
     }
   }
   
-  private MultiPhraseQuery randomPhraseQuery(long seed) throws Exception {
+  private MultiPhraseQuery randomPhraseQuery(long seed) {
     Random random = new Random(seed);
     int length = _TestUtil.nextInt(random, 2, 5);
     MultiPhraseQuery pq = new MultiPhraseQuery();

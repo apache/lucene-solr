@@ -61,14 +61,14 @@ public final class CachingTokenFilter extends TokenFilter {
   }
   
   @Override
-  public final void end() throws IOException {
+  public final void end() {
     if (finalState != null) {
       restoreState(finalState);
     }
   }
 
   @Override
-  public void reset() throws IOException {
+  public void reset() {
     if(cache != null) {
       iterator = cache.iterator();
     }

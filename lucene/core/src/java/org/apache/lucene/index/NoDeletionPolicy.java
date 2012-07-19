@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -34,8 +33,8 @@ public final class NoDeletionPolicy implements IndexDeletionPolicy {
     // keep private to avoid instantiation
   }
   
-  public void onCommit(List<? extends IndexCommit> commits) throws IOException {}
+  public void onCommit(List<? extends IndexCommit> commits) {}
 
-  public void onInit(List<? extends IndexCommit> commits) throws IOException {}
+  public void onInit(List<? extends IndexCommit> commits) {}
   
 }

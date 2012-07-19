@@ -63,7 +63,7 @@ public class NativeFSLockFactory extends FSLockFactory {
    * directory itself. Be sure to create one instance for each directory
    * your create!
    */
-  public NativeFSLockFactory() throws IOException {
+  public NativeFSLockFactory() {
     this((File) null);
   }
 
@@ -73,7 +73,7 @@ public class NativeFSLockFactory extends FSLockFactory {
    *
    * @param lockDirName where lock files are created.
    */
-  public NativeFSLockFactory(String lockDirName) throws IOException {
+  public NativeFSLockFactory(String lockDirName) {
     this(new File(lockDirName));
   }
 
@@ -83,7 +83,7 @@ public class NativeFSLockFactory extends FSLockFactory {
    * 
    * @param lockDir where lock files are created.
    */
-  public NativeFSLockFactory(File lockDir) throws IOException {
+  public NativeFSLockFactory(File lockDir) {
     setLockDir(lockDir);
   }
 

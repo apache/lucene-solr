@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.HashSet;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -135,7 +136,7 @@ class DocumentsWriterPerThread {
    *  updating the index files) and must discard all
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
-  void abort() throws IOException {
+  void abort() {
     hasAborted = aborting = true;
     try {
       if (infoStream.isEnabled("DWPT")) {
@@ -181,7 +182,7 @@ class DocumentsWriterPerThread {
   private int flushedDocCount;
   DocumentsWriterDeleteQueue deleteQueue;
   DeleteSlice deleteSlice;
-  private final NumberFormat nf = NumberFormat.getInstance();
+  private final NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
   final Allocator byteBlockAllocator;
 
   
@@ -352,7 +353,7 @@ class DocumentsWriterPerThread {
     return docCount;
   }
   
-  private void finishDocument(Term delTerm) throws IOException {
+  private void finishDocument(Term delTerm) {
     /*
      * here we actually finish the document in two steps 1. push the delete into
      * the queue and update our slice. 2. increment the DWPT private document
@@ -412,7 +413,7 @@ class DocumentsWriterPerThread {
   }
 
   /** Reset after a flush */
-  private void doAfterFlush() throws IOException {
+  private void doAfterFlush() {
     segmentInfo = null;
     consumer.doAfterFlush();
     directory.getCreatedFiles().clear();
@@ -463,15 +464,15 @@ class DocumentsWriterPerThread {
       pendingDeletes.docIDs.clear();
     }
 
-    if (infoStream.isEnabled("DWPT")) {
-      infoStream.message("DWPT", "flush postings as segment " + flushState.segmentInfo.name + " numDocs=" + numDocsInRAM);
-    }
-
     if (aborting) {
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush: skip because aborting is set");
       }
       return null;
+    }
+
+    if (infoStream.isEnabled("DWPT")) {
+      infoStream.message("DWPT", "flush postings as segment " + flushState.segmentInfo.name + " numDocs=" + numDocsInRAM);
     }
 
     boolean success = false;

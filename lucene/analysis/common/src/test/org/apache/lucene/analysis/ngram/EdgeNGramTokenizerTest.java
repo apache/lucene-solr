@@ -96,7 +96,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
   public void testReset() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 3);
     assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3}, 5 /* abcde */);
-    tokenizer.reset(new StringReader("abcde"));
+    tokenizer.setReader(new StringReader("abcde"));
     assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3}, 5 /* abcde */);
   }
   
@@ -105,21 +105,21 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new EdgeNGramTokenizer(reader, EdgeNGramTokenizer.Side.FRONT, 2, 15);
+        Tokenizer tokenizer = new EdgeNGramTokenizer(reader, EdgeNGramTokenizer.Side.FRONT, 2, 4);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
-    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192, false, false);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 8192, false, false);
     
     Analyzer b = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new EdgeNGramTokenizer(reader, EdgeNGramTokenizer.Side.BACK, 2, 15);
+        Tokenizer tokenizer = new EdgeNGramTokenizer(reader, EdgeNGramTokenizer.Side.BACK, 2, 4);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random(), b, 10000*RANDOM_MULTIPLIER, 20, false, false);
-    checkRandomData(random(), b, 200*RANDOM_MULTIPLIER, 8192, false, false);
+    checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), b, 100*RANDOM_MULTIPLIER, 8192, false, false);
   }
 }

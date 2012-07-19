@@ -135,7 +135,7 @@ class JoinQuery extends Query {
     private float queryWeight;
     ResponseBuilder rb;
 
-    public JoinQueryWeight(SolrIndexSearcher searcher) throws IOException {
+    public JoinQueryWeight(SolrIndexSearcher searcher) {
       this.fromSearcher = searcher;
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       if (info != null) {
@@ -175,7 +175,7 @@ class JoinQuery extends Query {
           final RefCounted<SolrIndexSearcher> ref = fromRef;
           info.addCloseHook(new Closeable() {
             @Override
-            public void close() throws IOException {
+            public void close() {
               ref.decref();
             }
           });
@@ -183,7 +183,7 @@ class JoinQuery extends Query {
 
         info.addCloseHook(new Closeable() {
           @Override
-          public void close() throws IOException {
+          public void close() {
             fromCore.close();
           }
         });
@@ -531,6 +531,11 @@ class JoinQuery extends Query {
     @Override
     public float score() throws IOException {
       return score;
+    }
+    
+    @Override
+    public float freq() throws IOException {
+      return 1;
     }
 
     @Override

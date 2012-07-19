@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.sinks;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -164,7 +165,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     TokenStream lowerCasing = new LowerCaseFilter(TEST_VERSION_CURRENT, source1);
     String[] lowerCaseTokens = new String[tokens1.length];
     for (int i = 0; i < tokens1.length; i++)
-      lowerCaseTokens[i] = tokens1[i].toLowerCase();
+      lowerCaseTokens[i] = tokens1[i].toLowerCase(Locale.ROOT);
     assertTokenStreamContents(lowerCasing, lowerCaseTokens);
   }
 
@@ -180,7 +181,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
       StringBuilder buffer = new StringBuilder();
       System.out.println("-----Tokens: " + tokCount[k] + "-----");
       for (int i = 0; i < tokCount[k]; i++) {
-        buffer.append(English.intToEnglish(i).toUpperCase()).append(' ');
+        buffer.append(English.intToEnglish(i).toUpperCase(Locale.ROOT)).append(' ');
       }
       //make sure we produce the same tokens
       TeeSinkTokenFilter teeStream = new TeeSinkTokenFilter(new StandardFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))));

@@ -23,6 +23,9 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.util.ShapeFieldCacheProvider;
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * @lucene.internal
+ */
 public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<Point> {
 
   final SpatialPrefixTree grid; //

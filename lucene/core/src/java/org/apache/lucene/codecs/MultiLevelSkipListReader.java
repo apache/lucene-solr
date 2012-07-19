@@ -251,7 +251,7 @@ public abstract class MultiLevelSkipListReader {
     }
     
     @Override
-    public void close() throws IOException {
+    public void close() {
       data = null;
     }
 
@@ -266,18 +266,18 @@ public abstract class MultiLevelSkipListReader {
     }
 
     @Override
-    public byte readByte() throws IOException {
+    public byte readByte() {
       return data[pos++];
     }
 
     @Override
-    public void readBytes(byte[] b, int offset, int len) throws IOException {
+    public void readBytes(byte[] b, int offset, int len) {
       System.arraycopy(data, pos, b, offset, len);
       pos += len;
     }
 
     @Override
-    public void seek(long pos) throws IOException {
+    public void seek(long pos) {
       this.pos =  (int) (pos - pointer);
     }
     

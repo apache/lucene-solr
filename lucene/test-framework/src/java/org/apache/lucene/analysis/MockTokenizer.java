@@ -143,15 +143,17 @@ public class MockTokenizer extends Tokenizer {
     if (ch < 0) {
       return ch;
     } else {
-      assert !Character.isLowSurrogate((char) ch);
+      assert !Character.isLowSurrogate((char) ch) : "unpaired low surrogate: " + Integer.toHexString(ch);
       off++;
       if (Character.isHighSurrogate((char) ch)) {
         int ch2 = input.read();
         if (ch2 >= 0) {
           off++;
-          assert Character.isLowSurrogate((char) ch2);
+          assert Character.isLowSurrogate((char) ch2) : "unpaired high surrogate: " + Integer.toHexString(ch) + ", followed by: " + Integer.toHexString(ch2);
           return Character.toCodePoint((char) ch, (char) ch2);
-        }
+        } else {
+          assert false : "stream ends with unpaired high surrogate: " + Integer.toHexString(ch);
+	}
       }
       return ch;
     }
@@ -191,8 +193,8 @@ public class MockTokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
+  public void setReader(Reader input) throws IOException {
+    super.setReader(input);
     assert !enableChecks || streamState == State.CLOSE : "setReader() called in wrong state: " + streamState;
     streamState = State.SETREADER;
   }

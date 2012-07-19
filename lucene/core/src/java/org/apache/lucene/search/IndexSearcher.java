@@ -34,19 +34,18 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
-import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.index.IndexWriter; // javadocs
 
@@ -182,17 +181,17 @@ public class IndexSearcher {
   }
 
   /** Sugar for <code>.getIndexReader().document(docID)</code> */
-  public Document doc(int docID) throws CorruptIndexException, IOException {
+  public Document doc(int docID) throws IOException {
     return reader.document(docID);
   }
 
   /** Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code> */
-  public void doc(int docID, StoredFieldVisitor fieldVisitor) throws CorruptIndexException, IOException {
+  public void doc(int docID, StoredFieldVisitor fieldVisitor) throws IOException {
     reader.document(docID, fieldVisitor);
   }
 
   /** Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code> */
-  public final Document document(int docID, Set<String> fieldsToLoad) throws CorruptIndexException, IOException {
+  public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }
 

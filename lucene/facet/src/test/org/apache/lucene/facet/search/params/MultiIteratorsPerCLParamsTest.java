@@ -7,7 +7,6 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -84,8 +83,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
     doTestCLParamMultiIteratorsByRequest(true);
   }
 
-  private void doTestCLParamMultiIteratorsByRequest(boolean cacheCLI) throws Exception,
-      CorruptIndexException, IOException {
+  private void doTestCLParamMultiIteratorsByRequest(boolean cacheCLI) throws Exception {
     // Create a CLP which generates different CLIs according to the
     // FacetRequest's dimension
     CategoryListParams clp = new CategoryListParams();

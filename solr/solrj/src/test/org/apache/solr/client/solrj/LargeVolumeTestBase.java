@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,7 +61,7 @@ public abstract class LargeVolumeTestBase extends SolrJettyTestBase
     log.info("done");
   }
 
-  private void query(int count) throws SolrServerException, IOException {
+  private void query(int count) throws SolrServerException {
     SolrServer gserver = this.getSolrServer();
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse response = gserver.query(query);

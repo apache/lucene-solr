@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -34,6 +35,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,7 +57,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   private void init(String config, String schema) throws Exception {
     //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
     createTempDir();
-    File parent = new File(TEST_HOME(), "conf");
+    File parent = new File(TEST_HOME() + "/collection1", "conf");
     File elevateFile = new File(parent, "elevate.xml");
     File elevateDataFile = new File(dataDir, "elevate-data.xml");
     FileUtils.copyFile(elevateFile, elevateDataFile);
@@ -412,7 +414,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   // write a test file to boost some docs
   private void writeFile(File file, String query, String... ids) throws Exception {
-    PrintWriter out = new PrintWriter(new FileOutputStream(file));
+    PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), IOUtils.CHARSET_UTF_8));
     out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
     out.println("<elevate>");
     out.println("<query text=\"" + query + "\">");

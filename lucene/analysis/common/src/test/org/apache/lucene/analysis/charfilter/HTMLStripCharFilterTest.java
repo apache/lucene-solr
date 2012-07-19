@@ -29,7 +29,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util._TestUtil;
@@ -46,7 +45,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
       @Override
       protected Reader initReader(String fieldName, Reader reader) {
-        return new HTMLStripCharFilter(CharReader.get(reader));
+        return new HTMLStripCharFilter(reader);
       }
     };
   }
@@ -60,7 +59,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "\nthis is some text\n here is a link and " +
             "another link. " +
             "This is an entity: & plus a <.  Here is an &. ";
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new StringReader(html)));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new StringReader(html));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     char [] goldArray = gold.toCharArray();
@@ -79,7 +78,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("htmlStripReaderTest.html");
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new InputStreamReader(stream, "UTF-8")));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){
@@ -96,7 +95,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testMSWord14GeneratedHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("MS-Word 14 generated.htm");
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new InputStreamReader(stream, "UTF-8")));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
     String gold = "This is a test";
     StringBuilder builder = new StringBuilder();
     int ch = 0;
@@ -117,7 +116,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "\u0393";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
+    Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -132,7 +131,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "  <foo> \u00DCbermensch = \u0393 bar \u0393";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
+    Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -147,7 +146,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "  <junk/>   ! @ and ’";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
+    Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -161,7 +160,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String test = "aaa bbb <reserved ccc=\"ddddd\"> eeee </reserved> ffff <reserved ggg=\"hhhh\"/> <other/>";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
+    Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -346,7 +345,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     for (int i = 0 ; i < testGold.length ; i += 2) {
       String test = testGold[i];
       String gold = testGold[i + 1];
-      Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+      Reader reader = new HTMLStripCharFilter(new StringReader(test));
       StringBuilder builder = new StringBuilder();
       int ch = 0;
       while ((ch = reader.read()) != -1){
@@ -370,7 +369,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
     testBuilder.append("-->foo");
     String gold = "foo";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(testBuilder.toString())));
+    Reader reader = new HTMLStripCharFilter(new StringReader(testBuilder.toString()));
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -388,7 +387,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     appendChars(testBuilder, HTMLStripCharFilter.getInitialBufferSize() + 500);
     testBuilder.append("?>");
     gold = "";
-    reader = new HTMLStripCharFilter(CharReader.get(new StringReader(testBuilder.toString())));
+    reader = new HTMLStripCharFilter(new StringReader(testBuilder.toString()));
     ch = 0;
     builder = new StringBuilder();
     try {
@@ -406,7 +405,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     appendChars(testBuilder, HTMLStripCharFilter.getInitialBufferSize() + 500);
     testBuilder.append("/>");
     gold = "";
-    reader = new HTMLStripCharFilter(CharReader.get(new StringReader(testBuilder.toString())));
+    reader = new HTMLStripCharFilter(new StringReader(testBuilder.toString()));
     ch = 0;
     builder = new StringBuilder();
     try {
@@ -430,7 +429,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   private void processBuffer(String test, String assertMsg) throws IOException {
     // System.out.println("-------------------processBuffer----------");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
+    Reader reader = new HTMLStripCharFilter(new BufferedReader(new StringReader(test)));//force the use of BufferedReader
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -448,7 +447,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
     String test = "<!--- three dashes, still a valid comment ---> ";
     String gold = " ";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
+    Reader reader = new HTMLStripCharFilter(new BufferedReader(new StringReader(test)));//force the use of BufferedReader
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -464,7 +463,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
 
   public void doTestOffsets(String in) throws Exception {
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(in))));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new BufferedReader(new StringReader(in)));
     int ch = 0;
     int off = 0;     // offset in the reader
     int strOff = -1; // offset in the original string
@@ -491,7 +490,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   static void assertLegalOffsets(String in) throws Exception {
     int length = in.length();
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(in))));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new BufferedReader(new StringReader(in)));
     int ch = 0;
     int off = 0;
     while ((ch = reader.read()) != -1) {
@@ -508,12 +507,12 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numRounds = RANDOM_MULTIPLIER * 10000;
+    int numRounds = RANDOM_MULTIPLIER * 1000;
     checkRandomData(random(), newTestAnalyzer(), numRounds);
   }
   
   public void testRandomHugeStrings() throws Exception {
-    int numRounds = RANDOM_MULTIPLIER * 200;
+    int numRounds = RANDOM_MULTIPLIER * 100;
     checkRandomData(random(), newTestAnalyzer(), numRounds, 8192);
   }
 
@@ -526,7 +525,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
         + " alt =  \"Alt: <!--#echo var='${IMAGE_CAPTION:<!--comment-->\\'Comment\\'}'  -->\"\n\n"
         + " title=\"Title: <!--#echo var=\"IMAGE_CAPTION\"-->\">two";
     String gold = "onetwo";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    Reader reader = new HTMLStripCharFilter(new StringReader(test));
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -540,7 +539,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
     test = "one<script><!-- <!--#config comment=\"<!-- \\\"comment\\\"-->\"--> --></script>two";
     gold = "one\ntwo";
-    reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    reader = new HTMLStripCharFilter(new StringReader(test));
     ch = 0;
     builder = new StringBuilder();
     try {
@@ -557,7 +556,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testScriptQuotes() throws Exception {
     String test = "one<script attr= bare><!-- action('<!-- comment -->', \"\\\"-->\\\"\"); --></script>two";
     String gold = "one\ntwo";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    Reader reader = new HTMLStripCharFilter(new StringReader(test));
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -572,7 +571,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
     test = "hello<script><!-- f('<!--internal--></script>'); --></script>";
     gold = "hello\n";
-    reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    reader = new HTMLStripCharFilter(new StringReader(test));
     ch = 0;
     builder = new StringBuilder();
     try {
@@ -591,7 +590,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "one<script no-value-attr></script>two";
     Set<String> escapedTags = new HashSet<String>(Arrays.asList("SCRIPT"));
     Reader reader = new HTMLStripCharFilter
-        (CharReader.get(new StringReader(test)), escapedTags);
+        (new StringReader(test), escapedTags);
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -612,7 +611,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
                 + "-->\n"
                 + "</style>two";
     String gold = "one\ntwo";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    Reader reader = new HTMLStripCharFilter(new StringReader(test));
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -631,7 +630,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "one<style type=\"text/css\"></style>two";
     Set<String> escapedTags = new HashSet<String>(Arrays.asList("STYLE"));
     Reader reader = new HTMLStripCharFilter
-        (CharReader.get(new StringReader(test)), escapedTags);
+        (new StringReader(test), escapedTags);
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -656,7 +655,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     for (int i = 0 ; i < testGold.length ; i += 2) {
       String test = testGold[i];
       String gold = testGold[i + 1];
-      Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+      Reader reader = new HTMLStripCharFilter(new StringReader(test));
       StringBuilder builder = new StringBuilder();
       int ch = 0;
       while ((ch = reader.read()) != -1){
@@ -671,7 +670,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "one<BR class='whatever'>two</\nBR\n>";
     Set<String> escapedTags = new HashSet<String>(Arrays.asList("BR"));
     Reader reader = new HTMLStripCharFilter
-        (CharReader.get(new StringReader(test)), escapedTags);
+        (new StringReader(test), escapedTags);
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -688,7 +687,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testInlineTagsNoSpace() throws Exception {
     String test = "one<sPAn class=\"invisible\">two<sup>2<sup>e</sup></sup>.</SpaN>three";
     String gold = "onetwo2e.three";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    Reader reader = new HTMLStripCharFilter(new StringReader(test));
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -705,7 +704,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testCDATA() throws Exception {
     String test = "one<![CDATA[<one><two>three<four></four></two></one>]]>two";
     String gold = "one<one><two>three<four></four></two></one>two";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    Reader reader = new HTMLStripCharFilter(new StringReader(test));
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -720,7 +719,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
     test = "one<![CDATA[two<![CDATA[three]]]]><![CDATA[>four]]>five";
     gold = "onetwo<![CDATA[three]]>fourfive";
-    reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    reader = new HTMLStripCharFilter(new StringReader(test));
     ch = 0;
     builder = new StringBuilder();
     try {
@@ -737,7 +736,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testUppercaseCharacterEntityVariants() throws Exception {
     String test = " &QUOT;-&COPY;&GT;>&LT;<&REG;&AMP;";
     String gold = " \"-\u00A9>><<\u00AE&";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    Reader reader = new HTMLStripCharFilter(new StringReader(test));
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -754,7 +753,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testMSWordMalformedProcessingInstruction() throws Exception {
     String test = "one<?xml:namespace prefix = o ns = \"urn:schemas-microsoft-com:office:office\" />two";
     String gold = "onetwo";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    Reader reader = new HTMLStripCharFilter(new StringReader(test));
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -771,7 +770,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testSupplementaryCharsInTags() throws Exception {
     String test = "one<𩬅艱鍟䇹愯瀛>two<瀛愯𩬅>three 瀛愯𩬅</瀛愯𩬅>four</𩬅艱鍟䇹愯瀛>five<𠀀𠀀>six<𠀀𠀀/>seven";
     String gold = "one\ntwo\nthree 瀛愯𩬅\nfour\nfive\nsix\nseven";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    Reader reader = new HTMLStripCharFilter(new StringReader(test));
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -822,7 +821,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
       }
     }
     Reader reader = new HTMLStripCharFilter
-        (CharReader.get(new StringReader(text.toString())));
+        (new StringReader(text.toString()));
     while (reader.read() != -1);
   }
 

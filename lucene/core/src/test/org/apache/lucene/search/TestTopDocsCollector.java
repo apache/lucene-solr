@@ -55,19 +55,18 @@ public class TestTopDocsCollector extends LuceneTestCase {
     }
     
     @Override
-    public void collect(int doc) throws IOException {
+    public void collect(int doc) {
       ++totalHits;
       pq.insertWithOverflow(new ScoreDoc(doc + base, scores[idx++]));
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context)
-        throws IOException {
+    public void setNextReader(AtomicReaderContext context) {
       base = context.docBase;
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorer scorer) {
       // Don't do anything. Assign scores in random
     }
     

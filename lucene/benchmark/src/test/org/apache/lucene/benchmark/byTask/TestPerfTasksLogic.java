@@ -19,7 +19,8 @@ package org.apache.lucene.benchmark.byTask;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.text.Collator;
 import java.util.List;
@@ -398,7 +399,9 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // Run algo
     Benchmark benchmark = execBenchmark(algLines1);
 
-    BufferedReader r = new BufferedReader(new FileReader(lineFile));
+    BufferedReader r = new BufferedReader(
+        new InputStreamReader(
+            new FileInputStream(lineFile), "UTF-8"));
     int numLines = 0;
     String line;
     while((line = r.readLine()) != null) {

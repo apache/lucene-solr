@@ -155,6 +155,7 @@
     	<fileset dir="lib">
     	  <include name="commons-compress-1.2.jar"/>
     	  <include name="xercesImpl-2.9.1.jar"/>
+    	  <include name="nekohtml-1.9.15.jar"/>
     	</fileset>
     </path>
     <path id="run.classpath">
@@ -261,18 +262,6 @@
 
     <target name="init" depends="module-build.init,resolve-icu,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
   
-    <target name="clean-javacc">
-      <fileset dir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml" includes="*.java">
-	<containsregexp expression="Generated.*By.*JavaCC"/>
-      </fileset>
-    </target>
-    
-    <target name="javacc" depends="init,javacc-check" if="javacc.present">
-      <invoke-javacc target="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml/HTMLParser.jj"
-                     outputDir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml"
-		     />
-    </target>
-    
     <target name="compile-test" depends="copy-alg-files-for-testing,module-build.compile-test"/>
     <target name="copy-alg-files-for-testing" description="copy .alg files as resources for testing">
       <copy todir="${build.dir}/classes/test/conf">

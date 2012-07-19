@@ -38,7 +38,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
+@Slow
 public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   public static UserDictionary readDict() {
@@ -183,15 +185,15 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerNoPunct, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerNoPunct, 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerNoPunct, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerNoPunct, 100*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testRandomHugeStringsMockGraphAfter() throws Exception {
@@ -206,7 +208,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
                         return new TokenStreamComponents(tokenizer, graph);
                       }
                     },
-                    200*RANDOM_MULTIPLIER, 8192);
+                    100*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testLargeDocReliability() throws Exception {
@@ -605,7 +607,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
   
   private void doTestBocchan(int numIterations) throws Exception {
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(
-        this.getClass().getResourceAsStream("bocchan.utf-8")));
+        this.getClass().getResourceAsStream("bocchan.utf-8"), "UTF-8"));
     String line = reader.readLine();
     reader.close();
     

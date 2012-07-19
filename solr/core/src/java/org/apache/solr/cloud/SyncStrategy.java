@@ -17,14 +17,11 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
@@ -160,8 +157,7 @@ public class SyncStrategy {
   }
   
   private boolean syncWithReplicas(ZkController zkController, SolrCore core,
-      ZkNodeProps props, String collection, String shardId)
-      throws MalformedURLException, SolrServerException, IOException {
+      ZkNodeProps props, String collection, String shardId) {
     List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
         .getReplicaProps(collection, shardId,
             props.get(ZkStateReader.NODE_NAME_PROP),
@@ -191,8 +187,7 @@ public class SyncStrategy {
   }
   
   private void syncToMe(ZkController zkController, String collection,
-      String shardId, ZkNodeProps leaderProps) throws MalformedURLException,
-      SolrServerException, IOException {
+      String shardId, ZkNodeProps leaderProps) {
     
     // sync everyone else
     // TODO: we should do this in parallel at least

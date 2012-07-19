@@ -17,6 +17,7 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -56,7 +57,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   // TODO: for now we redefine this method so that it pulls from the above
   // we don't get helpful override behavior due to the method being static
   protected void createServers(int numShards) throws Exception {
-    controlJetty = createJetty(testDir, testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
+    controlJetty = createJetty(new File(getSolrHome()), testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
 
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
@@ -64,7 +65,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir,
+      JettySolrRunner j = createJetty(new File(getSolrHome()),
           testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
           getSchemaFile());
       jettys.add(j);

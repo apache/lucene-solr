@@ -40,7 +40,7 @@ public class TestDictionaryCompoundWordTokenFilterFactory extends BaseTokenStrea
     Reader reader = new StringReader("I like to play softball");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     DictionaryCompoundWordTokenFilterFactory factory = new DictionaryCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     Map<String,String> args = new HashMap<String,String>();
     args.put("dictionary", "compoundDictionary.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);

@@ -24,6 +24,7 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
  * Tests {@link NGramTokenizer} for correctness.
@@ -89,7 +90,7 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   public void testReset() throws Exception {
     NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
-    tokenizer.reset(new StringReader("abcde"));
+    tokenizer.setReader(new StringReader("abcde"));
     assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
   }
   
@@ -98,11 +99,11 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new NGramTokenizer(reader, 2, 15);
+        Tokenizer tokenizer = new NGramTokenizer(reader, 2, 4);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
-    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192, false, false);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), a, 50*RANDOM_MULTIPLIER, 1027, false, false);
   }
 }

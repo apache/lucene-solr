@@ -18,7 +18,8 @@
  -->
 
 <project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant" 
-                       xmlns:ivy="antlib:org.apache.ivy.ant">
+                       xmlns:ivy="antlib:org.apache.ivy.ant"
+                       xmlns:junit4="antlib:com.carrotsearch.junit4">
   <description>
     This file is designed for importing into a main build file, and not intended
     for standalone use.
@@ -89,12 +90,26 @@
   <property name="tests.loggingfile" value="/dev/null"/>
   <property name="tests.nightly" value="false" />
   <property name="tests.weekly" value="false" />
-  <property name="tests.slow" value="false" />
+  <property name="tests.slow" value="true" />
   <property name="tests.cleanthreads.sysprop" value="perMethod"/>
   <property name="tests.asserts.gracious" value="false"/>
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
+  
+  <condition property="tests.heapsize" value="768M">
+    <isset property="run.clover"/>
+  </condition>
   <property name="tests.heapsize" value="512M"/>
+  
+  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m">
+    <isset property="run.clover"/>
+  </condition>
+  <property name="tests.clover.args" value=""/>
+  
+  <property name="tests.tempDir" value="${build.dir}/test"/>
+
+  <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
+  <property name="tests.cachefilehistory" value="20" />
 
   <!-- Override these in your local properties to your desire. -->
   <!-- Show simple class names (no package) in test suites. -->
@@ -103,6 +118,11 @@
   <property name="tests.maxClassNameColumns" value="10000" />
   <!-- Show suite summaries for tests. -->
   <property name="tests.showSuiteSummary" value="true" />
+  <!-- Show timestamps in console test reports. -->
+  <property name="tests.timestamps" value="false" />
+  <!-- Heartbeat in seconds for reporting long running tests or hung forked JVMs. -->
+  <property name="tests.heartbeat" value="60" />
+
   <!-- Configure test emission to console for each type of status -->
   <property name="tests.showError" value="true" />
   <property name="tests.showFailure" value="true" />
@@ -114,9 +134,6 @@
   <property name="javac.target" value="1.6"/>
   <property name="javac.source.backwards" value="1.6"/>
   <property name="javac.target.backwards" value="1.6"/>
-  <!-- clover wants to run with -lib, otherwise we prefer a repeatable
-       classpath -->
-  <property name="javac.includeAntRuntime" value="${run.clover}"/>
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
   <property name="bootclasspath" value=""/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
@@ -145,7 +162,6 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="tests.src.dir" location="src/test"/>
-  <property name="tests-framework.src.dir" location="${common.dir}/test-framework/src/java"/>
   <property name="build.dir" location="build"/>
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
@@ -196,29 +212,19 @@
   <property name="moman.url" value="https://bitbucket.org/jpbarrette/moman" />
   <property name="moman.rev" value="120" />
   <property name="python.exe" value="python" />
+  <property name="python32.exe" value="python3.2" />
 
   <property name="gpg.exe" value="gpg" />
   <property name="gpg.key" value="CODE SIGNING KEY" />
 
   <property name="filtered.pom.templates.dir" location="${common.dir}/build/poms"/>
 
-  <property name="clover.db.dir" location="${common.dir}/build/test/clover/db"/>
-  <property name="clover.report.dir" location="${common.dir}/build/test/clover/reports"/>
+  <property name="clover.license.path" location="${common.dir}/tools/clover/clover.license"/>
+  <property name="clover.db.dir" location="${common.dir}/build/clover/db"/>
+  <property name="clover.report.dir" location="${common.dir}/build/clover/reports"/>
 
   <!-- a reasonable default exclusion set, can be overridden for special cases -->
   <property name="rat.excludes" value="**/TODO,**/*.txt"/>
-
-  <available
-            property="clover.present"
-            classname="com.cenqua.clover.tasks.CloverReportTask"
-  />
-   
-  <condition property="clover.enabled">
-    <and>
-     <isset property="run.clover"/>
-     <isset property="clover.present"/>
-    </and>
-  </condition>
 
   <propertyset id="uptodate.and.compiled.properties" dynamic="true">
     <propertyref regex=".*\.uptodate$$"/>
@@ -226,7 +232,7 @@
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
-              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,lucene/benchmark/work/**,lucene/benchmark/temp/**"
+              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,benchmark/work/**,benchmark/temp/**,tools/javadoc/java6/**,tools/clover/**"
   />
 
   <!-- Default exclude sources and javadoc jars from Ivy fetch to save time and bandwidth -->
@@ -274,10 +280,13 @@
     <!-- currently empty -->
   </target>
 
-  <target name="ivy-configure" unless="ivy.settings.uptodate">
+  <target name="ivy-configure">
+     <!-- [DW] ivy loses its configuration for some reason. cannot explain this. if
+          you have an idea, fix it.
+          unless="ivy.settings.uptodate" -->
     <!-- override: just for safety, should be unnecessary -->
     <ivy:configure file="${common.dir}/ivy-settings.xml" override="true"/>
-    <property name="ivy.settings.uptodate" value="true"/>
+    <!-- <property name="ivy.settings.uptodate" value="true"/> -->
   </target>
 
   <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
@@ -669,25 +678,24 @@
   </macrodef>
 
   <target name="test-updatecache" description="Overwrite tests' timings cache for balancing." depends="install-junit4-taskdef">
-    <mergehints file="${common.dir}/tools/junit4/cached-timehints.txt">
+    <touch file="${tests.cachefile}" mkdirs="true" verbose="false" />
+    <junit4:mergehints file="${tests.cachefile}" historyLength="${tests.cachefilehistory}">
       <resources>
         <!-- The order is important. Include previous stats first, then append new stats. -->
-        <fileset dir="${common.dir}/tools/junit4">
-          <include name="*.txt" />
-        </fileset>
+        <file file="${tests.cachefile}" />
         <fileset dir="${common.dir}/..">
           <include name="**/tests-timehints.txt" />
           <exclude name="lucene/tools/junit4/**" />
         </fileset>
       </resources>
-    </mergehints>
+    </junit4:mergehints>
   </target>
 
   <!-- Aliases for tests filters -->
   <condition property="tests.class" value="*.${testcase}">
     <isset property="testcase" />
   </condition>
-  <condition property="tests.method" value="${testmethod}">
+  <condition property="tests.method" value="${testmethod}*">
     <isset property="testmethod" />
   </condition>
   <condition property="tests.showSuccess" value="true">
@@ -705,7 +713,7 @@
     <attribute name="junit.output.dir" default="${junit.output.dir}"/>
     <attribute name="junit.classpath" default="junit.classpath"/>
     <attribute name="testsDir" default="${build.dir}/classes/test"/>
-    <attribute name="tempDir" default="${build.dir}/test"/>
+    <attribute name="tempDir" default="${tests.tempDir}"/>
     <attribute name="threadNum" default="1"/>
     <attribute name="tests.nightly" default="${tests.nightly}"/>
     <attribute name="tests.weekly" default="${tests.weekly}"/>
@@ -719,15 +727,48 @@
             <isset property="tests.iter" />
           </condition>
         </fail>
+        <!-- this combo makes no sense LUCENE-4146 -->
+        <fail message="You are attempting to use 'tests.iters' in combination with a 'tests.method' value with does not end in a '*' -- This combination makes no sense, because the 'tests.method' filter will be unable to match the synthetic test names generated by the multiple iterations.">
+          <condition>
+            <and>
+              <isset property="tests.iters" />
+              <isset property="tests.method" />
+              <not>
+                <matches pattern="\*$" string="${tests.method}" />
+              </not>
+            </and>
+          </condition>
+        </fail>
 
         <!-- Defaults. -->
         <property name="tests.class"  value="" />
         <property name="tests.method" value="" />
-        <property name="tests.dynamicAssignmentRatio" value="0.25" /> <!-- 25% of suites -->
+        <property name="tests.dynamicAssignmentRatio" value="0.50" /> <!-- 50% of suites -->
         <property name="tests.haltonfailure" value="true" />
         <property name="tests.iters" value="" />
 
-        <junit4
+        <!-- Pick the random seed now (unless already set). -->
+        <junit4:pickseed property="tests.seed" />
+
+        <!-- Pick file.encoding based on the random seed. -->
+        <junit4:pickfromlist property="tests.file.encoding" allowundefined="false" seed="${tests.seed}">
+            <!-- Guaranteed support on any JVM. -->
+            <value>US-ASCII</value>   <!-- single byte length -->
+            <value>ISO-8859-1</value> <!-- single byte length -->
+            <value>UTF-8</value>      <!-- variable byte length -->
+            <value><!-- empty/ default encoding. --></value>
+
+            <!--
+            Disabled because of Java 1.7 bug on Linux/ Unix:
+            http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7181721
+
+            <value>UTF-16</value>     
+            <value>UTF-16LE</value>   
+            <value>UTF-16BE</value>
+            -->
+        </junit4:pickfromlist>
+        
+        <junit4:junit4
             dir="@{tempDir}"
             tempdir="@{tempDir}"
             maxmemory="${tests.heapsize}" 
@@ -742,9 +783,12 @@
             shuffleOnSlave="true"
             leaveTemporary="false"
             seed="${tests.seed}"
+
+            heartbeat="${tests.heartbeat}"
         >
             <!-- Classpaths. -->
             <classpath refid="@{junit.classpath}"/>
+            <classpath refid="clover.classpath" />
 
             <!-- Assertions. -->
             <assertions>
@@ -754,6 +798,7 @@
 
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>
+            <jvmarg line="${tests.clover.args}"/>
 
             <!-- set the number of times tests should run -->
             <sysproperty key="tests.iters" value="${tests.iters}"/>
@@ -803,17 +848,29 @@
             <sysproperty key="jetty.insecurerandom" value="1"/>
             <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
 
+            <!-- Only pass these to the test JVMs if defined in ANT. -->
+            <syspropertyset>
+                <propertyref prefix="tests.maxfailures" />
+                <propertyref prefix="tests.failfast" />
+            </syspropertyset>
+
+            <!-- Pass randomized settings to the forked JVM. -->
+            <syspropertyset ignoreEmpty="true">
+                <propertyref prefix="tests.file.encoding" />
+                <mapper type="glob" from="tests.*" to="*" />
+            </syspropertyset>
+
             <!-- Use static cached test balancing statistcs. -->
             <balancers>
-                <execution-times>
+                <junit4:execution-times>
                     <fileset dir="${common.dir}/tools/junit4" includes="**/*.txt" />
-                </execution-times>
+                </junit4:execution-times>
             </balancers>            
 
             <!-- Reporting listeners. -->
             <listeners>
                 <!-- A simplified console output (maven-like). -->
-                <report-text
+                <junit4:report-text
                     showThrowable="true" 
                     showStackTraces="true" 
                     showOutputStream="true" 
@@ -828,10 +885,12 @@
 
                     useSimpleNames="${tests.useSimpleNames}"
                     maxClassNameColumns="${tests.maxClassNameColumns}"
+                    
+                    timestamps="${tests.timestamps}"
                 />
 
                 <!-- Emits full status for all tests, their relative order on slaves. -->
-                <report-text
+                <junit4:report-text
                     file="@{junit.output.dir}/tests-report.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
@@ -844,10 +903,11 @@
                     showStatusIgnored="true"
 
                     showSuiteSummary="true"
+                    timestamps="true"
                 />
 
                 <!-- Emits status on errors and failures only. -->
-                <report-text
+                <junit4:report-text
                     file="@{junit.output.dir}/tests-failures.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
@@ -860,14 +920,15 @@
                     showStatusIgnored="false"
 
                     showSuiteSummary="false"
+                    timestamps="true"
                 />
                 
                 <!-- Emit the information about tests timings (could be used to determine
                      the slowest tests or for reuse in balancing). -->
-                <report-execution-times file="@{junit.output.dir}/tests-timehints.txt" historyLength="5" />
+                <junit4:report-execution-times file="@{junit.output.dir}/tests-timehints.txt" historyLength="5" />
 
-                <report-ant-xml dir="@{junit.output.dir}" />
-                <report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" />
+                <junit4:report-ant-xml dir="@{junit.output.dir}" />
+                <junit4:report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" />
             </listeners>
 
             <!-- Input test classes. -->
@@ -876,29 +937,29 @@
               <include name="**/*Test.class" />
               <exclude name="**/*$*" />
             </fileset>
-        </junit4>
+        </junit4:junit4>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
         <echo>5 slowest tests:</echo>
-        <tophints max="5">
+        <junit4:tophints max="5">
           <file file="@{junit.output.dir}/tests-timehints.txt" />
-        </tophints>
+        </junit4:tophints>
     </sequential>
   </macrodef>
 
   <target name="test-times" description="Show the slowest tests (averages)." depends="install-junit4-taskdef">
     <property name="max" value="10" />
     <echo>Showing ${max} slowest tests according to local stats. (change with -Dmax=...).</echo>
-    <tophints max="${max}">
+    <junit4:tophints max="${max}">
       <fileset dir="${basedir}" includes="**/tests-timehints.txt" />
-    </tophints>
+    </junit4:tophints>
 
     <echo>Showing ${max} slowest tests in cached stats. (change with -Dmax=...).</echo>
-    <tophints max="${max}">
+    <junit4:tophints max="${max}">
         <fileset dir="${common.dir}/tools/junit4">
           <include name="*.txt" />
         </fileset>
-    </tophints>
+    </junit4:tophints>
   </target>
 
   <target name="test-help" description="Help on 'ant test' syntax.">
@@ -909,7 +970,7 @@
 # - 'tests.class' is a class-filtering shell-like glob pattern,
 #   'testcase' is an alias of "tests.class=*.${testcase}"
 # - 'tests.method' is a method-filtering glob pattern.
-#   'testmethod' is an alias of "tests.method=${testmethod}"
+#   'testmethod' is an alias of "tests.method=${testmethod}*"
 #
 
 # Run a single test case (variants)
@@ -930,9 +991,6 @@ ant test "-Dtests.method=*esi*"
 # Run with a given seed (seed is a hex-encoded long).
 ant test -Dtests.seed=DEADBEEF
 
-# Repeats a given test N times (note filters).
-ant test -Dtests.iters=N -Dtestcase=ClassName -Dtestmethod=mytest
-
 # Repeats _all_ tests of ClassName N times. Every test repetition
 # will have a different seed.
 ant test -Dtests.iters=N -Dtestcase=ClassName
@@ -941,6 +999,18 @@ ant test -Dtests.iters=N -Dtestcase=ClassName
 # will have exactly the same master (dead) and method-level (beef)
 # seed.
 ant test -Dtests.iters=N -Dtestcase=ClassName -Dtests.seed=dead:beef
+
+# Repeats a given test N times (note the filters - individual test
+# repetitions are given suffixes, ie: testFoo[0], testFoo[1], etc...
+# so using testmethod or tests.method ending in a glob is necessary
+# to ensure iterations are run).
+ant test -Dtests.iters=N -Dtestcase=ClassName -Dtestmethod=mytest
+ant test -Dtests.iters=N -Dtestcase=ClassName -Dtests.method=mytest*
+
+# Repeats N times but skips any tests after the first failure or M
+# initial failures.
+ant test -Dtests.iters=N -Dtests.failfast=yes -Dtestcase=...
+ant test -Dtests.iters=N -Dtests.maxfailures=M -Dtestcase=...
 
 #
 # Test groups. ----------------------------------------------------
@@ -990,6 +1060,12 @@ ant -Dtests.showSuccess=true test
 # Display local averaged stats, if any (30 slowest tests).
 ant test-times -Dmax=30
 
+# Display a timestamp alongside each suite/ test.
+ant -Dtests.timestamps=on ...
+
+# Override forked JVM file.encoding
+ant -Dtests.file.encoding=XXX ...
+
 # Output test files and reports.
 ${tests-output}/tests-report.txt    - full ASCII tests report
 ${tests-output}/tests-failures.txt  - failures only (if any)
@@ -1000,62 +1076,67 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </echo>
   </target>
 
-  <target name="install-junit4-taskdef">
+  <target name="install-junit4-taskdef" depends="ivy-configure">
     <!-- JUnit4 taskdef. -->
-    <taskdef resource="com/carrotsearch/junit4/antlib.xml">
-      <classpath>
-         <fileset dir="${common.dir}/test-framework/lib">
-            <include name="junit4-ant-*.jar" />
-            <include name="junit-*.jar" />
-         </fileset>
-      </classpath>
+    <ivy:resolve   file="${common.dir}/test-framework/ivy.xml" type="jar" log="quiet" />
+    <ivy:cachepath file="${common.dir}/test-framework/ivy.xml" conf="junit4-stdalone" type="jar" transitive="false" pathid="path.junit4" />
+
+    <taskdef uri="antlib:com.carrotsearch.junit4">
+      <classpath refid="path.junit4" />
     </taskdef>
   </target>
 
   <!-- note: order here is important, the taskdef depends on test-framework
        jars so we just order it after compile-test to ensure that -->
-  <target name="test" depends="compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
+  <target name="test" depends="compile-test,install-junit4-taskdef,clover,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.jvms}" />
   </target>
 
   <!--
-   If you want clover test code coverage, run this before the tests.  You need clover.jar and the license in your ANT classspath and you need to specify -Drun.clover=true on the command line.
-
    See http://issues.apache.org/jira/browse/LUCENE-721
    -->
-  <target name="clover" depends="clover.setup, clover.info" description="Instrument the Unit tests using Clover.  Requires a Clover 2.x license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
+  <target name="clover" depends="-clover.disable,-clover.setup" description="Instrument the Unit tests using Clover. To use, specify -Drun.clover=true on the command line."/>
+  
+  <target name="-clover.setup" if="run.clover" unless="clover.loaded">
+    <available file="${clover.license.path}" property="clover.license.available" />
+    <fail unless="clover.license.available"><![CDATA[.
 
-  <target name="clover.setup" if="clover.enabled">
-    <taskdef resource="cloverlib.xml"/>
+  #########################################################################
+  Atlassian Clover License not found!
+  
+  Current License path: ${clover.license.path}
+
+  To use Atlassian Clover with Lucene build, you need a proper license
+  and let the system property 'clover.license.path' point to it.
+  You can pass it to ANT with:
+  
+  $ ant -Dclover.license.path=/path/to/clover.license -Drun.clover=true ...
+  
+  Apache Lucene/Solr source checkouts from SVN already contain the
+  file, but source distributions cannot because of legal reasons.
+  #########################################################################
+  
+]]></fail>
+    <echo>Code coverage with Atlassian Clover enabled.</echo>
+    <ivy:cachepath organisation="com.cenqua.clover" module="clover" revision="2.6.3"
+      inline="true" conf="master" type="jar" pathid="clover.classpath"/>
+    <taskdef resource="cloverlib.xml" classpathref="clover.classpath" />
     <mkdir dir="${clover.db.dir}"/>
-    <clover-setup initString="${clover.db.dir}/lucene_coverage.db" encoding="${build.encoding}">
-      <fileset dir="${src.dir}">
+    <clover-setup initString="${clover.db.dir}/coverage.db" encoding="${build.encoding}">
+      <fileset dir="${src.dir}" erroronmissingdir="no">
         <include name="org/apache/**/*.java" />
       </fileset>
-      <testsources dir="${tests-framework.src.dir}">
-        <include name="org/apache/**/*.java" />
-      </testsources>
-      <testsources dir="${tests.src.dir}">
+      <testsources dir="${tests.src.dir}" erroronmissingdir="no">
         <include name="org/apache/**/*.java" />
       </testsources>
     </clover-setup>
+    <property name="clover.loaded" value="true"/>
   </target>
 
-  <target name="clover.info" unless="clover.present">
-  	<echo>
-      Clover not found. Code coverage reports disabled.
-  	</echo>
-  </target>
-
-  <target name="clover.check">
-	<fail unless="clover.present">
-	  ##################################################################
-      Clover not found.
-      Please make sure clover.jar is in ANT_HOME/lib, or made available
-      to Ant using other mechanisms like -lib or CLASSPATH.
-      ##################################################################
-  	</fail>
+  <target name="-clover.disable" unless="run.clover">
+    <!-- define dummy clover path used by junit -->
+    <path id="clover.classpath"/>
   </target>
 
   <target name="generate-test-reports" description="Generates test reports">
@@ -1182,13 +1263,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </ant>
   </target>
 
-  <!-- TODO: add cool detector like the ivy one? this requires you have rat -->
-  <target name="rat-sources-typedef">
-    <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:rat.anttasks">
-      <classpath>
-        <fileset dir="." includes="rat*.jar"/>
-      </classpath>
-    </typedef>
+  <target name="rat-sources-typedef" unless="rat.loaded">
+    <ivy:cachepath organisation="org.apache.rat" module="apache-rat" revision="0.8" transitive="false" inline="true" conf="master" type="jar" pathid="rat.classpath"/>
+    <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:org.apache.rat.anttasks" classpathref="rat.classpath"/>
+    <property name="rat.loaded" value="true"/>
   </target>
 
   <target name="rat-sources" depends="rat-sources-typedef"
@@ -1610,7 +1688,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <macrodef name="check-broken-links">
        <attribute name="dir"/>
      <sequential>
-       <exec dir="." executable="${python.exe}" failonerror="true">
+       <exec dir="." executable="${python32.exe}" failonerror="true">
          <arg value="${dev-tools.dir}/scripts/checkJavadocLinks.py"/>
          <arg value="@{dir}"/>
        </exec>

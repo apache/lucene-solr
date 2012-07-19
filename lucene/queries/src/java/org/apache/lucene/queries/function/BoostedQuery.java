@@ -25,6 +25,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.Map;
 
@@ -35,7 +37,7 @@ import java.util.Map;
 // something has to give
 public class BoostedQuery extends Query {
   private Query q;
-  private ValueSource boostVal; // optional, can be null
+  private final ValueSource boostVal; // optional, can be null
 
   public BoostedQuery(Query subQuery, ValueSource boostVal) {
     this.q = subQuery;
@@ -65,7 +67,7 @@ public class BoostedQuery extends Query {
   }
 
   private class BoostedWeight extends Weight {
-    IndexSearcher searcher;
+    final IndexSearcher searcher;
     Weight qWeight;
     Map fcontext;
 
@@ -162,6 +164,16 @@ public class BoostedQuery extends Query {
       // map to -Float.MAX_VALUE. This conditional handles both -infinity
       // and NaN since comparisons with NaN are always false.
       return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
+    }
+
+    @Override
+    public float freq() throws IOException {
+      return scorer.freq();
+    }
+
+    @Override
+    public Collection<ChildScorer> getChildren() {
+      return Collections.singleton(new ChildScorer(scorer, "CUSTOM"));
     }
 
     public Explanation explain(int doc) throws IOException {

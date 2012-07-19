@@ -2,7 +2,7 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -208,7 +208,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
 
   @Override
   public String toFormattedString(Field f) throws IOException {
-    Map<String,Object> map = new HashMap<String,Object>();
+    Map<String,Object> map = new LinkedHashMap<String,Object>();
     map.put(VERSION_KEY, VERSION);
     if (f.fieldType().stored()) {
       String stringValue = f.stringValue();

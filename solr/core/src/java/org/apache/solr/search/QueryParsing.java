@@ -58,8 +58,8 @@ public class QueryParsing {
   public static final String OP = "q.op";  // the SolrParam used to override the QueryParser "default operator"
   public static final String V = "v";      // value of this parameter
   public static final String F = "f";      // field that a query or command pertains to
-  public static final String TYPE = "type";// type of this query or command
-  public static final String DEFTYPE = "defType"; // default type for any direct subqueries
+  public static final String TYPE = "type";// parser for this query or command
+  public static final String DEFTYPE = "defType"; // default parser for any direct subqueries
   public static final String LOCALPARAM_START = "{!";
   public static final char LOCALPARAM_END = '}';
   public static final String DOCID = "_docid_";
@@ -637,7 +637,7 @@ public class QueryParsing {
       }
     }
 
-    float getFloat() throws ParseException {
+    float getFloat() {
       eatws();
       char[] arr = new char[end - pos];
       int i;
@@ -657,7 +657,7 @@ public class QueryParsing {
       return Float.parseFloat(new String(arr, 0, i));
     }
 
-    Number getNumber() throws ParseException {
+    Number getNumber() {
       eatws();
       int start = pos;
       boolean flt = false;
@@ -682,7 +682,7 @@ public class QueryParsing {
       }
     }
 
-    double getDouble() throws ParseException {
+    double getDouble() {
       eatws();
       char[] arr = new char[end - pos];
       int i;
@@ -702,7 +702,7 @@ public class QueryParsing {
       return Double.parseDouble(new String(arr, 0, i));
     }
 
-    int getInt() throws ParseException {
+    int getInt() {
       eatws();
       char[] arr = new char[end - pos];
       int i;

@@ -97,6 +97,11 @@ public class BlockGroupingCollector extends Collector {
     public float score() {
       return score;
     }
+    
+    @Override
+    public float freq() {
+      throw new UnsupportedOperationException(); // TODO: wtf does this class do?
+    }
 
     @Override
     public int docID() {

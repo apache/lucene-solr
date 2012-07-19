@@ -1063,12 +1063,12 @@ public abstract class FieldComparator<T> {
   
   /** Sorts by field's natural Term sort order, using
    *  ordinals.  This is functionally equivalent to {@link
-   *  TermValComparator}, but it first resolves the string
+   *  org.apache.lucene.search.FieldComparator.TermValComparator}, but it first resolves the string
    *  to their relative ordinal positions (using the index
    *  returned by {@link FieldCache#getTermsIndex}), and
    *  does most comparisons using the ordinals.  For medium
    *  to large results, this comparator will be much faster
-   *  than {@link TermValComparator}.  For very small
+   *  than {@link org.apache.lucene.search.FieldComparator.TermValComparator}.  For very small
    *  result sets it may be slower. */
   public static final class TermOrdValComparator extends FieldComparator<BytesRef> {
     /* Ords for each slot.
@@ -1469,7 +1469,7 @@ public abstract class FieldComparator<T> {
 
   /** Sorts by field's natural Term sort order, using
    *  ordinals; this is just like {@link
-   *  TermOrdValComparator} except it uses DocValues to
+   *  org.apache.lucene.search.FieldComparator.TermValComparator} except it uses DocValues to
    *  retrieve the sort ords saved during indexing. */
   public static final class TermOrdValDocValuesComparator extends FieldComparator<BytesRef> {
     /* Ords for each slot.

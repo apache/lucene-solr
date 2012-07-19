@@ -212,7 +212,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
     }
     
     @Override
-    public final boolean incrementToken() throws IOException {
+    public final boolean incrementToken() {
       // lazy init the iterator
       if (it == null) {
         it = cachedStates.iterator();
@@ -228,7 +228,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
     }
   
     @Override
-    public final void end() throws IOException {
+    public final void end() {
       if (finalState != null) {
         restoreState(finalState);
       }

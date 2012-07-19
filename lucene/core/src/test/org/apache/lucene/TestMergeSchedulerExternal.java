@@ -22,7 +22,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
@@ -47,7 +46,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private class MyMergeScheduler extends ConcurrentMergeScheduler {
 
     private class MyMergeThread extends ConcurrentMergeScheduler.MergeThread {
-      public MyMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+      public MyMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) {
         super(writer, merge);
         mergeThreadCreated = true;
       }
@@ -114,7 +113,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private static class ReportingMergeScheduler extends MergeScheduler {
 
     @Override
-    public void merge(IndexWriter writer) throws CorruptIndexException, IOException {
+    public void merge(IndexWriter writer) throws IOException {
       OneMerge merge = null;
       while ((merge = writer.getNextMerge()) != null) {
         if (VERBOSE) {
@@ -125,7 +124,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     }
 
     @Override
-    public void close() throws CorruptIndexException, IOException {}
+    public void close() throws IOException {}
     
   }
 

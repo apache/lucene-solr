@@ -22,8 +22,11 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
@@ -40,13 +43,28 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
     );
   }
   
+  public void testKeyword() throws IOException {
+    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("あり"), false);
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer source = new JapaneseTokenizer(reader, null, true, JapaneseTokenizer.DEFAULT_MODE);
+        TokenStream sink = new KeywordMarkerFilter(source, exclusionSet);
+        return new TokenStreamComponents(source, new JapaneseBaseFormFilter(sink));
+      }
+    };
+    assertAnalyzesTo(a, "それはまだ実験段階にあります",
+        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "あり", "ます"  }
+    );
+  }
+  
   public void testEnglish() throws IOException {
     assertAnalyzesTo(analyzer, "this atest",
         new String[] { "this", "atest" });
   }
   
   public void testRandomStrings() throws IOException {
-    checkRandomData(random(), analyzer, atLeast(10000));
+    checkRandomData(random(), analyzer, atLeast(1000));
   }
   
   public void testEmptyTerm() throws IOException {

@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 public class DateRecognizerSinkTokenizerTest extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
-    DateRecognizerSinkFilter sinkFilter = new DateRecognizerSinkFilter(new SimpleDateFormat("MM/dd/yyyy", Locale.US));
+    DateRecognizerSinkFilter sinkFilter = new DateRecognizerSinkFilter(new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT));
     String test = "The quick red fox jumped over the lazy brown dogs on 7/11/2006  The dogs finally reacted on 7/12/2006";
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
     TeeSinkTokenFilter.SinkTokenStream sink = tee.newSinkTokenStream(sinkFilter);

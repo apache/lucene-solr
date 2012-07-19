@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<project name="solr" default="usage">
+<project name="solr" default="usage" xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>Solr</description>
   
   <target name="usage" description="Prints out instructions">
@@ -51,7 +51,7 @@
       </manifest>
     </jar>
     <delete includeemptydirs="true">
-      <fileset dir="${example}/work" includes="**/*"/>
+      <fileset dir="${example}/solr-webapp" includes="**/*"/>
     </delete>
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
@@ -130,7 +130,7 @@
   <target name="compile" description="Compile the source code."
           depends="compile-core, compile-contrib"/>
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
-          depends="validate, test-core, test-contrib"/>
+          depends="test-core, test-contrib"/>
   <target name="test-core" description="Runs the core and solrj unit tests."
           depends="test-solr-core, test-solrj"/>
   <target name="compile-test" description="Compile unit tests."
@@ -170,8 +170,10 @@
     </ant>
   </target>
     
-  <!-- Validation (license/ notice checks). -->
-  <target name="validate" depends="compile-tools,resolve" description="Validate legal stuff.">
+  <!-- Validation (license/notice/api checks). -->
+  <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
+
+  <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}">
       <additional-excludes>
         <!-- Exclude start.jar only (it'd be weird to have a license file there?) -->
@@ -186,6 +188,39 @@
         <replaceregex pattern="/(bcmail|bcprov)-([^/]+)$" replace="/\1" flags="gi" />
       </additional-filters>
     </license-check-macro>
+  </target>
+  
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-java-apis,-check-forbidden-test-apis" 
+          description="Check forbidden API calls in compiled class files."/>
+
+  <target name="-check-forbidden-java-apis">
+    <forbidden-apis>
+      <classpath refid="additional.dependencies"/>
+      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
+        <include name="jdk.txt" />
+        <include name="jdk-deprecated.txt" />
+        <include name="commons-io.txt" />
+      </apiFileSet>
+      <fileset dir="${basedir}/build">
+        <include name="**/*.class" />
+        <!-- exclude DIH for now as it is broken with Locales and Encodings: SOLR-1916 -->
+        <exclude name="contrib/solr-dataimporthandler*/**" />
+      </fileset>
+    </forbidden-apis>
+  </target>
+
+  <target name="-check-forbidden-test-apis">
+    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/tests.txt"> 
+      <classpath refid="junit-path"/>
+      <fileset dir="${basedir}/build">
+        <include name="**/classes/test/**/*.class"/>
+        <include name="solr-test-framework/**/*.class"/>
+        <!-- not actually a test -->
+        <exclude name="solr-core/classes/test/org/apache/solr/search/DocSetPerf.class"/>
+        <!-- imported code -->
+        <exclude name="solr-core/classes/test/org/apache/solr/internal/**/*.class"/>
+      </fileset>
+    </forbidden-apis>
   </target>
 
   <!-- rat sources -->
@@ -223,64 +258,26 @@
     </delete>
   </target>
 
-  <!-- Clover targets -->
-  <target name="clover" depends="clover.setup, clover.info"
-          description="Instrument the Unit tests using Clover.  Requires a Clover license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
-
-  <target name="clover.setup" if="clover.enabled">
-    <taskdef resource="cloverlib.xml"/>
-    <mkdir dir="${clover.db.dir}"/>
-    <clover-setup initString="${clover.db.dir}/lucene_coverage.db">
-      <fileset dir="core/src/java"/>
-      <fileset dir="solrj/src/java"/>
-      <fileset dir="contrib/analysis-extras/src/java"/>
-      <fileset dir="contrib/clustering/src/java"/>
-      <fileset dir="contrib/dataimporthandler/src/java"/>
-      <fileset dir="contrib/dataimporthandler-extras/src/java"/>
-      <fileset dir="contrib/extraction/src/java"/>
-      <fileset dir="contrib/uima/src/java"/>
-      <testsources dir="test-framework/src/java"/>
-      <testsources dir="core/src/test"/>
-      <testsources dir="solrj/src/test"/>
-      <testsources dir="contrib/analysis-extras/src/test" />
-      <testsources dir="contrib/clustering/src/test" />
-      <testsources dir="contrib/dataimporthandler/src/test" />
-      <testsources dir="contrib/dataimporthandler-extras/src/test" />
-      <testsources dir="contrib/extraction/src/test" />
-      <testsources dir="contrib/uima/src/test" />
-    </clover-setup>
-  </target>
-
-  <target name="clover.info" unless="clover.present">
-  	<echo>
-      Clover not found. Code coverage reports disabled.
-  	</echo>
-  </target>
-
-  <target name="clover.check">
-	<fail unless="clover.present">
-	  ##################################################################
-      Clover not found.
-      Please make sure clover.jar is in ANT_HOME/lib, or made available
-      to Ant using other mechanisms like -lib or CLASSPATH.
-      ##################################################################
-  	</fail>
-  </target>
-
-  <!-- Run after Junit tests. -->
-  <target name="generate-clover-reports" depends="clover.check, clover">
+  <!--
+   Run after Junit tests.
+   -->
+  <target name="generate-clover-reports" depends="clover">
+    <fail unless="run.clover">Clover not enabled!</fail>
     <mkdir dir="${clover.report.dir}"/>
+    <fileset dir="build" id="clover.test.result.files">
+      <include name="**/test/TEST-*.xml"/>
+    </fileset>
     <clover-report>
-       <current outfile="${clover.report.dir}/clover.xml"
-                title="${fullnamever}">
-          <format type="xml"/>
-       </current>
-       <current outfile="${clover.report.dir}" title="${fullnamever}">
-          <format type="html"/>
-       </current>
+      <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
+        <format type="html" filter="assert"/>
+        <testresults refid="clover.test.result.files"/>
+      </current>
+      <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
+        <format type="xml" filter="assert"/>
+        <testresults refid="clover.test.result.files"/>
+      </current>
     </clover-report>
   </target>
-
   
   <!-- ========================================================================= -->
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
@@ -340,15 +337,17 @@
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
     <delete dir="${svn.export.dir}/lucene/tools/javadoc/java6"/>
+    <!-- Exclude clover license files incompatible with the ASL -->
+    <delete dir="${svn.export.dir}/lucene/tools/clover"/>
 
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir="${svn.export.dir}"
                   prefix="${fullnamever}"
-                  excludes="example/**/*.sh example/**/bin/"/>
+                  excludes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/**"/>
       <tarfileset dir="${svn.export.dir}"
                   prefix="${fullnamever}"
                   filemode="755"
-                  includes="example/**/*.sh example/**/bin/"/>
+                  includes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/**"/>
       <tarfileset dir="${svn.export.dir}/solr" prefix="${fullnamever}"
                   includes="NOTICE.txt,LICENSE.txt"/>
     </tar>
@@ -387,7 +386,7 @@
           depends="init-dist, dist, example, javadocs">
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
-      <fileset dir="${example}/work" includes="**/*"/>
+      <fileset dir="${example}/solr-webapp" includes="**/*"/>
       <fileset dir="${dest}/${fullnamever}" includes="**/*"/>
     </delete>
  

@@ -80,7 +80,8 @@ public class Config {
     }
     // read props from string
     this.props = new Properties();
-    props.load(new ByteArrayInputStream(sb.toString().getBytes()));
+    // props.load always assumes iso8859-1...
+    props.load(new ByteArrayInputStream(sb.toString().getBytes("ISO-8859-1")));
 
     // make sure work dir is set properly 
     if (props.get("work.dir") == null) {

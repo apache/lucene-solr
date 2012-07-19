@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -40,6 +41,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@Slow
 public class LeaderElectionTest extends SolrTestCaseJ4 {
   
   static final int TIMEOUT = 30000;
@@ -51,12 +53,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   private volatile boolean stopStress = false;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     createTempDir();
   }
   
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
 
   }
   

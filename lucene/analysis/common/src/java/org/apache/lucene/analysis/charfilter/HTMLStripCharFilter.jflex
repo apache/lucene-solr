@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.charfilter;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,13 +18,13 @@ package org.apache.lucene.analysis.charfilter;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.Version;
-import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.OpenStringBuilder;
@@ -173,7 +173,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
   /**
    * @param source
    */
-  public HTMLStripCharFilter(CharStream source) {
+  public HTMLStripCharFilter(Reader source) {
     super(source);
     this.zzReader = source;
   }
@@ -183,7 +183,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
    * @param escapedTags Tags in this set (both start and end tags)
    *  will not be filtered out.
    */
-  public HTMLStripCharFilter(CharStream source, Set<String> escapedTags) {
+  public HTMLStripCharFilter(Reader source, Set<String> escapedTags) {
     super(source);
     this.zzReader = source;
     if (null != escapedTags) {

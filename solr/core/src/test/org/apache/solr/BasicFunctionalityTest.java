@@ -52,6 +52,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.util.RefCounted;
 
 
 import org.junit.BeforeClass;
@@ -125,9 +126,19 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // test merge factor picked up
     SolrCore core = h.getCore();
 
-    IndexWriter writer = ((DirectUpdateHandler2)core.getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
-    assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor());
-
+    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2) core
+        .getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
+    try {
+      assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy) iw
+          .get().getConfig().getMergePolicy()).getMergeFactor());
+    } finally {
+      iw.decref();
+    }
+    // test stats call
+    NamedList stats = core.getStatistics();
+    assertEquals("collection1", stats.get("coreName"));
+    assertTrue(stats.get("refCount") != null);
+    
     lrf.args.put(CommonParams.VERSION,"2.2");
     assertQ("test query on empty index",
             req("qlkciyopsbgzyvkylsjhchghjrdf")

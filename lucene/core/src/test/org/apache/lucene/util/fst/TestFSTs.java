@@ -53,6 +53,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
@@ -67,6 +68,7 @@ import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.packed.PackedInts;
 
 @SuppressCodecs({ "SimpleText", "Memory" })
+@Slow
 public class TestFSTs extends LuceneTestCase {
 
   private MockDirectoryWrapper dir;
@@ -1296,7 +1298,7 @@ public class TestFSTs extends LuceneTestCase {
           ord++;
           if (ord % 500000 == 0) {
             System.out.println(
-                String.format(Locale.ENGLISH, 
+                String.format(Locale.ROOT, 
                     "%6.2fs: %9d...", ((System.currentTimeMillis() - tStart) / 1000.0), ord));
           }
           if (ord >= limit) {
@@ -1635,7 +1637,7 @@ public class TestFSTs extends LuceneTestCase {
         String idString;
         if (cycle == 0) {
           // PKs are assigned sequentially
-          idString = String.format("%07d", id);
+          idString = String.format(Locale.ROOT, "%07d", id);
         } else {
           while(true) {
             final String s = Long.toString(random().nextLong());
@@ -1666,7 +1668,7 @@ public class TestFSTs extends LuceneTestCase {
       for(int idx=0;idx<NUM_IDS/10;idx++) {
         String idString;
         if (cycle == 0) {
-          idString = String.format("%07d", (NUM_IDS + idx));
+          idString = String.format(Locale.ROOT, "%07d", (NUM_IDS + idx));
         } else {
           while(true) {
             idString = Long.toString(random().nextLong());
@@ -1708,8 +1710,8 @@ public class TestFSTs extends LuceneTestCase {
           exists = false;
           final int idv = random().nextInt(NUM_IDS-1);
           if (cycle == 0) {
-            id = String.format("%07da", idv);
-            nextID = String.format("%07d", idv+1);
+            id = String.format(Locale.ROOT, "%07da", idv);
+            nextID = String.format(Locale.ROOT, "%07d", idv+1);
           } else {
             id = sortedAllIDsList.get(idv) + "a";
             nextID = sortedAllIDsList.get(idv+1);

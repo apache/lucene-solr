@@ -175,7 +175,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     target.close();
   }
   
-  private void checkOverrideMethods(Class<?> clazz) throws Exception {
+  private void checkOverrideMethods(Class<?> clazz) {
     boolean fail = false;
     for (Method m : clazz.getMethods()) {
       int mods = m.getModifiers();

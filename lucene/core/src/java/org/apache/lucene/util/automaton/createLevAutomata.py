@@ -121,7 +121,7 @@ def main():
 
   w('package org.apache.lucene.util.automaton;')
   w('')
-  w('/**')
+  w('/*')
   w(' * Licensed to the Apache Software Foundation (ASF) under one or more')
   w(' * contributor license agreements.  See the NOTICE file distributed with')
   w(' * this work for additional information regarding copyright ownership.')

@@ -115,7 +115,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
     Directory fsDir;
     
-    public FaultyFSDirectory(File dir) throws IOException {
+    public FaultyFSDirectory(File dir) {
       fsDir = newFSDirectory(dir);
       lockFactory = fsDir.getLockFactory();
     }

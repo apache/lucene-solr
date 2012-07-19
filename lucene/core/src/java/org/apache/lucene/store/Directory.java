@@ -230,7 +230,7 @@ public abstract class Directory implements Closeable {
         base.close();
       }
       @Override
-      public IndexInput openFullSlice() throws IOException {
+      public IndexInput openFullSlice() {
         return (IndexInput) base.clone();
       }
     };

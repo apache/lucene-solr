@@ -60,7 +60,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
       OrQuery oq = new OrQuery(queries,
                               true /* infix OR for field names */,
                               OrOperatorName);
-      System.out.println(getClass().toString() + ", fields expanded: " + oq.toString()); /* needs testing */
+      // System.out.println(getClass().toString() + ", fields expanded: " + oq.toString()); /* needs testing */
       return oq.makeLuceneQueryField(null, qf);
     }
   }

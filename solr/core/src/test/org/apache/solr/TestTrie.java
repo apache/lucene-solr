@@ -169,11 +169,11 @@ public class TestTrie extends SolrTestCaseJ4 {
     assertQ("Range filter tint:[* to *] must match 10 documents", req("q", "*:*", "fq", "tdate:[* TO *]"), "//*[@numFound='10']");
 
     // Test date math syntax
-    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     assertU(delQ("*:*"));
-    DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
+    DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.ROOT);
     String largestDate = "";
     for (int i = 0; i < 10; i++) {
       // index 10 days starting with today
@@ -220,9 +220,9 @@ public class TestTrie extends SolrTestCaseJ4 {
     checkPrecisionSteps("tdate");
 
     // For tdate tests
-    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
+    DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.ROOT);
 
     for (int i = 0; i < 10; i++) {
       long l = Integer.MAX_VALUE + i*1L;

@@ -73,7 +73,7 @@ public abstract class SrndQuery implements Cloneable {
   /** For subclasses of {@link SrndQuery} within the package
    *  {@link org.apache.lucene.queryparser.surround.query}
    *  it is not necessary to override this method,
-   *  @see #toString().
+   *  @see #toString()
    */
   @Override
   public int hashCode() {
@@ -83,7 +83,7 @@ public abstract class SrndQuery implements Cloneable {
   /** For subclasses of {@link SrndQuery} within the package
    *  {@link org.apache.lucene.queryparser.surround.query}
    *  it is not necessary to override this method,
-   *  @see #toString().
+   *  @see #toString()
    */
   @Override
   public boolean equals(Object obj) {

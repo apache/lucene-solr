@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.util;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -53,7 +54,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     // internal buffer size is 1024 make sure we have a surrogate pair right at the border
     builder.insert(1023, "\ud801\udc1c");
     Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString()));
-    assertTokenStreamContents(tokenizer, builder.toString().toLowerCase().split(" "));
+    assertTokenStreamContents(tokenizer, builder.toString().toLowerCase(Locale.ROOT).split(" "));
   }
   
   /*
@@ -70,7 +71,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       }
       builder.append("\ud801\udc1cabc");
       Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString()));
-      assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase()});
+      assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(Locale.ROOT)});
     }
   }
   
@@ -84,7 +85,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       builder.append("A");
     }
     Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
-    assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(), builder.toString().toLowerCase()});
+    assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(Locale.ROOT), builder.toString().toLowerCase(Locale.ROOT)});
   }
   
   /*
@@ -98,7 +99,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
     builder.append("\ud801\udc1c");
     Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
-    assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(), builder.toString().toLowerCase()});
+    assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(Locale.ROOT), builder.toString().toLowerCase(Locale.ROOT)});
   }
   
   // LUCENE-3642: normalize SMP->BMP and check that offsets are correct
@@ -119,7 +120,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int num = 10000 * RANDOM_MULTIPLIER;
+    int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random());
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
@@ -157,7 +158,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int num = 10000 * RANDOM_MULTIPLIER;
+    int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random());
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));

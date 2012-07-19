@@ -54,7 +54,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public final boolean incrementToken() throws IOException {
+    public final boolean incrementToken() {
       clearAttributes();
       if (index < testToken.length) {
         Token t = testToken[index++];
@@ -1023,7 +1023,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       new String[]{TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE},
       new int[]{1,0,1,0,1,0,1}
     );
-    wsTokenizer.reset(new StringReader("please divide this sentence"));
+    wsTokenizer.setReader(new StringReader("please divide this sentence"));
     assertTokenStreamContents(filter,
       new String[]{"please","please divide","divide","divide this","this","this sentence","sentence"},
       new int[]{0,0,7,7,14,14,19}, new int[]{6,13,13,18,18,27,27},
@@ -1144,7 +1144,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
@@ -1157,7 +1157,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);
   }
   
   public void testEmptyTerm() throws IOException {

@@ -33,7 +33,7 @@ public class TestMockCharFilter extends BaseTokenStreamTestCase {
 
       @Override
       protected Reader initReader(String fieldName, Reader reader) {
-        return new MockCharFilter(CharReader.get(reader), 7);
+        return new MockCharFilter(reader, 7);
       }
     };
     

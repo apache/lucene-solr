@@ -25,7 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -36,8 +35,8 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
     volatile boolean stop = false;
   }
 
-  public void testIsCurrentWithThreads() throws CorruptIndexException,
-      LockObtainFailedException, IOException, InterruptedException {
+  public void testIsCurrentWithThreads() throws
+      IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));

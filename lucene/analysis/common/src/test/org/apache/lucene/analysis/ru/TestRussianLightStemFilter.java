@@ -23,8 +23,11 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
 
@@ -46,9 +49,22 @@ public class TestRussianLightStemFilter extends BaseTokenStreamTestCase {
     assertVocabulary(analyzer, getDataFile("rulighttestdata.zip"), "rulight.txt");
   }
   
+  public void testKeyword() throws IOException {
+    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("энергии"), false);
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenStream sink = new KeywordMarkerFilter(source, exclusionSet);
+        return new TokenStreamComponents(source, new RussianLightStemFilter(sink));
+      }
+    };
+    checkOneTerm(a, "энергии", "энергии");
+  }
+  
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

@@ -23,8 +23,10 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -34,9 +36,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util._TestUtil;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -46,20 +47,25 @@ import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -67,7 +73,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 /**
  *
  */
-// @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-2161")
+@Slow
 public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
@@ -288,7 +294,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     // on shards with matches.
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
 
-
+    // would be better if these where all separate tests - but much, much
+    // slower
     doOptimisticLockingAndUpdating();
     testMultipleCollections();
     testANewCollectionInOneInstance();
@@ -298,10 +305,293 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
     testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-explicit");
     testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
+
+    testCollectionsAPI();
     
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
+    }
+  }
+
+  private void testCollectionsAPI() throws Exception {
+ 
+    // TODO: fragile - because we dont pass collection.confName, it will only
+    // find a default if a conf set with a name matching the collection name is found, or 
+    // if there is only one conf set. That and the fact that other tests run first in this
+    // env make this pretty fragile
+    
+    // create new collections rapid fire
+    Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
+    int cnt = atLeast(3);
+    for (int i = 0; i < cnt; i++) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionAction.CREATE.toString());
+      int numShards = _TestUtil.nextInt(random(), 0, shardCount) + 1;
+      int numReplicas = _TestUtil.nextInt(random(), 0, 5) + 1;
+      params.set("numShards", numShards);
+      params.set("numReplicas", numReplicas);
+      String collectionName = "awholynewcollection_" + i;
+      int clientIndex = random().nextInt(2);
+      List<Integer> list = new ArrayList<Integer>();
+      list.add(numShards);
+      list.add(numReplicas);
+      collectionInfos.put(collectionName, list);
+      params.set("name", collectionName);
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+   
+      clients.get(clientIndex).request(request);
+    }
+    
+    Set<Entry<String,List<Integer>>> collectionInfosEntrySet = collectionInfos.entrySet();
+    for (Entry<String,List<Integer>> entry : collectionInfosEntrySet) {
+      String collection = entry.getKey();
+      List<Integer> list = entry.getValue();
+      checkForCollection(collection, list.get(0));
+      
+      String url = getUrlFromZk(collection);
+
+      HttpSolrServer collectionClient = new HttpSolrServer(url);
+      
+      // poll for a second - it can take a moment before we are ready to serve
+      waitForNon404(collectionClient);
+    }
+    
+    List<String> collectionNameList = new ArrayList<String>();
+    collectionNameList.addAll(collectionInfos.keySet());
+    String collectionName = collectionNameList.get(random().nextInt(collectionNameList.size()));
+    
+    String url = getUrlFromZk(collectionName);
+
+    HttpSolrServer collectionClient = new HttpSolrServer(url);
+    
+    
+    // lets try and use the solrj client to index and retrieve a couple documents
+    SolrInputDocument doc1 = getDoc(id, 6, i1, -600, tlong, 600, t1,
+        "humpty dumpy sat on a wall");
+    SolrInputDocument doc2 = getDoc(id, 7, i1, -600, tlong, 600, t1,
+        "humpty dumpy3 sat on a walls");
+    SolrInputDocument doc3 = getDoc(id, 8, i1, -600, tlong, 600, t1,
+        "humpty dumpy2 sat on a walled");
+
+    collectionClient.add(doc1);
+    
+    collectionClient.add(doc2);
+
+    collectionClient.add(doc3);
+    
+    collectionClient.commit();
+    
+    assertEquals(3, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    
+    // lets try a collection reload
+    
+    // get core open times
+    Map<String,Long> urlToTimeBefore = new HashMap<String,Long>();
+    collectStartTimes(collectionName, urlToTimeBefore);
+    assertTrue(urlToTimeBefore.size() > 0);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.RELOAD.toString());
+    params.set("name", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    
+    // we can use this client because we just want base url
+    clients.get(0).request(request);
+
+    // reloads make take a short while
+    boolean allTimesAreCorrect = waitForReloads(collectionName, urlToTimeBefore);
+    assertTrue("some core start times did not change on reload", allTimesAreCorrect);
+    
+    // remove a collection
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.DELETE.toString());
+    params.set("name", collectionName);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+ 
+    clients.get(0).request(request);
+    
+    // ensure its out of the state
+    checkForMissingCollection(collectionName);
+
+  }
+
+  private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {
+    
+    
+    long timeoutAt = System.currentTimeMillis() + 30000;
+
+    boolean allTimesAreCorrect = false;
+    while (System.currentTimeMillis() < timeoutAt) {
+      Map<String,Long> urlToTimeAfter = new HashMap<String,Long>();
+      collectStartTimes(collectionName, urlToTimeAfter);
+      
+      boolean retry = false;
+      Set<Entry<String,Long>> entries = urlToTimeBefore.entrySet();
+      for (Entry<String,Long> entry : entries) {
+        Long beforeTime = entry.getValue();
+        Long afterTime = urlToTimeAfter.get(entry.getKey());
+        assertNotNull(afterTime);
+        if (afterTime <= beforeTime) {
+          retry = true;
+          break;
+        }
+
+      }
+      if (!retry) {
+        allTimesAreCorrect = true;
+        break;
+      }
+    }
+    return allTimesAreCorrect;
+  }
+
+  private void collectStartTimes(String collectionName,
+      Map<String,Long> urlToTime) throws SolrServerException, IOException {
+    Map<String,Map<String,Slice>> collections = solrj.getZkStateReader()
+        .getCloudState().getCollectionStates();
+    if (collections.containsKey(collectionName)) {
+      Map<String,Slice> slices = collections.get(collectionName);
+
+      Iterator<Entry<String,Slice>> it = slices.entrySet().iterator();
+      while (it.hasNext()) {
+        Entry<String,Slice> sliceEntry = it.next();
+        Map<String,ZkNodeProps> sliceShards = sliceEntry.getValue().getShards();
+        Iterator<Entry<String,ZkNodeProps>> shardIt = sliceShards.entrySet()
+            .iterator();
+        while (shardIt.hasNext()) {
+          Entry<String,ZkNodeProps> shardEntry = shardIt.next();
+          ZkCoreNodeProps coreProps = new ZkCoreNodeProps(shardEntry.getValue());
+          CoreAdminResponse mcr = CoreAdminRequest.getStatus(
+              coreProps.getCoreName(),
+              new HttpSolrServer(coreProps.getBaseUrl()));
+          long before = mcr.getStartTime(coreProps.getCoreName()).getTime();
+          urlToTime.put(coreProps.getCoreUrl(), before);
+        }
+      }
+    } else {
+      throw new IllegalArgumentException("Could not find collection in :"
+          + collections.keySet());
+    }
+  }
+
+  private String getUrlFromZk(String collection) {
+    CloudState cloudState = solrj.getZkStateReader().getCloudState();
+    Map<String,Slice> slices = cloudState.getCollectionStates().get(collection);
+    
+    if (slices == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection:" + collection);
+    }
+    
+    for (Map.Entry<String,Slice> entry : slices.entrySet()) {
+      Slice slice = entry.getValue();
+      Map<String,ZkNodeProps> shards = slice.getShards();
+      Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
+      for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
+        final ZkNodeProps node = shardEntry.getValue();
+        if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
+          return new ZkCoreNodeProps(node).getCoreUrl();
+        }
+      }
+    }
+    
+    throw new RuntimeException("Could not find a live node for collection:" + collection);
+  }
+
+  private void waitForNon404(HttpSolrServer collectionClient)
+      throws Exception {
+    
+    long timeoutAt = System.currentTimeMillis() + 30000;
+    
+    while (System.currentTimeMillis() < timeoutAt) {
+      boolean missing = false;
+      try {
+        collectionClient.query(new SolrQuery("*:*"));
+      } catch (SolrException e) {
+        // How do I get the response code!?
+        if (!e.getMessage().contains("(404)")) {
+          throw e;
+        }
+        missing = true;
+      }
+      if (!missing) {
+        return;
+      }
+      Thread.sleep(50);
+    }
+    printLayout();
+    fail("Could not find the new collection - 404 : " + collectionClient.getBaseURL());
+  }
+
+  private void checkForCollection(String collectionName, int expectedSlices)
+      throws Exception {
+    // check for an expectedSlices new collection - we poll the state
+    long timeoutAt = System.currentTimeMillis() + 60000;
+    boolean found = false;
+    boolean sliceMatch = false;
+    while (System.currentTimeMillis() < timeoutAt) {
+      solrj.getZkStateReader().updateCloudState(true);
+      CloudState cloudState = solrj.getZkStateReader().getCloudState();
+      Map<String,Map<String,Slice>> collections = cloudState
+          .getCollectionStates();
+      if (collections.containsKey(collectionName)) {
+        Map<String,Slice> slices = collections.get(collectionName);
+        // did we find expectedSlices slices/shards?
+        if (slices.size() == expectedSlices) {
+          sliceMatch = true;
+          found = true;
+          // also make sure each are active
+          Iterator<Entry<String,Slice>> it = slices.entrySet().iterator();
+          while (it.hasNext()) {
+            Entry<String,Slice> sliceEntry = it.next();
+            Map<String,ZkNodeProps> sliceShards = sliceEntry.getValue()
+                .getShards();
+            Iterator<Entry<String,ZkNodeProps>> shardIt = sliceShards
+                .entrySet().iterator();
+            while (shardIt.hasNext()) {
+              Entry<String,ZkNodeProps> shardEntry = shardIt.next();
+              if (!shardEntry.getValue().get(ZkStateReader.STATE_PROP)
+                  .equals(ZkStateReader.ACTIVE)) {
+                found = false;
+                break;
+              }
+            }
+          }
+          if (found) break;
+        }
+      }
+      Thread.sleep(100);
+    }
+    if (!found) {
+      printLayout();
+      if (!sliceMatch) {
+        fail("Could not find new " + expectedSlices + " slice collection called " + collectionName);
+      } else {
+        fail("Found expected # of slices, but some nodes are not active for collection called " + collectionName);
+      }
+    }
+  }
+  
+  private void checkForMissingCollection(String collectionName)
+      throws Exception {
+    // check for a  collection - we poll the state
+    long timeoutAt = System.currentTimeMillis() + 15000;
+    boolean found = true;
+    while (System.currentTimeMillis() < timeoutAt) {
+      solrj.getZkStateReader().updateCloudState(true);
+      CloudState cloudState = solrj.getZkStateReader().getCloudState();
+      Map<String,Map<String,Slice>> collections = cloudState
+          .getCollectionStates();
+      if (!collections.containsKey(collectionName)) {
+        found = false;
+        break;
+      }
+      Thread.sleep(100);
+    }
+    if (found) {
+      fail("Found collection that should be gone " + collectionName);
     }
   }
 
@@ -392,7 +682,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   }
 
   private void testNumberOfCommitsWithCommitAfterAdd()
-      throws MalformedURLException, SolrServerException, IOException {
+      throws SolrServerException, IOException {
     long startCommits = getNumCommits((HttpSolrServer) clients.get(0));
     
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
@@ -406,7 +696,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     assertEquals(startCommits + 1L, endCommits);
   }
 
-  private Long getNumCommits(HttpSolrServer solrServer) throws MalformedURLException,
+  private Long getNumCommits(HttpSolrServer solrServer) throws
       SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(solrServer.getBaseURL());
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -450,7 +740,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     
     assertAllActive(oneInstanceCollection2, solrj.getZkStateReader());
     
-   // TODO: enable when we don't falsly get slice1... 
+   // TODO: enable when we don't falsely get slice1... 
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice1", 30000);
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice2", 30000);
     client2.add(getDoc(id, "1")); 
@@ -552,15 +842,13 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   }
 
   private void createCollection(String collection,
-      List<SolrServer> collectionClients, String baseUrl, int num)
-      throws MalformedURLException, SolrServerException, IOException, InterruptedException {
+      List<SolrServer> collectionClients, String baseUrl, int num) {
     createCollection(collection, collectionClients, baseUrl, num, null);
   }
   
   private void createCollection(final String collection,
       List<SolrServer> collectionClients, final String baseUrl, final int num,
-      final String shardId) throws MalformedURLException, SolrServerException,
-      IOException, InterruptedException {
+      final String shardId) {
     Callable call = new Callable() {
       public Object call() {
         HttpSolrServer server;
@@ -594,8 +882,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     collectionClients.add(createNewSolrServer(collection, baseUrl));
   }
 
-  private void testMultipleCollections() throws MalformedURLException,
-      SolrServerException, IOException, Exception {
+  private void testMultipleCollections() throws Exception {
     // create another 2 collections and search across them
     createNewCollection("collection2");
     createNewCollection("collection3");
@@ -665,8 +952,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     client.add(doc);
   }
   
-  private void createNewCollection(final String collection)
-      throws MalformedURLException, SolrServerException, IOException, InterruptedException {
+  private void createNewCollection(final String collection) throws InterruptedException {
     final List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     otherCollectionClients.put(collection, collectionClients);
     int unique = 0;

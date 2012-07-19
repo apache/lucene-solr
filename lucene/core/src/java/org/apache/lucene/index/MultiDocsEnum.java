@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.ReaderSlice;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -43,7 +42,7 @@ public final class MultiDocsEnum extends DocsEnum {
     subDocsEnum = new DocsEnum[subReaderCount];
   }
 
-  MultiDocsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {
+  MultiDocsEnum reset(final EnumWithSlice[] subs, final int numSubs) {
     this.numSubs = numSubs;
 
     this.subs = new EnumWithSlice[subs.length];
@@ -53,6 +52,7 @@ public final class MultiDocsEnum extends DocsEnum {
       this.subs[i].slice = subs[i].slice;
     }
     upto = -1;
+    doc = -1;
     current = null;
     return this;
   }

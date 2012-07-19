@@ -96,7 +96,7 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
     };
   }
   
-  URI resolveRelativeURI(String baseURI, String systemId) throws IOException,URISyntaxException {
+  URI resolveRelativeURI(String baseURI, String systemId) throws URISyntaxException {
     URI uri;
     
     // special case for backwards compatibility: if relative systemId starts with "/" (we convert that to an absolute solrres:-URI)

@@ -18,6 +18,7 @@
 package org.apache.lucene.analysis.compound.hyphenation;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -463,10 +464,10 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
   }
 
   @Override
-  public void printStats() {
-    System.out.println("Value space size = "
+  public void printStats(PrintStream out) {
+    out.println("Value space size = "
         + Integer.toString(vspace.length()));
-    super.printStats();
+    super.printStats(out);
 
   }
 }

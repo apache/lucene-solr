@@ -131,7 +131,7 @@ public abstract class ValueSource {
     private final double[] values;
     private FunctionValues docVals;
     private double bottom;
-    private Map fcontext;
+    private final Map fcontext;
 
     ValueSourceComparator(Map fcontext, int numHits) {
       this.fcontext = fcontext;
@@ -187,7 +187,7 @@ public abstract class ValueSource {
 
     @Override
     public int compareDocToValue(int doc, Double valueObj) {
-      final double value = valueObj.doubleValue();
+      final double value = valueObj;
       final double docValue = docVals.doubleVal(doc);
       if (docValue < value) {
         return -1;

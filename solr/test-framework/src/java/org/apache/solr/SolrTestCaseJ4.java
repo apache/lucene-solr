@@ -67,7 +67,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   @BeforeClass 
   @SuppressWarnings("unused")
-  private static void beforeClass() throws Exception {
+  private static void beforeClass() {
     setupLogging();
     startTrackingSearchers();
     startTrackingZkClients();
@@ -81,7 +81,32 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     resetExceptionIgnores();
     endTrackingSearchers();
     endTrackingZkClients();
+    resetFactory();
   }
+
+  private static boolean changedFactory = false;
+  private static String savedFactory;
+  /** Use a different directory factory.  Passing "null" sets to an FS-based factory */
+  public static void useFactory(String factory) throws Exception {
+    assert !changedFactory;
+    changedFactory = true;
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    if (factory == null) {
+      factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
+    }
+    System.setProperty("solr.directoryFactory", factory);
+  }
+
+  private static void resetFactory() throws Exception {
+    if (!changedFactory) return;
+    changedFactory = false;
+    if (savedFactory != null) {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    } else {
+      System.clearProperty("solr.directoryFactory");
+    }
+  }
+
 
   @Override
   public void setUp() throws Exception {
@@ -139,6 +164,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void initCore(String config, String schema, String solrHome) throws Exception {
     configString = config;
     schemaString = schema;
+    testSolrHome = solrHome;
     if (solrHome != null) {
       System.setProperty("solr.solr.home", solrHome);
     }
@@ -233,6 +259,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   protected static String configString;
   protected static String schemaString;
+  protected static String testSolrHome;
 
   protected static SolrConfig solrConfig;
 
@@ -323,8 +350,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     log.info("####initCore end");
   }
 
-  public static void createCore() throws Exception {
-    solrConfig = TestHarness.createConfig(getSolrConfigFile());
+  public static void createCore() {
+    solrConfig = TestHarness.createConfig(testSolrHome, getSolrConfigFile());
     h = new TestHarness( dataDir.getAbsolutePath(),
             solrConfig,
             getSchemaFile());
@@ -354,7 +381,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * to delete dataDir, unless the system property "solr.test.leavedatadir"
    * is set.
    */
-  public static void deleteCore() throws Exception {
+  public static void deleteCore() {
     log.info("###deleteCore" );
     if (h != null) { h.close(); }
     if (dataDir != null) {
@@ -1365,8 +1392,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
   
+  // TODO: use solr rather than solr/collection1
   public static String TEST_HOME() {
-    return getFile("solr/conf").getParent();
+    return getFile("solr/collection1").getParent();
   }
 
   public static Throwable getRootCause(Throwable t) {

@@ -55,9 +55,10 @@
 package org.egothor.stemmer;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.util.Locale;
 import java.util.StringTokenizer;
 
 /**
@@ -83,7 +84,7 @@ public class DiffIt {
    * 
    * @param args the path to a file containing a stemmer table
    */
-  public static void main(java.lang.String[] args) {
+  public static void main(java.lang.String[] args) throws Exception {
     
     int ins = get(0, args[0]);
     int del = get(1, args[0]);
@@ -94,27 +95,23 @@ public class DiffIt {
       LineNumberReader in;
       // System.out.println("[" + args[i] + "]");
       Diff diff = new Diff(ins, del, rep, nop);
-      try {
-        in = new LineNumberReader(new BufferedReader(new FileReader(args[i])));
-        for (String line = in.readLine(); line != null; line = in.readLine()) {
-          try {
-            line = line.toLowerCase();
-            StringTokenizer st = new StringTokenizer(line);
-            String stem = st.nextToken();
-            System.out.println(stem + " -a");
-            while (st.hasMoreTokens()) {
-              String token = st.nextToken();
-              if (token.equals(stem) == false) {
-                System.out.println(stem + " " + diff.exec(token, stem));
-              }
+      String charset = System.getProperty("egothor.stemmer.charset", "UTF-8");
+      in = new LineNumberReader(new BufferedReader(new InputStreamReader(new FileInputStream(args[i]), charset)));
+      for (String line = in.readLine(); line != null; line = in.readLine()) {
+        try {
+          line = line.toLowerCase(Locale.ROOT);
+          StringTokenizer st = new StringTokenizer(line);
+          String stem = st.nextToken();
+          System.out.println(stem + " -a");
+          while (st.hasMoreTokens()) {
+            String token = st.nextToken();
+            if (token.equals(stem) == false) {
+              System.out.println(stem + " " + diff.exec(token, stem));
             }
-          } catch (java.util.NoSuchElementException x) {
-            // no base token (stem) on a line
           }
+        } catch (java.util.NoSuchElementException x) {
+          // no base token (stem) on a line
         }
-        
-      } catch (IOException x) {
-        x.printStackTrace();
       }
     }
   }

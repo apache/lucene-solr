@@ -226,7 +226,7 @@ public class TestDocumentWriter extends LuceneTestCase {
       private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
       
       @Override
-      public boolean incrementToken() throws IOException {
+      public boolean incrementToken() {
         if (index == tokens.length) {
           return false;
         } else {

@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderSlice;
 
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
@@ -96,7 +95,7 @@ public final class MultiTerms extends Terms {
   }
 
   @Override
-  public long size() throws IOException {
+  public long size() {
     return -1;
   }
 

@@ -312,9 +312,7 @@
   <property name="analyzers-morfologik.jar" value="${common.dir}/build/analysis/morfologik/lucene-analyzers-morfologik-${version}.jar"/>
   <fileset id="analyzers-morfologik.fileset" dir="${common.dir}">
     <include name="build/analysis/morfologik/lucene-analyzers-morfologik-${version}.jar" />
-    <include name="analysis/morfologik/lib/morfologik-fsa-1.5.2.jar" />
-    <include name="analysis/morfologik/lib/morfologik-polish-1.5.2.jar" />
-    <include name="analysis/morfologik/lib/morfologik-stemming-1.5.2.jar" />
+    <include name="analysis/morfologik/lib/morfologik-*.jar" />
   </fileset>
   <target name="check-analyzers-morfologik-uptodate" unless="analyzers-morfologik.uptodate">
     <module-uptodate name="analysis/morfologik" jarfile="${analyzers-morfologik.jar}" property="analyzers-morfologik.uptodate"/>

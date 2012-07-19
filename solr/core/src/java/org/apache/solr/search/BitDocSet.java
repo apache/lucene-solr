@@ -18,7 +18,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
@@ -27,8 +26,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetIterator;
 import org.apache.lucene.search.DocIdSetIterator;
-
-import java.io.IOException;
 
 /**
  * <code>BitDocSet</code> represents an unordered set of Lucene Document Ids
@@ -249,7 +246,7 @@ public class BitDocSet extends DocSetBase {
 
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) {
         AtomicReader reader = context.reader();
         // all Solr DocSets that are used as filters only include live docs
         final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
@@ -264,7 +261,7 @@ public class BitDocSet extends DocSetBase {
 
         return BitsFilteredDocIdSet.wrap(new DocIdSet() {
           @Override
-          public DocIdSetIterator iterator() throws IOException {
+          public DocIdSetIterator iterator() {
             return new DocIdSetIterator() {
               int pos=base-1;
               int adjustedDoc=-1;
@@ -275,13 +272,13 @@ public class BitDocSet extends DocSetBase {
               }
 
               @Override
-              public int nextDoc() throws IOException {
+              public int nextDoc() {
                 pos = bs.nextSetBit(pos+1);
                 return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
               }
 
               @Override
-              public int advance(int target) throws IOException {
+              public int advance(int target) {
                 if (target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
                 pos = bs.nextSetBit(target+base);
                 return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
@@ -295,7 +292,7 @@ public class BitDocSet extends DocSetBase {
           }
 
           @Override
-          public Bits bits() throws IOException {
+          public Bits bits() {
             return new Bits() {
               @Override
               public boolean get(int index) {

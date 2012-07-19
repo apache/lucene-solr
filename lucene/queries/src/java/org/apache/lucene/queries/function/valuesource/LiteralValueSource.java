@@ -78,9 +78,8 @@ public class LiteralValueSource extends ValueSource {
 
     LiteralValueSource that = (LiteralValueSource) o;
 
-    if (!string.equals(that.string)) return false;
+    return string.equals(that.string);
 
-    return true;
   }
 
   public static final int hash = LiteralValueSource.class.hashCode();

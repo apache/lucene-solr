@@ -31,11 +31,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TermContext;
 
 // TODO
 //   - doc blocks?  so we can test joins/grouping...

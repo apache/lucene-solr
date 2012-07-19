@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.hunspell;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -298,13 +299,12 @@ public class HunspellStemmer {
 
   // ================================================= Entry Point ===================================================
 
-  /**
+  /*
    * HunspellStemmer entry point.  Accepts two arguments: location of affix file and location of dic file
    *
    * @param args Program arguments.  Should contain location of affix file and location of dic file
    * @throws IOException Can be thrown while reading from the files
    * @throws ParseException Can be thrown while parsing the files
-   */
   public static void main(String[] args) throws IOException, ParseException {
     boolean ignoreCase = false;
     int offset = 0;
@@ -330,7 +330,7 @@ public class HunspellStemmer {
     
     HunspellStemmer stemmer = new HunspellStemmer(dictionary);
 
-    Scanner scanner = new Scanner(System.in);
+    Scanner scanner = new Scanner(System.in, Charset.defaultCharset().name());
     
     System.out.print("> ");
     while (scanner.hasNextLine()) {
@@ -346,12 +346,10 @@ public class HunspellStemmer {
     }
   }
 
-  /**
    * Prints the results of the stemming of a word
    *
    * @param originalWord Word that has been stemmed
    * @param stems Stems of the word
-   */
   private static void printStemResults(String originalWord, List<Stem> stems) {
     StringBuilder builder = new StringBuilder().append("stem(").append(originalWord).append(")").append("\n");
 
@@ -381,13 +379,12 @@ public class HunspellStemmer {
     System.out.println(builder);
   }
 
-  /**
    * Simple utility to check if the given String has any text
    *
    * @param str String to check if it has any text
    * @return {@code true} if the String has text, {@code false} otherwise
-   */
   private static boolean hasText(String str) {
     return str != null && str.length() > 0;
   }
+  */
 }

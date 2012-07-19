@@ -44,6 +44,7 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.DefaultParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
+import org.apache.tika.parser.PasswordProvider;
 import org.apache.tika.sax.XHTMLContentHandler;
 import org.apache.tika.sax.xpath.Matcher;
 import org.apache.tika.sax.xpath.MatchingContentHandler;
@@ -90,7 +91,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   protected TikaConfig config;
   protected SolrContentHandlerFactory factory;
-  //protected Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
 
   public ExtractingDocumentLoader(SolrQueryRequest req, UpdateRequestProcessor processor,
                            TikaConfig config, SolrContentHandlerFactory factory) {
@@ -114,8 +114,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   /**
    * this must be MT safe... may be called concurrently from multiple threads.
    *
-   * @param
-   * @param
    */
   void doAdd(SolrContentHandler handler, AddUpdateCommand template)
           throws IOException {
@@ -140,7 +138,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     String streamType = req.getParams().get(ExtractingParams.STREAM_TYPE, null);
     if (streamType != null) {
       //Cache?  Parsers are lightweight to construct and thread-safe, so I'm told
-      MediaType mt = MediaType.parse(streamType.trim().toLowerCase(Locale.ENGLISH));
+      MediaType mt = MediaType.parse(streamType.trim().toLowerCase(Locale.ROOT));
       parser = new DefaultParser(config.getMediaTypeRegistry()).getParsers().get(mt);
     } else {
       parser = autoDetectParser;
@@ -206,6 +204,23 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         try{
           //potentially use a wrapper handler for parsing, but we still need the SolrContentHandler for getting the document.
           ParseContext context = new ParseContext();//TODO: should we design a way to pass in parse context?
+
+          // Password handling
+          RegexRulesPasswordProvider epp = new RegexRulesPasswordProvider();
+          String pwMapFile = params.get(ExtractingParams.PASSWORD_MAP_FILE);
+          if(pwMapFile != null && pwMapFile.length() > 0) {
+            InputStream is = req.getCore().getResourceLoader().openResource(pwMapFile);
+            if(is != null) {
+              log.debug("Password file supplied: "+pwMapFile);
+              epp.parse(is);
+            }
+          }
+          context.set(PasswordProvider.class, epp);
+          String resourcePassword = params.get(ExtractingParams.RESOURCE_PASSWORD);
+          if(resourcePassword != null) {
+            epp.setExplicitPassword(resourcePassword);
+            log.debug("Literal password supplied for file "+resourceName);
+          }
           parser.parse(inputStream, parsingHandler, metadata, context);
         } catch (TikaException e) {
           if(ignoreTikaException)

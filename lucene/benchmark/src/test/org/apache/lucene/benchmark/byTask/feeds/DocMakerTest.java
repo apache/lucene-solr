@@ -18,7 +18,6 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
@@ -46,12 +45,11 @@ public class DocMakerTest extends BenchmarkTestCase {
     private boolean finish = false;
     
     @Override
-    public void close() throws IOException {
+    public void close() {
     }
 
     @Override
-    public DocData getNextDocData(DocData docData) throws NoMoreDataException,
-        IOException {
+    public DocData getNextDocData(DocData docData) throws NoMoreDataException {
       if (finish) {
         throw new NoMoreDataException();
       }
@@ -168,7 +166,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     // DocMaker did not close its ContentSource if resetInputs was called twice,
     // leading to a file handle leak.
     File f = new File(getWorkDir(), "docMakerLeak.txt");
-    PrintStream ps = new PrintStream(f);
+    PrintStream ps = new PrintStream(f, "UTF-8");
     ps.println("one title\t" + System.currentTimeMillis() + "\tsome content");
     ps.close();
     

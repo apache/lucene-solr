@@ -325,13 +325,13 @@ public final class WikipediaTokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset(Reader reader) throws IOException {
-    super.reset(reader);
+  public void setReader(Reader reader) throws IOException {
+    super.setReader(reader);
     scanner.yyreset(input);
   }
 
   @Override
-  public void end() throws IOException {
+  public void end() {
     // set final offset
     final int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
     this.offsetAtt.setOffset(finalOffset, finalOffset);

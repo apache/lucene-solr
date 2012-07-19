@@ -37,7 +37,7 @@ public class LongToEnglishQueryMaker implements QueryMaker {
   protected QueryParser parser;
 
   // TODO: we could take param to specify locale...
-  private final RuleBasedNumberFormat rnbf = new RuleBasedNumberFormat(Locale.ENGLISH,
+  private final RuleBasedNumberFormat rnbf = new RuleBasedNumberFormat(Locale.ROOT,
                                                                        RuleBasedNumberFormat.SPELLOUT);
 
   public Query makeQuery(int size) throws Exception {

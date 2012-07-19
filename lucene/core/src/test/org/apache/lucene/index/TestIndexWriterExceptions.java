@@ -983,7 +983,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
         
         @Override
-        public void close() throws IOException {}
+        public void close() {}
       }));
 
     try {

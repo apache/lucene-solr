@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
@@ -147,6 +148,12 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "fiets", "fiets");
   }
   
+  public void testEmptyStemDictionary() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, 
+        CharArraySet.EMPTY_SET, CharArrayMap.<String>emptyMap());
+    checkOneTerm(a, "fiets", "fiet");
+  }
+  
   /**
    * Test that stopwords are not case sensitive
    */
@@ -161,7 +168,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new DutchAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new DutchAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
   
 }

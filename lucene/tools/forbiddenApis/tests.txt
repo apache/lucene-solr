@@ -1,0 +1,10 @@
+# All classes should derive from LuceneTestCase
+junit.framework.TestCase
+
+# Use RandomizedRunner's random instead
+java.util.Random#<init>()
+
+# Don't depend on wall clock times
+# TODO: fix tests that do this!
+#java.lang.System#currentTimeMillis()
+#java.lang.System#nanoTime()

@@ -38,7 +38,7 @@ public class MatchAllDocsQuery extends Query {
     private final int maxDoc;
     private final Bits liveDocs;
 
-    MatchAllScorer(IndexReader reader, Bits liveDocs, Weight w, float score) throws IOException {
+    MatchAllScorer(IndexReader reader, Bits liveDocs, Weight w, float score) {
       super(w);
       this.liveDocs = liveDocs;
       this.score = score;
@@ -65,6 +65,11 @@ public class MatchAllDocsQuery extends Query {
     @Override
     public float score() {
       return score;
+    }
+
+    @Override
+    public float freq() {
+      return 1;
     }
 
     @Override

@@ -71,25 +71,26 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
   @Override
   public void init(NamedList args) {
 
-    String patternParam = args.remove(PATTERN_PARAM).toString();
+    Object patternParam = args.remove(PATTERN_PARAM);
 
     if(patternParam == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, 
                               "Missing required init parameter: " + PATTERN_PARAM);
     }
+    
     try {
-      pattern = Pattern.compile(patternParam);      
+      pattern = Pattern.compile(patternParam.toString());      
     } catch (PatternSyntaxException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, 
                               "Invalid regex: " + patternParam, e);
     }                                
 
-    String replacementParam = args.remove(REPLACEMENT_PARAM).toString();
+    Object replacementParam = args.remove(REPLACEMENT_PARAM);
     if(replacementParam == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, 
                               "Missing required init parameter: " + REPLACEMENT_PARAM);
     }
-    replacement = Matcher.quoteReplacement(replacementParam);
+    replacement = Matcher.quoteReplacement(replacementParam.toString());
 
     super.init(args);
   }

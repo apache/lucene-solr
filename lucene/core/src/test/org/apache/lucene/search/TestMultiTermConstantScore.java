@@ -178,7 +178,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
       private int base = 0;
       private Scorer scorer;
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorer scorer) {
         this.scorer = scorer;
       }
       @Override

@@ -20,14 +20,12 @@ package org.apache.solr.schema;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.DOMUtil;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
@@ -39,10 +37,17 @@ import org.xml.sax.InputSource;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <code>IndexSchema</code> contains information about the valid fields in an index
@@ -435,6 +440,16 @@ public final class IndexSchema {
     }
     if (simFactory instanceof SchemaAware) {
       ((SchemaAware)simFactory).inform(this);
+    } else {
+      // if the sim facotry isn't schema aware, then we are responsible for
+      // erroring if a field type is trying to specify a sim.
+      for (FieldType ft : fieldTypes.values()) {
+        if (null != ft.getSimilarity()) {
+          String msg = "FieldType '" + ft.getTypeName() + "' is configured with a similarity, but the global similarity does not support it: " + simFactory.getClass();
+          log.error(msg);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+        }
+      }
     }
     similarity = simFactory.getSimilarity();
 
@@ -678,7 +693,7 @@ public final class IndexSchema {
     return newArr;
   }
 
-  static SimilarityFactory readSimilarity(ResourceLoader loader, Node node) throws XPathExpressionException {
+  static SimilarityFactory readSimilarity(ResourceLoader loader, Node node) {
     if (node==null) {
       return null;
     } else {

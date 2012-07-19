@@ -199,7 +199,7 @@ public class PreAnalyzedField extends FieldType {
     public PreAnalyzedTokenizer(Reader reader, PreAnalyzedParser parser) throws IOException {
       super(reader);
       this.parser = parser;
-      reset(reader);
+      setReader(reader);
     }
     
     public boolean hasTokenStream() {
@@ -214,7 +214,7 @@ public class PreAnalyzedField extends FieldType {
       return binaryValue;
     }
     
-    public final boolean incrementToken() throws IOException {
+    public final boolean incrementToken() {
       // lazy init the iterator
       if (it == null) {
         it = cachedStates.iterator();
@@ -234,8 +234,8 @@ public class PreAnalyzedField extends FieldType {
     }
 
     @Override
-    public void reset(Reader input) throws IOException {
-      super.reset(input);
+    public void setReader(Reader input) throws IOException {
+      super.setReader(input);
       cachedStates.clear();
       stringValue = null;
       binaryValue = null;

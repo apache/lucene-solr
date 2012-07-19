@@ -69,7 +69,7 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
     String dictionaryName = args.get(DICTIONARY_SCHEMA_ATTRIBUTE);
     if (dictionaryName != null && !dictionaryName.isEmpty()) {
       try {
-        DICTIONARY dictionary = DICTIONARY.valueOf(dictionaryName.toUpperCase(Locale.ENGLISH));
+        DICTIONARY dictionary = DICTIONARY.valueOf(dictionaryName.toUpperCase(Locale.ROOT));
         assert dictionary != null;
         this.dictionary = dictionary;
       } catch (IllegalArgumentException e) {

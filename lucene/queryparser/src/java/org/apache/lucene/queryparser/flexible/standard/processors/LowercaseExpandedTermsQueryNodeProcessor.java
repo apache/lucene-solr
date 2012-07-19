@@ -18,6 +18,7 @@ package org.apache.lucene.queryparser.flexible.standard.processors;
  */
 
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
@@ -46,7 +47,6 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
     QueryNodeProcessorImpl {
 
   public LowercaseExpandedTermsQueryNodeProcessor() {
-    // empty constructor
   }
 
   @Override
@@ -63,6 +63,11 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
 
   @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
+    
+    Locale locale = getQueryConfigHandler().get(ConfigurationKeys.LOCALE);
+    if (locale == null) {
+      locale = Locale.getDefault();
+    }
 
     if (node instanceof WildcardQueryNode
         || node instanceof FuzzyQueryNode
@@ -71,7 +76,7 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
 
       TextableQueryNode txtNode = (TextableQueryNode) node;
       CharSequence text = txtNode.getText();
-      txtNode.setText(text != null ? UnescapedCharSequence.toLowerCase(text) : null);
+      txtNode.setText(text != null ? UnescapedCharSequence.toLowerCase(text, locale) : null);
     }
 
     return node;

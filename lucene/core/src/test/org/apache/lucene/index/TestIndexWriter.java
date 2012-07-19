@@ -820,7 +820,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     @Override
-    protected void doBeforeFlush() throws IOException {
+    protected void doBeforeFlush() {
       beforeWasCalled = true;
     }
   }
@@ -1520,14 +1520,14 @@ public class TestIndexWriter extends LuceneTestCase {
     public StringSplitTokenizer(Reader r) {
       super(r);
       try {
-        reset(r);
+        setReader(r);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
 
     @Override
-    public final boolean incrementToken() throws IOException {
+    public final boolean incrementToken() {
       clearAttributes();      
       if (upto < tokens.length) {
         termAtt.setEmpty();
@@ -1540,7 +1540,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     @Override
-    public void reset(Reader input) throws IOException {
+    public void setReader(Reader input) throws IOException {
        this.upto = 0;
        final StringBuilder b = new StringBuilder();
        final char[] buffer = new char[1024];

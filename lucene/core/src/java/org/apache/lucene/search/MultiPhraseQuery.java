@@ -26,6 +26,7 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -35,7 +36,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -568,7 +568,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
 
   @Override
-  public final int freq() throws IOException {
+  public final int freq() {
     return _freq;
   }
 

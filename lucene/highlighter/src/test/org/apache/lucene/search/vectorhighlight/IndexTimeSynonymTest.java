@@ -303,7 +303,7 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
         int p = 0;
         
         @Override
-        public boolean incrementToken() throws IOException {
+        public boolean incrementToken() {
           if( p >= tokens.length ) return false;
           clearAttributes();
           tokens[p++].copyTo(reusableToken);

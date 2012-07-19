@@ -22,6 +22,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -36,7 +37,6 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 
 /** Concrete class that reads the current doc/freq/skip
  *  postings format 
@@ -52,7 +52,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   final PostingsReaderBase wrappedPostingsReader;
   int maxPositions;
 
-  public PulsingPostingsReader(PostingsReaderBase wrappedPostingsReader) throws IOException {
+  public PulsingPostingsReader(PostingsReaderBase wrappedPostingsReader) {
     this.wrappedPostingsReader = wrappedPostingsReader;
   }
 

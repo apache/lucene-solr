@@ -529,13 +529,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     
     addParser("pi", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) {
         return new DoubleConstValueSource(Math.PI);
       }
     });
     addParser("e", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) {
         return new DoubleConstValueSource(Math.E);
       }
     });
@@ -601,28 +601,28 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("maxdoc", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) {
         return new MaxDocValueSource();
       }
     });
 
     addParser("numdocs", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) {
         return new NumDocsValueSource();
       }
     });
 
     addParser("true", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) {
         return new BoolConstValueSource(true);
       }
     });
 
     addParser("false", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) {
         return new BoolConstValueSource(false);
       }
     });

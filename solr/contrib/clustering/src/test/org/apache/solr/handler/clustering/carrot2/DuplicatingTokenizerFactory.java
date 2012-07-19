@@ -39,7 +39,7 @@ public class DuplicatingTokenizerFactory implements ITokenizerFactory {
       }
       
       @Override
-      public void reset(Reader input) throws IOException {
+      public void reset(Reader input) {
         delegate.reset(input);
       }
       

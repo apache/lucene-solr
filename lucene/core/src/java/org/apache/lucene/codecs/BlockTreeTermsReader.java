@@ -20,8 +20,10 @@ package org.apache.lucene.codecs;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -41,7 +43,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
@@ -346,7 +347,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
     @Override
     public String toString() {
       final ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-      final PrintStream out = new PrintStream(bos);
+      PrintStream out;
+      try {
+        out = new PrintStream(bos, false, "UTF-8");
+      } catch (UnsupportedEncodingException bogus) {
+        throw new RuntimeException(bogus);
+      }
       
       out.println("  index FST:");
       out.println("    " + indexNodeCount + " nodes");
@@ -354,7 +360,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       out.println("    " + indexNumBytes + " bytes");
       out.println("  terms:");
       out.println("    " + totalTermCount + " terms");
-      out.println("    " + totalTermBytes + " bytes" + (totalTermCount != 0 ? " (" + String.format("%.1f", ((double) totalTermBytes)/totalTermCount) + " bytes/term)" : ""));
+      out.println("    " + totalTermBytes + " bytes" + (totalTermCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalTermBytes)/totalTermCount) + " bytes/term)" : ""));
       out.println("  blocks:");
       out.println("    " + totalBlockCount + " blocks");
       out.println("    " + termsOnlyBlockCount + " terms-only blocks");
@@ -363,9 +369,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
       out.println("    " + floorBlockCount + " floor blocks");
       out.println("    " + (totalBlockCount-floorSubBlockCount) + " non-floor blocks");
       out.println("    " + floorSubBlockCount + " floor sub-blocks");
-      out.println("    " + totalBlockSuffixBytes + " term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format("%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
-      out.println("    " + totalBlockStatsBytes + " term stats bytes" + (totalBlockCount != 0 ? " (" + String.format("%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
-      out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format("%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
+      out.println("    " + totalBlockSuffixBytes + " term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
+      out.println("    " + totalBlockStatsBytes + " term stats bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
+      out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
       if (totalBlockCount != 0) {
         out.println("    by prefix length:");
         int total = 0;
@@ -373,13 +379,17 @@ public class BlockTreeTermsReader extends FieldsProducer {
           final int blockCount = blockCountByPrefixLen[prefix];
           total += blockCount;
           if (blockCount != 0) {
-            out.println("      " + String.format("%2d", prefix) + ": " + blockCount);
+            out.println("      " + String.format(Locale.ROOT, "%2d", prefix) + ": " + blockCount);
           }
         }
         assert totalBlockCount == total;
       }
 
-      return bos.toString();
+      try {
+        return bos.toString("UTF-8");
+      } catch (UnsupportedEncodingException bogus) {
+        throw new RuntimeException(bogus);
+      }
     }
   }
 
@@ -467,7 +477,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
 
     @Override
-    public int getDocCount() throws IOException {
+    public int getDocCount() {
       return docCount;
     }
 
@@ -864,7 +874,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public BytesRef term() throws IOException {
+      public BytesRef term() {
         return term;
       }
 
@@ -1157,22 +1167,22 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+      public boolean seekExact(BytesRef text, boolean useCache) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public void seekExact(long ord) throws IOException {
+      public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public long ord() throws IOException {
+      public long ord() {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+      public SeekStatus seekCeil(BytesRef text, boolean useCache) {
         throw new UnsupportedOperationException();
       }
     }
@@ -1948,11 +1958,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @SuppressWarnings("unused")
-      private void printSeekState() throws IOException {
+      private void printSeekState(PrintStream out) throws IOException {
         if (currentFrame == staticFrame) {
-          System.out.println("  no prior seek");
+          out.println("  no prior seek");
         } else {
-          System.out.println("  prior seek state:");
+          out.println("  prior seek state:");
           int ord = 0;
           boolean isSeekFrame = true;
           while(true) {
@@ -1960,26 +1970,26 @@ public class BlockTreeTermsReader extends FieldsProducer {
             assert f != null;
             final BytesRef prefix = new BytesRef(term.bytes, 0, f.prefix);
             if (f.nextEnt == -1) {
-              System.out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
+              out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
             } else {
-              System.out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
+              out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
             }
             if (index != null) {
               assert !isSeekFrame || f.arc != null: "isSeekFrame=" + isSeekFrame + " f.arc=" + f.arc;
               if (f.prefix > 0 && isSeekFrame && f.arc.label != (term.bytes[f.prefix-1]&0xFF)) {
-                System.out.println("      broken seek state: arc.label=" + (char) f.arc.label + " vs term byte=" + (char) (term.bytes[f.prefix-1]&0xFF));
+                out.println("      broken seek state: arc.label=" + (char) f.arc.label + " vs term byte=" + (char) (term.bytes[f.prefix-1]&0xFF));
                 throw new RuntimeException("seek state is broken");
               }
               BytesRef output = Util.get(index, prefix);
               if (output == null) {
-                System.out.println("      broken seek state: prefix is not final in index");
+                out.println("      broken seek state: prefix is not final in index");
                 throw new RuntimeException("seek state is broken");
               } else if (isSeekFrame && !f.isFloor) {
                 final ByteArrayDataInput reader = new ByteArrayDataInput(output.bytes, output.offset, output.length);
                 final long codeOrig = reader.readVLong();
                 final long code = (f.fp << BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) | (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) | (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0);
                 if (codeOrig != code) {
-                  System.out.println("      broken seek state: output code=" + codeOrig + " doesn't match frame code=" + code);
+                  out.println("      broken seek state: output code=" + codeOrig + " doesn't match frame code=" + code);
                   throw new RuntimeException("seek state is broken");
                 }
               }
@@ -2145,7 +2155,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public void seekExact(BytesRef target, TermState otherState) throws IOException {
+      public void seekExact(BytesRef target, TermState otherState) {
         // if (DEBUG) {
         //   System.out.println("BTTR.seekExact termState seg=" + segment + " target=" + target.utf8ToString() + " " + target + " state=" + otherState);
         // }
@@ -2175,7 +2185,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public void seekExact(long ord) throws IOException {
+      public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
 
@@ -2352,7 +2362,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // }
         }
 
-        void rewind() throws IOException {
+        void rewind() {
 
           // Force reload:
           fp = fpOrig;

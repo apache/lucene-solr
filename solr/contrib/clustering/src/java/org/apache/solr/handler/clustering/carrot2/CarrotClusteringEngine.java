@@ -147,7 +147,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
       final IResource foundResource = new IResource() {
         @Override
-        public InputStream open() throws IOException {
+        public InputStream open() {
           return new ByteArrayInputStream(asBytes);
         }
 

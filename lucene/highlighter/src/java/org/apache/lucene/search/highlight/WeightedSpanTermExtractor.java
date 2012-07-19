@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
@@ -43,7 +44,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.TermContext;
 
 /**
  * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether 

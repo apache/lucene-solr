@@ -40,7 +40,7 @@ import org.apache.lucene.util.mutable.MutableValueDouble;
 
 public class DoubleFieldSource extends FieldCacheSource {
 
-  protected FieldCache.DoubleParser parser;
+  protected final FieldCache.DoubleParser parser;
 
   public DoubleFieldSource(String field) {
     this(field, null);

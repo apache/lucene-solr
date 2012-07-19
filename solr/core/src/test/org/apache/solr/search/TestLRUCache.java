@@ -63,7 +63,7 @@ public class TestLRUCache extends LuceneTestCase {
       doTestPercentageAutowarm(10, 10, new int[]{10}, new int[]{1, 5, 9, 100, 200, 300, 400, 800, 899, 900});
   }
   
-  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) throws IOException {
+  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) {
     LRUCache<Object, Object> lruCache = new LRUCache<Object, Object>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("size", String.valueOf(limit));
@@ -126,7 +126,7 @@ public class TestLRUCache extends LuceneTestCase {
     CacheRegenerator cr = new CacheRegenerator() {
       @SuppressWarnings("unchecked")
       public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache,
-                                    SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
+                                    SolrCache oldCache, Object oldKey, Object oldVal) {
         newCache.put(oldKey, oldVal);
         return true;
       }

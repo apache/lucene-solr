@@ -117,7 +117,6 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
    * Run an example search.
    * 
    * @throws IOException
-   * @throws ParseException
    */
   private void searchForFleas(final int expectedTotalHits) throws IOException {
     Directory realDirectory = newFSDirectory(path);

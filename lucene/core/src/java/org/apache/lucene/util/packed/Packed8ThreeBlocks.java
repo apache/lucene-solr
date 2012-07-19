@@ -1,10 +1,6 @@
+// This file has been automatically generated, DO NOT EDIT
+
 package org.apache.lucene.util.packed;
-
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,32 +19,38 @@ import org.apache.lucene.util.RamUsageEstimator;
  * limitations under the License.
  */
 
-/** 24 bitsPerValue backed by byte[] */
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.util.RamUsageEstimator;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+/**
+ * Packs integers into 3 bytes (24 bits per value).
+ * @lucene.internal
+ */
 final class Packed8ThreeBlocks extends PackedInts.MutableImpl {
+  final byte[] blocks;
 
   public static final int MAX_SIZE = Integer.MAX_VALUE / 3;
-
-  private final byte[] blocks;
 
   Packed8ThreeBlocks(int valueCount) {
     super(valueCount, 24);
     if (valueCount > MAX_SIZE) {
       throw new ArrayIndexOutOfBoundsException("MAX_SIZE exceeded");
     }
-    this.blocks = new byte[3 * valueCount];
+    blocks = new byte[valueCount * 3];
   }
 
   Packed8ThreeBlocks(DataInput in, int valueCount) throws IOException {
     this(valueCount);
-    for (int i = 0; i < blocks.length; i++) {
+    for (int i = 0; i < 3 * valueCount; ++i) {
       blocks[i] = in.readByte();
     }
     final int mod = blocks.length % 8;
     if (mod != 0) {
-      final int pad = 8 - mod;
-      // round out long
-      for (int i = 0; i < pad; i++) {
-        in.readByte();
+      for (int i = mod; i < 8; ++i) {
+         in.readByte();
       }
     }
   }
@@ -56,26 +58,55 @@ final class Packed8ThreeBlocks extends PackedInts.MutableImpl {
   @Override
   public long get(int index) {
     final int o = index * 3;
-    return (blocks[o] & 0xffL) << 16 | (blocks[o+1] & 0xffL) << 8 | (blocks[o+2] & 0xffL);
+    return (blocks[o] & 0xFFL) << 16 | (blocks[o+1] & 0xFFL) << 8 | (blocks[o+2] & 0xFFL);
+  }
+
+  @Override
+  public int get(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int gets = Math.min(valueCount - index, len);
+    for (int i = index * 3, end = (index + gets) * 3; i < end; i+=3) {
+      arr[off++] = (blocks[i] & 0xFFL) << 16 | (blocks[i+1] & 0xFFL) << 8 | (blocks[i+2] & 0xFFL);
+    }
+    return gets;
   }
 
   @Override
   public void set(int index, long value) {
     final int o = index * 3;
+    blocks[o] = (byte) (value >>> 16);
+    blocks[o+1] = (byte) (value >>> 8);
     blocks[o+2] = (byte) value;
-    blocks[o+1] = (byte) (value >> 8);
-    blocks[o] = (byte) (value >> 16);
+  }
+
+  @Override
+  public int set(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int sets = Math.min(valueCount - index, len);
+    for (int i = off, o = index * 3, end = off + sets; i < end; ++i) {
+      final long value = arr[i];
+      blocks[o++] = (byte) (value >>> 16);
+      blocks[o++] = (byte) (value >>> 8);
+      blocks[o++] = (byte) value;
+    }
+    return sets;
   }
 
   @Override
   public void fill(int fromIndex, int toIndex, long val) {
-    byte block1 = (byte) (val >> 16);
-    byte block2 = (byte) (val >> 8);
-    byte block3 = (byte) val;
-    for (int i = fromIndex * 3, end = toIndex * 3; i < end; ) {
-      blocks[i++] = block1;
-      blocks[i++] = block2;
-      blocks[i++] = block3;
+    final byte block1 = (byte) (val >>> 16);
+    final byte block2 = (byte) (val >>> 8);
+    final byte block3 = (byte) val;
+    for (int i = fromIndex * 3, end = toIndex * 3; i < end; i += 3) {
+      blocks[i] = block1;
+      blocks[i+1] = block2;
+      blocks[i+2] = block3;
     }
   }
 
@@ -93,5 +124,4 @@ final class Packed8ThreeBlocks extends PackedInts.MutableImpl {
     return getClass().getSimpleName() + "(bitsPerValue=" + bitsPerValue
         + ", size=" + size() + ", elements.length=" + blocks.length + ")";
   }
-
 }

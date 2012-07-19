@@ -191,7 +191,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
     else {
       try {
-        action = ACTIONS.valueOf(actionParam.toUpperCase(Locale.ENGLISH));
+        action = ACTIONS.valueOf(actionParam.toUpperCase(Locale.ROOT));
       }
       catch (IllegalArgumentException iae){
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 

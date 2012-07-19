@@ -19,13 +19,16 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,6 +40,7 @@ import org.xml.sax.SAXParseException;
  * detect if a node is trying to do an update to itself with http - it shouldn't
  * do that.
  */
+@Slow
 public class BasicZkTest extends AbstractZkTestCase {
   
   @BeforeClass
@@ -58,10 +62,12 @@ public class BasicZkTest extends AbstractZkTestCase {
     // test merge factor picked up
     SolrCore core = h.getCore();
 
-    IndexWriter writer = ((DirectUpdateHandler2)core.getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
-
-    assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor());
-    
+    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2)core.getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
+    try {
+      assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy)iw.get().getConfig().getMergePolicy()).getMergeFactor());
+    } finally {
+      iw.decref();
+    }
     lrf.args.put(CommonParams.VERSION, "2.2");
     assertQ("test query on empty index", request("qlkciyopsbgzyvkylsjhchghjrdf"),
         "//result[@numFound='0']");
@@ -158,6 +164,13 @@ public class BasicZkTest extends AbstractZkTestCase {
       
     }
     
+    // test stats call
+    NamedList stats = core.getStatistics();
+    assertEquals("collection1", stats.get("coreName"));
+    assertEquals("collection1", stats.get("collection"));
+    assertEquals("shard1", stats.get("shard"));
+    assertTrue(stats.get("refCount") != null);
+
     //zkController.getZkClient().printLayoutToStdOut();
   }
   

@@ -49,15 +49,7 @@
   <property name="tests.loggingfile" value="${common-solr.dir}/testlogging.properties"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
-  <property name="clover.db.dir" location="${dest}/test/clover/db"/>
-  <property name="clover.report.dir" location="${dest}/test/clover/reports"/>
-  <available property="clover.present" classname="com.cenqua.clover.tasks.CloverReportTask"/>
-  <condition property="clover.enabled">
-    <and>
-      <isset property="run.clover"/>
-      <isset property="clover.present"/>
-    </and>
-  </condition>
+  <property name="clover.report.dir" location="${dest}/clover/reports"/>
 
   <import file="${common-solr.dir}/../lucene/module-build.xml"/>
 

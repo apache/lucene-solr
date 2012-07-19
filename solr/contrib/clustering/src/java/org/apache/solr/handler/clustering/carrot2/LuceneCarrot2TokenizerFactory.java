@@ -141,9 +141,9 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
         array.reset(term.buffer(), 0, term.length());
       }
 
-      public void reset(Reader input) throws IOException {
+      public void reset(Reader input) {
         try {
-          sentenceTokenizer.reset(input);
+          sentenceTokenizer.setReader(input);
           wordTokenFilter = (TokenStream) tokenFilterClass.getConstructor(
               TokenStream.class).newInstance(sentenceTokenizer);
           term = wordTokenFilter.addAttribute(CharTermAttribute.class);

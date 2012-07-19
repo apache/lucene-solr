@@ -75,7 +75,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
+  public Fields fields() {
     ensureOpen();
     return fields;
   }
@@ -117,7 +117,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   }
 
   @Override
-  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
     in.document(docID, visitor);
   }

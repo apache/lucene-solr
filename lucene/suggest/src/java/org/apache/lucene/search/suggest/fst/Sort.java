@@ -132,7 +132,7 @@ public final class Sort {
     
     @Override
     public String toString() {
-      return String.format(Locale.ENGLISH,
+      return String.format(Locale.ROOT,
           "time=%.2f sec. total (%.2f reading, %.2f sorting, %.2f merging), lines=%d, temp files=%d, merges=%d, soft ram limit=%.2f MB",
           totalTime / 1000.0d, readTime / 1000.0d, sortTime / 1000.0d, mergeTime / 1000.0d,
           lines, tempMergeFiles, mergeRounds,
@@ -193,47 +193,59 @@ public final class Sort {
     output.delete();
 
     ArrayList<File> merges = new ArrayList<File>();
-    ByteSequencesReader is = new ByteSequencesReader(input);
-    boolean success = false;
+    boolean success2 = false;
     try {
-      int lines = 0;
-      while ((lines = readPartition(is)) > 0) {                    
-        merges.add(sortPartition(lines));
-        sortInfo.tempMergeFiles++;
-        sortInfo.lines += lines;
-
-        // Handle intermediate merges.
-        if (merges.size() == maxTempFiles) {
-          File intermediate = File.createTempFile("sort", "intermediate", tempDirectory);
-          mergePartitions(merges, intermediate);
-          for (File file : merges) {
-            file.delete();
-          }
-          merges.clear();
-          merges.add(intermediate);
+      ByteSequencesReader is = new ByteSequencesReader(input);
+      boolean success = false;
+      try {
+        int lines = 0;
+        while ((lines = readPartition(is)) > 0) {
+          merges.add(sortPartition(lines));
           sortInfo.tempMergeFiles++;
-        }
-      }
-      success = true;
-    } finally {
-      if (success)
-        IOUtils.close(is);
-      else
-        IOUtils.closeWhileHandlingException(is);
-    }
+          sortInfo.lines += lines;
 
-    // One partition, try to rename or copy if unsuccessful.
-    if (merges.size() == 1) {     
-      // If simple rename doesn't work this means the output is
-      // on a different volume or something. Copy the input then.
-      if (!merges.get(0).renameTo(output)) {
-        copy(merges.get(0), output);
+          // Handle intermediate merges.
+          if (merges.size() == maxTempFiles) {
+            File intermediate = File.createTempFile("sort", "intermediate", tempDirectory);
+            try {
+              mergePartitions(merges, intermediate);
+            } finally {
+              for (File file : merges) {
+                file.delete();
+              }
+              merges.clear();
+              merges.add(intermediate);
+            }
+            sortInfo.tempMergeFiles++;
+          }
+        }
+        success = true;
+      } finally {
+        if (success)
+          IOUtils.close(is);
+        else
+          IOUtils.closeWhileHandlingException(is);
       }
-    } else { 
-      // otherwise merge the partitions with a priority queue.                  
-      mergePartitions(merges, output);                            
+
+      // One partition, try to rename or copy if unsuccessful.
+      if (merges.size() == 1) {     
+        File single = merges.get(0);
+        // If simple rename doesn't work this means the output is
+        // on a different volume or something. Copy the input then.
+        if (!single.renameTo(output)) {
+          copy(single, output);
+        }
+      } else { 
+        // otherwise merge the partitions with a priority queue.
+        mergePartitions(merges, output);
+      }
+      success2 = true;
+    } finally {
       for (File file : merges) {
         file.delete();
+      }
+      if (!success2) {
+        output.delete();
       }
     }
 

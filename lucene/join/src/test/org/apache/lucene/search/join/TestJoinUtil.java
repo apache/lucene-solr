@@ -47,11 +47,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
 
+@Slow
 public class TestJoinUtil extends LuceneTestCase {
 
   public void testSimple() throws Exception {
@@ -230,7 +232,7 @@ public class TestJoinUtil extends LuceneTestCase {
   public void testSingleValueRandomJoin() throws Exception {
     int maxIndexIter = _TestUtil.nextInt(random(), 6, 12);
     int maxSearchIter = _TestUtil.nextInt(random(), 13, 26);
-    executeRandomJoin(false, maxIndexIter, maxSearchIter);
+    executeRandomJoin(false, maxIndexIter, maxSearchIter, _TestUtil.nextInt(random(), 87, 764));
   }
 
   @Test
@@ -238,10 +240,10 @@ public class TestJoinUtil extends LuceneTestCase {
   public void testMultiValueRandomJoin() throws Exception {
     int maxIndexIter = _TestUtil.nextInt(random(), 3, 6);
     int maxSearchIter = _TestUtil.nextInt(random(), 6, 12);
-    executeRandomJoin(true, maxIndexIter, maxSearchIter);
+    executeRandomJoin(true, maxIndexIter, maxSearchIter, _TestUtil.nextInt(random(), 11, 57));
   }
 
-  private void executeRandomJoin(boolean multipleValuesPerDocument, int maxIndexIter, int maxSearchIter) throws Exception {
+  private void executeRandomJoin(boolean multipleValuesPerDocument, int maxIndexIter, int maxSearchIter, int numberOfDocumentsToIndex) throws Exception {
     for (int indexIter = 1; indexIter <= maxIndexIter; indexIter++) {
       if (VERBOSE) {
         System.out.println("indexIter=" + indexIter);
@@ -252,7 +254,6 @@ public class TestJoinUtil extends LuceneTestCase {
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy())
       );
-      int numberOfDocumentsToIndex = _TestUtil.nextInt(random(), 87, 764);
       IndexIterationContext context = createContext(numberOfDocumentsToIndex, w, multipleValuesPerDocument);
 
       IndexReader topLevelReader = w.getReader();
@@ -299,7 +300,7 @@ public class TestJoinUtil extends LuceneTestCase {
             topScoreDocCollector.collect(doc);
           }
 
-          public void setNextReader(AtomicReaderContext context) throws IOException {
+          public void setNextReader(AtomicReaderContext context) {
             docBase = context.docBase;
             topScoreDocCollector.setNextReader(context);
           }
@@ -317,12 +318,12 @@ public class TestJoinUtil extends LuceneTestCase {
           System.out.println("expected cardinality:" + expectedResult.cardinality());
           DocIdSetIterator iterator = expectedResult.iterator();
           for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
-            System.out.println(String.format("Expected doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
+            System.out.println(String.format(Locale.ROOT, "Expected doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
           }
           System.out.println("actual cardinality:" + actualResult.cardinality());
           iterator = actualResult.iterator();
           for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
-            System.out.println(String.format("Actual doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
+            System.out.println(String.format(Locale.ROOT, "Actual doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
           }
         }
         assertEquals(expectedResult, actualResult);
@@ -496,7 +497,7 @@ public class TestJoinUtil extends LuceneTestCase {
             reuse = null;
           }
 
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorer scorer) {
             this.scorer = scorer;
           }
 
@@ -528,7 +529,7 @@ public class TestJoinUtil extends LuceneTestCase {
             terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField);
           }
 
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorer scorer) {
             this.scorer = scorer;
           }
 
@@ -587,7 +588,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           public boolean acceptsDocsOutOfOrder() {return false;}
-          public void setScorer(Scorer scorer) throws IOException {}
+          public void setScorer(Scorer scorer) {}
         });
       } else {
         toSearcher.search(new MatchAllDocsQuery(), new Collector() {
@@ -596,7 +597,7 @@ public class TestJoinUtil extends LuceneTestCase {
           private int docBase;
           private final BytesRef spare = new BytesRef();
 
-          public void collect(int doc) throws IOException {
+          public void collect(int doc) {
             JoinScore joinScore = joinValueToJoinScores.get(terms.getTerm(doc, spare));
             if (joinScore == null) {
               return;
@@ -610,7 +611,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           public boolean acceptsDocsOutOfOrder() {return false;}
-          public void setScorer(Scorer scorer) throws IOException {}
+          public void setScorer(Scorer scorer) {}
         });
       }
       queryVals.put(uniqueRandomValue, docToJoinScore);
@@ -625,7 +626,7 @@ public class TestJoinUtil extends LuceneTestCase {
   private TopDocs createExpectedTopDocs(String queryValue,
                                         final boolean from,
                                         final ScoreMode scoreMode,
-                                        IndexIterationContext context) throws IOException {
+                                        IndexIterationContext context) {
 
     Map<Integer, JoinScore> hitsToJoinScores;
     if (from) {

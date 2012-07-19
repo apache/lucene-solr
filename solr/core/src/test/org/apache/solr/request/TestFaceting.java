@@ -52,7 +52,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   String t(int tnum) {
-    return String.format(Locale.US, "%08d", tnum);
+    return String.format(Locale.ROOT, "%08d", tnum);
   }
   
   void createIndex(int nTerms) {

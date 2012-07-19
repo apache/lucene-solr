@@ -128,13 +128,13 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   }
   
   private void close() throws IOException {
+    IOUtils.close(reader);
     if (tempInput != null) {
       tempInput.delete();
     }
     if (tempSorted != null) {
       tempSorted.delete();
     }
-    IOUtils.close(reader);
   }
   
   private final static class BytesOnlyComparator implements Comparator<BytesRef> {

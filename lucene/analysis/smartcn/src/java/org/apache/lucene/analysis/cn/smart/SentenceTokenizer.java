@@ -117,13 +117,13 @@ public final class SentenceTokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
+  public void setReader(Reader input) throws IOException {
+    super.setReader(input);
     reset();
   }
 
   @Override
-  public void end() throws IOException {
+  public void end() {
     // set final offset
     final int finalOffset = correctOffset(tokenEnd);
     offsetAtt.setOffset(finalOffset, finalOffset);

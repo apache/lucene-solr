@@ -33,6 +33,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -83,7 +84,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
       InputStream inputStream = (InputStream) obj;
       try {
         StringWriter strWriter = new StringWriter();
-        IOUtils.copy(inputStream,strWriter);
+        IOUtils.copy(new InputStreamReader(inputStream, "UTF-8"),strWriter);
         return strWriter.toString();
       } finally {
         IOUtils.closeQuietly(inputStream);

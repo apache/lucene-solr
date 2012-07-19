@@ -104,9 +104,6 @@ public class CloudSolrServer extends SolrServer {
    * Connect to the zookeeper ensemble.
    * This is an optional method that may be used to force a connect before any other requests are sent.
    *
-   * @throws IOException
-   * @throws TimeoutException
-   * @throws InterruptedException
    */
   public void connect() {
     if (zkStateReader == null) {

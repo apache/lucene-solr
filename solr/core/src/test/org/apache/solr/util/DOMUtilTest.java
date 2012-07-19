@@ -19,7 +19,6 @@ package org.apache.solr.util;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.util.DOMUtilTestBase;
 
 public class DOMUtilTest extends DOMUtilTestBase {
   
@@ -49,7 +48,7 @@ public class DOMUtilTest extends DOMUtilTestBase {
     assertTypeAndValue( namedList, "Boolean", false );
   }
 
-  private void assertTypeAndValue( NamedList<Object> namedList, String key, Object value ) throws Exception {
+  private void assertTypeAndValue( NamedList<Object> namedList, String key, Object value ) {
     Object v = namedList.get( key );
     assertNotNull( v );
     assertEquals( key, v.getClass().getSimpleName() );

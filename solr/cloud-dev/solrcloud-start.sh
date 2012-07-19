@@ -22,7 +22,7 @@ cp -r -f example example4
 cp -r -f example example5
 cp -r -f example example6
 
-java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkController 127.0.0.1:9983 example/solr 8983
+java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkCLI -cmd bootstrap -zkhost 127.0.0.1:9983 -solrhome example/solr -runzk 8983
 
 cd example
 java -DzkRun -DnumShards=2 -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example.log 2>&1 &

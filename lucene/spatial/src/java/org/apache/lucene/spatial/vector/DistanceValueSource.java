@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.vector;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,42 +17,36 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.vector;
-
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.simple.PointImpl;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldCache.DoubleParser;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.Map;
 
 /**
- *
  * An implementation of the Lucene ValueSource model to support spatial relevance ranking.
  *
+ * @lucene.internal
  */
 public class DistanceValueSource extends ValueSource {
 
-  private final TwoDoublesFieldInfo fields;
-  private final DistanceCalculator calculator;
+  private TwoDoublesStrategy strategy;
   private final Point from;
-  private final DoubleParser parser;
+  private final DistanceCalculator calculator;
 
   /**
    * Constructor.
    */
-  public DistanceValueSource(Point from, DistanceCalculator calc, TwoDoublesFieldInfo fields, DoubleParser parser) {
+  public DistanceValueSource(TwoDoublesStrategy strategy, Point from, DistanceCalculator calc) {
+    this.strategy = strategy;
     this.from = from;
-    this.fields = fields;
     this.calculator = calc;
-    this.parser = parser;
   }
 
   /**
@@ -69,10 +65,10 @@ public class DistanceValueSource extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     AtomicReader reader = readerContext.reader();
 
-    final double[] ptX = FieldCache.DEFAULT.getDoubles(reader, fields.getFieldNameX(), true);
-    final double[] ptY = FieldCache.DEFAULT.getDoubles(reader, fields.getFieldNameY(), true);
-    final Bits validX =  FieldCache.DEFAULT.getDocsWithField(reader, fields.getFieldNameX());
-    final Bits validY =  FieldCache.DEFAULT.getDocsWithField(reader, fields.getFieldNameY());
+    final double[] ptX = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameX(), true);
+    final double[] ptY = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameY(), true);
+    final Bits validX =  FieldCache.DEFAULT.getDocsWithField(reader, strategy.getFieldNameX());
+    final Bits validY =  FieldCache.DEFAULT.getDocsWithField(reader, strategy.getFieldNameY());
 
     return new FunctionValues() {
       @Override
@@ -84,8 +80,7 @@ public class DistanceValueSource extends ValueSource {
       public double doubleVal(int doc) {
         // make sure it has minX and area
         if (validX.get(doc) && validY.get(doc)) {
-          PointImpl pt = new PointImpl( ptX[doc],  ptY[doc] );
-          return calculator.distance(from, pt);
+          return calculator.distance(from, ptX[doc], ptY[doc]);
         }
         return 0;
       }
@@ -110,7 +105,7 @@ public class DistanceValueSource extends ValueSource {
     DistanceValueSource that = (DistanceValueSource) o;
 
     if (calculator != null ? !calculator.equals(that.calculator) : that.calculator != null) return false;
-    if (fields != null ? !fields.equals(that.fields) : that.fields != null) return false;
+    if (strategy != null ? !strategy.equals(that.strategy) : that.strategy != null) return false;
     if (from != null ? !from.equals(that.from) : that.from != null) return false;
 
     return true;
@@ -118,7 +113,7 @@ public class DistanceValueSource extends ValueSource {
 
   @Override
   public int hashCode() {
-    int result = fields != null ? fields.hashCode() : 0;
+    int result = strategy != null ? strategy.hashCode() : 0;
     result = 31 * result + (calculator != null ? calculator.hashCode() : 0);
     result = 31 * result + (from != null ? from.hashCode() : 0);
     return result;

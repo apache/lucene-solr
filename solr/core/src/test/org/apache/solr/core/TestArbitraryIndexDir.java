@@ -49,12 +49,12 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
   }
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {
@@ -71,7 +71,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         + System.getProperty("file.separator") + "data");
     dataDir.mkdirs();
 
-    solrConfig = TestHarness.createConfig("solrconfig.xml");
+    solrConfig = TestHarness.createConfig(getSolrHome(), "solrconfig.xml");
     h = new TestHarness( dataDir.getAbsolutePath(),
         solrConfig,
         "schema12.xml");

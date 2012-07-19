@@ -42,6 +42,15 @@ public final class PositiveIntOutputs extends Outputs<Long> {
     this.doShare = doShare;
   }
 
+  /** Returns the instance of PositiveIntOutputs. */
+  public static PositiveIntOutputs getSingleton() {
+    return getSingleton(true);
+  }
+
+  /** Expert: pass doShare=false to disable output sharing.
+   *  In some cases this may result in a smaller FST,
+   *  however it will also break methods like {@link
+   *  Util#getByOutput} and {@link Util#shortestPaths}. */
   public static PositiveIntOutputs getSingleton(boolean doShare) {
     return doShare ? singletonShare : singletonNoShare;
   }

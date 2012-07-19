@@ -20,8 +20,11 @@ package org.apache.lucene.analysis.ja;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -60,6 +63,19 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
       new int[] { 0, 4,  9, 14, 20, 25 },
       new int[] { 3, 8, 13, 19, 24, 29 });
   }
+  
+  public void testKeyword() throws IOException {
+    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("コーヒー"), false);
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenStream sink = new KeywordMarkerFilter(source, exclusionSet);
+        return new TokenStreamComponents(source, new JapaneseKatakanaStemFilter(sink));
+      }
+    };
+    checkOneTerm(a, "コーヒー", "コーヒー");
+  }
 
   public void testUnsupportedHalfWidthVariants() throws IOException {
     // The below result is expected since only full-width katakana is supported
@@ -67,7 +83,7 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testRandomData() throws IOException {
-    checkRandomData(random(), analyzer, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

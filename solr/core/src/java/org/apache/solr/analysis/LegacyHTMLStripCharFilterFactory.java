@@ -18,7 +18,8 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.CharStream;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
@@ -52,7 +53,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 @Deprecated
 public class LegacyHTMLStripCharFilterFactory extends CharFilterFactory {
 
-  public LegacyHTMLStripCharFilter create(CharStream input) {
+  public LegacyHTMLStripCharFilter create(Reader input) {
     return new LegacyHTMLStripCharFilter(input);
   }
 

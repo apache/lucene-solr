@@ -85,7 +85,7 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
       return new VariableIntBlockIndexInput(in) {
 
         @Override
-        protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
+        protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) {
           return new BlockReader() {
             public void seek(long pos) {}
             public int readBlock() throws IOException {

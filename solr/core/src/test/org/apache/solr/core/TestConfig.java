@@ -23,6 +23,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexConfig;
+import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Node;
@@ -109,14 +110,21 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     //System.out.println( handler.getHiddenFiles() );
     // should not contain: <gettableFiles>solrconfig.xml scheam.xml admin-extra.html</gettableFiles>
-    assertFalse(handler.getHiddenFiles().contains("scheam.xml".toUpperCase(Locale.ENGLISH)));
+    assertFalse(handler.getHiddenFiles().contains("scheam.xml".toUpperCase(Locale.ROOT)));
     assertTrue(handler.getHiddenFiles().contains("PROTWORDS.TXT"));
   }
 
   @Test
   public void testTermIndexInterval() throws Exception {
-    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getSolrCoreState().getIndexWriter(h.getCore());
-    int interval = writer.getConfig().getTermIndexInterval();
+    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2) h.getCore()
+        .getUpdateHandler()).getSolrCoreState().getIndexWriter(h.getCore());
+    int interval = 0;
+    try {
+      IndexWriter writer = iw.get();
+      interval = writer.getConfig().getTermIndexInterval();
+    } finally {
+      iw.decref();
+    }
     assertEquals(256, interval);
   }
 
@@ -130,7 +138,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   // If defaults change, add test methods to cover each version
   @Test
   public void testDefaults() throws Exception {
-    SolrConfig sc = new SolrConfig("solrconfig-basic.xml");
+    SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
     assertTrue("default ramBufferSizeMB should be 32", sic.ramBufferSizeMB == 32);
     assertTrue("default useCompoundFile should be false", sic.useCompoundFile == false);

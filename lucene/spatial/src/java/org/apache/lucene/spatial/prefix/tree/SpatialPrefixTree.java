@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix.tree;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,8 +17,6 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix.tree;
-
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
@@ -32,6 +32,8 @@ import java.util.List;
  * variable precision.  Each string corresponds to a spatial region.
  *
  * Implementations of this class should be thread-safe and immutable once initialized.
+ *
+ * @lucene.experimental
  */
 public abstract class SpatialPrefixTree {
 
@@ -61,10 +63,9 @@ public abstract class SpatialPrefixTree {
   }
 
   /**
-   * See {@link com.spatial4j.core.query.SpatialArgs#getDistPrecision()}.
+   * See {@link org.apache.lucene.spatial.query.SpatialArgs#getDistPrecision()}.
    * A grid level looked up via {@link #getLevelForDistance(double)} is returned.
    *
-   * @param shape
    * @param precision 0-0.5
    * @return 1-maxLevels
    */

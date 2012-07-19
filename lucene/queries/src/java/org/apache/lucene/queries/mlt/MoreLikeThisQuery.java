@@ -41,7 +41,7 @@ public class MoreLikeThisQuery extends Query {
   private String likeText;
   private String[] moreLikeFields;
   private Analyzer analyzer;
-  private String fieldName;
+  private final String fieldName;
   private float percentTermsToMatch = 0.3f;
   private int minTermFrequency = 1;
   private int maxQueryTerms = 5;
@@ -49,7 +49,7 @@ public class MoreLikeThisQuery extends Query {
   private int minDocFreq = -1;
 
   /**
-   * @param moreLikeFields
+   * @param moreLikeFields fields used for similarity measure
    */
   public MoreLikeThisQuery(String likeText, String[] moreLikeFields, Analyzer analyzer, String fieldName) {
     this.likeText = likeText;

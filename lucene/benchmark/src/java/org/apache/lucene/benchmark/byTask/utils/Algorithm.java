@@ -22,6 +22,7 @@ import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
@@ -159,7 +160,7 @@ public class Algorithm {
                 } else {
                   stok.nextToken();
                   if (stok.ttype!=StreamTokenizer.TT_WORD) throw new Exception("expected rate unit: 'min' or 'sec' - "+stok.toString());
-                  String unit = stok.sval.toLowerCase();
+                  String unit = stok.sval.toLowerCase(Locale.ROOT);
                   if ("min".equals(unit)) {
                     ((TaskSequence)prevTask).setRate((int)stok.nval,true); // set rate per min
                   } else if ("sec".equals(unit)) {

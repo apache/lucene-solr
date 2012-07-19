@@ -31,6 +31,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.apache.lucene.util._TestUtil;
+
 /**
  * A test case for the several HTTP cache headers emitted by Solr
  */
@@ -54,6 +56,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     HttpResponse response = getClient().execute(m);
     assertEquals(200, response.getStatusLine().getStatusCode());
     checkVetoHeaders(response, true);
+    f.delete();
   }
   
   @Test
@@ -243,8 +246,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = File.createTempFile(getClass().getName(),"csv");
-      f.deleteOnExit();
+      File f = _TestUtil.getTempDir("cachetest_csv");
       Writer out = new OutputStreamWriter(new FileOutputStream(f),
           charset);
       out.write(contents);

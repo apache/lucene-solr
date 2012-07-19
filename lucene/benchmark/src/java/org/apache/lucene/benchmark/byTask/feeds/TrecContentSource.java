@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.text.DateFormat;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
@@ -33,8 +32,6 @@ import java.util.Locale;
 import org.apache.lucene.benchmark.byTask.feeds.TrecDocParser.ParsePathType;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
-import org.apache.lucene.benchmark.byTask.utils.StringBuilderReader;
-import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * Implements a {@link ContentSource} over the TREC collection.
@@ -57,7 +54,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 public class TrecContentSource extends ContentSource {
 
-  private static final class DateFormatInfo {
+  static final class DateFormatInfo {
     DateFormat[] dfs;
     ParsePosition pos;
   }
@@ -83,13 +80,10 @@ public class TrecContentSource extends ContentSource {
   };
 
   private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<DateFormatInfo>();
-  private ThreadLocal<StringBuilderReader> trecDocReader = new ThreadLocal<StringBuilderReader>();
   private ThreadLocal<StringBuilder> trecDocBuffer = new ThreadLocal<StringBuilder>();
   private File dataDir = null;
   private ArrayList<File> inputFiles = new ArrayList<File>();
   private int nextFile = 0;
-  private int rawDocSize = 0;
-
   // Use to synchronize threads on reading from the TREC documents.
   private Object lock = new Object();
 
@@ -108,7 +102,7 @@ public class TrecContentSource extends ContentSource {
       dfi = new DateFormatInfo();
       dfi.dfs = new SimpleDateFormat[DATE_FORMATS.length];
       for (int i = 0; i < dfi.dfs.length; i++) {
-        dfi.dfs[i] = new SimpleDateFormat(DATE_FORMATS[i], Locale.US);
+        dfi.dfs[i] = new SimpleDateFormat(DATE_FORMATS[i], Locale.ROOT);
         dfi.dfs[i].setLenient(true);
       }
       dfi.pos = new ParsePosition(0);
@@ -126,17 +120,6 @@ public class TrecContentSource extends ContentSource {
     return sb;
   }
   
-  Reader getTrecDocReader(StringBuilder docBuffer) {
-    StringBuilderReader r = trecDocReader.get();
-    if (r == null) {
-      r = new StringBuilderReader(docBuffer);
-      trecDocReader.set(r);
-    } else {
-      r.set(docBuffer);
-    }
-    return r;
-  }
-
   HTMLParser getHtmlParser() {
     return htmlParser;
   }
@@ -161,7 +144,7 @@ public class TrecContentSource extends ContentSource {
         continue;
       }
 
-      rawDocSize += line.length();
+      line.length();
 
       if (lineStart!=null && line.startsWith(lineStart)) {
         if (collectMatchLine) {
@@ -287,12 +270,8 @@ public class TrecContentSource extends ContentSource {
 
     // This code segment relies on HtmlParser being thread safe. When we get 
     // here, everything else is already private to that thread, so we're safe.
-    try {
-      docData = trecDocParser.parse(docData, name, this, docBuf, parsedPathType);
-      addItem();
-    } catch (InterruptedException ie) {
-      throw new ThreadInterruptedException(ie);
-    }
+    docData = trecDocParser.parse(docData, name, this, docBuf, parsedPathType);
+    addItem();
 
     return docData;
   }

@@ -57,6 +57,7 @@ package org.egothor.stemmer;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -200,9 +201,9 @@ public class MultiTrie extends Trie {
    * @param prefix the desired prefix
    */
   @Override
-  public void printInfo(CharSequence prefix) {
+  public void printInfo(PrintStream out, CharSequence prefix) {
     int c = 0;
     for (Trie trie : tries)
-      trie.printInfo(prefix + "[" + (++c) + "] ");
+      trie.printInfo(out, prefix + "[" + (++c) + "] ");
   }
 }

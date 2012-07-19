@@ -289,7 +289,7 @@ public class KStemmer {
         entry = new DictEntry(exceptionWords[i], true);
         d.put(exceptionWords[i], entry);
       } else {
-        System.out.println("Warning: Entry [" + exceptionWords[i]
+        throw new RuntimeException("Warning: Entry [" + exceptionWords[i]
             + "] already in dictionary 1");
       }
     }
@@ -299,7 +299,7 @@ public class KStemmer {
         entry = new DictEntry(directConflations[i][1], false);
         d.put(directConflations[i][0], entry);
       } else {
-        System.out.println("Warning: Entry [" + directConflations[i][0]
+        throw new RuntimeException("Warning: Entry [" + directConflations[i][0]
             + "] already in dictionary 2");
       }
     }
@@ -309,7 +309,7 @@ public class KStemmer {
         entry = new DictEntry(countryNationality[i][1], false);
         d.put(countryNationality[i][0], entry);
       } else {
-        System.out.println("Warning: Entry [" + countryNationality[i][0]
+        throw new RuntimeException("Warning: Entry [" + countryNationality[i][0]
             + "] already in dictionary 3");
       }
     }
@@ -323,7 +323,7 @@ public class KStemmer {
       if (!d.containsKey(array[i])) {
         d.put(array[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + array[i]
+        throw new RuntimeException("Warning: Entry [" + array[i]
             + "] already in dictionary 4");
       }
     }
@@ -333,7 +333,7 @@ public class KStemmer {
       if (!d.containsKey(array[i])) {
         d.put(array[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + array[i]
+        throw new RuntimeException("Warning: Entry [" + array[i]
             + "] already in dictionary 4");
       }
     }
@@ -343,7 +343,7 @@ public class KStemmer {
       if (!d.containsKey(array[i])) {
         d.put(array[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + array[i]
+        throw new RuntimeException("Warning: Entry [" + array[i]
             + "] already in dictionary 4");
       }
     }
@@ -353,7 +353,7 @@ public class KStemmer {
       if (!d.containsKey(array[i])) {
         d.put(array[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + array[i]
+        throw new RuntimeException("Warning: Entry [" + array[i]
             + "] already in dictionary 4");
       }
     }
@@ -363,7 +363,7 @@ public class KStemmer {
       if (!d.containsKey(array[i])) {
         d.put(array[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + array[i]
+        throw new RuntimeException("Warning: Entry [" + array[i]
             + "] already in dictionary 4");
       }
     }
@@ -373,7 +373,7 @@ public class KStemmer {
       if (!d.containsKey(array[i])) {
         d.put(array[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + array[i]
+        throw new RuntimeException("Warning: Entry [" + array[i]
             + "] already in dictionary 4");
       }
     }
@@ -383,7 +383,7 @@ public class KStemmer {
       if (!d.containsKey(array[i])) {
         d.put(array[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + array[i]
+        throw new RuntimeException("Warning: Entry [" + array[i]
             + "] already in dictionary 4");
       }
     }
@@ -392,7 +392,7 @@ public class KStemmer {
       if (!d.containsKey(KStemData8.data[i])) {
         d.put(KStemData8.data[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + KStemData8.data[i]
+        throw new RuntimeException("Warning: Entry [" + KStemData8.data[i]
             + "] already in dictionary 4");
       }
     }
@@ -401,7 +401,7 @@ public class KStemmer {
       if (!d.containsKey(supplementDict[i])) {
         d.put(supplementDict[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + supplementDict[i]
+        throw new RuntimeException("Warning: Entry [" + supplementDict[i]
             + "] already in dictionary 5");
       }
     }
@@ -410,7 +410,7 @@ public class KStemmer {
       if (!d.containsKey(properNouns[i])) {
         d.put(properNouns[i], defaultEntry);
       } else {
-        System.out.println("Warning: Entry [" + properNouns[i]
+        throw new RuntimeException("Warning: Entry [" + properNouns[i]
             + "] already in dictionary 6");
       }
     }

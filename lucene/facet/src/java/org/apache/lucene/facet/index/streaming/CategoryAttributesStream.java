@@ -1,6 +1,5 @@
 package org.apache.lucene.facet.index.streaming;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -59,7 +58,7 @@ public class CategoryAttributesStream extends TokenStream {
   }
 
   @Override
-  public final boolean incrementToken() throws IOException {
+  public final boolean incrementToken() {
     if (iterator == null) {
       if (iterable == null) {
         return false;

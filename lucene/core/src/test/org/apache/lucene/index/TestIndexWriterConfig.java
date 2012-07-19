@@ -25,6 +25,8 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -324,6 +326,32 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(LogDocMergePolicy.class, conf.getMergePolicy().getClass());
     conf.setMergePolicy(null);
     assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
+  }
+
+  public void testLiveChangeToCFS() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+
+    // Start false:
+    ((LogMergePolicy) iwc.getMergePolicy()).setUseCompoundFile(false); 
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    // Change to true:
+    ((LogMergePolicy) w.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
+    ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundFile(true);
+
+    Document doc = new Document();
+    doc.add(newStringField("field", "foo", Store.NO));
+    w.addDocument(doc);
+    w.commit();
+
+    for(String file : dir.listAll()) {
+      // frq file should be stuck into CFS
+      assertFalse(file.endsWith(".frq"));
+    }
+    w.close();
+    dir.close();
   }
 
 }

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
@@ -39,6 +40,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Slow
 public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
@@ -66,15 +68,13 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   private Initializer init2;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
   
   @AfterClass
   public static void afterClass() throws InterruptedException {
     System.clearProperty("solrcloud.skip.autorecovery");
-    // wait just a bit for any zk client threads to outlast timeout
-    Thread.sleep(2000);
   }
 
   @Override

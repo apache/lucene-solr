@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.noggit.JSONParser;
 import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
@@ -181,7 +182,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     private JSONParser parser;
     
     public OpenExchangeRates(InputStream ratesStream) throws IOException {
-      parser = new JSONParser(new InputStreamReader(ratesStream));
+      parser = new JSONParser(new InputStreamReader(ratesStream, IOUtils.CHARSET_UTF_8));
       rates = new HashMap<String, Double>();
       
       int ev;

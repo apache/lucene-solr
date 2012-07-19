@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -135,7 +136,7 @@ public class Test2BTerms extends LuceneTestCase {
     }
   }
 
-  @Slow
+  @Ignore("Very slow. Enable manually by removing @Ignore.")
   public void test2BTerms() throws IOException {
 
     System.out.println("Starting Test2B");

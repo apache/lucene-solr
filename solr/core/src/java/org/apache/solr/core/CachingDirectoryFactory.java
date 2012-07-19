@@ -19,7 +19,9 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -54,6 +56,46 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   
   protected Map<Directory,CacheValue> byDirectoryCache = new HashMap<Directory,CacheValue>();
   
+  protected Map<Directory,List<CloseListener>> closeListeners = new HashMap<Directory,List<CloseListener>>();
+  
+  public interface CloseListener {
+    public void onClose();
+  }
+  
+  @Override
+  public void addCloseListener(Directory dir, CloseListener closeListener) {
+    synchronized (this) {
+      if (!byDirectoryCache.containsKey(dir)) {
+        throw new IllegalArgumentException("Unknown directory: " + dir
+            + " " + byDirectoryCache);
+      }
+      List<CloseListener> listeners = closeListeners.get(dir);
+      if (listeners == null) {
+        listeners = new ArrayList<CloseListener>();
+        closeListeners.put(dir, listeners);
+      }
+      listeners.add(closeListener);
+      
+      closeListeners.put(dir, listeners);
+    }
+  }
+  
+  @Override
+  public void doneWithDirectory(Directory directory) throws IOException {
+    synchronized (this) {
+      CacheValue cacheValue = byDirectoryCache.get(directory);
+      if (cacheValue == null) {
+        throw new IllegalArgumentException("Unknown directory: " + directory
+            + " " + byDirectoryCache);
+      }
+      cacheValue.doneWithDir = true;
+      if (cacheValue.refCnt == 0) {
+        cacheValue.refCnt++; // this will go back to 0 in close
+        close(directory);
+      }
+    }
+  }
+  
   /*
    * (non-Javadoc)
    * 
@@ -82,6 +124,13 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         directory.close();
         byDirectoryCache.remove(directory);
         byPathCache.remove(cacheValue.path);
+        List<CloseListener> listeners = closeListeners.remove(directory);
+        if (listeners != null) {
+          for (CloseListener listener : listeners) {
+            listener.onClose();
+          }
+          closeListeners.remove(directory);
+        }
       }
     }
   }
@@ -198,7 +247,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       log.warn("No lockType configured for " + dir + " assuming 'simple'");
       rawLockType = "simple";
     }
-    final String lockType = rawLockType.toLowerCase(Locale.ENGLISH).trim();
+    final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     
     if ("simple".equals(lockType)) {
       // multiple SimpleFSLockFactory instances should be OK

@@ -20,8 +20,12 @@ package org.apache.lucene.analysis.icu.segmentation;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
+import org.apache.lucene.analysis.icu.tokenattributes.ScriptAttribute;
+
+import com.ibm.icu.lang.UScript;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -235,12 +239,26 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);
+  }
+  
+  public void testTokenAttributes() throws Exception {
+    TokenStream ts = a.tokenStream("dummy", new StringReader("This is a test"));
+    ScriptAttribute scriptAtt = ts.addAttribute(ScriptAttribute.class);
+    ts.reset();
+    while (ts.incrementToken()) {
+      assertEquals(UScript.LATIN, scriptAtt.getCode());
+      assertEquals(UScript.getName(UScript.LATIN), scriptAtt.getName());
+      assertEquals(UScript.getShortName(UScript.LATIN), scriptAtt.getShortName());
+      assertTrue(ts.reflectAsString(false).contains("script=Latin"));
+    }
+    ts.end();
+    ts.close();
   }
 }

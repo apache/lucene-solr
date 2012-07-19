@@ -17,13 +17,15 @@ package org.apache.lucene.codecs.pfor;
  * limitations under the License.
  */
 
-import java.util.Collections;
-import java.util.Arrays;
-import java.util.Random;
-import java.nio.IntBuffer;
 import java.nio.ByteBuffer;
-import org.apache.lucene.codecs.pfor.PForUtil;
+import java.nio.IntBuffer;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Random;
+
 import org.apache.lucene.codecs.pfor.ForPostingsFormat;
+import org.apache.lucene.codecs.pfor.PForUtil;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -245,7 +247,7 @@ public class TestPForUtil extends LuceneTestCase {
       return false;
     for (int i=0; i<sza; ++i) {
       if (a[i]!=b[i]) {
-        System.err.println(String.format("! %08x != %08x in %d",a[i],b[i],i));
+        System.err.println(String.format(Locale.ENGLISH, "! %08x != %08x in %d",a[i],b[i],i));
         return false;
       }
     }
@@ -275,17 +277,17 @@ public class TestPForUtil extends LuceneTestCase {
     for ( int i=0; i<sz; i++ ) {
       if (i>0 && i%8 == 0)
         hex.append("\n");
-      hex.append(String.format("%08x ",raw[i]));
+      hex.append(String.format(Locale.ENGLISH, "%08x ",raw[i]));
     }
     return hex.toString();
   }
   static void eprintln(String format, Object... args) {
-    System.err.println(String.format(format,args)); 
+    System.err.println(String.format(Locale.ENGLISH, format,args)); 
   }
   static void println(String format, Object... args) {
-    System.out.println(String.format(format,args)); 
+    System.out.println(String.format(Locale.ENGLISH, format,args)); 
   }
   static void print(String format, Object... args) {
-    System.out.print(String.format(format,args)); 
+    System.out.print(String.format(Locale.ENGLISH, format,args)); 
   }
 }

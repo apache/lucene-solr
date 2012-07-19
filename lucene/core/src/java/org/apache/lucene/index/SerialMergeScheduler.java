@@ -27,8 +27,7 @@ public class SerialMergeScheduler extends MergeScheduler {
    * "synchronized" so that even if the application is using
    * multiple threads, only one merge may run at a time. */
   @Override
-  synchronized public void merge(IndexWriter writer)
-    throws CorruptIndexException, IOException {
+  synchronized public void merge(IndexWriter writer) throws IOException {
 
     while(true) {
       MergePolicy.OneMerge merge = writer.getNextMerge();

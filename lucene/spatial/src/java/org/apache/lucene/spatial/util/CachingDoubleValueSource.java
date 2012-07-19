@@ -25,6 +25,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @lucene.internal
+ */
 public class CachingDoubleValueSource extends ValueSource {
 
   final ValueSource source;

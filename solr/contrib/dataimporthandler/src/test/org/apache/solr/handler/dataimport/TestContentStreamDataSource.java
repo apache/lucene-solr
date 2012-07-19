@@ -40,7 +40,7 @@ import java.util.List;
  * @since solr 1.4
  */
 public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCase {
-  private static final String CONF_DIR = "dih/solr/conf/";
+  private static final String CONF_DIR = "dih/solr/collection1/conf/";
   SolrInstance instance = null;
   JettySolrRunner jetty;
 
@@ -151,8 +151,8 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
 
 
       homeDir = new File(home, "inst");
-      dataDir = new File(homeDir, "data");
-      confDir = new File(homeDir, "conf");
+      dataDir = new File(homeDir + "/collection1", "data");
+      confDir = new File(homeDir + "/collection1", "conf");
 
       homeDir.mkdirs();
       dataDir.mkdirs();

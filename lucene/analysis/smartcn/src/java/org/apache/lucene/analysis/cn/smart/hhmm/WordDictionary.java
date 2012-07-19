@@ -145,14 +145,9 @@ class WordDictionary extends AbstractDictionary {
     try {
       loadFromObjectInputStream(new FileInputStream(serialObj));
       return true;
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ClassNotFoundException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-    return false;
   }
 
   private void loadFromObjectInputStream(InputStream serialObjectInputStream)
@@ -190,8 +185,7 @@ class WordDictionary extends AbstractDictionary {
    * @throws IOException
    * @throws UnsupportedEncodingException
    */
-  private int loadMainDataFromFile(String dctFilePath)
-      throws FileNotFoundException, IOException, UnsupportedEncodingException {
+  private int loadMainDataFromFile(String dctFilePath) throws IOException {
     int i, cnt, length, total = 0;
     // The file only counted 6763 Chinese characters plus 5 reserved slots 3756~3760.
     // The 3756th is used (as a header) to store information.

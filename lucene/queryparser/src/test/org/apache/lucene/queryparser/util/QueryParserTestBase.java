@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -581,18 +582,20 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   
   /** for testing DateTools support */
   private String getDate(String s, DateTools.Resolution resolution) throws Exception {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+    // we use the default Locale since LuceneTestCase randomizes it
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
     return getDate(df.parse(s), resolution);      
   }
   
   /** for testing DateTools support */
-  private String getDate(Date d, DateTools.Resolution resolution) throws Exception {
+  private String getDate(Date d, DateTools.Resolution resolution) {
      return DateTools.dateToString(d, resolution);
   }
   
   private String getLocalizedDate(int year, int month, int day) {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    Calendar calendar = new GregorianCalendar();
+    // we use the default Locale/TZ since LuceneTestCase randomizes it
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
+    Calendar calendar = new GregorianCalendar(TimeZone.getDefault(), Locale.getDefault());
     calendar.clear();
     calendar.set(year, month, day);
     calendar.set(Calendar.HOUR_OF_DAY, 23);
@@ -605,7 +608,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   public void testDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1);
     String endDate = getLocalizedDate(2002, 1, 4);
-    Calendar endDateExpected = new GregorianCalendar();
+    // we use the default Locale/TZ since LuceneTestCase randomizes it
+    Calendar endDateExpected = new GregorianCalendar(TimeZone.getDefault(), Locale.getDefault());
     endDateExpected.clear();
     endDateExpected.set(2002, 1, 4, 23, 59, 59);
     endDateExpected.set(Calendar.MILLISECOND, 999);
@@ -936,13 +940,13 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     final int[] type = new int[1];
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
       @Override
-      protected Query getWildcardQuery(String field, String termStr) throws ParseException {
+      protected Query getWildcardQuery(String field, String termStr) {
         // override error checking of superclass
         type[0]=1;
         return new TermQuery(new Term(field,termStr));
       }
       @Override
-      protected Query getPrefixQuery(String field, String termStr) throws ParseException {
+      protected Query getPrefixQuery(String field, String termStr) {
         // override error checking of superclass
         type[0]=2;        
         return new TermQuery(new Term(field,termStr));

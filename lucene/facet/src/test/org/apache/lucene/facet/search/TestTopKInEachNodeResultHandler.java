@@ -8,7 +8,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -321,8 +320,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
   }
 
   private void prvt_add(DefaultFacetIndexingParams iParams, RandomIndexWriter iw,
-                    TaxonomyWriter tw, String... strings) throws IOException,
-      CorruptIndexException {
+                    TaxonomyWriter tw, String... strings) throws IOException {
     ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();
     CategoryPath cp = new CategoryPath(strings);
     cps.add(cp);

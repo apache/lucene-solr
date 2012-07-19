@@ -32,7 +32,7 @@ public class GenerateJFlexSupplementaryMacros {
   private static final UnicodeSet BMP = new UnicodeSet("[\u0000-\uFFFF]");
   private static final String NL = System.getProperty("line.separator");
   private static final DateFormat DATE_FORMAT = DateFormat.getDateTimeInstance
-    (DateFormat.FULL, DateFormat.FULL, Locale.US);
+    (DateFormat.FULL, DateFormat.FULL, Locale.ROOT);
   static {
     DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
   }
@@ -55,7 +55,7 @@ public class GenerateJFlexSupplementaryMacros {
       + " */" + NL + NL;
     
   
-  public static void main(String args[]) throws Exception {
+  public static void main(String args[]) {
     outputHeader();
     outputMacro("ALetterSupp",         "[:WordBreak=ALetter:]");
     outputMacro("FormatSupp",          "[:WordBreak=Format:]");

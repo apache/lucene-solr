@@ -18,6 +18,7 @@
 package org.apache.solr.util;
 
 import java.text.NumberFormat;
+import java.util.Locale;
 
 import org.apache.lucene.util.BytesRef;
 
@@ -27,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
 public class NumberUtils {
 
   public static String readableSize(long size) {
-    NumberFormat formatter = NumberFormat.getNumberInstance();
+    NumberFormat formatter = NumberFormat.getNumberInstance(Locale.ROOT);
     formatter.setMaximumFractionDigits(2);
     if (size / (1024 * 1024 * 1024) > 0) {
       return formatter.format(size * 1.0d / (1024 * 1024 * 1024)) + " GB";

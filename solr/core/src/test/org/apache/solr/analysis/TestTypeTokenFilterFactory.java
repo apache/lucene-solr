@@ -35,7 +35,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamTestCase {
 
   @Test
   public void testInform() throws Exception {
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     TypeTokenFilterFactory factory = new TypeTokenFilterFactory();
     Map<String, String> args = new HashMap<String, String>();
     args.put("types", "stoptypes-1.txt");

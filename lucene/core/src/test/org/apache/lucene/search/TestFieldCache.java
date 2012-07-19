@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -117,10 +118,10 @@ public class TestFieldCache extends LuceneTestCase {
     try {
       FieldCache cache = FieldCache.DEFAULT;
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-      cache.setInfoStream(new PrintStream(bos));
+      cache.setInfoStream(new PrintStream(bos, false, "UTF-8"));
       cache.getDoubles(reader, "theDouble", false);
       cache.getFloats(reader, "theDouble", false);
-      assertTrue(bos.toString().indexOf("WARNING") != -1);
+      assertTrue(bos.toString("UTF-8").indexOf("WARNING") != -1);
     } finally {
       FieldCache.DEFAULT.purgeAllCaches();
     }
@@ -261,7 +262,7 @@ public class TestFieldCache extends LuceneTestCase {
         if (chunk == 0) {
           for (int ord = 0; ord < values.size(); ord++) {
             BytesRef term = values.get(ord);
-            assertNull(String.format("Document[%d] misses field must be null. Has value %s for ord %d", i, term, ord), term);
+            assertNull(String.format(Locale.ROOT, "Document[%d] misses field must be null. Has value %s for ord %d", i, term, ord), term);
           }
           break;
         }
@@ -275,7 +276,7 @@ public class TestFieldCache extends LuceneTestCase {
               reuse = termOrds.lookup(i, reuse);
               reuse.read(buffer);
           }
-          assertTrue(String.format("Expected value %s for doc %d and ord %d, but was %s", expected, i, idx, actual), expected.equals(actual));
+          assertTrue(String.format(Locale.ROOT, "Expected value %s for doc %d and ord %d, but was %s", expected, i, idx, actual), expected.equals(actual));
         }
 
         if (chunk <= buffer.length) {

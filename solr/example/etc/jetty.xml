@@ -87,6 +87,32 @@
       </New>
     </Set>
     
+    <!-- =========================================================== -->
+    <!-- Configure Request Log                                       -->
+    <!-- =========================================================== -->
+    <!-- 
+    <Ref id="Handlers">
+      <Call name="addHandler">
+        <Arg>
+          <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler">
+            <Set name="requestLog">
+              <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
+                <Set name="filename">
+                   logs/request.yyyy_mm_dd.log
+                </Set>
+                <Set name="filenameDateFormat">yyyy_mm_dd</Set>
+                <Set name="retainDays">90</Set>
+                <Set name="append">true</Set>
+                <Set name="extended">false</Set>
+                <Set name="logCookies">false</Set>
+                <Set name="LogTimeZone">UTC</Set>
+              </New>
+            </Set>
+          </New>
+        </Arg>
+      </Call>
+    </Ref>
+    -->
 
     <!-- =========================================================== -->
     <!-- extra options                                               -->
@@ -134,17 +160,14 @@
     </Call>
     
     <Ref id="DeploymentManager">
-          <Call id="webappprovider" name="addAppProvider">
-            <Arg>
-              <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-                <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps</Set>
-                <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
-                <Set name="scanInterval">0</Set>
-                <Set name="contextXmlDir"><Property name="jetty.home" default="." />/contexts</Set>
-		<Set name="extractWars">true</Set>
-              </New>
-            </Arg>
-          </Call>
+      <Call name="addAppProvider">
+        <Arg>
+          <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
+            <Set name="monitoredDirName"><SystemProperty name="jetty.home" default="."/>/contexts</Set>
+            <Set name="scanInterval">0</Set>
+          </New>
+        </Arg>
+      </Call>
     </Ref>
 
 </Configure>

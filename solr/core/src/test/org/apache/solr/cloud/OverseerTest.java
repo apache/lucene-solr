@@ -32,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
@@ -39,6 +42,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -46,7 +50,9 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.xml.sax.SAXException;
 
+@Slow
 public class OverseerTest extends SolrTestCaseJ4 {
 
   static final int TIMEOUT = 10000;
@@ -202,7 +208,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             }
           });
 
-      System.setProperty("bootstrap_confdir", getFile("solr/conf")
+      System.setProperty("bootstrap_confdir", getFile("solr/collection1/conf")
           .getAbsolutePath());
 
       final int numShards=6;
@@ -287,7 +293,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           });
       }
 
-      System.setProperty("bootstrap_confdir", getFile("solr/conf")
+      System.setProperty("bootstrap_confdir", getFile("solr/collection1/conf")
           .getAbsolutePath());
 
       
@@ -402,7 +408,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
         }
       server.shutdown();
       for (int i = 0; i < nodeCount; i++) {
-        nodeExecutors[i].shutdownNow();
+        if (nodeExecutors[i] != null) {
+          nodeExecutors[i].shutdownNow();
+        }
       }
     }
   }
@@ -582,8 +590,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       mockController.publishState("core1", null,1);
       while(version == getCloudStateVersion(controllerClient));
       Thread.sleep(500);
-      assertEquals("Shard count does not match", 0, reader.getCloudState()
-          .getSlice("collection1", "shard1").getShards().size());
+      assertFalse("collection1 should be gone after publishing the null state", reader.getCloudState().getCollections().contains("collection1"));
     } finally {
       
       close(mockController);
@@ -898,11 +905,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
 
   private SolrZkClient electNewOverseer(String address) throws InterruptedException,
-      TimeoutException, IOException, KeeperException {
+      TimeoutException, IOException, KeeperException, ParserConfigurationException, SAXException {
     SolrZkClient zkClient  = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
-    ElectionContext ec = new OverseerElectionContext(address.replaceAll("/", "_"), reader);
+    ElectionContext ec = new OverseerElectionContext(new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", address.replaceAll("/", "_"), reader);
     overseerElector.setup(ec);
     overseerElector.joinElection(ec);
     return zkClient;

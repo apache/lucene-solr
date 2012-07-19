@@ -135,6 +135,9 @@ public class CloudState implements JSONWriter.Writable {
 		return Collections.unmodifiableSet(collectionStates.keySet());
 	}
 
+	/**
+	 * @return Map&lt;collectionName, Map&lt;sliceName,Slice&gt;&gt;
+	 */
 	public Map<String, Map<String, Slice>> getCollectionStates() {
 		return Collections.unmodifiableMap(collectionStates);
 	}
@@ -240,7 +243,7 @@ public class CloudState implements JSONWriter.Writable {
 	/**
 	 * Create CloudState from json string that is typically stored in zookeeper.
 	 */
-	public static CloudState load(byte[] bytes, Set<String> liveNodes) throws KeeperException, InterruptedException {
+	public static CloudState load(byte[] bytes, Set<String> liveNodes) {
     if (bytes == null || bytes.length == 0) {
       return new CloudState(liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
     }

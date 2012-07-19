@@ -9,16 +9,6 @@ import java.util.TreeSet;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.encoding.DGapIntEncoder;
-import org.apache.lucene.util.encoding.EightFlagsIntEncoder;
-import org.apache.lucene.util.encoding.FourFlagsIntEncoder;
-import org.apache.lucene.util.encoding.IntDecoder;
-import org.apache.lucene.util.encoding.IntEncoder;
-import org.apache.lucene.util.encoding.NOnesIntEncoder;
-import org.apache.lucene.util.encoding.SimpleIntEncoder;
-import org.apache.lucene.util.encoding.SortingIntEncoder;
-import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
-import org.apache.lucene.util.encoding.VInt8IntEncoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -142,7 +132,7 @@ public class EncodingTest extends LuceneTestCase {
   }
 
   private static void decoding(ByteArrayOutputStream baos, IntDecoder decoder)
-      throws IOException, InstantiationException, IllegalAccessException {
+      throws IOException {
     ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
     decoder.reInit(bais);
     

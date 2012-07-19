@@ -219,7 +219,7 @@ public class TestNumericUtils extends LuceneTestCase {
   /** Note: The neededBounds Iterable must be unsigned (easier understanding what's happening) */
   private void assertLongRangeSplit(final long lower, final long upper, int precisionStep,
     final boolean useBitSet, final Iterable<Long> expectedBounds, final Iterable<Integer> expectedShifts
-  ) throws Exception {
+  ) {
     // Cannot use FixedBitSet since the range could be long:
     final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
     final Iterator<Long> neededBounds = (expectedBounds == null) ? null : expectedBounds.iterator();
@@ -460,7 +460,7 @@ public class TestNumericUtils extends LuceneTestCase {
   /** Note: The neededBounds Iterable must be unsigned (easier understanding what's happening) */
   private void assertIntRangeSplit(final int lower, final int upper, int precisionStep,
     final boolean useBitSet, final Iterable<Integer> expectedBounds, final Iterable<Integer> expectedShifts
-  ) throws Exception {
+  ) {
     final FixedBitSet bits=useBitSet ? new FixedBitSet(upper-lower+1) : null;
     final Iterator<Integer> neededBounds = (expectedBounds == null) ? null : expectedBounds.iterator();
     final Iterator<Integer> neededShifts = (expectedShifts == null) ? null : expectedShifts.iterator();

@@ -1,12 +1,12 @@
 package org.apache.lucene.analysis.core;
 
-import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.nio.CharBuffer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockCharFilter;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -65,10 +65,10 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     checkAnalysisConsistency(random(), a, false, "wmgddzunizdomqyj");
   }
   
-  CharStream wrappedStream = new CharStream() {
+  CharFilter wrappedStream = new CharFilter(new StringReader("bogus")) {
 
     @Override
-    public void mark(int readAheadLimit) throws IOException {
+    public void mark(int readAheadLimit) {
       throw new UnsupportedOperationException("mark(int)");
     }
 
@@ -78,53 +78,53 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public int read() throws IOException {
+    public int read() {
       throw new UnsupportedOperationException("read()");
     }
 
     @Override
-    public int read(char[] cbuf) throws IOException {
+    public int read(char[] cbuf) {
       throw new UnsupportedOperationException("read(char[])");
     }
 
     @Override
-    public int read(CharBuffer target) throws IOException {
+    public int read(CharBuffer target) {
       throw new UnsupportedOperationException("read(CharBuffer)");
     }
 
     @Override
-    public boolean ready() throws IOException {
+    public boolean ready() {
       throw new UnsupportedOperationException("ready()");
     }
 
     @Override
-    public void reset() throws IOException {
+    public void reset() {
       throw new UnsupportedOperationException("reset()");
     }
 
     @Override
-    public long skip(long n) throws IOException {
+    public long skip(long n) {
       throw new UnsupportedOperationException("skip(long)");
     }
 
     @Override
-    public int correctOffset(int currentOff) {
-      throw new UnsupportedOperationException("correctOffset(int)");
+    public int correct(int currentOff) {
+      throw new UnsupportedOperationException("correct(int)");
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
       throw new UnsupportedOperationException("close()");
     }
 
     @Override
-    public int read(char[] arg0, int arg1, int arg2) throws IOException {
+    public int read(char[] arg0, int arg1, int arg2) {
       throw new UnsupportedOperationException("read(char[], int, int)");
     }
   };
   
   public void testWrapping() throws Exception {
-    CharStream cs = new TestRandomChains.CheckThatYouDidntReadAnythingReaderWrapper(wrappedStream);
+    CharFilter cs = new TestRandomChains.CheckThatYouDidntReadAnythingReaderWrapper(wrappedStream);
     try {
       cs.mark(1);
       fail();
@@ -178,7 +178,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       cs.correctOffset(1);
       fail();
     } catch (Exception e) {
-      assertEquals("correctOffset(int)", e.getMessage());
+      assertEquals("correct(int)", e.getMessage());
     }
     
     try {

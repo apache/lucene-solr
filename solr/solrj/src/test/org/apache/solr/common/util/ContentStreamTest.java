@@ -21,9 +21,9 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
@@ -60,7 +60,7 @@ public class ContentStreamTest extends LuceneTestCase
     ContentStreamBase stream = new ContentStreamBase.FileStream( file );
     assertEquals( file.length(), stream.getSize().intValue() );
     assertTrue( IOUtils.contentEquals( new FileInputStream( file ), stream.getStream() ) );
-    assertTrue( IOUtils.contentEquals( new FileReader(      file ), stream.getReader() ) );
+    assertTrue( IOUtils.contentEquals( new InputStreamReader(new FileInputStream(file), "UTF-8"), stream.getReader() ) );
   }
   
 

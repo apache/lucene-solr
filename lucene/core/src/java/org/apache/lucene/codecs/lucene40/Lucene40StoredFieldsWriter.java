@@ -18,15 +18,15 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.store.Directory;
@@ -35,7 +35,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 /** 
@@ -209,7 +208,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   }
 
   @Override
-  public void finish(FieldInfos fis, int numDocs) throws IOException {
+  public void finish(FieldInfos fis, int numDocs) {
     if (HEADER_LENGTH_IDX+((long) numDocs)*8 != indexStream.getFilePointer())
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and
@@ -226,7 +225,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     int rawDocLengths[] = new int[MAX_RAW_MERGE_DOCS];
     int idx = 0;
     
-    for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
+    for (AtomicReader reader : mergeState.readers) {
       final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
       Lucene40StoredFieldsReader matchingFieldsReader = null;
       if (matchingSegmentReader != null) {
@@ -237,7 +236,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
         }
       }
     
-      if (reader.liveDocs != null) {
+      if (reader.getLiveDocs() != null) {
         docCount += copyFieldsWithDeletions(mergeState,
                                             reader, matchingFieldsReader, rawDocLengths);
       } else {
@@ -253,12 +252,12 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
-  private int copyFieldsWithDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
+  private int copyFieldsWithDeletions(MergeState mergeState, final AtomicReader reader,
                                       final Lucene40StoredFieldsReader matchingFieldsReader, int rawDocLengths[])
-    throws IOException, MergeAbortedException, CorruptIndexException {
+    throws IOException {
     int docCount = 0;
-    final int maxDoc = reader.reader.maxDoc();
-    final Bits liveDocs = reader.liveDocs;
+    final int maxDoc = reader.maxDoc();
+    final Bits liveDocs = reader.getLiveDocs();
     assert liveDocs != null;
     if (matchingFieldsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
@@ -298,7 +297,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
         // on the fly?
         // NOTE: it's very important to first assign to doc then pass it to
         // fieldsWriter.addDocument; see LUCENE-1282
-        Document doc = reader.reader.document(j);
+        Document doc = reader.document(j);
         addDocument(doc, mergeState.fieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);
@@ -307,10 +306,10 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     return docCount;
   }
 
-  private int copyFieldsNoDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
+  private int copyFieldsNoDeletions(MergeState mergeState, final AtomicReader reader,
                                     final Lucene40StoredFieldsReader matchingFieldsReader, int rawDocLengths[])
-    throws IOException, MergeAbortedException, CorruptIndexException {
-    final int maxDoc = reader.reader.maxDoc();
+    throws IOException {
+    final int maxDoc = reader.maxDoc();
     int docCount = 0;
     if (matchingFieldsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
@@ -325,7 +324,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       for (; docCount < maxDoc; docCount++) {
         // NOTE: it's very important to first assign to doc then pass it to
         // fieldsWriter.addDocument; see LUCENE-1282
-        Document doc = reader.reader.document(docCount);
+        Document doc = reader.document(docCount);
         addDocument(doc, mergeState.fieldInfos);
         mergeState.checkAbort.work(300);
       }

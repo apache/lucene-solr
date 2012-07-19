@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfoPerCommit;
@@ -27,7 +28,6 @@ import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.CodecUtil; // javadocs
 import org.apache.lucene.util.MutableBits;
 
 /**

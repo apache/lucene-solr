@@ -103,13 +103,13 @@ public final class ICUTokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
+  public void setReader(Reader input) throws IOException {
+    super.setReader(input);
     reset();
   }
   
   @Override
-  public void end() throws IOException {
+  public void end() {
     final int finalOffset = (length < 0) ? offset : offset + length;
     offsetAtt.setOffset(correctOffset(finalOffset), correctOffset(finalOffset));
   }  

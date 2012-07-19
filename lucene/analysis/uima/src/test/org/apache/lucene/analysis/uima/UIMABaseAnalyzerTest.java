@@ -30,7 +30,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,7 +64,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
   @Test
   public void baseUIMAAnalyzerIntegrationTest() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_40, analyzer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     // add the first doc
     Document doc = new Document();
     String dummyTitle = "this is a dummy title ";
@@ -78,7 +77,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     // try the search over the first doc
     DirectoryReader directoryReader = DirectoryReader.open(dir);
     IndexSearcher indexSearcher = new IndexSearcher(directoryReader);
-    TopDocs result = indexSearcher.search(new MatchAllDocsQuery(), 10);
+    TopDocs result = indexSearcher.search(new MatchAllDocsQuery(), 1);
     assertTrue(result.totalHits > 0);
     Document d = indexSearcher.doc(result.scoreDocs[0].doc);
     assertNotNull(d);
@@ -99,7 +98,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     directoryReader.close();
     directoryReader = DirectoryReader.open(dir);
     indexSearcher = new IndexSearcher(directoryReader);
-    result = indexSearcher.search(new MatchAllDocsQuery(), 10);
+    result = indexSearcher.search(new MatchAllDocsQuery(), 2);
     Document d1 = indexSearcher.doc(result.scoreDocs[1].doc);
     assertNotNull(d1);
     assertNotNull(d1.getField("title"));
@@ -109,7 +108,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
     // do a matchalldocs query to retrieve both docs
     indexSearcher = new IndexSearcher(directoryReader);
-    result = indexSearcher.search(new MatchAllDocsQuery(), 10);
+    result = indexSearcher.search(new MatchAllDocsQuery(), 2);
     assertEquals(2, result.totalHits);
     writer.close();
     indexSearcher.getIndexReader().close();
@@ -119,7 +118,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
   @Test
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestAggregateSentenceAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation"),
-        1000 * RANDOM_MULTIPLIER);
+        100 * RANDOM_MULTIPLIER);
   }
 
 }

@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.util.Enumeration;
@@ -38,10 +39,12 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -134,6 +137,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     } catch (SolrServerException e) {
       assertTrue(e.getMessage().contains("refused"));
     }
+    server.shutdown();
   }
   
   @Test
@@ -148,6 +152,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     } catch (SolrServerException e) {
       assertTrue(e.getMessage().contains("Timeout"));
     }
+    server.shutdown();
   }
   
   @Test
@@ -234,6 +239,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
     assertEquals("application/x-www-form-urlencoded; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
     assertEquals("UTF-8", DebugServlet.headers.get("Content-Charset"));
+    server.shutdown();
   }
 
   @Test
@@ -274,6 +280,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertEquals(server.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
     assertEquals("Solr[" + org.apache.solr.client.solrj.impl.HttpSolrServer.class.getName() + "] 1.0", DebugServlet.headers.get("User-Agent"));
     assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
+    server.shutdown();
   }
   
   @Test
@@ -335,6 +342,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertEquals("application/javabin", DebugServlet.headers.get("Content-Type"));
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    server.shutdown();
   }
   
   @Test
@@ -355,6 +363,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     } catch (Throwable t) {
       fail("Exception was thrown:" + t);
     }
+    server.shutdown();
   }
   
   @Test
@@ -406,6 +415,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     q = new SolrQuery("foo");
     QueryResponse response = server.query(q);
     assertEquals(0, response.getStatus());
+    server.shutdown();
   }
   
   @Test
@@ -420,8 +430,21 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
       server.setDefaultMaxConnectionsPerHost(1);
       fail("Operation should not succeed.");
     } catch (UnsupportedOperationException e) {}
+    client.getConnectionManager().shutdown();
   }
-  
+
+  @Test
+  public void testGetRawStream() throws SolrServerException, IOException{
+    HttpClient client = HttpClientUtil.createClient(null);
+    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:" + jetty.getLocalPort() + "/solr", client, null);
+    QueryRequest req = new QueryRequest();
+    NamedList response = server.request(req);
+    InputStream stream = (InputStream)response.get("stream");
+    assertNotNull(stream);
+    stream.close();
+    client.getConnectionManager().shutdown();
+  }
+
   private int findUnusedPort() {
     for (int port = 0; port < 65535; port++) {
       Socket s = new Socket();

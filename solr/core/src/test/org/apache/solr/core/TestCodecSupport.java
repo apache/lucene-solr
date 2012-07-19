@@ -29,7 +29,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml", "schema_codec.xml");
+    initCore("solrconfig_codec.xml", "schema_codec.xml");
   }
 
   public void testPostingsFormats() {

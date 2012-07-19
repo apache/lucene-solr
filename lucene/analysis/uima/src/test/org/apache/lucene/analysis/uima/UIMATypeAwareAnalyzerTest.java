@@ -61,7 +61,7 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
   @Test
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new UIMATypeAwareAnalyzer("/uima/TestAggregateSentenceAE.xml",
-        "org.apache.lucene.uima.ts.TokenAnnotation", "pos"), 1000 * RANDOM_MULTIPLIER);
+        "org.apache.lucene.uima.ts.TokenAnnotation", "pos"), 100 * RANDOM_MULTIPLIER);
   }
 
 }

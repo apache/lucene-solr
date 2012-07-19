@@ -186,6 +186,11 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     public float score() throws IOException {
       return theScore;
     }
+    
+    @Override
+    public float freq() throws IOException {
+      return 1;
+    }
 
     @Override
     public int advance(int target) throws IOException {

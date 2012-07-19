@@ -86,8 +86,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     private long pendingFP;
     private long lastBlockFP = -1;
 
-    public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader)
-      throws IOException {
+    public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader) {
       this.in = in;
       this.pending = pending;
       this.blockSize = pending.length;

@@ -258,7 +258,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     @Override
     public MergeSpecification findMerges(SegmentInfos segmentInfos)
-        throws CorruptIndexException, IOException {
+        throws IOException {
       MergeSpecification ms = new MergeSpecification();
       if (doMerge) {
         OneMerge om = new OneMerge(segmentInfos.asList().subList(start, start + length));
@@ -272,13 +272,13 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     @Override
     public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
         int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
-        throws CorruptIndexException, IOException {
+        throws IOException {
       return null;
     }
 
     @Override
     public MergeSpecification findForcedDeletesMerges(
-        SegmentInfos segmentInfos) throws CorruptIndexException, IOException {
+        SegmentInfos segmentInfos) throws IOException {
       return null;
     }
 

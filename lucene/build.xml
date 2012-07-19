@@ -143,13 +143,9 @@
   <!--
    Run after Junit tests.
    -->
-  <target name="generate-clover-reports" depends="clover.check, clover">
+  <target name="generate-clover-reports" depends="clover">
+    <fail unless="run.clover">Clover not enabled!</fail>
     <mkdir dir="${clover.report.dir}"/>
-    <fileset dir="." id="clover.test.src.files">
-      <include name="**/src/test/**/*.java"/>
-      <include name="test-framework/src/java/**/*.java"/>
-      <exclude name="lucene/backwards/**"/>
-    </fileset>
     <fileset dir="build" id="clover.test.result.files">
       <include name="**/test/TEST-*.xml"/>
       <!-- do not include BW tests -->
@@ -158,25 +154,79 @@
     <clover-report>
       <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
         <format type="html" filter="assert"/>
-        <testsources refid="clover.test.src.files"/>
         <testresults refid="clover.test.result.files"/>
       </current>
       <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
         <format type="xml" filter="assert"/>
-        <testsources refid="clover.test.src.files"/>
         <testresults refid="clover.test.result.files"/>
       </current>
     </clover-report>
   </target>
 
-  <!-- Validate once from top-level. -->
-  <target name="validate" depends="compile-tools,resolve" description="Validate legal stuff.">
+  <!-- Validation (license/notice/api checks). -->
+  <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
+
+  <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" />
+  </target>
+
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
+
+  <target name="-check-forbidden-jdk-apis">
+    <forbidden-apis> 
+      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
+        <include name="jdk.txt" />
+        <include name="jdk-deprecated.txt" />
+      </apiFileSet>
+      <fileset dir="${basedir}/build" includes="**/*.class" />
+    </forbidden-apis>
+  </target>
+
+  <target name="-check-forbidden-test-apis">
+    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/tests.txt"> 
+      <classpath refid="junit-path"/>
+      <fileset dir="${basedir}/build" includes="**/classes/test/**/*.class,test-framework/**/*.class" />
+    </forbidden-apis>
+  </target>
+
+  <target name="-check-system-out">
+    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/system-out.txt">
+      <fileset dir="${basedir}/build">
+        <include name="**/classes/java/**/*.class"/>
+        <!-- this is basically tests -->
+        <exclude name="test-framework/**"/>
+        <!-- exclude command line tools -->
+        <exclude name="core/classes/java/org/apache/lucene/index/CheckIndex.class"/>
+        <exclude name="core/classes/java/org/apache/lucene/index/IndexUpgrader.class"/>
+        <exclude name="core/classes/java/org/apache/lucene/store/LockVerifyServer.class"/>
+        <exclude name="core/classes/java/org/apache/lucene/store/LockStressTest.class"/>
+        <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/Compile.class"/>
+        <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/DiffIt.class"/>
+        <exclude name="benchmark/**"/>
+        <exclude name="demo/classes/java/org/apache/lucene/demo/IndexFiles.class"/>
+        <exclude name="demo/classes/java/org/apache/lucene/demo/SearchFiles.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/index/CompoundFileExtractor.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/index/IndexSplitter.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/index/MultiPassIndexSplitter.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/misc/GetTermInfo.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/misc/HighFreqTerms.class"/>
+        <exclude name="misc/classes/java/org/apache/lucene/misc/IndexMergeTool.class"/>
+        <!-- not printing, just checking if its a system stream -->
+        <exclude name="core/classes/java/org/apache/lucene/util/PrintStreamInfoStream.class"/>
+        <!-- not printing, just generated code from javacc -->
+        <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/classic/QueryParserTokenManager.class"/>
+        <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParserTokenManager.class"/>
+        <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/surround/parser/QueryParserTokenManager.class"/>
+      </fileset>
+    </forbidden-apis>
   </target>
 
   <target name="resolve">
     <sequential>
       <ant dir="test-framework" target="resolve" inheritall="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+      <ant dir="${common.dir}/tools" target="resolve" inheritAll="false">
          <propertyset refid="uptodate.and.compiled.properties"/>
       </ant>
       <modules-crawl target="resolve" failonerror="true"/>
@@ -362,6 +412,8 @@
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
     <delete dir="${svn.export.dir}/tools/javadoc/java6"/>
+    <!-- Exclude clover license files incompatible with the ASL -->
+    <delete dir="${svn.export.dir}/tools/clover"/>
 
     <build-changes changes.src.dir="${svn.export.dir}/site/changes"
                    changes.target.dir="${svn.export.dir}/docs/changes"/>

@@ -1,7 +1,5 @@
 package org.apache.lucene.search;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.Term;
 
 import org.apache.lucene.util.ToStringUtils;
@@ -53,7 +51,7 @@ public class RegexpQuery extends AutomatonQuery {
    * A provider that provides no named automata
    */
   private static AutomatonProvider defaultProvider = new AutomatonProvider() {
-    public Automaton getAutomaton(String name) throws IOException {
+    public Automaton getAutomaton(String name) {
       return null;
     }
   };

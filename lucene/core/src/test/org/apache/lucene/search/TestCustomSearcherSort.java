@@ -19,8 +19,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.TreeMap;
 
 import org.apache.lucene.document.DateTools;
@@ -230,10 +232,12 @@ public class TestCustomSearcherSort extends LuceneTestCase {
   private class RandomGen {
     RandomGen(Random random) {
       this.random = random;
+      base.set(1980, 1, 1);
     }
     
     private Random random;
-    private Calendar base = new GregorianCalendar(1980, 1, 1);
+    // we use the default Locale/TZ since LuceneTestCase randomizes it
+    private Calendar base = new GregorianCalendar(TimeZone.getDefault(), Locale.getDefault());
     
     // Just to generate some different Lucene Date strings
     private String getLuceneDate() {

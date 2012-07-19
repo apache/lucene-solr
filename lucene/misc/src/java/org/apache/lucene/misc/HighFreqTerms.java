@@ -23,6 +23,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
@@ -32,7 +33,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ReaderUtil;
 
 import java.io.File;
 import java.io.IOException;

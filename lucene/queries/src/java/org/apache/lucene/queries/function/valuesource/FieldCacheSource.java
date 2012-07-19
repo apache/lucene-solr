@@ -27,8 +27,8 @@ import org.apache.lucene.search.FieldCache;
  *
  */
 public abstract class FieldCacheSource extends ValueSource {
-  protected String field;
-  protected FieldCache cache = FieldCache.DEFAULT;
+  protected final String field;
+  protected final FieldCache cache = FieldCache.DEFAULT;
 
   public FieldCacheSource(String field) {
     this.field=field;
@@ -58,6 +58,6 @@ public abstract class FieldCacheSource extends ValueSource {
   @Override
   public int hashCode() {
     return cache.hashCode() + field.hashCode();
-  };
+  }
 
 }

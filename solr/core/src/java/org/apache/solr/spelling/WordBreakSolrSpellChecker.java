@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Token;
@@ -126,7 +127,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     wbsp = new WordBreakSpellChecker();
     String bstb = strParam(config, PARAM_BREAK_SUGGESTION_TIE_BREAKER);
     if (bstb != null) {
-      bstb = bstb.toUpperCase();
+      bstb = bstb.toUpperCase(Locale.ROOT);
       if (bstb.equals(BreakSuggestionTieBreaker.SUM_FREQ.name())) {
         sortMethod = BreakSuggestionSortMethod.NUM_CHANGES_THEN_SUMMED_FREQUENCY;
       } else if (bstb.equals(BreakSuggestionTieBreaker.MAX_FREQ.name())) {

@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 
@@ -112,7 +113,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
   private void assertCache(LFUCache cache, int... gets) {
     for (int idx : gets) {
       if (cache.get(idx) == null) {
-        log.error(String.format("Expected entry %d not in cache", idx));
+        log.error(String.format(Locale.ROOT, "Expected entry %d not in cache", idx));
         assertTrue(false);
       }
     }
@@ -120,7 +121,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
   private void assertNotCache(LFUCache cache, int... gets) {
     for (int idx : gets) {
       if (cache.get(idx) != null) {
-        log.error(String.format("Unexpected entry %d in cache", idx));
+        log.error(String.format(Locale.ROOT, "Unexpected entry %d in cache", idx));
         assertTrue(false);
       }
     }

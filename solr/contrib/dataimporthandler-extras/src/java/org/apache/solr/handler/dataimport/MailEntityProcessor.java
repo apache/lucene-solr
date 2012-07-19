@@ -171,7 +171,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       InputStream is = part.getInputStream();
       String fileName = part.getFileName();
       Metadata md = new Metadata();
-      md.set(HttpHeaders.CONTENT_TYPE, ctype.getBaseType().toLowerCase(Locale.ENGLISH));
+      md.set(HttpHeaders.CONTENT_TYPE, ctype.getBaseType().toLowerCase(Locale.ROOT));
       md.set(TikaMetadataKeys.RESOURCE_NAME_KEY, fileName);
       String content = tika.parseToString(is, md);
       if (disp != null && disp.equalsIgnoreCase(Part.ATTACHMENT)) {

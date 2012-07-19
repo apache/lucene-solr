@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -94,7 +92,7 @@ public class Test2BPostings extends LuceneTestCase {
     }
     
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       if (index <= 'z') {
         buffer[0] = (char) index++;
         return true;
@@ -103,7 +101,7 @@ public class Test2BPostings extends LuceneTestCase {
     }
     
     @Override
-    public void reset() throws IOException {
+    public void reset() {
       index = 'a';
     }
   }

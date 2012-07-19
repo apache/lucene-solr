@@ -154,7 +154,7 @@ public interface CommonParams {
     
     public static EchoParamStyle get( String v ) {
       if( v != null ) {
-        v = v.toUpperCase(Locale.ENGLISH);
+        v = v.toUpperCase(Locale.ROOT);
         if( v.equals( "EXPLICIT" ) ) {
           return EXPLICIT;
         }

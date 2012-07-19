@@ -31,7 +31,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONParser;
 import org.apache.noggit.JSONWriter;
@@ -42,6 +41,7 @@ import org.apache.solr.common.util.ByteUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,6 +180,11 @@ public class ZkStateReader {
         
         @Override
         public void process(WatchedEvent event) {
+          // session events are not change events,
+          // and do not remove the watcher
+          if (EventType.None.equals(event.getType())) {
+            return;
+          }
           log.info("A cluster state change has occurred");
           try {
             
@@ -223,6 +228,11 @@ public class ZkStateReader {
             
             @Override
             public void process(WatchedEvent event) {
+              // session events are not change events,
+              // and do not remove the watcher
+              if (EventType.None.equals(event.getType())) {
+                return;
+              }
               log.info("Updating live nodes");
               try {
                 // delayed approach

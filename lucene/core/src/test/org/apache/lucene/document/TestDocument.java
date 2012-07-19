@@ -51,8 +51,8 @@ public class TestDocument extends LuceneTestCase {
     FieldType ft = new FieldType();
     ft.setStored(true);
     IndexableField stringFld = new Field("string", binaryVal, ft);
-    IndexableField binaryFld = new StoredField("binary", binaryVal.getBytes());
-    IndexableField binaryFld2 = new StoredField("binary", binaryVal2.getBytes());
+    IndexableField binaryFld = new StoredField("binary", binaryVal.getBytes("UTF-8"));
+    IndexableField binaryFld2 = new StoredField("binary", binaryVal2.getBytes("UTF-8"));
     
     doc.add(stringFld);
     doc.add(binaryFld);
@@ -62,7 +62,6 @@ public class TestDocument extends LuceneTestCase {
     assertTrue(binaryFld.binaryValue() != null);
     assertTrue(binaryFld.fieldType().stored());
     assertFalse(binaryFld.fieldType().indexed());
-    assertFalse(binaryFld.fieldType().tokenized());
     
     String binaryTest = doc.getBinaryValue("binary").utf8ToString();
     assertTrue(binaryTest.equals(binaryVal));

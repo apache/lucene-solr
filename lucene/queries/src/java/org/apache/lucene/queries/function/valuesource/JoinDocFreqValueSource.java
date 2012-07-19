@@ -22,11 +22,11 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -57,16 +57,15 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader();
     
     return new IntDocValues(this) {
-      BytesRef ref = new BytesRef();
+      final BytesRef ref = new BytesRef();
 
       @Override
       public int intVal(int doc) 
       {
         try {
           terms.getTerm(doc, ref);
-          int v = top.docFreq( qfield, ref ); 
           //System.out.println( NAME+"["+field+"="+ref.utf8ToString()+"=("+qfield+":"+v+")]" );
-          return v;
+          return top.docFreq( qfield, ref );
         } 
         catch (IOException e) {
           throw new RuntimeException("caught exception in function "+description()+" : doc="+doc, e);
@@ -86,5 +85,5 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
   @Override
   public int hashCode() {
     return qfield.hashCode() + super.hashCode();
-  };
+  }
 }

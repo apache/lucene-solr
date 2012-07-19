@@ -23,10 +23,10 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.TermContext;
 
 /**
  * Holds all implementations of classes in the o.a.l.s.spans package as a
@@ -52,12 +52,12 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public boolean next() throws IOException {
+    public boolean next() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public boolean skipTo(int target) throws IOException {
+    public boolean skipTo(int target) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -67,7 +67,7 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public Collection<byte[]> getPayload() throws IOException {
+    public Collection<byte[]> getPayload() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -86,7 +86,7 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public Spans getSpans(AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
+    public Spans getSpans(AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -100,7 +100,7 @@ final class JustCompileSearchSpans {
   static final class JustCompilePayloadSpans extends Spans {
 
     @Override
-    public Collection<byte[]> getPayload() throws IOException {
+    public Collection<byte[]> getPayload() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -120,12 +120,12 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public boolean next() throws IOException {
+    public boolean next() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public boolean skipTo(int target) throws IOException {
+    public boolean skipTo(int target) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -144,7 +144,7 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    protected boolean setFreqCurrentDoc() throws IOException {
+    protected boolean setFreqCurrentDoc() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }

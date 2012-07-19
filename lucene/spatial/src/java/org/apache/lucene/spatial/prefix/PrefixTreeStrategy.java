@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,39 +17,37 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix;
-
 import com.spatial4j.core.distance.DistanceCalculator;
-import com.spatial4j.core.query.SpatialArgs;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.spatial.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.tree.Node;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.CachedDistanceValueSource;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFieldInfo> {
+/**
+ * @lucene.internal
+ */
+public abstract class PrefixTreeStrategy extends SpatialStrategy {
   protected final SpatialPrefixTree grid;
   private final Map<String, PointPrefixTreeFieldCacheProvider> provider = new ConcurrentHashMap<String, PointPrefixTreeFieldCacheProvider>();
   protected int defaultFieldValuesArrayLen = 2;
   protected double distErrPct = SpatialArgs.DEFAULT_DIST_PRECISION;
 
-  public PrefixTreeStrategy(SpatialPrefixTree grid) {
-    super(grid.getSpatialContext());
+  public PrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
+    super(grid.getSpatialContext(), fieldName);
     this.grid = grid;
   }
 
@@ -62,7 +62,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
   }
 
   @Override
-  public IndexableField createField(SimpleSpatialFieldInfo fieldInfo, Shape shape, boolean index, boolean store) {
+  public IndexableField[] createIndexableFields(Shape shape) {
     int detailLevel = grid.getMaxLevelForPrecision(shape,distErrPct);
     List<Node> cells = grid.getNodes(shape, detailLevel, true);//true=intermediates cells
     //If shape isn't a point, add a full-resolution center-point so that
@@ -74,42 +74,21 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
       cells.add(grid.getNodes(ctr,grid.getMaxLevels(),false).get(0));
     }
 
-    String fname = fieldInfo.getFieldName();
-    if( store ) {
-      //TODO figure out how to re-use original string instead of reconstituting it.
-      String wkt = grid.getSpatialContext().toString(shape);
-      if( index ) {
-        Field f = new Field(fname,wkt,TYPE_STORED);
-        f.setTokenStream(new CellTokenStream(cells.iterator()));
-        return f;
-      }
-      return new StoredField(fname,wkt);
-    }
-    
-    if( index ) {
-      return new Field(fname,new CellTokenStream(cells.iterator()),TYPE_NOT_STORED);
-    }
-    
-    throw new UnsupportedOperationException("Fields need to be indexed or store ["+fname+"]");
+    //TODO is CellTokenStream supposed to be re-used somehow? see Uwe's comments:
+    //  http://code.google.com/p/lucene-spatial-playground/issues/detail?id=4
+
+    Field field = new Field(getFieldName(), new CellTokenStream(cells.iterator()), FIELD_TYPE);
+    return new IndexableField[]{field};
   }
 
   /* Indexed, tokenized, not stored. */
-  public static final FieldType TYPE_NOT_STORED = new FieldType();
-
-  /* Indexed, tokenized, stored. */
-  public static final FieldType TYPE_STORED = new FieldType();
+  public static final FieldType FIELD_TYPE = new FieldType();
 
   static {
-    TYPE_NOT_STORED.setIndexed(true);
-    TYPE_NOT_STORED.setTokenized(true);
-    TYPE_NOT_STORED.setOmitNorms(true);
-    TYPE_NOT_STORED.freeze();
-
-    TYPE_STORED.setStored(true);
-    TYPE_STORED.setIndexed(true);
-    TYPE_STORED.setTokenized(true);
-    TYPE_STORED.setOmitNorms(true);
-    TYPE_STORED.freeze();
+    FIELD_TYPE.setIndexed(true);
+    FIELD_TYPE.setTokenized(true);
+    FIELD_TYPE.setOmitNorms(true);
+    FIELD_TYPE.freeze();
   }
 
   /** Outputs the tokenString of a cell, and if its a leaf, outputs it again with the leaf byte. */
@@ -126,7 +105,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
     CharSequence nextTokenStringNeedingLeaf = null;
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public boolean incrementToken() {
       clearAttributes();
       if (nextTokenStringNeedingLeaf != null) {
         termAtt.append(nextTokenStringNeedingLeaf);
@@ -148,19 +127,19 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
   }
 
   @Override
-  public ValueSource makeValueSource(SpatialArgs args, SimpleSpatialFieldInfo fieldInfo) {
+  public ValueSource makeValueSource(SpatialArgs args) {
     DistanceCalculator calc = grid.getSpatialContext().getDistCalc();
-    return makeValueSource(args, fieldInfo, calc);
+    return makeValueSource(args, calc);
   }
   
-  public ValueSource makeValueSource(SpatialArgs args, SimpleSpatialFieldInfo fieldInfo, DistanceCalculator calc) {
-    PointPrefixTreeFieldCacheProvider p = provider.get( fieldInfo.getFieldName() );
+  public ValueSource makeValueSource(SpatialArgs args, DistanceCalculator calc) {
+    PointPrefixTreeFieldCacheProvider p = provider.get( getFieldName() );
     if( p == null ) {
       synchronized (this) {//double checked locking idiom is okay since provider is threadsafe
-        p = provider.get( fieldInfo.getFieldName() );
+        p = provider.get( getFieldName() );
         if (p == null) {
-          p = new PointPrefixTreeFieldCacheProvider(grid, fieldInfo.getFieldName(), defaultFieldValuesArrayLen);
-          provider.put(fieldInfo.getFieldName(),p);
+          p = new PointPrefixTreeFieldCacheProvider(grid, getFieldName(), defaultFieldValuesArrayLen);
+          provider.put(getFieldName(),p);
         }
       }
     }

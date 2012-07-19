@@ -67,7 +67,7 @@ public abstract class Lock {
    *         out of bounds
    * @throws IOException if obtain() throws IOException
    */
-  public boolean obtain(long lockWaitTimeout) throws LockObtainFailedException, IOException {
+  public boolean obtain(long lockWaitTimeout) throws IOException {
     failureReason = null;
     boolean locked = obtain();
     if (lockWaitTimeout < 0 && lockWaitTimeout != LOCK_OBTAIN_WAIT_FOREVER)
@@ -128,7 +128,7 @@ public abstract class Lock {
      * be obtained
      * @throws IOException if {@link Lock#obtain} throws IOException
      */
-    public Object run() throws LockObtainFailedException, IOException {
+    public Object run() throws IOException {
       boolean locked = false;
       try {
          locked = lock.obtain(lockWaitTimeout);

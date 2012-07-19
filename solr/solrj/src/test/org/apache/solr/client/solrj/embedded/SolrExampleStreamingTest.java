@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
@@ -31,6 +32,7 @@ import org.junit.BeforeClass;
  *
  * @since solr 1.3
  */
+@Slow
 public class SolrExampleStreamingTest extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {

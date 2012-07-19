@@ -52,10 +52,10 @@ public abstract class IndexReaderContext {
    * returns itself as the only leaf.
    * <p>Note: this is convenience method since leaves can always be obtained by
    * walking the context tree using {@link #children()}.
-   * @throws UnsupportedOperationExceception if this is not a top-level context.
+   * @throws UnsupportedOperationException if this is not a top-level context.
    * @see #children()
    */
-  public abstract List<AtomicReaderContext> leaves();
+  public abstract List<AtomicReaderContext> leaves() throws UnsupportedOperationException;
   
   /**
    * Returns the context's children iff this context is a composite context

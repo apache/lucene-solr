@@ -1,3 +1,5 @@
+// This file has been automatically generated, DO NOT EDIT
+
 package org.apache.lucene.util.packed;
 
 /*
@@ -24,63 +26,37 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * Direct wrapping of 8 bit values to a backing array of bytes.
+ * Direct wrapping of 8-bits values to a backing array.
  * @lucene.internal
  */
+final class Direct8 extends PackedInts.MutableImpl {
+  final byte[] values;
 
-class Direct8 extends PackedInts.MutableImpl {
-  private final byte[] values;
-  private static final int BITS_PER_VALUE = 8;
-
-  public Direct8(int valueCount) {
-    super(valueCount, BITS_PER_VALUE);
+  Direct8(int valueCount) {
+    super(valueCount, 8);
     values = new byte[valueCount];
   }
 
-  public Direct8(DataInput in, int valueCount)
-          throws IOException {
-    super(valueCount, BITS_PER_VALUE);
-    byte[] values = new byte[valueCount];
-    for(int i=0;i<valueCount;i++) {
+  Direct8(DataInput in, int valueCount) throws IOException {
+    this(valueCount);
+    for (int i = 0; i < valueCount; ++i) {
       values[i] = in.readByte();
     }
     final int mod = valueCount % 8;
     if (mod != 0) {
-      final int pad = 8-mod;
-      // round out long
-      for(int i=0;i<pad;i++) {
+      for (int i = mod; i < 8; ++i) {
         in.readByte();
       }
     }
-
-    this.values = values;
-  }
-
-  /**
-   * Creates an array backed by the given values.
-   * </p><p>
-   * Note: The values are used directly, so changes to the given values will
-   * affect the structure.
-   * @param values used as the internal backing array.
-   */
-  public Direct8(byte[] values) {
-    super(values.length, BITS_PER_VALUE);
-    this.values = values;
-  }
-
-  public long get(final int index) {
-    assert index >= 0 && index < size();
-    return 0xFFL & values[index];
-  }
-
-  public void set(final int index, final long value) {
-    values[index] = (byte)(value & 0xFF);
   }
 
   @Override
-  public void fill(int fromIndex, int toIndex, long val) {
-    assert (val & 0xffL) == val;
-    Arrays.fill(values, fromIndex, toIndex, (byte) val);
+  public long get(final int index) {
+    return values[index] & 0xFFL;
+  }
+
+  public void set(final int index, final long value) {
+    values[index] = (byte) (value);
   }
 
   public long ramBytesUsed() {
@@ -88,7 +64,7 @@ class Direct8 extends PackedInts.MutableImpl {
   }
 
   public void clear() {
-    Arrays.fill(values, (byte)0);
+    Arrays.fill(values, (byte) 0L);
   }
 
   @Override
@@ -99,5 +75,36 @@ class Direct8 extends PackedInts.MutableImpl {
   @Override
   public boolean hasArray() {
     return true;
+  }
+
+  @Override
+  public int get(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int gets = Math.min(valueCount - index, len);
+    for (int i = index, o = off, end = index + gets; i < end; ++i, ++o) {
+      arr[o] = values[i] & 0xFFL;
+    }
+    return gets;
+  }
+
+  public int set(int index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < valueCount;
+    assert off + len <= arr.length;
+
+    final int sets = Math.min(valueCount - index, len);
+    for (int i = index, o = off, end = index + sets; i < end; ++i, ++o) {
+      values[i] = (byte) arr[o];
+    }
+    return sets;
+  }
+
+  @Override
+  public void fill(int fromIndex, int toIndex, long val) {
+    assert val == (val & 0xFFL);
+    Arrays.fill(values, fromIndex, toIndex, (byte) val);
   }
 }

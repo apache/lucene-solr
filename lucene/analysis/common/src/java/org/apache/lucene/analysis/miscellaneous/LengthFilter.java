@@ -17,10 +17,7 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
@@ -48,7 +45,7 @@ public final class LengthFilter extends FilteringTokenFilter {
   }
   
   @Override
-  public boolean accept() throws IOException {
+  public boolean accept() {
     final int len = termAtt.length();
     return (len >= min && len <= max);
   }

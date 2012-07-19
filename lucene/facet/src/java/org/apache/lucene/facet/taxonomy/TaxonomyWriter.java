@@ -3,7 +3,7 @@ package org.apache.lucene.facet.taxonomy;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.util.TwoPhaseCommit;
+import org.apache.lucene.index.TwoPhaseCommit;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

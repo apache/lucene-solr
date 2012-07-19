@@ -25,11 +25,11 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TermContext;
 
 /**
  * Base rewrite method for collecting only the top terms
@@ -75,7 +75,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
       private ScoreTerm st;
       
       @Override
-      public void setNextEnum(TermsEnum termsEnum) throws IOException {
+      public void setNextEnum(TermsEnum termsEnum) {
         this.termsEnum = termsEnum;
         this.termComp = termsEnum.getComparator();
         
@@ -89,7 +89,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     
       // for assert:
       private BytesRef lastTerm;
-      private boolean compareToLastTerm(BytesRef t) throws IOException {
+      private boolean compareToLastTerm(BytesRef t) {
         if (lastTerm == null && t != null) {
           lastTerm = BytesRef.deepCopyOf(t);
         } else if (t == null) {

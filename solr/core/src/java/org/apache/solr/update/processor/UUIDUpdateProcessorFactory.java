@@ -59,7 +59,7 @@ public class UUIDUpdateProcessorFactory
                                             UpdateRequestProcessor next ) {
     return new DefaultValueUpdateProcessor(fieldName, next) {
       public Object getDefaultValue() { 
-        return UUID.randomUUID().toString().toLowerCase(Locale.ENGLISH);
+        return UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
       }
     };
   }

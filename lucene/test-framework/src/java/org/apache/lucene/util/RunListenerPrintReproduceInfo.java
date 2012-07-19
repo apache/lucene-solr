@@ -160,8 +160,8 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
         addVmOpt(b, "tests.timezone", classEnvRule.timeZone.getID());
       }
     }
-    // Randomize this: LUCENE-4094
-    addVmOpt(b, "args", "-Dfile.encoding=" + System.getProperty("file.encoding"));
+
+    addVmOpt(b, "tests.file.encoding", System.getProperty("file.encoding"));
 
     System.err.println(b.toString());
   }

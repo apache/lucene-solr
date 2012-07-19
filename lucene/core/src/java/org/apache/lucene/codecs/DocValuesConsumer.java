@@ -29,6 +29,7 @@ import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.ShortDocValuesField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
@@ -106,12 +107,12 @@ public abstract class DocValuesConsumer {
     assert mergeState != null;
     boolean hasMerged = false;
     for(int readerIDX=0;readerIDX<mergeState.readers.size();readerIDX++) {
-      final org.apache.lucene.index.MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(readerIDX);
+      final AtomicReader reader = mergeState.readers.get(readerIDX);
       if (docValues[readerIDX] != null) {
         hasMerged = true;
         merge(docValues[readerIDX], mergeState.docBase[readerIDX],
-              reader.reader.maxDoc(), reader.liveDocs);
-        mergeState.checkAbort.work(reader.reader.maxDoc());
+              reader.maxDoc(), reader.getLiveDocs());
+        mergeState.checkAbort.work(reader.maxDoc());
       }
     }
     // only finish if no exception is thrown!

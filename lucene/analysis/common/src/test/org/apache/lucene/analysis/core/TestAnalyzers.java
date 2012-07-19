@@ -163,7 +163,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     filter.reset();
     String highSurEndingUpper = "BogustermBoguster\ud801";
     String highSurEndingLower = "bogustermboguster\ud801";
-    tokenizer.reset(new StringReader(highSurEndingUpper));
+    tokenizer.setReader(new StringReader(highSurEndingUpper));
     assertTokenStreamContents(filter, new String[] {highSurEndingLower});
     assertTrue(filter.hasAttribute(CharTermAttribute.class));
     char[] termBuffer = filter.getAttribute(CharTermAttribute.class).buffer();
@@ -191,17 +191,17 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), new SimpleAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), new StopAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new SimpleAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new StopAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, new SimpleAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, new StopAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new SimpleAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new StopAnalyzer(TEST_VERSION_CURRENT), 100*RANDOM_MULTIPLIER, 8192);
   } 
 }
 

@@ -46,10 +46,9 @@ public class EnhancementsDocumentBuilder extends CategoryDocumentBuilder {
    * @param taxonomyWriter
    * @param params
    *            Indexing params which include {@link CategoryEnhancement}s.
-   * @throws IOException
    */
   public EnhancementsDocumentBuilder(TaxonomyWriter taxonomyWriter,
-      EnhancementsIndexingParams params) throws IOException {
+      EnhancementsIndexingParams params) {
     super(taxonomyWriter, params);
   }
 

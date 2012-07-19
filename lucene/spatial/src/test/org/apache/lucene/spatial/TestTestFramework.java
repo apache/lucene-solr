@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,14 +17,11 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial;
-
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
-import com.spatial4j.core.query.SpatialArgsParser;
-import com.spatial4j.core.query.SpatialOperation;
 import com.spatial4j.core.shape.Rectangle;
-
+import org.apache.lucene.spatial.query.SpatialArgsParser;
+import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assert;
 import org.junit.Test;

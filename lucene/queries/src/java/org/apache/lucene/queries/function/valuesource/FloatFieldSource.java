@@ -38,7 +38,7 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
 
 public class FloatFieldSource extends FieldCacheSource {
 
-  protected FieldCache.FloatParser parser;
+  protected final FieldCache.FloatParser parser;
 
   public FloatFieldSource(String field) {
     this(field, null);
@@ -108,5 +108,5 @@ public class FloatFieldSource extends FieldCacheSource {
     int h = parser==null ? Float.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();
     return h;
-  };
+  }
 }

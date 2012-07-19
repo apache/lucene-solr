@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.ArrayUtil;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 
@@ -135,5 +136,19 @@ class ConjunctionScorer extends Scorer {
       sum += scorers[i].score();
     }
     return sum * coord;
+  }
+
+  @Override
+  public float freq() throws IOException {
+    return scorers.length;
+  }
+
+  @Override
+  public Collection<ChildScorer> getChildren() {
+    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>(scorers.length);
+    for (Scorer scorer : scorers) {
+      children.add(new ChildScorer(scorer, "MUST"));
+    }
+    return children;
   }
 }
