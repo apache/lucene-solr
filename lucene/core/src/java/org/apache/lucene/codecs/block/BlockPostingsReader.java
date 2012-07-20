@@ -118,6 +118,17 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     }
   }
 
+  static void readBlock(IndexInput in, byte[] encoded, IntBuffer encodedBuffer, int[] buffer) throws IOException {
+    int header = in.readVInt();
+    in.readBytes(encoded, 0, ForUtil.getEncodedSize(header));
+    ForUtil.decompress(encodedBuffer, buffer, header);
+  }
+
+  static void skipBlock(IndexInput in) throws IOException {
+    int header = in.readVInt();
+    in.seek(in.getFilePointer() + ForUtil.getEncodedSize(header));
+  }
+
   // Must keep final because we do non-standard clone
   private final static class IntBlockTermState extends BlockTermState {
     long docStartFP;
@@ -370,12 +381,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       return doc;
     }
     
-    private void readBlock(IndexInput in, int[] buffer) throws IOException {
-      int header = in.readVInt();
-      in.readBytes(encoded, 0, ForUtil.getEncodedSize(header));
-      ForUtil.decompress(encodedBuffer, buffer, header);
-    }
-
     private void refillDocs() throws IOException {
       final int left = docFreq - docUpto;
       assert left > 0;
@@ -384,13 +389,13 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
-        readBlock(docIn, docDeltaBuffer);
+        readBlock(docIn, encoded, encodedBuffer, docDeltaBuffer);
 
         if (indexHasFreq) {
           if (DEBUG) {
             System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
           }
-          readBlock(docIn, freqBuffer);
+          readBlock(docIn, encoded, encodedBuffer, freqBuffer);
         }
       } else {
         // Read vInts:
@@ -646,17 +651,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       return doc;
     }
 
-    private void readBlock(IndexInput in, int[] buffer) throws IOException {
-      int header = in.readVInt();
-      in.readBytes(encoded, 0, ForUtil.getEncodedSize(header));
-      ForUtil.decompress(encodedBuffer, buffer, header);
-    }
-
-    private void skipBlock(IndexInput in) throws IOException {
-      int header = in.readVInt();
-      in.seek(in.getFilePointer() + ForUtil.getEncodedSize(header));
-    }
-
     private void refillDocs() throws IOException {
       final int left = docFreq - docUpto;
       assert left > 0;
@@ -666,13 +660,13 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
 
-        readBlock(docIn, docDeltaBuffer);
+        readBlock(docIn, encoded, encodedBuffer, docDeltaBuffer);
 
         if (DEBUG) {
           System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
         }
 
-        readBlock(docIn, freqBuffer);
+        readBlock(docIn, encoded, encodedBuffer, freqBuffer);
       } else {
         // Read vInts:
         if (DEBUG) {
@@ -724,7 +718,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("        bulk pos block @ fp=" + posIn.getFilePointer());
         }
-        readBlock(posIn, posDeltaBuffer);
+        readBlock(posIn, encoded, encodedBuffer, posDeltaBuffer);
       }
     }
 
@@ -1097,17 +1091,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       return doc;
     }
 
-    private void readBlock(IndexInput in, int[] buffer) throws IOException {
-      int header = in.readVInt();
-      in.readBytes(encoded, 0, ForUtil.getEncodedSize(header));
-      ForUtil.decompress(encodedBuffer, buffer, header);
-    }
-
-    private void skipBlock(IndexInput in) throws IOException {
-      int header = in.readVInt();
-      in.seek(in.getFilePointer() + ForUtil.getEncodedSize(header));
-    }
-
     private void refillDocs() throws IOException {
       final int left = docFreq - docUpto;
       assert left > 0;
@@ -1117,13 +1100,13 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
 
-        readBlock(docIn, docDeltaBuffer);
+        readBlock(docIn, encoded, encodedBuffer, docDeltaBuffer);
 
         if (DEBUG) {
           System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
         }
 
-        readBlock(docIn, freqBuffer);
+        readBlock(docIn, encoded, encodedBuffer, freqBuffer);
       } else {
         // Read vInts:
         if (DEBUG) {
@@ -1192,13 +1175,13 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("        bulk pos block @ fp=" + posIn.getFilePointer());
         }
-        readBlock(posIn, posDeltaBuffer);
+        readBlock(posIn, encoded, encodedBuffer, posDeltaBuffer);
 
         if (indexHasPayloads) {
           if (DEBUG) {
             System.out.println("        bulk payload block @ pay.fp=" + payIn.getFilePointer());
           }
-          readBlock(payIn, payloadLengthBuffer);
+          readBlock(payIn, encoded, encodedBuffer, payloadLengthBuffer);
           int numBytes = payIn.readVInt();
           if (DEBUG) {
             System.out.println("        " + numBytes + " payload bytes @ pay.fp=" + payIn.getFilePointer());
@@ -1214,8 +1197,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           if (DEBUG) {
             System.out.println("        bulk offset block @ pay.fp=" + payIn.getFilePointer());
           }
-          readBlock(payIn, offsetStartDeltaBuffer);
-          readBlock(payIn, offsetLengthBuffer);
+          readBlock(payIn, encoded, encodedBuffer, offsetStartDeltaBuffer);
+          readBlock(payIn, encoded, encodedBuffer, offsetLengthBuffer);
         }
       }
     }
@@ -1400,8 +1383,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           if (indexHasOffsets) {
             // Must load offset blocks merely to sum
             // up into lastEndOffset:
-            readBlock(payIn, offsetStartDeltaBuffer);
-            readBlock(payIn, offsetLengthBuffer);
+            readBlock(payIn, encoded, encodedBuffer, offsetStartDeltaBuffer);
+            readBlock(payIn, encoded, encodedBuffer, offsetLengthBuffer);
             for(int i=0;i<blockSize;i++) {
               lastEndOffset += offsetStartDeltaBuffer[i] + offsetLengthBuffer[i];
             }
