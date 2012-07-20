@@ -34,7 +34,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  * Test indexes ~82M docs with 26 terms each, so you get > Integer.MAX_VALUE terms/docs pairs
  * @lucene.experimental
  */
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class Test2BPostings extends LuceneTestCase {
 
   @Nightly
