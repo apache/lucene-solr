@@ -422,19 +422,19 @@ public class Overseer {
    */
   public static DistributedQueue getInQueue(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
-    return new DistributedQueue(zkClient.getSolrZooKeeper(), "/overseer/queue", null);
+    return new DistributedQueue(zkClient, "/overseer/queue", null);
   }
 
   /* Internal queue, not to be used outside of Overseer */
   static DistributedQueue getInternalQueue(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
-    return new DistributedQueue(zkClient.getSolrZooKeeper(), "/overseer/queue-work", null);
+    return new DistributedQueue(zkClient, "/overseer/queue-work", null);
   }
   
   /* Collection creation queue */
   static DistributedQueue getCollectionQueue(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
-    return new DistributedQueue(zkClient.getSolrZooKeeper(), "/overseer/collection-queue-work", null);
+    return new DistributedQueue(zkClient, "/overseer/collection-queue-work", null);
   }
   
   private static void createOverseerNode(final SolrZkClient zkClient) {
