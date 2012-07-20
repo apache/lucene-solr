@@ -18,9 +18,11 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -40,6 +42,89 @@ public class TestDirectory extends LuceneTestCase {
       } catch (AlreadyClosedException ace) {
       }
     }
+  }
+  
+  // test is occasionally very slow, i dont know why
+  // try this seed: 7D7E036AD12927F5:93333EF9E6DE44DE
+  @Nightly
+  public void testThreadSafety() throws Exception {
+    final BaseDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false); // we arent making an index
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setThrottling(Throttling.NEVER); // makes this test really slow
+    }
+    
+    if (VERBOSE) {
+      System.out.println(dir);
+    }
+
+    class TheThread extends Thread {
+      private String name;
+
+      public TheThread(String name) {
+        this.name = name;
+      }
+      
+      public void run() {
+        for (int i = 0; i < 3000; i++) {
+          String fileName = this.name + i;
+          try {
+            //System.out.println("create:" + fileName);
+            IndexOutput output = dir.createOutput(fileName, newIOContext(random()));
+            output.close();
+            assertTrue(dir.fileExists(fileName));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
+    };
+    
+    class TheThread2 extends Thread {
+      private String name;
+
+      public TheThread2(String name) {
+        this.name = name;
+      }
+      
+      public void run() {
+        for (int i = 0; i < 10000; i++) {
+          try {
+            String[] files = dir.listAll();
+            for (String file : files) {
+              //System.out.println("file:" + file);
+             try {
+              IndexInput input = dir.openInput(file, newIOContext(random()));
+              input.close();
+              } catch (FileNotFoundException e) {
+                // ignore
+              } catch (IOException e) {
+                if (e.getMessage().contains("still open for writing")) {
+                  // ignore
+                } else {
+                  throw new RuntimeException(e);
+                }
+              }
+              if (random().nextBoolean()) {
+                break;
+              }
+            }
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
+    };
+    
+    TheThread theThread = new TheThread("t1");
+    TheThread2 theThread2 = new TheThread2("t2");
+    theThread.start();
+    theThread2.start();
+    
+    theThread.join();
+    theThread2.join();
+    
+    dir.close();
   }
 
 
