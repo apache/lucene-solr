@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
 import org.apache.lucene.util.*;
@@ -164,7 +165,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
       assert !termArrays.isEmpty();
       final AtomicReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -184,7 +185,7 @@ public class MultiPhraseQuery extends Query {
 
         final DocsAndPositionsEnum postingsEnum;
         int docFreq;
-        TermQuery.TermDocsEnumFactory factory;
+        TermDocsEnumFactory factory;
         if (terms.length > 1) {
           postingsEnum = new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum);
 
@@ -223,7 +224,7 @@ public class MultiPhraseQuery extends Query {
             throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
           }
 
-          factory = new TermQuery.TermDocsEnumFactory(BytesRef.deepCopyOf(term.bytes()), termsEnum, acceptDocs);
+          factory = new TermDocsEnumFactory(BytesRef.deepCopyOf(term.bytes()), termsEnum, acceptDocs);
         }
         
         postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, factory, termsEnum.docFreq() , positions.get(pos).intValue(), terms);
@@ -235,20 +236,20 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context));
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context), needsOffsets, collectPositions);
         if (s.noDocs) {
           return null;
         } else {
           return s;
         }
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context));
+        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context), needsOffsets, collectPositions);
       }
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, true, false, true, false, false, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -393,7 +394,7 @@ public class MultiPhraseQuery extends Query {
     return true;
   }
 
-  private static class MultiTermDocsEnumFactory extends TermQuery.TermDocsEnumFactory {
+  private static class MultiTermDocsEnumFactory extends TermDocsEnumFactory {
 
     AtomicReaderContext context;
     Term[] terms;

@@ -203,7 +203,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -233,6 +233,11 @@ final class JustCompileSearch {
     public float score() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+    
+    @Override
+    public float freq() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
 
     @Override
     public int docID() {
@@ -250,7 +255,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
@@ -345,7 +350,7 @@ final class JustCompileSearch {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

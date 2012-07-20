@@ -52,7 +52,7 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
             "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
     assertU(adoc("id", "48", "text_sw", "this has gigabyte potential", "foo_i","100"));
     assertU(adoc("id", "49", "text_sw", "start the big apple end", "foo_i","-100"));
-    assertU(adoc("id", "50", "text_sw", "start new big city end"));    
+    assertU(adoc("id", "50", "text_sw", "start new big city end"));
     assertU(adoc("id", "51", "store",   "12.34,-56.78"));
     assertU(adoc("id", "52", "text_sw", "tekna theou klethomen"));
     assertU(adoc("id", "53", "text_sw", "nun tekna theou esmen"));
@@ -352,6 +352,7 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
   }
 
   public void testUserFields() {
+    String allr = "*[count(//doc)=10]";
     String oner = "*[count(//doc)=1]";
     String nor = "*[count(//doc)=0]";
     
@@ -365,9 +366,24 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     assertQ(req("defType","edismax", "q","id:42"),
         oner);
     
-    assertQ(req("defType","edismax", "uf","*", "q","id:42"),
+    // SOLR-3377 - parens should be allowed immediately before field name
+    assertQ(req("defType","edismax", "q","( id:42 )"),
         oner);
-    
+    assertQ(req("defType","edismax", "q","(id:42)"),
+        oner);
+    assertQ(req("defType","edismax", "q","(+id:42)"),
+        oner);
+    assertQ(req("defType","edismax", "q","+(+id:42)"),
+        oner);
+    assertQ(req("defType","edismax", "q","+(+((id:42)))"),
+        oner);
+    assertQ(req("defType","edismax", "q","+(+((+id:42)))"),
+        oner);
+    assertQ(req("defType","edismax", "q"," +( +( ( +id:42) ) ) "),
+        oner);
+    assertQ(req("defType","edismax", "q","(id:(*:*)^200)"),
+        allr);
+
     assertQ(req("defType","edismax", "uf","id", "q","id:42"),
         oner);
     

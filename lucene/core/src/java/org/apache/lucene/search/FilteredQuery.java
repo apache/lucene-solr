@@ -25,6 +25,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 
@@ -122,7 +124,7 @@ public class FilteredQuery extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, Bits acceptDocs) throws IOException {
+      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
         assert filter != null;
 
         final DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);
@@ -149,12 +151,12 @@ public class FilteredQuery extends Query {
           // if we are using random access, we return the inner scorer, just with other acceptDocs
           // TODO, replace this by when BooleanWeight is fixed to be consistent with its scorer implementations:
           // return weight.scorer(context, scoreDocsInOrder, topScorer, filterAcceptDocs);
-          return weight.scorer(context, true, topScorer, filterAcceptDocs);
+          return weight.scorer(context, true, topScorer, needsPositions, needsOffsets, collectPositions, filterAcceptDocs);
         } else {
           assert firstFilterDoc > -1;
           // we are gonna advance() this scorer, so we set inorder=true/toplevel=false
           // we pass null as acceptDocs, as our filter has already respected acceptDocs, no need to do twice
-          final Scorer scorer = weight.scorer(context, true, false, null);
+          final Scorer scorer = weight.scorer(context, true, false, needsPositions, needsOffsets, collectPositions, null);
           return (scorer == null) ? null : new Scorer(this) {
             private int scorerDoc = -1, filterDoc = firstFilterDoc;
             
@@ -224,9 +226,16 @@ public class FilteredQuery extends Query {
             }
 
             @Override
-            public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-              // nocommit what should we do in this case with positions?
-              throw new UnsupportedOperationException();
+            public IntervalIterator positions() throws IOException {
+               return scorer.positions();
+            }
+            
+            @Override
+            public float freq() throws IOException { return scorer.freq(); }
+            
+            @Override
+            public Collection<ChildScorer> getChildren() {
+              return Collections.singleton(new ChildScorer(scorer, "FILTERED"));
             }
           };
         }

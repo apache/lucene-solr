@@ -21,8 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
 
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter; // javadocs
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.RollingCharBuffer;
 import org.apache.lucene.util.fst.CharSequenceOutputs;
@@ -51,8 +50,8 @@ public class MappingCharFilter extends BaseCharFilter {
   private int replacementPointer;
   private int inputOff;
 
-  /** Default constructor that takes a {@link CharStream}. */
-  public MappingCharFilter(NormalizeCharMap normMap, CharStream in) {
+  /** Default constructor that takes a {@link Reader}. */
+  public MappingCharFilter(NormalizeCharMap normMap, Reader in) {
     super(in);
     buffer.reset(in);
 
@@ -66,15 +65,10 @@ public class MappingCharFilter extends BaseCharFilter {
     }
   }
 
-  /** Easy-use constructor that takes a {@link Reader}. */
-  public MappingCharFilter(NormalizeCharMap normMap, Reader in) {
-    this(normMap, CharReader.get(in));
-  }
-
   @Override
   public void reset() throws IOException {
     super.reset();
-    buffer.reset(input);
+    buffer.reset(in);
     replacement = null;
     inputOff = 0;
   }

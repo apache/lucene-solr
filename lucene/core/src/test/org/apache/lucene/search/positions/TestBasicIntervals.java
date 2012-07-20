@@ -184,9 +184,10 @@ public class TestBasicIntervals extends LuceneTestCase {
    Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
    
    Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
-       .nextBoolean(), true, r.getLiveDocs());
-   IntervalIterator positions = scorer.positions(false, false, false);
-   positions.advanceTo(11);
+       .nextBoolean(), true, true, false, false, r.getLiveDocs());
+   IntervalIterator positions = scorer.positions();
+   positions.scorer.advance(11);
+   positions.scorerAdvanced(11);
    Interval interval = positions.next();
    assertNotNull("first range", interval);
    assertEquals("first doc", 11, positions.docID());
@@ -211,6 +212,10 @@ public class TestBasicIntervals extends LuceneTestCase {
     }
     
   }
+  
+  private int advanceIter(IntervalIterator iter, int pos) throws IOException {
+    return iter.scorerAdvanced(iter.scorer.advance(pos));
+  }
   public void testNearUnOrdered() throws Exception {
     {
       BooleanQuery query = new BooleanQuery();
@@ -223,37 +228,38 @@ public class TestBasicIntervals extends LuceneTestCase {
       Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
       
       Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
-          .nextBoolean(), true, r.getLiveDocs());
-      IntervalIterator positions = scorer.positions(false, false, false);
-      positions.advanceTo(4);
+          .nextBoolean(), true, true, false, false, r.getLiveDocs());
+      IntervalIterator positions = scorer.positions();
+      advanceIter(positions, 4);
+
       Interval interval = positions.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 4, positions.docID());
       assertEquals("start " + interval, 1, interval.begin);
       assertEquals("end", 2, interval.end);
       
-      positions.advanceTo(5);
+      advanceIter(positions, 5);
       interval = positions.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 5, positions.docID());
       assertEquals("start", 2, interval.begin);
       assertEquals("end", 3, interval.end);
       
-      positions.advanceTo(8);
+      advanceIter(positions, 8);
       interval = positions.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 8, positions.docID());
       assertEquals("start", 2, interval.begin);
       assertEquals("end", 3, interval.end);
       
-      positions.advanceTo(9);
+      advanceIter(positions, 9);
       interval = positions.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 9, positions.docID());
       assertEquals("start", 0, interval.begin);
       assertEquals("end", 1, interval.end);
       
-      positions.advanceTo(10);
+      advanceIter(positions, 10);
       interval = positions.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 10, positions.docID());
@@ -282,10 +288,10 @@ public class TestBasicIntervals extends LuceneTestCase {
       AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
       Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
       Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
-          .nextBoolean(), true, r.getLiveDocs());
+          .nextBoolean(), true, true, false, false, r.getLiveDocs());
       
-      IntervalIterator iterator = scorer.positions(false, false, false);
-      assertEquals(4,iterator.advanceTo(4));
+      IntervalIterator iterator = scorer.positions();
+      assertEquals(4, advanceIter(iterator, 4));
       Interval interval = iterator.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 4, iterator.docID());
@@ -299,7 +305,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       assertEquals("start", 1, interval.begin);
       assertEquals("end", 2, interval.end);
       
-      iterator.advanceTo(5);
+      advanceIter(iterator, 5);
       interval = iterator.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 5, iterator.docID());
@@ -312,7 +318,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       assertEquals("start", 2, interval.begin);
       assertEquals("end", 3, interval.end);
       
-      iterator.advanceTo(8); // (u2 xx (u1 u2))
+      advanceIter(iterator, 8); // (u2 xx (u1 u2))
       interval = iterator.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 8, iterator.docID());
@@ -325,7 +331,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       assertEquals("start", 2, interval.begin);
       assertEquals("end", 3, interval.end);
       
-      iterator.advanceTo(9); // u2 u1 xx u2
+      advanceIter(iterator, 9); // u2 u1 xx u2
       interval = iterator.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 9, iterator.docID());
@@ -341,7 +347,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       interval = iterator.next();
       assertNull("Has next and it shouldn't", interval);
       
-      iterator.advanceTo(10);
+      advanceIter(iterator, 10);
       interval = iterator.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 10, iterator.docID());
@@ -363,16 +369,16 @@ public class TestBasicIntervals extends LuceneTestCase {
     AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
     Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
     
-    Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
-        .nextBoolean(), true, r.getLiveDocs());
-    return scorer.positions(false, false, false);
+    Scorer scorer = createWeight.scorer(r.getTopReaderContext(), true, true, true, false, false, r.getLiveDocs());
+    return scorer.positions();
   }
   
   private IntervalIterator tstNextPosition(
       IntervalIterator iterator, int doc, int start, int end)
       throws Exception {
     if (iterator.docID() != doc) {
-      iterator.advanceTo(doc);
+      iterator.scorer.advance(doc);
+      iterator.scorerAdvanced(doc);
     }
     assertEquals("doc", doc, iterator.docID());
     Interval next = iterator.next();
@@ -390,11 +396,11 @@ public class TestBasicIntervals extends LuceneTestCase {
   
   public void testOrMovesForward() throws Exception {
     IntervalIterator iterator = orIterator(new String[] {"w1", "xx"});
-    iterator.advanceTo(0);
+    advanceIter(iterator, 0);
     assertNotNull(iterator.next());
     int doc = iterator.docID();
     assertEquals(0, doc);
-    assertEquals(1, iterator.advanceTo(1));
+    assertEquals(1, advanceIter(iterator, 1));
     
   }
   
@@ -409,7 +415,8 @@ public class TestBasicIntervals extends LuceneTestCase {
   
   public void testOrDoubleSkip() throws Exception {
     IntervalIterator iterator = orIterator(new String[] {"w5", "yy"});
-    assertEquals("initial skipTo", 3, iterator.advanceTo(3));
+    iterator.scorer.advance(3);
+    assertEquals("initial skipTo", 3, iterator.scorerAdvanced(3));
     assertEquals("doc", 3, iterator.docID());
     Interval next = iterator.next();
     assertEquals("start", 4, next.begin);

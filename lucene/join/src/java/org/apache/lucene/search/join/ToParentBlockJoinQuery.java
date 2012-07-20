@@ -159,10 +159,10 @@ public class ToParentBlockJoinQuery extends Query {
     // parent document space
     @Override
     public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
 
       // Pass scoreDocsInOrder true, topScorer false to our sub:
-      final Scorer childScorer = childWeight.scorer(readerContext, true, false, null);
+      final Scorer childScorer = childWeight.scorer(readerContext, true, false, needsPositions, needsOffsets, collectPositions, null);
 
       if (childScorer == null) {
         // No matches
@@ -196,7 +196,7 @@ public class ToParentBlockJoinQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, true, false, context.reader().getLiveDocs());
+      BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, true, false, false, false, false, context.reader().getLiveDocs());
       if (scorer != null) {
         if (scorer.advance(doc) == doc) {
           return scorer.explain(context.docBase);
@@ -219,6 +219,7 @@ public class ToParentBlockJoinQuery extends Query {
     private int parentDoc = -1;
     private int prevParentDoc;
     private float parentScore;
+    private float parentFreq;
     private int nextChildDoc;
 
     private int[] pendingChildDocs = new int[5];
@@ -240,7 +241,7 @@ public class ToParentBlockJoinQuery extends Query {
 
     @Override
     public Collection<ChildScorer> getChildren() {
-      return Collections.singletonList(new ChildScorer(childScorer, "BLOCK_JOIN"));
+      return Collections.singleton(new ChildScorer(childScorer, "BLOCK_JOIN"));
     }
 
     int getChildCount() {
@@ -300,7 +301,9 @@ public class ToParentBlockJoinQuery extends Query {
         }
 
         float totalScore = 0;
+        float totalFreq = 0;
         float maxScore = Float.NEGATIVE_INFINITY;
+        float maxFreq = 0;
 
         childDocUpto = 0;
         do {
@@ -316,9 +319,12 @@ public class ToParentBlockJoinQuery extends Query {
           if (scoreMode != ScoreMode.None) {
             // TODO: specialize this into dedicated classes per-scoreMode
             final float childScore = childScorer.score();
+            final float childFreq = childScorer.freq();
             pendingChildScores[childDocUpto] = childScore;
             maxScore = Math.max(childScore, maxScore);
+            maxFreq = Math.max(childFreq, maxFreq);
             totalScore += childScore;
+            totalFreq += childFreq;
           }
           childDocUpto++;
           nextChildDoc = childScorer.nextDoc();
@@ -330,12 +336,15 @@ public class ToParentBlockJoinQuery extends Query {
         switch(scoreMode) {
         case Avg:
           parentScore = totalScore / childDocUpto;
+          parentFreq = totalFreq / childDocUpto;
           break;
         case Max:
           parentScore = maxScore;
+          parentFreq = maxFreq;
           break;
         case Total:
           parentScore = totalScore;
+          parentFreq = totalFreq;
           break;
         case None:
           break;
@@ -354,6 +363,11 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public float score() throws IOException {
       return parentScore;
+    }
+    
+    @Override
+    public float freq() {
+      return parentFreq;
     }
 
     @Override
@@ -402,8 +416,7 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads,
-        boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException();
     }
 

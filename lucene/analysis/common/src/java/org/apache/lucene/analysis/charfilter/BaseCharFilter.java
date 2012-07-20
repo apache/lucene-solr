@@ -17,9 +17,10 @@
 
 package org.apache.lucene.analysis.charfilter;
 
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.util.ArrayUtil;
 
+import java.io.Reader;
 import java.util.Arrays;
 
 /**
@@ -34,7 +35,7 @@ public abstract class BaseCharFilter extends CharFilter {
   private int diffs[];
   private int size = 0;
   
-  public BaseCharFilter(CharStream in) {
+  public BaseCharFilter(Reader in) {
     super(in);
   }
 

@@ -18,8 +18,7 @@ package org.apache.solr.analysis;
  */
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.core.SolrResourceLoader;
@@ -38,7 +37,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
   public void testIterationMarksWithKeywordTokenizer() throws IOException {
     final String text = "時々馬鹿々々しいところゞゝゝミスヾ";
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory();
-    CharStream filter = filterFactory.create(CharReader.get(new StringReader(text)));
+    CharFilter filter = filterFactory.create(new StringReader(text));
     TokenStream tokenStream = new MockTokenizer(filter, MockTokenizer.KEYWORD, false);
     assertTokenStreamContents(tokenStream, new String[]{"時時馬鹿馬鹿しいところどころミスズ"});
   }
@@ -53,8 +52,8 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     Map<String, String> filterArgs = Collections.emptyMap();
     filterFactory.init(filterArgs);
 
-    CharStream filter = filterFactory.create(
-        CharReader.get(new StringReader("時々馬鹿々々しいところゞゝゝミスヾ"))
+    CharFilter filter = filterFactory.create(
+        new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
     TokenStream tokenStream = tokenizerFactory.create(filter);
     assertTokenStreamContents(tokenStream, new String[]{"時時", "馬鹿馬鹿しい", "ところどころ", "ミ", "スズ"});
@@ -72,8 +71,8 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     filterArgs.put("normalizeKana", "false");
     filterFactory.init(filterArgs);
     
-    CharStream filter = filterFactory.create(
-        CharReader.get(new StringReader("時々馬鹿々々しいところゞゝゝミスヾ"))
+    CharFilter filter = filterFactory.create(
+        new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
     TokenStream tokenStream = tokenizerFactory.create(filter);
     assertTokenStreamContents(tokenStream, new String[]{"時時", "馬鹿馬鹿しい", "ところ", "ゞ", "ゝ", "ゝ", "ミス", "ヾ"});
@@ -91,8 +90,8 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     filterArgs.put("normalizeKana", "true");
     filterFactory.init(filterArgs);
 
-    CharStream filter = filterFactory.create(
-        CharReader.get(new StringReader("時々馬鹿々々しいところゞゝゝミスヾ"))
+    CharFilter filter = filterFactory.create(
+        new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
     TokenStream tokenStream = tokenizerFactory.create(filter);
     assertTokenStreamContents(tokenStream, new String[]{"時々", "馬鹿", "々", "々", "しい", "ところどころ", "ミ", "スズ"});

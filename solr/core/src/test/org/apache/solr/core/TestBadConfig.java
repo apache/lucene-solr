@@ -17,31 +17,36 @@
 
 package org.apache.solr.core;
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import javax.script.ScriptEngineManager;
 
-public class TestBadConfig extends AbstractSolrTestCase {
+import org.junit.Assume;
 
-  @Override
-  public String getSchemaFile() { return "schema.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "bad_solrconfig.xml"; }
+public class TestBadConfig extends AbstractBadConfigTestBase {
 
-  @Override
-  public void setUp() throws Exception {
-    ignoreException("unset.sys.property");
-    try {
-      super.setUp();
-      fail("Exception should have been thrown");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("unset.sys.property"));
-    } finally {
-      resetExceptionIgnores();
-    }
+  public void testUnsetSysProperty() throws Exception {
+    assertConfigs("bad_solrconfig.xml","schema.xml","unset.sys.property");
   }
-    
 
-  public void testNothing() {
-    // Empty test case as the real test is that the initialization of the TestHarness fails
-    assertTrue(true);
+  public void testBogusScriptEngine() throws Exception {
+    // sanity check
+    Assume.assumeTrue(null == (new ScriptEngineManager()).getEngineByName("giberish"));
+                      
+    assertConfigs("bad-solrconfig-bogus-scriptengine-name.xml",
+                  "schema.xml","giberish");
   }
+
+  public void testMissingScriptFile() throws Exception {
+    // sanity check
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
+    assertConfigs("bad-solrconfig-missing-scriptfile.xml",
+                  "schema.xml","a-file-name-that-does-not-exist.js");
+  }
+
+  public void testInvalidScriptFile() throws Exception {
+    // sanity check
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("javascript"));
+    assertConfigs("bad-solrconfig-invalid-scriptfile.xml",
+                  "schema.xml","currency.xml");
+  }
+
 }

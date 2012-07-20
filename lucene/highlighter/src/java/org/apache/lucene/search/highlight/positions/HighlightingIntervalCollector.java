@@ -50,7 +50,7 @@ public class HighlightingIntervalCollector extends Collector implements Interval
     addDoc (doc);
     // consume any remaining positions the scorer didn't report
     docs[count-1].score=scorer.score();
-    positions.advanceTo(doc);
+    positions.scorerAdvanced(doc);
     while(positions.next() != null) {
       positions.collect(this);
     }    
@@ -71,7 +71,7 @@ public class HighlightingIntervalCollector extends Collector implements Interval
 
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
-    positions = scorer.positions(false, true, true);
+    positions = scorer.positions();
     // If we want to visit the other scorers, we can, here...
   }
   
@@ -89,7 +89,19 @@ public class HighlightingIntervalCollector extends Collector implements Interval
   }
   
   @Override
-  public boolean needsPositions() { return true; }
+  public boolean needsPositions() {
+    return true;
+  }
+  
+  @Override
+  public boolean needsOffsets() {
+    return true;
+  }
+  
+  @Override
+  public boolean collectsPositions() {
+    return true;
+  }
 
   @Override
   public void collectLeafPosition(Scorer scorer, Interval interval,

@@ -328,6 +328,11 @@ public class ToParentBlockJoinCollector extends Collector {
     public float score() {
       return score;
     }
+    
+    @Override
+    public float freq() {
+      return 1; // TODO: does anything else make sense?... duplicate of grouping's FakeScorer btw?
+    }
 
     @Override
     public int docID() {
@@ -345,7 +350,7 @@ public class ToParentBlockJoinCollector extends Collector {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException();
     }
   }

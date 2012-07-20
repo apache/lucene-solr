@@ -99,31 +99,26 @@ public final class ConjunctionIntervalIterator extends BooleanIntervalIterator {
   
   
   @Override
-  public int advanceTo(final int docId) throws IOException {
-    int advancedTo = docId;
-    while (true) {
-      queue.reset();
-      for (int i = 0; i < iterators.length; i++) {
-        currentDoc = iterators[i].advanceTo(advancedTo);
-        if (currentDoc == NO_MORE_DOCS) {
-          return NO_MORE_DOCS;
-        }
-        
-        if (i != 0 && currentDoc != advancedTo) {
-          advancedTo = currentDoc;
-          continue;
-        }
-        advancedTo = currentDoc;
-        final Interval interval = iterators[i].next();
-        if (interval != null) {
-          IntervalRef intervalRef = new IntervalRef(interval, i); // TODO maybe
-                                                                  // reuse?
-          queue.updateRightExtreme(intervalRef);
-          queue.add(intervalRef);
-        }
-      }
-      return currentDoc;
+  public int scorerAdvanced(final int docId) throws IOException {
+    if (docId == NO_MORE_DOCS) {
+      return NO_MORE_DOCS;
     }
+    queue.reset();
+    for (int i = 0; i < iterators.length; i++) {
+      int scorerAdvanced = iterators[i].scorerAdvanced(docId);
+      if (scorerAdvanced != docId) {
+        System.out.println();
+      }
+      assert scorerAdvanced == docId;
+      final Interval interval = iterators[i].next();
+      if (interval != null) {
+        IntervalRef intervalRef = new IntervalRef(interval, i); // TODO maybe
+                                                                // reuse?
+        queue.updateRightExtreme(intervalRef);
+        queue.add(intervalRef);
+      }
+    }
+    return docId;
   }
   
   
@@ -137,7 +132,7 @@ public final class ConjunctionIntervalIterator extends BooleanIntervalIterator {
   
   private void collectInternal(IntervalCollector collector) {
     assert collectPositions;
-    collector.collectComposite(scorer, queue.currentCandidate, currentDoc);
+    collector.collectComposite(scorer, queue.currentCandidate, docID());
     for (IntervalIterator iter : iterators) {
       iter.collect(collector);
     }

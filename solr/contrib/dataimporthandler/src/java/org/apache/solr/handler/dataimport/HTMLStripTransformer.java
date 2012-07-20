@@ -17,7 +17,6 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
-import org.apache.lucene.analysis.CharReader;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -73,7 +72,7 @@ public class HTMLStripTransformer extends Transformer {
     StringBuilder out = new StringBuilder();
     StringReader strReader = new StringReader(value);
     try {
-      HTMLStripCharFilter html = new HTMLStripCharFilter(CharReader.get(strReader.markSupported() ? strReader : new BufferedReader(strReader)));
+      HTMLStripCharFilter html = new HTMLStripCharFilter(strReader.markSupported() ? strReader : new BufferedReader(strReader));
       char[] cbuf = new char[1024 * 10];
       while (true) {
         int count = html.read(cbuf);

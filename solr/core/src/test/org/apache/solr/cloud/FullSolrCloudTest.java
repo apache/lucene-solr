@@ -185,7 +185,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       chaosMonkey = new ChaosMonkey(zkServer, zkStateReader,
           DEFAULT_COLLECTION, shardToJetty, shardToClient, shardToLeaderClient,
-          shardToLeaderJetty, random());
+          shardToLeaderJetty);
     }
     
     // wait until shards have started registering...

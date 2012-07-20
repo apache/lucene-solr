@@ -82,7 +82,7 @@ public class TermQuery extends Query {
     
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
       assert termStates.topReaderContext == ReaderUtil
           .getTopLevelContext(context) : "The top-reader used to create Weight ("
           + termStates.topReaderContext
@@ -92,30 +92,22 @@ public class TermQuery extends Query {
       if (termsEnum == null) {
         return null;
       }
-      DocsEnum docs = termsEnum.docs(acceptDocs, null, true);
+      DocsEnum docs = needsPositions ? termsEnum.docsAndPositions(acceptDocs, null, needsOffsets) : termsEnum.docs(acceptDocs, null, true);
       if (docs != null) {
-        return new TermScorer(this, docs, new TermDocsEnumFactory(termsEnum, acceptDocs), createDocScorer(context));
+        return new TermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq(), collectPositions);
       } else {
         // Index does not store freq info
         docs = termsEnum.docs(acceptDocs, null, false);
         assert docs != null;
-        return new MatchOnlyTermScorer(this, docs, createDocScorer(context));
+        return new MatchOnlyTermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
       }
-    }
-    
-    /**
-     * Creates an {@link ExactSimScorer} for this {@link TermWeight}
-     */
-    ExactSimScorer createDocScorer(AtomicReaderContext context)
-        throws IOException {
-      return similarity.exactSimScorer(stats, context);
     }
     
     /**
      * Returns a {@link TermsEnum} positioned at this weights Term or null if
      * the term does not exist in the given context
      */
-    TermsEnum getTermsEnum(AtomicReaderContext context) throws IOException {
+    private TermsEnum getTermsEnum(AtomicReaderContext context) throws IOException {
       final TermState state = termStates.get(context.ord);
       if (state == null) { // term is not present in that reader
         assert termNotInReader(context.reader(), term.field(), term.bytes()) : "no termstate found but term exists in reader term="
@@ -141,8 +133,8 @@ public class TermQuery extends Query {
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
         throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader()
-          .getLiveDocs());
+      Scorer scorer = scorer(context, true, false, false, false, false, context.reader()
+              .getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -247,30 +239,4 @@ public class TermQuery extends Query {
     return Float.floatToIntBits(getBoost()) ^ term.hashCode();
   }
   
-  static class TermDocsEnumFactory {
-    protected final TermsEnum termsEnum;
-    protected final Bits liveDocs;
-    protected final BytesRef term;
-    
-    TermDocsEnumFactory(TermsEnum termsEnum, Bits liveDocs) {
-      this(null, termsEnum, liveDocs);
-    }
-    
-    TermDocsEnumFactory(BytesRef term, TermsEnum termsEnum, Bits liveDocs) {
-      this.termsEnum = termsEnum;
-      this.liveDocs = liveDocs;
-      this.term = term;
-    }
-    
-    
-    public DocsAndPositionsEnum docsAndPositionsEnum(boolean offsets)
-        throws IOException {
-      if (term != null) {
-        assert term != null;
-        termsEnum.seekExact(term, false);
-      }
-      return termsEnum.docsAndPositions(liveDocs, null, offsets);
-    }
-
-  }
 }

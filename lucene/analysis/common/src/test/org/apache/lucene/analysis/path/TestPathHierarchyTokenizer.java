@@ -23,7 +23,6 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
@@ -123,7 +122,7 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
     builder.add("\\", "/");
     NormalizeCharMap normMap = builder.build();
     String path = "c:\\a\\b\\c";
-    CharStream cs = new MappingCharFilter(normMap, new StringReader(path));
+    Reader cs = new MappingCharFilter(normMap, new StringReader(path));
     PathHierarchyTokenizer t = new PathHierarchyTokenizer( cs );
     assertTokenStreamContents(t,
         new String[]{"c:", "c:/a", "c:/a/b", "c:/a/b/c"},

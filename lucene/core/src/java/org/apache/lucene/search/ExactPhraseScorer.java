@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.positions.BlockIntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.TermIntervalIterator;
@@ -38,7 +39,7 @@ final class ExactPhraseScorer extends Scorer {
   boolean noDocs;
   
   private final static class ChunkState {
-    final TermQuery.TermDocsEnumFactory factory;
+    final TermDocsEnumFactory factory;
     final DocsAndPositionsEnum posEnum;
     final int offset;
     final boolean useAdvance;
@@ -47,7 +48,7 @@ final class ExactPhraseScorer extends Scorer {
     int pos;
     int lastPos;
     
-    public ChunkState(TermQuery.TermDocsEnumFactory factory, DocsAndPositionsEnum posEnum, int offset,
+    public ChunkState(TermDocsEnumFactory factory, DocsAndPositionsEnum posEnum, int offset,
         boolean useAdvance) throws IOException {
       this.factory = factory;
       this.posEnum = posEnum;
@@ -62,11 +63,16 @@ final class ExactPhraseScorer extends Scorer {
   private int freq;
   
   private final Similarity.ExactSimScorer docScorer;
+
+  private final boolean needsOffsets;
+  private final boolean collectPositions;
   
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      Similarity.ExactSimScorer docScorer) throws IOException {
+      Similarity.ExactSimScorer docScorer, boolean needsOffsets, boolean collectPositions) throws IOException {
     super(weight);
     this.docScorer = docScorer;
+    this.needsOffsets = needsOffsets;
+    this.collectPositions = collectPositions;
     
     chunkStates = new ChunkState[postings.length];
     
@@ -326,11 +332,12 @@ final class ExactPhraseScorer extends Scorer {
   }
   
   @Override
-  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions() throws IOException {
     TermIntervalIterator[] posIters = new TermIntervalIterator[chunkStates.length];
+    DocsAndPositionsEnum[] enums = new DocsAndPositionsEnum[chunkStates.length];
     for (int i = 0; i < chunkStates.length; i++) {
-      posIters[i] = new TermIntervalIterator(this, chunkStates[i].factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
+      posIters[i] = new TermIntervalIterator(this, enums[i] = chunkStates[i].factory.docsAndPositionsEnum(needsOffsets), false, collectPositions);
     }
-    return new BlockIntervalIterator(this, collectPositions, posIters);
+    return new PhraseScorer.AdvancingIntervalIterator(this, collectPositions, enums, new BlockIntervalIterator(this, collectPositions, posIters));
   }
 }

@@ -108,25 +108,23 @@ public final class OrderedConjunctionIntervalIterator extends
   @Override
   public void collect(IntervalCollector collector) {
     assert collectPositions;
-    collector.collectComposite(scorer, interval, currentDoc);
+    collector.collectComposite(scorer, interval, docID());
     for (IntervalIterator iter : iterators) {
       iter.collect(collector);
     }
   }
 
   @Override
-  public int advanceTo(int docId) throws IOException {
-    if (docId == currentDoc) {
-      return docId;
-    }
+  public int scorerAdvanced(int docId) throws IOException {
+    assert scorer.docID() == docId;
     for (int i = 0; i < iterators.length; i++) {
-      int advanceTo = iterators[i].advanceTo(docId);
+      int advanceTo = iterators[i].scorerAdvanced(docId);
       assert advanceTo == docId;
       intervals[i] = INFINITE_INTERVAL;
     }
     intervals[0] = iterators[0].next();
     index = 1;
-    return currentDoc = docId;
+    return scorer.docID();
   }
 
   @Override

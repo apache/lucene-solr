@@ -17,6 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.search.positions.Interval;
+import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.positions.IntervalIterator.IntervalCollector;
 import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;
@@ -133,5 +137,49 @@ abstract class PhraseScorer extends Scorer {
 
   @Override
   public String toString() { return "scorer(" + weight + ")"; }
+  
+  
+  final static class AdvancingIntervalIterator extends IntervalIterator {
+
+    public AdvancingIntervalIterator(Scorer scorer, boolean collectPositions, final DocsAndPositionsEnum[] enums, final IntervalIterator delegate) {
+      super(scorer, collectPositions);
+      this.enums = enums;
+      this.delegate = delegate;
+    }
+
+    private final DocsAndPositionsEnum[] enums;
+    private final IntervalIterator delegate;
+    @Override
+    public int scorerAdvanced(int docId) throws IOException {
+      assert docId == docID();
+      for (DocsAndPositionsEnum oneEnum : enums) {
+        int advance = oneEnum.advance(docId);
+        assert advance == docId;
+      }
+      delegate.scorerAdvanced(docId);
+      return docId;
+    }
+
+    @Override
+    public Interval next() throws IOException {
+      return delegate.next();
+    }
+
+    @Override
+    public void collect(IntervalCollector collector) {
+      delegate.collect(collector);
+    }
+
+    @Override
+    public IntervalIterator[] subs(boolean inOrder) {
+      return delegate.subs(inOrder);
+    }
+
+    @Override
+    public int matchDistance() {
+      return delegate.matchDistance();
+    }
+    
+  }
  
 }

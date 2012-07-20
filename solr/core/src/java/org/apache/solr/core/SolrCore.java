@@ -664,7 +664,8 @@ public final class SolrCore implements SolrInfoMBean {
       latch.countDown();//release the latch, otherwise we block trying to do the close.  This should be fine, since counting down on a latch of 0 is still fine
       //close down the searcher and any other resources, if it exists, as this is not recoverable
       close();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+                              e.getMessage(), e);
     } finally {
       // allow firstSearcher events to fire and make sure it is released
       latch.countDown();
@@ -1179,8 +1180,12 @@ public final class SolrCore implements SolrInfoMBean {
 
         if (updateHandlerReopens) {
           // SolrCore.verbose("start reopen from",previousSearcher,"writer=",writer);
-          IndexWriter writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
-          newReader = DirectoryReader.openIfChanged(currentReader, writer, true);
+          RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
+          try {
+            newReader = DirectoryReader.openIfChanged(currentReader, writer.get(), true);
+          } finally {
+            writer.decref();
+          }
 
         } else {
           // verbose("start reopen without writer, reader=", currentReader);

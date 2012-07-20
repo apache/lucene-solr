@@ -134,11 +134,13 @@ public class TestBrouwerianQuery extends LuceneTestCase {
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
     assertEquals(1, leaves.size());
     for (AtomicReaderContext atomicReaderContext : leaves) {
-      Scorer scorer = weight.scorer(atomicReaderContext, true, true, atomicReaderContext.reader().getLiveDocs());
+      Scorer scorer = weight.scorer(atomicReaderContext, true, true, true, false, false, atomicReaderContext.reader().getLiveDocs());
+        IntervalIterator positions = scorer.positions();
         int nextDoc = scorer.nextDoc();
+        assertEquals(1, positions.scorerAdvanced(nextDoc));
+
+        
         assertEquals(1, nextDoc);
-        IntervalIterator positions = scorer.positions(false, false, false);
-        assertEquals(1, positions.advanceTo(nextDoc));
         Interval interval = null;
         int[] start = new int[] {0, 1, 4};
         int[] end = new int[] {4, 6, 11};

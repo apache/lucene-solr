@@ -38,6 +38,10 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     @Override public float score() {
       return idx == scores.length ? Float.NaN : scores[idx];
     }
+    
+    @Override public float freq() {
+      return 1;
+    }
 
     @Override public int docID() { return idx; }
 
@@ -51,7 +55,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException();
     }
   }

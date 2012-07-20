@@ -26,6 +26,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.Map;
 
@@ -97,9 +99,9 @@ public class BoostedQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
       // we are gonna advance() the subscorer
-      Scorer subQueryScorer = qWeight.scorer(context, true, false, acceptDocs);
+      Scorer subQueryScorer = qWeight.scorer(context, true, false, needsPositions, needsOffsets, collectPositions, acceptDocs);
       if(subQueryScorer == null) {
         return null;
       }
@@ -165,6 +167,16 @@ public class BoostedQuery extends Query {
       return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
     }
 
+    @Override
+    public float freq() throws IOException {
+      return scorer.freq();
+    }
+
+    @Override
+    public Collection<ChildScorer> getChildren() {
+      return Collections.singleton(new ChildScorer(scorer, "CUSTOM"));
+    }
+
     public Explanation explain(int doc) throws IOException {
       Explanation subQueryExpl = weight.qWeight.explain(readerContext ,doc);
       if (!subQueryExpl.isMatch()) {
@@ -179,8 +191,8 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-      return scorer.positions(needsPayloads, needsOffsets, false);
+    public IntervalIterator positions() throws IOException {
+      return scorer.positions();
     }
   }
 

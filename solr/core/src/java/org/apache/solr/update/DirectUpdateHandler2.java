@@ -137,7 +137,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   private void deleteAll() throws IOException {
     SolrCore.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
-    solrCoreState.getIndexWriter(core).deleteAll();
+    RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
+    try {
+      iw.get().deleteAll();
+    } finally {
+      iw.decref();
+    }
   }
 
   protected void rollbackWriter() throws IOException {
@@ -148,115 +153,124 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
-    IndexWriter writer = solrCoreState.getIndexWriter(core);
-    addCommands.incrementAndGet();
-    addCommandsCumulative.incrementAndGet();
-    int rc=-1;
-
-    // if there is no ID field, don't overwrite
-    if( idField == null ) {
-      cmd.overwrite = false;
-    }
-
-
+    int rc = -1;
+    RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
-
-      if (cmd.overwrite) {
-
-        // Check for delete by query commands newer (i.e. reordered).  This should always be null on a leader
-        List<UpdateLog.DBQ> deletesAfter = null;
-        if (ulog != null && cmd.version > 0) {
-          deletesAfter = ulog.getDBQNewer(cmd.version);
-        }
-
-        if (deletesAfter != null) {
-          log.info("Reordered DBQs detected.  Update="+cmd+" DBQs="+deletesAfter);
-          List<Query> dbqList = new ArrayList<Query>(deletesAfter.size());
-          for (UpdateLog.DBQ dbq : deletesAfter) {
-            try {
-              DeleteUpdateCommand tmpDel = new DeleteUpdateCommand(cmd.req);
-              tmpDel.query = dbq.q;
-              tmpDel.version = -dbq.version;
-              dbqList.add( getQuery(tmpDel) );
-            } catch (Exception e) {
-              log.error("Exception parsing reordered query : " + dbq, e);
+      IndexWriter writer = iw.get();
+      addCommands.incrementAndGet();
+      addCommandsCumulative.incrementAndGet();
+      
+      // if there is no ID field, don't overwrite
+      if (idField == null) {
+        cmd.overwrite = false;
+      }
+      
+      try {
+        
+        if (cmd.overwrite) {
+          
+          // Check for delete by query commands newer (i.e. reordered). This
+          // should always be null on a leader
+          List<UpdateLog.DBQ> deletesAfter = null;
+          if (ulog != null && cmd.version > 0) {
+            deletesAfter = ulog.getDBQNewer(cmd.version);
+          }
+          
+          if (deletesAfter != null) {
+            log.info("Reordered DBQs detected.  Update=" + cmd + " DBQs="
+                + deletesAfter);
+            List<Query> dbqList = new ArrayList<Query>(deletesAfter.size());
+            for (UpdateLog.DBQ dbq : deletesAfter) {
+              try {
+                DeleteUpdateCommand tmpDel = new DeleteUpdateCommand(cmd.req);
+                tmpDel.query = dbq.q;
+                tmpDel.version = -dbq.version;
+                dbqList.add(getQuery(tmpDel));
+              } catch (Exception e) {
+                log.error("Exception parsing reordered query : " + dbq, e);
+              }
             }
-          }
-
-          addAndDelete(cmd, dbqList);
-        } else {
-          // normal update
-
-          Term updateTerm;
-          Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
-          boolean del = false;
-          if (cmd.updateTerm == null) {
-            updateTerm = idTerm;
+            
+            addAndDelete(cmd, dbqList);
           } else {
-            del = true;
-            updateTerm = cmd.updateTerm;
+            // normal update
+            
+            Term updateTerm;
+            Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
+            boolean del = false;
+            if (cmd.updateTerm == null) {
+              updateTerm = idTerm;
+            } else {
+              del = true;
+              updateTerm = cmd.updateTerm;
+            }
+            
+            Document luceneDocument = cmd.getLuceneDocument();
+            // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
+            writer.updateDocument(updateTerm, luceneDocument,
+                schema.getAnalyzer());
+            // SolrCore.verbose("updateDocument",updateTerm,"DONE");
+            
+            if (del) { // ensure id remains unique
+              BooleanQuery bq = new BooleanQuery();
+              bq.add(new BooleanClause(new TermQuery(updateTerm),
+                  Occur.MUST_NOT));
+              bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
+              writer.deleteDocuments(bq);
+            }
+            
+            // Add to the transaction log *after* successfully adding to the
+            // index, if there was no error.
+            // This ordering ensures that if we log it, it's definitely been
+            // added to the the index.
+            // This also ensures that if a commit sneaks in-between, that we
+            // know everything in a particular
+            // log version was definitely committed.
+            if (ulog != null) ulog.add(cmd);
           }
-
-          Document luceneDocument = cmd.getLuceneDocument();
-          // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
-          writer.updateDocument(updateTerm, luceneDocument, schema.getAnalyzer());
-          // SolrCore.verbose("updateDocument",updateTerm,"DONE");
-
-
-          if(del) { // ensure id remains unique
-            BooleanQuery bq = new BooleanQuery();
-            bq.add(new BooleanClause(new TermQuery(updateTerm), Occur.MUST_NOT));
-            bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
-            writer.deleteDocuments(bq);
-          }
-
-
-          // Add to the transaction log *after* successfully adding to the index, if there was no error.
-          // This ordering ensures that if we log it, it's definitely been added to the the index.
-          // This also ensures that if a commit sneaks in-between, that we know everything in a particular
-          // log version was definitely committed.
+          
+        } else {
+          // allow duplicates
+          writer.addDocument(cmd.getLuceneDocument(), schema.getAnalyzer());
           if (ulog != null) ulog.add(cmd);
         }
-
-      } else {
-        // allow duplicates
-        writer.addDocument(cmd.getLuceneDocument(), schema.getAnalyzer());
-        if (ulog != null) ulog.add(cmd);
+        
+        if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
+          commitTracker.addedDocument(-1);
+          softCommitTracker.addedDocument(cmd.commitWithin);
+        }
+        
+        rc = 1;
+      } finally {
+        if (rc != 1) {
+          numErrors.incrementAndGet();
+          numErrorsCumulative.incrementAndGet();
+        } else {
+          numDocsPending.incrementAndGet();
+        }
       }
-
-
-      if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-        commitTracker.addedDocument( -1 );
-        softCommitTracker.addedDocument( cmd.commitWithin );
-      }
-
-      rc = 1;
+      
     } finally {
-      if (rc!=1) {
-        numErrors.incrementAndGet();
-        numErrorsCumulative.incrementAndGet();
-      } else {
-        numDocsPending.incrementAndGet();
-      }
+      iw.decref();
     }
-
+    
     return rc;
   }
-
+  
   private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
     if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-      softCommitTracker.deletedDocument( cmd.commitWithin );
-
+      softCommitTracker.deletedDocument(cmd.commitWithin);
+      
       if (commitTracker.getTimeUpperBound() > 0) {
         commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
       }
-
+      
       if (softCommitTracker.getTimeUpperBound() > 0) {
-        softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
+        softCommitTracker.scheduleCommitWithin(softCommitTracker
+            .getTimeUpperBound());
       }
     }
   }
-  
 
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
@@ -264,11 +278,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
 
-    IndexWriter writer = solrCoreState.getIndexWriter(core);
     Term deleteTerm = new Term(idField.getName(), cmd.getIndexedId());
-
     // SolrCore.verbose("deleteDocuments",deleteTerm,writer);
-    writer.deleteDocuments(deleteTerm);
+    RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
+    try {
+      iw.get().deleteDocuments(deleteTerm);
+    } finally {
+      iw.decref();
+    }
     // SolrCore.verbose("deleteDocuments",deleteTerm,"DONE");
 
     if (ulog != null) ulog.delete(cmd);
@@ -343,7 +360,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         if (delAll) {
           deleteAll();
         } else {
-          solrCoreState.getIndexWriter(core).deleteDocuments(q);
+          RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
+          try {
+            iw.get().deleteDocuments(q);
+          } finally {
+            iw.decref();
+          }
         }
 
         if (ulog != null) ulog.deleteByQuery(cmd);
@@ -364,23 +386,29 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
 
   /** Add a document execute the deletes as atomically as possible */
-  private void addAndDelete(AddUpdateCommand cmd, List<Query> dbqList) throws IOException {
+  private void addAndDelete(AddUpdateCommand cmd, List<Query> dbqList)
+      throws IOException {
     Document luceneDocument = cmd.getLuceneDocument();
     Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
-
+    
     // see comment in deleteByQuery
     synchronized (this) {
-      IndexWriter writer = solrCoreState.getIndexWriter(core);
-
-      writer.updateDocument(idTerm, luceneDocument, core.getSchema().getAnalyzer());
-
-      for (Query q : dbqList) {
-        writer.deleteDocuments(q);
+      RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
+      try {
+        IndexWriter writer = iw.get();
+        writer.updateDocument(idTerm, luceneDocument, core.getSchema()
+            .getAnalyzer());
+        
+        for (Query q : dbqList) {
+          writer.deleteDocuments(q);
+        }
+      } finally {
+        iw.decref();
       }
-
+      
       if (ulog != null) ulog.add(cmd, true);
     }
-
+    
   }
 
 
@@ -395,7 +423,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     
     IndexReader[] readers = cmd.readers;
     if (readers != null && readers.length > 0) {
-      solrCoreState.getIndexWriter(core).addIndexes(readers);
+      RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
+      try {
+        iw.get().addIndexes(readers);
+      } finally {
+        iw.decref();
+      }
       rc = 1;
     } else {
       rc = 0;
@@ -418,9 +451,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     try {
       log.info("start "+cmd);
-      IndexWriter writer = solrCoreState.getIndexWriter(core);
-
-      writer.prepareCommit();
+      RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
+      try {
+        iw.get().prepareCommit();
+      } finally {
+        iw.decref();
+      }
 
       log.info("end_prepareCommit");
 
@@ -438,7 +474,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       return;
     }
 
-    IndexWriter writer = solrCoreState.getIndexWriter(core);
     if (cmd.optimize) {
       optimizeCommands.incrementAndGet();
     } else {
@@ -473,27 +508,35 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
          commitTracker.cancelPendingCommit();
       }
 
-
-      if (cmd.optimize) {
-        writer.forceMerge(cmd.maxOptimizeSegments);
-      } else if (cmd.expungeDeletes) {
-        writer.forceMergeDeletes();
-      }
-
-      if (!cmd.softCommit) {
-        synchronized (this) { // sync is currently needed to prevent preCommit from being called between preSoft and postSoft... see postSoft comments.
-          if (ulog != null) ulog.preCommit(cmd);
+      RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
+      try {
+        IndexWriter writer = iw.get();
+        if (cmd.optimize) {
+          writer.forceMerge(cmd.maxOptimizeSegments);
+        } else if (cmd.expungeDeletes) {
+          writer.forceMergeDeletes();
         }
-
-        // SolrCore.verbose("writer.commit() start writer=",writer);
-        final Map<String,String> commitData = new HashMap<String,String>();
-        commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
-        writer.commit(commitData);
-        // SolrCore.verbose("writer.commit() end");
-        numDocsPending.set(0);
-        callPostCommitCallbacks();
-      } else {
-        callPostSoftCommitCallbacks();
+        
+        if (!cmd.softCommit) {
+          synchronized (this) { // sync is currently needed to prevent preCommit
+                                // from being called between preSoft and
+                                // postSoft... see postSoft comments.
+            if (ulog != null) ulog.preCommit(cmd);
+          }
+          
+          // SolrCore.verbose("writer.commit() start writer=",writer);
+          final Map<String,String> commitData = new HashMap<String,String>();
+          commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
+              String.valueOf(System.currentTimeMillis()));
+          writer.commit(commitData);
+          // SolrCore.verbose("writer.commit() end");
+          numDocsPending.set(0);
+          callPostCommitCallbacks();
+        } else {
+          callPostSoftCommitCallbacks();
+        }
+      } finally {
+        iw.decref();
       }
 
 

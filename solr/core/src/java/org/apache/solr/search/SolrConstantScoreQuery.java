@@ -121,7 +121,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
       return new ConstantScorer(context, this, queryWeight, acceptDocs);
     }
 
@@ -187,6 +187,11 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     public float score() throws IOException {
       return theScore;
     }
+    
+    @Override
+    public float freq() throws IOException {
+      return 1;
+    }
 
     @Override
     public int advance(int target) throws IOException {
@@ -194,9 +199,9 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       if (docIdSetIterator instanceof Scorer) {
-        return ((Scorer) docIdSetIterator).positions(needsPayloads, needsOffsets, false);
+        return ((Scorer) docIdSetIterator).positions();
       }
       throw new UnsupportedOperationException("Positions are only supported for Scorers");
     }

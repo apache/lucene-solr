@@ -82,7 +82,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     endTrackingSearchers();
     endTrackingZkClients();
     resetFactory();
-    resetFactory();
   }
 
   private static boolean changedFactory = false;

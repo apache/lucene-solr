@@ -123,7 +123,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, final Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, final Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
@@ -134,7 +134,7 @@ public class ConstantScoreQuery extends Query {
         disi = dis.iterator();
       } else {
         assert query != null && innerWeight != null;
-        disi = innerWeight.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
+        disi = innerWeight.scorer(context, scoreDocsInOrder, topScorer, needsPositions, needsOffsets, collectPositions, acceptDocs);
       }
 
       if (disi == null) {
@@ -150,7 +150,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      final Scorer cs = scorer(context, true, false, context.reader().getLiveDocs());
+      final Scorer cs = scorer(context, true, false, false, false, false, context.reader().getLiveDocs());
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
       final ComplexExplanation result = new ComplexExplanation();
@@ -195,6 +195,11 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
+    public float freq() throws IOException {
+      return 1;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
     }
@@ -229,8 +234,8 @@ public class ConstantScoreQuery extends Query {
         }
         
         @Override
-        public boolean needsPayloads() {
-          return collector.needsPayloads();
+        public boolean needsOffsets() {
+          return collector.needsOffsets();
         }
       };
     }
@@ -256,9 +261,9 @@ public class ConstantScoreQuery extends Query {
     }
         
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       if (docIdSetIterator instanceof Scorer) {
-        return ((Scorer) docIdSetIterator).positions(needsPayloads, needsOffsets, false);
+        return ((Scorer) docIdSetIterator).positions();
       } else {
         throw new UnsupportedOperationException("positions are only supported on Scorer subclasses");
       }

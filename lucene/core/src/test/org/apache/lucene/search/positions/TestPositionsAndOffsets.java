@@ -99,15 +99,15 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
     assertEquals(1, leaves.size());
     Scorer scorer = weight.scorer(leaves.get(0),
-        true, true, leaves.get(0).reader().getLiveDocs());
+        true, true, true, false, false, leaves.get(0).reader().getLiveDocs());
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);
-    IntervalIterator positions = scorer.positions(false, needsOffsets, false);
+    IntervalIterator positions = scorer.positions();
     int startOffsets[] = expectedOffsets[0];
     int endOffsets[] = expectedOffsets[1];
 
-    assertEquals(0, positions.advanceTo(nextDoc));
+    assertEquals(0, positions.scorerAdvanced(nextDoc));
     for (int i = 0; i < startOffsets.length; i++) {
       Interval interval = positions.next();
       assertEquals("i: " + i, startOffsets[i], interval.offsetBegin);

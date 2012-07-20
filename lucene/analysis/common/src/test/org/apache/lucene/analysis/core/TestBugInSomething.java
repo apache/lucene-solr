@@ -1,11 +1,12 @@
 package org.apache.lucene.analysis.core;
 
 import java.io.Reader;
+import java.io.StringReader;
 import java.nio.CharBuffer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockCharFilter;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -64,7 +65,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     checkAnalysisConsistency(random(), a, false, "wmgddzunizdomqyj");
   }
   
-  CharStream wrappedStream = new CharStream() {
+  CharFilter wrappedStream = new CharFilter(new StringReader("bogus")) {
 
     @Override
     public void mark(int readAheadLimit) {
@@ -107,8 +108,8 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public int correctOffset(int currentOff) {
-      throw new UnsupportedOperationException("correctOffset(int)");
+    public int correct(int currentOff) {
+      throw new UnsupportedOperationException("correct(int)");
     }
 
     @Override
@@ -123,7 +124,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
   };
   
   public void testWrapping() throws Exception {
-    CharStream cs = new TestRandomChains.CheckThatYouDidntReadAnythingReaderWrapper(wrappedStream);
+    CharFilter cs = new TestRandomChains.CheckThatYouDidntReadAnythingReaderWrapper(wrappedStream);
     try {
       cs.mark(1);
       fail();
@@ -177,7 +178,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       cs.correctOffset(1);
       fail();
     } catch (Exception e) {
-      assertEquals("correctOffset(int)", e.getMessage());
+      assertEquals("correct(int)", e.getMessage());
     }
     
     try {

@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 
@@ -33,13 +34,15 @@ class ConjunctionScorer extends Scorer {
   private final Scorer[] scorers;
   private final float coord;
   private int lastDoc = -1;
+  private final boolean collectPositions;
 
-  public ConjunctionScorer(Weight weight, float coord, Collection<Scorer> scorers) throws IOException {
-    this(weight, coord, scorers.toArray(new Scorer[scorers.size()]));
+  public ConjunctionScorer(Weight weight, float coord, boolean collectPositions, Collection<Scorer> scorers) throws IOException {
+    this(weight, coord, collectPositions, scorers.toArray(new Scorer[scorers.size()]));
   }
   
-  public ConjunctionScorer(Weight weight, float coord, Scorer... scorers) throws IOException {
+  public ConjunctionScorer(Weight weight, float coord, boolean collectPositions, Scorer... scorers) throws IOException {
     super(weight);
+    this.collectPositions = collectPositions;
     scorersOrdered = new Scorer[scorers.length];
     System.arraycopy(scorers, 0, scorersOrdered, 0, scorers.length);
     this.scorers = scorers;
@@ -145,12 +148,26 @@ class ConjunctionScorer extends Scorer {
   }
   
   @Override
-  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions() throws IOException {
     if (scorersOrdered == null) {
       throw new IllegalStateException("no positions requested for this scorer");
     }
       // only created if needed for this scorer - no penalty for non-positional queries
-    return new ConjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorersOrdered));
+    return new ConjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(scorersOrdered));
   }
 
+
+  @Override
+  public float freq() throws IOException {
+    return scorers.length;
+  }
+
+  @Override
+  public Collection<ChildScorer> getChildren() {
+    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>(scorers.length);
+    for (Scorer scorer : scorers) {
+      children.add(new ChildScorer(scorer, "MUST"));
+    }
+    return children;
+  }
 }

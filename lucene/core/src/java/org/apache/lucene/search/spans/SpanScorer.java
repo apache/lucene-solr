@@ -100,8 +100,7 @@ public class SpanScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean needsPayloads,
-      boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions() throws IOException {
     return null;
   }
 }

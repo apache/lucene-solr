@@ -99,6 +99,10 @@ public class CollectionsHandler extends RequestHandlerBase {
           this.handleDeleteAction(req, rsp);
           break;
         }
+        case RELOAD: {
+          this.handleReloadAction(req, rsp);
+          break;
+        }
         
         default: {
           throw new RuntimeException("Unknown action: " + action);
@@ -109,7 +113,21 @@ public class CollectionsHandler extends RequestHandlerBase {
     rsp.setHttpCaching(false);
   }
 
+  private void handleReloadAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    log.info("Reloading Collection : " + req.getParamString());
+    String name = req.getParams().required().get("name");
+    
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        OverseerCollectionProcessor.RELOADCOLLECTION, "name", name);
+
+    // TODO: what if you want to block until the collection is available?
+    coreContainer.getZkController().getOverseerCollectionQueue().offer(ZkStateReader.toJSON(m));
+  }
+
+
   private void handleDeleteAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    log.info("Deleting Collection : " + req.getParamString());
+    
     String name = req.getParams().required().get("name");
     
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
@@ -127,7 +145,7 @@ public class CollectionsHandler extends RequestHandlerBase {
   // as well as specific replicas= options
   private void handleCreateAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws InterruptedException, KeeperException {
-
+    log.info("Creating Collection : " + req.getParamString());
     Integer numReplicas = req.getParams().getInt("numReplicas", 0);
     String name = req.getParams().required().get("name");
     String configName = req.getParams().get("collection.configName");

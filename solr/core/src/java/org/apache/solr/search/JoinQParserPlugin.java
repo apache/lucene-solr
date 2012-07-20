@@ -216,7 +216,7 @@ class JoinQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
       if (filter == null) {
         boolean debug = rb != null && rb.isDebug();
         long start = debug ? System.currentTimeMillis() : 0;
@@ -485,7 +485,7 @@ class JoinQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, true, false, false, false, false, context.reader().getLiveDocs());
       boolean exists = scorer.advance(doc) == doc;
 
       ComplexExplanation result = new ComplexExplanation();
@@ -533,6 +533,11 @@ class JoinQuery extends Query {
     public float score() throws IOException {
       return score;
     }
+    
+    @Override
+    public float freq() throws IOException {
+      return 1;
+    }
 
     @Override
     public int advance(int target) throws IOException {
@@ -540,9 +545,9 @@ class JoinQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       if (iter instanceof Scorer) {
-        return ((Scorer) iter).positions(needsPayloads, needsOffsets, false);
+        return ((Scorer) iter).positions();
       }
       throw new UnsupportedOperationException("Positions are only supported for Scorers");
 

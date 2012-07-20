@@ -64,17 +64,17 @@
        files in that directory which completely match the regex
        (anchored on both ends) will be included.
     -->
-  <lib dir="../../dist/" regex="apache-solr-cell-\d.*\.jar" />
-  <lib dir="../../contrib/extraction/lib" regex=".*\.jar" />
+  <lib dir="../../../dist/" regex="apache-solr-cell-\d.*\.jar" />
+  <lib dir="../../../contrib/extraction/lib" regex=".*\.jar" />
 
-  <lib dir="../../dist/" regex="apache-solr-clustering-\d.*\.jar" />
-  <lib dir="../../contrib/clustering/lib/" regex=".*\.jar" />
+  <lib dir="../../../dist/" regex="apache-solr-clustering-\d.*\.jar" />
+  <lib dir="../../../contrib/clustering/lib/" regex=".*\.jar" />
 
-  <lib dir="../../dist/" regex="apache-solr-langid-\d.*\.jar" />
-  <lib dir="../../contrib/langid/lib/" regex=".*\.jar" />
+  <lib dir="../../../dist/" regex="apache-solr-langid-\d.*\.jar" />
+  <lib dir="../../../contrib/langid/lib/" regex=".*\.jar" />
 
-  <lib dir="../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
-  <lib dir="../../contrib/velocity/lib" regex=".*\.jar" />
+  <lib dir="../../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
+  <lib dir="../../../contrib/velocity/lib" regex=".*\.jar" />
 
   <!-- If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, it will be ignored

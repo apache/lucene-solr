@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.positions.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;
@@ -31,6 +32,7 @@ import java.io.IOException;
 final class MatchOnlyTermScorer extends Scorer {
   private final DocsEnum docsEnum;
   private final Similarity.ExactSimScorer docScorer;
+  private final int docFreq;
   
   /**
    * Construct a <code>TermScorer</code>.
@@ -42,11 +44,14 @@ final class MatchOnlyTermScorer extends Scorer {
    * @param docScorer
    *          The </code>Similarity.ExactSimScorer</code> implementation 
    *          to be used for score computations.
+   * @param docFreq
+   *          per-segment docFreq of this term
    */
-  MatchOnlyTermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer) {
+  MatchOnlyTermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer, int docFreq) {
     super(weight);
     this.docScorer = docScorer;
     this.docsEnum = td;
+    this.docFreq = docFreq;
   }
 
   @Override
@@ -94,8 +99,22 @@ final class MatchOnlyTermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override
-  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-    // nocommit is this ok here?
+  public IntervalIterator positions() throws IOException {
     throw new UnsupportedOperationException();
+   
+  }
+  
+  // TODO: benchmark if the specialized conjunction really benefits
+  // from these, or if instead its from sorting by docFreq, or both
+
+  DocsEnum getDocsEnum() {
+    return docsEnum;
+  }
+  
+  // TODO: generalize something like this for scorers?
+  // even this is just an estimation...
+  
+  int getDocFreq() {
+    return docFreq;
   }
 }

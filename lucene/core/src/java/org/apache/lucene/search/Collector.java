@@ -175,6 +175,9 @@ public abstract class Collector {
   
   public boolean needsPositions() { return false; }
   
-  public boolean needsPayloads() { return false; }
+  public boolean needsOffsets() { return false; }
+
+  public boolean collectsPositions() { return false; }
+
   
 }

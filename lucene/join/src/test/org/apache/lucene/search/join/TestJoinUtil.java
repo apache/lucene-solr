@@ -232,7 +232,7 @@ public class TestJoinUtil extends LuceneTestCase {
   public void testSingleValueRandomJoin() throws Exception {
     int maxIndexIter = _TestUtil.nextInt(random(), 6, 12);
     int maxSearchIter = _TestUtil.nextInt(random(), 13, 26);
-    executeRandomJoin(false, maxIndexIter, maxSearchIter);
+    executeRandomJoin(false, maxIndexIter, maxSearchIter, _TestUtil.nextInt(random(), 87, 764));
   }
 
   @Test
@@ -240,10 +240,10 @@ public class TestJoinUtil extends LuceneTestCase {
   public void testMultiValueRandomJoin() throws Exception {
     int maxIndexIter = _TestUtil.nextInt(random(), 3, 6);
     int maxSearchIter = _TestUtil.nextInt(random(), 6, 12);
-    executeRandomJoin(true, maxIndexIter, maxSearchIter);
+    executeRandomJoin(true, maxIndexIter, maxSearchIter, _TestUtil.nextInt(random(), 11, 57));
   }
 
-  private void executeRandomJoin(boolean multipleValuesPerDocument, int maxIndexIter, int maxSearchIter) throws Exception {
+  private void executeRandomJoin(boolean multipleValuesPerDocument, int maxIndexIter, int maxSearchIter, int numberOfDocumentsToIndex) throws Exception {
     for (int indexIter = 1; indexIter <= maxIndexIter; indexIter++) {
       if (VERBOSE) {
         System.out.println("indexIter=" + indexIter);
@@ -254,7 +254,6 @@ public class TestJoinUtil extends LuceneTestCase {
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy())
       );
-      int numberOfDocumentsToIndex = _TestUtil.nextInt(random(), 87, 764);
       IndexIterationContext context = createContext(numberOfDocumentsToIndex, w, multipleValuesPerDocument);
 
       IndexReader topLevelReader = w.getReader();

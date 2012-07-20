@@ -69,13 +69,18 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
+    public float freq() {
+      return 1;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       doc = target-1;
       return nextDoc();
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       // nocommit this is tricky - I think we can't really provide positions here?
       throw new UnsupportedOperationException();
     }
@@ -112,7 +117,7 @@ public class MatchAllDocsQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
       return new MatchAllScorer(context.reader(), acceptDocs, this, queryWeight);
     }
 

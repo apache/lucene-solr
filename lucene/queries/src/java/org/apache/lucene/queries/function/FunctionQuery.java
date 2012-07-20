@@ -92,13 +92,13 @@ public class FunctionQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
       return new AllScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      return ((AllScorer)scorer(context, true, true, context.reader().getLiveDocs())).explain(doc);
+      return ((AllScorer)scorer(context, true, true, false, false, false, context.reader().getLiveDocs())).explain(doc);
     }
   }
 
@@ -159,6 +159,11 @@ public class FunctionQuery extends Query {
       return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
     }
 
+    @Override
+    public float freq() throws IOException {
+      return 1;
+    }
+
     public Explanation explain(int doc) throws IOException {
       float sc = qWeight * vals.floatVal(doc);
 
@@ -172,7 +177,7 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException();
       //nocommit - is that correct here?
     }

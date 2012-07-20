@@ -222,6 +222,16 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     close();
   }
   
+  public void testConstantScore() throws Exception {
+    insertDocs(analyzer, "This is a test");
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new BooleanClause(new TermQuery(new Term(F, "This")), Occur.MUST));
+    bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.MUST));
+    String frags[] = doSearch(new ConstantScoreQuery(bq));
+    assertEquals("<B>This</B> is a <B>test</B>", frags[0]);
+    close();
+  }
+  
   public void testBooleanAndOtherOrder() throws Exception {
     insertDocs(analyzer, "This is a test");
     BooleanQuery bq = new BooleanQuery();

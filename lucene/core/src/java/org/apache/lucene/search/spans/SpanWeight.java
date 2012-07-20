@@ -82,7 +82,7 @@ public class SpanWeight extends Weight {
 
   @Override
   public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-      boolean topScorer, Bits acceptDocs) throws IOException {
+      boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
     if (stats == null) {
       return null;
     } else {
@@ -92,7 +92,7 @@ public class SpanWeight extends Weight {
 
   @Override
   public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-    Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
+    Scorer scorer = scorer(context, true, false, true, false, false, context.reader().getLiveDocs());
     if (scorer != null) {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {

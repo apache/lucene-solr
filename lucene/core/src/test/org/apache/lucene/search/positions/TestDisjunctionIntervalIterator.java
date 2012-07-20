@@ -104,14 +104,13 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
     assertEquals(1, leaves.size());
     Scorer scorer = weight.scorer(leaves.get(0),
-        true, true, leaves.get(0).reader().getLiveDocs());
-    
+        true, true, true, false, false, leaves.get(0).reader().getLiveDocs());
+    IntervalIterator positions = scorer.positions();
     for (int i = 0; i < 2; i++) {
 
       int nextDoc = scorer.nextDoc();
       assertEquals(i, nextDoc);
-      IntervalIterator positions = scorer.positions(false, false, false);
-      assertEquals(i, positions.advanceTo(nextDoc));
+      assertEquals(i, positions.scorerAdvanced(nextDoc));
       Interval interval = positions.next();
       assertEquals(1, interval.begin);
       assertEquals(1, interval.end);
@@ -160,12 +159,12 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
     assertEquals(1, leaves.size());
     for (AtomicReaderContext atomicReaderContext : leaves) {
       Scorer scorer = weight.scorer(atomicReaderContext,
-          true, true, atomicReaderContext.reader().getLiveDocs());
+          true, true, true, false, false, atomicReaderContext.reader().getLiveDocs());
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        IntervalIterator positions = scorer.positions(false, false, false);
-        assertEquals(0, positions.advanceTo(nextDoc));
+        IntervalIterator positions = scorer.positions();
+        assertEquals(0, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] { 0, 1, 2, 3, 4, 6, 7, 31, 32, 33 };
         int[] end = new int[] { 2, 3, 4, 33, 33, 33, 33, 33, 34, 35 };
@@ -186,8 +185,8 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        IntervalIterator positions = scorer.positions(false, false, false);
-        assertEquals(1, positions.advanceTo(nextDoc));
+        IntervalIterator positions = scorer.positions();
+        assertEquals(1, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] { 0, 1, 3, 4, 5, 6, 7, 31, 32, 34 };
         int[] end = new int[] { 5, 5, 5, 6, 7, 36, 36, 36, 36, 36 };

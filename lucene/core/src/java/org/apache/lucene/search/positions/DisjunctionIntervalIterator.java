@@ -70,30 +70,22 @@ public final class DisjunctionIntervalIterator extends BooleanIntervalIterator {
   @Override
   public void collect(IntervalCollector collector) {
     assert collectPositions;
-    collector.collectComposite(scorer, queue.currentCandidate, currentDoc);
+    collector.collectComposite(scorer, queue.currentCandidate, docID());
     iterators[queue.top().index].collect(collector);
   }
 
   @Override
-  public int advanceTo(int docId) throws IOException {
+  public int scorerAdvanced(int docId) throws IOException {
     queue.reset();
-    int minAdvance = NO_MORE_DOCS;
     for (int i = 0; i < iterators.length; i++) {
-      if (iterators[i].docID() < docId) {
-        minAdvance = Math.min(minAdvance, iterators[i].advanceTo(docId));
-      } else {
-        minAdvance = Math.min(minAdvance, iterators[i].docID());
-      }
-    }
-    if (minAdvance == NO_MORE_DOCS) {
-      return NO_MORE_DOCS;
-    }
-    for (int i = 0; i < iterators.length; i++) {
-      if (iterators[i].docID() == minAdvance) {
+      int scorerAdvanced =  iterators[i].scorerAdvanced(docId);
+      assert iterators[i].docID() == scorerAdvanced : " " + iterators[i];
+
+      if (scorerAdvanced == docId) {
         queue.add(new IntervalRef(iterators[i].next(), i));
       }
     }
-    return currentDoc = minAdvance;
+    return this.docID();
   }
 
   @Override

@@ -106,13 +106,13 @@ public class TestOrderedConjunctionIntervalIterator extends LuceneTestCase {
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
     assertEquals(1, leaves.size());
     for (AtomicReaderContext atomicReaderContext : leaves) {
-      Scorer scorer = weight.scorer(atomicReaderContext, true, true, atomicReaderContext.reader()
-          .getLiveDocs());
+      Scorer scorer = weight.scorer(atomicReaderContext, true, true, true, false, false, atomicReaderContext.reader()
+              .getLiveDocs());
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        IntervalIterator positions = new OrderedConjunctionIntervalIterator(false, scorer.positions(false, false, false));
-        assertEquals(0, positions.advanceTo(nextDoc));
+        IntervalIterator positions = new OrderedConjunctionIntervalIterator(false, scorer.positions());
+        assertEquals(0, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] {0, 31};
         int[] end = new int[] {2, 33};
@@ -132,8 +132,8 @@ public class TestOrderedConjunctionIntervalIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        IntervalIterator positions = new OrderedConjunctionIntervalIterator(false, scorer.positions(false, false, false));
-        assertEquals(1, positions.advanceTo(nextDoc));
+        IntervalIterator positions = new OrderedConjunctionIntervalIterator(false, scorer.positions());
+        assertEquals(1, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] {3, 34};
         int[] end = new int[] {5, 36};

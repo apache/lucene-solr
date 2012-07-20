@@ -233,7 +233,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       Weight weight = s.createNormalizedWeight(q);
 
       Scorer scorer = weight.scorer(s.leafContexts.get(0),
-                                          true, false, null);
+                                          true, false, false, false, false, null);
 
       // First pass: just use .nextDoc() to gather all hits
       final List<ScoreDoc> hits = new ArrayList<ScoreDoc>();
@@ -251,7 +251,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
         weight = s.createNormalizedWeight(q);
         scorer = weight.scorer(s.leafContexts.get(0),
-                               true, false, null);
+                               true, false, false, false, false, null);
 
         if (VERBOSE) {
           System.out.println("  iter2=" + iter2);

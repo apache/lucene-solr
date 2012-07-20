@@ -116,7 +116,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
     WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("abcde"));
     EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
     assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
-    tokenizer.reset(new StringReader("abcde"));
+    tokenizer.setReader(new StringReader("abcde"));
     assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
   }
   

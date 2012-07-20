@@ -21,18 +21,17 @@ import java.io.IOException;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.TermQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.BytesRef;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
   private final DocsEnum docsEnum;
   private final Similarity.ExactSimScorer docScorer;
-  private final TermDocsEnumFactory factory;
+  private final int docFreq;
+  private final boolean collectPositions;
   
   /**
    * Construct a <code>TermScorer</code>.
@@ -44,12 +43,15 @@ final class TermScorer extends Scorer {
    * @param docScorer
    *          The </code>Similarity.ExactSimScorer</code> implementation 
    *          to be used for score computations.
+   * @param docFreq
+   *          per-segment docFreq of this term
    */
-  TermScorer(Weight weight, DocsEnum docsEnum, TermDocsEnumFactory factory, Similarity.ExactSimScorer docScorer) throws IOException {
+  TermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer, int docFreq, boolean collectPositions) {
     super(weight);
     this.docScorer = docScorer;
-    this.docsEnum = docsEnum;
-    this.factory = factory;
+    this.docsEnum = td;
+    this.docFreq = docFreq;
+    this.collectPositions = collectPositions;
   }
 
   @Override
@@ -97,7 +99,21 @@ final class TermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
   
   @Override
-  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-    return new TermIntervalIterator(this, factory.docsAndPositionsEnum(needsOffsets), needsPayloads, collectPositions);
+  public IntervalIterator positions() throws IOException {
+    assert docsEnum instanceof DocsAndPositionsEnum;
+    return new TermIntervalIterator(this, (DocsAndPositionsEnum) docsEnum, false, collectPositions);
+  }
+  // TODO: benchmark if the specialized conjunction really benefits
+  // from this, or if instead its from sorting by docFreq, or both
+
+  DocsEnum getDocsEnum() {
+    return docsEnum;
+  }
+  
+  // TODO: generalize something like this for scorers?
+  // even this is just an estimation...
+  
+  int getDocFreq() {
+    return docFreq;
   }
 }

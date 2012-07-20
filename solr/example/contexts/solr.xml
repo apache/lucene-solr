@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/solr</Set>
+  <Set name="war"><SystemProperty name="jetty.home"/>/webapps/solr.war</Set>
+  <Set name="defaultsDescriptor"><SystemProperty name="jetty.home"/>/etc/webdefault.xml</Set>
+  <Set name="tempDirectory"><Property name="jetty.home" default="."/>/solr-webapp</Set>
+</Configure>

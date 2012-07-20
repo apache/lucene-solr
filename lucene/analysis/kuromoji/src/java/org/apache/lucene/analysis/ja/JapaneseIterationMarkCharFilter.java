@@ -17,11 +17,11 @@ package org.apache.lucene.analysis.ja;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.charfilter.CharFilter;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.util.RollingCharBuffer;
 
 import java.io.IOException;
+import java.io.Reader;
 
 /**
  * Normalizes Japanese horizontal iteration marks (odoriji) to their expanded form.
@@ -147,7 +147,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    *
    * @param input char stream
    */
-  public JapaneseIterationMarkCharFilter(CharStream input) {
+  public JapaneseIterationMarkCharFilter(Reader input) {
     this(input, NORMALIZE_KANJI_DEFAULT, NORMALIZE_KANA_DEFAULT);
   }
 
@@ -159,7 +159,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    * @param normalizeKanji indicates whether kanji iteration marks should be normalized
    * @param normalizeKana indicates whether kana iteration marks should be normalized
    */
-  public JapaneseIterationMarkCharFilter(CharStream input, boolean normalizeKanji, boolean normalizeKana) {
+  public JapaneseIterationMarkCharFilter(Reader input, boolean normalizeKanji, boolean normalizeKana) {
     super(input);
     this.normalizeKanji = normalizeKanji;
     this.normalizeKana = normalizeKana;
@@ -452,5 +452,11 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    */
   private boolean inside(char c, char[] map, char offset) {
     return c >= offset && c < offset + map.length;
+  }
+
+
+  @Override
+  protected int correct(int currentOff) {
+    return currentOff; // this filter doesn't change the length of strings
   }
 }

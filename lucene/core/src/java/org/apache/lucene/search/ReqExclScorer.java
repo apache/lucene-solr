@@ -18,10 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator;
-
 
 /** A Scorer for queries with a required subscorer
  * and an excluding (prohibited) sub DocIdSetIterator.
@@ -33,15 +34,17 @@ class ReqExclScorer extends Scorer {
   private Scorer reqScorer;
   private DocIdSetIterator exclDisi;
   private int doc = -1;
+  private final boolean collectPositions;
 
   /** Construct a <code>ReqExclScorer</code>.
    * @param reqScorer The scorer that must match, except where
    * @param exclDisi indicates exclusion.
    */
-  public ReqExclScorer(Scorer reqScorer, DocIdSetIterator exclDisi) {
+  public ReqExclScorer(Scorer reqScorer, DocIdSetIterator exclDisi, boolean collectPositions) {
     super(reqScorer.weight);
     this.reqScorer = reqScorer;
     this.exclDisi = exclDisi;
+    this.collectPositions = collectPositions;
   }
 
   @Override
@@ -107,6 +110,16 @@ class ReqExclScorer extends Scorer {
   }
   
   @Override
+  public float freq() throws IOException {
+    return reqScorer.freq();
+  }
+
+  @Override
+  public Collection<ChildScorer> getChildren() {
+    return Collections.singleton(new ChildScorer(reqScorer, "FILTERED"));
+  }
+
+  @Override
   public int advance(int target) throws IOException {
     if (reqScorer == null) {
       return doc = NO_MORE_DOCS;
@@ -122,7 +135,7 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-    return new ConjunctionIntervalIterator(this, collectPositions, reqScorer.positions(needsPayloads, needsOffsets, collectPositions));
+  public IntervalIterator positions() throws IOException {
+    return new ConjunctionIntervalIterator(this, collectPositions, reqScorer.positions());
   }
 }

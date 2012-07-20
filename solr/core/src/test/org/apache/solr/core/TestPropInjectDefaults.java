@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,15 +34,27 @@ public class TestPropInjectDefaults extends SolrTestCaseJ4 {
 
   @Test
   public void testMergePolicyDefaults() throws Exception {
-    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getSolrCoreState().getIndexWriter(h.getCore());
-    LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getConfig().getMergePolicy();
+    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2) h.getCore()
+        .getUpdateHandler()).getSolrCoreState().getIndexWriter(h.getCore());
+    LogByteSizeMergePolicy mp;
+    try {
+      mp = (LogByteSizeMergePolicy) iw.get().getConfig().getMergePolicy();
+    } finally {
+      iw.decref();
+    }
     assertEquals(32.0, mp.getMaxMergeMB(), 0);
   }
   
   @Test
   public void testPropsDefaults() throws Exception {
-    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getSolrCoreState().getIndexWriter(h.getCore());
-    ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getConfig().getMergeScheduler();
+    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2) h.getCore()
+        .getUpdateHandler()).getSolrCoreState().getIndexWriter(h.getCore());
+    ConcurrentMergeScheduler cms;
+    try {
+      cms = (ConcurrentMergeScheduler) iw.get().getConfig().getMergeScheduler();
+    } finally {
+      iw.decref();
+    }
     assertEquals(4, cms.getMaxThreadCount());
   }
 

@@ -285,7 +285,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     boolean dropCmd = false;
     if (!forwardToLeader) {
-      dropCmd = versionAdd(cmd);
+      // clone the original doc
+      SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
+      dropCmd = versionAdd(cmd, clonedDoc);
+      cmd.solrDoc = clonedDoc;
     }
 
     if (dropCmd) {
@@ -393,10 +396,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   /**
    * @param cmd
+   * @param cloneDoc needs the version if it's assigned
    * @return whether or not to drop this cmd
    * @throws IOException
    */
-  private boolean versionAdd(AddUpdateCommand cmd) throws IOException {
+  private boolean versionAdd(AddUpdateCommand cmd, SolrInputDocument cloneDoc) throws IOException {
     BytesRef idBytes = cmd.getIndexedId();
 
     if (vinfo == null || idBytes == null) {
@@ -452,10 +456,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
           if (leaderLogic) {
 
-            boolean updated = getUpdatedDocument(cmd);
-            if (updated && versionOnUpdate == -1) {
-              versionOnUpdate = 1;  // implied "doc must exist" for now...
-            }
+            boolean updated = getUpdatedDocument(cmd, versionOnUpdate);
 
             if (versionOnUpdate != 0) {
               Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
@@ -472,6 +473,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             long version = vinfo.getNewClock();
             cmd.setVersion(version);
             cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
+            cloneDoc.setField(VersionInfo.VERSION_FIELD, version);
             bucket.updateHighest(version);
           } else {
             // The leader forwarded us this update.
@@ -517,7 +519,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   // TODO: may want to switch to using optimistic locking in the future for better concurrency
   // that's why this code is here... need to retry in a loop closely around/in versionAdd
-  boolean getUpdatedDocument(AddUpdateCommand cmd) throws IOException {
+  boolean getUpdatedDocument(AddUpdateCommand cmd, long versionOnUpdate) throws IOException {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     boolean update = false;
     for (SolrInputField sif : sdoc.values()) {
@@ -533,12 +535,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id);
 
     if (oldDoc == null) {
-      // not found... allow this in the future (depending on the details of the update, or if the user explicitly sets it).
-      // could also just not change anything here and let the optimistic locking throw the error
-      throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + cmd.getPrintableId());
+      // create a new doc by default if an old one wasn't found
+      if (versionOnUpdate <= 0) {
+        oldDoc = new SolrInputDocument();
+      } else {
+        // could just let the optimistic locking throw the error
+        throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + cmd.getPrintableId());
+      }
+    } else {
+      oldDoc.remove(VERSION_FIELD);
     }
-
-    oldDoc.remove(VERSION_FIELD);
 
     for (SolrInputField sif : sdoc.values()) {
       Object val = sif.getValue();

@@ -85,8 +85,13 @@ public class ValueSourceScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {    
+  public IntervalIterator positions() throws IOException {    
     throw new UnsupportedOperationException();
     //nocommit - is that correct here?
+  }
+
+  @Override
+  public float freq() throws IOException {
+    return 1;
   }
 }

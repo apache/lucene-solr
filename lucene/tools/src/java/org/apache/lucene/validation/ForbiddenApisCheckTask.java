@@ -343,8 +343,11 @@ public class ForbiddenApisCheckTask extends Task {
             throw new BuildException("Resource does not exist: " + r);
           }
           if (r instanceof StringResource) {
-            log("Reading inline API signatures...", Project.MSG_INFO);
-            parseApiFile(new StringReader(((StringResource) r).getValue()));
+            final String s = ((StringResource) r).getValue();
+            if (s != null && s.trim().length() > 0) {
+              log("Reading inline API signatures...", Project.MSG_INFO);
+              parseApiFile(new StringReader(s));
+            }
           } else {
             log("Reading API signatures: " + r, Project.MSG_INFO);
             parseApiFile(new InputStreamReader(r.getInputStream(), "UTF-8"));

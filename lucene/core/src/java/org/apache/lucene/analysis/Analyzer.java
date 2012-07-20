@@ -69,7 +69,7 @@ public abstract class Analyzer {
    * instance of {@link TokenStreamComponents}. It returns the sink of the
    * components and stores the components internally. Subsequent calls to this
    * method will reuse the previously stored components after resetting them
-   * through {@link TokenStreamComponents#reset(Reader)}.
+   * through {@link TokenStreamComponents#setReader(Reader)}.
    * </p>
    * 
    * @param fieldName the name of the field the created TokenStream is used for
@@ -83,7 +83,7 @@ public abstract class Analyzer {
       components = createComponents(fieldName, r);
       reuseStrategy.setReusableComponents(fieldName, components);
     } else {
-      components.reset(r);
+      components.setReader(r);
     }
     return components.getTokenStream();
   }
@@ -181,8 +181,8 @@ public abstract class Analyzer {
      * @throws IOException
      *           if the component's reset method throws an {@link IOException}
      */
-    protected void reset(final Reader reader) throws IOException {
-      source.reset(reader);
+    protected void setReader(final Reader reader) throws IOException {
+      source.setReader(reader);
     }
 
     /**

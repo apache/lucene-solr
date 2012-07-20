@@ -21,6 +21,8 @@ import org.apache.lucene.search.positions.DisjunctionIntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /** A Scorer for queries with a required part and an optional part.
  * Delays skipTo() on the optional part until a score() is needed.
@@ -33,6 +35,7 @@ class ReqOptSumScorer extends Scorer {
    */
   private Scorer reqScorer;
   private Scorer optScorer;
+  private final boolean collectPositions;
 
   /** Construct a <code>ReqOptScorer</code>.
    * @param reqScorer The required scorer. This must match.
@@ -40,11 +43,14 @@ class ReqOptSumScorer extends Scorer {
    */
   public ReqOptSumScorer(
       Scorer reqScorer,
-      Scorer optScorer)
+      Scorer optScorer, boolean collectPositions)
   {
     super(reqScorer.weight);
+    assert reqScorer != null;
+    assert optScorer != null;
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
+    this.collectPositions = collectPositions;
   }
 
   @Override
@@ -85,9 +91,23 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, reqScorer, optScorer));
+  public IntervalIterator positions() throws IOException {
+    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(reqScorer, optScorer));
   }
 
+  @Override
+  public float freq() throws IOException {
+    // we might have deferred advance()
+    score();
+    return (optScorer != null && optScorer.docID() == reqScorer.docID()) ? 2 : 1;
+  }
+
+  @Override
+  public Collection<ChildScorer> getChildren() {
+    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>(2);
+    children.add(new ChildScorer(reqScorer, "MUST"));
+    children.add(new ChildScorer(optScorer, "SHOULD"));
+    return children;
+  }
 }
 

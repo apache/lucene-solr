@@ -64,7 +64,7 @@ public abstract class Scorer extends DocIdSetIterator {
   }
   
   //nocommit javadocs
-  public abstract IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException;
+  public abstract IntervalIterator positions() throws IOException;
 
   /**
    * Expert: Collects matching documents in a range. Hook for optimization.
@@ -103,9 +103,7 @@ public abstract class Scorer extends DocIdSetIterator {
    *  "sloppy" the match was.
    *
    * @lucene.experimental */
-  public float freq() throws IOException {
-    throw new UnsupportedOperationException(this + " does not implement freq()");
-  }
+  public abstract float freq() throws IOException;
   
   /** returns parent Weight
    * @lucene.experimental

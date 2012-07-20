@@ -141,7 +141,7 @@ final class BooleanScorer extends Scorer {
     public float score() { return score; }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       return IntervalIterator.NO_MORE_POSITIONS;
     }
     
@@ -327,20 +327,13 @@ final class BooleanScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
-    final List<Scorer> scorers = new ArrayList<Scorer>();
-    SubScorer sub = this.scorers;
-    while(sub != null) {
-      if (!sub.prohibited) {
-        scorers.add(sub.scorer);
-      }
-      sub = sub.next;
-    }
-    if (this.minNrShouldMatch > 1) {
-      return new ConjunctionIntervalIterator(this,
-          collectPositions, this.minNrShouldMatch, BooleanIntervalIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorers));
-    }
-    return new DisjunctionIntervalIterator(this, collectPositions,  BooleanIntervalIterator.pullIterators(needsPayloads, needsOffsets, collectPositions, scorers));
+  public IntervalIterator positions() throws IOException {
+    throw new UnsupportedOperationException("intervals are not available if docs are matched out of order");
+  }
+
+  @Override
+  public float freq() throws IOException {
+    return current.coord;
   }
 
   @Override
@@ -364,7 +357,8 @@ final class BooleanScorer extends Scorer {
   public Collection<ChildScorer> getChildren() {
     List<ChildScorer> children = new ArrayList<ChildScorer>();
     for (SubScorer sub = scorers; sub != null; sub = sub.next) {
-      children.add(new ChildScorer(sub.scorer, sub.prohibited ? Occur.MUST_NOT.toString() : Occur.SHOULD.toString()));
+      // TODO: fix this if BQ ever sends us required clauses
+      children.add(new ChildScorer(sub.scorer, sub.prohibited ? "MUST_NOT" : "SHOULD"));
     }
     return children;
   }

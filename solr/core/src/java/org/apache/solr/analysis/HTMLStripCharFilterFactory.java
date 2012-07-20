@@ -18,10 +18,10 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 
+import java.io.Reader;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +44,7 @@ import java.util.regex.Pattern;
   Set<String> escapedTags = null;
   Pattern TAG_NAME_PATTERN = Pattern.compile("[^\\s,]+");
 
-  public HTMLStripCharFilter create(CharStream input) {
+  public HTMLStripCharFilter create(Reader input) {
     HTMLStripCharFilter charFilter;
     if (null == escapedTags) {
       charFilter = new HTMLStripCharFilter(input);

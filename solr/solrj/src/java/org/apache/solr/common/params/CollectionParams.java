@@ -28,7 +28,7 @@ public interface CollectionParams
 
 
   public enum CollectionAction {
-    CREATE, DELETE;
+    CREATE, DELETE, RELOAD;
     
     public static CollectionAction get( String p )
     {

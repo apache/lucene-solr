@@ -90,12 +90,24 @@ public class CoreContainer
 {
   private static final String DEFAULT_HOST_CONTEXT = "solr";
   private static final String DEFAULT_HOST_PORT = "8983";
-  private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 10000;
+  private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 15000;
   public static final String DEFAULT_DEFAULT_CORE_NAME = "collection1";
   private static final boolean DEFAULT_SHARE_SCHEMA = false;
   
   protected static Logger log = LoggerFactory.getLogger(CoreContainer.class);
   
+  // solr.xml node constants
+  private static final String CORE_NAME = "name";
+  private static final String CORE_CONFIG = "config";
+  private static final String CORE_INSTDIR = "instanceDir";
+  private static final String CORE_DATADIR = "dataDir";
+  private static final String CORE_SCHEMA = "schema";
+  private static final String CORE_SHARD = "shard";
+  private static final String CORE_COLLECTION = "collection";
+  private static final String CORE_ROLES = "roles";
+  private static final String CORE_PROPERTIES = "properties";
+
+
   protected final Map<String, SolrCore> cores = new LinkedHashMap<String, SolrCore>();
   protected boolean persistent = false;
   protected String adminPath = null;
@@ -477,43 +489,43 @@ public class CoreContainer
     for (int i=0; i<nodes.getLength(); i++) {
       Node node = nodes.item(i);
       try {
-        String rawName = DOMUtil.getAttr(node, "name", null);
+        String rawName = DOMUtil.getAttr(node, CORE_NAME, null);
         if (null == rawName) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                                   "Each core in solr.xml must have a 'name'");
         }
         String name = rawName;
-        CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
+        CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, CORE_INSTDIR, null));
 
         // deal with optional settings
-        String opt = DOMUtil.getAttr(node, "config", null);
+        String opt = DOMUtil.getAttr(node, CORE_CONFIG, null);
 
         if (opt != null) {
           p.setConfigName(opt);
         }
-        opt = DOMUtil.getAttr(node, "schema", null);
+        opt = DOMUtil.getAttr(node, CORE_SCHEMA, null);
         if (opt != null) {
           p.setSchemaName(opt);
         }
         if (zkController != null) {
-          opt = DOMUtil.getAttr(node, "shard", null);
+          opt = DOMUtil.getAttr(node, CORE_SHARD, null);
           if (opt != null && opt.length() > 0) {
             p.getCloudDescriptor().setShardId(opt);
           }
-          opt = DOMUtil.getAttr(node, "collection", null);
+          opt = DOMUtil.getAttr(node, CORE_COLLECTION, null);
           if (opt != null) {
             p.getCloudDescriptor().setCollectionName(opt);
           }
-          opt = DOMUtil.getAttr(node, "roles", null);
+          opt = DOMUtil.getAttr(node, CORE_ROLES, null);
           if(opt != null){
         	  p.getCloudDescriptor().setRoles(opt);
           }
         }
-        opt = DOMUtil.getAttr(node, "properties", null);
+        opt = DOMUtil.getAttr(node, CORE_PROPERTIES, null);
         if (opt != null) {
           p.setPropertiesName(opt);
         }
-        opt = DOMUtil.getAttr(node, CoreAdminParams.DATA_DIR, null);
+        opt = DOMUtil.getAttr(node, CORE_DATADIR, null);
         if (opt != null) {
           p.setDataDir(opt);
         }
@@ -565,6 +577,8 @@ public class CoreContainer
    */
   public void shutdown() {
     log.info("Shutting down CoreContainer instance="+System.identityHashCode(this));
+    isShutDown = true;
+    
     if (isZooKeeperAware()) {
       cancelCoreRecoveries();
     }
@@ -589,7 +603,6 @@ public class CoreContainer
         if (shardHandlerFactory != null) {
           shardHandlerFactory.close();
         }
-        isShutDown = true;
       }
     }
   }
@@ -1153,7 +1166,7 @@ public class CoreContainer
           for (int i = 0; i < nodes.getLength(); i++) {
             Node node = nodes.item(i);
             
-            String name = DOMUtil.getAttr(node, "name", null);
+            String name = DOMUtil.getAttr(node, CORE_NAME, null);
             if (origCoreName.equals(name)) {
               coreNode = node;
               if (coreName.equals(origCoreName)) {
@@ -1167,7 +1180,7 @@ public class CoreContainer
             // see if we match with substitution
             for (int i = 0; i < nodes.getLength(); i++) {
               Node node = nodes.item(i);
-              String name = DOMUtil.getAttr(node, "name", null);
+              String name = DOMUtil.getAttr(node, CORE_NAME, null);
               if (origCoreName.equals(DOMUtil.substituteProperty(name,
                   loader.getCoreProperties()))) {
                 coreNode = node;
@@ -1180,28 +1193,28 @@ public class CoreContainer
           }
         }
 
-        coreAttribs.put("name", coreName);
+        coreAttribs.put(CORE_NAME, coreName);
         
         String instanceDir = dcore.getInstanceDir();
-        addCoreProperty(coreAttribs, coreNode, "instanceDir", instanceDir, null);
+        addCoreProperty(coreAttribs, coreNode, CORE_INSTDIR, instanceDir, null);
         
         // write config 
         String configName = dcore.getConfigName();
-        addCoreProperty(coreAttribs, coreNode, "conf", configName, dcore.getDefaultConfigName());
+        addCoreProperty(coreAttribs, coreNode, CORE_CONFIG, configName, dcore.getDefaultConfigName());
         
         // write schema
         String schema = dcore.getSchemaName();
-        addCoreProperty(coreAttribs, coreNode, "schema", schema, dcore.getDefaultSchemaName());
+        addCoreProperty(coreAttribs, coreNode, CORE_SCHEMA, schema, dcore.getDefaultSchemaName());
         
         String dataDir = dcore.dataDir;
-        addCoreProperty(coreAttribs, coreNode, "dataDir", dataDir, null);
+        addCoreProperty(coreAttribs, coreNode, CORE_DATADIR, dataDir, null);
         
         CloudDescriptor cd = dcore.getCloudDescriptor();
         String shard = null;
         if (cd != null) {
           shard = cd.getShardId();
         }
-        addCoreProperty(coreAttribs, coreNode, "shard", shard, null);
+        addCoreProperty(coreAttribs, coreNode, CORE_SHARD, shard, null);
         
         String collection = null;
         // only write out the collection name if it's not the default (the
@@ -1211,12 +1224,12 @@ public class CoreContainer
           collection = cd.getCollectionName();
         }
         
-        addCoreProperty(coreAttribs, coreNode, "collection", collection, dcore.name);
+        addCoreProperty(coreAttribs, coreNode, CORE_COLLECTION, collection, dcore.name);
         
         // we don't try and preserve sys prop defs in these
         String opt = dcore.getPropertiesName();
         if (opt != null) {
-          coreAttribs.put("properties", opt);
+          coreAttribs.put(CORE_PROPERTIES, opt);
         }
         
         SolrCoreXMLDef solrCoreXMLDef = new SolrCoreXMLDef();

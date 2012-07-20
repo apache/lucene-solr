@@ -27,7 +27,6 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
   private final IntervalIterator subtracted;
   private Interval subtractedInterval = new Interval();
   private Interval currentInterval = new Interval();
-  private int secondDoc = -1;
 
   public BrouwerianIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator minuted, IntervalIterator subtracted) {
     super(scorer, collectPositions);
@@ -37,16 +36,16 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
   
 
   @Override
-  public int advanceTo(int docId) throws IOException {
-    currentDoc = minuted.advanceTo(docId);
-    secondDoc  = subtracted.advanceTo(docId);
+  public int scorerAdvanced(int docId) throws IOException {
     subtractedInterval.reset();
-    return currentDoc;
+    minuted.scorerAdvanced(docId);
+    subtracted.scorerAdvanced(docId);
+    return docId;
   }
   
   @Override
   public Interval next() throws IOException {
-    if (secondDoc != currentDoc) {
+    if (subtracted.docID() != minuted.docID()) {
       return currentInterval = minuted.next();
     }
     while ((currentInterval = minuted.next()) != null) {
@@ -62,7 +61,7 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
   @Override
   public void collect(IntervalCollector collector) {
     assert collectPositions;
-    collector.collectComposite(scorer, currentInterval, currentDoc);
+    collector.collectComposite(scorer, currentInterval, docID());
     minuted.collect(collector);
     
   }

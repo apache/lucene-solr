@@ -45,24 +45,20 @@ public abstract class BooleanIntervalIterator extends IntervalIterator {
 
   abstract void advance() throws IOException;
   
-  public static IntervalIterator[] pullIterators(boolean needsPayloads,
-      boolean needsOffsets, boolean collectPositions, Scorer... scorers)
+  public static IntervalIterator[] pullIterators(Scorer... scorers)
       throws IOException {
     IntervalIterator[] iterators = new IntervalIterator[scorers.length];
     for (int i = 0; i < scorers.length; i++) {
-      iterators[i] = scorers[i].positions(needsPayloads, needsOffsets,
-          collectPositions);
+      iterators[i] = scorers[i].positions();
     }
     return iterators;
   }
   
-  public static IntervalIterator[] pullIterators(boolean needsPayloads,
-      boolean needsOffsets, boolean collectPositions, List<Scorer> scorers)
+  public static IntervalIterator[] pullIterators(List<Scorer> scorers)
       throws IOException {
     IntervalIterator[] iterators = new IntervalIterator[scorers.size()];
     for (int i = 0; i < iterators.length; i++) {
-      iterators[i] = scorers.get(i).positions(needsPayloads, needsOffsets,
-          collectPositions);
+      iterators[i] = scorers.get(i).positions();
     }
     return iterators;
   }

@@ -19,12 +19,13 @@ package org.apache.solr.analysis;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.util.*;
@@ -78,7 +79,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     }
   }
 
-  public CharStream create(CharStream input) {
+  public CharFilter create(Reader input) {
     return new MappingCharFilter(normMap,input);
   }
 

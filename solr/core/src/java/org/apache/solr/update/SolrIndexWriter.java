@@ -122,10 +122,11 @@ public class SolrIndexWriter extends IndexWriter {
     final InfoStream infoStream = isClosed ? null : getConfig().getInfoStream();    
     try {
       super.close();
+    } finally {
       if(infoStream != null) {
         infoStream.close();
       }
-    } finally {
+      
       isClosed = true;
 
       directoryFactory.release(directory);

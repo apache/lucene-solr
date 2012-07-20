@@ -83,6 +83,7 @@ public class TestBooleanScorer extends LuceneTestCase
     Scorer[] scorers = new Scorer[] {new Scorer(weight) {
       private int doc = -1;
       @Override public float score() { return 0; }
+      @Override public float freq()  { return 0; }
       @Override public int docID() { return doc; }
       
       @Override public int nextDoc() {
@@ -93,8 +94,7 @@ public class TestBooleanScorer extends LuceneTestCase
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
       }
       @Override
-      public IntervalIterator positions(boolean needsPayloads,
-          boolean needsOffsets, boolean collectPositions) throws IOException {
+      public IntervalIterator positions() throws IOException {
         return null;
       }
       

@@ -54,8 +54,8 @@ public class SloppyIntervalIterator extends IntervalIterator {
   }
   
   @Override
-  public int advanceTo(int docId) throws IOException {
-    return currentDoc = iterator.advanceTo(docId);
+  public int scorerAdvanced(int docId) throws IOException {
+    return iterator.scorerAdvanced(docId);
   }
   
   public int matchDistance() {
@@ -87,8 +87,8 @@ public class SloppyIntervalIterator extends IntervalIterator {
     }
     
     @Override
-    public int advanceTo(int docId) throws IOException {
-      return currentDoc = iterator.advanceTo(docId);
+    public int scorerAdvanced(int docId) throws IOException {
+      return iterator.scorerAdvanced(docId);
     }
     
     @Override
@@ -104,7 +104,7 @@ public class SloppyIntervalIterator extends IntervalIterator {
     
     @Override
     public void collect(IntervalCollector collector) {
-      collector.collectLeafPosition(scorer, realInterval, currentDoc);
+      collector.collectLeafPosition(scorer, realInterval, docID());
       
     }
     
@@ -142,9 +142,9 @@ public class SloppyIntervalIterator extends IntervalIterator {
     }
     
     @Override
-    public int advanceTo(int docId) throws IOException {
+    public int scorerAdvanced(int docId) throws IOException {
       initialized = false;
-      return currentDoc = groupIterator.advanceTo(docId);
+      return groupIterator.scorerAdvanced(docId);
     }
     
     @Override
@@ -195,7 +195,7 @@ public class SloppyIntervalIterator extends IntervalIterator {
       for (int i = 0; i < intervalPositions.length; i++) { // find min / max
         int idx = currentIdx++ % intervalPositions.length;
         collector.collectLeafPosition(scorer, intervalPositions[idx],
-            currentDoc);
+            docID());
       }
       
     }

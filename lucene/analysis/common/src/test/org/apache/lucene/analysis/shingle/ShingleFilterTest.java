@@ -1023,7 +1023,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       new String[]{TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE},
       new int[]{1,0,1,0,1,0,1}
     );
-    wsTokenizer.reset(new StringReader("please divide this sentence"));
+    wsTokenizer.setReader(new StringReader("please divide this sentence"));
     assertTokenStreamContents(filter,
       new String[]{"please","please divide","divide","divide this","this","this sentence","sentence"},
       new int[]{0,0,7,7,14,14,19}, new int[]{6,13,13,18,18,27,27},

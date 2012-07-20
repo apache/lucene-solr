@@ -30,7 +30,9 @@ import java.util.TimeZone;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.appending.AppendingCodec;
+import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
 import org.apache.lucene.search.RandomSimilarityProvider;
@@ -167,9 +169,13 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
     } else */ if (!"random".equals(TEST_POSTINGSFORMAT)) {
-      codec = new Lucene40Codec() {
-        private final PostingsFormat format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
-        
+      final PostingsFormat format;
+      if ("MockRandom".equals(TEST_POSTINGSFORMAT)) {
+        format = new MockRandomPostingsFormat(random);
+      } else {
+        format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
+      }
+      codec = new Lucene40Codec() {       
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
           return format;
@@ -184,6 +190,8 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       codec = new SimpleTextCodec();
     } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
       codec = new AppendingCodec();
+    } else if ("Asserting".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 7 && !shouldAvoidCodec("Asserting"))) {
+      codec = new AssertingCodec();
     } else if (!"random".equals(TEST_CODEC)) {
       codec = Codec.forName(TEST_CODEC);
     } else if ("random".equals(TEST_POSTINGSFORMAT)) {

@@ -42,7 +42,7 @@ public class TestTermQuery extends LuceneTestCase {
   private String fieldName = "field";
 
   /**
-   * Simple testcase for {@link TermScorer#positions(boolean, boolean, boolean)}
+   * Simple testcase for {@link TermScorer#positions()}
    */
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
@@ -77,14 +77,14 @@ public class TestTermQuery extends LuceneTestCase {
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       for (AtomicReaderContext atomicReaderContext : leaves) {
-        Scorer scorer = weight.scorer(atomicReaderContext, true, true, null);
+        Scorer scorer = weight.scorer(atomicReaderContext, true, true, true, false, false, null);
         assertNotNull(scorer);
         int toDoc = 1 + random().nextInt(atomicReaderContext.reader().docFreq(new Term(fieldName, "1")) - 1 );
         final int advance = scorer.advance(toDoc);
-        IntervalIterator positions = scorer.positions(false, false, false);
+        IntervalIterator positions = scorer.positions();
 
         do {
-          assertEquals(scorer.docID(), positions.advanceTo(scorer.docID()));
+          assertEquals(scorer.docID(), positions.scorerAdvanced(scorer.docID()));
 
           Interval interval = null;
           String msg = "Advanced to: " + advance + " current doc: "
@@ -181,7 +181,7 @@ public class TestTermQuery extends LuceneTestCase {
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       for (AtomicReaderContext atomicReaderContext : leaves) {
-        Scorer scorer = weight.scorer(atomicReaderContext, true, true, null);
+        Scorer scorer = weight.scorer(atomicReaderContext, true, true, true, false, false, null);
         assertNotNull(scorer);
         int initDoc = 0;
         int maxDoc = atomicReaderContext.reader().maxDoc();
@@ -197,7 +197,7 @@ public class TestTermQuery extends LuceneTestCase {
           if (docID == Scorer.NO_MORE_DOCS) {
             break;
           }
-          IntervalIterator positions = scorer.positions(false, false, false);
+          IntervalIterator positions = scorer.positions();
           Integer[] pos = positionsInDoc[atomicReaderContext.docBase + docID];
 
           assertEquals((float) pos.length, positions.getScorer().freq(), 0.0f);
@@ -206,7 +206,7 @@ public class TestTermQuery extends LuceneTestCase {
           final int howMany = random().nextInt(20) == 0 ? pos.length
               - random().nextInt(pos.length) : pos.length;
           Interval interval = null;
-          assertEquals(scorer.docID(), positions.advanceTo(scorer.docID()));
+          assertEquals(scorer.docID(), positions.scorerAdvanced(scorer.docID()));
           for (int j = 0; j < howMany; j++) {
             assertNotNull((interval = positions.next()));
             assertEquals("iteration: " + i + " initDoc: " + initDoc + " doc: "
@@ -267,7 +267,7 @@ public class TestTermQuery extends LuceneTestCase {
       Weight weight = one.createWeight(searcher);
       Interval interval = null;
       for (AtomicReaderContext atomicReaderContext : leaves) {
-        Scorer scorer = weight.scorer(atomicReaderContext, true, true, null);
+        Scorer scorer = weight.scorer(atomicReaderContext, true, true, true, false, false, null);
         assertNotNull(scorer);
 
         int initDoc = 0;
@@ -279,9 +279,9 @@ public class TestTermQuery extends LuceneTestCase {
           initDoc = scorer.advance(random().nextInt(maxDoc));
         }
         String msg = "Iteration: " + i + " initDoc: " + initDoc;
-        IntervalIterator positions = scorer.positions(false, false, false);
+        IntervalIterator positions = scorer.positions();
         assertEquals(howMany / 2.f, positions.getScorer().freq(), 0.0);
-        assertEquals(scorer.docID(), positions.advanceTo(scorer.docID()));
+        assertEquals(scorer.docID(), positions.scorerAdvanced(scorer.docID()));
         for (int j = 0; j < howMany; j += 2) {
           assertNotNull("next returned nullat index: " + j + " with freq: "
               + positions.getScorer().freq() + " -- " + msg,

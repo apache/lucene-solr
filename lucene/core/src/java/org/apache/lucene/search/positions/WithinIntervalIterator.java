@@ -64,8 +64,8 @@ public class WithinIntervalIterator extends IntervalIterator implements Interval
   }
 
   @Override
-  public int advanceTo(int docId) throws IOException {
-    return currentDoc = iterator.advanceTo(docId);
+  public int scorerAdvanced(int docId) throws IOException {
+    return iterator.scorerAdvanced(docId);
   }
 
   @Override

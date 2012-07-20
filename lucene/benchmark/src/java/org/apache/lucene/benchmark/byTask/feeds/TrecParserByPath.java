@@ -26,7 +26,7 @@ public class TrecParserByPath extends TrecDocParser {
 
   @Override
   public DocData parse(DocData docData, String name, TrecContentSource trecSrc, 
-      StringBuilder docBuf, ParsePathType pathType) throws IOException, InterruptedException {
+      StringBuilder docBuf, ParsePathType pathType) throws IOException {
     return pathType2parser.get(pathType).parse(docData, name, trecSrc, docBuf, pathType);
   }
 

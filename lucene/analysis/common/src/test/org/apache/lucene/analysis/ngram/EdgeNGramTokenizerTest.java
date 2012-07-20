@@ -96,7 +96,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
   public void testReset() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 3);
     assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3}, 5 /* abcde */);
-    tokenizer.reset(new StringReader("abcde"));
+    tokenizer.setReader(new StringReader("abcde"));
     assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3}, 5 /* abcde */);
   }
   

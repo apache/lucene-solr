@@ -55,6 +55,7 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
       this.subs[i].slice = subs[i].slice;
     }
     upto = -1;
+    doc = -1;
     current = null;
     return this;
   }
@@ -69,6 +70,7 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   @Override
   public int freq() throws IOException {
+    assert current != null;
     return current.freq();
   }
 

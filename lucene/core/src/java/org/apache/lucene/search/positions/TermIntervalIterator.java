@@ -68,12 +68,13 @@ public final class TermIntervalIterator extends IntervalIterator {
   }
 
   @Override
-  public int advanceTo(int docId) throws IOException {
-    int advance = docsAndPos.advance(docId);
-    if (advance != NO_MORE_DOCS) {
-      positionsPending = docsAndPos.freq();
-    }
+  public int scorerAdvanced(int docId) throws IOException {
     interval.reset();
+    if (docsAndPos.docID() == docId) {
+      positionsPending = docsAndPos.freq();
+    } else {
+      positionsPending = -1;
+    }
     return docID = docsAndPos.docID();
   }
   

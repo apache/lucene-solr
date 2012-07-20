@@ -123,14 +123,14 @@ public class PhraseQuery extends Query {
   }
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
-    final TermQuery.TermDocsEnumFactory factory;
+    final TermDocsEnumFactory factory;
     final DocsAndPositionsEnum postings;
     final int docFreq;
     final int position;
     final Term[] terms;
     final int nTerms; // for faster comparisons
 
-    public PostingsAndFreq(DocsAndPositionsEnum postings, TermQuery.TermDocsEnumFactory factory, int docFreq, int position, Term... terms) throws IOException {
+    public PostingsAndFreq(DocsAndPositionsEnum postings, TermDocsEnumFactory factory, int docFreq, int position, Term... terms) throws IOException {
       this.factory = factory;
       this.postings = postings;
       this.docFreq = docFreq;
@@ -232,7 +232,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
       assert !terms.isEmpty();
       final AtomicReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -263,7 +263,7 @@ public class PhraseQuery extends Query {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }
-        TermQuery.TermDocsEnumFactory factory = new TermQuery.TermDocsEnumFactory(BytesRef.deepCopyOf(t.bytes()), te, acceptDocs);
+        TermDocsEnumFactory factory = new TermDocsEnumFactory(BytesRef.deepCopyOf(t.bytes()), te, acceptDocs);
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, factory, te.docFreq(), positions.get(i).intValue(), t);
       }
 
@@ -273,7 +273,8 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0) {				  // optimize exact case
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context));
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context), needsOffsets, collectPositions
+            );
         if (s.noDocs) {
           return null;
         } else {
@@ -281,7 +282,7 @@ public class PhraseQuery extends Query {
         }
       } else {
         return
-          new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context));
+          new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context), needsOffsets, collectPositions);
       }
     }
     
@@ -292,7 +293,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, true, false, true, false, false, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -390,4 +391,30 @@ public class PhraseQuery extends Query {
       ^ positions.hashCode();
   }
 
+  static class TermDocsEnumFactory {
+    protected final TermsEnum termsEnum;
+    protected final Bits liveDocs;
+    protected final BytesRef term;
+    
+    TermDocsEnumFactory(TermsEnum termsEnum, Bits liveDocs) {
+      this(null, termsEnum, liveDocs);
+    }
+    
+    TermDocsEnumFactory(BytesRef term, TermsEnum termsEnum, Bits liveDocs) {
+      this.termsEnum = termsEnum;
+      this.liveDocs = liveDocs;
+      this.term = term;
+    }
+    
+    
+    public DocsAndPositionsEnum docsAndPositionsEnum(boolean offsets)
+        throws IOException {
+      if (term != null) {
+        assert term != null;
+        termsEnum.seekExact(term, false);
+      }
+      return termsEnum.docsAndPositions(liveDocs, null, offsets);
+    }
+
+  }
 }

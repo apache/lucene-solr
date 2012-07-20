@@ -389,10 +389,8 @@ public class ArrayHashMap<K,V> implements Iterable<V> {
 
   /** Prints the baseHash array, used for debugging purposes. */
   @SuppressWarnings("unused")
-  private void printBaseHash() {
-    for (int i : baseHash) {
-      System.out.println(i + ".\t" + i);
-    }
+  private String getBaseHashAsString() {
+    return Arrays.toString(this.baseHash);
   }
 
   /**

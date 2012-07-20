@@ -45,8 +45,12 @@ public class OverseerCollectionProcessor implements Runnable {
 
   public static final String CREATECOLLECTION = "createcollection";
 
+  public static final String RELOADCOLLECTION = "reloadcollection";
+  
   // TODO: use from Overseer?
   private static final String QUEUE_OPERATION = "operation";
+
+
   
   private static Logger log = LoggerFactory
       .getLogger(OverseerCollectionProcessor.class);
@@ -124,77 +128,19 @@ public class OverseerCollectionProcessor implements Runnable {
     if (CREATECOLLECTION.equals(operation)) {
       return createCollection(zkStateReader.getCloudState(), message);
     } else if (DELETECOLLECTION.equals(operation)) {
-      return deleteCollection(zkStateReader.getCloudState(), message);
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
+      params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
+      return collectionCmd(zkStateReader.getCloudState(), message, params);
+    } else if (RELOADCOLLECTION.equals(operation)) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
+      return collectionCmd(zkStateReader.getCloudState(), message, params);
     }
     // unknown command, toss it from our queue
     return true;
   }
-  
-  private boolean deleteCollection(CloudState cloudState, ZkNodeProps message) {
-    
-    String name = message.get("name");
-    
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
-    
-    Map<String,Slice> slices = cloudState.getCollectionStates().get(name);
-    
-    if (slices == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection:" + name);
-    }
-    
-    for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-      Slice slice = entry.getValue();
-      Map<String,ZkNodeProps> shards = slice.getShards();
-      Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
-      for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
-        final ZkNodeProps node = shardEntry.getValue();
-        if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
-          params.set(CoreAdminParams.CORE, name);
-          params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
 
-          String replica = node.get(ZkStateReader.BASE_URL_PROP);
-          ShardRequest sreq = new ShardRequest();
-          // yes, they must use same admin handler path everywhere...
-          params.set("qt", adminPath);
-
-          sreq.purpose = 1;
-          // TODO: this sucks
-          if (replica.startsWith("http://")) replica = replica.substring(7);
-          sreq.shards = new String[] {replica};
-          sreq.actualShards = sreq.shards;
-          sreq.params = params;
-          
-          shardHandler.submit(sreq, replica, sreq.params);
-        }
-      }
-    }
-    
-    int failed = 0;
-    ShardResponse srsp;
-    do {
-      srsp = shardHandler.takeCompletedOrError();
-      if (srsp != null) {
-        Throwable e = srsp.getException();
-        if (e != null) {
-          // should we retry?
-          // TODO: we should return errors to the client
-          // TODO: what if one fails and others succeed?
-          failed++;
-          log.error("Error talking to shard: " + srsp.getShard(), e);
-        }
-      }
-    } while (srsp != null);
-
-    
-    // if all calls succeeded, return true
-    if (failed > 0) {
-      return false;
-    }
-    return true;
-  }
-
-  // TODO: bad name conflict with another method
   private boolean createCollection(CloudState cloudState, ZkNodeProps message) {
     
     // look at the replication factor and see if it matches reality
@@ -236,10 +182,13 @@ public class OverseerCollectionProcessor implements Runnable {
     Collections.shuffle(nodeList);
     
     int numNodes = numShards * (numReplicas + 1);
-    List<String> createOnNodes = nodeList.subList(0, Math.min(nodeList.size() -1, numNodes - 1));
+    List<String> createOnNodes = nodeList.subList(0, Math.min(nodeList.size(), numNodes));
+    
+    log.info("Create collection " + name + " on " + createOnNodes);
     
     for (String replica : createOnNodes) {
       // TODO: this does not work if original url had _ in it
+      // We should have a master list
       replica = replica.replaceAll("_", "/");
       params.set(CoreAdminParams.NAME, name);
       params.set("collection.configName", configName);
@@ -254,6 +203,66 @@ public class OverseerCollectionProcessor implements Runnable {
       sreq.params = params;
       
       shardHandler.submit(sreq, replica, sreq.params);
+    }
+    
+    int failed = 0;
+    ShardResponse srsp;
+    do {
+      srsp = shardHandler.takeCompletedOrError();
+      if (srsp != null) {
+        Throwable e = srsp.getException();
+        if (e != null) {
+          // should we retry?
+          // TODO: we should return errors to the client
+          // TODO: what if one fails and others succeed?
+          failed++;
+          log.error("Error talking to shard: " + srsp.getShard(), e);
+        }
+      }
+    } while (srsp != null);
+
+    
+    // if all calls succeeded, return true
+    if (failed > 0) {
+      return false;
+    }
+    return true;
+  }
+  
+  private boolean collectionCmd(CloudState cloudState, ZkNodeProps message, ModifiableSolrParams params) {
+    log.info("Executing Collection Cmd : " + params);
+    String name = message.get("name");
+    
+    Map<String,Slice> slices = cloudState.getCollectionStates().get(name);
+    
+    if (slices == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection:" + name);
+    }
+    
+    for (Map.Entry<String,Slice> entry : slices.entrySet()) {
+      Slice slice = entry.getValue();
+      Map<String,ZkNodeProps> shards = slice.getShards();
+      Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
+      for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
+        final ZkNodeProps node = shardEntry.getValue();
+        if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
+          params.set(CoreAdminParams.CORE, node.get(ZkStateReader.CORE_NAME_PROP));
+
+          String replica = node.get(ZkStateReader.BASE_URL_PROP);
+          ShardRequest sreq = new ShardRequest();
+          // yes, they must use same admin handler path everywhere...
+          params.set("qt", adminPath);
+
+          sreq.purpose = 1;
+          // TODO: this sucks
+          if (replica.startsWith("http://")) replica = replica.substring(7);
+          sreq.shards = new String[] {replica};
+          sreq.actualShards = sreq.shards;
+          sreq.params = params;
+          
+          shardHandler.submit(sreq, replica, sreq.params);
+        }
+      }
     }
     
     int failed = 0;

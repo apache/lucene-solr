@@ -44,6 +44,10 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       // once per document.
       return idx == scores.length ? Float.NaN : scores[idx++];
     }
+    
+    @Override public float freq() throws IOException {
+      return 1;
+    }
 
     @Override public int docID() { return doc; }
 
@@ -57,7 +61,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException(); 
     }
   }

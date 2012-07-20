@@ -18,8 +18,6 @@
 package org.apache.solr.handler;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.analysis.util.CharFilterFactory;
@@ -41,6 +39,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.*;
 import org.apache.commons.lang.ArrayUtils;
@@ -106,7 +105,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     if( cfiltfacs != null ){
       String source = value;
       for(CharFilterFactory cfiltfac : cfiltfacs ){
-        CharStream reader = CharReader.get(new StringReader(source));
+        Reader reader = new StringReader(source);
         reader = cfiltfac.create(reader);
         source = writeCharStream(namedList, reader);
       }
@@ -287,7 +286,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     return tokensNamedLists;
   }
   
-  private String writeCharStream(NamedList<Object> out, CharStream input ){
+  private String writeCharStream(NamedList<Object> out, Reader input ){
     final int BUFFER_SIZE = 1024;
     char[] buf = new char[BUFFER_SIZE];
     int len = 0;

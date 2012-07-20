@@ -17,20 +17,32 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.highlight.SimpleHTMLEncoder;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util._TestUtil;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   
@@ -175,4 +187,152 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     sfb.setMultiValuedSeparator( '/' );
     assertEquals( "//a b c//<b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
   }
+
+  public void testDiscreteMultiValueHighlighting() throws Exception {
+    makeIndexShortMV();
+
+    FieldQuery fq = new FieldQuery( tq( "d" ), true, true );
+    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
+    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    SimpleFragListBuilder sflb = new SimpleFragListBuilder();
+    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
+    sfb.setDiscreteMultiValueHighlighting(true);
+    assertEquals( "<b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
+
+    make1dmfIndex("some text to highlight", "highlight other text");
+    fq = new FieldQuery( tq( "text" ), true, true );
+    stack = new FieldTermStack( reader, 0, F, fq );
+    fpl = new FieldPhraseList( stack, fq );
+    sflb = new SimpleFragListBuilder();
+    ffl = sflb.createFieldFragList( fpl, 32 );
+    String[] result = sfb.createFragments(reader, 0, F, ffl, 3);
+    assertEquals(2, result.length);
+    assertEquals("some <b>text</b> to highlight", result[0]);
+    assertEquals("other <b>text</b>", result[1]);
+
+    fq = new FieldQuery( tq( "highlight" ), true, true );
+    stack = new FieldTermStack( reader, 0, F, fq );
+    fpl = new FieldPhraseList( stack, fq );
+    sflb = new SimpleFragListBuilder();
+    ffl = sflb.createFieldFragList( fpl, 32 );
+    result = sfb.createFragments(reader, 0, F, ffl, 3);
+    assertEquals(2, result.length);
+    assertEquals("text to <b>highlight</b>", result[0]);
+    assertEquals("<b>highlight</b> other text", result[1]);
+  }
+
+  public void testRandomDiscreteMultiValueHighlighting() throws Exception {
+    String[] randomValues = new String[3 + random().nextInt(10 * RANDOM_MULTIPLIER)];
+    for (int i = 0; i < randomValues.length; i++) {
+      String randomValue;
+      do {
+        randomValue = _TestUtil.randomSimpleString(random());
+      } while ("".equals(randomValue));
+      randomValues[i] = randomValue;
+    }
+
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(
+        random(),
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT,
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorOffsets(true);
+    customType.setStoreTermVectorPositions(true);
+
+    int numDocs = randomValues.length * 5;
+    int numFields = 2 + random().nextInt(5);
+    int numTerms = 2 + random().nextInt(3);
+    List<Doc> docs = new ArrayList<Doc>(numDocs);
+    List<Document> documents = new ArrayList<Document>(numDocs);
+    Map<String, Set<Integer>> valueToDocId = new HashMap<String, Set<Integer>>();
+    for (int i = 0; i < numDocs; i++) {
+      Document document = new Document();
+      String[][] fields = new String[numFields][numTerms];
+      for (int j = 0; j < numFields; j++) {
+        String[] fieldValues = new String[numTerms];
+        fieldValues[0] = getRandomValue(randomValues, valueToDocId, i);
+        StringBuilder builder = new StringBuilder(fieldValues[0]);
+        for (int k = 1; k < numTerms; k++) {
+          fieldValues[k] = getRandomValue(randomValues, valueToDocId, i);
+          builder.append(' ').append(fieldValues[k]);
+        }
+        document.add(new Field(F, builder.toString(), customType));
+        fields[j] = fieldValues;
+      }
+      docs.add(new Doc(fields));
+      documents.add(document);
+    }
+    writer.addDocuments(documents);
+    writer.close();
+    IndexReader reader = DirectoryReader.open(dir);
+
+    try {
+      int highlightIters = 1 + random().nextInt(120 * RANDOM_MULTIPLIER);
+      for (int highlightIter = 0; highlightIter < highlightIters; highlightIter++) {
+        String queryTerm = randomValues[random().nextInt(randomValues.length)];
+        int randomHit = valueToDocId.get(queryTerm).iterator().next();
+        List<StringBuilder> builders = new ArrayList<StringBuilder>();
+        for (String[] fieldValues : docs.get(randomHit).fieldValues) {
+          StringBuilder builder = new StringBuilder();
+          boolean hit = false;
+          for (int i = 0; i < fieldValues.length; i++) {
+            if (queryTerm.equals(fieldValues[i])) {
+              builder.append("<b>").append(queryTerm).append("</b>");
+              hit = true;
+            } else {
+              builder.append(fieldValues[i]);
+            }
+            if (i != fieldValues.length - 1) {
+              builder.append(' ');
+            }
+          }
+          if (hit) {
+            builders.add(builder);
+          }
+        }
+
+        FieldQuery fq = new FieldQuery(tq(queryTerm), true, true);
+        FieldTermStack stack = new FieldTermStack(reader, randomHit, F, fq);
+
+        FieldPhraseList fpl = new FieldPhraseList(stack, fq);
+        SimpleFragListBuilder sflb = new SimpleFragListBuilder(100);
+        FieldFragList ffl = sflb.createFieldFragList(fpl, 300);
+
+        SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
+        sfb.setDiscreteMultiValueHighlighting(true);
+        String[] actualFragments = sfb.createFragments(reader, randomHit, F, ffl, numFields);
+        assertEquals(builders.size(), actualFragments.length);
+        for (int i = 0; i < actualFragments.length; i++) {
+          assertEquals(builders.get(i).toString(), actualFragments[i]);
+        }
+      }
+    } finally {
+      reader.close();
+      dir.close();
+    }
+  }
+
+  private String getRandomValue(String[] randomValues, Map<String, Set<Integer>> valueToDocId, int docId) {
+    String value = randomValues[random().nextInt(randomValues.length)];
+    if (!valueToDocId.containsKey(value)) {
+      valueToDocId.put(value, new HashSet<Integer>());
+    }
+    valueToDocId.get(value).add(docId);
+    return value;
+  }
+
+  private static class Doc {
+
+    final String[][] fieldValues;
+
+    private Doc(String[][] fieldValues) {
+      this.fieldValues = fieldValues;
+    }
+  }
+
 }

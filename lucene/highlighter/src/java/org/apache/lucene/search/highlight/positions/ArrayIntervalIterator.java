@@ -56,7 +56,7 @@ public class ArrayIntervalIterator extends IntervalIterator {
   }
 
   @Override
-  public int advanceTo(int docId) throws IOException {
+  public int scorerAdvanced(int docId) throws IOException {
     return 0;
   }
 

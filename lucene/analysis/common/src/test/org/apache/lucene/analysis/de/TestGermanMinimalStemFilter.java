@@ -23,8 +23,11 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
 
@@ -51,6 +54,19 @@ public class TestGermanMinimalStemFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "boote", "boot");
     checkOneTerm(analyzer, "götter", "gott");
     checkOneTerm(analyzer, "äpfel", "apfel");
+  }
+  
+  public void testKeyword() throws IOException {
+    final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("sängerinnen"), false);
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenStream sink = new KeywordMarkerFilter(source, exclusionSet);
+        return new TokenStreamComponents(source, new GermanMinimalStemFilter(sink));
+      }
+    };
+    checkOneTerm(a, "sängerinnen", "sängerinnen");
   }
   
   /** Test against a vocabulary from the reference impl */

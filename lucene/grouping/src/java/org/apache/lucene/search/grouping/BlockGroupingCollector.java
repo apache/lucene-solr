@@ -109,6 +109,11 @@ public class BlockGroupingCollector extends Collector {
     public float score() {
       return score;
     }
+    
+    @Override
+    public float freq() {
+      throw new UnsupportedOperationException(); // TODO: wtf does this class do?
+    }
 
     @Override
     public int docID() {
@@ -126,7 +131,7 @@ public class BlockGroupingCollector extends Collector {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {
+    public IntervalIterator positions() throws IOException {
       throw new UnsupportedOperationException();
     }
   }

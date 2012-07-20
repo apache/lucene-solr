@@ -19,15 +19,14 @@ package org.apache.solr.util;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.logging.CircularList;
 import org.junit.Test;
 
 /** 
  * Test circular list
  */
-public class CircularListTest  extends TestCase {  
+public class CircularListTest  extends LuceneTestCase {  
 
   @Test
   public void testCircularList() throws IOException {

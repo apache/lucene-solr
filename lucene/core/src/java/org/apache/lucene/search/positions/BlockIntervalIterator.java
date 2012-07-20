@@ -71,7 +71,7 @@ public final class BlockIntervalIterator extends IntervalIterator {
     intervals = new Interval[subScorers.length];
     for (int i = 0; i < subScorers.length; i++) {
       // nocommit - offsets and payloads?
-      iterators[i] = subScorers[i].positions(false, false, false);
+      iterators[i] = subScorers[i].positions();
       assert iterators[i] != null;
     }
     lastIter = iterators.length - 1;
@@ -109,8 +109,8 @@ public final class BlockIntervalIterator extends IntervalIterator {
         i++;
         if (i < iterators.length && intervals[i] == INFINITE_INTERVAL) {
           // advance only if really necessary
-          iterators[i].advanceTo(currentDoc);
-          assert iterators[i].docID() == currentDoc;
+          iterators[i].scorerAdvanced(docID());
+          assert iterators[i].docID() == docID();
         }
       } else {
         do {
@@ -137,20 +137,20 @@ public final class BlockIntervalIterator extends IntervalIterator {
   @Override
   public void collect(IntervalCollector collector) {
     assert collectPositions;
-    collector.collectComposite(scorer, interval, currentDoc);
+    collector.collectComposite(scorer, interval, docID());
     for (IntervalIterator iter : iterators) {
       iter.collect(collector);
     }
   }
 
   @Override
-  public int advanceTo(int docId) throws IOException {
-    iterators[0].advanceTo(docId);
+  public int scorerAdvanced(int docId) throws IOException {
+    iterators[0].scorerAdvanced(docId);
     assert iterators[0].docID() == docId;
-    iterators[1].advanceTo(docId);
+    iterators[1].scorerAdvanced(docId);
     assert iterators[1].docID() == docId;
     Arrays.fill(intervals, INFINITE_INTERVAL);
-    return currentDoc = docId;
+    return docId;
   }
 
   @Override

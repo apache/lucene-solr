@@ -78,7 +78,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       System.out.println("TEST: verify input=" + input + " expectedOutput=" + output);
     }
 
-    tokensIn.reset(new StringReader(input));
+    tokensIn.setReader(new StringReader(input));
     tokensOut.reset();
     final String[] expected = output.split(" ");
     int expectedUpto = 0;

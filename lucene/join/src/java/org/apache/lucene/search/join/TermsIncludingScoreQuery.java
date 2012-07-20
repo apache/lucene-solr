@@ -100,7 +100,7 @@ class TermsIncludingScoreQuery extends Query {
       private TermsEnum segmentTermsEnum;
 
       public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-        SVInnerScorer scorer = (SVInnerScorer) scorer(context, true, false, context.reader().getLiveDocs());
+        SVInnerScorer scorer = (SVInnerScorer) scorer(context, true, false, false, false, false, context.reader().getLiveDocs());
         if (scorer != null) {
           if (scorer.advance(doc) == doc) {
             return scorer.explain();
@@ -121,7 +121,7 @@ class TermsIncludingScoreQuery extends Query {
         originalWeight.normalize(norm, topLevelBoost * TermsIncludingScoreQuery.this.getBoost());
       }
 
-      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, Bits acceptDocs) throws IOException {
+      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
         Terms terms = context.reader().terms(field);
         if (terms == null) {
           return null;
@@ -209,11 +209,14 @@ class TermsIncludingScoreQuery extends Query {
       } while (docId != DocIdSetIterator.NO_MORE_DOCS);
       return docId;
     }
+    @Override
+    public IntervalIterator positions() throws IOException {
+      throw new UnsupportedOperationException();
+    }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads,
-        boolean needsOffsets, boolean collectPositions) throws IOException {
-      throw new UnsupportedOperationException();
+    public float freq() {
+      return 1;
     }
   }
 

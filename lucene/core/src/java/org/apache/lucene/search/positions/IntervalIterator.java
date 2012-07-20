@@ -31,7 +31,6 @@ public abstract class IntervalIterator {
   public static final IntervalIterator NO_MORE_POSITIONS = new EmptyIntervalIterator();
   public static final int NO_MORE_DOCS = Integer.MAX_VALUE;
   
-  protected int currentDoc = -1;
   protected final Scorer scorer;
   protected final boolean collectPositions;
   
@@ -40,7 +39,7 @@ public abstract class IntervalIterator {
     this.collectPositions = collectPositions;
   }
   
-  public abstract int advanceTo(int docId) throws IOException;
+  public abstract int scorerAdvanced(int docId) throws IOException;
   
   public abstract Interval next() throws IOException;
   
@@ -51,7 +50,7 @@ public abstract class IntervalIterator {
   public abstract int matchDistance();
   
   public int docID() {
-    return currentDoc;
+    return scorer.docID();
   }
   
   public Scorer getScorer() {
@@ -80,7 +79,7 @@ public abstract class IntervalIterator {
     }
     
     @Override
-    public int advanceTo(int docId) throws IOException {
+    public int scorerAdvanced(int docId) throws IOException {
       return IntervalIterator.NO_MORE_DOCS;
     }
     

@@ -1010,7 +1010,7 @@ public abstract class LuceneTestCase extends Assert {
       // TODO: remove this, and fix those tests to wrap before putting slow around:
       final boolean wasOriginallyAtomic = r instanceof AtomicReader;
       for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
-        switch(random.nextInt(4)) {
+        switch(random.nextInt(5)) {
           case 0:
             r = SlowCompositeReaderWrapper.wrap(r);
             break;
@@ -1040,6 +1040,16 @@ public abstract class LuceneTestCase extends Assert {
               new FieldFilterAtomicReader(ar, fields, false),
               new FieldFilterAtomicReader(ar, fields, true)
             );
+            break;
+          case 4:
+            // Häckidy-Hick-Hack: a standard Reader will cause FC insanity, so we use
+            // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
+            // along our reader:
+            if (r instanceof AtomicReader) {
+              r = new FCInvisibleMultiReader(new AssertingAtomicReader((AtomicReader)r));
+            } else if (r instanceof DirectoryReader) {
+              r = new FCInvisibleMultiReader((DirectoryReader)r);
+            }
             break;
           default:
             fail("should not get here");

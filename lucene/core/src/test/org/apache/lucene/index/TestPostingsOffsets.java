@@ -330,17 +330,17 @@ public class TestPostingsOffsets extends LuceneTestCase {
           docsAndPositionsAndOffsets = termsEnum.docsAndPositions(null, docsAndPositions, true);
           assertNotNull(docsAndPositionsAndOffsets);
           //System.out.println("    doc/freq/pos/offs");
-          while((doc = docsAndPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          while((doc = docsAndPositionsAndOffsets.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
             //System.out.println("      doc=" + docIDToID[doc] + " " + expected.size() + " freq");
             assertNotNull(expected);
-            assertEquals(expected.size(), docsAndPositions.freq());
+            assertEquals(expected.size(), docsAndPositionsAndOffsets.freq());
             for(Token token : expected) {
               int pos = Integer.parseInt(token.type());
               //System.out.println("        pos=" + pos);
-              assertEquals(pos, docsAndPositions.nextPosition());
-              assertEquals(token.startOffset(), docsAndPositions.startOffset());
-              assertEquals(token.endOffset(), docsAndPositions.endOffset());
+              assertEquals(pos, docsAndPositionsAndOffsets.nextPosition());
+              assertEquals(token.startOffset(), docsAndPositionsAndOffsets.startOffset());
+              assertEquals(token.endOffset(), docsAndPositionsAndOffsets.endOffset());
             }
           }
         }

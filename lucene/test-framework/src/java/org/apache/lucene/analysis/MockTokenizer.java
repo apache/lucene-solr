@@ -193,8 +193,8 @@ public class MockTokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
+  public void setReader(Reader input) throws IOException {
+    super.setReader(input);
     assert !enableChecks || streamState == State.CLOSE : "setReader() called in wrong state: " + streamState;
     streamState = State.SETREADER;
   }

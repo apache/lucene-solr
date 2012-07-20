@@ -17,10 +17,6 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
@@ -29,9 +25,18 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.search.highlight.DefaultEncoder;
 import org.apache.lucene.search.highlight.Encoder;
-import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.SubInfo;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
+import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.SubInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
 
@@ -48,6 +53,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   public static final String[] COLORED_POST_TAGS = { "</b>" };
   private char multiValuedSeparator = ' ';
   private final BoundaryScanner boundaryScanner;
+  private boolean discreteMultiValueHighlighting = false;
   
   protected BaseFragmentsBuilder(){
     this( new String[]{ "<b>" }, new String[]{ "</b>" } );
@@ -76,7 +82,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   public abstract List<WeightedFragInfo> getWeightedFragInfoList( List<WeightedFragInfo> src );
 
   private static final Encoder NULL_ENCODER = new DefaultEncoder();
-  
+
   public String createFragment( IndexReader reader, int docId,
       String fieldName, FieldFragList fieldFragList ) throws IOException {
     return createFragment( reader, docId, fieldName, fieldFragList,
@@ -102,14 +108,23 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   public String[] createFragments( IndexReader reader, int docId,
       String fieldName, FieldFragList fieldFragList, int maxNumFragments,
       String[] preTags, String[] postTags, Encoder encoder ) throws IOException {
-    if( maxNumFragments < 0 )
-      throw new IllegalArgumentException( "maxNumFragments(" + maxNumFragments + ") must be positive number." );
 
-    List<WeightedFragInfo> fragInfos = getWeightedFragInfoList( fieldFragList.getFragInfos() );
-    
+    if( maxNumFragments < 0 ) {
+      throw new IllegalArgumentException( "maxNumFragments(" + maxNumFragments + ") must be positive number." );
+    }
+
+    List<WeightedFragInfo> fragInfos = fieldFragList.getFragInfos();
     List<String> fragments = new ArrayList<String>( maxNumFragments );
     Field[] values = getFields( reader, docId, fieldName );
-    if( values.length == 0 ) return null;
+    if( values.length == 0 ) {
+      return null;
+    }
+
+    if (discreteMultiValueHighlighting && values.length > 1) {
+      fragInfos = discreteMultiValueHighlighting(fragInfos, values);
+    }
+
+    fragInfos = getWeightedFragInfoList(fragInfos);
     StringBuilder buffer = new StringBuilder();
     int[] nextValueIndex = { 0 };
     for( int n = 0; n < maxNumFragments && n < fragInfos.size(); n++ ){
@@ -186,13 +201,106 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     int eo = buffer.length() < endOffset ? buffer.length() : endOffset;
     return buffer.substring( startOffset, eo );
   }
-  
+
+  protected List<WeightedFragInfo> discreteMultiValueHighlighting(List<WeightedFragInfo> fragInfos, Field[] fields) {
+    Map<String, List<WeightedFragInfo>> fieldNameToFragInfos = new HashMap<String, List<WeightedFragInfo>>();
+    for (Field field : fields) {
+      fieldNameToFragInfos.put(field.name(), new ArrayList<WeightedFragInfo>());
+    }
+
+    fragInfos: for (WeightedFragInfo fragInfo : fragInfos) {
+      int fieldStart;
+      int fieldEnd = 0;
+      for (Field field : fields) {
+        if (field.stringValue().isEmpty()) {
+          fieldEnd++;
+          continue;
+        }
+        fieldStart = fieldEnd;
+        fieldEnd += field.stringValue().length() + 1; // + 1 for going to next field with same name.
+
+        if (fragInfo.getStartOffset() >= fieldStart && fragInfo.getEndOffset() >= fieldStart &&
+            fragInfo.getStartOffset() <= fieldEnd && fragInfo.getEndOffset() <= fieldEnd) {
+          fieldNameToFragInfos.get(field.name()).add(fragInfo);
+          continue fragInfos;
+        }
+
+        if (fragInfo.getSubInfos().isEmpty()) {
+          continue fragInfos;
+        }
+
+        Toffs firstToffs = fragInfo.getSubInfos().get(0).getTermsOffsets().get(0);
+        if (fragInfo.getStartOffset() >= fieldEnd || firstToffs.getStartOffset() >= fieldEnd) {
+          continue;
+        }
+
+        int fragStart = fieldStart;
+        if (fragInfo.getStartOffset() > fieldStart && fragInfo.getStartOffset() < fieldEnd) {
+          fragStart = fragInfo.getStartOffset();
+        }
+
+        int fragEnd = fieldEnd;
+        if (fragInfo.getEndOffset() > fieldStart && fragInfo.getEndOffset() < fieldEnd) {
+          fragEnd = fragInfo.getEndOffset();
+        }
+
+
+        List<SubInfo> subInfos = new ArrayList<SubInfo>();
+        WeightedFragInfo weightedFragInfo = new WeightedFragInfo(fragStart, fragEnd, subInfos, fragInfo.getTotalBoost());
+
+        Iterator<SubInfo> subInfoIterator = fragInfo.getSubInfos().iterator();
+        while (subInfoIterator.hasNext()) {
+          SubInfo subInfo = subInfoIterator.next();
+          List<Toffs> toffsList = new ArrayList<Toffs>();
+          Iterator<Toffs> toffsIterator = subInfo.getTermsOffsets().iterator();
+          while (toffsIterator.hasNext()) {
+            Toffs toffs = toffsIterator.next();
+            if (toffs.getStartOffset() >= fieldStart && toffs.getEndOffset() <= fieldEnd) {
+              toffsList.add(toffs);
+              toffsIterator.remove();
+            }
+          }
+          if (!toffsList.isEmpty()) {
+            subInfos.add(new SubInfo(subInfo.getText(), toffsList, subInfo.getSeqnum()));
+          }
+
+          if (subInfo.getTermsOffsets().isEmpty()) {
+            subInfoIterator.remove();
+          }
+        }
+        fieldNameToFragInfos.get(field.name()).add(weightedFragInfo);
+      }
+    }
+
+    List<WeightedFragInfo> result = new ArrayList<WeightedFragInfo>();
+    for (List<WeightedFragInfo> weightedFragInfos : fieldNameToFragInfos.values()) {
+      result.addAll(weightedFragInfos);
+    }
+    Collections.sort(result, new Comparator<WeightedFragInfo>() {
+
+      public int compare(FieldFragList.WeightedFragInfo info1, FieldFragList.WeightedFragInfo info2) {
+        return info1.getStartOffset() - info2.getStartOffset();
+      }
+
+    });
+
+    return result;
+  }
+
   public void setMultiValuedSeparator( char separator ){
     multiValuedSeparator = separator;
   }
   
   public char getMultiValuedSeparator(){
     return multiValuedSeparator;
+  }
+
+  public boolean isDiscreteMultiValueHighlighting() {
+    return discreteMultiValueHighlighting;
+  }
+
+  public void setDiscreteMultiValueHighlighting(boolean discreteMultiValueHighlighting) {
+    this.discreteMultiValueHighlighting = discreteMultiValueHighlighting;
   }
 
   protected String getPreTag( int num ){

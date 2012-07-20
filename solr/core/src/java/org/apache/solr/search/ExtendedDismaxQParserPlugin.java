@@ -624,6 +624,7 @@ class ExtendedDismaxQParser extends QParser {
     }
 
     String field;
+    String rawField;  // if the clause is +(foo:bar) then rawField=(foo
     boolean isPhrase;
     boolean hasWhitespace;
     boolean hasSpecialSyntax;
@@ -667,7 +668,9 @@ class ExtendedDismaxQParser extends QParser {
       }
       if (clause.field != null) {
         disallowUserField = false;
-        pos += clause.field.length(); // skip the field name
+        int colon = s.indexOf(':',pos);
+        clause.rawField = s.substring(pos, colon);
+        pos += colon - pos; // skip the field name
         pos++;  // skip the ':'
       }
 
@@ -798,6 +801,10 @@ class ExtendedDismaxQParser extends QParser {
     // make sure there is space after the colon, but not whitespace
     if (colon<=pos || colon+1>=end || Character.isWhitespace(s.charAt(colon+1))) return null;
     char ch = s.charAt(p++);
+    while ((ch=='(' || ch=='+' || ch=='-') && (pos<end)) {
+      ch = s.charAt(p++);
+      pos++;
+    }
     if (!Character.isJavaIdentifierPart(ch)) return null;
     while (p<colon) {
       ch = s.charAt(p++);

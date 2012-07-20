@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.http.client.HttpClient;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
@@ -35,6 +36,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
+@Slow
 @Ignore("ignore while investigating jenkins fails")
 public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
 
@@ -65,8 +67,8 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
-    shardCount = atLeast(3);
-    sliceCount = 2;
+    sliceCount = atLeast(2);
+    shardCount = atLeast(sliceCount * 2);
   }
   
   @Override
@@ -98,7 +100,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
       
       chaosMonkey.startTheMonkey(true, 1500);
       try {
-        Thread.sleep(atLeast(6000));
+        Thread.sleep(180000);
       } finally {
         chaosMonkey.stopTheMonkey();
       }

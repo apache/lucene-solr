@@ -962,7 +962,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves().get(0), true, true, null);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves().get(0), true, true, false, false, false, null);
     assertEquals(1, disi.advance(1));
     r.close();
     dir.close();
@@ -996,7 +996,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves().get(0), true, true, null);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves().get(0), true, true, false, false, false, null);
     assertEquals(2, disi.advance(0));
     r.close();
     dir.close();

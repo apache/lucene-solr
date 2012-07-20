@@ -52,6 +52,7 @@ public final class MultiDocsEnum extends DocsEnum {
       this.subs[i].slice = subs[i].slice;
     }
     upto = -1;
+    doc = -1;
     current = null;
     return this;
   }

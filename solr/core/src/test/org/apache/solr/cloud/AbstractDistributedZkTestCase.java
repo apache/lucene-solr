@@ -139,7 +139,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
           }
         }
       }
-      if (!sawLiveRecovering || cnt == 120) {
+      if (!sawLiveRecovering || cnt == 520) {
         if (!sawLiveRecovering) {
           if (verbose) System.out.println("no one is recoverying");
         } else {

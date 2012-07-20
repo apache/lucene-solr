@@ -174,13 +174,13 @@ public class NLS {
           Locale.getDefault());
       if (resourceBundle != null) {
         Object obj = resourceBundle.getObject(key);
-        if (obj == null)
-          System.err.println("WARN: Message with key:" + key + " and locale: "
-              + Locale.getDefault() + " not found.");
+        //if (obj == null)
+        //  System.err.println("WARN: Message with key:" + key + " and locale: "
+        //      + Locale.getDefault() + " not found.");
       }
     } catch (MissingResourceException e) {
-      System.err.println("WARN: Message with key:" + key + " and locale: "
-          + Locale.getDefault() + " not found.");
+      //System.err.println("WARN: Message with key:" + key + " and locale: "
+      //    + Locale.getDefault() + " not found.");
     } catch (Throwable e) {
       // ignore all other errors and exceptions
       // since this code is just a test to see if the message is present on the

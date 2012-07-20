@@ -389,12 +389,9 @@ public class IntHashSet {
   /**
    * Prints the baseHash array, used for debug purposes.
    */
-  public void printBaseHash() {
-    for (int i = 0; i < this.baseHash.length; i++) {
-      if (baseHash[i] != 0) {
-        System.out.println(i + ".\t" + baseHash[i]);
-      }
-    }
+  @SuppressWarnings("unused")
+  private String getBaseHashAsString() {
+    return Arrays.toString(this.baseHash);
   }
 
   /**

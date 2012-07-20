@@ -114,10 +114,10 @@ public class ToChildBlockJoinQuery extends Query {
     // child document space
     @Override
     public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
 
       // Pass scoreDocsInOrder true, topScorer false to our sub:
-      final Scorer parentScorer = parentWeight.scorer(readerContext, true, false, null);
+      final Scorer parentScorer = parentWeight.scorer(readerContext, true, false, needsPositions, needsOffsets, collectPositions, null);
 
       if (parentScorer == null) {
         // No matches
@@ -162,6 +162,7 @@ public class ToChildBlockJoinQuery extends Query {
     private final Bits acceptDocs;
 
     private float parentScore;
+    private float parentFreq = 1;
 
     private int childDoc = -1;
     private int parentDoc;
@@ -176,7 +177,7 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public Collection<ChildScorer> getChildren() {
-      return Collections.singletonList(new ChildScorer(parentScorer, "BLOCK_JOIN"));
+      return Collections.singleton(new ChildScorer(parentScorer, "BLOCK_JOIN"));
     }
 
     @Override
@@ -219,6 +220,7 @@ public class ToChildBlockJoinQuery extends Query {
             if (childDoc < parentDoc) {
               if (doScores) {
                 parentScore = parentScorer.score();
+                parentFreq = parentScorer.freq();
               }
               //System.out.println("  " + childDoc);
               return childDoc;
@@ -249,6 +251,11 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
+    public float freq() throws IOException {
+      return parentFreq;
+    }
+
+    @Override
     public int advance(int childTarget) throws IOException {
       assert childTarget >= parentBits.length() || !parentBits.get(childTarget);
       
@@ -270,6 +277,7 @@ public class ToChildBlockJoinQuery extends Query {
         }
         if (doScores) {
           parentScore = parentScorer.score();
+          parentFreq = parentScorer.freq();
         }
         final int firstChild = parentBits.prevSetBit(parentDoc-1);
         //System.out.println("  firstChild=" + firstChild);
@@ -288,8 +296,8 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean needsPayloads, boolean needsOffsets, boolean collectPositions) throws IOException {      // nocommit is that correct here?
-      return parentScorer.positions(needsPayloads, needsOffsets, false);
+    public IntervalIterator positions() throws IOException {      // nocommit is that correct here?
+      return parentScorer.positions();
     }
   }
 

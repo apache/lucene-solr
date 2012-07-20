@@ -40,7 +40,7 @@ public class SpansScorerWrapper extends Spans {
   public boolean next() throws IOException {
     if (doc == -1) {
       doc = scorer.nextDoc();
-      positions.advanceTo(doc);
+      positions.scorerAdvanced(doc);
     }
 
     if (doc == Scorer.NO_MORE_DOCS) {
@@ -51,7 +51,7 @@ public class SpansScorerWrapper extends Spans {
       if (doc == Scorer.NO_MORE_DOCS) {
         return false;
       }
-      positions.advanceTo(doc);
+      positions.scorerAdvanced(doc);
       return (current = positions.next()) != null;
     }
     return true;
@@ -63,7 +63,7 @@ public class SpansScorerWrapper extends Spans {
     if (doc == Scorer.NO_MORE_DOCS) {
       return false;
     }
-    positions.advanceTo(doc);
+    positions.scorerAdvanced(doc);
     return (current = positions.next()) != null;
   }
 

@@ -149,14 +149,14 @@ public class PayloadNearQuery extends SpanNearQuery {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
       return new PayloadNearSpanScorer(query.getSpans(context, acceptDocs, termContexts), this,
           similarity, similarity.sloppySimScorer(stats, context));
     }
     
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      PayloadNearSpanScorer scorer = (PayloadNearSpanScorer) scorer(context, true, false, context.reader().getLiveDocs());
+      PayloadNearSpanScorer scorer = (PayloadNearSpanScorer) scorer(context, true, false, true, false, false, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

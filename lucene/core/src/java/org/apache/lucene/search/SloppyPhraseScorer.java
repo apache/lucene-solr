@@ -31,6 +31,7 @@ import java.util.Map;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
+import org.apache.lucene.search.positions.Interval;
 import org.apache.lucene.search.positions.SloppyIntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.TermIntervalIterator;
@@ -50,11 +51,15 @@ final class SloppyPhraseScorer extends PhraseScorer {
   private boolean hasMultiTermRpts; //  
   private PhrasePositions[][] rptGroups; // in each group are PPs that repeats each other (i.e. same term), sorted by (query) offset 
   private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps 
+  private final boolean needsOffsets;
+  private final boolean collectPositions;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SloppySimScorer docScorer) throws IOException {
+      int slop, Similarity.SloppySimScorer docScorer, boolean needsOffsets, boolean collectPositions) throws IOException {
     super(weight, postings, docScorer);
     this.slop = slop;
+    this.needsOffsets = needsOffsets;
+    this.collectPositions = collectPositions;
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
 //    iter = (MaxLengthPositionIntervalIterator) positions(false, false, false);
@@ -541,10 +546,10 @@ final class SloppyPhraseScorer extends PhraseScorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean needsPayloads,
-      boolean needsOffsets, boolean collectPositions) throws IOException {
+  public IntervalIterator positions() throws IOException {
     // nocommit - payloads?
     Map<Term, IterAndOffsets> map = new HashMap<Term, IterAndOffsets>();
+    List<DocsAndPositionsEnum> enums = new ArrayList<DocsAndPositionsEnum>();
 
     for (int i = 0; i < postings.length; i++) {
       Term term = postings[i].terms[0];
@@ -560,7 +565,8 @@ final class SloppyPhraseScorer extends PhraseScorer {
       if (!map.containsKey(term)) {
         DocsAndPositionsEnum docsAndPosEnum = postings[i].factory
             .docsAndPositionsEnum(needsOffsets);
-        iterAndOffset = new IterAndOffsets(new TermIntervalIterator(this, docsAndPosEnum, needsPayloads,
+        enums.add(docsAndPosEnum);
+        iterAndOffset = new IterAndOffsets(new TermIntervalIterator(this, docsAndPosEnum, false,
             collectPositions));
         map.put(term, iterAndOffset);
       } else {
@@ -575,8 +581,10 @@ final class SloppyPhraseScorer extends PhraseScorer {
     for (IterAndOffsets iterAndOffsets : values) {
       iters[i++] = SloppyIntervalIterator.create(this, collectPositions, iterAndOffsets.iter, iterAndOffsets.toIntArray());
     }
-    return new SloppyIntervalIterator(this, slop, collectPositions, iters);
+    return new AdvancingIntervalIterator(this, collectPositions, enums.toArray(new DocsAndPositionsEnum[enums.size()]), new SloppyIntervalIterator(this, slop, collectPositions, iters));
   }
+  
+  
   
   private static class IterAndOffsets {
     final List<Integer> offsets = new ArrayList<Integer>();
