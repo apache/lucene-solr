@@ -31,7 +31,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestIndexWriterForceMerge extends LuceneTestCase {
   public void testPartialMerge() throws IOException {
 
-    MockDirectoryWrapper dir = newDirectory();
+    Directory dir = newDirectory();
 
     final Document doc = new Document();
     doc.add(newStringField("content", "aaa", Field.Store.NO));
@@ -72,7 +72,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
   }
 
   public void testMaxNumSegments2() throws IOException {
-    MockDirectoryWrapper dir = newDirectory();
+    Directory dir = newDirectory();
 
     final Document doc = new Document();
     doc.add(newStringField("content", "aaa", Field.Store.NO));
@@ -121,7 +121,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
    */
   public void testForceMergeTempSpaceUsage() throws IOException {
 
-    MockDirectoryWrapper dir = newDirectory();
+    MockDirectoryWrapper dir = newMockDirectory();
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(10).setMergePolicy(newLogMergePolicy()));
     if (VERBOSE) {
       System.out.println("TEST: config1=" + writer.getConfig());

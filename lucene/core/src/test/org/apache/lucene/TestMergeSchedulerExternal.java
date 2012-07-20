@@ -85,7 +85,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   }
 
   public void testSubclassConcurrentMergeScheduler() throws IOException {
-    MockDirectoryWrapper dir = newDirectory();
+    MockDirectoryWrapper dir = newMockDirectory();
     dir.failOn(new FailOnlyOnMerge());
 
     Document doc = new Document();

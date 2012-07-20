@@ -213,7 +213,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     public void testIndexNoDocuments() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       writer.commit();
       writer.close();
@@ -235,7 +235,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testManyFields() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(10));
       for(int j=0;j<100;j++) {
         Document doc = new Document();
@@ -265,7 +265,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testSmallRAMBuffer() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(
           dir,
           newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).
@@ -405,7 +405,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testDiverseDocs() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setRAMBufferSizeMB(0.5));
       int n = atLeast(1);
       for(int i=0;i<n;i++) {
@@ -454,7 +454,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testEnablingNorms() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(10));
       // Enable norms for only 1 doc, pre flush
       FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -510,7 +510,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testHighFreqTerm() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random())).setRAMBufferSizeMB(0.01));
       // Massive doc that has 128 K a's
