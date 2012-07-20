@@ -21,6 +21,9 @@ New features
   respect field boundaries in the case of highlighting for multivalued fields.
   (Martijn van Groningen)
 
+* LUCENE-4227: Added DirectPostingsFormat, to hold all postings in
+  memory as uncompressed simple arrays.  This uses a tremendous amount
+  of RAM but gives good search performance gains.  (Mike McCandless)
 
 API Changes
 

@@ -41,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.ThreadInterruptedException;
 
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
   private final ThreadLocal<Long> lastGens = new ThreadLocal<Long>();

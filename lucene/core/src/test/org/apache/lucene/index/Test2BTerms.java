@@ -55,7 +55,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 //
 //   java -server -Xmx8g -d64 -cp .:lib/junit-4.10.jar:./build/classes/test:./build/classes/test-framework:./build/classes/java -Dlucene.version=4.0-dev -Dtests.directory=MMapDirectory -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
 //
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class Test2BTerms extends LuceneTestCase {
 
   private final static int TOKEN_LEN = 10;

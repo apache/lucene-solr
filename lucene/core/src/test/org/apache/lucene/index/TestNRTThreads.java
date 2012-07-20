@@ -28,7 +28,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 //   - mix in forceMerge, addIndexes
 //   - randomoly mix in non-congruent docs
 
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
   
   @Override
