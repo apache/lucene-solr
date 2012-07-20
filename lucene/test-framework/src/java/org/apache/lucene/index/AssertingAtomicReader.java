@@ -376,4 +376,17 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       return super.hasPayload();
     }
   }
+
+  // this is the same hack as FCInvisible
+  @Override
+  public Object getCoreCacheKey() {
+    return cacheKey;
+  }
+
+  @Override
+  public Object getCombinedCoreAndDeletesKey() {
+    return cacheKey;
+  }
+  
+  private final Object cacheKey = new Object();
 }
