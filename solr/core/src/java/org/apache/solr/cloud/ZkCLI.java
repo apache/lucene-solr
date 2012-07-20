@@ -163,7 +163,7 @@ public class ZkCLI {
       }
       SolrZkClient zkClient = null;
       try {
-        zkClient = new SolrZkClient(zkServerAddress, 15000, 5000,
+        zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
             new OnReconnect() {
               @Override
               public void command() {}
