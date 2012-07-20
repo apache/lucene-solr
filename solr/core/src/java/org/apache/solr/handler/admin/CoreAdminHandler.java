@@ -655,7 +655,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
   protected void handleRequestRecoveryAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws IOException {
     final SolrParams params = req.getParams();
-    
+    log.info("The leader requested that we recover");
     String cname = params.get(CoreAdminParams.CORE);
     if (cname == null) {
       cname = "";
