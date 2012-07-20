@@ -33,6 +33,7 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
@@ -84,7 +85,7 @@ public class TestPulsingReuse extends LuceneTestCase {
   public void testNestedPulsing() throws Exception {
     // we always run this test with pulsing codec.
     Codec cp = _TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat());
-    MockDirectoryWrapper dir = newDirectory();
+    BaseDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // will do this ourselves, custom codec
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));

@@ -37,7 +37,7 @@ public class TestForTooMuchCloning extends LuceneTestCase {
     // NOTE: if we see a fail on this test with "NestedPulsing" its because its 
     // reuse isnt perfect (but reasonable). see TestPulsingReuse.testNestedPulsing 
     // for more details
-    final MockDirectoryWrapper dir = newDirectory();
+    final MockDirectoryWrapper dir = newMockDirectory();
     final TieredMergePolicy tmp = new TieredMergePolicy();
     tmp.setMaxMergeAtOnce(2);
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir,

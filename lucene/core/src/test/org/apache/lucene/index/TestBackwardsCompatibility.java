@@ -55,6 +55,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -174,7 +175,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
       File oldIndxeDir = _TestUtil.getTempDir(unsupportedNames[i]);
       _TestUtil.unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), oldIndxeDir);
-      MockDirectoryWrapper dir = newFSDirectory(oldIndxeDir);
+      BaseDirectoryWrapper dir = newFSDirectory(oldIndxeDir);
       // don't checkindex, these are intentionally not supported
       dir.setCheckIndexOnClose(false);
 

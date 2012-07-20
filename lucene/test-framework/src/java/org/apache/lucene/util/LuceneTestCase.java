@@ -781,48 +781,48 @@ public abstract class LuceneTestCase extends Assert {
    * Returns a new Directory instance. Use this when the test does not
    * care about the specific Directory implementation (most tests).
    * <p>
-   * The Directory is wrapped with {@link MockDirectoryWrapper}.
-   * By default this means it will be picky, such as ensuring that you
+   * The Directory is wrapped with {@link BaseDirectoryWrapper}.
+   * this means usually it will be picky, such as ensuring that you
    * properly close it and all open files in your test. It will emulate
    * some features of Windows, such as not allowing open files to be
    * overwritten.
    */
-  public static MockDirectoryWrapper newDirectory() {
+  public static BaseDirectoryWrapper newDirectory() {
     return newDirectory(random());
   }
-
+  
   /**
    * Returns a new Directory instance, using the specified random.
    * See {@link #newDirectory()} for more information.
    */
-  public static MockDirectoryWrapper newDirectory(Random r) {
-    Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
-    closeAfterSuite(new CloseableDirectory(dir, suiteFailureMarker));
+  public static BaseDirectoryWrapper newDirectory(Random r) {
+    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), rarely(r));
+  }
 
-    dir.setThrottling(TEST_THROTTLING);
-    if (VERBOSE) {
-      System.out.println("NOTE: LuceneTestCase.newDirectory: returning " + dir);
-    }
-    return dir;
-   }
+  public static MockDirectoryWrapper newMockDirectory() {
+    return newMockDirectory(random());
+  }
+
+  public static MockDirectoryWrapper newMockDirectory(Random r) {
+    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false);
+  }
 
   /**
    * Returns a new Directory instance, with contents copied from the
    * provided directory. See {@link #newDirectory()} for more
    * information.
    */
-  public static MockDirectoryWrapper newDirectory(Directory d) throws IOException {
+  public static BaseDirectoryWrapper newDirectory(Directory d) throws IOException {
     return newDirectory(random(), d);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static MockDirectoryWrapper newFSDirectory(File f) {
+  public static BaseDirectoryWrapper newFSDirectory(File f) {
     return newFSDirectory(f, null);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) {
+  public static BaseDirectoryWrapper newFSDirectory(File f, LockFactory lf) {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
@@ -839,14 +839,11 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       Directory fsdir = newFSDirectoryImpl(clazz, f);
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(
-          random(), maybeNRTWrap(random(), fsdir));
+      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, rarely());
       if (lf != null) {
-        dir.setLockFactory(lf);
+        wrapped.setLockFactory(lf);
       }
-      closeAfterSuite(new CloseableDirectory(dir, suiteFailureMarker));
-      dir.setThrottling(TEST_THROTTLING);
-      return dir;
+      return wrapped;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -857,22 +854,27 @@ public abstract class LuceneTestCase extends Assert {
    * with contents copied from the provided directory. See 
    * {@link #newDirectory()} for more information.
    */
-  public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
+  public static BaseDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
      d.copy(impl, file, file, newIOContext(r));
     }
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
-    closeAfterSuite(new CloseableDirectory(dir, suiteFailureMarker));
-    dir.setThrottling(TEST_THROTTLING);
-    return dir;
+    return wrapDirectory(r, impl, rarely(r));
   }
   
-  private static Directory maybeNRTWrap(Random random, Directory directory) {
+  private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare) {
     if (rarely(random)) {
-      return new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
+      directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
+    }
+    if (bare) {
+      BaseDirectoryWrapper base = new BaseDirectoryWrapper(directory);
+      closeAfterSuite(new CloseableDirectory(base, suiteFailureMarker));
+      return base;
     } else {
-      return directory;
+      MockDirectoryWrapper mock = new MockDirectoryWrapper(random, directory);
+      mock.setThrottling(TEST_THROTTLING);
+      closeAfterSuite(new CloseableDirectory(mock, suiteFailureMarker));
+      return mock;
     }
   }
   

@@ -29,7 +29,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
@@ -46,7 +45,7 @@ public class TestCustomNorms extends LuceneTestCase {
 
   public void testFloatNorms() throws IOException {
 
-    MockDirectoryWrapper dir = newDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));
     Similarity provider = new MySimProvider();
@@ -87,7 +86,7 @@ public class TestCustomNorms extends LuceneTestCase {
   }
 
   public void testExceptionOnRandomType() throws IOException {
-    MockDirectoryWrapper dir = newDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));
     Similarity provider = new MySimProvider();

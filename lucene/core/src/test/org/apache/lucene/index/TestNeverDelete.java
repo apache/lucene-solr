@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -35,12 +36,14 @@ public class TestNeverDelete extends LuceneTestCase {
 
   public void testIndexing() throws Exception {
     final File tmpDir = _TestUtil.getTempDir("TestNeverDelete");
-    final MockDirectoryWrapper d = newFSDirectory(tmpDir);
+    final BaseDirectoryWrapper d = newFSDirectory(tmpDir);
 
     // We want to "see" files removed if Lucene removed
     // them.  This is still worth running on Windows since
     // some files the IR opens and closes.
-    d.setNoDeleteOpenFile(false);
+    if (d instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)d).setNoDeleteOpenFile(false);
+    }
     final RandomIndexWriter w = new RandomIndexWriter(random(),
                                                       d,
                                                       newIndexWriterConfig(TEST_VERSION_CURRENT,

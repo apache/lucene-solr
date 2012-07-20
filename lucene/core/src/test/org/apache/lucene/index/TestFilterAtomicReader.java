@@ -26,7 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -148,7 +148,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     Directory target = newDirectory();
 
     // We mess with the postings so this can fail:
-    ((MockDirectoryWrapper) target).setCrossCheckTermVectorsOnClose(false);
+    ((BaseDirectoryWrapper) target).setCrossCheckTermVectorsOnClose(false);
 
     writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     IndexReader reader = new TestReader(DirectoryReader.open(directory));

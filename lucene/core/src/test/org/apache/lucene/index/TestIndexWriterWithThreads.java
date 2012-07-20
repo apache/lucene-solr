@@ -31,6 +31,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
@@ -132,7 +133,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
       }
-      MockDirectoryWrapper dir = newDirectory();
+      MockDirectoryWrapper dir = newMockDirectory();
       IndexWriter writer = new IndexWriter(
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
@@ -247,7 +248,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }
-      MockDirectoryWrapper dir = newDirectory();
+      MockDirectoryWrapper dir = newMockDirectory();
 
       IndexWriter writer = new IndexWriter(
           dir,
@@ -304,7 +305,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   // Runs test, with one thread, using the specific failure
   // to trigger an IOException
   public void _testSingleThreadFailure(MockDirectoryWrapper.Failure failure) throws IOException {
-    MockDirectoryWrapper dir = newDirectory();
+    MockDirectoryWrapper dir = newMockDirectory();
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
@@ -437,7 +438,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   //  and closes before the second IndexWriter time's out trying to get the Lock,
   //  we should see both documents
   public void testOpenTwoIndexWritersOnDifferentThreads() throws IOException, InterruptedException {
-     final MockDirectoryWrapper dir = newDirectory();
+     final Directory dir = newDirectory();
      CountDownLatch oneIWConstructed = new CountDownLatch(1);
      DelayedIndexAndCloseRunnable thread1 = new DelayedIndexAndCloseRunnable(
          dir, oneIWConstructed);
@@ -505,8 +506,10 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
   // LUCENE-4147
   public void testRollbackAndCommitWithThreads() throws Exception {
-    final MockDirectoryWrapper d = newFSDirectory(_TestUtil.getTempDir("RollbackAndCommitWithThreads"));
-    d.setPreventDoubleWrite(false);
+    final BaseDirectoryWrapper d = newFSDirectory(_TestUtil.getTempDir("RollbackAndCommitWithThreads"));
+    if (d instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)d).setPreventDoubleWrite(false);
+    }
 
     final int threadCount = _TestUtil.nextInt(random(), 2, 6);
 
