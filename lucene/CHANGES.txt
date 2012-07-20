@@ -50,6 +50,11 @@ API Changes
   filter another reader and you override correct() for offset correction.
   (Robert Muir)
 
+* LUCENE-4240: Analyzer api now just takes fieldName for getOffsetGap. If the
+  field is not analyzed (e.g. StringField), then the analyzer is not invoked
+  at all. If you want to tweak things like positionIncrementGap and offsetGap,
+  analyze the field with KeywordTokenizer instead.  (Grant Ingersoll, Robert Muir)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.

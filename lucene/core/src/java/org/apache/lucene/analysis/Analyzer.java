@@ -17,7 +17,6 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.CloseableThreadLocal;
 
@@ -114,21 +113,15 @@ public abstract class Analyzer {
 
   /**
    * Just like {@link #getPositionIncrementGap}, except for
-   * Token offsets instead.  By default this returns 1 for
-   * tokenized fields and, as if the fields were joined
-   * with an extra space character, and 0 for un-tokenized
-   * fields.  This method is only called if the field
+   * Token offsets instead.  By default this returns 1.
+   * This method is only called if the field
    * produced at least one token for indexing.
    *
-   * @param field the field just indexed
+   * @param fieldName the field just indexed
    * @return offset gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
    */
-  public int getOffsetGap(IndexableField field) {
-    if (field.fieldType().tokenized()) {
-      return 1;
-    } else {
-      return 0;
-    }
+  public int getOffsetGap(String fieldName) {
+    return 1;
   }
 
   /** Frees persistent resources used by this Analyzer */
