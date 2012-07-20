@@ -293,12 +293,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       IntervalIterator iterator = scorer.positions();
       assertEquals(4, advanceIter(iterator, 4));
       Interval interval = iterator.next();
-      assertNotNull("Does not have next and it should", interval);
-      assertEquals("doc", 4, iterator.docID());
-      assertEquals("start", 0, interval.begin);
-      assertEquals("end", 2, interval.end);
-      
-      interval = iterator.next();
+
       assertNotNull("Does not have next and it should", interval);
       // unordered spans can be subsets
       assertEquals("doc", 4, iterator.docID());
@@ -306,11 +301,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       assertEquals("end", 2, interval.end);
       
       advanceIter(iterator, 5);
-      interval = iterator.next();
-      assertNotNull("Does not have next and it should", interval);
-      assertEquals("doc", 5, iterator.docID());
-      assertEquals("start", 0, interval.begin);
-      assertEquals("end", 3, interval.end);
+
 
       interval = iterator.next();
       assertNotNull("Does not have next and it should", interval);
@@ -319,12 +310,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       assertEquals("end", 3, interval.end);
       
       advanceIter(iterator, 8); // (u2 xx (u1 u2))
-      interval = iterator.next();
-      assertNotNull("Does not have next and it should", interval);
-      assertEquals("doc", 8, iterator.docID());
-      assertEquals("start", 0, interval.begin);
-      assertEquals("end", 3, interval.end);
-      
+
       interval = iterator.next();
       assertNotNull("Does not have next and it should", interval);
       assertEquals("doc", 8, iterator.docID());
@@ -338,12 +324,6 @@ public class TestBasicIntervals extends LuceneTestCase {
       assertEquals("start", 0, interval.begin);
       assertEquals("end", 1, interval.end);
       
-      // this on is tricky since the two terms are overlapping - need to find a solution for this ie. dedicated query?
-//      interval = iterator.next(); 
-//      assertNotNull("Does not have next and it should", interval);
-//      assertEquals("doc", 9, iterator.docID());
-//      assertEquals("start", 0, interval.begin);
-//      assertEquals("end", 3, interval.end);
       interval = iterator.next();
       assertNull("Has next and it shouldn't", interval);
       

@@ -25,12 +25,6 @@ final class IntervalQueueOr extends IntervalQueue {
     super(size);
   }
   
-  public boolean topContainsQueueInterval() {
-    Interval interval = top().interval;
-    return interval.begin <= currentCandidate.begin
-        && currentCandidate.end <= interval.end;
-  }
-
   public void updateCurrentCandidate() {
     currentCandidate.copy(top().interval);
   }

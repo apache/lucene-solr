@@ -90,10 +90,7 @@ public final class ConjunctionIntervalIterator extends BooleanIntervalIterator {
       }
       rightExtremeBegin = queue.rightExtremeBegin;
       advance();
-      if (queue.size() < nrMustMatch) {
-        break;
-      }
-    } while (queue.topContainsQueueInterval());
+    } while (queue.size() >= nrMustMatch && queue.currentCandidate.end == queue.rightExtreme);
     return queue.currentCandidate; // TODO support payloads
   }
   

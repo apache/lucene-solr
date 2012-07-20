@@ -46,12 +46,6 @@ final class IntervalQueueAnd extends IntervalQueue {
       rightExtremeBegin = interval.begin;
     }
   }
-  
-  public boolean topContainsQueueInterval() {
-    Interval interval = top().interval;
-    return interval.begin < currentCandidate.begin
-        && currentCandidate.end < rightExtreme;
-  }
  
   public void updateCurrentCandidate() {
     final IntervalRef top = top();

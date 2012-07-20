@@ -166,14 +166,11 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
         IntervalIterator positions = scorer.positions();
         assertEquals(0, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
-        int[] start = new int[] { 0, 1, 2, 3, 4, 6, 7, 31, 32, 33 };
-        int[] end = new int[] { 2, 3, 4, 33, 33, 33, 33, 33, 34, 35 };
-        // {start}term{end} - end is pos+1
-        // {0}Pease {1}porridge {2}hot!{0} {3}Pease{1} {4}porridge{2} cold!
-        // {5}Pease {6}porridge in the pot nine days old! Some like it hot,
-        // some"
-        // like it cold, Some like it in the pot nine days old! {7}Pease
-        // {8}porridge {9}hot!{3,4,5,6,7} Pease{8} porridge{9} cold!",
+        int[] start = new int[] { 0, 1, 2, 31, 32, 33 };
+        int[] end = new int[] { 2, 3, 4, 33, 34, 35 };
+     // {start}term{end} - end is pos+1 
+        // {0}Pease {1}porridge {2}hot!{0} Pease{1} porridge{2} cold! Pease porridge in the pot nine days old! Some like it hot, some"
+        // like it cold, Some like it in the pot nine days old! {3}Pease {4}porridge {5}hot!{3} Pease{4} porridge{5} cold!",
         for (int j = 0; j < end.length; j++) {
           interval = positions.next();
           assertNotNull("" + j, interval);
@@ -188,14 +185,11 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
         IntervalIterator positions = scorer.positions();
         assertEquals(1, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
-        int[] start = new int[] { 0, 1, 3, 4, 5, 6, 7, 31, 32, 34 };
-        int[] end = new int[] { 5, 5, 5, 6, 7, 36, 36, 36, 36, 36 };
+        int[] start = new int[] {  3, 4, 5, 34 };
+        int[] end = new int[] { 5, 6, 7, 36 };
         // {start}term{end} - end is pos+1
-        // {0}Pease {1}porridge cold! {2}Pease {3}porridge {4}hot!{0, 1, 2, 3}
-        // {5}Pease {4, 6}porridge in the pot nine days old! Some like it cold,
-        // some
-        // like it hot, Some like it in the pot nine days old! {7}Pease
-        // {8}porridge cold! {9}Pease porridge hot{5, 6, 7, 8, 9}!
+        // {0}Pease {1}porridge cold! {0}Pease {1}porridge {2}hot!{0} Pease{1} porridge{2} in the pot nine days old! Some like it cold, some
+        // like it hot, Some like it in the pot nine days old! Pease porridge cold! {4}Pease porridge hot{4}!
         for (int j = 0; j < end.length; j++) {
           interval = positions.next();
           assertNotNull(interval);

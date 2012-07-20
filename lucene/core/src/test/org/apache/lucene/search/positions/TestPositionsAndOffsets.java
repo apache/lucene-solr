@@ -134,8 +134,8 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
         BooleanClause.Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "nine")),
         BooleanClause.Occur.MUST));
-    int[] startOffsetsConj = new int[] {6, 26, 47, 67, 143};
-    int[] endOffsetsConj = new int[] {71, 71, 71, 172, 172};
+    int[] startOffsetsConj = new int[] {47,143};
+    int[] endOffsetsConj = new int[] {71, 172};
     testQuery(query, new int[][] {startOffsetsConj, endOffsetsConj});
   }
    

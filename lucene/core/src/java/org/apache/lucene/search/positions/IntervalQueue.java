@@ -36,8 +36,6 @@ abstract class IntervalQueue extends PriorityQueue<IntervalRef> {
     currentCandidate.offsetEnd = -1;
   }
 
-  abstract public boolean topContainsQueueInterval();
-
   abstract public void updateCurrentCandidate();
 
   public IntervalQueue(int size) {

@@ -465,10 +465,10 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     assertSloppyPhrase( "A X A", null, 1, "X", "A", "A");
 
     assertSloppyPhrase( "A X B A", "<B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> X B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> X B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
 
-    assertSloppyPhrase( "A A X A X B A", "A <B>A</B> <B>X</B> <B>A</B> X B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A", "A <B>A</B> <B>X</B> <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
     assertSloppyPhrase( "A A Y A X B A", "A A Y <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
     assertSloppyPhrase( "A A Y A X B A A", "A A Y <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
     assertSloppyPhrase( "A A X A Y B A", null , 1, "X", "A", "A");
