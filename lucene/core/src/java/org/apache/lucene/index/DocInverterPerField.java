@@ -76,6 +76,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       // consumer if it wants to see this particular field
       // tokenized.
       if (fieldType.indexed() && doInvert) {
+        final boolean analyzed = fieldType.tokenized() && docState.analyzer != null;
         
         // if the field omits norms, the boost cannot be indexed.
         if (fieldType.omitNorms() && field.boost() != 1.0f) {
@@ -88,7 +89,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         int lastStartOffset = 0;
 
         if (i > 0) {
-          fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);
+          fieldState.position += analyzed ? docState.analyzer.getPositionIncrementGap(fieldInfo.name) : 0;
         }
 
         final TokenStream stream = field.tokenStream(docState.analyzer);
@@ -188,7 +189,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           }
         }
 
-        fieldState.offset += docState.analyzer == null ? 0 : docState.analyzer.getOffsetGap(field);
+        fieldState.offset += analyzed ? docState.analyzer.getOffsetGap(fieldInfo.name) : 0;
         fieldState.boost *= field.boost();
       }
 

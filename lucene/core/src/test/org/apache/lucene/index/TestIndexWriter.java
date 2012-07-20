@@ -35,6 +35,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -1797,6 +1798,42 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     assertEquals(0, r.maxDoc());
     r.close();
+    dir.close();
+  }
+  
+  public void testDontInvokeAnalyzerForUnAnalyzedFields() throws Exception {
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        throw new IllegalStateException("don't invoke me!");
+      }
+
+      @Override
+      public int getPositionIncrementGap(String fieldName) {
+        throw new IllegalStateException("don't invoke me!");
+      }
+
+      @Override
+      public int getOffsetGap(String fieldName) {
+        throw new IllegalStateException("don't invoke me!");
+      }
+    };
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
+        TEST_VERSION_CURRENT, analyzer));
+    Document doc = new Document();
+    FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorPositions(true);
+    customType.setStoreTermVectorOffsets(true);
+    Field f = newField("field", "abcd", customType);
+    doc.add(f);
+    doc.add(f);
+    Field f2 = newField("field", "", customType);
+    doc.add(f2);
+    doc.add(f);
+    w.addDocument(doc);
+    w.close();
     dir.close();
   }
 }

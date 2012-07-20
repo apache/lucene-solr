@@ -17,8 +17,6 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexableField;
-
 import java.io.Reader;
 
 /**
@@ -83,8 +81,8 @@ public abstract class AnalyzerWrapper extends Analyzer {
    * {@inheritDoc}
    */
   @Override
-  public final int getOffsetGap(IndexableField field) {
-    return getWrappedAnalyzer(field.name()).getOffsetGap(field);
+  public final int getOffsetGap(String fieldName) {
+    return getWrappedAnalyzer(fieldName).getOffsetGap(fieldName);
   }
 
   @Override
