@@ -24,7 +24,7 @@
     </subant>
   </target>
 
-  <target name="test" description="Test both Lucene and Solr" depends="validate">
+  <target name="test" description="Test both Lucene and Solr">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
@@ -149,7 +149,7 @@
     </delete>
   </target>
 
-  <target name="clean" depends="clean-jars" description="Clean Lucene and Solr">
+  <target name="clean" description="Clean Lucene and Solr">
     <delete dir="dist" />
     <sequential>
       <subant target="clean" inheritall="false" failonerror="true">
