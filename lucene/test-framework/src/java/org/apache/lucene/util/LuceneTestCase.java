@@ -1051,9 +1051,9 @@ public abstract class LuceneTestCase extends Assert {
             // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
             // along our reader:
             if (r instanceof AtomicReader) {
-              r = new FCInvisibleMultiReader(new AssertingAtomicReader((AtomicReader)r));
+              r = new AssertingAtomicReader((AtomicReader)r);
             } else if (r instanceof DirectoryReader) {
-              r = new FCInvisibleMultiReader((DirectoryReader)r);
+              r = new AssertingDirectoryReader((DirectoryReader)r);
             }
             break;
           default:
