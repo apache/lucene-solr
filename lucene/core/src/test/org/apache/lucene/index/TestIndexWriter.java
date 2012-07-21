@@ -1271,7 +1271,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testDeleteUnusedFiles() throws Exception {
     for(int iter=0;iter<2;iter++) {
-      Directory dir = newDirectory();
+      Directory dir = newMockDirectory(); // relies on windows semantics
 
       LogMergePolicy mergePolicy = newLogMergePolicy(true);
       mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
