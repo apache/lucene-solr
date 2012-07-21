@@ -1680,8 +1680,10 @@ public class DirectPostingsFormat extends PostingsFormat {
     private int skipPositions;
     private int startOffset;
     private int endOffset;
+    private int lastPayloadOffset;
     private int payloadOffset;
     private int payloadLength;
+    private byte[] payloadBytes;
 
     public LowFreqDocsAndPositionsEnum(Bits liveDocs, boolean hasOffsets, boolean hasPayloads) {
       this.liveDocs = liveDocs;
@@ -1708,7 +1710,7 @@ public class DirectPostingsFormat extends PostingsFormat {
       endOffset = -1;
       docID = -1;
       payloadLength = 0;
-      payload.bytes = payloadBytes;
+      this.payloadBytes = payloadBytes;
       return this;
     }
 
@@ -1741,7 +1743,17 @@ public class DirectPostingsFormat extends PostingsFormat {
             skipPositions = freq;
             return docID;
           }
-          upto += posMult * freq;
+          if (hasPayloads) {
+            for(int i=0;i<freq;i++) {
+              upto++;
+              if (hasOffsets) {
+                upto += 2;
+              }
+              payloadOffset += postings[upto++];
+            }
+          } else {
+            upto += posMult * freq;
+          }
         }
       }
 
@@ -1769,7 +1781,7 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
       if (hasPayloads) {
         payloadLength = postings[upto++];
-        payload.offset = payloadOffset;
+        lastPayloadOffset = payloadOffset;
         payloadOffset += payloadLength;
       }
       return pos;
@@ -1802,6 +1814,8 @@ public class DirectPostingsFormat extends PostingsFormat {
     @Override
     public BytesRef getPayload() {
       if (payloadLength > 0) {
+        payload.bytes = payloadBytes;
+        payload.offset = lastPayloadOffset;
         payload.length = payloadLength;
         payloadLength = 0;
         return payload;
