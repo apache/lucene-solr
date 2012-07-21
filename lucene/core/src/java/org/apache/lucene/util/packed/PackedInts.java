@@ -26,6 +26,8 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongsRef;
 
 import java.io.IOException;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 
 /**
  * Simplistic compression for array of unsigned long values.
@@ -239,6 +241,88 @@ public class PackedInts {
     }
 
     return new FormatAndBits(format, actualBitsPerValue);
+  }
+
+  /**
+   * A decoder for packed integers.
+   */
+  public static interface Decoder {
+
+    /**
+     * The minimum number of long blocks to decode in a single call.
+     */
+    int blocks();
+
+    /**
+     * The number of values that can be stored in <code>blocks()</code> long
+     * blocks.
+     */
+    int values();
+
+    /**
+     * Read <code>iterations * blocks()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * values()</code> values into
+     * <code>values</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param values       the values buffer
+     * @param iterations   controls how much data to decode
+     */
+    void decode(LongBuffer blocks, LongBuffer values, int iterations);
+
+    /**
+     * Read <code>iterations * blocks()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * values()</code> values into
+     * <code>values</code>. This method will throw an
+     * {@link UnsupportedOperationException} if the values require more than
+     * 32 bits of storage.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param values       the values buffer
+     * @param iterations   controls how much data to decode
+     */
+    void decode(LongBuffer blocks, IntBuffer values, int iterations);
+
+  }
+
+  /**
+   * An encoder for packed integers.
+   */
+  public static interface Encoder {
+
+    /**
+     * The minimum number of long blocks to encode in a single call.
+     */
+    int blocks();
+
+    /**
+     * The number of values that can be stored in <code>blocks()</code> long
+     * blocks.
+     */
+    int values();
+
+    /**
+     * Read <code>iterations * values()</code> values from <code>values</code>,
+     * encode them and write <code>iterations * blocks()</code> blocks into
+     * <code>blocks</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param values       the values buffer
+     * @param iterations   controls how much data to encode
+     */
+    void encode(LongBuffer values, LongBuffer blocks, int iterations);
+
+    /**
+     * Read <code>iterations * values()</code> values from <code>values</code>,
+     * encode them and write <code>iterations * blocks()</code> blocks into
+     * <code>blocks</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param values       the values buffer
+     * @param iterations   controls how much data to encode
+     */
+    void encode(IntBuffer values, LongBuffer blocks, int iterations);
+
   }
 
   /**
@@ -490,8 +574,7 @@ public class PackedInts {
     protected final int valueCount;
     protected final int bitsPerValue;
 
-    protected Writer(DataOutput out, int valueCount, int bitsPerValue)
-      throws IOException {
+    protected Writer(DataOutput out, int valueCount, int bitsPerValue) {
       assert bitsPerValue <= 64;
       assert valueCount >= 0 || valueCount == -1;
       this.out = out;
@@ -526,6 +609,30 @@ public class PackedInts {
      * written so far minus one).
      */
     public abstract int ord();
+  }
+
+  /**
+   * Get a {@link Decoder}.
+   *
+   * @param format         the format used to store packed ints
+   * @param version        the compatibility version
+   * @param bitsPerValue   the number of bits per value
+   * @return a decoder
+   */
+  public static Decoder getDecoder(Format format, int version, int bitsPerValue) {
+    return BulkOperation.of(format, bitsPerValue);
+  }
+
+  /**
+   * Get an {@link Encoder}.
+   *
+   * @param format         the format used to store packed ints
+   * @param version        the compatibility version
+   * @param bitsPerValue   the number of bits per value
+   * @return an encoder
+   */
+  public static Encoder getEncoder(Format format, int version, int bitsPerValue) {
+    return BulkOperation.of(format, bitsPerValue);
   }
 
   /**
@@ -612,7 +719,7 @@ public class PackedInts {
    * @lucene.internal
    */
   public static ReaderIterator getReaderIteratorNoHeader(DataInput in, Format format, int version,
-      int valueCount, int bitsPerValue, int mem) throws IOException {
+      int valueCount, int bitsPerValue, int mem) {
     return new PackedReaderIterator(format, valueCount, bitsPerValue, in, mem);
   }
 
@@ -652,7 +759,7 @@ public class PackedInts {
    * @lucene.internal
    */
   public static Reader getDirectReaderNoHeader(IndexInput in, Format format,
-      int version, int valueCount, int bitsPerValue) throws IOException {
+      int version, int valueCount, int bitsPerValue) {
     switch (format) {
       case PACKED:
         return new DirectPackedReader(bitsPerValue, valueCount, in);
@@ -784,7 +891,7 @@ public class PackedInts {
    * @lucene.internal
    */
   public static Writer getWriterNoHeader(
-      DataOutput out, Format format, int valueCount, int bitsPerValue, int mem) throws IOException {
+      DataOutput out, Format format, int valueCount, int bitsPerValue, int mem) {
     return new PackedWriter(format, out, valueCount, bitsPerValue, mem);
   }
 

@@ -21,6 +21,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
+import java.nio.LongBuffer;
 import java.util.Arrays;
 
 /**
@@ -146,12 +147,12 @@ class Packed64 extends PackedInts.MutableImpl {
     assert off + len <= arr.length;
 
     final int originalIndex = index;
-    final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
+    final PackedInts.Decoder decoder = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
 
     // go to the next block where the value does not span across two blocks
-    final int offsetInBlocks = index % op.values();
+    final int offsetInBlocks = index % decoder.values();
     if (offsetInBlocks != 0) {
-      for (int i = offsetInBlocks; i < op.values() && len > 0; ++i) {
+      for (int i = offsetInBlocks; i < decoder.values() && len > 0; ++i) {
         arr[off++] = get(index++);
         --len;
       }
@@ -161,12 +162,15 @@ class Packed64 extends PackedInts.MutableImpl {
     }
 
     // bulk get
-    assert index % op.values() == 0;
+    assert index % decoder.values() == 0;
     int blockIndex = (int) ((long) index * bitsPerValue) >>> BLOCK_BITS;
     assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
-    final int iterations = len / op.values();
-    op.get(blocks, blockIndex, arr, off, iterations);
-    final int gotValues = iterations * op.values();
+    final int iterations = len / decoder.values();
+    decoder.decode(
+        LongBuffer.wrap(blocks, blockIndex, blocks.length - blockIndex),
+        LongBuffer.wrap(arr, off, arr.length - off),
+        iterations);
+    final int gotValues = iterations * decoder.values();
     index += gotValues;
     len -= gotValues;
     assert len >= 0;
@@ -210,12 +214,12 @@ class Packed64 extends PackedInts.MutableImpl {
     assert off + len <= arr.length;
 
     final int originalIndex = index;
-    final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
+    final PackedInts.Encoder encoder = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
 
     // go to the next block where the value does not span across two blocks
-    final int offsetInBlocks = index % op.values();
+    final int offsetInBlocks = index % encoder.values();
     if (offsetInBlocks != 0) {
-      for (int i = offsetInBlocks; i < op.values() && len > 0; ++i) {
+      for (int i = offsetInBlocks; i < encoder.values() && len > 0; ++i) {
         set(index++, arr[off++]);
         --len;
       }
@@ -224,13 +228,16 @@ class Packed64 extends PackedInts.MutableImpl {
       }
     }
 
-    // bulk get
-    assert index % op.values() == 0;
+    // bulk set
+    assert index % encoder.values() == 0;
     int blockIndex = (int) ((long) index * bitsPerValue) >>> BLOCK_BITS;
     assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
-    final int iterations = len / op.values();
-    op.set(blocks, blockIndex, arr, off, iterations);
-    final int setValues = iterations * op.values();
+    final int iterations = len / encoder.values();
+    encoder.encode(
+        LongBuffer.wrap(arr, off, arr.length - off),
+        LongBuffer.wrap(blocks, blockIndex, blocks.length - blockIndex),
+        iterations);
+    final int setValues = iterations * encoder.values();
     index += setValues;
     len -= setValues;
     assert len >= 0;

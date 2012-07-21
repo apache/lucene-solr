@@ -18,6 +18,8 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.IOException;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -618,6 +620,65 @@ public class TestPackedInts extends LuceneTestCase {
         }
         in.close();
         directory.deleteFile("packed-ints.bin");
+      }
+    }
+  }
+
+  public void testEncodeDecode() {
+    for (PackedInts.Format format : PackedInts.Format.values()) {
+      for (int bpv = 1; bpv <= 64; ++bpv) {
+        if (!format.isSupported(bpv)) {
+          continue;
+        }
+        PackedInts.Encoder encoder = PackedInts.getEncoder(format, PackedInts.VERSION_CURRENT, bpv);
+        PackedInts.Decoder decoder = PackedInts.getDecoder(format, PackedInts.VERSION_CURRENT, bpv);
+        final int nblocks = encoder.blocks();
+        final int nvalues = encoder.values();
+        assertEquals(nblocks, decoder.blocks());
+        assertEquals(nvalues, decoder.values());
+        final int iterations = _TestUtil.nextInt(random(), 1, 9);
+        assertEquals(format.nblocks(bpv, nvalues * iterations), nblocks * iterations);
+        final int blocksPosition = random().nextInt(10);
+        final int valuesPosition = random().nextInt(10);
+        final LongBuffer blocks = LongBuffer.allocate(blocksPosition + nblocks * iterations);
+        blocks.position(blocksPosition);
+        final LongBuffer values = LongBuffer.allocate(valuesPosition + nvalues * iterations);
+        values.position(valuesPosition);
+
+        for (int i = 0; i < iterations * nblocks; ++i) {
+          blocks.put(blocks.position() + i, random().nextLong());
+        }
+        decoder.decode(blocks, values, iterations);
+
+        final int restoredBlocksPosition = random().nextInt(10);
+        final LongBuffer restoredBlocks = LongBuffer.allocate(restoredBlocksPosition + nblocks * iterations);
+        values.position(valuesPosition);
+        restoredBlocks.position(restoredBlocksPosition);
+        encoder.encode(values, restoredBlocks, iterations);
+
+        blocks.position(blocksPosition);
+        blocks.limit(blocksPosition + nblocks * iterations);
+        restoredBlocks.position(restoredBlocksPosition);
+        restoredBlocks.limit(restoredBlocksPosition + nblocks * iterations);
+        assertEquals(blocks, restoredBlocks);
+
+        if (bpv <= 32) {
+          final IntBuffer intValues = IntBuffer.allocate(valuesPosition + nvalues * iterations);
+          intValues.position(valuesPosition);
+
+          blocks.position(blocksPosition);
+          decoder.decode(blocks, intValues, iterations);
+
+          intValues.position(valuesPosition);
+          restoredBlocks.position(restoredBlocksPosition);
+          encoder.encode(intValues, restoredBlocks, iterations);
+
+          blocks.position(blocksPosition);
+          blocks.limit(blocksPosition + nblocks * iterations);
+          restoredBlocks.position(restoredBlocksPosition);
+          restoredBlocks.limit(restoredBlocksPosition + nblocks * iterations);
+          assertEquals(blocks, restoredBlocks);
+        }
       }
     }
   }

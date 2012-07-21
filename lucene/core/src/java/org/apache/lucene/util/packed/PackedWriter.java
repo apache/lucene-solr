@@ -21,6 +21,7 @@ import org.apache.lucene.store.DataOutput;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.LongBuffer;
 
 // Packs high order byte first, to match
 // IndexOutput.writeInt/Long/Short byte order
@@ -30,21 +31,18 @@ final class PackedWriter extends PackedInts.Writer {
   boolean finished;
   final PackedInts.Format format;
   final BulkOperation bulkOperation;
-  final long[] nextBlocks;
-  final long[] nextValues;
+  final LongBuffer nextBlocks;
+  final LongBuffer nextValues;
   final int iterations;
-  int off;
   int written;
 
-  PackedWriter(PackedInts.Format format, DataOutput out, int valueCount, int bitsPerValue, int mem)
-      throws IOException {
+  PackedWriter(PackedInts.Format format, DataOutput out, int valueCount, int bitsPerValue, int mem) {
     super(out, valueCount, bitsPerValue);
     this.format = format;
     bulkOperation = BulkOperation.of(format, bitsPerValue);
     iterations = bulkOperation.computeIterations(valueCount, mem);
-    nextBlocks = new long[iterations * bulkOperation.blocks()];
-    nextValues = new long[iterations * bulkOperation.values()];
-    off = 0;
+    nextBlocks = LongBuffer.allocate(iterations * bulkOperation.blocks());
+    nextValues = LongBuffer.allocate(iterations * bulkOperation.values());
     written = 0;
     finished = false;
   }
@@ -61,10 +59,9 @@ final class PackedWriter extends PackedInts.Writer {
     if (valueCount != -1 && written >= valueCount) {
       throw new EOFException("Writing past end of stream");
     }
-    nextValues[off++] = v;
-    if (off == nextValues.length) {
-      flush(nextValues.length);
-      off = 0;
+    nextValues.put(v);
+    if (nextValues.remaining() == 0) {
+      flush();
     }
     ++written;
   }
@@ -77,17 +74,21 @@ final class PackedWriter extends PackedInts.Writer {
         add(0L);
       }
     }
-    flush(off);
+    flush();
     finished = true;
   }
 
-  private void flush(int nvalues) throws IOException {
-    bulkOperation.set(nextBlocks, 0, nextValues, 0, iterations);
+  private void flush() throws IOException {
+    final int nvalues = nextValues.position();
+    nextValues.rewind();
+    nextBlocks.clear();
+    bulkOperation.encode(nextValues, nextBlocks, iterations);
     final int blocks = format.nblocks(bitsPerValue, nvalues);
+    nextBlocks.rewind();
     for (int i = 0; i < blocks; ++i) {
-      out.writeLong(nextBlocks[i]);
+      out.writeLong(nextBlocks.get());
     }
-    off = 0;
+    nextValues.clear();
   }
 
   @Override
