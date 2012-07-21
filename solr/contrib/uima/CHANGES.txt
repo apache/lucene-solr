@@ -17,7 +17,9 @@ HMMTagger           v2.3.1
 AlchemyAPIAnnotator v2.3.1
 WhitespaceTokenizer v2.3.1
 
-$Id$
+==================  3.6.2  ==================
+
+(No Changes)
 
 ==================  3.6.1 ==================
 

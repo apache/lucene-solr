@@ -124,7 +124,7 @@
       <module name="lucene" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/lucene-idea" />
-      <option name="VM_PARAMETERS" value="-ea -Dlucene.version=3.6.1-SNAPSHOT -DtempDir=temp" />
+      <option name="VM_PARAMETERS" value="-ea -Dlucene.version=3.6.2-SNAPSHOT -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="memory contrib" type="JUnit" factoryName="JUnit">

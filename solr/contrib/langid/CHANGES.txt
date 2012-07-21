@@ -5,7 +5,9 @@ This file describes changes to the SolrTika Language Identifier (contrib/langid)
 See http://wiki.apache.org/solr/LanguageDetection for details
 
 
-$Id$
+================== Release 3.6.2 ==================
+
+(No Changes)
 
 ================== Release 3.6.1 ==================
 

@@ -10,7 +10,9 @@ It includes integration with ICU for multilingual support, and
 analyzers for Chinese and Polish.
 
 
-$Id$
+==================  3.6.2  ==================
+
+(No Changes)
 
 ==================  3.6.1 ==================
 

@@ -6,7 +6,9 @@ See http://wiki.apache.org/solr/ClusteringComponent
 
 CHANGES
 
-$Id$
+==================  3.6.2  ==================
+
+(No Changes)
 
 ================== Release 3.6.1 ==================
 
