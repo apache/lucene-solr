@@ -54,7 +54,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
         }
         r.close();
         writer.commit();
-        final Set<String> openDeletedFiles = ((MockDirectoryWrapper) dir).getOpenDeletedFiles();
+        final Set<String> openDeletedFiles = dir.getOpenDeletedFiles();
         if (openDeletedFiles.size() > 0) {
           System.out.println("OBD files: " + openDeletedFiles);
         }
@@ -80,7 +80,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
     r.close();
 
     //System.out.println("numDocs=" + r.numDocs() + " openDelFileCount=" + dir.openDeleteFileCount());
-    final Set<String> openDeletedFiles = ((MockDirectoryWrapper) dir).getOpenDeletedFiles();
+    final Set<String> openDeletedFiles = dir.getOpenDeletedFiles();
     if (openDeletedFiles.size() > 0) {
       System.out.println("OBD files: " + openDeletedFiles);
     }
