@@ -37,8 +37,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
@@ -60,7 +60,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   protected final AtomicInteger delCount = new AtomicInteger();
   protected final AtomicInteger packCount = new AtomicInteger();
 
-  protected Directory dir;
+  protected MockDirectoryWrapper dir;
   protected IndexWriter writer;
 
   private static class SubDocs {
@@ -432,8 +432,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     Random random = new Random(random().nextLong());
     final LineFileDocs docs = new LineFileDocs(random, true);
     final File tempDir = _TestUtil.getTempDir(testName);
-    dir = newFSDirectory(tempDir);
-    ((BaseDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
+    dir = newMockFSDirectory(tempDir); // some subclasses rely on this being MDW
+    dir.setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, 
         new MockAnalyzer(random())).setInfoStream(new FailOnNonBulkMergesInfoStream());
 

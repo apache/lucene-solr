@@ -806,6 +806,10 @@ public abstract class LuceneTestCase extends Assert {
     return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false);
   }
 
+  public static MockDirectoryWrapper newMockFSDirectory(File f) {
+    return (MockDirectoryWrapper) newFSDirectory(f, null, false);
+  }
+
   /**
    * Returns a new Directory instance, with contents copied from the
    * provided directory. See {@link #newDirectory()} for more
@@ -822,6 +826,10 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
   public static BaseDirectoryWrapper newFSDirectory(File f, LockFactory lf) {
+    return newFSDirectory(f, lf, rarely());
+  }
+
+  private static BaseDirectoryWrapper newFSDirectory(File f, LockFactory lf, boolean bare) {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
@@ -838,7 +846,7 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       Directory fsdir = newFSDirectoryImpl(clazz, f);
-      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, rarely());
+      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
       if (lf != null) {
         wrapped.setLockFactory(lf);
       }
