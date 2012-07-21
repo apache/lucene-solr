@@ -330,15 +330,25 @@ public class TestPostingsFormat extends LuceneTestCase {
       System.out.println("\nTEST: now build index");
     }
 
+    int maxIndexOptionNoOffsets = Arrays.asList(IndexOptions.values()).indexOf(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+
     // nocommit use allowPayloads
 
     FieldInfo[] newFieldInfoArray = new FieldInfo[fields.size()];
     for(int fieldUpto=0;fieldUpto<fields.size();fieldUpto++) {
       FieldInfo oldFieldInfo = fieldInfos.fieldInfo(fieldUpto);
 
+      String pf = _TestUtil.getPostingsFormat(oldFieldInfo.name);
+      int fieldMaxIndexOption;
+      if (doesntSupportOffsets.contains(pf)) {
+        fieldMaxIndexOption = Math.min(maxIndexOptionNoOffsets, maxIndexOption);
+      } else {
+        fieldMaxIndexOption = maxIndexOption;
+      }
+    
       // Randomly picked the IndexOptions to index this
       // field with:
-      IndexOptions indexOptions = IndexOptions.values()[random().nextInt(1+maxIndexOption)];
+      IndexOptions indexOptions = IndexOptions.values()[random().nextInt(1+fieldMaxIndexOption)];
       boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
 
       newFieldInfoArray[fieldUpto] = new FieldInfo(oldFieldInfo.name,
@@ -366,11 +376,12 @@ public class TestPostingsFormat extends LuceneTestCase {
       Map<BytesRef,List<Posting>> terms = fieldEnt.getValue();
 
       FieldInfo fieldInfo = newFieldInfos.fieldInfo(field);
-      if (VERBOSE) {
-        System.out.println("field=" + field);
-      }
 
       IndexOptions indexOptions = fieldInfo.getIndexOptions();
+
+      if (VERBOSE) {
+        System.out.println("field=" + field + " indexOtions=" + indexOptions);
+      }
 
       boolean doFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
       boolean doPos = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
@@ -413,6 +424,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           } else {
             totalTF++;
           }
+          postingsConsumer.finishDoc();
           docCount++;
         }
         termsConsumer.finishTerm(term, new TermStats(postings.size(), totalTF));
@@ -539,9 +551,9 @@ public class TestPostingsFormat extends LuceneTestCase {
       docsAndPositionsEnum = threadState.reuseDocsAndPositionsEnum;
     }
 
-    assertNotNull(docsEnum);
+    assertNotNull("null DocsEnum", docsEnum);
     int initialDocID = docsEnum.docID();
-    assertTrue(initialDocID == -1 || initialDocID == DocsEnum.NO_MORE_DOCS);
+    assertTrue("inital docID should be -1 or NO_MORE_DOCS", initialDocID == -1 || initialDocID == DocsEnum.NO_MORE_DOCS);
 
     if (VERBOSE) {
       if (prevDocsEnum == null) {
@@ -600,10 +612,10 @@ public class TestPostingsFormat extends LuceneTestCase {
     while (nextPosting <= stopAt) {
       if (nextPosting == stopAt) {
         if (stopAt == expected.size()) {
-          assertEquals(DocsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
+          assertEquals("DocsEnum should have ended but didn't", DocsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
 
           // Common bug is to forget to set this.doc=NO_MORE_DOCS in the enum!:
-          assertEquals(DocsEnum.NO_MORE_DOCS, docsEnum.docID());
+          assertEquals("DocsEnum should have ended but didn't", DocsEnum.NO_MORE_DOCS, docsEnum.docID());
         }
         break;
       }
@@ -631,7 +643,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           if (VERBOSE) {
             System.out.println("  now advance to end (target=" + target + ")");
           }
-          assertEquals(DocsEnum.NO_MORE_DOCS, docsEnum.advance(target));
+          assertEquals("DocsEnum should have ended but didn't", DocsEnum.NO_MORE_DOCS, docsEnum.advance(target));
           break;
         } else {
           posting = expected.get(nextPosting++);
@@ -643,7 +655,7 @@ public class TestPostingsFormat extends LuceneTestCase {
             }
           }
           int docID = docsEnum.advance(targetDocID != -1 ? targetDocID : posting.docID);
-          assertEquals(posting.docID, docID);
+          assertEquals("docID is wrong", posting.docID, docID);
         }
       } else {
         posting = expected.get(nextPosting++);
@@ -651,7 +663,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           System.out.println("  now nextDoc to " + posting.docID + " (" + nextPosting + " of " + stopAt + ")");
         }
         int docID = docsEnum.nextDoc();
-        assertEquals(posting.docID, docID);
+        assertEquals("docID is wrong", posting.docID, docID);
       }
 
       if (doCheckFreqs && random().nextDouble() <= freqAskChance) {
@@ -659,7 +671,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           System.out.println("    now freq()=" + posting.positions.size());
         }
         int freq = docsEnum.freq();
-        assertEquals(posting.positions.size(), freq);
+        assertEquals("freq is wrong", posting.positions.size(), freq);
       }
 
       if (doCheckPositions) {
@@ -676,7 +688,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           if (VERBOSE) {
             System.out.println("    now nextPosition to " + position.position);
           }
-          assertEquals(position.position, docsAndPositionsEnum.nextPosition());
+          assertEquals("position is wrong", position.position, docsAndPositionsEnum.nextPosition());
 
           // nocommit sometimes don't pull the payload even
           // though we pulled the position
@@ -687,17 +699,18 @@ public class TestPostingsFormat extends LuceneTestCase {
                 System.out.println("      now check payload length=" + (position.payload == null ? 0 : position.payload.length));
               }
               if (position.payload == null || position.payload.length == 0) {
-                assertFalse(docsAndPositionsEnum.hasPayload());
+                assertFalse("should not have payload", docsAndPositionsEnum.hasPayload());
               } else {
-                assertTrue(docsAndPositionsEnum.hasPayload());
+                assertTrue("should have payload but doesn't", docsAndPositionsEnum.hasPayload());
 
                 BytesRef payload = docsAndPositionsEnum.getPayload();
-                assertFalse(docsAndPositionsEnum.hasPayload());
+                assertFalse("2nd call to hasPayload should be false", docsAndPositionsEnum.hasPayload());
 
-                assertNotNull(payload);
-                assertEquals(position.payload.length, payload.length);
+                assertNotNull("payload should not be null", payload);
+                assertEquals("payload length is wrong", position.payload.length, payload.length);
                 for(int byteUpto=0;byteUpto<position.payload.length;byteUpto++) {
-                  assertEquals(position.payload[byteUpto],
+                  assertEquals("payload bytes are wrong",
+                               position.payload[byteUpto],
                                payload.bytes[payload.offset+byteUpto]);
                 }
               }
@@ -713,16 +726,19 @@ public class TestPostingsFormat extends LuceneTestCase {
               if (VERBOSE) {
                 System.out.println("      now check offsets: startOff=" + position.startOffset + " endOffset=" + position.endOffset);
               }
-              assertEquals(position.startOffset, docsAndPositionsEnum.startOffset());
-              assertEquals(position.endOffset, docsAndPositionsEnum.endOffset());
+              assertEquals("startOffset is wrong", position.startOffset, docsAndPositionsEnum.startOffset());
+              assertEquals("endOffset is wrong", position.endOffset, docsAndPositionsEnum.endOffset());
             } else {
               if (VERBOSE) {
                 System.out.println("      skip check offsets");
               }
             }
           } else {
-            assertEquals(-1, docsAndPositionsEnum.startOffset());
-            assertEquals(-1, docsAndPositionsEnum.endOffset());
+            if (VERBOSE) {
+              System.out.println("      now check offsets are -1");
+            }
+            assertEquals("startOffset isn't -1", -1, docsAndPositionsEnum.startOffset());
+            assertEquals("endOffset isn't -1", -1, docsAndPositionsEnum.endOffset());
           }
         }
       }
@@ -846,6 +862,7 @@ public class TestPostingsFormat extends LuceneTestCase {
 
     boolean indexPayloads = random().nextBoolean();
     // nocommit test thread safety of buildIndex too
+
     FieldsProducer fieldsProducer = buildIndex(dir, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, indexPayloads);
 
     //testTerms(fieldsProducer, EnumSet.noneOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
@@ -855,7 +872,11 @@ public class TestPostingsFormat extends LuceneTestCase {
     //testTerms(fieldsProducer, EnumSet.of(Option.SKIPPING), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     //testTerms(fieldsProducer, EnumSet.of(Option.THREADS, Option.TERM_STATE, Option.SKIPPING, Option.PARTIAL_DOC_CONSUME, Option.PARTIAL_POS_CONSUME), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     //testTerms(fieldsProducer, EnumSet.of(Option.TERM_STATE, Option.SKIPPING, Option.PARTIAL_DOC_CONSUME, Option.PARTIAL_POS_CONSUME), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    testTerms(fieldsProducer, EnumSet.of(Option.TERM_STATE, Option.PAYLOADS, Option.PARTIAL_DOC_CONSUME, Option.PARTIAL_POS_CONSUME, Option.SKIPPING), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    //testTerms(fieldsProducer, EnumSet.of(Option.TERM_STATE, Option.PAYLOADS, Option.PARTIAL_DOC_CONSUME, Option.PARTIAL_POS_CONSUME, Option.SKIPPING), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+
+    // NOTE: you can also test "weaker" index options than
+    // you indexed with:
+    testTerms(fieldsProducer, EnumSet.allOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
 
     fieldsProducer.close();
     dir.close();
