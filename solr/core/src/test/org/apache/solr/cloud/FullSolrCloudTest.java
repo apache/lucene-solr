@@ -544,6 +544,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       indexAbunchOfDocs();
       
+      // check again 
+      waitForRecoveriesToFinish(false);
+      
       commit();
       
       assertDocCounts(VERBOSE);
@@ -1404,7 +1407,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           + DEFAULT_COLLECTION;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setSoTimeout(15000);
+      s.setSoTimeout(20000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
