@@ -1134,13 +1134,12 @@ public final class ZkController {
    */
   public static void bootstrapConf(SolrZkClient zkClient, Config cfg, String solrHome) throws IOException,
       KeeperException, InterruptedException {
-    
+    log.info("bootstraping config into ZooKeeper using solr.xml");
     NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
 
     for (int i=0; i<nodes.getLength(); i++) {
       Node node = nodes.item(i);
       String rawName = DOMUtil.substituteProperty(DOMUtil.getAttr(node, "name", null), new Properties());
-
       String instanceDir = DOMUtil.getAttr(node, "instanceDir", null);
       File idir = new File(instanceDir);
       if (!idir.isAbsolute()) {
@@ -1151,7 +1150,7 @@ public final class ZkController {
         confName = rawName;
       }
       File udir = new File(idir, "conf");
-      SolrException.log(log, "Uploading directory " + udir + " with name " + confName + " for SolrCore " + rawName);
+      log.info("Uploading directory " + udir + " with name " + confName + " for SolrCore " + rawName);
       ZkController.uploadConfigDir(zkClient, udir, confName);
     }
   }
