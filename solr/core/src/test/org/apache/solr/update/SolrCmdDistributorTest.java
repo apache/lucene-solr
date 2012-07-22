@@ -82,7 +82,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   public void doTest() throws Exception {
     //del("*:*");
     
-    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor();
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(8);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
     List<Node> nodes = new ArrayList<Node>();
@@ -116,7 +116,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     
     // add another 2 docs to control and 3 to client
-    cmdDistrib = new SolrCmdDistributor();
+    cmdDistrib = new SolrCmdDistributor(8);
     cmd.solrDoc = sdoc("id", 2);
     cmdDistrib.distribAdd(cmd, nodes, params);
     
@@ -149,7 +149,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     DeleteUpdateCommand dcmd = new DeleteUpdateCommand(null);
     dcmd.id = "2";
     
-    cmdDistrib = new SolrCmdDistributor();
+    cmdDistrib = new SolrCmdDistributor(8);
     cmdDistrib.distribDelete(dcmd, nodes, params);
     
     cmdDistrib.distribCommit(ccmd, nodes, params);

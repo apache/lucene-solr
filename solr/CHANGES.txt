@@ -117,6 +117,9 @@ Bug Fixes
 
 * SOLR-3660: Velocity: Link to admin page broken (janhoy)
 
+* SOLR-3658: Adding thousands of docs with one UpdateProcessorChain instance can briefly create 
+  spikes of threads in the thousands. (yonik, Mark Miller)
+
 Other Changes
 ----------------------
 
