@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -85,7 +86,8 @@ public class SyncSliceTest extends FullSolrCloudTest {
     
     waitForThingsToLevelOut();
 
-    del("*:*");
+    // something wrong with this?
+    //del("*:*");
     
     List<String> skipServers = new ArrayList<String>();
     
@@ -124,6 +126,9 @@ public class SyncSliceTest extends FullSolrCloudTest {
     
     checkShardConsistency(false, true);
     
+    long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    assertEquals(4, cloudClientDocs);
+    
     skipServers = new ArrayList<String>();
     
     skipServers.add(shardToJetty.get("shard1").get(random().nextInt(shardCount)).url + "/");
@@ -138,6 +143,9 @@ public class SyncSliceTest extends FullSolrCloudTest {
     waitForThingsToLevelOut();
     
     checkShardConsistency(false, true);
+    
+    cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    assertEquals(5, cloudClientDocs);
   }
 
   private void waitForThingsToLevelOut() throws Exception {
