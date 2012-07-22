@@ -885,7 +885,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           break;
         }
         Thread.sleep(200);
-        if(waitCnt == 10) {
+        if(waitCnt == 20) {
           fail("Backup success not detected:" + checkStatus.response);
         }
         waitCnt++;
