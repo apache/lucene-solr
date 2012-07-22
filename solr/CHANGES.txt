@@ -111,6 +111,9 @@ Bug Fixes
 * SOLR-3642: Correct broken check for multivalued fields in stats.facet
   (Yandong Yao, hossman)
 
+* SOLR-3658: Adding thousands of docs with one UpdateProcessorChain instance can briefly create 
+  spikes of threads in the thousands. (yonik, Mark Miller)
+
 Other Changes
 ----------------------
 
