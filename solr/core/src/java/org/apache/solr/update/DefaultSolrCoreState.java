@@ -55,12 +55,19 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   @Override
   public synchronized RefCounted<IndexWriter> getIndexWriter(SolrCore core)
       throws IOException {
+
+    if (core == null) {
+      // core == null is a signal to just return the current writer, or null if none.
+      if (refCntWriter != null) refCntWriter.incref();
+      return refCntWriter;
+    }
+
     while (pauseWriter) {
       try {
         wait();
       } catch (InterruptedException e) {}
     }
-    
+
     if (indexWriter == null) {
       indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false,
           false);
