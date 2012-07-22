@@ -221,6 +221,44 @@ public class CoreAdminRequest extends SolrRequest
     }
   }
   
+  public static class RequestSyncShard extends CoreAdminRequest {
+    private String shard;
+    private String collection;
+    
+    public RequestSyncShard() {
+      action = CoreAdminAction.REQUESTSYNCSHARD;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      if( action == null ) {
+        throw new RuntimeException( "no action specified!" );
+      }
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, action.toString());
+      params.set("shard", shard);
+      params.set("collection", collection);
+      params.set(CoreAdminParams.CORE, core);
+      return params;
+    }
+
+    public String getShard() {
+      return shard;
+    }
+
+    public void setShard(String shard) {
+      this.shard = shard;
+    }
+
+    public String getCollection() {
+      return collection;
+    }
+
+    public void setCollection(String collection) {
+      this.collection = collection;
+    }
+  }
+  
     //a persist core request
   public static class Persist extends CoreAdminRequest {
     protected String fileName = null;

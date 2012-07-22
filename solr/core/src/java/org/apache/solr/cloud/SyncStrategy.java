@@ -69,6 +69,7 @@ public class SyncStrategy {
   
   public boolean sync(ZkController zkController, SolrCore core,
       ZkNodeProps leaderProps) {
+    log.info("Sync replicas to " + ZkCoreNodeProps.getCoreUrl(leaderProps));
     // TODO: look at our state usage of sync
     // zkController.publish(core, ZkStateReader.SYNC);
     
@@ -208,7 +209,7 @@ public class SyncStrategy {
 //         System.out
 //             .println("try and ask " + node.getCoreUrl() + " to sync");
         log.info("try and ask " + node.getCoreUrl() + " to sync");
-        requestSync(zkLeader.getCoreUrl(), node.getCoreName());
+        requestSync(node.getCoreUrl(), zkLeader.getCoreUrl(), node.getCoreName());
 
       } catch (Exception e) {
         SolrException.log(log, "Error syncing replica to leader", e);
@@ -224,12 +225,15 @@ public class SyncStrategy {
       if (!success) {
          try {
            log.info("Sync failed - asking replica to recover.");
-           //System.out.println("Sync failed - asking replica to recover.");
+           
+           // TODO: do this in background threads
            RequestRecovery recoverRequestCmd = new RequestRecovery();
            recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
            recoverRequestCmd.setCoreName(((SyncShardRequest)srsp.getShardRequest()).coreName);
            
-           HttpSolrServer server = new HttpSolrServer(zkLeader.getBaseUrl());
+           HttpSolrServer server = new HttpSolrServer(srsp.getShardAddress());
+           server.setConnectionTimeout(45000);
+           server.setSoTimeout(45000);
            server.request(recoverRequestCmd);
          } catch (Exception e) {
            log.info("Could not tell a replica to recover", e);
@@ -251,7 +255,7 @@ public class SyncStrategy {
     return success;
   }
 
-  private void requestSync(String replica, String coreName) {
+  private void requestSync(String replica, String leaderUrl, String coreName) {
     SyncShardRequest sreq = new SyncShardRequest();
     sreq.coreName = coreName;
     sreq.purpose = 1;
@@ -264,7 +268,7 @@ public class SyncStrategy {
     sreq.params.set("qt","/get");
     sreq.params.set("distrib",false);
     sreq.params.set("getVersions",Integer.toString(100));
-    sreq.params.set("sync",replica);
+    sreq.params.set("sync",leaderUrl);
     
     shardHandler.submit(sreq, replica, sreq.params);
   }

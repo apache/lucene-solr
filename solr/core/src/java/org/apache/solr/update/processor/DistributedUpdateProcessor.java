@@ -19,9 +19,12 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -209,8 +212,22 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   coreName, null, ZkStateReader.DOWN);
           if (replicaProps != null) {
             nodes = new ArrayList<Node>(replicaProps.size());
+            // check for test param that lets us miss replicas
+            String[] skipList = req.getParams().getParams("test.distrib.skip.servers");
+            Set<String> skipListSet = null;
+            if (skipList != null) {
+              skipListSet = new HashSet<String>(skipList.length);
+              skipListSet.addAll(Arrays.asList(skipList));
+            }
+            
             for (ZkCoreNodeProps props : replicaProps) {
-              nodes.add(new StdNode(props));
+              if (skipList != null) {
+                if (!skipListSet.contains(props.getCoreUrl())) {
+                  nodes.add(new StdNode(props));
+                }
+              } else {
+                nodes.add(new StdNode(props));
+              }
             }
           }
           

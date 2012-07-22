@@ -127,6 +127,9 @@ Bug Fixes
   did not work correctly across a core reload, and update handler synchronization
   was changed to synchronize on core state since more than on update handler
   can coexist for a single index during a reload. (yonik)
+  
+* SOLR-3663: There are a couple of bugs in the sync process when a leader goes down and a 
+  new leader is elected. (Mark Miller)
 
 
 Other Changes

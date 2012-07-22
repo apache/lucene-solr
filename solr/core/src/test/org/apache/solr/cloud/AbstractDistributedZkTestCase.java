@@ -110,9 +110,15 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     waitForRecoveriesToFinish(collection, zkStateReader, verbose, true);
   }
   
-  protected void waitForRecoveriesToFinish(String collection,
-      ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout)
+  protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout)
       throws Exception {
+    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 120 * (TEST_NIGHTLY ? 2 : 1) * RANDOM_MULTIPLIER);
+  }
+  
+  protected void waitForRecoveriesToFinish(String collection,
+      ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout, int timeoutSeconds)
+      throws Exception {
+    log.info("Wait for recoveries to finish - collection: " + collection + " failOnTimeout:" + failOnTimeout + " timeout (sec):" + timeoutSeconds);
     boolean cont = true;
     int cnt = 0;
     
@@ -139,7 +145,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
           }
         }
       }
-      if (!sawLiveRecovering || cnt == 520) {
+      if (!sawLiveRecovering || cnt == timeoutSeconds) {
         if (!sawLiveRecovering) {
           if (verbose) System.out.println("no one is recoverying");
         } else {
