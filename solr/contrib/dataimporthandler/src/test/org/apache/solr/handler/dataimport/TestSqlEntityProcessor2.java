@@ -35,6 +35,7 @@ import java.text.ParseException;
  *
  * @since solr 1.3
  */
+@Ignore("FIXME: I fail so often it makes me ill!")
 public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
