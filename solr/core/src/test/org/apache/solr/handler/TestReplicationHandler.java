@@ -67,7 +67,6 @@ import org.junit.Ignore;
  */
 // TODO: can this test be sped up? it used to not be so slow...
 @Slow
-@Ignore("FIXME: I fail so often it makes me ill!")
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
