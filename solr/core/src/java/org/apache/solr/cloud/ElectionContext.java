@@ -135,8 +135,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       String coreName = leaderProps.get(ZkStateReader.CORE_NAME_PROP);
       SolrCore core = null;
       try {
-        // the first time we are run, we will get a startupCore - after
-        // we will get null and must use cc.getCore
      
         core = cc.getCore(coreName);
 
