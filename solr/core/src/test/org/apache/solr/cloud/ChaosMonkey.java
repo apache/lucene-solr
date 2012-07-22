@@ -36,6 +36,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The monkey can stop random or specific jetties used with SolrCloud.
@@ -45,7 +47,8 @@ import org.eclipse.jetty.servlet.FilterHolder;
  *
  */
 public class ChaosMonkey {
-
+  private static Logger log = LoggerFactory.getLogger(ChaosMonkey.class);
+  
   private static final int CONLOSS_PERCENT = 3; //30%
   private static final int EXPIRE_PERCENT = 4; //40%
   private Map<String,List<CloudJettyRunner>> shardToJetty;
@@ -82,9 +85,12 @@ public class ChaosMonkey {
     Random random = LuceneTestCase.random();
     expireSessions = random.nextBoolean();
     causeConnectionLoss = random.nextBoolean();
+    monkeyLog("init - expire sessions:" + expireSessions
+        + " cause connection loss:" + causeConnectionLoss);
   }
   
   public void expireSession(JettySolrRunner jetty) {
+    monkeyLog("expire session for " + jetty.getLocalPort() + " !");
     SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty.getDispatchFilter().getFilter();
     if (solrDispatchFilter != null) {
       CoreContainer cores = solrDispatchFilter.getCores();
@@ -106,8 +112,9 @@ public class ChaosMonkey {
   }
   
   public void randomConnectionLoss() throws KeeperException, InterruptedException {
-    String sliceName = getRandomSlice();
+    monkeyLog("cause connection loss!");
     
+    String sliceName = getRandomSlice();
     JettySolrRunner jetty = getRandomJetty(sliceName, aggressivelyKillLeaders);
     if (jetty != null) {
       causeConnectionLoss(jetty);
@@ -145,7 +152,7 @@ public class ChaosMonkey {
   }
   
   public static void stop(JettySolrRunner jetty) throws Exception {
-    
+    monkeyLog("stop shard! " + jetty.getLocalPort());
     // get a clean shutdown so that no dirs are left open...
     FilterHolder fh = jetty.getDispatchFilter();
     if (fh != null) {
@@ -162,6 +169,7 @@ public class ChaosMonkey {
   }
   
   public static void kill(JettySolrRunner jetty) throws Exception {
+    monkeyLog("kill shard! " + jetty.getLocalPort());
     FilterHolder fh = jetty.getDispatchFilter();
     SolrDispatchFilter sdf = null;
     if (fh != null) {
@@ -288,6 +296,7 @@ public class ChaosMonkey {
     
     if (numActive < 2) {
       // we cannot kill anyone
+      monkeyLog("only one active node in shard - monkey cannot kill :(");
       return null;
     }
     Random random = LuceneTestCase.random();
@@ -306,17 +315,19 @@ public class ChaosMonkey {
       boolean isLeader = leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName);
       if (!aggressivelyKillLeaders && isLeader) {
         // we don't kill leaders...
+        monkeyLog("abort! I don't kill leaders");
         return null;
       } 
     }
 
     if (jetty.getLocalPort() == -1) {
       // we can't kill the dead
+      monkeyLog("abort! This guy is already dead");
       return null;
     }
     
     //System.out.println("num active:" + numActive + " for " + slice + " sac:" + jetty.getLocalPort());
-    
+    monkeyLog("chose a victim! " + jetty.getLocalPort());
     return jetty;
   }
   
@@ -335,6 +346,7 @@ public class ChaosMonkey {
   // synchronously starts and stops shards randomly, unless there is only one
   // active shard up for a slice or if there is one active and others recovering
   public void startTheMonkey(boolean killLeaders, final int roundPause) {
+    monkeyLog("starting");
     this.aggressivelyKillLeaders = killLeaders;
     startTime = System.currentTimeMillis();
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
@@ -409,12 +421,16 @@ public class ChaosMonkey {
             e.printStackTrace();
           }
         }
-        
-        System.out.println("I ran for " + (System.currentTimeMillis() - startTime)/1000.0f + "sec. I stopped " + stops + " and I started " + starts
+        monkeyLog("finished");
+        monkeyLog("I ran for " + (System.currentTimeMillis() - startTime)/1000.0f + "sec. I stopped " + stops + " and I started " + starts
             + ". I also expired " + expires.get() + " and caused " + connloss
             + " connection losses");
       }
     }.start();
+  }
+  
+  public static void monkeyLog(String msg) {
+    log.info("monkey: " + msg);
   }
   
   public void stopTheMonkey() {

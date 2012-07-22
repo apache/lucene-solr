@@ -93,7 +93,8 @@ public interface CoreAdminParams
     RENAME,
     MERGEINDEXES,
     PREPRECOVERY, 
-    REQUESTRECOVERY;
+    REQUESTRECOVERY, 
+    REQUESTSYNCSHARD;
     
     public static CoreAdminAction get( String p )
     {
