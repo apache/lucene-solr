@@ -223,6 +223,9 @@ public class TestHarness {
   }
 
 
+  public void reload() throws Exception {
+    container.reload(coreName);
+  }
 
   /**
    * Processes an "update" (add, commit or optimize) and

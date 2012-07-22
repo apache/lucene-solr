@@ -116,6 +116,14 @@ Bug Fixes
 
 * SOLR-3660: Velocity: Link to admin page broken (janhoy)
 
+* SOLR-3656: A core reload now always uses the same dataDir.  (Mark Miller, yonik)
+
+* SOLR-3662: Core reload bugs: a reload always obtained a non-NRT searcher, which
+  could go back in time with respect to the previous core's NRT searcher.  Versioning
+  did not work correctly across a core reload, and update handler synchronization
+  was changed to synchronize on core state since more than on update handler
+  can coexist for a single index during a reload. (yonik)
+
 Other Changes
 ----------------------
 

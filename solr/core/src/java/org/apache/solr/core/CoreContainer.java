@@ -945,7 +945,7 @@ public class CoreContainer
       }
     }
     
-    SolrCore newCore = core.reload(solrLoader);
+    SolrCore newCore = core.reload(solrLoader, core);
     // keep core to orig name link
     String origName = coreToOrigName.remove(core);
     if (origName != null) {

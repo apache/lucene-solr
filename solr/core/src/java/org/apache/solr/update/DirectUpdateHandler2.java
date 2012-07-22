@@ -343,7 +343,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       // currently for testing purposes.  Do a delete of complete index w/o worrying about versions, don't log, clean up most state in update log, etc
       if (delAll && cmd.getVersion() == -Long.MAX_VALUE) {
-        synchronized (this) {
+        synchronized (solrCoreState) {
           deleteAll();
           ulog.deleteAll();
           return;
@@ -356,7 +356,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       // a realtime view of the index.  When a new searcher is opened after a DBQ, that
       // flag can be cleared.  If those thing happen concurrently, it's not thread safe.
       //
-      synchronized (this) {
+      synchronized (solrCoreState) {
         if (delAll) {
           deleteAll();
         } else {
@@ -392,7 +392,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
     
     // see comment in deleteByQuery
-    synchronized (this) {
+    synchronized (solrCoreState) {
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
         IndexWriter writer = iw.get();
@@ -518,7 +518,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
         
         if (!cmd.softCommit) {
-          synchronized (this) { // sync is currently needed to prevent preCommit
+          synchronized (solrCoreState) { // sync is currently needed to prevent preCommit
                                 // from being called between preSoft and
                                 // postSoft... see postSoft comments.
             if (ulog != null) ulog.preCommit(cmd);
@@ -547,14 +547,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       if (cmd.softCommit) {
         // ulog.preSoftCommit();
-        synchronized (this) {
+        synchronized (solrCoreState) {
           if (ulog != null) ulog.preSoftCommit(cmd);
           core.getSearcher(true, false, waitSearcher, true);
           if (ulog != null) ulog.postSoftCommit(cmd);
         }
         // ulog.postSoftCommit();
       } else {
-        synchronized (this) {
+        synchronized (solrCoreState) {
           if (ulog != null) ulog.preSoftCommit(cmd);
           if (cmd.openSearcher) {
             core.getSearcher(true, false, waitSearcher);
@@ -705,7 +705,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           // TODO: keep other commit callbacks from being called?
          //  this.commit(cmd);        // too many test failures using this method... is it because of callbacks?
 
-          synchronized (this) {
+          synchronized (solrCoreState) {
             ulog.preCommit(cmd);
           }
 
@@ -714,7 +714,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
           writer.commit(commitData);
 
-          synchronized (this) {
+          synchronized (solrCoreState) {
             ulog.postCommit(cmd);
           }
         }
