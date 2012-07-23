@@ -10,6 +10,10 @@ http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib
 
 New features
 
+* LUCENE-4249: Changed the explanation of the PayloadTermWeight to use the
+  underlying PayloadFunction's explanation as the explanation
+  for the payload score. (Scott Smerchek via Robert Muir)
+  
 * LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
   iteration marks. (Robert Muir, Christian Moen)
 
