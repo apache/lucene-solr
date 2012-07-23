@@ -343,8 +343,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private long nextDocStart;
     private boolean readOffsets;
     private boolean readPositions;
-    private int startOffset = -1;
-    private int endOffset = -1;
+    private int startOffset;
+    private int endOffset;
 
     public SimpleTextDocsAndPositionsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
@@ -361,6 +361,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
       docID = -1;
       readPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       readOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      if (!readOffsets) {
+        startOffset = -1;
+        endOffset = -1;
+      }
       return this;
     }
 
