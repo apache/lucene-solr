@@ -154,7 +154,7 @@ public class TestCodecs extends LuceneTestCase {
       for(int i=0;i<docs.length;i++) {
         final int termDocFreq;
         if (field.omitTF) {
-          termDocFreq = 0;
+          termDocFreq = -1;
         } else {
           termDocFreq = positions[i].length;
         }
@@ -165,8 +165,8 @@ public class TestCodecs extends LuceneTestCase {
             final PositionData pos = positions[i][j];
             postingsConsumer.addPosition(pos.pos, pos.payload, -1, -1);
           }
-          postingsConsumer.finishDoc();
         }
+        postingsConsumer.finishDoc();
       }
       termsConsumer.finishTerm(text, new TermStats(docs.length, field.omitTF ? -1 : totTF));
       return totTF;

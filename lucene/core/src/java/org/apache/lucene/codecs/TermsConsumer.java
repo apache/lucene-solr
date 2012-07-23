@@ -57,10 +57,14 @@ public abstract class TermsConsumer {
    *  no docs. */
   public abstract PostingsConsumer startTerm(BytesRef text) throws IOException;
 
-  /** Finishes the current term; numDocs must be > 0. */
+  /** Finishes the current term; numDocs must be > 0.
+   *  <code>stats.totalTermFreq</code> will be -1 when term 
+   *  frequencies are omitted for the field. */
   public abstract void finishTerm(BytesRef text, TermStats stats) throws IOException;
 
-  /** Called when we are done adding terms to this field */
+  /** Called when we are done adding terms to this field.
+   *  <code>sumTotalTermFreq</code> will be -1 when term 
+   *  frequencies are omitted for the field. */
   public abstract void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException;
 
   /** Return the BytesRef Comparator used to sort terms

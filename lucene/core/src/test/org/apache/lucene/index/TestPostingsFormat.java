@@ -406,7 +406,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           if (VERBOSE) {
             System.out.println("    " + docCount + ": docID=" + posting.docID + " freq=" + posting.positions.size());
           }
-          postingsConsumer.startDoc(posting.docID, posting.positions.size());
+          postingsConsumer.startDoc(posting.docID, doFreq ? posting.positions.size() : -1);
           seenDocs.set(posting.docID);
           if (doPos) {
             totalTF += posting.positions.size();
