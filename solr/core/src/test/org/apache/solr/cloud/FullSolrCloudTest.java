@@ -711,7 +711,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     // to talk to a downed node causes grief
     tries = 0;
     while (((SolrDispatchFilter) shardToJetty.get(SHARD2).get(1).jetty.getDispatchFilter().getFilter()).getCores().getZkController().getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(new CloudSolrServerClient(shardToClient.get(SHARD2).get(0))).get(ZkStateReader.NODE_NAME_PROP))) {
-      if (tries++ == 60) {
+      if (tries++ == 120) {
         fail("Shard still reported as live in zk");
       }
       Thread.sleep(1000);
