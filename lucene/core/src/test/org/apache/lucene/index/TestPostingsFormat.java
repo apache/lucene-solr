@@ -386,6 +386,7 @@ public class TestPostingsFormat extends LuceneTestCase {
       boolean doFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
       boolean doPos = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
+      boolean doOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       
       TermsConsumer termsConsumer = fieldsConsumer.addField(fieldInfo);
       long sumTotalTF = 0;
@@ -417,7 +418,7 @@ public class TestPostingsFormat extends LuceneTestCase {
                   System.out.println("      pos=" + pos.position);
                 }
               }
-              postingsConsumer.addPosition(pos.position, (doPayloads && pos.payload != null) ? new BytesRef(pos.payload) : null, pos.startOffset, pos.endOffset);
+              postingsConsumer.addPosition(pos.position, (doPayloads && pos.payload != null) ? new BytesRef(pos.payload) : null, doOffsets ? pos.startOffset : -1, doOffsets ? pos.endOffset : -1);
             }
           } else if (doFreq) {
             totalTF += posting.positions.size();
