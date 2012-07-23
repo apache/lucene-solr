@@ -29,7 +29,9 @@ import org.apache.lucene.search.Scorer;
   require log(size) time. The ordering is by Scorer.doc().
  *
  * @lucene.internal
+ * @deprecated 
  */
+@Deprecated
 public class ScorerDocQueue {  // later: SpansQueue for spans with doc and term positions
   private final HeapedScorerDoc[] heap;
   private final int maxSize;

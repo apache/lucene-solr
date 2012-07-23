@@ -102,7 +102,12 @@ class ReqExclScorer extends Scorer {
   public float score() throws IOException {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
   }
-  
+
+  @Override
+  public float freq() throws IOException {
+    return reqScorer.freq();
+  }
+
   @Override
   public int advance(int target) throws IOException {
     if (reqScorer == null) {

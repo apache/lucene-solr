@@ -136,4 +136,9 @@ class ConjunctionScorer extends Scorer {
     }
     return sum * coord;
   }
+
+  @Override
+  public float freq() throws IOException {
+    return scorers.length;
+  }
 }

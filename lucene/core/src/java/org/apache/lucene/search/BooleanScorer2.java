@@ -128,6 +128,11 @@ class BooleanScorer2 extends Scorer {
     }
 
     @Override
+    public float freq() throws IOException {
+      return 1;
+    }
+
+    @Override
     public int docID() {
       return scorer.docID();
     }
@@ -311,8 +316,8 @@ class BooleanScorer2 extends Scorer {
   }
 
   @Override
-  public float freq() {
-    return coordinator.nrMatchers;
+  public float freq() throws IOException {
+    return countingSumScorer.freq();
   }
 
   @Override

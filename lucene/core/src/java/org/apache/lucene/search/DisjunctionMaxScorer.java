@@ -24,11 +24,7 @@ import java.io.IOException;
  * by the subquery scorers that generate that document, plus tieBreakerMultiplier times the sum of the scores
  * for the other subqueries that generate the document.
  */
-class DisjunctionMaxScorer extends Scorer {
-
-  /* The scorers for subqueries that have remaining docs, kept as a min heap by number of next doc. */
-  private final Scorer[] subScorers;
-  private int numScorers;
+class DisjunctionMaxScorer extends DisjunctionScorer {
   /* Multiplier applied to non-maximum-scoring subqueries for a document as they are summed into the result. */
   private final float tieBreakerMultiplier;
   private int doc = -1;
@@ -55,16 +51,9 @@ class DisjunctionMaxScorer extends Scorer {
    *          length may be larger than the actual number of scorers.
    */
   public DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier,
-      Similarity similarity, Scorer[] subScorers, int numScorers) throws IOException {
-    super(similarity, weight);
+      Similarity similarity, Scorer[] subScorers, int numScorers) {
+    super(similarity, weight, subScorers, numScorers);
     this.tieBreakerMultiplier = tieBreakerMultiplier;
-    // The passed subScorers array includes only scorers which have documents
-    // (DisjunctionMaxQuery takes care of that), and their nextDoc() was already
-    // called.
-    this.subScorers = subScorers;
-    this.numScorers = numScorers;
-    
-    heapify();
   }
 
   @Override
@@ -114,6 +103,24 @@ class DisjunctionMaxScorer extends Scorer {
   }
 
   @Override
+  public float freq() throws IOException {
+    int doc = subScorers[0].docID();
+    int size = numScorers;
+    return 1 + freq(1, size, doc) + freq(2, size, doc);
+  }
+  
+  // Recursively iterate all subScorers that generated last doc computing sum and max
+  private int freq(int root, int size, int doc) throws IOException {
+    int freq = 0;
+    if (root < size && subScorers[root].docID() == doc) {
+      freq++;
+      freq += freq((root<<1)+1, size, doc);
+      freq += freq((root<<1)+2, size, doc);
+    }
+    return freq;
+  }
+
+  @Override
   public int advance(int target) throws IOException {
     if (numScorers == 0) return doc = NO_MORE_DOCS;
     while (subScorers[0].docID() < target) {
@@ -127,63 +134,6 @@ class DisjunctionMaxScorer extends Scorer {
       }
     }
     return doc = subScorers[0].docID();
-  }
-
-  // Organize subScorers into a min heap with scorers generating the earliest document on top.
-  private void heapify() {
-    for (int i = (numScorers >> 1) - 1; i >= 0; i--) {
-      heapAdjust(i);
-    }
-  }
-
-  /* The subtree of subScorers at root is a min heap except possibly for its root element.
-   * Bubble the root down as required to make the subtree a heap.
-   */
-  private void heapAdjust(int root) {
-    Scorer scorer = subScorers[root];
-    int doc = scorer.docID();
-    int i = root;
-    while (i <= (numScorers >> 1) - 1) {
-      int lchild = (i << 1) + 1;
-      Scorer lscorer = subScorers[lchild];
-      int ldoc = lscorer.docID();
-      int rdoc = Integer.MAX_VALUE, rchild = (i << 1) + 2;
-      Scorer rscorer = null;
-      if (rchild < numScorers) {
-        rscorer = subScorers[rchild];
-        rdoc = rscorer.docID();
-      }
-      if (ldoc < doc) {
-        if (rdoc < ldoc) {
-          subScorers[i] = rscorer;
-          subScorers[rchild] = scorer;
-          i = rchild;
-        } else {
-          subScorers[i] = lscorer;
-          subScorers[lchild] = scorer;
-          i = lchild;
-        }
-      } else if (rdoc < doc) {
-        subScorers[i] = rscorer;
-        subScorers[rchild] = scorer;
-        i = rchild;
-      } else {
-        return;
-      }
-    }
-  }
-
-  // Remove the root Scorer from subScorers and re-establish it as a heap
-  private void heapRemoveRoot() {
-    if (numScorers == 1) {
-      subScorers[0] = null;
-      numScorers = 0;
-    } else {
-      subScorers[0] = subScorers[numScorers - 1];
-      subScorers[numScorers - 1] = null;
-      --numScorers;
-      heapAdjust(0);
-    }
   }
 
   @Override

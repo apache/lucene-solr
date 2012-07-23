@@ -80,5 +80,11 @@ class ReqOptSumScorer extends Scorer {
     return optScorerDoc == curDoc ? reqScore + optScorer.score() : reqScore;
   }
 
+  @Override
+  public float freq() throws IOException {
+    // we might have deferred advance()
+    score();
+    return (optScorer != null && optScorer.docID() == reqScorer.docID()) ? 2 : 1;
+  }
 }
 
