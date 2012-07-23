@@ -205,6 +205,6 @@ public abstract class TermsConsumer {
         }
       }
     }
-    finish(sumTotalTermFreq, sumDocFreq, visitedDocs.cardinality());
+    finish(indexOptions == IndexOptions.DOCS_ONLY ? -1 : sumTotalTermFreq, sumDocFreq, visitedDocs.cardinality());
   }
 }

@@ -428,12 +428,12 @@ public class TestPostingsFormat extends LuceneTestCase {
           postingsConsumer.finishDoc();
           docCount++;
         }
-        termsConsumer.finishTerm(term, new TermStats(postings.size(), totalTF));
+        termsConsumer.finishTerm(term, new TermStats(postings.size(), doFreq ? totalTF : -1));
         sumTotalTF += totalTF;
         sumDF += postings.size();
       }
 
-      termsConsumer.finish(sumTotalTF, sumDF, seenDocs.cardinality());
+      termsConsumer.finish(doFreq ? sumTotalTF : -1, sumDF, seenDocs.cardinality());
     }
 
     fieldsConsumer.close();
