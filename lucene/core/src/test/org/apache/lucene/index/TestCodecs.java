@@ -117,7 +117,7 @@ public class TestCodecs extends LuceneTestCase {
         sumDF += term.docs.length;
         sumTotalTermCount += term.write(termsConsumer);
       }
-      termsConsumer.finish(sumTotalTermCount, sumDF, (int) visitedDocs.cardinality());
+      termsConsumer.finish(omitTF ? -1 : sumTotalTermCount, sumDF, (int) visitedDocs.cardinality());
     }
   }
 
@@ -169,7 +169,7 @@ public class TestCodecs extends LuceneTestCase {
           postingsConsumer.finishDoc();
         }
       }
-      termsConsumer.finishTerm(text, new TermStats(docs.length, totTF));
+      termsConsumer.finishTerm(text, new TermStats(docs.length, field.omitTF ? -1 : totTF));
       return totTF;
     }
   }

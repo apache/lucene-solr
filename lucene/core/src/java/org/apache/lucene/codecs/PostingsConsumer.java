@@ -146,6 +146,6 @@ public abstract class PostingsConsumer {
         df++;
       }
     }
-    return new TermStats(df, totTF);
+    return new TermStats(df, indexOptions == IndexOptions.DOCS_ONLY ? -1 : totTF);
   }
 }

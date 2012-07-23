@@ -542,11 +542,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         }
         postingsConsumer.finishDoc();
       }
-      termsConsumer.finishTerm(text, new TermStats(numDocs, totTF));
+      termsConsumer.finishTerm(text, new TermStats(numDocs, writeTermFreq ? totTF : -1));
       sumTotalTermFreq += totTF;
       sumDocFreq += numDocs;
     }
 
-    termsConsumer.finish(sumTotalTermFreq, sumDocFreq, visitedDocs.cardinality());
+    termsConsumer.finish(writeTermFreq ? sumTotalTermFreq : -1, sumDocFreq, visitedDocs.cardinality());
   }
 }
