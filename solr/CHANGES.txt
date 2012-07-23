@@ -112,6 +112,25 @@ Bug Fixes
   file name using the "config" attribute prevented the override file from being
   used. (Ryan Zezeski, hossman)
 
+* SOLR-3642: Correct broken check for multivalued fields in stats.facet
+  (Yandong Yao, hossman)
+
+* SOLR-3660: Velocity: Link to admin page broken (janhoy)
+
+* SOLR-3658: Adding thousands of docs with one UpdateProcessorChain instance can briefly create 
+  spikes of threads in the thousands. (yonik, Mark Miller)
+
+* SOLR-3656: A core reload now always uses the same dataDir.  (Mark Miller, yonik)
+
+* SOLR-3662: Core reload bugs: a reload always obtained a non-NRT searcher, which
+  could go back in time with respect to the previous core's NRT searcher.  Versioning
+  did not work correctly across a core reload, and update handler synchronization
+  was changed to synchronize on core state since more than on update handler
+  can coexist for a single index during a reload. (yonik)
+  
+* SOLR-3663: There are a couple of bugs in the sync process when a leader goes down and a 
+  new leader is elected. (Mark Miller)
+
 
 Other Changes
 ----------------------
@@ -795,7 +814,36 @@ Documentation
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
   
+==================  3.6.1  ==================
+More information about this release, including any errata related to the 
+release notes, upgrade instructions, or other changes may be found online at:
+   https://wiki.apache.org/solr/Solr3.6.1
+
+Bug Fixes:
+
+* LUCENE-3969: Throw IAE on bad arguments that could cause confusing errors in
+  PatternTokenizer. CommonGrams populates PositionLengthAttribute correctly.
+  (Uwe Schindler, Mike McCandless, Robert Muir)
+  
+* SOLR-3361: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered on commit
+  (James Dyer, Tomas Fernandez Lobbe)
+
+* SOLR-3375: Fix charset problems with HttpSolrServer (Roger Håkansson, yonik, siren)
+
+* SOLR-3436: Group count incorrect when not all shards are queried in the second
+  pass. (Francois Perron, Martijn van Groningen)
+
+* SOLR-3454: Exception when using result grouping with main=true and using
+  wt=javabin. (Ludovic Boutros, Martijn van Groningen)
+
+* SOLR-3489: Config file replication less error prone (Jochen Just via janhoy)
+
+* SOLR-3477: SOLR does not start up when no cores are defined (Tomás Fernández Löbbe via tommaso)
+
 ==================  3.6.0  ==================
+More information about this release, including any errata related to the 
+release notes, upgrade instructions, or other changes may be found online at:
+   https://wiki.apache.org/solr/Solr3.6
 
 Upgrading from Solr 3.5
 ----------------------
@@ -829,15 +877,15 @@ Upgrading from Solr 3.5
 * SOLR-3161: Don't use the 'qt' parameter with a leading '/'.  It probably won't work in 4.0
   and it's now limited in 3.6 to SearchHandler subclasses that aren't lazy-loaded.
 
+* SOLR-2724: Specifying <defaultSearchField> and <solrQueryParser defaultOperator="..."/> in
+  schema.xml is now considered deprecated.  Instead you are encouraged to specify these via the "df"
+  and "q.op" parameters in your request handler definition.  (David Smiley)
+
 * Bugs found and fixed in the SignatureUpdateProcessor that previously caused 
   some documents to produce the same signature even when the configured fields 
   contained distinct (non-String) values.  Users of SignatureUpdateProcessor 
   are strongly advised that they should re-index as document signatures may 
   have now changed. (see SOLR-3200 & SOLR-3226 for details)
-
-* SOLR-2724: Specifying <defaultSearchField> and <solrQueryParser defaultOperator="..."/> in
-  schema.xml is now considered deprecated.  Instead you are encouraged to specify these via the "df"
-  and "q.op" parameters in your request handler definition.  (David Smiley)
 
 New Features
 ----------------------
@@ -853,13 +901,13 @@ New Features
 
 * SOLR-1565: StreamingUpdateSolrServer supports RequestWriter API and therefore, javabin update
   format (shalin)
-
+  
 * SOLR-2438 added MultiTermAwareComponent to the various classes to allow automatic lowercasing
   for multiterm queries (wildcards, regex, prefix, range, etc). You can now optionally specify a
   "multiterm" analyzer in our schema.xml, but Solr should "do the right thing" if you don't
-  specify <analyzer type="multiterm"> (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
+  specify <fieldType="multiterm"> (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
 
-* SOLR-2919: Added support for localized range queries when the analysis chain uses 
+* SOLR-2919: Added support for localized range queries when the analysis chain uses
   CollationKeyFilter or ICUCollationKeyFilter.  (Michael Sokolov, rmuir)
 
 * SOLR-2982: Added BeiderMorseFilterFactory for Beider-Morse (BMPM) phonetic encoder. Upgrades
@@ -962,7 +1010,7 @@ Bug Fixes
 
 * SOLR-2819: Improved speed of parsing hex entities in HTMLStripCharFilter
   (Bernhard Berger, hossman)
-  
+	 	   
 * SOLR-2509: StringIndexOutOfBoundsException in the spellchecker collate when the term contains
   a hyphen. (Thomas Gambier caught the bug, Steffen Godskesen did the patch, via Erick Erickson)
 
@@ -982,17 +1030,18 @@ Bug Fixes
   
 * SOLR-2542: Fixed DIH Context variables which were broken for all scopes other 
   then SCOPE_ENTITY (Linbin Chen & Frank Wesemann via hossman)
-  
+
 * SOLR-3042: Fixed Maven Jetty plugin configuration. 
   (David Smiley via Steve Rowe)
 
 * SOLR-2970: CSV ResponseWriter returns fields defined as stored=false in schema (janhoy)
 
 * LUCENE-3690, LUCENE-2208, SOLR-882, SOLR-42: Re-implemented
-  HTMLStripCharFilter as a JFlex-generated scanner.  See below for a list
-  of bug fixes and other changes.  To get the same behavior as
-  HTMLStripCharFilter in Solr version 3.5 and earlier (including the bugs),
-  use LegacyHTMLStripCharFilter, which is the previous implementation.
+  HTMLStripCharFilter as a JFlex-generated scanner and moved it to
+  lucene/contrib/analyzers/common/.  See below for a list of bug fixes and
+  other changes.  To get the same behavior as HTMLStripCharFilter in Solr
+  version 3.5 and earlier (including the bugs), use LegacyHTMLStripCharFilter,
+  which is the previous implementation.
 
   Behavior changes from the previous version:
 
@@ -1006,7 +1055,7 @@ Bug Fixes
     from Unicode character classes [:ID_Start:] and [:ID_Continue:].
   - Uppercase character entities "&QUOT;", "&COPY;", "&GT;", "&LT;", "&REG;",
     and "&AMP;" are now recognized and handled as if they were in lowercase.
-  - The REPLACEMENT CHARACTER U+FFFD is now used to replace numeric character 
+  - The REPLACEMENT CHARACTER U+FFFD is now used to replace numeric character
     entities for unpaired UTF-16 low and high surrogates (in the range
     [U+D800-U+DFFF]).
   - Properly paired numeric character entities for UTF-16 surrogates are now
@@ -1072,6 +1121,9 @@ Bug Fixes
   and was fundamentally broken/bizarre.
   (hossman, Ahmet Arslan)
 
+* SOLR-2291: fix JSONWriter to respect field list when writing SolrDocuments
+  (Ahmet Arslan via hossman)
+
 * SOLR-3264: Fix CoreContainer and SolrResourceLoader logging to be more 
   clear about when SolrCores are being created, and stop misleading people 
   about SolrCore instanceDir's being the "Solr Home Dir" (hossman)
@@ -1087,9 +1139,9 @@ Bug Fixes
 * SOLR-3200: Fix SignatureUpdateProcessor "all fields" mode to use all 
   fields of each document instead of the fields specified by the first 
   document indexed (Spyros Kapnissis via hossman)
-
-* SOLR-3316: Distributed grouping failed when rows parameter was set to 0 and sometimes returned a wrong
-  hit count as matches. (Cody Young, Martijn van Groningen)
+  
+* SOLR-3316: Distributed grouping failed when rows parameter was set to 0 and 
+  sometimes returned a wrong hit count as matches. (Cody Young, Martijn van Groningen)
 
 Other Changes
 ----------------------
@@ -1098,7 +1150,7 @@ Other Changes
 * SOLR-2920: Refactor frequent conditional use of DefaultSolrParams and 
   AppendedSolrParams into factory methods.
   (David Smiley via hossman)
-
+  
 * SOLR-3032: Deprecate logOnce from SolrException logOnce and all the supporting
   structure will disappear in 4.0. Errors should be caught and logged at the
   top-most level or logged and NOT propagated up the chain. (Erick Erickson)
@@ -1122,7 +1174,7 @@ Other Changes
 * SOLR-3077: Better error messages when attempting to use "blank" field names 
   (Antony Stubbs via hossman)
 
-* SOLR-2712: expecting fl=score to return all fields is now deprecated.
+* SOLR-2712: expecting fl=score to return all fields is now deprecated.  
   In solr 4.0, this will only return the score.  (ryan)
 
 * SOLR-3156: Check for Lucene directory locks at startup. In previous versions
@@ -1134,6 +1186,13 @@ Other Changes
   changed: useCompoundFile=false, ramBufferSizeMB=32, lockType=native, so that
   the effect of NOT specifying <indexConfig> at all gives same result as the
   example config used to give in 3.5 (janhoy, gsingers)
+
+* SOLR-3294: In contrib/clustering/lib/, replaced the manually retrowoven
+  Java 1.5-compatible carrot2-core-3.5.0.jar (which is not publicly available,
+  except from the Solr Subversion repository), with newly released Java
+  1.5-compatible carrot2-core-3.5.0.1.jar (hosted on the Maven Central
+  repository).  Also updated dependencies jackson-core-asl and
+  jackson-mapper-asl (both v1.5.2 -> v1.7.4).  (Dawid Weiss, Steve Rowe)
 
 Build
 ----------------------

@@ -17,9 +17,17 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerCollectionProcessor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -103,6 +111,10 @@ public class CollectionsHandler extends RequestHandlerBase {
           this.handleReloadAction(req, rsp);
           break;
         }
+        case SYNCSHARD: {
+          this.handleSyncShardAction(req, rsp);
+          break;
+        }
         
         default: {
           throw new RuntimeException("Unknown action: " + action);
@@ -122,6 +134,24 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     // TODO: what if you want to block until the collection is available?
     coreContainer.getZkController().getOverseerCollectionQueue().offer(ZkStateReader.toJSON(m));
+  }
+  
+  private void handleSyncShardAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException, SolrServerException, IOException {
+    log.info("Syncing shard : " + req.getParamString());
+    String collection = req.getParams().required().get("collection");
+    String shard = req.getParams().required().get("shard");
+    
+    CloudState cloudState = coreContainer.getZkController().getCloudState();
+    
+    ZkNodeProps leaderProps = cloudState.getLeader(collection, shard);
+    ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
+    
+    HttpSolrServer server = new HttpSolrServer(nodeProps.getBaseUrl());
+    RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();
+    reqSyncShard.setCollection(collection);
+    reqSyncShard.setShard(shard);
+    reqSyncShard.setCoreName(nodeProps.getCoreName());
+    server.request(reqSyncShard);
   }
 
 

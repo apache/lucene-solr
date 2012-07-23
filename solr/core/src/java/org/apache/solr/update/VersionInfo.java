@@ -19,7 +19,6 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -36,22 +35,25 @@ import org.apache.solr.util.RefCounted;
 public class VersionInfo {
   public static final String VERSION_FIELD="_version_";
 
-  private SolrCore core;
-  private UpdateHandler updateHandler;
+  private final UpdateLog ulog;
   private final VersionBucket[] buckets;
   private SchemaField versionField;
   private SchemaField idField;
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
-  public VersionInfo(UpdateHandler updateHandler, int nBuckets) {
-    this.updateHandler = updateHandler;
-    this.core = updateHandler.core;
+  public VersionInfo(UpdateLog ulog, int nBuckets) {
+    this.ulog = ulog;
+    SolrCore core = ulog.uhandler.core;
     versionField = core.getSchema().getFieldOrNull(VERSION_FIELD);
     idField = core.getSchema().getUniqueKeyField();
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
     for (int i=0; i<buckets.length; i++) {
       buckets[i] = new VersionBucket();
     }
+  }
+
+  public void reload() {
+
   }
 
   public SchemaField getVersionField() {
@@ -143,14 +145,14 @@ public class VersionInfo {
   }
 
   public Long lookupVersion(BytesRef idBytes) {
-    return updateHandler.ulog.lookupVersion(idBytes);
+    return ulog.lookupVersion(idBytes);
   }
 
   public Long getVersionFromIndex(BytesRef idBytes) {
     // TODO: we could cache much of this and invalidate during a commit.
     // TODO: most DocValues classes are threadsafe - expose which.
 
-    RefCounted<SolrIndexSearcher> newestSearcher = core.getRealtimeSearcher();
+    RefCounted<SolrIndexSearcher> newestSearcher = ulog.uhandler.core.getRealtimeSearcher();
     try {
       SolrIndexSearcher searcher = newestSearcher.get();
       long lookup = searcher.lookupId(idBytes);

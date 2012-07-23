@@ -35,6 +35,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -212,7 +213,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     public void testIndexNoDocuments() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       writer.commit();
       writer.close();
@@ -234,7 +235,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testManyFields() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(10));
       for(int j=0;j<100;j++) {
         Document doc = new Document();
@@ -264,7 +265,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testSmallRAMBuffer() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(
           dir,
           newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).
@@ -404,7 +405,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testDiverseDocs() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setRAMBufferSizeMB(0.5));
       int n = atLeast(1);
       for(int i=0;i<n;i++) {
@@ -453,7 +454,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testEnablingNorms() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(10));
       // Enable norms for only 1 doc, pre flush
       FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -509,7 +510,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testHighFreqTerm() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();
+      Directory dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random())).setRAMBufferSizeMB(0.01));
       // Massive doc that has 128 K a's
@@ -1270,7 +1271,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testDeleteUnusedFiles() throws Exception {
     for(int iter=0;iter<2;iter++) {
-      Directory dir = newDirectory();
+      Directory dir = newMockDirectory(); // relies on windows semantics
 
       LogMergePolicy mergePolicy = newLogMergePolicy(true);
       mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
@@ -1797,6 +1798,42 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     assertEquals(0, r.maxDoc());
     r.close();
+    dir.close();
+  }
+  
+  public void testDontInvokeAnalyzerForUnAnalyzedFields() throws Exception {
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        throw new IllegalStateException("don't invoke me!");
+      }
+
+      @Override
+      public int getPositionIncrementGap(String fieldName) {
+        throw new IllegalStateException("don't invoke me!");
+      }
+
+      @Override
+      public int getOffsetGap(String fieldName) {
+        throw new IllegalStateException("don't invoke me!");
+      }
+    };
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
+        TEST_VERSION_CURRENT, analyzer));
+    Document doc = new Document();
+    FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorPositions(true);
+    customType.setStoreTermVectorOffsets(true);
+    Field f = newField("field", "abcd", customType);
+    doc.add(f);
+    doc.add(f);
+    Field f2 = newField("field", "", customType);
+    doc.add(f2);
+    doc.add(f);
+    w.addDocument(doc);
+    w.close();
     dir.close();
   }
 }

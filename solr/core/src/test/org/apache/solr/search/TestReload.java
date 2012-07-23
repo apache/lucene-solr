@@ -22,12 +22,11 @@ import org.junit.Ignore;
 
 import java.util.Random;
 
-@Ignore
 public class TestReload extends TestRTGBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    useFactory(null);   // force FS directory
+    // useFactory(null);   // force FS directory
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
 
@@ -37,36 +36,48 @@ public class TestReload extends TestRTGBase {
     assertU(commit());
     long version = addAndGetVersion(sdoc("id","1") , null);
 
-   //  h.getCoreContainer().reload(h.getCore().getName());
+    assertU(commit("softCommit","true"));   // should cause a RTG searcher to be opened
 
-    assertU(commit("openSearcher","false"));   // should cause a RTG searcher to be opened
+    assertJQ(req("qt","/get","id","1")
+        ,"=={'doc':{'id':'1','_version_':" + version + "}}"
+    );
 
-    // should also use the RTG searcher (commit should have cleared the translog cache)
+    h.reload();
+
     assertJQ(req("qt","/get","id","1")
         ,"=={'doc':{'id':'1','_version_':" + version + "}}"
     );
 
     assertU(commit("softCommit","true"));   // open a normal (caching) NRT searcher
 
-    h.getCoreContainer().reload(h.getCore().getName());
+    assertJQ(req("q","id:1")
+        ,"/response/numFound==1"
+    );
+
 
     Random rand = random();
     int iter = atLeast(20);
+
     for (int i=0; i<iter; i++) {
       if (rand.nextBoolean()) {
+        // System.out.println("!!! add");
         version = addAndGetVersion(sdoc("id","1") , null);
       }
 
       if (rand.nextBoolean()) {
         if (rand.nextBoolean()) {
+          // System.out.println("!!! flush");
           assertU(commit("openSearcher","false"));   // should cause a RTG searcher to be opened as well
         } else {
-          assertU(commit("softCommit", ""+rand.nextBoolean()));
+          boolean softCommit = rand.nextBoolean();
+          System.out.println("!!! softCommit" + softCommit);
+          // assertU(commit("softCommit", ""+softCommit));
         }
       }
 
       if (rand.nextBoolean()) {
         // RTG should always be able to see the last version
+        // System.out.println("!!! rtg");
         assertJQ(req("qt","/get","id","1")
             ,"=={'doc':{'id':'1','_version_':" + version + "}}"
         );
@@ -74,13 +85,16 @@ public class TestReload extends TestRTGBase {
 
       if (rand.nextBoolean()) {
         // a normal search should always find 1 doc
+        // System.out.println("!!! q");
         assertJQ(req("q","id:1")
             ,"/response/numFound==1"
         );
       }
 
-      // TODO: randomly do a reload
-      // but the test currently fails without this!
+      if (rand.nextBoolean()) {
+        // System.out.println("!!! reload");
+        h.reload();
+      }
     }
 
     // test framework should ensure that all searchers opened have been closed.

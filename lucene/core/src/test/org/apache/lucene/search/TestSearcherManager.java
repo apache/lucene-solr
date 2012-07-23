@@ -43,7 +43,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
 
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
   boolean warmCalled;

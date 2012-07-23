@@ -177,29 +177,15 @@ public final class ZkController {
               overseerElector.joinElection(context);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
-              List<CoreDescriptor> descriptors = registerOnReconnect
-                  .getCurrentDescriptors();
-              if (descriptors != null) {
-                // before registering as live, make sure everyone is in a
-                // down state
-                for (CoreDescriptor descriptor : descriptors) {
-                  final String coreZkNodeName = getNodeName() + "_"
-                      + descriptor.getName();
-                  try {
-                    publish(descriptor, ZkStateReader.DOWN);
-                    waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
-                  } catch (Exception e) {
-                    SolrException.log(log, "", e);
-                  }
-                }
-              }
+              registerAllCoresAsDown(registerOnReconnect);
               
 
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
               
+              List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
               // re register all descriptors
-              if (descriptors != null) {
+              if (descriptors  != null) {
                 for (CoreDescriptor descriptor : descriptors) {
                   // TODO: we need to think carefully about what happens when it was
                   // a leader that was expired - as well as what to do about leaders/overseers
@@ -228,7 +214,28 @@ public final class ZkController {
     cmdExecutor = new ZkCmdExecutor();
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
-    init();
+    
+    init(registerOnReconnect);
+  }
+
+  private void registerAllCoresAsDown(
+      final CurrentCoreDescriptorProvider registerOnReconnect) {
+    List<CoreDescriptor> descriptors = registerOnReconnect
+        .getCurrentDescriptors();
+    if (descriptors != null) {
+      // before registering as live, make sure everyone is in a
+      // down state
+      for (CoreDescriptor descriptor : descriptors) {
+        final String coreZkNodeName = getNodeName() + "_"
+            + descriptor.getName();
+        try {
+          publish(descriptor, ZkStateReader.DOWN);
+          waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
+        } catch (Exception e) {
+          SolrException.log(log, "", e);
+        }
+      }
+    }
   }
 
   /**
@@ -338,8 +345,9 @@ public final class ZkController {
     return zkServerAddress;
   }
 
-  private void init() {
-
+  private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
+    registerAllCoresAsDown(registerOnReconnect);
+    
     try {
       // makes nodes zkNode
       cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
@@ -1126,13 +1134,12 @@ public final class ZkController {
    */
   public static void bootstrapConf(SolrZkClient zkClient, Config cfg, String solrHome) throws IOException,
       KeeperException, InterruptedException {
-    
+    log.info("bootstraping config into ZooKeeper using solr.xml");
     NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
 
     for (int i=0; i<nodes.getLength(); i++) {
       Node node = nodes.item(i);
       String rawName = DOMUtil.substituteProperty(DOMUtil.getAttr(node, "name", null), new Properties());
-
       String instanceDir = DOMUtil.getAttr(node, "instanceDir", null);
       File idir = new File(instanceDir);
       if (!idir.isAbsolute()) {
@@ -1143,7 +1150,7 @@ public final class ZkController {
         confName = rawName;
       }
       File udir = new File(idir, "conf");
-      SolrException.log(log, "Uploading directory " + udir + " with name " + confName + " for SolrCore " + rawName);
+      log.info("Uploading directory " + udir + " with name " + confName + " for SolrCore " + rawName);
       ZkController.uploadConfigDir(zkClient, udir, confName);
     }
   }

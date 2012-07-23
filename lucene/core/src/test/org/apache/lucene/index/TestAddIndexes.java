@@ -51,6 +51,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -1168,7 +1169,7 @@ public class TestAddIndexes extends LuceneTestCase {
    * simple test that ensures we getting expected exceptions 
    */
   public void testAddIndexMissingCodec() throws IOException {
-    MockDirectoryWrapper toAdd = newDirectory();
+    BaseDirectoryWrapper toAdd = newDirectory();
     // Disable checkIndex, else we get an exception because
     // of the unregistered codec:
     toAdd.setCheckIndexOnClose(false);

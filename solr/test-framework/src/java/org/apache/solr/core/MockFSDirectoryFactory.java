@@ -31,12 +31,14 @@ public class MockFSDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   public Directory create(String path) throws IOException {
-    MockDirectoryWrapper dir = LuceneTestCase.newFSDirectory(new File(path));
+    Directory dir = LuceneTestCase.newFSDirectory(new File(path));
     // Somehow removing unref'd files in Solr tests causes
     // problems... there's some interaction w/
     // CachingDirectoryFactory.  Once we track down where Solr
     // isn't closing an IW, we can re-enable this:
-    dir.setAssertNoUnrefencedFilesOnClose(false);
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setAssertNoUnrefencedFilesOnClose(false);
+    }
     return dir;
   }
 }

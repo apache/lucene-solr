@@ -25,13 +25,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 // TODO: This test would be a lot faster if it used a solrhome with fewer config
 // files - there are a lot of them to upload
 public class ZkCLITest extends SolrTestCaseJ4 {
@@ -65,32 +65,38 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
+    log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(),
-        zkServer.getZkAddress(), "solrconfig.xml", "schema.xml");
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    zkClient.makePath("/solr", false, true);
+    zkClient.close();
 
     
-    zkClient = new SolrZkClient(zkServer.getZkAddress(),
+    this.zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT);
     
     log.info("####SETUP_END " + getTestName());
-    
   }
   
   @Test
   public void testBootstrap() throws Exception {
     // test bootstrap_conf
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
-        "bootstrap", "-solrhome", TEST_HOME()};
+        "bootstrap", "-solrhome", ExternalPaths.EXAMPLE_HOME};
     ZkCLI.main(args);
-
-
-    assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", true));
     
     assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/collection1", true));
     
+    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "bootstrap", "-solrhome", ExternalPaths.EXAMPLE_MULTICORE_HOME};
+    ZkCLI.main(args);
+    
+    assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/core0", true));
+    assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/core1", true));
+    
+
   }
   
   @Test
@@ -114,14 +120,14 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         "-cmd",
         "upconfig",
         "-confdir",
-        TEST_HOME() + File.separator + "collection1"
+        ExternalPaths.EXAMPLE_HOME + File.separator + "collection1"
             + File.separator + "conf", "-confname", confsetname};
     ZkCLI.main(args);
     
     assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/" + confsetname, true));
 
     // print help
-    ZkCLI.main(new String[0]);
+    // ZkCLI.main(new String[0]);
     
     // test linkconfig
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",

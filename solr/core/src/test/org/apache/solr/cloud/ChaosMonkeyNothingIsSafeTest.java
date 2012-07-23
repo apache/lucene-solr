@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -35,10 +34,15 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Slow
 @Ignore("ignore while investigating jenkins fails")
 public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
+  public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
+  
+  private static final int BASE_RUN_LENGTH = 180000;
 
   @BeforeClass
   public static void beforeSuperClass() {
@@ -53,7 +57,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   public void setUp() throws Exception {
     super.setUp();
     // TODO use @Noisy annotation as we expect lots of exceptions
-    ignoreException(".*");
+    //ignoreException(".*");
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
@@ -67,8 +71,8 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
-    sliceCount = atLeast(2);
-    shardCount = atLeast(sliceCount * 2);
+    sliceCount = 2;
+    shardCount = 6;
   }
   
   @Override
@@ -99,8 +103,9 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
       ftIndexThread.start();
       
       chaosMonkey.startTheMonkey(true, 1500);
+      int runLength = atLeast(BASE_RUN_LENGTH);
       try {
-        Thread.sleep(180000);
+        Thread.sleep(runLength);
       } finally {
         chaosMonkey.stopTheMonkey();
       }
@@ -124,7 +129,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
       Thread.sleep(2000);
       
       // wait until there are no recoveries...
-      waitForThingsToLevelOut();
+      waitForThingsToLevelOut(Math.round((runLength / 1000.0f / 5.0f)));
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
@@ -155,35 +160,6 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
         printLayout();
       }
     }
-  }
-
-  private void waitForThingsToLevelOut() throws Exception {
-    int cnt = 0;
-    boolean retry = false;
-    do {
-      waitForRecoveriesToFinish(VERBOSE);
-      
-      try {
-        commit();
-      } catch (Exception e) {
-        // we don't care if this commit fails on some nodes
-      }
-      
-      updateMappingsFromZk(jettys, clients);
-      
-      Set<String> theShards = shardToClient.keySet();
-      String failMessage = null;
-      for (String shard : theShards) {
-        failMessage = checkShardConsistency(shard, false);
-      }
-      
-      if (failMessage != null) {
-        retry  = true;
-      }
-      cnt++;
-      if (cnt > 10) break;
-      Thread.sleep(4000);
-    } while (retry);
   }
   
   // skip the randoms - they can deadlock...

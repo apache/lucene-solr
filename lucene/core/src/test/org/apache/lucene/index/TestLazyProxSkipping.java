@@ -132,8 +132,9 @@ public class TestLazyProxSkipping extends LuceneTestCase {
  
     public void testLazySkipping() throws IOException {
       final String fieldFormat = _TestUtil.getPostingsFormat(this.field);
-      assumeFalse("This test cannot run with Memory codec", fieldFormat.equals("Memory"));
-      assumeFalse("This test cannot run with SimpleText codec", fieldFormat.equals("SimpleText"));
+      assumeFalse("This test cannot run with Memory postings format", fieldFormat.equals("Memory"));
+      assumeFalse("This test cannot run with Direct postings format", fieldFormat.equals("Direct"));
+      assumeFalse("This test cannot run with SimpleText postings format", fieldFormat.equals("SimpleText"));
 
         // test whether only the minimum amount of seeks()
         // are performed

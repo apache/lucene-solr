@@ -277,7 +277,6 @@ public class ZkStateReader {
   private synchronized void updateCloudState(boolean immediate,
       final boolean onlyLiveNodes) throws KeeperException,
       InterruptedException {
-    log.info("Manual update of cluster state initiated");
     // build immutable CloudInfo
     
     if (immediate) {

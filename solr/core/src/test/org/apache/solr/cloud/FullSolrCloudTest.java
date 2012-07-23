@@ -55,6 +55,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -64,6 +66,8 @@ import org.junit.BeforeClass;
  */
 @Slow
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
+  private static Logger log = LoggerFactory.getLogger(FullSolrCloudTest.class);
+  
   @BeforeClass
   public static void beforeFullSolrCloudTest() {
     // shorten the log output more for this test type
@@ -103,12 +107,13 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   protected volatile ZkStateReader zkStateReader;
   
   private Map<String,SolrServer> shardToLeaderClient = new HashMap<String,SolrServer>();
-  private Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<String,CloudJettyRunner>();
+  protected Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<String,CloudJettyRunner>();
   
   class CloudJettyRunner {
     JettySolrRunner jetty;
     String nodeName;
     String coreNodeName;
+    String url;
   }
   
   static class CloudSolrServerClient {
@@ -403,6 +408,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             cjr.jetty = jetty;
             cjr.nodeName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
             cjr.coreNodeName = shard.getKey();
+            cjr.url = shard.getValue().get(ZkStateReader.BASE_URL_PROP) + "/" + shard.getValue().get(ZkStateReader.CORE_NAME_PROP);
             list.add(cjr);
             if (isLeader) {
               shardToLeaderJetty.put(slice.getKey(), cjr);
@@ -538,6 +544,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       indexAbunchOfDocs();
       
+      // check again 
+      waitForRecoveriesToFinish(false);
+      
       commit();
       
       assertDocCounts(VERBOSE);
@@ -653,6 +662,11 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose);
   }
   
+  protected void waitForRecoveriesToFinish(boolean verbose, int timeoutSeconds)
+      throws Exception {
+    super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose, true, timeoutSeconds);
+  }
+  
   private void brindDownShardIndexSomeDocsAndRecover() throws Exception {
     SolrQuery query = new SolrQuery("*:*");
     query.set("distrib", false);
@@ -660,7 +674,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     commit();
     
     long deadShardCount = shardToClient.get(SHARD2).get(0).query(query).getResults().getNumFound();
-    System.err.println("dsc:" + deadShardCount);
     
     query("q", "*:*", "sort", "n_tl1 desc");
     
@@ -698,7 +711,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     // to talk to a downed node causes grief
     tries = 0;
     while (((SolrDispatchFilter) shardToJetty.get(SHARD2).get(1).jetty.getDispatchFilter().getFilter()).getCores().getZkController().getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(new CloudSolrServerClient(shardToClient.get(SHARD2).get(0))).get(ZkStateReader.NODE_NAME_PROP))) {
-      if (tries++ == 60) {
+      if (tries++ == 120) {
         fail("Shard still reported as live in zk");
       }
       Thread.sleep(1000);
@@ -1320,6 +1333,36 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
   };
   
+  protected void waitForThingsToLevelOut(int waitForRecTimeSeconds) throws Exception {
+    log.info("Wait for recoveries to finish - wait " + waitForRecTimeSeconds + " for each attempt");
+    int cnt = 0;
+    boolean retry = false;
+    do {
+      waitForRecoveriesToFinish(VERBOSE, waitForRecTimeSeconds);
+      
+      try {
+        commit();
+      } catch (Exception e) {
+        // we don't care if this commit fails on some nodes
+      }
+      
+      updateMappingsFromZk(jettys, clients);
+      
+      Set<String> theShards = shardToClient.keySet();
+      String failMessage = null;
+      for (String shard : theShards) {
+        failMessage = checkShardConsistency(shard, false);
+      }
+      
+      if (failMessage != null) {
+        retry  = true;
+      }
+      cnt++;
+      if (cnt > 2) break;
+      Thread.sleep(4000);
+    } while (retry);
+  }
+  
   @Override
   @After
   public void tearDown() throws Exception {
@@ -1364,7 +1407,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           + DEFAULT_COLLECTION;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setSoTimeout(15000);
+      s.setSoTimeout(20000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;

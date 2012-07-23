@@ -71,8 +71,8 @@ import java.util.Map;
  *
  */
 public class TestHarness {
+  String coreName;
   protected CoreContainer container;
-  private SolrCore core;
   private final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
   private final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
   public UpdateRequestHandler updater;
@@ -114,11 +114,8 @@ public class TestHarness {
       container = init.initialize();
       if (coreName == null)
         coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
-      // get the core & decrease its refcount:
-      // the container holds the core for the harness lifetime
-      core = container.getCore(coreName);
-      if (core != null)
-        core.close();
+
+      this.coreName = coreName;
 
       updater = new UpdateRequestHandler();
       updater.init( null );
@@ -206,10 +203,30 @@ public class TestHarness {
     return container;
   }
 
+  /** Gets a core that does not have it's refcount incremented (i.e. there is no need to
+   * close when done).  This is not MT safe in conjunction with reloads!
+   */
   public SolrCore getCore() {
+    // get the core & decrease its refcount:
+    // the container holds the core for the harness lifetime
+    SolrCore core = container.getCore(coreName);
+    if (core != null)
+      core.close();
     return core;
   }
-        
+
+  /** Gets the core with it's reference count incremented.
+   * You must call core.close() when done!
+   */
+  public SolrCore getCoreInc() {
+    return container.getCore(coreName);
+  }
+
+
+  public void reload() throws Exception {
+    container.reload(coreName);
+  }
+
   /**
    * Processes an "update" (add, commit or optimize) and
    * returns the response as a String.
@@ -218,6 +235,7 @@ public class TestHarness {
    * @return The XML response to the update
    */
   public String update(String xml) {
+    SolrCore core = getCoreInc();
     DirectSolrConnection connection = new DirectSolrConnection(core);
     SolrRequestHandler handler = core.getRequestHandler("/update");
     // prefer the handler mapped to /update, but use our generic backup handler
@@ -231,6 +249,8 @@ public class TestHarness {
       throw (SolrException)e;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    } finally {
+      core.close();
     }
   }
   
@@ -324,6 +344,7 @@ public class TestHarness {
    * @see LocalSolrQueryRequest
    */
   public String query(String handler, SolrQueryRequest req) throws Exception {
+    SolrCore core = getCoreInc();
     try {
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -341,18 +362,24 @@ public class TestHarness {
     } finally {
       req.close();
       SolrRequestInfo.clearRequestInfo();
+      core.close();
     }
   }
 
   /** It is the users responsibility to close the request object when done with it.
    * This method does not set/clear SolrRequestInfo */
   public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    core.execute(core.getRequestHandler(handler),req,rsp);
-    if (rsp.getException() != null) {
-      throw rsp.getException();
+    SolrCore core = getCoreInc();
+    try {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      core.execute(core.getRequestHandler(handler),req,rsp);
+      if (rsp.getException() != null) {
+        throw rsp.getException();
+      }
+      return rsp;
+    } finally {
+      core.close();
     }
-    return rsp;
   }
 
 
@@ -578,6 +605,10 @@ public class TestHarness {
      *       ignored.</b>
      *   </li>
      * </ul>
+     *
+     * TODO: this isn't really safe in the presense of core reloads!
+     * Perhaps the best we could do is increment the core reference count
+     * and decrement it in the request close() method?
      */
     public LocalSolrQueryRequest makeRequest(String ... q) {
       if (q.length==1) {

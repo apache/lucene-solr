@@ -4,6 +4,7 @@
 #macro(url_root)/solr#end
 
 ## TODO: s/url_for_solr/url_for_core/ and s/url_root/url_for_solr/
+#macro(core_name)$request.core.name#end
 #macro(url_for_solr)#{url_root}#if($request.core.name != "")/$request.core.name#end#end
 #macro(url_for_home)#url_for_solr/browse#end
 

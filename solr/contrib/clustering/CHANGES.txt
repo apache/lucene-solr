@@ -16,6 +16,11 @@ $Id$
 * SOLR-3470: Bug fix: custom Carrot2 tokenizer and stemmer factories are 
   respected now (Stanislaw Osinski, Dawid Weiss)
 
+================== Release 3.6.1 ==================
+
+* SOLR-3470: Bug fix: custom Carrot2 tokenizer and stemmer factories are 
+  respected now (Stanislaw Osinski, Dawid Weiss)
+
 ================== Release 3.6.0 ==================
 
 * SOLR-2937: Configuring the number of contextual snippets used for 

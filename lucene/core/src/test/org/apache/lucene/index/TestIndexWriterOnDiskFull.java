@@ -182,7 +182,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     
     // Now, build a starting index that has START_COUNT docs.  We
     // will then try to addIndexes into a copy of this:
-    MockDirectoryWrapper startDir = newDirectory();
+    MockDirectoryWrapper startDir = newMockDirectory();
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     for(int j=0;j<START_COUNT;j++) {
       addDocWithIndex(writer, j);
@@ -476,7 +476,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   
   // LUCENE-2593
   public void testCorruptionAfterDiskFullDuringMerge() throws IOException {
-    MockDirectoryWrapper dir = newDirectory();
+    MockDirectoryWrapper dir = newMockDirectory();
     //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setReaderPooling(true));
     IndexWriter w = new IndexWriter(
         dir,
@@ -520,7 +520,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   // an IndexWriter (hit during DW.ThreadState.init()) is
   // OK:
   public void testImmediateDiskFull() throws IOException {
-    MockDirectoryWrapper dir = newDirectory();
+    MockDirectoryWrapper dir = newMockDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
     dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));

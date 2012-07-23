@@ -54,7 +54,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
  * Unlike {@link AbstractSolrTestCase}, a new core is not created for each test method.
  */
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
-  public static int DEFAULT_CONNECTION_TIMEOUT = 500;  // default socket connection timeout in ms
+  public static int DEFAULT_CONNECTION_TIMEOUT = 1000;  // default socket connection timeout in ms
 
 
   @ClassRule
