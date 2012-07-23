@@ -1,0 +1,6 @@
+
+This product includes data from BSD-licensed dictionary of Polish (Morfologik)
+(http://morfologik.blogspot.com/)
+
+This product includes data from BSD-licensed dictionary of Polish (SGJP)
+(http://sgjp.pl/morfeusz/)
