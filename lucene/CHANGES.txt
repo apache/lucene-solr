@@ -93,6 +93,9 @@ Bug Fixes
   all queries.  Made Scorer.freq() abstract. 
   (Koji Sekiguchi, Mike McCandless, Robert Muir)
 
+* LUCENE-4234: Exception when FacetsCollector is used with ScoreFacetRequest, 
+  and the number of matching documents is too large. (Gilad Barkai via Shai Erera)
+
 Build
 
 * LUCENE-4094: Support overriding file.encoding on forked test JVMs
