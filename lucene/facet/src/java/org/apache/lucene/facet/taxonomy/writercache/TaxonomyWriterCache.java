@@ -22,22 +22,25 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * TaxonomyWriterCache is a relatively simple interface for a cache of
- * category->ordinal mappings, used in TaxonomyWriter implementations
- * (such as {@link DirectoryTaxonomyWriter}).
- * <P>
- * It basically has put() methods for adding a mapping, and get() for looking
- * a mapping up the cache. The cache does <B>not</B> guarantee to hold
- * everything that has been put into it, and might in fact selectively
- * delete some of the mappings (e.g., the ones least recently used).
- * This means that if get() returns a negative response, it does not
- * necessarily mean that the category doesn't exist - just that it is not
- * in the cache. The caller can only infer that the category doesn't exist
- * if it knows the cache to be complete (because all the categories were
- * loaded into the cache, and since then no put() returned true). 
- * <P> However,
- * if it does so, it should clear out large parts of the cache at once, because
- * the user will typically need to work hard to recover from every cache
+ * category->ordinal mappings, used in TaxonomyWriter implementations (such as
+ * {@link DirectoryTaxonomyWriter}).
+ * <p>
+ * It basically has put() methods for adding a mapping, and get() for looking a
+ * mapping up the cache. The cache does <B>not</B> guarantee to hold everything
+ * that has been put into it, and might in fact selectively delete some of the
+ * mappings (e.g., the ones least recently used). This means that if get()
+ * returns a negative response, it does not necessarily mean that the category
+ * doesn't exist - just that it is not in the cache. The caller can only infer
+ * that the category doesn't exist if it knows the cache to be complete (because
+ * all the categories were loaded into the cache, and since then no put()
+ * returned true).
+ * <p>
+ * However, if it does so, it should clear out large parts of the cache at once,
+ * because the user will typically need to work hard to recover from every cache
  * cleanup (see {@link #put(CategoryPath, int)}'s return value).
+ * <p>
+ * <b>NOTE:</b> the cache may be accessed concurrently by multiple threads,
+ * therefore cache implementations should take this into consideration.
  * 
  * @lucene.experimental
  */
