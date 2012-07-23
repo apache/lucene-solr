@@ -190,7 +190,7 @@ public class PayloadTermQuery extends SpanTermQuery {
           // whether to load the payload or not
           // GSI: I suppose we could toString the payload, but I don't think that
           // would be a good idea
-          Explanation payloadExpl = new Explanation(scorer.getPayloadScore(), "scorePayload(...)");
+          Explanation payloadExpl = function.explain(doc, scorer.payloadsSeen, scorer.payloadScore);
           payloadExpl.setValue(scorer.getPayloadScore());
           // combined
           ComplexExplanation result = new ComplexExplanation();

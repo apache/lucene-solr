@@ -11,6 +11,10 @@ http://s.apache.org/luceneversions
 
 New features
 
+* LUCENE-4249: Changed the explanation of the PayloadTermWeight to use the
+  underlying PayloadFunction's explanation as the explanation
+  for the payload score. (Scott Smerchek via Robert Muir)
+  
 * LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
   iteration marks. (Robert Muir, Christian Moen)
 
