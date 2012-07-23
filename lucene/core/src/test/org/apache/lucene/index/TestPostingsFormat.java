@@ -53,11 +53,11 @@ import org.junit.BeforeClass;
  * if there is some bug in a given PostingsFormat that this
  * test fails to catch then this test needs to be improved! */
 
-// nocommit can we make it easy for testing to pair up a "random terms dict impl" with your postings base format...
+// TODO can we make it easy for testing to pair up a "random terms dict impl" with your postings base format...
 
-// nocommit test when you reuse after skipping a term or two, eg the block reuse case
+// TODO test when you reuse after skipping a term or two, eg the block reuse case
 
-// nocommit hmm contract says .doc() can return NO_MORE_DOCS
+// TODO hmm contract says .doc() can return NO_MORE_DOCS
 // before nextDoc too...?
 
 /* TODO
@@ -167,7 +167,7 @@ public class TestPostingsFormat extends LuceneTestCase {
       fields.put(field, postings);
       Set<String> seenTerms = new HashSet<String>();
 
-      // nocommit
+      // TODO
       //final int numTerms = atLeast(10);
       final int numTerms = 4;
       for(int termUpto=0;termUpto<numTerms;termUpto++) {
@@ -185,7 +185,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           term = "big_" + term;
         } else if (random().nextInt(10) == 3 && numMediumTerms < 10) {
           // 10% of the time make a medium freq term:
-          // nocommit not high enough to test level 1 skipping:
+          // TODO not high enough to test level 1 skipping:
           numDocs = atLeast(3000);
           numMediumTerms++;
           term = "medium_" + term;
@@ -223,7 +223,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           } else if (maxDocSpacing == 1) {
             docID++;
           } else {
-            // nocommit: sometimes have a biggish gap here!
+            // TODO: sometimes have a biggish gap here!
             docID += _TestUtil.nextInt(random(), 1, maxDocSpacing);
           }
 
@@ -316,7 +316,7 @@ public class TestPostingsFormat extends LuceneTestCase {
     }
   }
 
-  // nocommit maybe instead of @BeforeClass just make a single test run: build postings & index & test it?
+  // TODO maybe instead of @BeforeClass just make a single test run: build postings & index & test it?
 
   private FieldInfos currentFieldInfos;
 
@@ -332,7 +332,7 @@ public class TestPostingsFormat extends LuceneTestCase {
 
     int maxIndexOptionNoOffsets = Arrays.asList(IndexOptions.values()).indexOf(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
-    // nocommit use allowPayloads
+    // TODO use allowPayloads
 
     FieldInfo[] newFieldInfoArray = new FieldInfo[fields.size()];
     for(int fieldUpto=0;fieldUpto<fields.size();fieldUpto++) {
@@ -386,6 +386,7 @@ public class TestPostingsFormat extends LuceneTestCase {
       boolean doFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
       boolean doPos = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
+      boolean doOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       
       TermsConsumer termsConsumer = fieldsConsumer.addField(fieldInfo);
       long sumTotalTF = 0;
@@ -417,7 +418,7 @@ public class TestPostingsFormat extends LuceneTestCase {
                   System.out.println("      pos=" + pos.position);
                 }
               }
-              postingsConsumer.addPosition(pos.position, (doPayloads && pos.payload != null) ? new BytesRef(pos.payload) : null, pos.startOffset, pos.endOffset);
+              postingsConsumer.addPosition(pos.position, (doPayloads && pos.payload != null) ? new BytesRef(pos.payload) : null, doOffsets ? pos.startOffset : -1, doOffsets ? pos.endOffset : -1);
             }
           } else if (doFreq) {
             totalTF += posting.positions.size();
@@ -690,7 +691,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           }
           assertEquals("position is wrong", position.position, docsAndPositionsEnum.nextPosition());
 
-          // nocommit sometimes don't pull the payload even
+          // TODO sometimes don't pull the payload even
           // though we pulled the position
 
           if (doCheckPayloads) {
@@ -861,7 +862,7 @@ public class TestPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
 
     boolean indexPayloads = random().nextBoolean();
-    // nocommit test thread safety of buildIndex too
+    // TODO test thread safety of buildIndex too
 
     FieldsProducer fieldsProducer = buildIndex(dir, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, indexPayloads);
 
@@ -883,5 +884,5 @@ public class TestPostingsFormat extends LuceneTestCase {
   }
 }
 
-// nocommit test that start/endOffset return -1 if field has
+// TODO test that start/endOffset return -1 if field has
 // no offsets
