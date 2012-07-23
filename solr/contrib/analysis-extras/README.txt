@@ -9,8 +9,11 @@ Relies upon the following lucene components (in lucene-libs/):
  * lucene-analyzers-icu-X.Y.jar
  * lucene-analyzers-smartcn-X.Y.jar
  * lucene-analyzers-stempel-X.Y.jar
- 
-And the ICU library (in lib/):
+ * lucene-analyzers-morfologik-X.Y.jar
+ * lucene-analyzers-smartcn-X.Y.jar
+
+And the following third-party library (in lib/):
 
  * icu4j-X.Y.jar
+ * morfologik-*.jar
  

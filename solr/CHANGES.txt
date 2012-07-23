@@ -131,6 +131,8 @@ Bug Fixes
 * SOLR-3663: There are a couple of bugs in the sync process when a leader goes down and a 
   new leader is elected. (Mark Miller)
 
+* SOLR-3623: Fixed inconsistent treatment of third-party dependencies for 
+  solr contribs analysis-extras & uima (hossman) 
 
 Other Changes
 ----------------------

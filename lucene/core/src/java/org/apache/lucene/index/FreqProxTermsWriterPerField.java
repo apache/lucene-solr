@@ -430,7 +430,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
             if (readTermFreq) {
               termDocFreq = postings.docFreqs[termID];
             } else {
-              termDocFreq = 0;
+              termDocFreq = -1;
             }
             postings.lastDocCodes[termID] = -1;
           } else {
@@ -441,7 +441,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           final int code = freq.readVInt();
           if (!readTermFreq) {
             docID += code;
-            termDocFreq = 0;
+            termDocFreq = -1;
           } else {
             docID += code >>> 1;
             if ((code & 1) != 0) {
@@ -469,7 +469,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         // 2nd sweep does the real flush, but I suspect
         // that'd add too much time to flush.
         visitedDocs.set(docID);
-        postingsConsumer.startDoc(docID, termDocFreq);
+        postingsConsumer.startDoc(docID, writeTermFreq ? termDocFreq : -1);
         if (docID < delDocLimit) {
           // Mark it deleted.  TODO: we could also skip
           // writing its postings; this would be
@@ -542,11 +542,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         }
         postingsConsumer.finishDoc();
       }
-      termsConsumer.finishTerm(text, new TermStats(numDocs, totTF));
+      termsConsumer.finishTerm(text, new TermStats(numDocs, writeTermFreq ? totTF : -1));
       sumTotalTermFreq += totTF;
       sumDocFreq += numDocs;
     }
 
-    termsConsumer.finish(sumTotalTermFreq, sumDocFreq, visitedDocs.cardinality());
+    termsConsumer.finish(writeTermFreq ? sumTotalTermFreq : -1, sumDocFreq, visitedDocs.cardinality());
   }
 }

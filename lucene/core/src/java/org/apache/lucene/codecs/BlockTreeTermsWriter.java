@@ -896,7 +896,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         //   w.close();
         // }
       } else {
-        assert sumTotalTermFreq == 0;
+        assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
         assert docCount == 0;
       }

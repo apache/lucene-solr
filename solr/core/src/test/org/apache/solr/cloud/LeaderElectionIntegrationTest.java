@@ -191,7 +191,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       int newLeaderPort = getLeaderPort(leader);
       int retry = 0;
       while (leaderPort == newLeaderPort) {
-        if (retry++ == 20) {
+        if (retry++ == 60) {
           break;
         }
         Thread.sleep(1000);
