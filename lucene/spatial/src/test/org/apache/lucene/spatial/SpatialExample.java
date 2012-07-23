@@ -17,7 +17,6 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import com.spatial4j.core.shape.Shape;
@@ -45,6 +44,7 @@ import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
@@ -53,7 +53,7 @@ import java.io.IOException;
  * This class serves as example code to show how to use the Lucene spatial
  * module.
  */
-public class SpatialExample extends RandomizedTest {
+public class SpatialExample extends LuceneTestCase {
 
   public static void main(String[] args) throws IOException {
     new SpatialExample().test();
@@ -100,7 +100,7 @@ public class SpatialExample extends RandomizedTest {
   }
 
   private void indexPoints() throws IOException {
-    IndexWriterConfig iwConfig = new IndexWriterConfig(Version.LUCENE_50,null);
+    IndexWriterConfig iwConfig = new IndexWriterConfig(TEST_VERSION_CURRENT,null);
     IndexWriter indexWriter = new IndexWriter(directory, iwConfig);
 
     //Spatial4j is x-y order for arguments
