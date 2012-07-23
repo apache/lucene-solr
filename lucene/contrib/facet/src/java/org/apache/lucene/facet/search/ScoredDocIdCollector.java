@@ -8,7 +8,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -51,7 +51,7 @@ public abstract class ScoredDocIdCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      docIds.fastSet(docBase + doc);
+      docIds.set(docBase + doc);
       ++numDocIds;
     }
 
@@ -102,7 +102,9 @@ public abstract class ScoredDocIdCollector extends Collector {
     @SuppressWarnings("synthetic-access")
     public ScoringDocIdCollector(int maxDoc) {
       super(maxDoc);
-      scores = new float[maxDoc];
+      // only matching documents have an entry in the scores array. Therefore start with
+      // a small array and grow when needed.
+      scores = new float[64];
     }
 
     @Override
@@ -110,7 +112,7 @@ public abstract class ScoredDocIdCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      docIds.fastSet(docBase + doc);
+      docIds.set(docBase + doc);
 
       float score = this.scorer.score();
       if (numDocIds >= scores.length) {
@@ -166,7 +168,7 @@ public abstract class ScoredDocIdCollector extends Collector {
 
   protected int numDocIds;
   protected int docBase;
-  protected final OpenBitSet docIds;
+  protected final FixedBitSet docIds;
 
   /**
    * Creates a new {@link ScoredDocIdCollector} with the given parameters.
@@ -186,7 +188,7 @@ public abstract class ScoredDocIdCollector extends Collector {
 
   private ScoredDocIdCollector(int maxDoc) {
     numDocIds = 0;
-    docIds = new OpenBitSet(maxDoc);
+    docIds = new FixedBitSet(maxDoc);
   }
 
   /** Returns the default score used when scoring is disabled. */

@@ -5,7 +5,10 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 3.6.2 =======================
 
-(No Changes)
+Bug Fixes:
+
+* LUCENE-4234: Exception when FacetsCollector is used with ScoreFacetRequest, 
+  and the number of matching documents is too large. (Gilad Barkai via Shai Erera)
 
 ======================= Lucene 3.6.1 =======================
 More information about this release, including any errata related to the 
