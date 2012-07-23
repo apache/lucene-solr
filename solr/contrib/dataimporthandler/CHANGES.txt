@@ -28,7 +28,12 @@ Other Changes
 
 Bug Fixes
 ----------------------
-* SOLR-3336: SolrEntityProcessor substitutes most variables at query time
+* SOLR-3360: More bug fixes for the deprecated "threads" parameter.  (Mikhail Khludnev, Claudio R, via James Dyer)
+
+* SOLR-3430: Added a new test against a real SQL database.  Fixed problems revealed by this new test
+             related to the expanded cache support added to 3.6/SOLR-2382 (James Dyer)
+
+* SOLR-3336: SolrEntityProcessor substitutes most variables at query time.
              (Michael Kroh, Lance Norskog, via Martijn van Groningen)
 
 ==================  3.6.0 ==================
