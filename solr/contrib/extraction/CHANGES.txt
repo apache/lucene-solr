@@ -32,6 +32,10 @@ $Id$
 
 * SOLR-3254: Upgrade Solr to Tika 1.1 (janhoy)
 
+================== Release 3.6.1 ==================
+
+(No Changes)
+
 ================== Release 3.6.0 ==================
 
 * SOLR-2346: Add a chance to set content encoding explicitly via content type of stream.

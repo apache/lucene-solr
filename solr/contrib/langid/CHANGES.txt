@@ -15,6 +15,10 @@ $Id$
 
 (No changes)
 
+================== Release 3.6.1 ==================
+
+(No Changes)
+
 ================== Release 3.6.0 ==================
 
 * SOLR-3107: When using the LangDetect implementation of langid, set the random
