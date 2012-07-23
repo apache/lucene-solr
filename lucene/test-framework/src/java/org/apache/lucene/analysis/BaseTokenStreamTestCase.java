@@ -473,14 +473,6 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
   }
 
-  static final Set<String> doesntSupportOffsets = new HashSet<String>(Arrays.asList( 
-    "Lucene3x",
-    "MockFixedIntBlock",
-    "MockVariableIntBlock",
-    "MockSep",
-    "MockRandom"
-  ));
-
   private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) throws IOException {
 
     final LineFileDocs docs = new LineFileDocs(random);
