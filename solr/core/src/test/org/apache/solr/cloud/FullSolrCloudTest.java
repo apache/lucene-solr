@@ -106,7 +106,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   protected ChaosMonkey chaosMonkey;
   protected volatile ZkStateReader zkStateReader;
   
-  private Map<String,SolrServer> shardToLeaderClient = new HashMap<String,SolrServer>();
+  protected Map<String,SolrServer> shardToLeaderClient = new HashMap<String,SolrServer>();
   protected Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<String,CloudJettyRunner>();
   
   class CloudJettyRunner {
