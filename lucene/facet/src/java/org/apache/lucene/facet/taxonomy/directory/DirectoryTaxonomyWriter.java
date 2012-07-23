@@ -375,7 +375,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * returning the category's ordinal, or a negative number in case the
    * category does not yet exist in the taxonomy.
    */
-  protected int findCategory(CategoryPath categoryPath) throws IOException {
+  protected synchronized int findCategory(CategoryPath categoryPath) throws IOException {
     // If we can find the category in the cache, or we know the cache is
     // complete, we can return the response directly from it
     int res = cache.get(categoryPath);
@@ -474,12 +474,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public int addCategory(CategoryPath categoryPath) throws IOException {
     ensureOpen();
-    // If the category is already in the cache and/or the taxonomy, we
-    // should return its existing ordinal
-    int res = findCategory(categoryPath);
+    // check the cache outside the synchronized block. this results in better
+    // concurrency when categories are there.
+    int res = cache.get(categoryPath);
     if (res < 0) {
-      // the category is neither in the cache nor in the index - following code
-      // cannot be executed in parallel.
+      // the category is not in the cache - following code cannot be executed in parallel.
       synchronized (this) {
         res = findCategory(categoryPath);
         if (res < 0) {
@@ -494,7 +493,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       }
     }
     return res;
-
   }
 
   /**
