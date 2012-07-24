@@ -870,7 +870,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   private void closeInternal(boolean waitForMerges, boolean doFlush) throws IOException {
-    boolean interrupted = Thread.interrupted();
+    boolean interrupted = false;
     try {
 
       if (pendingCommit != null) {
@@ -894,6 +894,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         
       } finally {
         // clean up merge scheduler in all cases, although flushing may have failed:
+        interrupted = Thread.interrupted();
       
         if (waitForMerges) {
           try {
