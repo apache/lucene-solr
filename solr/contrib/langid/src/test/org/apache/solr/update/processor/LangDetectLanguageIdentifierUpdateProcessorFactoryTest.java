@@ -24,7 +24,7 @@ import org.junit.Test;
 public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest extends LanguageIdentifierUpdateProcessorFactoryTestCase {
   @Override
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters) throws Exception {
-    return new LangDetectLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(null, parameters, null), resp, null);
+    return new LangDetectLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(h.getCore(), parameters, null), resp, null);
   }
   
   // this one actually works better it seems with short docs
