@@ -40,21 +40,18 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
     final LinkedHashMap<String,S> services = new LinkedHashMap<String,S>();
     while (loader.hasNext()) {
       final Class<? extends S> c = loader.next();
-      final S service;
       try {
-        service = c.newInstance();
-      } catch (InstantiationException ie) {
-        throw new ServiceConfigurationError("Cannot instantiate SPI class: " + c.getName(), ie); 
-      } catch (IllegalAccessException iae) {
-        throw new ServiceConfigurationError("Cannot instantiate SPI class: " + c.getName(), iae); 
-      }
-      final String name = service.getName();
-      // only add the first one for each name, later services will be ignored
-      // this allows to place services before others in classpath to make 
-      // them used instead of others
-      if (!services.containsKey(name)) {
-        assert checkServiceName(name);
-        services.put(name, service);
+        final S service = c.newInstance();
+        final String name = service.getName();
+        // only add the first one for each name, later services will be ignored
+        // this allows to place services before others in classpath to make 
+        // them used instead of others
+        if (!services.containsKey(name)) {
+          checkServiceName(name);
+          services.put(name, service);
+        }
+      } catch (Exception e) {
+        throw new ServiceConfigurationError("Cannot instantiate SPI class: " + c.getName(), e);
       }
     }
     this.services = Collections.unmodifiableMap(services);
@@ -63,32 +60,24 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
   /**
    * Validates that a service name meets the requirements of {@link NamedSPI}
    */
-  public static boolean checkServiceName(String name) {
+  public static void checkServiceName(String name) {
     // based on harmony charset.java
     if (name.length() >= 128) {
       throw new IllegalArgumentException("Illegal service name: '" + name + "' is too long (must be < 128 chars).");
     }
-    for (int i = 0; i < name.length(); i++) {
+    for (int i = 0, len = name.length(); i < len; i++) {
       char c = name.charAt(i);
-      if (!isLetter(c) && !isDigit(c)) {
+      if (!isLetterOrDigit(c)) {
         throw new IllegalArgumentException("Illegal service name: '" + name + "' must be simple ascii alphanumeric.");
       }
     }
-    return true;
   }
   
-  /*
-   * Checks whether a character is a letter (ascii) which are defined in the spec.
+  /**
+   * Checks whether a character is a letter or digit (ascii) which are defined in the spec.
    */
-  private static boolean isLetter(char c) {
-      return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
-  }
-
-  /*
-   * Checks whether a character is a digit (ascii) which are defined in the spec.
-   */
-  private static boolean isDigit(char c) {
-      return ('0' <= c && c <= '9');
+  private static boolean isLetterOrDigit(char c) {
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9');
   }
   
   public S lookup(String name) {

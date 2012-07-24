@@ -414,7 +414,7 @@ public class SolrResourceLoader implements ResourceLoader
       // retrieve the map of classLoader -> expectedType -> SPI from cache / regenerate cache
       Map<Class<?>,AnalysisSPILoader<?>> spiLoaders = expectedTypesSPILoaders.get(classLoader);
       if (spiLoaders == null) {
-        spiLoaders = new IdentityHashMap<Class<?>,AnalysisSPILoader<?>>();
+        spiLoaders = new IdentityHashMap<Class<?>,AnalysisSPILoader<?>>(3);
         spiLoaders.put(CharFilterFactory.class, CharFilterFactory.getSPILoader(classLoader));
         spiLoaders.put(TokenizerFactory.class, TokenizerFactory.getSPILoader(classLoader));
         spiLoaders.put(TokenFilterFactory.class, TokenFilterFactory.getSPILoader(classLoader));
