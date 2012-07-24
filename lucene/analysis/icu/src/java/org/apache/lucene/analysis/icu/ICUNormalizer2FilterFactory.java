@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.icu;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,9 +22,8 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import com.ibm.icu.text.FilteredNormalizer2;
@@ -66,7 +65,7 @@ public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements M
     else if (mode.equals("decompose"))
       normalizer = Normalizer2.getInstance(null, name, Normalizer2.Mode.DECOMPOSE);
     else 
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid mode: " + mode);
+      throw new InitializationException("Invalid mode: " + mode);
     
     String filter = args.get("filter");
     if (filter != null) {

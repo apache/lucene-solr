@@ -1,4 +1,10 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.icu;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.icu.ICUFoldingFilter;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,17 +23,15 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import java.io.Reader;
+/** Factory for {@link ICUFoldingFilter} */
+public class ICUFoldingFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.icu.segmentation.ICUTokenizer;
-import org.apache.lucene.analysis.util.TokenizerFactory;
-
-/** Factory for {@link ICUTokenizer} */
-public class ICUTokenizerFactory extends TokenizerFactory {
-  // TODO: add support for custom configs
   @Override
-  public Tokenizer create(Reader input) {
-    return new ICUTokenizer(input);
+  public TokenStream create(TokenStream input) {
+    return new ICUFoldingFilter(input);
+  }
+
+  public AbstractAnalysisFactory getMultiTermComponent() {
+    return this;
   }
 }

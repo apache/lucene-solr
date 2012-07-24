@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.icu;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,9 +22,8 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUTransformFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import com.ibm.icu.text.Transliterator;
@@ -48,7 +47,7 @@ public class ICUTransformFilterFactory extends TokenFilterFactory implements Mul
     super.init(args);
     String id = args.get("id");
     if (id == null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "id is required.");
+      throw new InitializationException("id is required.");
     }
     
     int dir;
@@ -58,7 +57,7 @@ public class ICUTransformFilterFactory extends TokenFilterFactory implements Mul
     else if (direction.equalsIgnoreCase("reverse"))
       dir = Transliterator.REVERSE;
     else
-      throw new SolrException(ErrorCode.SERVER_ERROR, "invalid direction: " + direction);
+      throw new InitializationException("invalid direction: " + direction);
     
     transliterator = Transliterator.getInstance(id, dir);
   }

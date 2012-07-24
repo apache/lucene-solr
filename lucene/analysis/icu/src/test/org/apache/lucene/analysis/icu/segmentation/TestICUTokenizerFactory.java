@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.icu.segmentation;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,28 +19,18 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
-/** basic tests for {@link ICUNormalizer2FilterFactory} */
-public class TestICUNormalizer2FilterFactory extends BaseTokenStreamTestCase {
-  
-  /** Test nfkc_cf defaults */
-  public void testDefaults() throws Exception {
-    Reader reader = new StringReader("This is a Ｔｅｓｔ");
-    ICUNormalizer2FilterFactory factory = new ICUNormalizer2FilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
-    TokenStream stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "this", "is", "a", "test" });
+/** basic tests for {@link ICUTokenizerFactory} **/
+public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
+  public void testMixedText() throws Exception {
+    Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี  This is a test ກວ່າດອກ");
+    ICUTokenizerFactory factory = new ICUTokenizerFactory();
+    TokenStream stream = factory.create(reader);
+    assertTokenStreamContents(stream,
+        new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี",
+        "This", "is", "a", "test", "ກວ່າ", "ດອກ"});
   }
-  
-  // TODO: add tests for different forms
 }
