@@ -29,13 +29,23 @@ import org.apache.lucene.analysis.CharFilter;
 public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<CharFilterFactory> loader =
-      new AnalysisSPILoader<CharFilterFactory>(CharFilterFactory.class);
+      getSPILoader(Thread.currentThread().getContextClassLoader());
   
-  /** looks up a charfilter by name */
+  /**
+   * Used by e.g. Apache Solr to get a correctly configured instance
+   * of {@link AnalysisSPILoader} from Solr's classpath.
+   * @lucene.internal
+   */
+  public static AnalysisSPILoader<CharFilterFactory> getSPILoader(ClassLoader classloader) {
+    return new AnalysisSPILoader<CharFilterFactory>(CharFilterFactory.class, classloader);
+  }
+  
+  /** looks up a charfilter by name from context classpath */
   public static CharFilterFactory forName(String name) {
     return loader.newInstance(name);
   }
   
+  /** looks up a charfilter class by name from context classpath */
   public static Class<? extends CharFilterFactory> lookupClass(String name) {
     return loader.lookupClass(name);
   }

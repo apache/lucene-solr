@@ -29,18 +29,28 @@ import java.util.Set;
 public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<TokenizerFactory> loader =
-      new AnalysisSPILoader<TokenizerFactory>(TokenizerFactory.class);
+      getSPILoader(Thread.currentThread().getContextClassLoader());
   
-  /** looks up a tokenizer by name */
+  /**
+   * Used by e.g. Apache Solr to get a correctly configured instance
+   * of {@link AnalysisSPILoader} from Solr's classpath.
+   * @lucene.internal
+   */
+  public static AnalysisSPILoader<TokenizerFactory> getSPILoader(ClassLoader classloader) {
+    return new AnalysisSPILoader<TokenizerFactory>(TokenizerFactory.class, classloader);
+  }
+  
+  /** looks up a tokenizer by name from context classpath */
   public static TokenizerFactory forName(String name) {
     return loader.newInstance(name);
   }
   
+  /** looks up a tokenizer class by name from context classpath */
   public static Class<? extends TokenizerFactory> lookupClass(String name) {
     return loader.lookupClass(name);
   }
   
-  /** returns a list of all available tokenizer names */
+  /** returns a list of all available tokenizer names from context classpath */
   public static Set<String> availableTokenizers() {
     return loader.availableServices();
   }

@@ -29,11 +29,16 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.util.AnalysisSPILoader;
+import org.apache.lucene.util.WeakIdentityMap;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -366,8 +371,15 @@ public class SolrResourceLoader implements ResourceLoader
   /*
    * A static map of short class name to fully qualified class name 
    */
-  private static Map<String, String> classNameCache = new ConcurrentHashMap<String, String>();
+  private static final Map<String, String> classNameCache = new ConcurrentHashMap<String, String>();
 
+  // A static map of AnalysisSPILoaders, keyed by ClassLoader used (because it can change during Solr lifetime) and expected base class:
+  private static final WeakIdentityMap<ClassLoader, Map<Class<?>,AnalysisSPILoader<?>>> expectedTypesSPILoaders = WeakIdentityMap.newConcurrentHashMap();
+
+  // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
+  private static final Pattern legacyAnalysisPattern = 
+      Pattern.compile("((\\Q"+base+".analysis.\\E)|(\\Q"+project+".\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
+      
   /**
    * This method loads a class either with it's FQN or a short-name (solr.class-simplename or class-simplename).
    * It tries to load the class with the name that is given first and if it fails, it tries all the known
@@ -394,6 +406,33 @@ public class SolrResourceLoader implements ResourceLoader
       }
     }
     Class<? extends T> clazz = null;
+    
+    // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
+    final Matcher m = legacyAnalysisPattern.matcher(cname);
+    if (m.matches()) {
+      log.trace("Trying to load class from analysis SPI");
+      // retrieve the map of classLoader -> expectedType -> SPI from cache / regenerate cache
+      Map<Class<?>,AnalysisSPILoader<?>> spiLoaders = expectedTypesSPILoaders.get(classLoader);
+      if (spiLoaders == null) {
+        spiLoaders = new IdentityHashMap<Class<?>,AnalysisSPILoader<?>>();
+        spiLoaders.put(CharFilterFactory.class, CharFilterFactory.getSPILoader(classLoader));
+        spiLoaders.put(TokenizerFactory.class, TokenizerFactory.getSPILoader(classLoader));
+        spiLoaders.put(TokenFilterFactory.class, TokenFilterFactory.getSPILoader(classLoader));
+        expectedTypesSPILoaders.put(classLoader, spiLoaders);
+      }
+      AnalysisSPILoader<? extends AbstractAnalysisFactory> loader = spiLoaders.get(expectedType);
+      if (loader != null) {
+        // it's a correct expected type for analysis! Let's go on!
+        try {
+          @SuppressWarnings("unchecked")
+          final Class<? extends T> cl = (Class<? extends T>) loader.lookupClass(m.group(4));
+          return clazz = cl;
+        } catch (IllegalArgumentException ex) { 
+          // ok, we fall back to legacy loading
+        }
+      }
+    }
+    
     // first try cname == full name
     try {
       return Class.forName(cname, true, classLoader).asSubclass(expectedType);

@@ -28,19 +28,29 @@ import org.apache.lucene.analysis.TokenStream;
 public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<TokenFilterFactory> loader =
-      new AnalysisSPILoader<TokenFilterFactory>(TokenFilterFactory.class, 
-          new String[] { "TokenFilterFactory", "FilterFactory" });
+      getSPILoader(Thread.currentThread().getContextClassLoader());
   
-  /** looks up a tokenfilter by name */
+  /**
+   * Used by e.g. Apache Solr to get a correctly configured instance
+   * of {@link AnalysisSPILoader} from Solr's classpath.
+   * @lucene.internal
+   */
+  public static AnalysisSPILoader<TokenFilterFactory> getSPILoader(ClassLoader classloader) {
+    return new AnalysisSPILoader<TokenFilterFactory>(TokenFilterFactory.class,
+      new String[] { "TokenFilterFactory", "FilterFactory" }, classloader);
+  }
+  
+  /** looks up a tokenfilter by name from context classpath */
   public static TokenFilterFactory forName(String name) {
     return loader.newInstance(name);
   }
   
+  /** looks up a tokenfilter class by name from context classpath */
   public static Class<? extends TokenFilterFactory> lookupClass(String name) {
     return loader.lookupClass(name);
   }
   
-  /** returns a list of all available tokenfilter names */
+  /** returns a list of all available tokenfilter names from context classpath */
   public static Set<String> availableTokenFilters() {
     return loader.availableServices();
   }

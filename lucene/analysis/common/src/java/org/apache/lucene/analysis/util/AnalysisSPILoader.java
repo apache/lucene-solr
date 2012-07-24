@@ -28,7 +28,7 @@ import org.apache.lucene.util.SPIClassIterator;
  * Helper class for loading named SPIs from classpath (e.g. Tokenizers, TokenStreams).
  * @lucene.internal
  */
-final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
+public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
   private final Map<String,Class<? extends S>> services;
   private final Class<S> clazz;
@@ -37,9 +37,17 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     this(clazz, new String[] { clazz.getSimpleName() });
   }
 
+  public AnalysisSPILoader(Class<S> clazz, ClassLoader loader) {
+    this(clazz, new String[] { clazz.getSimpleName() }, loader);
+  }
+
   public AnalysisSPILoader(Class<S> clazz, String[] suffixes) {
+    this(clazz, suffixes, Thread.currentThread().getContextClassLoader());
+  }
+  
+  public AnalysisSPILoader(Class<S> clazz, String[] suffixes, ClassLoader classloader) {
     this.clazz = clazz;
-    final SPIClassIterator<S> loader = SPIClassIterator.get(clazz);
+    final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<String,Class<? extends S>>();
     while (loader.hasNext()) {
       final Class<? extends S> service = loader.next();

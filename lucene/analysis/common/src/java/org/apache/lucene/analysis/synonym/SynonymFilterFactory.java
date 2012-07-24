@@ -152,7 +152,6 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     return parser.build();
   }
   
-  // nocommit: spi-hack solr.xxx and o.a.solr.analysis.xxx via a delegator
   // (there are no tests for this functionality)
   private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname){
     TokenizerFactory tokFactory = loader.newInstance(cname, TokenizerFactory.class);
