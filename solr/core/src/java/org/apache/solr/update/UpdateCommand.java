@@ -44,7 +44,7 @@ public abstract class UpdateCommand implements Cloneable {
 
   @Override
   public String toString() {
-    return name() + "{flags="+flags+",version="+version;
+    return name() + "{flags="+flags+",_version_="+version;
   }
 
   public long getVersion() {

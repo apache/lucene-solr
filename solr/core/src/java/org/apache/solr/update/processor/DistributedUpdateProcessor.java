@@ -748,7 +748,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (zkEnabled && DistribPhase.TOLEADER == phase) {
       // This core should be a leader
+      isLeader = true;
       replicas = setupRequest();
+    } else if (DistribPhase.FROMLEADER == phase) {
+      isLeader = false;
     }
 
     if (vinfo == null) {

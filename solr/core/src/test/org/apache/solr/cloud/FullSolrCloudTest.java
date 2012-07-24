@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
-  private static Logger log = LoggerFactory.getLogger(FullSolrCloudTest.class);
+  static Logger log = LoggerFactory.getLogger(FullSolrCloudTest.class);
   
   @BeforeClass
   public static void beforeFullSolrCloudTest() {
@@ -508,11 +508,15 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   protected void del(String q) throws Exception {
     controlClient.deleteByQuery(q);
+    cloudClient.deleteByQuery(q);
+
+    /***
     for (SolrServer client : clients) {
       UpdateRequest ureq = new UpdateRequest();
       // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
       ureq.deleteByQuery(q).process(client);
     }
+     ***/
   }// serial commit...
   
   /*
