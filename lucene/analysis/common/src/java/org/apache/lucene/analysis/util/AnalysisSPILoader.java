@@ -22,7 +22,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Set;
-import java.util.ServiceLoader;
+import org.apache.lucene.util.SPIClassIterator;
 
 /**
  * Helper class for loading named SPIs from classpath (e.g. Tokenizers, TokenStreams).
@@ -39,10 +39,11 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
   public AnalysisSPILoader(Class<S> clazz, String[] suffixes) {
     this.clazz = clazz;
-    final ServiceLoader<S> loader = ServiceLoader.load(clazz);
+    final SPIClassIterator<S> loader = SPIClassIterator.get(clazz);
     final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<String,Class<? extends S>>();
-    for (final S service : loader) {
-      final String clazzName = service.getClass().getSimpleName();
+    while (loader.hasNext()) {
+      final Class<? extends S> service = loader.next();
+      final String clazzName = service.getSimpleName();
       int suffixIndex = -1;
       for (String suffix : suffixes) {
         suffixIndex = clazzName.lastIndexOf(suffix);
@@ -56,7 +57,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       // them used instead of others
       if (!services.containsKey(name)) {
         assert checkServiceName(name);
-        services.put(name, service.getClass().asSubclass(clazz));
+        services.put(name, service);
       }
     }
     this.services = Collections.unmodifiableMap(services);
