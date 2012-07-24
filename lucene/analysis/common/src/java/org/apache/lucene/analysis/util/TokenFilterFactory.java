@@ -36,6 +36,10 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
     return loader.newInstance(name);
   }
   
+  public static Class<? extends TokenFilterFactory> lookupClass(String name) {
+    return loader.lookupClass(name);
+  }
+  
   /** returns a list of all available tokenfilter names */
   public static Set<String> availableTokenFilters() {
     return loader.availableServices();

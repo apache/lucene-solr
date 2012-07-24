@@ -28,7 +28,7 @@ import java.util.ServiceLoader;
  * Helper class for loading named SPIs from classpath (e.g. Tokenizers, TokenStreams).
  * @lucene.internal
  */
-public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
+final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
   private final Map<String,Class<? extends S>> services;
   private final Class<S> clazz;
@@ -93,19 +93,25 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       return ('0' <= c && c <= '9');
   }
   
+  // TODO: do we even need this method?
   public S newInstance(String name) {
+    final Class<? extends S> service = lookupClass(name);
+    try {
+      return service.newInstance();
+    } catch (Exception e) {
+      throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
+            "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);
+    }
+  }
+  
+  public Class<? extends S> lookupClass(String name) {
     final Class<? extends S> service = services.get(name.toLowerCase(Locale.ROOT));
     if (service != null) {
-      try {
-        return service.newInstance();
-      } catch (Exception e) {
-        throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
-              "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);
-      }
+      return service;
     } else {
       throw new IllegalArgumentException("A SPI class of type "+clazz.getName()+" with name '"+name+"' does not exist. "+
-            "You need to add the corresponding JAR file supporting this SPI to your classpath."+
-            "The current classpath supports the following names: "+availableServices());
+          "You need to add the corresponding JAR file supporting this SPI to your classpath."+
+          "The current classpath supports the following names: "+availableServices());
     }
   }
 

@@ -36,6 +36,10 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
     return loader.newInstance(name);
   }
   
+  public static Class<? extends CharFilterFactory> lookupClass(String name) {
+    return loader.lookupClass(name);
+  }
+  
   /** returns a list of all available charfilter names */
   public static Set<String> availableCharFilters() {
     return loader.availableServices();

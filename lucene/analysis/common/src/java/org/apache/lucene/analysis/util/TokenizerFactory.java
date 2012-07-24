@@ -36,6 +36,10 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
     return loader.newInstance(name);
   }
   
+  public static Class<? extends TokenizerFactory> lookupClass(String name) {
+    return loader.lookupClass(name);
+  }
+  
   /** returns a list of all available tokenizer names */
   public static Set<String> availableTokenizers() {
     return loader.availableServices();

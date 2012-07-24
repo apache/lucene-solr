@@ -268,8 +268,8 @@ public final class FieldTypePluginLoader
       ("[schema.xml] analyzer/charFilter", CharFilterFactory.class, false, false) {
 
       @Override
-      protected CharFilterFactory createSPI(String name) {
-        return CharFilterFactory.forName(name);
+      protected Class<? extends CharFilterFactory> lookupSPI(String name) {
+        return CharFilterFactory.lookupClass(name);
       }
 
       @Override
@@ -306,8 +306,8 @@ public final class FieldTypePluginLoader
       ("[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
       
       @Override
-      protected TokenizerFactory createSPI(String name) {
-        return TokenizerFactory.forName(name);
+      protected Class<? extends TokenizerFactory> lookupSPI(String name) {
+        return TokenizerFactory.lookupClass(name);
       }
 
       @Override
@@ -349,8 +349,8 @@ public final class FieldTypePluginLoader
     {
       
       @Override
-      protected TokenFilterFactory createSPI(String name) {
-        return TokenFilterFactory.forName(name);
+      protected Class<? extends TokenFilterFactory> lookupSPI(String name) {
+        return TokenFilterFactory.lookupClass(name);
       }
 
       @Override

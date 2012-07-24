@@ -37,19 +37,18 @@ public abstract class AnalysisPluginLoader<S extends AbstractAnalysisFactory> ex
 
   @Override
   protected S create(ResourceLoader loader, String name, String className, Node node) throws Exception {
-    S instance = null;
+    Class<? extends S> clazz = null;
     Matcher m = legacyPattern.matcher(className);
     if (m.matches()) {
       try {
-        instance = createSPI(m.group(4));
+        clazz = lookupSPI(m.group(4));
       } catch (IllegalArgumentException ex) { 
         // ok
       }
     }
     
-    if (instance != null) {
-      // necessary because SolrResourceLoader manages its own list of 'awaiting ResourceLoaderAware'
-      className = instance.getClass().getName();
+    if (clazz != null) {
+      className = clazz.getName();
     }
     
     return super.create(loader, name, className, node);
@@ -58,5 +57,5 @@ public abstract class AnalysisPluginLoader<S extends AbstractAnalysisFactory> ex
   private static final Pattern legacyPattern = 
       Pattern.compile("((org\\.apache\\.solr\\.analysis\\.)|(solr\\.))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
   
-  protected abstract S createSPI(String name);
+  protected abstract Class<? extends S> lookupSPI(String name);
 }
