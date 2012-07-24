@@ -71,10 +71,8 @@ public class ChaosMonkey {
   
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
-      Map<String,List<SolrServer>> shardToClient,
       Map<String,CloudJettyRunner> shardToLeaderJetty) {
     this.shardToJetty = shardToJetty;
-    this.shardToClient = shardToClient;
     this.shardToLeaderJetty = shardToLeaderJetty;
     this.zkServer = zkServer;
     this.zkStateReader = zkStateReader;

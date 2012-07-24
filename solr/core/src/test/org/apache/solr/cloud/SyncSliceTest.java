@@ -26,13 +26,10 @@ import java.util.Set;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.FullSolrCloudTest.CloudSolrServerClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -122,7 +119,8 @@ public class SyncSliceTest extends FullSolrCloudTest {
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     
-    String baseUrl = ((HttpSolrServer) shardToClient.get("shard1").get(2)).getBaseURL();
+    String baseUrl = ((HttpSolrServer) shardToJetty.get("shard1").get(2).client.solrClient)
+        .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
     
     HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
@@ -145,21 +143,28 @@ public class SyncSliceTest extends FullSolrCloudTest {
     
     // kill the leader - new leader could have all the docs or be missing one
     CloudJettyRunner leaderJetty = shardToLeaderJetty.get("shard1");
-    CloudSolrServerClient leaderClient = leaderJetty.client;
-    Set<JettySolrRunner> jetties = new HashSet<JettySolrRunner>();
+
+    Set<CloudJettyRunner> jetties = new HashSet<CloudJettyRunner>();
     for (int i = 0; i < shardCount; i++) {
-      jetties.add(shardToJetty.get("shard1").get(i).jetty);
+      jetties.add(shardToJetty.get("shard1").get(i));
     }
     jetties.remove(leaderJetty);
     
     chaosMonkey.killJetty(leaderJetty);
 
-    JettySolrRunner upJetty = jetties.iterator().next();
+    CloudJettyRunner upJetty = jetties.iterator().next();
     // we are careful to make sure the downed node is no longer in the state,
     // because on some systems (especially freebsd w/ blackhole enabled), trying
     // to talk to a downed node causes grief
+    assertNotNull(upJetty.jetty.getDispatchFilter());
+    assertNotNull(upJetty.jetty.getDispatchFilter());
+    assertNotNull(upJetty.jetty.getDispatchFilter().getFilter());
+    
+    
     int tries = 0;
-    while (((SolrDispatchFilter) upJetty.getDispatchFilter().getFilter()).getCores().getZkController().getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(leaderClient).get(ZkStateReader.NODE_NAME_PROP))) {
+    while (((SolrDispatchFilter) upJetty.jetty.getDispatchFilter().getFilter())
+        .getCores().getZkController().getZkStateReader().getCloudState()
+        .liveNodesContain(leaderJetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
       if (tries++ == 120) {
         fail("Shard still reported as live in zk");
       }
@@ -184,7 +189,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
       
       updateMappingsFromZk(jettys, clients);
       
-      Set<String> theShards = shardToClient.keySet();
+      Set<String> theShards = shardToJetty.keySet();
       String failMessage = null;
       for (String shard : theShards) {
         failMessage = checkShardConsistency(shard, false);

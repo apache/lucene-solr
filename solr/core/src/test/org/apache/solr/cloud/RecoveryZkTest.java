@@ -100,8 +100,8 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     checkShardConsistency("shard1", false); 
     SolrQuery query = new SolrQuery("*:*");
     query.setParam("distrib", "false");
-    long client1Docs = shardToClient.get("shard1").get(0).query(query).getResults().getNumFound();
-    long client2Docs = shardToClient.get("shard1").get(1).query(query).getResults().getNumFound();
+    long client1Docs = shardToJetty.get("shard1").get(0).client.solrClient.query(query).getResults().getNumFound();
+    long client2Docs = shardToJetty.get("shard1").get(1).client.solrClient.query(query).getResults().getNumFound();
     
     assertTrue(client1Docs > 0);
     assertEquals(client1Docs, client2Docs);
