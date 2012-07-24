@@ -89,9 +89,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     
     waitForThingsToLevelOut();
 
-    // something wrong with this?
-    //del("*:*");
-    
+    del("*:*");
     List<String> skipServers = new ArrayList<String>();
     
     indexDoc(skipServers, id, 0, i1, 50, tlong, 50, t1,
