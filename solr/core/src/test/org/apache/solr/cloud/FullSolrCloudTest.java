@@ -109,28 +109,30 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   protected Map<String,SolrServer> shardToLeaderClient = new HashMap<String,SolrServer>();
   protected Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<String,CloudJettyRunner>();
   
-  class CloudJettyRunner {
+  static class CloudJettyRunner {
     JettySolrRunner jetty;
     String nodeName;
     String coreNodeName;
     String url;
+    CloudSolrServerClient client;
   }
   
   static class CloudSolrServerClient {
-    SolrServer client;
+    SolrServer solrClient;
     String shardName;
+    int port;
     
     public CloudSolrServerClient() {}
     
     public CloudSolrServerClient(SolrServer client) {
-      this.client = client;
+      this.solrClient = client;
     }
     
     @Override
     public int hashCode() {
       final int prime = 31;
       int result = 1;
-      result = prime * result + ((client == null) ? 0 : client.hashCode());
+      result = prime * result + ((solrClient == null) ? 0 : solrClient.hashCode());
       return result;
     }
     
@@ -140,9 +142,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       if (obj == null) return false;
       if (getClass() != obj.getClass()) return false;
       CloudSolrServerClient other = (CloudSolrServerClient) obj;
-      if (client == null) {
-        if (other.client != null) return false;
-      } else if (!client.equals(other.client)) return false;
+      if (solrClient == null) {
+        if (other.solrClient != null) return false;
+      } else if (!solrClient.equals(other.solrClient)) return false;
       return true;
     }
     
@@ -189,7 +191,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       }
       
       chaosMonkey = new ChaosMonkey(zkServer, zkStateReader,
-          DEFAULT_COLLECTION, shardToJetty, shardToClient, shardToLeaderClient,
+          DEFAULT_COLLECTION, shardToJetty, shardToClient,
           shardToLeaderJetty);
     }
     
@@ -359,7 +361,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           
           if (shard.getKey().contains(":" + port + "_")) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
-            csc.client = client;
+            csc.solrClient = client;
+            csc.port = port;
             csc.shardName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
             boolean isLeader = shard.getValue().containsKey(
                 ZkStateReader.LEADER_PROP);
@@ -409,6 +412,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             cjr.nodeName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
             cjr.coreNodeName = shard.getKey();
             cjr.url = shard.getValue().get(ZkStateReader.BASE_URL_PROP) + "/" + shard.getValue().get(ZkStateReader.CORE_NAME_PROP);
+            cjr.client = findClientByPort(port);
             list.add(cjr);
             if (isLeader) {
               shardToLeaderJetty.put(slice.getKey(), cjr);
@@ -431,6 +435,16 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
   }
   
+  private CloudSolrServerClient findClientByPort(int port) {
+    Set<CloudSolrServerClient> theClients = clientToInfo.keySet();
+    for (CloudSolrServerClient client : theClients) {
+      if (client.port == port) {
+        return client;
+      }
+    }
+    throw new IllegalArgumentException("Client with the give port does not exist:" + port);
+  }
+
   @Override
   protected void setDistributedParams(ModifiableSolrParams params) {
     
@@ -678,7 +692,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     query("q", "*:*", "sort", "n_tl1 desc");
     
     // kill a shard
-    JettySolrRunner deadShard = chaosMonkey.stopShard(SHARD2, 0);
+    CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD2, 0);
     cloudClient.connect();
     int tries = 0;
     while (cloudClient.getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(new CloudSolrServerClient(shardToClient.get(SHARD2).get(0))).get(ZkStateReader.NODE_NAME_PROP))) {
@@ -690,7 +704,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
 	
     // ensure shard is dead
     try {
-      index_specific(shardToClient.get(SHARD2).get(0), id, 999, i1, 107, t1,
+      index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1,
           "specific doc!");
       fail("This server should be down and this update should have failed");
     } catch (SolrServerException e) {
@@ -777,7 +791,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
     
     // this should trigger a recovery phase on deadShard
-    deadShard.start(true);
+    ChaosMonkey.start(deadShard.jetty);
     
     // make sure we have published we are recovering
     Thread.sleep(1500);
@@ -791,7 +805,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     
     // recover over 100 docs so we do more than just peer sync (replicate recovery)
-    deadShard = chaosMonkey.stopShard(SHARD2, 0);
+    chaosMonkey.stopJetty(deadShard);
     
     for (int i = 0; i < 226; i++) {
       doc = new SolrInputDocument();
@@ -804,7 +818,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     commit();
     
-    deadShard.start(true);
+    Thread.sleep(1500);
+    
+    ChaosMonkey.start(deadShard.jetty);
     
     // make sure we have published we are recovering
     Thread.sleep(1500);
@@ -1182,7 +1198,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   private SolrServer getClient(String nodeName) {
     for (CloudSolrServerClient client : clientToInfo.keySet()) {
       if (client.shardName.equals(nodeName)) {
-        return client.client;
+        return client.solrClient;
       }
     }
     return null;
@@ -1233,7 +1249,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       long count = 0;
       String currentState = clientToInfo.get(new CloudSolrServerClient(client))
           .get(ZkStateReader.STATE_PROP);
-      if (currentState != null && currentState.equals(ZkStateReader.ACTIVE)) {
+      if (currentState != null && currentState.equals(ZkStateReader.ACTIVE) && zkStateReader.getCloudState().liveNodesContain(clientToInfo.get(new CloudSolrServerClient(client))
+          .get(ZkStateReader.NODE_NAME_PROP))) {
         SolrQuery query = new SolrQuery("*:*");
         query.set("distrib", false);
         count = client.query(query).getResults().getNumFound();
