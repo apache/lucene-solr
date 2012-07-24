@@ -19,8 +19,8 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.core.SolrResourceLoader;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -32,7 +32,7 @@ import java.util.HashMap;
 public class TestStopFilterFactory extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new ResourceAsStreamResourceLoader(getClass());
     assertTrue("loader is null and it shouldn't be", loader != null);
     StopFilterFactory factory = new StopFilterFactory();
     Map<String, String> args = new HashMap<String, String>();

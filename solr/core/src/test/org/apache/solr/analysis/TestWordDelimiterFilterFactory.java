@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.miscellaneous;
+package org.apache.solr.analysis;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.BeforeClass;
@@ -33,6 +34,7 @@ import org.junit.Test;
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
  */
+// TODO: add a low-level test for this factory
 public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
 
   @BeforeClass

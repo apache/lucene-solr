@@ -20,8 +20,8 @@ package org.apache.lucene.analysis.core;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -35,7 +35,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamTestCase {
 
   @Test
   public void testInform() throws Exception {
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new ResourceAsStreamResourceLoader(getClass());
     TypeTokenFilterFactory factory = new TypeTokenFilterFactory();
     Map<String, String> args = new HashMap<String, String>();
     args.put("types", "stoptypes-1.txt");
@@ -95,7 +95,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamTestCase {
       args.put("enablePositionIncrements", "false");
       typeTokenFilterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
       typeTokenFilterFactory.init(args);
-      typeTokenFilterFactory.inform(new SolrResourceLoader(null, null));
+      typeTokenFilterFactory.inform(new ResourceAsStreamResourceLoader(getClass()));
       fail("not supplying 'types' parameter should cause an InitializationException");
     } catch (InitializationException e) {
       // everything ok

@@ -21,9 +21,10 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.TestStopFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.core.SolrResourceLoader;
 
 import java.io.StringReader;
 import java.util.Collections;
@@ -38,7 +39,7 @@ import java.util.HashMap;
 public class TestCommonGramsFilterFactory extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new ResourceAsStreamResourceLoader(TestStopFilter.class);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsFilterFactory factory = new CommonGramsFilterFactory();
     Map<String, String> args = new HashMap<String, String>();
@@ -88,7 +89,7 @@ public class TestCommonGramsFilterFactory extends BaseTokenStreamTestCase {
    * If no words are provided, then a set of english default stopwords is used.
    */
   public void testDefaults() throws Exception {
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new ResourceAsStreamResourceLoader(TestStopFilter.class);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsFilterFactory factory = new CommonGramsFilterFactory();
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
