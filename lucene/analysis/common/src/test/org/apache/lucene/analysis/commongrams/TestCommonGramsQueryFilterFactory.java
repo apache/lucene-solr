@@ -1,3 +1,5 @@
+package org.apache.lucene.analysis.commongrams;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,7 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -34,7 +35,7 @@ import java.util.HashMap;
  * used by the StopFilterFactoryTest TODO: consider creating separate test files
  * so this won't break if stop filter test files change
  **/
-public class CommonGramsQueryFilterFactoryTest extends BaseTokenStreamTestCase {
+public class TestCommonGramsQueryFilterFactory extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
     ResourceLoader loader = new SolrResourceLoader("solr/collection1");

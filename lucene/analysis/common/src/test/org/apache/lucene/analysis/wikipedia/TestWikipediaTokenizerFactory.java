@@ -1,12 +1,4 @@
-package org.apache.solr.analysis;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
+package org.apache.lucene.analysis.wikipedia;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,6 +16,14 @@ import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 
 /**
  * Simple tests to ensure the wikipedia tokenizer is working.

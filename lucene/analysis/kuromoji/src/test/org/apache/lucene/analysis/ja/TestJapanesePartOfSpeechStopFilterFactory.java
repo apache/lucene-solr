@@ -1,14 +1,4 @@
-package org.apache.solr.analysis;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrResourceLoader;
+package org.apache.lucene.analysis.ja;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,6 +16,16 @@ import org.apache.solr.core.SolrResourceLoader;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Simple tests for {@link JapanesePartOfSpeechStopFilterFactory}

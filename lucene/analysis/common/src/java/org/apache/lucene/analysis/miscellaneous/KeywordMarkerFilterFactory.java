@@ -1,10 +1,4 @@
-package org.apache.solr.analysis;
-
-import java.io.IOException;
-
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
-import org.apache.lucene.analysis.util.*;
-import org.apache.lucene.analysis.TokenStream;
+package org.apache.lucene.analysis.miscellaneous;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,6 +16,12 @@ import org.apache.lucene.analysis.TokenStream;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+
+import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link KeywordMarkerFilter}.

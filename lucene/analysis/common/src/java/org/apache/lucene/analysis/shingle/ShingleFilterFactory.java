@@ -1,3 +1,4 @@
+package org.apache.lucene.analysis.shingle;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -15,9 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.TokenStream;

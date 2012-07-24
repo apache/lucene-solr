@@ -1,3 +1,4 @@
+package org.apache.lucene.analysis.fr;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,11 +17,7 @@
  * limitations under the License.
  */
 
-
-package org.apache.solr.analysis;
-
 import org.apache.lucene.analysis.util.*;
-import org.apache.lucene.analysis.fr.*;
 
 import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;

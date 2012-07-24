@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.reverse;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

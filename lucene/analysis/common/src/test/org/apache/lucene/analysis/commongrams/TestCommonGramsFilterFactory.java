@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.commongrams;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,7 +35,7 @@ import java.util.HashMap;
  * used by the StopFilterFactoryTest TODO: consider creating separate test files
  * so this won't break if stop filter test files change
  **/
-public class CommonGramsFilterFactoryTest extends BaseTokenStreamTestCase {
+public class TestCommonGramsFilterFactory extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
     ResourceLoader loader = new SolrResourceLoader("solr/collection1");

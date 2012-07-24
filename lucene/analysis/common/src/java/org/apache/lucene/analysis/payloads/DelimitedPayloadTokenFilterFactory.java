@@ -1,4 +1,5 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.payloads;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,7 +29,6 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
-
 
 /**
  *

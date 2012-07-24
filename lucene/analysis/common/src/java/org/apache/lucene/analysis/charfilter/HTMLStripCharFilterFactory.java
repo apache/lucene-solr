@@ -1,5 +1,4 @@
-package org.apache.solr.analysis;
-
+package org.apache.lucene.analysis.charfilter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

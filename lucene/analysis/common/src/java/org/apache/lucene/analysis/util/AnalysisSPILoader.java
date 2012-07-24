@@ -40,15 +40,24 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   private final Map<String,Class<S>> modifiableServices;
   
   private final Class<S> clazz;
-
+  
   public AnalysisSPILoader(Class<S> clazz) {
+    this(clazz, new String[] { clazz.getSimpleName() });
+  }
+
+  public AnalysisSPILoader(Class<S> clazz, String[] suffixes) {
     this.clazz = clazz;
     final ServiceLoader<S> loader = ServiceLoader.load(clazz);
     final LinkedHashMap<String,Class<S>> services = new LinkedHashMap<String,Class<S>>();
-    final String suffix = clazz.getSimpleName();
     for (final S service : loader) {
       final String clazzName = service.getClass().getSimpleName();
-      final int suffixIndex = clazzName.lastIndexOf(suffix);
+      int suffixIndex = -1;
+      for (String suffix : suffixes) {
+        suffixIndex = clazzName.lastIndexOf(suffix);
+        if (suffixIndex != -1) {
+          break;
+        }
+      }
       final String name = clazzName.substring(0, suffixIndex).toLowerCase(Locale.ROOT);
       // only add the first one for each name, later services will be ignored
       // this allows to place services before others in classpath to make 

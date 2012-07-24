@@ -1,13 +1,4 @@
-package org.apache.solr.analysis;
-
-import java.io.Reader;
-import java.io.StringReader;
-
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
+package org.apache.lucene.analysis.el;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +16,15 @@ import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.Reader;
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
 
 /**
  * Simple tests to ensure the Greek stem filter factory is working.

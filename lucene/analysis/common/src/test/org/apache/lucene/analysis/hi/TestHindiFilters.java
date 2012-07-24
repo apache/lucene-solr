@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.hi;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,8 @@ import java.util.Map;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.in.IndicNormalizationFilterFactory;
+import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
 
 /**
  * Simple tests to ensure the Hindi filter Factories are working.

@@ -1,11 +1,4 @@
-package org.apache.solr.analysis;
-
-import java.io.Reader;
-import java.io.StringReader;
-
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
+package org.apache.lucene.analysis.en;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,6 +16,13 @@ import org.apache.lucene.analysis.TokenStream;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.Reader;
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Simple tests to ensure the kstem filter factory is working.

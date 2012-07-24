@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
-public class LengthFilterTest extends BaseTokenStreamTestCase {
+public class TestLengthFilterFactory extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
     LengthFilterFactory factory = new LengthFilterFactory();

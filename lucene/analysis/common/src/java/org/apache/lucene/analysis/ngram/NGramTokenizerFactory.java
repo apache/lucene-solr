@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.ngram;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,22 +35,22 @@ import java.util.Map;
  *
  */
 public class NGramTokenizerFactory extends TokenizerFactory {
-    private int maxGramSize = 0;
-    private int minGramSize = 0;
+  private int maxGramSize = 0;
+  private int minGramSize = 0;
+  
+  /** Initializes the n-gram min and max sizes and the side from which one should start tokenizing. */
+  @Override
+  public void init(Map<String, String> args) {
+    super.init(args);
+    String maxArg = args.get("maxGramSize");
+    maxGramSize = (maxArg != null ? Integer.parseInt(maxArg) : NGramTokenizer.DEFAULT_MAX_NGRAM_SIZE);
     
-    /** Initializes the n-gram min and max sizes and the side from which one should start tokenizing. */
-    @Override
-    public void init(Map<String, String> args) {
-        super.init(args);
-        String maxArg = args.get("maxGramSize");
-        maxGramSize = (maxArg != null ? Integer.parseInt(maxArg) : NGramTokenizer.DEFAULT_MAX_NGRAM_SIZE);
-
-        String minArg = args.get("minGramSize");
-        minGramSize = (minArg != null ? Integer.parseInt(minArg) : NGramTokenizer.DEFAULT_MIN_NGRAM_SIZE);
-    }
-
-    /** Creates the {@link TokenStream} of n-grams from the given {@link Reader}. */
-    public NGramTokenizer create(Reader input) {
-        return new NGramTokenizer(input, minGramSize, maxGramSize);
-    }
+    String minArg = args.get("minGramSize");
+    minGramSize = (minArg != null ? Integer.parseInt(minArg) : NGramTokenizer.DEFAULT_MIN_NGRAM_SIZE);
+  }
+  
+  /** Creates the {@link TokenStream} of n-grams from the given {@link Reader}. */
+  public NGramTokenizer create(Reader input) {
+    return new NGramTokenizer(input, minGramSize, maxGramSize);
+  }
 }

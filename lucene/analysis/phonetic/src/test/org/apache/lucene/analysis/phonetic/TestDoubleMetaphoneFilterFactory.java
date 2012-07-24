@@ -1,3 +1,5 @@
+package org.apache.lucene.analysis.phonetic;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,7 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.analysis;
 
 import java.io.StringReader;
 import java.util.HashMap;
@@ -26,7 +27,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-public class DoubleMetaphoneFilterFactoryTest extends BaseTokenStreamTestCase {
+public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
 
   public void testDefaults() throws Exception {
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();

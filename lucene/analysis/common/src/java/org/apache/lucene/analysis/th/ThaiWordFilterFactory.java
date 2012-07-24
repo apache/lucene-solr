@@ -1,3 +1,4 @@
+package org.apache.lucene.analysis.th;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,8 +17,6 @@
  * limitations under the License.
  */
 
-
-package org.apache.solr.analysis;
 import org.apache.lucene.analysis.th.ThaiWordFilter;
 
 import org.apache.lucene.analysis.TokenStream;

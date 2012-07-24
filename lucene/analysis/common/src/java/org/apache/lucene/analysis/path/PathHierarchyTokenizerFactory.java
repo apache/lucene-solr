@@ -1,4 +1,5 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.path;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,7 +25,6 @@ import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-
 
 /**
  * Factory for {@link PathHierarchyTokenizer}. 
