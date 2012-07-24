@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.ServiceConfigurationError;
 
@@ -61,7 +62,7 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
     try {
       this.profilesEnum = loader.getResources(META_INF_SERVICES + clazz.getName());
     } catch (IOException ioe) {
-      throw new ServiceConfigurationError("Error loading SPI classes.", ioe);
+      throw new ServiceConfigurationError("Error loading SPI profiles for type " + clazz.getName() + " from classpath", ioe);
     }
     this.linesIterator = Collections.<String>emptySet().iterator();
   }
@@ -74,8 +75,8 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
       } else {
         lines = new ArrayList<String>();
       }
+      final URL url = profilesEnum.nextElement();
       try {
-        final URL url = profilesEnum.nextElement();
         final InputStream in = url.openStream();
         IOException priorE = null;
         try {
@@ -96,7 +97,7 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
           IOUtils.closeWhileHandlingException(priorE, in);
         }
       } catch (IOException ioe) {
-        throw new ServiceConfigurationError("Error loading SPI classes.", ioe);
+        throw new ServiceConfigurationError("Error loading SPI class list from URL: " + url, ioe);
       }
       if (!lines.isEmpty()) {
         this.linesIterator = lines.iterator();
@@ -120,10 +121,11 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
     assert linesIterator.hasNext();
     final String c = linesIterator.next();
     try {
-      // don't initialize the class:
+      // don't initialize the class (pass false as 2nd parameter):
       return Class.forName(c, false, loader).asSubclass(clazz);
     } catch (ClassNotFoundException cnfe) {
-      throw new ServiceConfigurationError("SPI class not found: " + c);
+      throw new ServiceConfigurationError(String.format(Locale.ROOT, "A SPI class of type %s with classname %s does not exist, "+
+        "please fix the file '%s%s' in your classpath.", clazz.getName(), c, META_INF_SERVICES, clazz.getName()));
     }
   }
   
