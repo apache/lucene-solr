@@ -26,6 +26,7 @@
 	<classpathentry kind="src" path="lucene/analysis/kuromoji/src/resources"/>
 	<classpathentry kind="src" path="lucene/analysis/kuromoji/src/test"/>
 	<classpathentry kind="src" path="lucene/analysis/phonetic/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/phonetic/src/resources"/>
 	<classpathentry kind="src" path="lucene/analysis/phonetic/src/test"/>
 	<classpathentry kind="src" path="lucene/analysis/smartcn/src/java"/>
 	<classpathentry kind="src" path="lucene/analysis/smartcn/src/resources"/>
