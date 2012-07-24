@@ -22,8 +22,6 @@ import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator;
 import org.apache.lucene.analysis.util.*;
 
-import org.apache.solr.common.util.StrUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +65,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
     String types = args.get(TYPES);
     if (types != null) {
       try {
-        List<String> files = StrUtils.splitFileNames( types );
+        List<String> files = splitFileNames( types );
         List<String> wlist = new ArrayList<String>();
         for( String file : files ){
           List<String> lines = loader.getLines( file.trim() );

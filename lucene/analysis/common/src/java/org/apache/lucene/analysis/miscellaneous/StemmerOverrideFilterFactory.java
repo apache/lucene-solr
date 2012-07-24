@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.util.*;
-import org.apache.solr.common.util.StrUtils;
 
 /**
  * Factory for {@link StemmerOverrideFilter}.
@@ -45,7 +44,7 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
     ignoreCase = getBoolean("ignoreCase", false);
     if (dictionaryFiles != null) {
       assureMatchVersion();
-      List<String> files = StrUtils.splitFileNames(dictionaryFiles);
+      List<String> files = splitFileNames(dictionaryFiles);
       try {
         if (files.size() > 0) {
           dictionary = new CharArrayMap<String>(luceneMatchVersion, 

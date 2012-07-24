@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.TypeTokenFilter;
 import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -50,7 +49,7 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
     useWhitelist = getBoolean("useWhitelist", false);
     if (stopTypesFiles != null) {
       try {
-        List<String> files = StrUtils.splitFileNames(stopTypesFiles);
+        List<String> files = splitFileNames(stopTypesFiles);
         if (files.size() > 0) {
           stopTypes = new HashSet<String>();
           for (String file : files) {

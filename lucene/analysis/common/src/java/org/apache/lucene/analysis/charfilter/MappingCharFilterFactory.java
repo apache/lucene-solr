@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.util.*;
-import org.apache.solr.common.util.StrUtils;
 
 /**
  * Factory for {@link MappingCharFilter}. 
@@ -62,7 +61,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
           wlist = loader.getLines( mapping );
         }
         else{
-          List<String> files = StrUtils.splitFileNames( mapping );
+          List<String> files = splitFileNames( mapping );
           wlist = new ArrayList<String>();
           for( String file : files ){
             List<String> lines = loader.getLines( file.trim() );
