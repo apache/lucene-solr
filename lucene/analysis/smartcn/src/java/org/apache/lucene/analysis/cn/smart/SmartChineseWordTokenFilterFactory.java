@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.cn.smart;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,18 +17,22 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.cn.smart.SentenceTokenizer;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
- * Factory for the SmartChineseAnalyzer {@link SentenceTokenizer}
+ * Factory for the SmartChineseAnalyzer {@link WordTokenFilter}
+ * <p>
+ * Note: this class will currently emit tokens for punctuation. So you should either add
+ * a WordDelimiterFilter after to remove these (with concatenate off), or use the 
+ * SmartChinese stoplist with a StopFilterFactory via:
+ * <code>words="org/apache/lucene/analysis/cn/smart/stopwords.txt"</code>
  * @lucene.experimental
  */
-public class SmartChineseSentenceTokenizerFactory extends TokenizerFactory {
-  public Tokenizer create(Reader input) {
-    return new SentenceTokenizer(input);
+public class SmartChineseWordTokenFilterFactory extends TokenFilterFactory {
+  public TokenFilter create(TokenStream input) {
+      return new WordTokenFilter(input);
   }
 }
