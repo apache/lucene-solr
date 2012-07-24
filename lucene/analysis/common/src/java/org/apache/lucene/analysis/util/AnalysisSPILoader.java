@@ -30,15 +30,7 @@ import java.util.ServiceLoader;
  */
 public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
-  private final Map<String,Class<S>> services;
-
-  /** This field is a hack for LuceneTestCase to get access
-   * to the modifiable map (to work around bugs in IBM J9) */
-  @SuppressWarnings("unused")
-  @Deprecated
-  // Hackidy-Häck-Hack for bugs in IBM J9 ServiceLoader
-  private final Map<String,Class<S>> modifiableServices;
-  
+  private final Map<String,Class<? extends S>> services;
   private final Class<S> clazz;
   
   public AnalysisSPILoader(Class<S> clazz) {
@@ -48,7 +40,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   public AnalysisSPILoader(Class<S> clazz, String[] suffixes) {
     this.clazz = clazz;
     final ServiceLoader<S> loader = ServiceLoader.load(clazz);
-    final LinkedHashMap<String,Class<S>> services = new LinkedHashMap<String,Class<S>>();
+    final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<String,Class<? extends S>>();
     for (final S service : loader) {
       final String clazzName = service.getClass().getSimpleName();
       int suffixIndex = -1;
@@ -64,10 +56,11 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       // them used instead of others
       if (!services.containsKey(name)) {
         assert checkServiceName(name);
-        services.put(name, (Class<S>) service.getClass());
+        @SuppressWarnings("unchecked")
+        final Class<? extends S> sclazz = (Class<? extends S>) service.getClass();
+        services.put(name, sclazz);
       }
     }
-    this.modifiableServices = services; // hack, remove when IBM J9 is fixed!
     this.services = Collections.unmodifiableMap(services);
   }
   
@@ -103,13 +96,13 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   }
   
   public S newInstance(String name) {
-    final Class<S> service = services.get(name.toLowerCase(Locale.ROOT));
+    final Class<? extends S> service = services.get(name.toLowerCase(Locale.ROOT));
     if (service != null) {
       try {
         return service.newInstance();
       } catch (Exception e) {
         throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
-        		"This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);
+              "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);
       }
     } else {
       throw new IllegalArgumentException("A SPI class of type "+clazz.getName()+" with name '"+name+"' does not exist. "+
