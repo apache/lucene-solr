@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 
+import org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
