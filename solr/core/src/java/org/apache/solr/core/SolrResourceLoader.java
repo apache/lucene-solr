@@ -420,13 +420,12 @@ public class SolrResourceLoader implements ResourceLoader
         spiLoaders.put(TokenFilterFactory.class, TokenFilterFactory.getSPILoader(classLoader));
         expectedTypesSPILoaders.put(classLoader, spiLoaders);
       }
-      AnalysisSPILoader<? extends AbstractAnalysisFactory> loader = spiLoaders.get(expectedType);
+      @SuppressWarnings("unchecked") final AnalysisSPILoader<? extends T> loader =
+        (AnalysisSPILoader<? extends T>) spiLoaders.get(expectedType);
       if (loader != null) {
         // it's a correct expected type for analysis! Let's go on!
         try {
-          @SuppressWarnings("unchecked")
-          final Class<? extends T> cl = (Class<? extends T>) loader.lookupClass(m.group(4));
-          return clazz = cl;
+          return clazz = loader.lookupClass(m.group(4));
         } catch (IllegalArgumentException ex) { 
           // ok, we fall back to legacy loading
         }
