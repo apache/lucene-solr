@@ -844,7 +844,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (hitOOM) {
           rollbackInternal();
         } else {
-          closeInternal(waitForMerges, !hitOOM);
+          closeInternal(waitForMerges, true);
         }
       }
     }
@@ -872,7 +872,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   private void closeInternal(boolean waitForMerges, boolean doFlush) throws IOException {
-
+    boolean interrupted = Thread.interrupted();
     try {
 
       if (pendingCommit != null) {
@@ -893,17 +893,35 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         docWriter.abort(); // already closed
       }
 
-      if (waitForMerges)
-        // Give merge scheduler last chance to run, in case
-        // any pending merges are waiting:
-        mergeScheduler.merge(this);
-
+      if (waitForMerges) {
+        try {
+          // Give merge scheduler last chance to run, in case
+          // any pending merges are waiting:
+          mergeScheduler.merge(this);
+        } catch (ThreadInterruptedException tie) {
+          // ignore any interruption, does not matter
+          interrupted = true;
+        }
+      }
+      
       mergePolicy.close();
 
       synchronized(this) {
-        finishMerges(waitForMerges);
+        for (;;) {
+          try {
+            finishMerges(waitForMerges && !interrupted);
+            break;
+          } catch (ThreadInterruptedException tie) {
+            // by setting the interrupted status, the
+            // next call to finishMerges will pass false,
+            // so it will not wait
+            interrupted = true;
+          }
+        }
         stopMerges = true;
       }
+      
+      // shutdown scheduler and all threads (this call is not interruptible):
       mergeScheduler.close();
 
       if (infoStream.isEnabled("IW")) {
@@ -945,6 +963,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
         }
       }
+      // finally, restore interrupt status:
+      if (interrupted) Thread.currentThread().interrupt();
     }
   }
 

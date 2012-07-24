@@ -243,27 +243,34 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     sync();
   }
 
-  /** Wait for any running merge threads to finish */
+  /** Wait for any running merge threads to finish. This call is not interruptible as used by {@link #close()}. */
   public void sync() {
-    while (true) {
-      MergeThread toSync = null;
-      synchronized (this) {
-        for (MergeThread t : mergeThreads) {
-          if (t.isAlive()) {
-            toSync = t;
-            break;
+    boolean interrupted = false;
+    try {
+      while (true) {
+        MergeThread toSync = null;
+        synchronized (this) {
+          for (MergeThread t : mergeThreads) {
+            if (t.isAlive()) {
+              toSync = t;
+              break;
+            }
           }
         }
-      }
-      if (toSync != null) {
-        try {
-          toSync.join();
-        } catch (InterruptedException ie) {
-          throw new ThreadInterruptedException(ie);
+        if (toSync != null) {
+          try {
+            toSync.join();
+          } catch (InterruptedException ie) {
+            // ignore this Exception, we will retry until all threads are dead
+            interrupted = true;
+          }
+        } else {
+          break;
         }
-      } else {
-        break;
       }
+    } finally {
+      // finally, restore interrupt status:
+      if (interrupted) Thread.currentThread().interrupt();
     }
   }
 
