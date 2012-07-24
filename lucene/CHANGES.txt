@@ -100,6 +100,9 @@ Bug Fixes
 * LUCENE-4234: Exception when FacetsCollector is used with ScoreFacetRequest, 
   and the number of matching documents is too large. (Gilad Barkai via Shai Erera)
 
+* LUCENE-4245: Make IndexWriter#close() and MergeScheduler#close()
+  non-interruptible.  (Mark Miller, Uwe Schindler)
+
 Build
 
 * LUCENE-4094: Support overriding file.encoding on forked test JVMs
