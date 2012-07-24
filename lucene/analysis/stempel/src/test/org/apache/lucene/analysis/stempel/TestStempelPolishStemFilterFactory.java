@@ -1,11 +1,4 @@
-package org.apache.solr.analysis;
-
-import java.io.StringReader;
-
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.solr.core.SolrResourceLoader;
+package org.apache.lucene.analysis.stempel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,6 +17,12 @@ import org.apache.solr.core.SolrResourceLoader;
  * limitations under the License.
  */
 
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+
 /**
  * Tests for {@link StempelPolishStemFilterFactory}
  */
@@ -31,7 +30,7 @@ public class TestStempelPolishStemFilterFactory extends BaseTokenStreamTestCase 
   public void testBasics() throws Exception {
     StringReader document = new StringReader("studenta studenci");
     StempelPolishStemFilterFactory factory = new StempelPolishStemFilterFactory();
-    factory.inform(new SolrResourceLoader(null, null));
+    factory.inform(new ResourceAsStreamResourceLoader(getClass()));
     TokenStream ts = factory.create(new WhitespaceTokenizer(TEST_VERSION_CURRENT, document));
     assertTokenStreamContents(ts,
         new String[] { "student", "student" });

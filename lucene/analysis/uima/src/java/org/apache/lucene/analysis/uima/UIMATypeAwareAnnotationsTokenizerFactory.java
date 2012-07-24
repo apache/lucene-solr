@@ -1,4 +1,4 @@
-package org.apache.solr.uima.analysis;
+package org.apache.lucene.analysis.uima;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,29 +18,31 @@ package org.apache.solr.uima.analysis;
  */
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.uima.UIMATypeAwareAnnotationsTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.analysis.uima.UIMAAnnotationsTokenizer;
 
 import java.io.Reader;
 import java.util.Map;
 
 /**
- * {@link org.apache.lucene.analysis.util.TokenizerFactory} for {@link UIMAAnnotationsTokenizer}
+ * {@link org.apache.lucene.analysis.util.TokenizerFactory} for {@link UIMATypeAwareAnnotationsTokenizer}
  */
-public class UIMAAnnotationsTokenizerFactory extends TokenizerFactory {
+public class UIMATypeAwareAnnotationsTokenizerFactory extends TokenizerFactory {
 
   private String descriptorPath;
   private String tokenType;
+  private String featurePath;
 
   @Override
   public void init(Map<String, String> args) {
     super.init(args);
     descriptorPath = args.get("descriptorPath");
     tokenType = args.get("tokenType");
+    featurePath = args.get("featurePath");
   }
 
   @Override
   public Tokenizer create(Reader input) {
-    return new UIMAAnnotationsTokenizer(descriptorPath, tokenType, input);
+    return new UIMATypeAwareAnnotationsTokenizer(descriptorPath, tokenType, featurePath, input);
   }
 }

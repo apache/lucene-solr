@@ -38,6 +38,7 @@
 	<classpathentry kind="src" path="lucene/analysis/morfologik/src/resources"/>
 	<classpathentry kind="src" path="lucene/analysis/morfologik/src/test"/>
 	<classpathentry kind="src" path="lucene/analysis/uima/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/uima/src/resources"/>
 	<classpathentry kind="src" path="lucene/analysis/uima/src/test"/>
 	<classpathentry kind="src" path="lucene/benchmark/src/java"/>
 	<classpathentry kind="src" path="lucene/benchmark/src/test"/>

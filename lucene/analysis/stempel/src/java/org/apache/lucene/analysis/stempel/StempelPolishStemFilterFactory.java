@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.stempel;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,8 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.stempel.StempelFilter;
 import org.apache.lucene.analysis.stempel.StempelStemmer;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.egothor.stemmer.Trie;
@@ -34,7 +33,7 @@ import org.egothor.stemmer.Trie;
  */
 public class StempelPolishStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private Trie stemmer = null;
-  private static final String STEMTABLE = "org/apache/lucene/analysis/pl/stemmer_20000.tbl";
+  private static final String STEMTABLE = "/org/apache/lucene/analysis/pl/stemmer_20000.tbl";
   
   public TokenStream create(TokenStream input) {
     return new StempelFilter(input, new StempelStemmer(stemmer));
@@ -44,7 +43,7 @@ public class StempelPolishStemFilterFactory extends TokenFilterFactory implement
     try {
       stemmer = StempelStemmer.load(loader.openResource(STEMTABLE));
     } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load stem table: " + STEMTABLE);
+      throw new InitializationException("Could not load stem table: " + STEMTABLE, e);
     }
   }
 }
