@@ -895,45 +895,46 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
         
       } finally {
-        // clean up merge scheduler in all cases, although flushing may have failed:
-        interrupted = Thread.interrupted();
-      
-        if (waitForMerges) {
-          try {
-            // Give merge scheduler last chance to run, in case
-            // any pending merges are waiting:
-            mergeScheduler.merge(this);
-          } catch (ThreadInterruptedException tie) {
-            // ignore any interruption, does not matter
-            interrupted = true;
-            if (infoStream.isEnabled("IW")) {
-              infoStream.message("IW", "interrupted while waiting for final merges");
-            }
-          }
-        }
+        try {
+          // clean up merge scheduler in all cases, although flushing may have failed:
+          interrupted = Thread.interrupted();
         
-        mergePolicy.close();
-
-        synchronized(this) {
-          for (;;) {
+          if (waitForMerges) {
             try {
-              finishMerges(waitForMerges && !interrupted);
-              break;
+              // Give merge scheduler last chance to run, in case
+              // any pending merges are waiting:
+              mergeScheduler.merge(this);
             } catch (ThreadInterruptedException tie) {
-              // by setting the interrupted status, the
-              // next call to finishMerges will pass false,
-              // so it will not wait
+              // ignore any interruption, does not matter
               interrupted = true;
               if (infoStream.isEnabled("IW")) {
-                infoStream.message("IW", "interrupted while waiting for merges to finish");
+                infoStream.message("IW", "interrupted while waiting for final merges");
               }
             }
           }
-          stopMerges = true;
+          
+          synchronized(this) {
+            for (;;) {
+              try {
+                finishMerges(waitForMerges && !interrupted);
+                break;
+              } catch (ThreadInterruptedException tie) {
+                // by setting the interrupted status, the
+                // next call to finishMerges will pass false,
+                // so it will not wait
+                interrupted = true;
+                if (infoStream.isEnabled("IW")) {
+                  infoStream.message("IW", "interrupted while waiting for merges to finish");
+                }
+              }
+            }
+            stopMerges = true;
+          }
+          
+        } finally {
+          // shutdown policy, scheduler and all threads (this call is not interruptible):
+          IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler);
         }
-        
-        // shutdown scheduler and all threads (this call is not interruptible):
-        mergeScheduler.close();
       }
 
       if (infoStream.isEnabled("IW")) {
