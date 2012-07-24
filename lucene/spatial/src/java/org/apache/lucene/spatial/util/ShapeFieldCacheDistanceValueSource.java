@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.util;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,8 +17,6 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.util;
-
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -28,17 +28,20 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An implementation of the Lucene ValueSource model to support spatial relevance ranking.
+ * An implementation of the Lucene ValueSource that returns the spatial distance
+ * between an input point and a document's points in
+ * {@link ShapeFieldCacheProvider}. The shortest distance is returned if a
+ * document has more than one point.
  *
  * @lucene.internal
  */
-public class CachedDistanceValueSource extends ValueSource {
+public class ShapeFieldCacheDistanceValueSource extends ValueSource {
 
   private final ShapeFieldCacheProvider<Point> provider;
   private final DistanceCalculator calculator;
   private final Point from;
 
-  public CachedDistanceValueSource(Point from, DistanceCalculator calc, ShapeFieldCacheProvider<Point> provider) {
+  public ShapeFieldCacheDistanceValueSource(Point from, DistanceCalculator calc, ShapeFieldCacheProvider<Point> provider) {
     this.from = from;
     this.provider = provider;
     this.calculator = calc;
@@ -46,7 +49,7 @@ public class CachedDistanceValueSource extends ValueSource {
 
   @Override
   public String description() {
-    return "DistanceValueSource("+calculator+")";
+    return getClass().getSimpleName()+"("+calculator+")";
   }
 
   @Override
@@ -85,7 +88,7 @@ public class CachedDistanceValueSource extends ValueSource {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    CachedDistanceValueSource that = (CachedDistanceValueSource) o;
+    ShapeFieldCacheDistanceValueSource that = (ShapeFieldCacheDistanceValueSource) o;
 
     if (calculator != null ? !calculator.equals(that.calculator) : that.calculator != null) return false;
     if (from != null ? !from.equals(that.from) : that.from != null) return false;

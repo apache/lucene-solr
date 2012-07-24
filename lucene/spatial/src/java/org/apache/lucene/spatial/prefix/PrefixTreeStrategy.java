@@ -30,7 +30,7 @@ import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.tree.Node;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
-import org.apache.lucene.spatial.util.CachedDistanceValueSource;
+import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
 
 import java.util.Iterator;
 import java.util.List;
@@ -144,7 +144,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
       }
     }
     Point point = args.getShape().getCenter();
-    return new CachedDistanceValueSource(point, calc, p);
+    return new ShapeFieldCacheDistanceValueSource(point, calc, p);
   }
 
   public SpatialPrefixTree getGrid() {
