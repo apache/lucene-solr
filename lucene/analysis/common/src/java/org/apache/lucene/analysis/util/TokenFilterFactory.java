@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
+import java.util.Set;
+
 import org.apache.lucene.analysis.TokenStream;
 
 /**
@@ -25,6 +27,19 @@ import org.apache.lucene.analysis.TokenStream;
  */
 public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
+  private static final AnalysisSPILoader<TokenFilterFactory> loader =
+      new AnalysisSPILoader<TokenFilterFactory>(TokenFilterFactory.class);
+  
+  /** looks up a tokenfilter by name */
+  public static TokenFilterFactory forName(String name) {
+    return loader.newInstance(name);
+  }
+  
+  /** returns a list of all available tokenfilter names */
+  public static Set<String> availableTokenFilters() {
+    return loader.availableServices();
+  }
+  
   /** Transform the specified input TokenStream */
   public abstract TokenStream create(TokenStream input);
 }

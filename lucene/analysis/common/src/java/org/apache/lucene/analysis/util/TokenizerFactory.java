@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.util;
 import org.apache.lucene.analysis.Tokenizer;
 
 import java.io.Reader;
+import java.util.Set;
 
 /**
  * Abstract parent class for analysis factories that create {@link Tokenizer}
@@ -27,6 +28,19 @@ import java.io.Reader;
  */
 public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 
+  private static final AnalysisSPILoader<TokenizerFactory> loader =
+      new AnalysisSPILoader<TokenizerFactory>(TokenizerFactory.class);
+  
+  /** looks up a tokenizer by name */
+  public static TokenizerFactory forName(String name) {
+    return loader.newInstance(name);
+  }
+  
+  /** returns a list of all available tokenizer names */
+  public static Set<String> availableTokenizers() {
+    return loader.availableServices();
+  }
+  
   /** Creates a TokenStream of the specified input */
   public abstract Tokenizer create(Reader input);
 }
