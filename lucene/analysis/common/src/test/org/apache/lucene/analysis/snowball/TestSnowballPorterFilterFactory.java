@@ -21,19 +21,16 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.tartarus.snowball.ext.EnglishStemmer;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 
 public class TestSnowballPorterFilterFactory extends BaseTokenStreamTestCase {
 
@@ -53,11 +50,22 @@ public class TestSnowballPorterFilterFactory extends BaseTokenStreamTestCase {
 
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new LinesMockSolrResourceLoader(new ArrayList<String>()));
+    factory.inform(new StringMockResourceLoader(""));
     Tokenizer tokenizer = new MockTokenizer(
-        new StringReader(StrUtils.join(Arrays.asList(test), ' ')), MockTokenizer.WHITESPACE, false);
+        new StringReader(join(test, ' ')), MockTokenizer.WHITESPACE, false);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, gold);
+  }
+  
+  String join(String[] stuff, char sep) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < stuff.length; i++) {
+      if (i > 0) {
+        sb.append(sep);
+      }
+      sb.append(stuff[i]);
+    }
+    return sb.toString();
   }
 
   class LinesMockSolrResourceLoader implements ResourceLoader {
@@ -85,7 +93,7 @@ public class TestSnowballPorterFilterFactory extends BaseTokenStreamTestCase {
    */
   public void testProtected() throws Exception {
     SnowballPorterFilterFactory factory = new SnowballPorterFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new StringMockResourceLoader("ridding");
     Map<String,String> args = new HashMap<String,String>();
     args.put("protected", "protwords.txt");
     args.put("language", "English");

@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
 
 /**
  * Simple tests to ensure the Hunspell stemmer loads from factory
@@ -34,11 +34,11 @@ public class TestHunspellStemFilterFactory extends BaseTokenStreamTestCase {
   public void testStemming() throws Exception {
     HunspellStemFilterFactory factory = new HunspellStemFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    args.put("dictionary", "hunspell-test.dic");
-    args.put("affix", "hunspell-test.aff");
+    args.put("dictionary", "test.dic");
+    args.put("affix", "test.aff");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new SolrResourceLoader("solr/collection1"));
+    factory.inform(new ResourceAsStreamResourceLoader(getClass()));
     
     Reader reader = new StringReader("abc");
     TokenStream stream = factory.create(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));

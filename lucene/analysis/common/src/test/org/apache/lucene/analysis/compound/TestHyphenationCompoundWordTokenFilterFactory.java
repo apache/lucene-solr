@@ -26,8 +26,8 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Simple tests to ensure the Hyphenation compound filter factory is working.
@@ -40,7 +40,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     Reader reader = new StringReader("min veninde som er lidt af en læsehest");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new ResourceAsStreamResourceLoader(getClass());
     Map<String,String> args = new HashMap<String,String>();
     args.put("hyphenator", "da_UTF8.xml");
     args.put("dictionary", "da_compoundDictionary.txt");
@@ -64,7 +64,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     Reader reader = new StringReader("basketballkurv");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new ResourceAsStreamResourceLoader(getClass());
     Map<String,String> args = new HashMap<String,String>();
     args.put("hyphenator", "da_UTF8.xml");
     args.put("minSubwordSize", "2");

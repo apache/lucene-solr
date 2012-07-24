@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.lucene.analysis.util.StringMockResourceLoader;
 
 /**
  * Simple tests to ensure the keyword marker filter factory is working.
@@ -40,7 +40,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     KeywordMarkerFilterFactory factory = new KeywordMarkerFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new StringMockResourceLoader("cats");
     args.put("protected", "protwords.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
@@ -55,7 +55,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     KeywordMarkerFilterFactory factory = new KeywordMarkerFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new StringMockResourceLoader("cats");
     args.put("protected", "protwords.txt");
     args.put("ignoreCase", "true");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);

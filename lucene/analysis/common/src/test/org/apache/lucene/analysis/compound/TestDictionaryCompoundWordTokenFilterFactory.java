@@ -26,8 +26,8 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Simple tests to ensure the Dictionary compound filter factory is working.
@@ -40,7 +40,7 @@ public class TestDictionaryCompoundWordTokenFilterFactory extends BaseTokenStrea
     Reader reader = new StringReader("I like to play softball");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     DictionaryCompoundWordTokenFilterFactory factory = new DictionaryCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new ResourceAsStreamResourceLoader(getClass());
     Map<String,String> args = new HashMap<String,String>();
     args.put("dictionary", "compoundDictionary.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);

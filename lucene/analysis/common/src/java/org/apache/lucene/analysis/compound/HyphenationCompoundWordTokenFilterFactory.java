@@ -17,12 +17,12 @@ package org.apache.lucene.analysis.compound;
  * limitations under the License.
  */
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.CompoundWordTokenFilterBase;
 import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.util.IOUtils;
 
 import java.util.Map;
 import java.io.InputStream;
@@ -99,7 +99,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
     } catch (Exception e) { // TODO: getHyphenationTree really shouldn't throw "Exception"
       throw new InitializationException("Exception thrown while loading dictionary and hyphenation file", e);
     } finally {
-      IOUtils.closeQuietly(stream);
+      IOUtils.closeWhileHandlingException(stream);
     }
   }
   
