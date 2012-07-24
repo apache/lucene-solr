@@ -13,4 +13,4 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# TODO: add the iteration mark factory once moved over.
+org.apache.lucene.analysis.ja.JapaneseIterationMarkCharFilterFactory

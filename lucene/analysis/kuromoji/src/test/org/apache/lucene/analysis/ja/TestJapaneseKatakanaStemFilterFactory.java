@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.ja;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,18 +27,23 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Simple tests for {@link JapaneseReadingFormFilterFactory}
+ * Simple tests for {@link JapaneseKatakanaStemFilterFactory}
  */
-public class TestJapaneseReadingFormFilterFactory extends BaseTokenStreamTestCase {
-  public void testReadings() throws IOException {
+public class TestJapaneseKatakanaStemFilterFactory extends BaseTokenStreamTestCase {
+  public void testKatakanaStemming() throws IOException {
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    Map<String, String> args = Collections.emptyMap();
-    tokenizerFactory.init(args);
+    Map<String, String> tokenizerArgs = Collections.emptyMap();
+    tokenizerFactory.init(tokenizerArgs);
     tokenizerFactory.inform(new SolrResourceLoader(null, null));
-    TokenStream tokenStream = tokenizerFactory.create(new StringReader("先ほどベルリンから来ました。"));
-    JapaneseReadingFormFilterFactory filterFactory = new JapaneseReadingFormFilterFactory();
+    TokenStream tokenStream = tokenizerFactory.create(
+        new StringReader("明後日パーティーに行く予定がある。図書館で資料をコピーしました。")
+    );
+    JapaneseKatakanaStemFilterFactory filterFactory = new JapaneseKatakanaStemFilterFactory();
+    Map<String, String> filterArgs = Collections.emptyMap();
+    filterFactory.init(filterArgs);
     assertTokenStreamContents(filterFactory.create(tokenStream),
-        new String[] { "サキ", "ホド", "ベルリン", "カラ", "キ", "マシ", "タ" }
+        new String[]{ "明後日", "パーティ", "に", "行く", "予定", "が", "ある",   // パーティー should be stemmed
+                      "図書館", "で", "資料", "を", "コピー", "し", "まし", "た"} // コピー should not be stemmed
     );
   }
 }

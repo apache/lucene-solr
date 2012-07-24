@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.cjk;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * Simple tests to ensure the CJK bigram factory is working.
- * @deprecated
  */
 public class TestCJKBigramFilterFactory extends BaseTokenStreamTestCase {
   public void testDefaults() throws Exception {

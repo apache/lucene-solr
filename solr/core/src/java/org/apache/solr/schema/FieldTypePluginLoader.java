@@ -19,9 +19,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.util.Version;
-import org.apache.solr.analysis.KeywordTokenizerFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
