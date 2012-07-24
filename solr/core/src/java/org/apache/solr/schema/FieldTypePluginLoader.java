@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.util.Version;
+import org.apache.solr.analysis.AnalysisPluginLoader;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
@@ -262,9 +263,14 @@ public final class FieldTypePluginLoader
 
     final ArrayList<CharFilterFactory> charFilters 
       = new ArrayList<CharFilterFactory>();
-    AbstractPluginLoader<CharFilterFactory> charFilterLoader =
-      new AbstractPluginLoader<CharFilterFactory>
+    AnalysisPluginLoader<CharFilterFactory> charFilterLoader =
+      new AnalysisPluginLoader<CharFilterFactory>
       ("[schema.xml] analyzer/charFilter", CharFilterFactory.class, false, false) {
+
+      @Override
+      protected CharFilterFactory createSPI(String name) {
+        return CharFilterFactory.forName(name);
+      }
 
       @Override
       protected void init(CharFilterFactory plugin, Node node) throws Exception {
@@ -295,9 +301,15 @@ public final class FieldTypePluginLoader
 
     final ArrayList<TokenizerFactory> tokenizers 
       = new ArrayList<TokenizerFactory>(1);
-    AbstractPluginLoader<TokenizerFactory> tokenizerLoader =
-      new AbstractPluginLoader<TokenizerFactory>
+    AnalysisPluginLoader<TokenizerFactory> tokenizerLoader =
+      new AnalysisPluginLoader<TokenizerFactory>
       ("[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
+      
+      @Override
+      protected TokenizerFactory createSPI(String name) {
+        return TokenizerFactory.forName(name);
+      }
+
       @Override
       protected void init(TokenizerFactory plugin, Node node) throws Exception {
         if( !tokenizers.isEmpty() ) {
@@ -332,9 +344,15 @@ public final class FieldTypePluginLoader
     final ArrayList<TokenFilterFactory> filters 
       = new ArrayList<TokenFilterFactory>();
 
-    AbstractPluginLoader<TokenFilterFactory> filterLoader = 
-      new AbstractPluginLoader<TokenFilterFactory>("[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false)
+    AnalysisPluginLoader<TokenFilterFactory> filterLoader = 
+      new AnalysisPluginLoader<TokenFilterFactory>("[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false)
     {
+      
+      @Override
+      protected TokenFilterFactory createSPI(String name) {
+        return TokenFilterFactory.forName(name);
+      }
+
       @Override
       protected void init(TokenFilterFactory plugin, Node node) throws Exception {
         if( plugin != null ) {
