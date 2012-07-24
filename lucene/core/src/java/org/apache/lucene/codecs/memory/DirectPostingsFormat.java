@@ -1852,7 +1852,7 @@ public class DirectPostingsFormat extends PostingsFormat {
     public DocsEnum reset(int[] docIDs, int[] freqs) {
       this.docIDs = docIDs;
       this.freqs = freqs;
-      upto = -1;
+      docID = upto = -1;
       return this;
     }
 

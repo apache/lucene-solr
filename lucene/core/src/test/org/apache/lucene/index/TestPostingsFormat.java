@@ -554,7 +554,7 @@ public class TestPostingsFormat extends LuceneTestCase {
 
     assertNotNull("null DocsEnum", docsEnum);
     int initialDocID = docsEnum.docID();
-    assertTrue("inital docID should be -1 or NO_MORE_DOCS", initialDocID == -1 || initialDocID == DocsEnum.NO_MORE_DOCS);
+    assertTrue("inital docID should be -1 or NO_MORE_DOCS: " + docsEnum, initialDocID == -1 || initialDocID == DocsEnum.NO_MORE_DOCS);
 
     if (VERBOSE) {
       if (prevDocsEnum == null) {
