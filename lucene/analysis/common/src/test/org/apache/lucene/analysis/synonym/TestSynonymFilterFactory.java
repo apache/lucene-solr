@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.synonym;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,21 +17,16 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
+import org.apache.lucene.analysis.util.StringMockResourceLoader;
 
 public class TestSynonymFilterFactory extends BaseTokenStreamTestCase {
   /** test that we can parse and use the solr syn file */
@@ -41,7 +36,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamTestCase {
     args.put("synonyms", "synonyms.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new SolrResourceLoader("solr/collection1"));
+    factory.inform(new ResourceAsStreamResourceLoader(getClass()));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
     assertTrue(ts instanceof SynonymFilter);
     assertTokenStreamContents(ts, 
@@ -56,28 +51,8 @@ public class TestSynonymFilterFactory extends BaseTokenStreamTestCase {
     args.put("synonyms", "synonyms.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new StringMockSolrResourceLoader("")); // empty file!
+    factory.inform(new StringMockResourceLoader("")); // empty file!
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(ts, new String[] { "GB" });
-  }
-  
-  private class StringMockSolrResourceLoader implements ResourceLoader {
-    String text;
-
-    StringMockSolrResourceLoader(String text) {
-      this.text = text;
-    }
-
-    public List<String> getLines(String resource) throws IOException {
-      return Arrays.asList(text.split("\n"));
-    }
-
-    public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
-      return null;
-    }
-
-    public InputStream openResource(String resource) throws IOException {
-      return new ByteArrayInputStream(text.getBytes("UTF-8"));
-    }
   }
 }

@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.synonym;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,9 +38,6 @@ import org.apache.lucene.analysis.synonym.SolrSynonymParser;
 import org.apache.lucene.analysis.synonym.WordnetSynonymParser;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.util.Version;
-import org.apache.solr.common.util.StrUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory for {@link SynonymFilter}.
@@ -55,9 +52,6 @@ import org.slf4j.LoggerFactory;
  * &lt;/fieldType&gt;</pre>
  */
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-
-  public static final Logger log = LoggerFactory.getLogger(SynonymFilterFactory.class);
-
   private SynonymMap map;
   private boolean ignoreCase;
   
@@ -100,10 +94,6 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     } catch (Exception e) {
       throw new InitializationException("Exception thrown while loading synonyms", e);
     }
-    
-    if (map.fst == null) {
-      log.warn("Synonyms loaded with " + args + " has empty rule set!");
-    }
   }
   
   /**
@@ -125,7 +115,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
       decoder.reset();
       parser.add(new InputStreamReader(loader.openResource(synonyms), decoder));
     } else {
-      List<String> files = StrUtils.splitFileNames(synonyms);
+      List<String> files = splitFileNames(synonyms);
       for (String file : files) {
         decoder.reset();
         parser.add(new InputStreamReader(loader.openResource(file), decoder));
@@ -153,7 +143,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
       decoder.reset();
       parser.add(new InputStreamReader(loader.openResource(synonyms), decoder));
     } else {
-      List<String> files = StrUtils.splitFileNames(synonyms);
+      List<String> files = splitFileNames(synonyms);
       for (String file : files) {
         decoder.reset();
         parser.add(new InputStreamReader(loader.openResource(file), decoder));
@@ -162,6 +152,8 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     return parser.build();
   }
   
+  // nocommit: spi-hack solr.xxx and o.a.solr.analysis.xxx via a delegator
+  // (there are no tests for this functionality)
   private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname){
     TokenizerFactory tokFactory = loader.newInstance(cname, TokenizerFactory.class);
     tokFactory.setLuceneMatchVersion(luceneMatchVersion);

@@ -85,5 +85,6 @@ org.apache.lucene.analysis.snowball.SnowballPorterFilterFactory
 org.apache.lucene.analysis.standard.ClassicFilterFactory
 org.apache.lucene.analysis.standard.StandardFilterFactory
 org.apache.lucene.analysis.sv.SwedishLightStemFilterFactory
+org.apache.lucene.analysis.synonym.SynonymFilterFactory
 org.apache.lucene.analysis.th.ThaiWordFilterFactory
 org.apache.lucene.analysis.tr.TurkishLowerCaseFilterFactory
