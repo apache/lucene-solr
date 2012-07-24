@@ -56,9 +56,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       // them used instead of others
       if (!services.containsKey(name)) {
         assert checkServiceName(name);
-        @SuppressWarnings("unchecked")
-        final Class<? extends S> sclazz = (Class<? extends S>) service.getClass();
-        services.put(name, sclazz);
+        services.put(name, service.getClass().asSubclass(clazz));
       }
     }
     this.services = Collections.unmodifiableMap(services);
