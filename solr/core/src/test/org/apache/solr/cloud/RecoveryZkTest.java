@@ -72,7 +72,7 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     Thread.sleep(atLeast(2000));   
     
     // bring shard replica down
-    JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1);
+    JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1).jetty;
 
     
     // wait a moment - lets allow some docs to be indexed so replication time is non 0

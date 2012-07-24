@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.FullSolrCloudTest.CloudSolrServerClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -143,8 +144,8 @@ public class SyncSliceTest extends FullSolrCloudTest {
         "to come to the aid of their country.");
     
     // kill the leader - new leader could have all the docs or be missing one
-    JettySolrRunner leaderJetty = shardToLeaderJetty.get("shard1").jetty;
-    SolrServer leaderClient = shardToLeaderClient.get("shard1");
+    CloudJettyRunner leaderJetty = shardToLeaderJetty.get("shard1");
+    CloudSolrServerClient leaderClient = leaderJetty.client;
     Set<JettySolrRunner> jetties = new HashSet<JettySolrRunner>();
     for (int i = 0; i < shardCount; i++) {
       jetties.add(shardToJetty.get("shard1").get(i).jetty);
@@ -158,7 +159,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     // because on some systems (especially freebsd w/ blackhole enabled), trying
     // to talk to a downed node causes grief
     int tries = 0;
-    while (((SolrDispatchFilter) upJetty.getDispatchFilter().getFilter()).getCores().getZkController().getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(new CloudSolrServerClient(leaderClient)).get(ZkStateReader.NODE_NAME_PROP))) {
+    while (((SolrDispatchFilter) upJetty.getDispatchFilter().getFilter()).getCores().getZkController().getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(leaderClient).get(ZkStateReader.NODE_NAME_PROP))) {
       if (tries++ == 120) {
         fail("Shard still reported as live in zk");
       }
