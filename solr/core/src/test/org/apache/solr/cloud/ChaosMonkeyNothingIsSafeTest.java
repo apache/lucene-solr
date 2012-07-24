@@ -87,7 +87,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
       // as it's not supported for recovery
       // del("*:*");
       
-      List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
+      List<StopableThread> threads = new ArrayList<StopableThread>();
       int threadCount = 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
@@ -95,6 +95,14 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
             i * 50000, true);
         threads.add(indexThread);
         indexThread.start();
+      }
+      
+      threadCount = 1;
+      i = 0;
+      for (i = 0; i < threadCount; i++) {
+        StopableSearchThread searchThread = new StopableSearchThread();
+        threads.add(searchThread);
+        searchThread.start();
       }
       
       FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
@@ -110,12 +118,12 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
         chaosMonkey.stopTheMonkey();
       }
       
-      for (StopableIndexingThread indexThread : threads) {
+      for (StopableThread indexThread : threads) {
         indexThread.safeStop();
       }
       
       // wait for stop...
-      for (StopableIndexingThread indexThread : threads) {
+      for (StopableThread indexThread : threads) {
         indexThread.join();
       }
       

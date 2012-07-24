@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -1283,7 +1284,14 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     return rsp;
   }
   
-  class StopableIndexingThread extends Thread {
+  abstract class StopableThread extends Thread {
+    public StopableThread(String name) {
+      super(name);
+    }
+    public abstract void safeStop();
+  }
+  
+  class StopableIndexingThread extends StopableThread {
     private volatile boolean stop = false;
     protected final int startI;
     protected final List<Integer> deletes = new ArrayList<Integer>();
@@ -1345,6 +1353,55 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       System.err.println("added docs:" + numAdds + " with " + fails + " fails"
           + " deletes:" + numDeletes);
+    }
+    
+    public void safeStop() {
+      stop = true;
+    }
+    
+    public int getFails() {
+      return fails.get();
+    }
+    
+  };
+  
+  class StopableSearchThread extends StopableThread {
+    private volatile boolean stop = false;
+    protected final AtomicInteger fails = new AtomicInteger();
+    private String[] QUERIES = new String[] {"to come","their country","aid","co*"};
+    
+    public StopableSearchThread() {
+      super("StopableSearchThread");
+      setDaemon(true);
+    }
+    
+    @Override
+    public void run() {
+      Random random = random();
+      int numSearches = 0;
+      
+      while (true && !stop) {
+        numSearches++;
+        try {
+          //to come to the aid of their country.
+          cloudClient.query(new SolrQuery(QUERIES[random.nextInt(QUERIES.length)]));
+        } catch (Exception e) {
+          System.err.println("QUERY REQUEST FAILED:");
+          e.printStackTrace();
+          if (e instanceof SolrServerException) {
+            System.err.println("ROOT CAUSE:");
+            ((SolrServerException) e).getRootCause().printStackTrace();
+          }
+          fails.incrementAndGet();
+        }
+        try {
+          Thread.sleep(random.nextInt(4000) + 300);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+      
+      System.err.println("num searches done:" + numSearches + " with " + fails + " fails");
     }
     
     public void safeStop() {
