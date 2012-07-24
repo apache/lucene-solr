@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.morfologik;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,7 +16,6 @@ package org.apache.solr.analysis;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 
 import java.util.Arrays;
 import java.util.Locale;

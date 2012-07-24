@@ -35,6 +35,7 @@
 	<classpathentry kind="src" path="lucene/analysis/stempel/src/resources"/>
 	<classpathentry kind="src" path="lucene/analysis/stempel/src/test"/>
 	<classpathentry kind="src" path="lucene/analysis/morfologik/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/morfologik/src/resources"/>
 	<classpathentry kind="src" path="lucene/analysis/morfologik/src/test"/>
 	<classpathentry kind="src" path="lucene/analysis/uima/src/java"/>
 	<classpathentry kind="src" path="lucene/analysis/uima/src/test"/>

@@ -1,12 +1,4 @@
-package org.apache.solr.analysis;
-
-import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+package org.apache.lucene.analysis.morfologik;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,6 +16,14 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Test for {@link MorfologikFilterFactory}.
