@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrResourceLoader;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -30,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Simple tests for {@link org.apache.solr.analysis.JapaneseIterationMarkCharFilterFactory}
+ * Simple tests for {@link JapaneseIterationMarkCharFilterFactory}
  */
 public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamTestCase {
 
@@ -46,7 +45,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
     Map<String, String> tokenizerArgs = Collections.emptyMap();
     tokenizerFactory.init(tokenizerArgs);
-    tokenizerFactory.inform(new SolrResourceLoader(null, null));
+    tokenizerFactory.inform(new StringMockResourceLoader(""));
 
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory();
     Map<String, String> filterArgs = Collections.emptyMap();
@@ -63,7 +62,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
     Map<String, String> tokenizerArgs = Collections.emptyMap();
     tokenizerFactory.init(tokenizerArgs);
-    tokenizerFactory.inform(new SolrResourceLoader(null, null));
+    tokenizerFactory.inform(new StringMockResourceLoader(""));
 
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory();
     Map<String, String> filterArgs = new HashMap<String, String>();
@@ -82,7 +81,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
     Map<String, String> tokenizerArgs = Collections.emptyMap();
     tokenizerFactory.init(tokenizerArgs);
-    tokenizerFactory.inform(new SolrResourceLoader(null, null));
+    tokenizerFactory.inform(new StringMockResourceLoader(""));
 
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory();
     Map<String, String> filterArgs = new HashMap<String, String>();

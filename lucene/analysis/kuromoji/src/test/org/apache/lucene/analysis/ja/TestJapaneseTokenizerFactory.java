@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Simple tests for {@link JapaneseTokenizerFactory}
@@ -36,7 +35,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     Map<String, String> args = Collections.emptyMap();
     factory.init(args);
-    factory.inform(new SolrResourceLoader(null, null));
+    factory.inform(new StringMockResourceLoader(""));
     TokenStream ts = factory.create(new StringReader("これは本ではない"));
     assertTokenStreamContents(ts,
         new String[] { "これ", "は", "本", "で", "は", "ない" },
@@ -53,7 +52,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     Map<String, String> args = Collections.emptyMap();
     factory.init(args);
-    factory.inform(new SolrResourceLoader(null, null));
+    factory.inform(new StringMockResourceLoader(""));
     TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
     assertTokenStreamContents(ts,
                               new String[] { "シニア", "シニアソフトウェアエンジニア", "ソフトウェア", "エンジニア" }
@@ -68,7 +67,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("mode", "normal");
     factory.init(args);
-    factory.inform(new SolrResourceLoader(null, null));
+    factory.inform(new StringMockResourceLoader(""));
     TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
     assertTokenStreamContents(ts,
         new String[] { "シニアソフトウェアエンジニア" }
@@ -89,7 +88,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("userDictionary", "userdict.txt");
     factory.init(args);
-    factory.inform(new StringMockSolrResourceLoader(userDict));
+    factory.inform(new StringMockResourceLoader(userDict));
     TokenStream ts = factory.create(new StringReader("関西国際空港に行った"));
     assertTokenStreamContents(ts,
         new String[] { "関西", "国際", "空港", "に",  "行っ",  "た" }
@@ -104,7 +103,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("discardPunctuation", "false");
     factory.init(args);
-    factory.inform(new SolrResourceLoader(null, null));
+    factory.inform(new StringMockResourceLoader(""));
     TokenStream ts = factory.create(
         new StringReader("今ノルウェーにいますが、来週の頭日本に戻ります。楽しみにしています！お寿司が食べたいな。。。")
     );

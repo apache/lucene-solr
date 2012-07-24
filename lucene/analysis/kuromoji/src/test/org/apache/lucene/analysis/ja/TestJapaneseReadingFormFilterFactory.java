@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ja;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrResourceLoader;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -34,7 +33,7 @@ public class TestJapaneseReadingFormFilterFactory extends BaseTokenStreamTestCas
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
     Map<String, String> args = Collections.emptyMap();
     tokenizerFactory.init(args);
-    tokenizerFactory.inform(new SolrResourceLoader(null, null));
+    tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream tokenStream = tokenizerFactory.create(new StringReader("先ほどベルリンから来ました。"));
     JapaneseReadingFormFilterFactory filterFactory = new JapaneseReadingFormFilterFactory();
     assertTokenStreamContents(filterFactory.create(tokenStream),

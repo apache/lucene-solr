@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Simple tests for {@link JapanesePartOfSpeechStopFilterFactory}
@@ -40,14 +39,14 @@ public class TestJapanesePartOfSpeechStopFilterFactory extends BaseTokenStreamTe
     tokenizerFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     Map<String, String> tokenizerArgs = Collections.emptyMap();
     tokenizerFactory.init(tokenizerArgs);
-    tokenizerFactory.inform(new SolrResourceLoader(null, null));
+    tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream ts = tokenizerFactory.create(new StringReader("私は制限スピードを超える。"));
     JapanesePartOfSpeechStopFilterFactory factory = new JapanesePartOfSpeechStopFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("tags", "stoptags.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new StringMockSolrResourceLoader(tags));
+    factory.inform(new StringMockResourceLoader(tags));
     ts = factory.create(ts);
     assertTokenStreamContents(ts,
         new String[] { "私", "は", "制限", "スピード", "を" }
