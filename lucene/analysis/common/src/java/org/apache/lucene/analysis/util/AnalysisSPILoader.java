@@ -76,7 +76,6 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     this.services = Collections.unmodifiableMap(services);
   }
   
-  // TODO: do we even need this method?
   public S newInstance(String name) {
     final Class<? extends S> service = lookupClass(name);
     try {

@@ -83,12 +83,13 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
           final BufferedReader reader = new BufferedReader(new InputStreamReader(in, IOUtils.CHARSET_UTF_8));
           String line;
           while ((line = reader.readLine()) != null) {
-            final String[] prts = line.trim().split("#");
-            if (0 != prts.length) {
-              final String c = prts[0].trim();
-              if (!(0 == c.length() || c.startsWith("#"))) {
-                lines.add(c);
-              }
+            final int pos = line.indexOf('#');
+            if (pos >= 0) {
+              line = line.substring(0, pos);
+            }
+            line = line.trim();
+            if (line.length() > 0) {
+              lines.add(line);
             }
           }
         } catch (IOException ioe) {
