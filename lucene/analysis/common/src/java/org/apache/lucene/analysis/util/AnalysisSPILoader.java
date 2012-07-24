@@ -17,12 +17,14 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Set;
-import org.apache.lucene.util.NamedSPILoader.NamedSPI; // javadocs
+import java.util.ServiceConfigurationError;
+
 import org.apache.lucene.util.SPIClassIterator;
 
 /**
@@ -53,54 +55,25 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     while (loader.hasNext()) {
       final Class<? extends S> service = loader.next();
       final String clazzName = service.getSimpleName();
-      int suffixIndex = -1;
+      String name = null;
       for (String suffix : suffixes) {
-        suffixIndex = clazzName.lastIndexOf(suffix);
-        if (suffixIndex != -1) {
+        if (clazzName.endsWith(suffix)) {
+          name = clazzName.substring(0, clazzName.length() - suffix.length()).toLowerCase(Locale.ROOT);
           break;
         }
       }
-      final String name = clazzName.substring(0, suffixIndex).toLowerCase(Locale.ROOT);
+      if (name == null) {
+        throw new ServiceConfigurationError("The class name " + service.getName() +
+          " has wrong suffix, allowed are: " + Arrays.toString(suffixes));
+      }
       // only add the first one for each name, later services will be ignored
       // this allows to place services before others in classpath to make 
       // them used instead of others
       if (!services.containsKey(name)) {
-        assert checkServiceName(name);
         services.put(name, service);
       }
     }
     this.services = Collections.unmodifiableMap(services);
-  }
-  
-  /**
-   * Validates that a service name meets the requirements of {@link NamedSPI}
-   */
-  public static boolean checkServiceName(String name) {
-    // based on harmony charset.java
-    if (name.length() >= 128) {
-      throw new IllegalArgumentException("Illegal service name: '" + name + "' is too long (must be < 128 chars).");
-    }
-    for (int i = 0; i < name.length(); i++) {
-      char c = name.charAt(i);
-      if (!isLetter(c) && !isDigit(c)) {
-        throw new IllegalArgumentException("Illegal service name: '" + name + "' must be simple ascii alphanumeric.");
-      }
-    }
-    return true;
-  }
-  
-  /*
-   * Checks whether a character is a letter (ascii) which are defined in the spec.
-   */
-  private static boolean isLetter(char c) {
-      return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
-  }
-
-  /*
-   * Checks whether a character is a digit (ascii) which are defined in the spec.
-   */
-  private static boolean isDigit(char c) {
-      return ('0' <= c && c <= '9');
   }
   
   // TODO: do we even need this method?
