@@ -324,7 +324,8 @@ public class SnapPuller {
       successfulInstall = false;
       boolean deleteTmpIdxDir = true;
 
-      final File indexDir = new File(core.getIndexDir());
+      // make sure it's the newest known index dir...
+      final File indexDir = new File(core.getNewIndexDir());
       Directory oldDirectory = null;
       try {
         downloadIndexFiles(isFullCopyNeeded, tmpIndexDir, latestGeneration);
