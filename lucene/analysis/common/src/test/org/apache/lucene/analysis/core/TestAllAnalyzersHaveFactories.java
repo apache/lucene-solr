@@ -18,10 +18,13 @@ package org.apache.lucene.analysis.core;
  */
 
 import java.lang.reflect.Modifier;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
@@ -37,14 +40,17 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.core.TestRandomChains;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.sinks.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -111,16 +117,59 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
       if (Tokenizer.class.isAssignableFrom(c)) {
         String clazzName = c.getSimpleName();
         assertTrue(clazzName.endsWith("Tokenizer"));
-        assertNotNull(TokenizerFactory.forName(clazzName.substring(0, clazzName.length() - 9)));
+        String simpleName = clazzName.substring(0, clazzName.length() - 9);
+        TokenizerFactory instance = TokenizerFactory.forName(simpleName);
+        assertNotNull(instance);
+        try {
+          instance.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+          instance.init(Collections.<String,String>emptyMap());
+          // TODO: provide fake ResourceLoader
+          if (!(instance instanceof ResourceLoaderAware)) {
+            assertSame(c, instance.create(new StringReader("")).getClass());
+          }
+        } catch (InitializationException e) {
+          // TODO: For now pass because some factories have not yet a default config that always works, some require ResourceLoader
+        }
       } else if (TokenFilter.class.isAssignableFrom(c)) {
         String clazzName = c.getSimpleName();
         assertTrue(clazzName.endsWith("Filter"));
         String simpleName = clazzName.substring(0, clazzName.length() - (clazzName.endsWith("TokenFilter") ? 11 : 6));
-        assertNotNull(TokenFilterFactory.forName(simpleName));
+        TokenFilterFactory instance = TokenFilterFactory.forName(simpleName);
+        assertNotNull(instance);
+        try {
+          instance.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+          instance.init(Collections.<String,String>emptyMap());
+          // TODO: provide fake ResourceLoader
+          if (!(instance instanceof ResourceLoaderAware)) {
+            Class<? extends TokenStream> createdClazz = instance.create(new KeywordTokenizer(new StringReader(""))).getClass();
+            // only check instance if factory have wrapped at all!
+            if (KeywordTokenizer.class != createdClazz) {
+              assertSame(c, createdClazz);
+            }
+          }
+        } catch (InitializationException e) {
+          // TODO: For now pass because some factories have not yet a default config that always works, some require ResourceLoader
+        }
       } else if (CharFilter.class.isAssignableFrom(c)) {
         String clazzName = c.getSimpleName();
         assertTrue(clazzName.endsWith("CharFilter"));
-        assertNotNull(CharFilterFactory.forName(clazzName.substring(0, clazzName.length() - 10)));
+        String simpleName = clazzName.substring(0, clazzName.length() - 10);
+        CharFilterFactory instance = CharFilterFactory.forName(simpleName);
+        assertNotNull(instance);
+        try {
+          instance.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+          instance.init(Collections.<String,String>emptyMap());
+          // TODO: provide fake ResourceLoader
+          if (!(instance instanceof ResourceLoaderAware)) {
+            Class<? extends Reader> createdClazz = instance.create(new StringReader("")).getClass();
+            // only check instance if factory have wrapped at all!
+            if (StringReader.class != createdClazz) {
+              assertSame(c, createdClazz);
+            }
+          }
+        } catch (InitializationException e) {
+          // TODO: For now pass because some factories have not yet a default config that always works, some require ResourceLoader
+        }
       }
     }
   }
