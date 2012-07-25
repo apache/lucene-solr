@@ -55,10 +55,10 @@ public abstract class PayloadFunction {
    */
   public abstract float docScore(int docId, String field, int numPayloadsSeen, float payloadScore);
   
-  public Explanation explain(int docId, int numPayloadsSeen, float payloadScore){
+  public Explanation explain(int docId, String field, int numPayloadsSeen, float payloadScore){
 	  Explanation result = new Explanation();
-	  result.setDescription("Unimpl Payload Function Explain");
-	  result.setValue(1);
+	  result.setDescription(getClass().getSimpleName() + ".docScore()");
+	  result.setValue(docScore(docId, field, numPayloadsSeen, payloadScore));
 	  return result;
   };
   

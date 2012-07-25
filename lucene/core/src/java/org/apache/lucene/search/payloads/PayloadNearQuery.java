@@ -167,8 +167,9 @@ public class PayloadNearQuery extends SpanNearQuery {
           Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
           expl.addDetail(scoreExplanation);
           expl.setValue(scoreExplanation.getValue());
+          String field = ((SpanQuery)getQuery()).getField();
           // now the payloads part
-          Explanation payloadExpl = function.explain(doc, scorer.payloadsSeen, scorer.payloadScore);
+          Explanation payloadExpl = function.explain(doc, field, scorer.payloadsSeen, scorer.payloadScore);
           // combined
           ComplexExplanation result = new ComplexExplanation();
           result.addDetail(expl);
