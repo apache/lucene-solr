@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.uima;
  */
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.analysis.uima.UIMAAnnotationsTokenizer;
 
@@ -37,6 +38,9 @@ public class UIMAAnnotationsTokenizerFactory extends TokenizerFactory {
     super.init(args);
     descriptorPath = args.get("descriptorPath");
     tokenType = args.get("tokenType");
+    if (descriptorPath == null || tokenType == null) {
+      throw new InitializationException("Both descriptorPath and tokenType are mandatory");
+    }
   }
 
   @Override

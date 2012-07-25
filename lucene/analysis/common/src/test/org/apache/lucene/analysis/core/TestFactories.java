@@ -39,6 +39,9 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * we do our best to see if we can sanely initialize it with
  * no parameters and smoke test it, etc.
  */
+// TODO: move this, TestRandomChains, and TestAllAnalyzersHaveFactories
+// to an integration test module that sucks in all analysis modules.
+// currently the only way to do this is via eclipse etc (LUCENE-3974)
 public class TestFactories extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     for (String tokenizer : TokenizerFactory.availableTokenizers()) {

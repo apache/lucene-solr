@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.uima;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.uima.UIMATypeAwareAnnotationsTokenizer;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
 import java.io.Reader;
@@ -39,6 +40,9 @@ public class UIMATypeAwareAnnotationsTokenizerFactory extends TokenizerFactory {
     descriptorPath = args.get("descriptorPath");
     tokenType = args.get("tokenType");
     featurePath = args.get("featurePath");
+    if (descriptorPath == null || tokenType == null || featurePath == null) {
+      throw new InitializationException("descriptorPath, tokenType, and featurePath are mandatory");
+    }
   }
 
   @Override

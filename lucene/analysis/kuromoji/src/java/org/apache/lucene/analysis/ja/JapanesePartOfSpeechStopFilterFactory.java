@@ -45,12 +45,15 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   public void inform(ResourceLoader loader) {
     String stopTagFiles = args.get("tags");
     enablePositionIncrements = getBoolean("enablePositionIncrements", false);
+    stopTags = null;
     try {
       CharArraySet cas = getWordSet(loader, stopTagFiles, false);
-      stopTags = new HashSet<String>();
-      for (Object element : cas) {
-        char chars[] = (char[]) element;
-        stopTags.add(new String(chars));
+      if (cas != null) {
+        stopTags = new HashSet<String>();
+        for (Object element : cas) {
+          char chars[] = (char[]) element;
+          stopTags.add(new String(chars));
+        }
       }
     } catch (IOException e) {
       throw new InitializationException("IOException thrown while loading tags", e);
@@ -58,6 +61,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   }
 
   public TokenStream create(TokenStream stream) {
-    return new JapanesePartOfSpeechStopFilter(enablePositionIncrements, stream, stopTags);
+    // if stoptags is null, it means the file is empty
+    return stopTags == null ? stream : new JapanesePartOfSpeechStopFilter(enablePositionIncrements, stream, stopTags);
   }
 }
