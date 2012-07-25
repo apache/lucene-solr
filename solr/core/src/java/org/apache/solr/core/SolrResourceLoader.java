@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -374,7 +373,7 @@ public class SolrResourceLoader implements ResourceLoader
   private static final Map<String, String> classNameCache = new ConcurrentHashMap<String, String>();
 
   // A static map of AnalysisSPILoaders, keyed by ClassLoader used (because it can change during Solr lifetime) and expected base class:
-  private static final WeakIdentityMap<ClassLoader, Map<Class,AnalysisSPILoader>> expectedTypesSPILoaders = WeakIdentityMap.newConcurrentHashMap();
+  private static final WeakIdentityMap<ClassLoader, Map<Class<?>,AnalysisSPILoader<?>>> expectedTypesSPILoaders = WeakIdentityMap.newConcurrentHashMap();
 
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern = 
@@ -412,19 +411,19 @@ public class SolrResourceLoader implements ResourceLoader
     if (m.matches()) {
       log.trace("Trying to load class from analysis SPI");
       // retrieve the map of classLoader -> expectedType -> SPI from cache / regenerate cache
-      Map<Class,AnalysisSPILoader> spiLoaders = expectedTypesSPILoaders.get(classLoader);
+      Map<Class<?>,AnalysisSPILoader<?>> spiLoaders = expectedTypesSPILoaders.get(classLoader);
       if (spiLoaders == null) {
-        spiLoaders = new IdentityHashMap<Class,AnalysisSPILoader>(3);
+        spiLoaders = new IdentityHashMap<Class<?>,AnalysisSPILoader<?>>(3);
         spiLoaders.put(CharFilterFactory.class, CharFilterFactory.getSPILoader(classLoader));
         spiLoaders.put(TokenizerFactory.class, TokenizerFactory.getSPILoader(classLoader));
         spiLoaders.put(TokenFilterFactory.class, TokenFilterFactory.getSPILoader(classLoader));
         expectedTypesSPILoaders.put(classLoader, spiLoaders);
       }
-      final AnalysisSPILoader loader = spiLoaders.get(expectedType);
+      final AnalysisSPILoader<?> loader = spiLoaders.get(expectedType);
       if (loader != null) {
         // it's a correct expected type for analysis! Let's go on!
         try {
-          return clazz = loader.lookupClass(m.group(4));
+          return clazz = loader.lookupClass(m.group(4)).asSubclass(expectedType);
         } catch (IllegalArgumentException ex) { 
           // ok, we fall back to legacy loading
         }
