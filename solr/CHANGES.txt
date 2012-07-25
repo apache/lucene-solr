@@ -134,6 +134,10 @@ Bug Fixes
 * SOLR-3623: Fixed inconsistent treatment of third-party dependencies for 
   solr contribs analysis-extras & uima (hossman) 
 
+* SOLR-3652: Fixed range faceting to error instead of looping infinitely 
+  when 'gap' is zero -- or effectively zero due to floating point arithmetic 
+  underflow. (hossman)
+
 Other Changes
 ----------------------
 
