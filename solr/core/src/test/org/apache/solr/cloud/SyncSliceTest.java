@@ -143,9 +143,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     CloudJettyRunner leaderJetty = shardToLeaderJetty.get("shard1");
 
     Set<CloudJettyRunner> jetties = new HashSet<CloudJettyRunner>();
-    for (int i = 0; i < shardCount; i++) {
-      jetties.add(shardToJetty.get("shard1").get(i));
-    }
+    jetties.addAll(shardToJetty.get("shard1"));
     jetties.remove(leaderJetty);
     
     chaosMonkey.killJetty(leaderJetty);
@@ -166,18 +164,6 @@ public class SyncSliceTest extends FullSolrCloudTest {
     
     cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(5, cloudClientDocs);
-  }
-
-  private void waitToSeeNotLive(ZkStateReader zkStateReader,
-      CloudJettyRunner cjetty) throws InterruptedException {
-    int tries = 0;
-    while (zkStateReader.getCloudState()
-        .liveNodesContain(cjetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
-      if (tries++ == 120) {
-        fail("Shard still reported as live in zk");
-      }
-      Thread.sleep(1000);
-    }
   }
 
   private void waitForThingsToLevelOut() throws Exception {
