@@ -68,6 +68,10 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
    */
   public void inform(ResourceLoader loader) {
     assureMatchVersion();
+    String dictionaryArg = args.get(PARAM_DICTIONARY);
+    if (dictionaryArg == null) {
+      throw new InitializationException("Parameter " + PARAM_DICTIONARY + " is mandatory.");
+    }
     String dictionaryFiles[] = args.get(PARAM_DICTIONARY).split(",");
     String affixFile = args.get(PARAM_AFFIX);
     String pic = args.get(PARAM_IGNORE_CASE);

@@ -97,13 +97,12 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
     for (final Class<?> c : analysisClasses) {
       final int modifiers = c.getModifiers();
       if (
-        // don't waste time with abstract classes or deprecated known-buggy ones
+        // don't waste time with abstract classes
         Modifier.isAbstract(modifiers) || !Modifier.isPublic(modifiers)
         || c.isSynthetic() || c.isAnonymousClass() || c.isMemberClass() || c.isInterface()
         || testComponents.contains(c)
         || crazyComponents.contains(c)
         || oddlyNamedComponents.contains(c)
-        || c.isAnnotationPresent(Deprecated.class)
         || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharFilter.class.isAssignableFrom(c))
       ) {
         continue;

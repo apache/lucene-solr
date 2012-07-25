@@ -55,5 +55,5 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
     return loader.availableServices();
   }
 
-  public abstract CharFilter create(Reader input);
+  public abstract Reader create(Reader input);
 }

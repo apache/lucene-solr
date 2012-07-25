@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.util.*;
@@ -75,11 +74,18 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
       final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
       parseRules( wlist, builder );
       normMap = builder.build();
+      if (normMap.map == null) {
+        // if the inner FST is null, it means it accepts nothing (e.g. the file is empty)
+        // so just set the whole map to null
+        normMap = null;
+      }
     }
   }
 
-  public CharFilter create(Reader input) {
-    return new MappingCharFilter(normMap,input);
+  public Reader create(Reader input) {
+    // if the map is null, it means there's actually no mappings... just return the original stream
+    // as there is nothing to do here.
+    return normMap == null ? input : new MappingCharFilter(normMap,input);
   }
 
   // "source" => "target"

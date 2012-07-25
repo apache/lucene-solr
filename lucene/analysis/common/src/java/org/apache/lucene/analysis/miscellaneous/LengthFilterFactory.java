@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.LengthFilter;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
@@ -43,8 +44,13 @@ public class LengthFilterFactory extends TokenFilterFactory {
   @Override
   public void init(Map<String, String> args) {
     super.init(args);
-    min=Integer.parseInt(args.get(MIN_KEY));
-    max=Integer.parseInt(args.get(MAX_KEY));
+    String minKey = args.get(MIN_KEY);
+    String maxKey = args.get(MAX_KEY);
+    if (minKey == null || maxKey == null) {
+      throw new InitializationException("Both " + MIN_KEY + " and " + MAX_KEY + " are mandatory");
+    }
+    min=Integer.parseInt(minKey);
+    max=Integer.parseInt(maxKey);
     enablePositionIncrements = getBoolean("enablePositionIncrements",false);
   }
   

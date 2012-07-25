@@ -61,6 +61,9 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
 
   public void inform(ResourceLoader loader) {
     String encoderClass = args.get(ENCODER_ATTR);
+    if (encoderClass == null) {
+      throw new InitializationException("Parameter " + ENCODER_ATTR + " is mandatory");
+    }
     if (encoderClass.equals("float")){
       encoder = new FloatEncoder();
     } else if (encoderClass.equals("integer")){

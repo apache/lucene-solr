@@ -30,11 +30,43 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertEquals(WhitespaceTokenizerFactory.class, TokenizerFactory.forName("WHITESPACE").getClass());
     assertEquals(WhitespaceTokenizerFactory.class, TokenizerFactory.forName("whitespace").getClass());
   }
+  
+  public void testBogusLookupTokenizer() {
+    try {
+      TokenizerFactory.forName("sdfsdfsdfdsfsdfsdf");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
+    
+    try {
+      TokenizerFactory.forName("!(**#$U*#$*");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
+  }
 
   public void testLookupTokenizerClass() {
     assertEquals(WhitespaceTokenizerFactory.class, TokenizerFactory.lookupClass("Whitespace"));
     assertEquals(WhitespaceTokenizerFactory.class, TokenizerFactory.lookupClass("WHITESPACE"));
     assertEquals(WhitespaceTokenizerFactory.class, TokenizerFactory.lookupClass("whitespace"));
+  }
+  
+  public void testBogusLookupTokenizerClass() {
+    try {
+      TokenizerFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
+    
+    try {
+      TokenizerFactory.lookupClass("!(**#$U*#$*");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
   }
   
   public void testAvailableTokenizers() {
@@ -50,6 +82,22 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertEquals(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.forName("REMOVEDUPLICATES").getClass());
     assertEquals(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.forName("removeduplicates").getClass());
   }
+  
+  public void testBogusLookupTokenFilter() {
+    try {
+      TokenFilterFactory.forName("sdfsdfsdfdsfsdfsdf");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
+    
+    try {
+      TokenFilterFactory.forName("!(**#$U*#$*");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
+  }
 
   public void testLookupTokenFilterClass() {
     assertEquals(LowerCaseFilterFactory.class, TokenFilterFactory.lookupClass("Lowercase"));
@@ -59,6 +107,22 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertEquals(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.lookupClass("RemoveDuplicates"));
     assertEquals(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.lookupClass("REMOVEDUPLICATES"));
     assertEquals(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.lookupClass("removeduplicates"));
+  }
+  
+  public void testBogusLookupTokenFilterClass() {
+    try {
+      TokenFilterFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
+    
+    try {
+      TokenFilterFactory.lookupClass("!(**#$U*#$*");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
   }
   
   public void testAvailableTokenFilters() {
@@ -71,11 +135,43 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertEquals(HTMLStripCharFilterFactory.class, CharFilterFactory.forName("HTMLSTRIP").getClass());
     assertEquals(HTMLStripCharFilterFactory.class, CharFilterFactory.forName("htmlstrip").getClass());
   }
+  
+  public void testBogusLookupCharFilter() {
+    try {
+      CharFilterFactory.forName("sdfsdfsdfdsfsdfsdf");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
+    
+    try {
+      CharFilterFactory.forName("!(**#$U*#$*");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
+  }
 
   public void testLookupCharFilterClass() {
     assertEquals(HTMLStripCharFilterFactory.class, CharFilterFactory.lookupClass("HTMLStrip"));
     assertEquals(HTMLStripCharFilterFactory.class, CharFilterFactory.lookupClass("HTMLSTRIP"));
     assertEquals(HTMLStripCharFilterFactory.class, CharFilterFactory.lookupClass("htmlstrip"));
+  }
+  
+  public void testBogusLookupCharFilterClass() {
+    try {
+      CharFilterFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
+    
+    try {
+      CharFilterFactory.lookupClass("!(**#$U*#$*");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //
+    }
   }
   
   public void testAvailableCharFilters() {

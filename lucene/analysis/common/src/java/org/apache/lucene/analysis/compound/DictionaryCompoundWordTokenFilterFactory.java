@@ -63,8 +63,9 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
       throw new InitializationException("IOException thrown while loading dictionary", e);
     }
   }
-  public DictionaryCompoundWordTokenFilter create(TokenStream input) {
-    return new DictionaryCompoundWordTokenFilter(luceneMatchVersion,input,dictionary,minWordSize,minSubwordSize,maxSubwordSize,onlyLongestMatch);
+  public TokenStream create(TokenStream input) {
+    // if the dictionary is null, it means it was empty
+    return dictionary == null ? input : new DictionaryCompoundWordTokenFilter(luceneMatchVersion,input,dictionary,minWordSize,minSubwordSize,maxSubwordSize,onlyLongestMatch);
   }
 }
 

@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -41,12 +42,16 @@ public class LimitTokenCountFilterFactory extends TokenFilterFactory {
   @Override
   public void init(Map<String, String> args) {
     super.init( args );
-    maxTokenCount = Integer.parseInt( args.get( "maxTokenCount" ) );
+    String maxTokenCountArg = args.get("maxTokenCount");
+    if (maxTokenCountArg == null) {
+      throw new InitializationException("maxTokenCount is mandatory.");
+    }
+    maxTokenCount = Integer.parseInt(args.get(maxTokenCountArg));
   }
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new LimitTokenCountFilter( input, maxTokenCount );
+    return new LimitTokenCountFilter(input, maxTokenCount);
   }
 
 }

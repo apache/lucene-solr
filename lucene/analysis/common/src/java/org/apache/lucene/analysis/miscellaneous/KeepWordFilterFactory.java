@@ -89,7 +89,8 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     return words;
   }
 
-  public KeepWordFilter create(TokenStream input) {
-    return new KeepWordFilter(enablePositionIncrements, input, words);
+  public TokenStream create(TokenStream input) {
+    // if the set is null, it means it was empty
+    return words == null ? input : new KeepWordFilter(enablePositionIncrements, input, words);
   }
 }
