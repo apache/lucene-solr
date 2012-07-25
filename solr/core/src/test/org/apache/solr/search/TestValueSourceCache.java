@@ -21,6 +21,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,6 +35,11 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
   }
 
   static QParser _func;
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    _func = null;
+  }
 
   Query getQuery(String query) throws ParseException {
     _func.setString(query);

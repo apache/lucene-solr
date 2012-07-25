@@ -96,7 +96,7 @@ public class TestBasics extends LuceneTestCase {
     }
   }
   
-  static final Analyzer simplePayloadAnalyzer = new Analyzer() {
+  static Analyzer simplePayloadAnalyzer = new Analyzer() {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
@@ -130,6 +130,7 @@ public class TestBasics extends LuceneTestCase {
     searcher = null;
     reader = null;
     directory = null;
+    simplePayloadAnalyzer = null;
   }
 
   @Test

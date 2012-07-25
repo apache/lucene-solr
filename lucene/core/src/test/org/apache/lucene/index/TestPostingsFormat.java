@@ -43,6 +43,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /* NOTE: This test focuses on the postings
@@ -315,6 +316,15 @@ public class TestPostingsFormat extends LuceneTestCase {
       System.out.println("TEST: done init postings; maxDocID=" + maxDocID + "; " + allTerms.size() + " total terms, across " + fieldInfos.size() + " fields");
     }
   }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    allTerms = null;
+    fieldInfos = null;
+    fields = null;
+    fieldsLive = null;
+    globalLiveDocs = null;
+  }
 
   // TODO maybe instead of @BeforeClass just make a single test run: build postings & index & test it?
 
@@ -554,7 +564,7 @@ public class TestPostingsFormat extends LuceneTestCase {
 
     assertNotNull("null DocsEnum", docsEnum);
     int initialDocID = docsEnum.docID();
-    assertTrue("inital docID should be -1 or NO_MORE_DOCS", initialDocID == -1 || initialDocID == DocsEnum.NO_MORE_DOCS);
+    assertTrue("inital docID should be -1 or NO_MORE_DOCS: " + docsEnum, initialDocID == -1 || initialDocID == DocsEnum.NO_MORE_DOCS);
 
     if (VERBOSE) {
       if (prevDocsEnum == null) {

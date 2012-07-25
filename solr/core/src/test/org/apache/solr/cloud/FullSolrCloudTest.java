@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -66,7 +67,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
-  private static Logger log = LoggerFactory.getLogger(FullSolrCloudTest.class);
+  static Logger log = LoggerFactory.getLogger(FullSolrCloudTest.class);
   
   @BeforeClass
   public static void beforeFullSolrCloudTest() {
@@ -98,39 +99,40 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   protected volatile CloudSolrServer cloudClient;
   
-  protected Map<JettySolrRunner,ZkNodeProps> jettyToInfo = new HashMap<JettySolrRunner,ZkNodeProps>();
-  protected Map<CloudSolrServerClient,ZkNodeProps> clientToInfo = new HashMap<CloudSolrServerClient,ZkNodeProps>();
-  protected Map<String,List<SolrServer>> shardToClient = new HashMap<String,List<SolrServer>>();
+  protected List<CloudJettyRunner> cloudJettys = new ArrayList<CloudJettyRunner>();
   protected Map<String,List<CloudJettyRunner>> shardToJetty = new HashMap<String,List<CloudJettyRunner>>();
   private AtomicInteger jettyIntCntr = new AtomicInteger(0);
   protected ChaosMonkey chaosMonkey;
   protected volatile ZkStateReader zkStateReader;
   
-  protected Map<String,SolrServer> shardToLeaderClient = new HashMap<String,SolrServer>();
   protected Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<String,CloudJettyRunner>();
   
-  class CloudJettyRunner {
+  static class CloudJettyRunner {
     JettySolrRunner jetty;
     String nodeName;
     String coreNodeName;
     String url;
+    CloudSolrServerClient client;
+    public ZkNodeProps info;
   }
   
   static class CloudSolrServerClient {
-    SolrServer client;
+    SolrServer solrClient;
     String shardName;
+    int port;
+    public ZkNodeProps info;
     
     public CloudSolrServerClient() {}
     
     public CloudSolrServerClient(SolrServer client) {
-      this.client = client;
+      this.solrClient = client;
     }
     
     @Override
     public int hashCode() {
       final int prime = 31;
       int result = 1;
-      result = prime * result + ((client == null) ? 0 : client.hashCode());
+      result = prime * result + ((solrClient == null) ? 0 : solrClient.hashCode());
       return result;
     }
     
@@ -140,9 +142,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       if (obj == null) return false;
       if (getClass() != obj.getClass()) return false;
       CloudSolrServerClient other = (CloudSolrServerClient) obj;
-      if (client == null) {
-        if (other.client != null) return false;
-      } else if (!client.equals(other.client)) return false;
+      if (solrClient == null) {
+        if (other.solrClient != null) return false;
+      } else if (!solrClient.equals(other.solrClient)) return false;
       return true;
     }
     
@@ -189,7 +191,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       }
       
       chaosMonkey = new ChaosMonkey(zkServer, zkStateReader,
-          DEFAULT_COLLECTION, shardToJetty, shardToClient, shardToLeaderClient,
+          DEFAULT_COLLECTION, shardToJetty,
           shardToLeaderJetty);
     }
     
@@ -335,9 +337,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
       List<SolrServer> clients) throws Exception {
     zkStateReader.updateCloudState(true);
-    shardToClient.clear();
+    cloudJettys.clear();
     shardToJetty.clear();
-    jettyToInfo.clear();
     
     CloudState cloudState = zkStateReader.getCloudState();
     Map<String,Slice> slices = cloudState.getSlices(DEFAULT_COLLECTION);
@@ -347,6 +348,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           + DEFAULT_COLLECTION + " in " + cloudState.getCollections());
     }
     
+    List<CloudSolrServerClient> theClients = new ArrayList<CloudSolrServerClient>();
     for (SolrServer client : clients) {
       // find info for this client in zk 
       nextClient:
@@ -359,36 +361,23 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           
           if (shard.getKey().contains(":" + port + "_")) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
-            csc.client = client;
+            csc.solrClient = client;
+            csc.port = port;
             csc.shardName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
-            boolean isLeader = shard.getValue().containsKey(
-                ZkStateReader.LEADER_PROP);
-            clientToInfo.put(csc, shard.getValue());
-            List<SolrServer> list = shardToClient.get(slice.getKey());
-            if (list == null) {
-              list = new ArrayList<SolrServer>();
-              shardToClient.put(slice.getKey(), list);
-            }
-            list.add(client);
+            csc.info = shard.getValue();
             
-            if (isLeader) {
-              shardToLeaderClient.put(slice.getKey(), client);
-            }
+            theClients .add(csc);
+            
             break nextClient;
           }
         }
       }
     }
-    
-    for (Map.Entry<String,Slice> slice : slices.entrySet()) {
-      // check that things look right
-      assertEquals(slice.getValue().getShards().size(), shardToClient.get(slice.getKey()).size());
-    }
  
     for (JettySolrRunner jetty : jettys) {
       int port = jetty.getLocalPort();
       if (port == -1) {
-        continue; // If we cannot get the port, this jetty is down
+        throw new RuntimeException("Cannot find the port for jetty");
       }
       
       nextJetty:
@@ -396,7 +385,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
           if (shard.getKey().contains(":" + port + "_")) {
-            jettyToInfo.put(jetty, shard.getValue());
             List<CloudJettyRunner> list = shardToJetty.get(slice.getKey());
             if (list == null) {
               list = new ArrayList<CloudJettyRunner>();
@@ -406,13 +394,16 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
                 ZkStateReader.LEADER_PROP);
             CloudJettyRunner cjr = new CloudJettyRunner();
             cjr.jetty = jetty;
+            cjr.info = shard.getValue();
             cjr.nodeName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
             cjr.coreNodeName = shard.getKey();
             cjr.url = shard.getValue().get(ZkStateReader.BASE_URL_PROP) + "/" + shard.getValue().get(ZkStateReader.CORE_NAME_PROP);
+            cjr.client = findClientByPort(port, theClients);
             list.add(cjr);
             if (isLeader) {
               shardToLeaderJetty.put(slice.getKey(), cjr);
             }
+            cloudJettys.add(cjr);
             break nextJetty;
           }
         }
@@ -431,6 +422,15 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
   }
   
+  private CloudSolrServerClient findClientByPort(int port, List<CloudSolrServerClient> theClients) {
+    for (CloudSolrServerClient client : theClients) {
+      if (client.port == port) {
+        return client;
+      }
+    }
+    throw new IllegalArgumentException("Client with the give port does not exist:" + port);
+  }
+
   @Override
   protected void setDistributedParams(ModifiableSolrParams params) {
     
@@ -509,11 +509,15 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   protected void del(String q) throws Exception {
     controlClient.deleteByQuery(q);
+    cloudClient.deleteByQuery(q);
+
+    /***
     for (SolrServer client : clients) {
       UpdateRequest ureq = new UpdateRequest();
       // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
       ureq.deleteByQuery(q).process(client);
     }
+     ***/
   }// serial commit...
   
   /*
@@ -647,9 +651,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     // new server should be part of first shard
     // how many docs are on the new shard?
-    for (SolrServer client : shardToClient.get("shard1")) {
+    for (CloudJettyRunner cjetty : shardToJetty.get("shard1")) {
       if (VERBOSE) System.err.println("total:"
-          + client.query(new SolrQuery("*:*")).getResults().getNumFound());
+          + cjetty.client.solrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     
     checkShardConsistency("shard1");
@@ -673,24 +677,32 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     commit();
     
-    long deadShardCount = shardToClient.get(SHARD2).get(0).query(query).getResults().getNumFound();
-    
+    long deadShardCount = shardToJetty.get(SHARD2).get(0).client.solrClient
+        .query(query).getResults().getNumFound();
+
     query("q", "*:*", "sort", "n_tl1 desc");
     
     // kill a shard
-    JettySolrRunner deadShard = chaosMonkey.stopShard(SHARD2, 0);
+    CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD2, 0);
     cloudClient.connect();
-    int tries = 0;
-    while (cloudClient.getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(new CloudSolrServerClient(shardToClient.get(SHARD2).get(0))).get(ZkStateReader.NODE_NAME_PROP))) {
-      if (tries++ == 60) {
-        fail("Shard still reported as live in zk");
-      }
-      Thread.sleep(1000);
+
+    // we are careful to make sure the downed node is no longer in the state,
+    // because on some systems (especially freebsd w/ blackhole enabled), trying
+    // to talk to a downed node causes grief
+    Set<CloudJettyRunner> jetties = new HashSet<CloudJettyRunner>();
+    jetties.addAll(shardToJetty.get(SHARD2));
+    jetties.remove(deadShard);
+    
+    for (CloudJettyRunner cjetty : jetties) {
+      waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
+          .getFilter()).getCores().getZkController().getZkStateReader(),
+          deadShard);
     }
-	
+    waitToSeeNotLive(cloudClient.getZkStateReader(), deadShard);
+
     // ensure shard is dead
     try {
-      index_specific(shardToClient.get(SHARD2).get(0), id, 999, i1, 107, t1,
+      index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1,
           "specific doc!");
       fail("This server should be down and this update should have failed");
     } catch (SolrServerException e) {
@@ -705,21 +717,11 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     // System.out.println("clouddocs:" + cloudClientDocs);
     
     // try to index to a living shard at shard2
-    
-    // we are careful to make sure the downed node is no longer in the state,
-    // because on some systems (especially freebsd w/ blackhole enabled), trying
-    // to talk to a downed node causes grief
-    tries = 0;
-    while (((SolrDispatchFilter) shardToJetty.get(SHARD2).get(1).jetty.getDispatchFilter().getFilter()).getCores().getZkController().getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(new CloudSolrServerClient(shardToClient.get(SHARD2).get(0))).get(ZkStateReader.NODE_NAME_PROP))) {
-      if (tries++ == 120) {
-        fail("Shard still reported as live in zk");
-      }
-      Thread.sleep(1000);
-    }
+
 	
     long numFound1 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     
-    index_specific(shardToClient.get(SHARD2).get(1), id, 1000, i1, 108, t1,
+    index_specific(shardToJetty.get(SHARD2).get(1).client.solrClient, id, 1000, i1, 108, t1,
         "specific doc!");
     
     commit();
@@ -777,21 +779,29 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
     
     // this should trigger a recovery phase on deadShard
-    deadShard.start(true);
+    ChaosMonkey.start(deadShard.jetty);
     
     // make sure we have published we are recovering
     Thread.sleep(1500);
     
     waitForRecoveriesToFinish(false);
     
-    deadShardCount = shardToClient.get(SHARD2).get(0).query(query).getResults().getNumFound();
+    deadShardCount = shardToJetty.get(SHARD2).get(0).client.solrClient
+        .query(query).getResults().getNumFound();
     // if we properly recovered, we should now have the couple missing docs that
     // came in while shard was down
     checkShardConsistency(true, false);
     
     
     // recover over 100 docs so we do more than just peer sync (replicate recovery)
-    deadShard = chaosMonkey.stopShard(SHARD2, 0);
+    chaosMonkey.stopJetty(deadShard);
+    
+    for (CloudJettyRunner cjetty : jetties) {
+      waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
+          .getFilter()).getCores().getZkController().getZkStateReader(),
+          deadShard);
+    }
+    waitToSeeNotLive(cloudClient.getZkStateReader(), deadShard);
     
     for (int i = 0; i < 226; i++) {
       doc = new SolrInputDocument();
@@ -804,7 +814,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     commit();
     
-    deadShard.start(true);
+    Thread.sleep(1500);
+    
+    ChaosMonkey.start(deadShard.jetty);
     
     // make sure we have published we are recovering
     Thread.sleep(1500);
@@ -1009,10 +1021,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   protected String checkShardConsistency(String shard, boolean verbose)
       throws Exception {
     
-    List<SolrServer> solrClients = shardToClient.get(shard);
-    if (solrClients == null) {
+    List<CloudJettyRunner> solrJetties = shardToJetty.get(shard);
+    if (solrJetties == null) {
       throw new RuntimeException("shard not found:" + shard + " keys:"
-          + shardToClient.keySet());
+          + shardToJetty.keySet());
     }
     long num = -1;
     long lastNum = -1;
@@ -1024,18 +1036,18 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         "The client count does not match up with the shard count for slice:"
             + shard,
         zkStateReader.getCloudState().getSlice(DEFAULT_COLLECTION, shard)
-            .getShards().size(), solrClients.size());
+            .getShards().size(), solrJetties.size());
 
     SolrServer lastClient = null;
-    for (SolrServer client : solrClients) {
-      ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(client));
+    for (CloudJettyRunner cjetty : solrJetties) {
+      ZkNodeProps props = cjetty.info;
       if (verbose) System.err.println("client" + cnt++);
       if (verbose) System.err.println("PROPS:" + props);
       
       try {
         SolrQuery query = new SolrQuery("*:*");
         query.set("distrib", false);
-        num = client.query(query).getResults().getNumFound();
+        num = cjetty.client.solrClient.query(query).getResults().getNumFound();
       } catch (SolrServerException e) {
         if (verbose) System.err.println("error contacting client: "
             + e.getMessage() + "\n");
@@ -1060,7 +1072,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       if (active && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
           failMessage = shard + " is not consistent.  Got " + lastNum + " from " + lastClient + "lastClient"
-              + " and got " + num + " from " + client;
+              + " and got " + num + " from " + cjetty.url;
 
           if (verbose || true) {
             System.err.println("######" + failMessage);
@@ -1071,14 +1083,14 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             query.set("sort","id asc");
 
             SolrDocumentList lst1 = lastClient.query(query).getResults();
-            SolrDocumentList lst2 = client.query(query).getResults();
+            SolrDocumentList lst2 = cjetty.client.solrClient.query(query).getResults();
 
-            showDiff(lst1, lst2, lastClient.toString(), client.toString());
+            showDiff(lst1, lst2, lastClient.toString(), cjetty.client.solrClient.toString());
           }
 
         }
         lastNum = num;
-        lastClient = client;
+        lastClient = cjetty.client.solrClient;
       }
     }
     return failMessage;
@@ -1125,7 +1137,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     updateMappingsFromZk(jettys, clients);
     
-    Set<String> theShards = shardToClient.keySet();
+    Set<String> theShards = shardToJetty.keySet();
     String failMessage = null;
     for (String shard : theShards) {
       String shardFailMessage = checkShardConsistency(shard, verbose);
@@ -1140,15 +1152,15 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     if (checkVsControl) {
       // now check that the right # are on each shard
-      theShards = shardToClient.keySet();
+      theShards = shardToJetty.keySet();
       int cnt = 0;
       for (String s : theShards) {
-        int times = shardToClient.get(s).size();
+        int times = shardToJetty.get(s).size();
         for (int i = 0; i < times; i++) {
           try {
-            SolrServer client = shardToClient.get(s).get(i);
-            ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(
-                client));
+            CloudJettyRunner cjetty = shardToJetty.get(s).get(i);
+            ZkNodeProps props = cjetty.info;
+            SolrServer client = cjetty.client.solrClient;
             boolean active = props.get(ZkStateReader.STATE_PROP).equals(
                 ZkStateReader.ACTIVE);
             if (active) {
@@ -1180,9 +1192,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   private SolrServer getClient(String nodeName) {
-    for (CloudSolrServerClient client : clientToInfo.keySet()) {
+    for (CloudJettyRunner cjetty : cloudJettys) {
+      CloudSolrServerClient client = cjetty.client;
       if (client.shardName.equals(nodeName)) {
-        return client.client;
+        return client.solrClient;
       }
     }
     return null;
@@ -1216,12 +1229,13 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           + DEFAULT_COLLECTION + " in " + cloudState.getCollections());
     }
     
-    for (SolrServer client : clients) {
+    for (CloudJettyRunner cjetty : cloudJettys) {
+      CloudSolrServerClient client = cjetty.client;
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
           String shardName = new URI(
-              ((HttpSolrServer) client).getBaseURL()).getPort()
+              ((HttpSolrServer) client.solrClient).getBaseURL()).getPort()
               + "_solr_";
           if (verbose && shard.getKey().endsWith(shardName)) {
             System.err.println("shard:" + slice.getKey());
@@ -1231,12 +1245,14 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       }
       
       long count = 0;
-      String currentState = clientToInfo.get(new CloudSolrServerClient(client))
-          .get(ZkStateReader.STATE_PROP);
-      if (currentState != null && currentState.equals(ZkStateReader.ACTIVE)) {
+      String currentState = cjetty.info.get(ZkStateReader.STATE_PROP);
+      if (currentState != null
+          && currentState.equals(ZkStateReader.ACTIVE)
+          && zkStateReader.getCloudState().liveNodesContain(
+              cjetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
         SolrQuery query = new SolrQuery("*:*");
         query.set("distrib", false);
-        count = client.query(query).getResults().getNumFound();
+        count = client.solrClient.query(query).getResults().getNumFound();
       }
       
       if (verbose) System.err.println("client docs:" + count + "\n\n");
@@ -1259,7 +1275,14 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     return rsp;
   }
   
-  class StopableIndexingThread extends Thread {
+  abstract class StopableThread extends Thread {
+    public StopableThread(String name) {
+      super(name);
+    }
+    public abstract void safeStop();
+  }
+  
+  class StopableIndexingThread extends StopableThread {
     private volatile boolean stop = false;
     protected final int startI;
     protected final List<Integer> deletes = new ArrayList<Integer>();
@@ -1333,6 +1356,55 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
   };
   
+  class StopableSearchThread extends StopableThread {
+    private volatile boolean stop = false;
+    protected final AtomicInteger fails = new AtomicInteger();
+    private String[] QUERIES = new String[] {"to come","their country","aid","co*"};
+    
+    public StopableSearchThread() {
+      super("StopableSearchThread");
+      setDaemon(true);
+    }
+    
+    @Override
+    public void run() {
+      Random random = random();
+      int numSearches = 0;
+      
+      while (true && !stop) {
+        numSearches++;
+        try {
+          //to come to the aid of their country.
+          cloudClient.query(new SolrQuery(QUERIES[random.nextInt(QUERIES.length)]));
+        } catch (Exception e) {
+          System.err.println("QUERY REQUEST FAILED:");
+          e.printStackTrace();
+          if (e instanceof SolrServerException) {
+            System.err.println("ROOT CAUSE:");
+            ((SolrServerException) e).getRootCause().printStackTrace();
+          }
+          fails.incrementAndGet();
+        }
+        try {
+          Thread.sleep(random.nextInt(4000) + 300);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+      
+      System.err.println("num searches done:" + numSearches + " with " + fails + " fails");
+    }
+    
+    public void safeStop() {
+      stop = true;
+    }
+    
+    public int getFails() {
+      return fails.get();
+    }
+    
+  };
+  
   protected void waitForThingsToLevelOut(int waitForRecTimeSeconds) throws Exception {
     log.info("Wait for recoveries to finish - wait " + waitForRecTimeSeconds + " for each attempt");
     int cnt = 0;
@@ -1348,7 +1420,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       updateMappingsFromZk(jettys, clients);
       
-      Set<String> theShards = shardToClient.keySet();
+      Set<String> theShards = shardToJetty.keySet();
       String failMessage = null;
       for (String shard : theShards) {
         failMessage = checkShardConsistency(shard, false);
@@ -1413,6 +1485,18 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       return s;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
+    }
+  }
+  
+  protected void waitToSeeNotLive(ZkStateReader zkStateReader,
+      CloudJettyRunner cjetty) throws InterruptedException {
+    int tries = 0;
+    while (zkStateReader.getCloudState()
+        .liveNodesContain(cjetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
+      if (tries++ == 120) {
+        fail("Shard still reported as live in zk");
+      }
+      Thread.sleep(1000);
     }
   }
 }

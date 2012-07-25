@@ -17,7 +17,7 @@
             <field column="description" xpath="/RDF/item/description" />
             <field column="creator" xpath="/RDF/item/creator" />
             <field column="item-subject" xpath="/RDF/item/subject" />
-            <field column="date" xpath="/RDF/item/date" dateTimeFormat="yyyy-MM-dd'T'hh:mm:ss" />
+            <field column="date" xpath="/RDF/item/date" dateTimeFormat="yyyy-MM-dd'T'HH:mm:ss" />
             <field column="slash-department" xpath="/RDF/item/department" />
             <field column="slash-section" xpath="/RDF/item/section" />
             <field column="slash-comments" xpath="/RDF/item/comments" />
