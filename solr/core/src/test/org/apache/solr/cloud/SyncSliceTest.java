@@ -150,31 +150,34 @@ public class SyncSliceTest extends FullSolrCloudTest {
     
     chaosMonkey.killJetty(leaderJetty);
 
-    CloudJettyRunner upJetty = jetties.iterator().next();
     // we are careful to make sure the downed node is no longer in the state,
     // because on some systems (especially freebsd w/ blackhole enabled), trying
     // to talk to a downed node causes grief
-    assertNotNull(upJetty.jetty.getDispatchFilter());
-    assertNotNull(upJetty.jetty.getDispatchFilter());
-    assertNotNull(upJetty.jetty.getDispatchFilter().getFilter());
-    
-    
-    int tries = 0;
-    while (((SolrDispatchFilter) upJetty.jetty.getDispatchFilter().getFilter())
-        .getCores().getZkController().getZkStateReader().getCloudState()
-        .liveNodesContain(leaderJetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
-      if (tries++ == 120) {
-        fail("Shard still reported as live in zk");
-      }
-      Thread.sleep(1000);
+    for (CloudJettyRunner cjetty : jetties) {
+      waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
+          .getFilter()).getCores().getZkController().getZkStateReader(),
+          leaderJetty);
     }
-    
+    waitToSeeNotLive(cloudClient.getZkStateReader(), leaderJetty);
+
     waitForThingsToLevelOut();
     
     checkShardConsistency(false, true);
     
     cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(5, cloudClientDocs);
+  }
+
+  private void waitToSeeNotLive(ZkStateReader zkStateReader,
+      CloudJettyRunner cjetty) throws InterruptedException {
+    int tries = 0;
+    while (zkStateReader.getCloudState()
+        .liveNodesContain(cjetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
+      if (tries++ == 120) {
+        fail("Shard still reported as live in zk");
+      }
+      Thread.sleep(1000);
+    }
   }
 
   private void waitForThingsToLevelOut() throws Exception {
