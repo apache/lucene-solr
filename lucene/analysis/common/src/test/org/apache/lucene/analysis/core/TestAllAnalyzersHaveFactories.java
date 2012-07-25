@@ -49,7 +49,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests that any newly added Tokenizers/TokenFilters/CharFilters have a
- * corresponding factory.
+ * corresponding factory (and that the SPI configuration is correct)
  */
 public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
 
