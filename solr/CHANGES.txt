@@ -81,6 +81,13 @@ New Features
   already exist.  To assert that the document must exist, use the optimistic
   concurrency feature by specifying a _version_ of 1.  (yonik)
 
+* LUCENE-2510, LUCENE-4044: Migrated Solr's Tokenizer-, TokenFilter-, and
+  CharFilterFactories to the lucene-analysis module. To add new analysis
+  modules to Solr (like ICU, SmartChinese, Morfologik,...), just drop in
+  the JAR files from Lucene's binary distribution into your Solr instance's
+  lib folder. The factories are automatically made available with SPI.
+  (Chris Male, Robert Muir, Uwe Schindler)
+
 
 Bug Fixes
 ----------------------

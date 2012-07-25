@@ -30,6 +30,10 @@ New features
   memory as uncompressed simple arrays.  This uses a tremendous amount
   of RAM but gives good search performance gains.  (Mike McCandless)
 
+* LUCENE-2510, LUCENE-4044: Migrated Solr's Tokenizer-, TokenFilter-, and
+  CharFilterFactories to the lucene-analysis module. The API is still
+  experimental.  (Chris Male, Robert Muir, Uwe Schindler)
+
 API Changes
 
 * LUCENE-4138: update of morfologik (Polish morphological analyzer) to 1.5.3.
