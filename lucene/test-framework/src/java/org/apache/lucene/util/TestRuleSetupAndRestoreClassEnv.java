@@ -88,32 +88,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     restoreProperties.put("solr.solr.home", System.getProperty("solr.solr.home"));
     restoreProperties.put("solr.data.dir", System.getProperty("solr.data.dir"));
 
-    // enable the Lucene 3.x PreflexRW codec explicitly, to work around bugs in IBM J9 / Harmony ServiceLoader:
-    try {
-      final java.lang.reflect.Field spiLoaderField = Codec.class.getDeclaredField("loader");
-      spiLoaderField.setAccessible(true);
-      final Object spiLoader = spiLoaderField.get(null);
-      final java.lang.reflect.Field modifiableServicesField = NamedSPILoader.class.getDeclaredField("modifiableServices");
-      modifiableServicesField.setAccessible(true);
-      @SuppressWarnings({"unchecked","rawtypes"}) final Map<String,Codec> serviceMap =
-        (Map) modifiableServicesField.get(spiLoader);
-      if (!(Codec.forName("Lucene3x") instanceof PreFlexRWCodec)) {
-        if (Constants.JAVA_VENDOR.startsWith("IBM")) {
-          // definitely a buggy version
-          System.err.println("ERROR: Your VM's java.util.ServiceLoader implementation is buggy"+
-            " and does not respect classpath order, please report this to the vendor.");
-        } else {
-          // could just be a classpath issue
-          System.err.println("ERROR: fix your classpath to have tests-framework.jar before lucene-core.jar!"+
-              " If you have already done this, then your VM's java.util.ServiceLoader implementation is buggy"+
-              " and does not respect classpath order, please report this to the vendor.");
-        }
-        serviceMap.put("Lucene3x", new PreFlexRWCodec());
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot access internals of Codec and NamedSPILoader classes", e);
-    }
-    
     // if verbose: print some debugging stuff about which codecs are loaded.
     if (VERBOSE) {
       Set<String> codecs = Codec.availableCodecs();

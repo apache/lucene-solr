@@ -20,8 +20,8 @@ package org.apache.solr.core;
 import junit.framework.Assert;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.analysis.KeywordTokenizerFactory;
-import org.apache.solr.analysis.NGramFilterFactory;
+import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
+import org.apache.lucene.analysis.ngram.NGramFilterFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;

@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Set;
-import java.util.ServiceLoader;
+import java.util.ServiceConfigurationError;
 
 /**
  * Helper class for loading named SPIs from classpath (e.g. Codec, PostingsFormat).
@@ -32,63 +32,52 @@ import java.util.ServiceLoader;
 public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements Iterable<S> {
 
   private final Map<String,S> services;
-
-  /** This field is a hack for LuceneTestCase to get access
-   * to the modifiable map (to work around bugs in IBM J9) */
-  @SuppressWarnings("unused")
-  @Deprecated
-  // Hackidy-Häck-Hack for bugs in IBM J9 ServiceLoader
-  private final Map<String,S> modifiableServices;
-  
   private final Class<S> clazz;
 
   public NamedSPILoader(Class<S> clazz) {
     this.clazz = clazz;
-    final ServiceLoader<S> loader = ServiceLoader.load(clazz);
+    final SPIClassIterator<S> loader = SPIClassIterator.get(clazz);
     final LinkedHashMap<String,S> services = new LinkedHashMap<String,S>();
-    for (final S service : loader) {
-      final String name = service.getName();
-      // only add the first one for each name, later services will be ignored
-      // this allows to place services before others in classpath to make 
-      // them used instead of others
-      if (!services.containsKey(name)) {
-        assert checkServiceName(name);
-        services.put(name, service);
+    while (loader.hasNext()) {
+      final Class<? extends S> c = loader.next();
+      try {
+        final S service = c.newInstance();
+        final String name = service.getName();
+        // only add the first one for each name, later services will be ignored
+        // this allows to place services before others in classpath to make 
+        // them used instead of others
+        if (!services.containsKey(name)) {
+          checkServiceName(name);
+          services.put(name, service);
+        }
+      } catch (Exception e) {
+        throw new ServiceConfigurationError("Cannot instantiate SPI class: " + c.getName(), e);
       }
     }
-    this.modifiableServices = services; // hack, remove when IBM J9 is fixed!
     this.services = Collections.unmodifiableMap(services);
   }
   
   /**
    * Validates that a service name meets the requirements of {@link NamedSPI}
    */
-  public static boolean checkServiceName(String name) {
+  public static void checkServiceName(String name) {
     // based on harmony charset.java
     if (name.length() >= 128) {
       throw new IllegalArgumentException("Illegal service name: '" + name + "' is too long (must be < 128 chars).");
     }
-    for (int i = 0; i < name.length(); i++) {
+    for (int i = 0, len = name.length(); i < len; i++) {
       char c = name.charAt(i);
-      if (!isLetter(c) && !isDigit(c)) {
+      if (!isLetterOrDigit(c)) {
         throw new IllegalArgumentException("Illegal service name: '" + name + "' must be simple ascii alphanumeric.");
       }
     }
-    return true;
   }
   
-  /*
-   * Checks whether a character is a letter (ascii) which are defined in the spec.
+  /**
+   * Checks whether a character is a letter or digit (ascii) which are defined in the spec.
    */
-  private static boolean isLetter(char c) {
-      return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
-  }
-
-  /*
-   * Checks whether a character is a digit (ascii) which are defined in the spec.
-   */
-  private static boolean isDigit(char c) {
-      return ('0' <= c && c <= '9');
+  private static boolean isLetterOrDigit(char c) {
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9');
   }
   
   public S lookup(String name) {
