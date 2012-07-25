@@ -63,6 +63,10 @@ API Changes
   at all. If you want to tweak things like positionIncrementGap and offsetGap,
   analyze the field with KeywordTokenizer instead.  (Grant Ingersoll, Robert Muir)
 
+* LUCENE-4250: Pass fieldName to the PayloadFunction explain method, so it
+  parallels with docScore and the default implementation is correct.
+  (Robert Muir)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.
