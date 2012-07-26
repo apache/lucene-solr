@@ -193,6 +193,9 @@ def checkAll(dirName):
         # see LUCENE-4011: this is a javadocs bug for constants 
         # on annotations it seems?
         pass
+      elif link.startswith('file:'):
+        # TODO: fix file: paths (need to parse URL, unescape %XX and so on)
+        pass
       elif link not in allFiles:
         # We only load HTML... so if the link is another resource (eg
         # SweetSpotSimilarity refs
