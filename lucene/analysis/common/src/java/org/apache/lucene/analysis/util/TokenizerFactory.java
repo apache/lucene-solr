@@ -29,16 +29,7 @@ import java.util.Set;
 public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<TokenizerFactory> loader =
-      getSPILoader(Thread.currentThread().getContextClassLoader());
-  
-  /**
-   * Used by e.g. Apache Solr to get a correctly configured instance
-   * of {@link AnalysisSPILoader} from Solr's classpath.
-   * @lucene.internal
-   */
-  public static AnalysisSPILoader<TokenizerFactory> getSPILoader(ClassLoader classloader) {
-    return new AnalysisSPILoader<TokenizerFactory>(TokenizerFactory.class, classloader);
-  }
+      new AnalysisSPILoader<TokenizerFactory>(TokenizerFactory.class);
   
   /** looks up a tokenizer by name from context classpath */
   public static TokenizerFactory forName(String name) {
@@ -55,6 +46,21 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
     return loader.availableServices();
   }
   
+  /** 
+   * Reloads the factory list from the given {@link ClassLoader}.
+   * Changes to the factories are visible after the method ends, all
+   * iterators ({@link #availableTokenizers()},...) stay consistent. 
+   * 
+   * <p><b>NOTE:</b> Only new factories are added, existing ones are
+   * never removed or replaced.
+   * 
+   * <p><em>This method is expensive and should only be called for discovery
+   * of new factories on the given classpath/classloader!</em>
+   */
+  public static void reloadTokenizers(ClassLoader classloader) {
+    loader.reload(classloader);
+  }
+
   /** Creates a TokenStream of the specified input */
   public abstract Tokenizer create(Reader input);
 }

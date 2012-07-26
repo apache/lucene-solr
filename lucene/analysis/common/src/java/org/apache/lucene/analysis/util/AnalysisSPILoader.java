@@ -33,8 +33,9 @@ import org.apache.lucene.util.SPIClassIterator;
  */
 public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
-  private final Map<String,Class<? extends S>> services;
+  private volatile Map<String,Class<? extends S>> services = Collections.emptyMap();
   private final Class<S> clazz;
+  private final String[] suffixes;
   
   public AnalysisSPILoader(Class<S> clazz) {
     this(clazz, new String[] { clazz.getSimpleName() });
@@ -50,6 +51,22 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   
   public AnalysisSPILoader(Class<S> clazz, String[] suffixes, ClassLoader classloader) {
     this.clazz = clazz;
+    this.suffixes = suffixes;
+    reload(classloader);
+  }
+  
+  /** 
+   * Reloads the internal SPI list from the given {@link ClassLoader}.
+   * Changes to the service list are visible after the method ends, all
+   * iterators (e.g., from {@link #availableServices()},...) stay consistent. 
+   * 
+   * <p><b>NOTE:</b> Only new service providers are added, existing ones are
+   * never removed or replaced.
+   * 
+   * <p><em>This method is expensive and should only be called for discovery
+   * of new service providers on the given classpath/classloader!</em>
+   */
+  public void reload(ClassLoader classloader) {
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<String,Class<? extends S>>();
     while (loader.hasNext()) {
@@ -69,6 +86,11 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       // only add the first one for each name, later services will be ignored
       // this allows to place services before others in classpath to make 
       // them used instead of others
+      //
+      // TODO: Should we disallow duplicate names here?
+      // Allowing it may get confusing on collisions, as different packages
+      // could contain same factory class, which is a naming bug!
+      // When changing this be careful to allow reload()!
       if (!services.containsKey(name)) {
         services.put(name, service);
       }

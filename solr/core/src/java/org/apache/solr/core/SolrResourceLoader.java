@@ -17,13 +17,11 @@
 
 package org.apache.solr.core;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -36,9 +34,9 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.analysis.util.AnalysisSPILoader;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.analysis.util.WordlistLoader;
-import org.apache.lucene.util.WeakIdentityMap;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -47,7 +45,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CodingErrorAction;
 import java.lang.reflect.Constructor;
 
 import javax.naming.Context;
@@ -113,7 +110,7 @@ public class SolrResourceLoader implements ResourceLoader
     
     this.classLoader = createClassLoader(null, parent);
     addToClassLoader("./lib/", null);
-    
+    reloadLuceneSPI();
     this.coreProperties = coreProperties;
   }
 
@@ -134,7 +131,8 @@ public class SolrResourceLoader implements ResourceLoader
    * Adds every file/dir found in the baseDir which passes the specified Filter
    * to the ClassLoader used by this ResourceLoader.  This method <b>MUST</b>
    * only be called prior to using this ResourceLoader to get any resources, otherwise
-   * it's behavior will be non-deterministic.
+   * it's behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
+   * before using this ResourceLoader.
    *
    * @param baseDir base directory whose children (either jars or directories of
    *                classes) will be in the classpath, will be resolved relative
@@ -150,7 +148,8 @@ public class SolrResourceLoader implements ResourceLoader
    * Adds the specific file/dir specified to the ClassLoader used by this
    * ResourceLoader.  This method <b>MUST</b>
    * only be called prior to using this ResourceLoader to get any resources, otherwise
-   * it's behavior will be non-deterministic.
+   * it's behavior will be non-deterministic. You also have to {link #reloadLuceneSPI()}
+   * before using this ResourceLoader.
    *
    * @param path A jar file (or directory of classes) to be added to the classpath,
    *             will be resolved relative the instance dir.
@@ -167,6 +166,22 @@ public class SolrResourceLoader implements ResourceLoader
     } else {
       log.error("Can't find (or read) file to add to classloader: " + file);
     }
+  }
+  
+  /**
+   * Reloads all Lucene SPI implementations using the new classloader.
+   * This method must be called after {@link #addToClassLoader(String)}
+   * and {@link #addToClassLoader(String,FileFilter)} before using
+   * this ResourceLoader.
+   */
+  void reloadLuceneSPI() {
+    // Codecs:
+    PostingsFormat.reloadPostingsFormats(this.classLoader);
+    Codec.reloadCodecs(this.classLoader);
+    // Analysis:
+    CharFilterFactory.reloadCharFilters(this.classLoader);
+    TokenFilterFactory.reloadTokenFilters(this.classLoader);
+    TokenizerFactory.reloadTokenizers(this.classLoader);
   }
   
   private static URLClassLoader replaceClassLoader(final URLClassLoader oldLoader,
@@ -351,9 +366,6 @@ public class SolrResourceLoader implements ResourceLoader
    */
   private static final Map<String, String> classNameCache = new ConcurrentHashMap<String, String>();
 
-  // A static map of AnalysisSPILoaders, keyed by ClassLoader used (because it can change during Solr lifetime) and expected base class:
-  private static final WeakIdentityMap<ClassLoader, Map<Class<?>,AnalysisSPILoader<?>>> expectedTypesSPILoaders = WeakIdentityMap.newConcurrentHashMap();
-
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern = 
       Pattern.compile("((\\Q"+base+".analysis.\\E)|(\\Q"+project+".\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
@@ -388,24 +400,20 @@ public class SolrResourceLoader implements ResourceLoader
     // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
     final Matcher m = legacyAnalysisPattern.matcher(cname);
     if (m.matches()) {
-      log.trace("Trying to load class from analysis SPI");
-      // retrieve the map of classLoader -> expectedType -> SPI from cache / regenerate cache
-      Map<Class<?>,AnalysisSPILoader<?>> spiLoaders = expectedTypesSPILoaders.get(classLoader);
-      if (spiLoaders == null) {
-        spiLoaders = new IdentityHashMap<Class<?>,AnalysisSPILoader<?>>(3);
-        spiLoaders.put(CharFilterFactory.class, CharFilterFactory.getSPILoader(classLoader));
-        spiLoaders.put(TokenizerFactory.class, TokenizerFactory.getSPILoader(classLoader));
-        spiLoaders.put(TokenFilterFactory.class, TokenFilterFactory.getSPILoader(classLoader));
-        expectedTypesSPILoaders.put(classLoader, spiLoaders);
-      }
-      final AnalysisSPILoader<?> loader = spiLoaders.get(expectedType);
-      if (loader != null) {
-        // it's a correct expected type for analysis! Let's go on!
-        try {
-          return clazz = loader.lookupClass(m.group(4)).asSubclass(expectedType);
-        } catch (IllegalArgumentException ex) { 
-          // ok, we fall back to legacy loading
+      final String name = m.group(4);
+      log.trace("Trying to load class from analysis SPI using name='{}'", name);
+      try {
+        if (CharFilterFactory.class == expectedType) {
+          return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
+        } else if (TokenizerFactory.class == expectedType) {
+          return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
+        } else if (TokenFilterFactory.class == expectedType) {
+          return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
+        } else {
+          log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
         }
+      } catch (IllegalArgumentException ex) { 
+        // ok, we fall back to legacy loading
       }
     }
     

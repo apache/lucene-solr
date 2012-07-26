@@ -28,16 +28,34 @@ import java.util.ServiceConfigurationError;
  * Helper class for loading named SPIs from classpath (e.g. Codec, PostingsFormat).
  * @lucene.internal
  */
-// TODO: would be nice to have case insensitive lookups.
 public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements Iterable<S> {
 
-  private final Map<String,S> services;
+  private volatile Map<String,S> services = Collections.emptyMap();
   private final Class<S> clazz;
 
   public NamedSPILoader(Class<S> clazz) {
+    this(clazz, Thread.currentThread().getContextClassLoader());
+  }
+  
+  public NamedSPILoader(Class<S> clazz, ClassLoader classloader) {
     this.clazz = clazz;
-    final SPIClassIterator<S> loader = SPIClassIterator.get(clazz);
-    final LinkedHashMap<String,S> services = new LinkedHashMap<String,S>();
+    reload(classloader);
+  }
+  
+  /** 
+   * Reloads the internal SPI list from the given {@link ClassLoader}.
+   * Changes to the service list are visible after the method ends, all
+   * iterators ({@link #iterator()},...) stay consistent. 
+   * 
+   * <p><b>NOTE:</b> Only new service providers are added, existing ones are
+   * never removed or replaced.
+   * 
+   * <p><em>This method is expensive and should only be called for discovery
+   * of new service providers on the given classpath/classloader!</em>
+   */
+  public void reload(ClassLoader classloader) {
+    final LinkedHashMap<String,S> services = new LinkedHashMap<String,S>(this.services);
+    final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     while (loader.hasNext()) {
       final Class<? extends S> c = loader.next();
       try {

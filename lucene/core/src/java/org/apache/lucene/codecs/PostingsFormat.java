@@ -70,4 +70,19 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   public static Set<String> availablePostingsFormats() {
     return loader.availableServices();
   }
+  
+  /** 
+   * Reloads the postings format list from the given {@link ClassLoader}.
+   * Changes to the postings formats are visible after the method ends, all
+   * iterators ({@link #availablePostingsFormats()},...) stay consistent. 
+   * 
+   * <p><b>NOTE:</b> Only new postings formats are added, existing ones are
+   * never removed or replaced.
+   * 
+   * <p><em>This method is expensive and should only be called for discovery
+   * of new postings formats on the given classpath/classloader!</em>
+   */
+  public static void reloadPostingsFormats(ClassLoader classloader) {
+    loader.reload(classloader);
+  }
 }
