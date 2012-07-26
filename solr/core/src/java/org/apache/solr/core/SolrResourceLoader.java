@@ -252,7 +252,7 @@ public class SolrResourceLoader implements ResourceLoader
    * Override this method to customize loading schema resources.
    *@return the stream for the named schema
    */
-  public InputStream openSchema(String name) {
+  public InputStream openSchema(String name) throws IOException {
     return openResource(name);
   }
   
@@ -260,7 +260,7 @@ public class SolrResourceLoader implements ResourceLoader
    * Override this method to customize loading config resources.
    *@return the stream for the named configuration
    */
-  public InputStream openConfig(String name) {
+  public InputStream openConfig(String name) throws IOException {
     return openResource(name);
   }
   
@@ -272,7 +272,7 @@ public class SolrResourceLoader implements ResourceLoader
    * Override this method to customize loading resources.
    *@return the stream for the named resource
    */
-  public InputStream openResource(String resource) {
+  public InputStream openResource(String resource) throws IOException {
     InputStream is=null;
     try {
       File f0 = new File(resource);

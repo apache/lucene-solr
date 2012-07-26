@@ -105,12 +105,12 @@ public final class IndexSchema {
       name = DEFAULT_SCHEMA_FILE;
     this.resourceName = name;
     loader = solrConfig.getResourceLoader();
-    if (is == null) {
-      is = new InputSource(loader.openSchema(name));
-      is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
-    }
-    readSchema(is);
     try {
+      if (is == null) {
+        is = new InputSource(loader.openSchema(name));
+        is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+      }
+      readSchema(is);
       loader.inform( loader );
     } catch (IOException e) {
       throw new RuntimeException(e);
