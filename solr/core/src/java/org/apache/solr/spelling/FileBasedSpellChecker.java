@@ -59,17 +59,13 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   }
 
   @Override
-  public void build(SolrCore core, SolrIndexSearcher searcher) {
-    try {
-      loadExternalFileDictionary(core);
-      spellChecker.clearIndex();
-      // TODO: you should be able to specify the IWC params?
-      // TODO: if we enable this, codec gets angry since field won't exist in the schema
-      // config.setCodec(core.getCodec());
-      spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
+    loadExternalFileDictionary(core);
+    spellChecker.clearIndex();
+    // TODO: you should be able to specify the IWC params?
+    // TODO: if we enable this, codec gets angry since field won't exist in the schema
+    // config.setCodec(core.getCodec());
+    spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
   }
 
   /**

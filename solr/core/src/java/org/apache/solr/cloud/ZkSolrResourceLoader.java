@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
@@ -69,7 +70,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
    * @return the stream for the named resource
    */
   @Override
-  public InputStream openResource(String resource) {
+  public InputStream openResource(String resource) throws IOException {
     InputStream is = null;
     String file = collectionZkPath + "/" + resource;
     try {
@@ -78,16 +79,16 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
         return new ByteArrayInputStream(bytes);
       }
     } catch (Exception e) {
-      throw new RuntimeException("Error opening " + file, e);
+      throw new IOException("Error opening " + file, e);
     }
     try {
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
       is = classLoader.getResourceAsStream(resource);
     } catch (Exception e) {
-      throw new RuntimeException("Error opening " + resource, e);
+      throw new IOException("Error opening " + resource, e);
     }
     if (is == null) {
-      throw new RuntimeException("Can't find resource '" + resource
+      throw new IOException("Can't find resource '" + resource
           + "' in classpath or '" + collectionZkPath + "', cwd="
           + System.getProperty("user.dir"));
     }
