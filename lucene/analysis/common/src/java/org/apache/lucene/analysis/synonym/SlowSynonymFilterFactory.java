@@ -69,12 +69,12 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
     List<String> wlist=null;
     File synonymFile = new File(synonyms);
     if (synonymFile.exists()) {
-      wlist = loader.getLines(synonyms);
+      wlist = getLines(loader, synonyms);
     } else  {
       List<String> files = splitFileNames(synonyms);
       wlist = new ArrayList<String>();
       for (String file : files) {
-        List<String> lines = loader.getLines(file.trim());
+        List<String> lines = getLines(loader, file.trim());
         wlist.addAll(lines);
       }
     }

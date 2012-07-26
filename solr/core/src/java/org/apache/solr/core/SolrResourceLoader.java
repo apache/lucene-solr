@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.analysis.util.AnalysisSPILoader;
+import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.WeakIdentityMap;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -337,34 +338,12 @@ public class SolrResourceLoader implements ResourceLoader
 
 
   public List<String> getLines(String resource, Charset charset) throws IOException{
-    BufferedReader input = null;
-    ArrayList<String> lines;
     try {
-      input = new BufferedReader(new InputStreamReader(openResource(resource),
-          charset.newDecoder()
-          .onMalformedInput(CodingErrorAction.REPORT)
-          .onUnmappableCharacter(CodingErrorAction.REPORT)));
-
-      lines = new ArrayList<String>();
-      for (String word=null; (word=input.readLine())!=null;) {
-        // skip initial bom marker
-        if (lines.isEmpty() && word.length() > 0 && word.charAt(0) == '\uFEFF')
-          word = word.substring(1);
-        // skip comments
-        if (word.startsWith("#")) continue;
-        word=word.trim();
-        // skip blank lines
-        if (word.length()==0) continue;
-        lines.add(word);
-      }
+      return WordlistLoader.getLines(openResource(resource), charset);
     } catch (CharacterCodingException ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-          "Error loading resource (wrong encoding?): " + resource, ex);
-    } finally {
-      if (input != null)
-        input.close();
+         "Error loading resource (wrong encoding?): " + resource, ex);
     }
-    return lines;
   }
 
   /*

@@ -20,8 +20,6 @@ package org.apache.lucene.analysis.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.List;
 
 /** Fake resource loader for tests: works if you want to fake reading a single file */
 public class StringMockResourceLoader implements ResourceLoader {
@@ -29,10 +27,6 @@ public class StringMockResourceLoader implements ResourceLoader {
 
   public StringMockResourceLoader(String text) {
     this.text = text;
-  }
-
-  public List<String> getLines(String resource) throws IOException {
-    return Arrays.asList(text.split("\n"));
   }
 
   // TODO: do this subpackages thing... wtf is that?

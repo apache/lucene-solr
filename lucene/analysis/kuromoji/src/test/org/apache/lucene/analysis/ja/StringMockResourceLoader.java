@@ -33,10 +33,6 @@ class StringMockResourceLoader implements ResourceLoader {
     this.text = text;
   }
 
-  public List<String> getLines(String resource) throws IOException {
-    return Arrays.asList(text.split("\n"));
-  }
-
   // TODO: do this subpackages thing... wtf is that?
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     try {

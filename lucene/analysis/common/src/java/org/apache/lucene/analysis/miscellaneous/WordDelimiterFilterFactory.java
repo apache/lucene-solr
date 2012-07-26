@@ -63,7 +63,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
       List<String> files = splitFileNames( types );
       List<String> wlist = new ArrayList<String>();
       for( String file : files ){
-        List<String> lines = loader.getLines( file.trim() );
+        List<String> lines = getLines(loader, file.trim());
         wlist.addAll( lines );
       }
       typeTable = parseTypes(wlist);

@@ -17,17 +17,13 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CodingErrorAction;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.apache.lucene.util.IOUtils;
-
+/**
+ * Simple ResourceLoader that uses Class.getResourceAsStream
+ * and Class.forName to open resources and classes, respectively.
+ */
 public class ResourceAsStreamResourceLoader implements ResourceLoader {
   Class<?> clazz;
   
@@ -38,37 +34,6 @@ public class ResourceAsStreamResourceLoader implements ResourceLoader {
   @Override
   public InputStream openResource(String resource) throws IOException {
     return clazz.getResourceAsStream(resource);
-  }
-
-  @Override
-  public List<String> getLines(String resource) throws IOException {
-    BufferedReader input = null;
-    ArrayList<String> lines;
-    try {
-      input = new BufferedReader(new InputStreamReader(openResource(resource),
-          IOUtils.CHARSET_UTF_8.newDecoder()
-          .onMalformedInput(CodingErrorAction.REPORT)
-          .onUnmappableCharacter(CodingErrorAction.REPORT)));
-
-      lines = new ArrayList<String>();
-      for (String word=null; (word=input.readLine())!=null;) {
-        // skip initial bom marker
-        if (lines.isEmpty() && word.length() > 0 && word.charAt(0) == '\uFEFF')
-          word = word.substring(1);
-        // skip comments
-        if (word.startsWith("#")) continue;
-        word=word.trim();
-        // skip blank lines
-        if (word.length()==0) continue;
-        lines.add(word);
-      }
-    } catch (CharacterCodingException ex) {
-      throw new RuntimeException("Error loading resource (wrong encoding?): " + resource, ex);
-    } finally {
-      if (input != null)
-        input.close();
-    }
-    return lines;
   }
 
   // TODO: do this subpackages thing... wtf is that?

@@ -22,6 +22,7 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
 
 /**
  * Tests for {@link StempelPolishStemFilterFactory}

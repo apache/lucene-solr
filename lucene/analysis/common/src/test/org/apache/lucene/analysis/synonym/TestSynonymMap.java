@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.synonym;
  * limitations under the License.
  */
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -272,15 +273,6 @@ public class TestSynonymMap extends LuceneTestCase {
     SlowSynonymFilterFactory ff = new SlowSynonymFilterFactory();
     ff.init(args);
     ff.inform( new ResourceLoader() {
-      @Override
-      public List<String> getLines(String resource) throws IOException {
-        if( !"something.txt".equals(resource) ) {
-          throw new RuntimeException( "should not get a differnt resource" );
-        }
-        List<String> rules = new ArrayList<String>();
-        rules.add( "a,b" );
-        return rules;
-      }
 
       @Override
       public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
@@ -289,7 +281,11 @@ public class TestSynonymMap extends LuceneTestCase {
 
       @Override
       public InputStream openResource(String resource) throws IOException {
-        throw new RuntimeException("stub");
+        if( !"something.txt".equals(resource) ) {
+          throw new RuntimeException( "should not get a differnt resource" );
+        } else {
+          return new ByteArrayInputStream("a,b".getBytes("UTF-8"));
+        }
       }
     });
     
