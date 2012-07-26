@@ -52,7 +52,7 @@
       <dependency org="rome" name="rome" rev="0.9" transitive="false"/>
       <dependency org="jdom" name="jdom" rev="1.0" transitive="false"/>
       <!-- Other ExtracingRequestHandler dependencies -->
-      <dependency org="com.ibm.icu" name="icu4j" rev="4.8.1.1" transitive="false"/>
+      <dependency org="com.ibm.icu" name="icu4j" rev="49.1" transitive="false"/>
       <dependency org="xerces" name="xercesImpl" rev="2.8.1" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>

@@ -2,7 +2,7 @@ ICU License - ICU 1.8.1 and later
 
 COPYRIGHT AND PERMISSION NOTICE
 
-Copyright (c) 1995-2008 International Business Machines Corporation and others
+Copyright (c) 1995-2012 International Business Machines Corporation and others
 
 All rights reserved.
 

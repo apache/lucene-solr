@@ -67,6 +67,8 @@ API Changes
   parallels with docScore and the default implementation is correct.
   (Robert Muir)
 
+* LUCENE-3747: Support Unicode 6.1.0. (Steve Rowe)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.
