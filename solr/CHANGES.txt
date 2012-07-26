@@ -111,7 +111,8 @@ Bug Fixes
 * SOLR-3621: Fix rare concurrency issue when opening a new IndexWriter for replication or rollback.
   (Mark Miller)
 
-* SOLR-1781: Replication index directories not always cleaned up. (Terje Sten Bjerkseth, Mark Miller)
+* SOLR-1781: Replication index directories not always cleaned up. 
+  (Markus Jelsma, Terje Sten Bjerkseth, Mark Miller)
 
 * SOLR-3639: Update ZooKeeper to 3.3.5 for a variety of bug fixes. (Mark Miller)
 
