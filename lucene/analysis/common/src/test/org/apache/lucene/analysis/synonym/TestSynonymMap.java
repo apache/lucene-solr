@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.ngram.NGramTokenizerFactory;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -43,9 +42,9 @@ public class TestSynonymMap extends LuceneTestCase {
     rules.add( "a=>b=>c" );
     try{
         SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
-        fail( "InitializationException must be thrown." );
+        fail( "IllegalArgumentException must be thrown." );
     }
-    catch(InitializationException expected) {}
+    catch(IllegalArgumentException expected) {}
   }
   
   public void testReadMappingRules() throws Exception {

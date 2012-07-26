@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -44,7 +43,7 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements M
     super.init(args);
     assureMatchVersion();
     if (args.containsKey("charset"))
-      throw new InitializationException(
+      throw new IllegalArgumentException(
           "The charset parameter is no longer supported.  "
           + "Please process your documents as Unicode instead.");
   }

@@ -42,21 +42,17 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   private boolean enablePositionIncrements;
   private Set<String> stopTags;
 
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String stopTagFiles = args.get("tags");
     enablePositionIncrements = getBoolean("enablePositionIncrements", false);
     stopTags = null;
-    try {
-      CharArraySet cas = getWordSet(loader, stopTagFiles, false);
-      if (cas != null) {
-        stopTags = new HashSet<String>();
-        for (Object element : cas) {
-          char chars[] = (char[]) element;
-          stopTags.add(new String(chars));
-        }
+    CharArraySet cas = getWordSet(loader, stopTagFiles, false);
+    if (cas != null) {
+      stopTags = new HashSet<String>();
+      for (Object element : cas) {
+        char chars[] = (char[]) element;
+        stopTags.add(new String(chars));
       }
-    } catch (IOException e) {
-      throw new InitializationException("IOException thrown while loading tags", e);
     }
   }
 

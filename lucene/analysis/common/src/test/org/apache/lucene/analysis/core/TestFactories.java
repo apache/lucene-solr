@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
@@ -121,7 +120,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
       factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
       factory.init(Collections.<String,String>emptyMap());
       success = true;
-    } catch (InitializationException ignored) {
+    } catch (IllegalArgumentException ignored) {
       // its ok if we dont provide the right parameters to throw this
     }
     
@@ -130,8 +129,10 @@ public class TestFactories extends BaseTokenStreamTestCase {
       try {
         ((ResourceLoaderAware) factory).inform(new StringMockResourceLoader(""));
         success = true;
-      } catch (InitializationException ignored) {
+      } catch (IOException ignored) {
         // its ok if the right files arent available or whatever to throw this
+      } catch (IllegalArgumentException ignored) {
+        // is this ok? I guess so
       }
     }
     return success;

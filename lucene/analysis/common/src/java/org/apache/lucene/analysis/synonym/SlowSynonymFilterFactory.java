@@ -43,10 +43,10 @@ import java.util.List;
 @Deprecated
 final class SlowSynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String synonyms = args.get("synonyms");
     if (synonyms == null)
-      throw new InitializationException("Missing required argument 'synonyms'.");
+      throw new IllegalArgumentException("Missing required argument 'synonyms'.");
     boolean ignoreCase = getBoolean("ignoreCase", false);
     boolean expand = getBoolean("expand", true);
 
@@ -65,22 +65,18 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   /**
    * @return a list of all rules
    */
-  protected Iterable<String> loadRules( String synonyms, ResourceLoader loader ) {
+  protected Iterable<String> loadRules( String synonyms, ResourceLoader loader ) throws IOException {
     List<String> wlist=null;
-    try {
-      File synonymFile = new File(synonyms);
-      if (synonymFile.exists()) {
-        wlist = loader.getLines(synonyms);
-      } else  {
-        List<String> files = splitFileNames(synonyms);
-        wlist = new ArrayList<String>();
-        for (String file : files) {
-          List<String> lines = loader.getLines(file.trim());
-          wlist.addAll(lines);
-        }
+    File synonymFile = new File(synonyms);
+    if (synonymFile.exists()) {
+      wlist = loader.getLines(synonyms);
+    } else  {
+      List<String> files = splitFileNames(synonyms);
+      wlist = new ArrayList<String>();
+      for (String file : files) {
+        List<String> lines = loader.getLines(file.trim());
+        wlist.addAll(lines);
       }
-    } catch (IOException e) {
-      throw new InitializationException("IOException thrown while loading synonym rules", e);
     }
     return wlist;
   }
@@ -88,7 +84,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   private SlowSynonymMap synMap;
 
   static void parseRules(Iterable<String> rules, SlowSynonymMap map, String mappingSep,
-    String synSep, boolean expansion, TokenizerFactory tokFactory) {
+    String synSep, boolean expansion, TokenizerFactory tokFactory) throws IOException {
     int count=0;
     for (String rule : rules) {
       // To use regexes, we need an expression that specifies an odd number of chars.
@@ -102,7 +98,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
       List<List<String>> target;
 
       if (mapping.size() > 2) {
-        throw new InitializationException("Invalid Synonym Rule:" + rule);
+        throw new IllegalArgumentException("Invalid Synonym Rule:" + rule);
       } else if (mapping.size()==2) {
         source = getSynList(mapping.get(0), synSep, tokFactory);
         target = getSynList(mapping.get(1), synSep, tokFactory);
@@ -133,7 +129,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   }
 
   // a , b c , d e f => [[a],[b,c],[d,e,f]]
-  private static List<List<String>> getSynList(String str, String separator, TokenizerFactory tokFactory) {
+  private static List<List<String>> getSynList(String str, String separator, TokenizerFactory tokFactory) throws IOException {
     List<String> strList = splitSmart(str, separator, false);
     // now split on whitespace to get a list of token strings
     List<List<String>> synList = new ArrayList<List<String>>();
@@ -145,7 +141,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
     return synList;
   }
 
-  private static List<String> splitByTokenizer(String source, TokenizerFactory tokFactory){
+  private static List<String> splitByTokenizer(String source, TokenizerFactory tokFactory) throws IOException{
     StringReader reader = new StringReader( source );
     TokenStream ts = loadTokenizer(tokFactory, reader);
     List<String> tokList = new ArrayList<String>();
@@ -155,16 +151,13 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
         if( termAtt.length() > 0 )
           tokList.add( termAtt.toString() );
       }
-    } catch (IOException e) {
-      throw new InitializationException("IOException thrown while tokenizing source", e);
-    }
-    finally{
+    } finally{
       reader.close();
     }
     return tokList;
   }
 
-  private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname) {
+  private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname) throws IOException {
     TokenizerFactory tokFactory = loader.newInstance(cname, TokenizerFactory.class);
     tokFactory.setLuceneMatchVersion(luceneMatchVersion);
     tokFactory.init( args );

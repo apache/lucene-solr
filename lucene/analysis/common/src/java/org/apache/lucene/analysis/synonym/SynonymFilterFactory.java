@@ -17,11 +17,11 @@ package org.apache.lucene.analysis.synonym;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -52,7 +52,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
       // check if you use the new optional arg "format". this makes no sense for the old one, 
       // as its wired to solr's synonyms format only.
       if (args.containsKey("format") && !args.get("format").equals("solr")) {
-        throw new InitializationException("You must specify luceneMatchVersion >= 3.4 to use alternate synonyms formats");
+        throw new IllegalArgumentException("You must specify luceneMatchVersion >= 3.4 to use alternate synonyms formats");
       }
       delegator = new SlowSynonymFilterFactory();
     }
@@ -66,7 +66,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   }
 
   @Override
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     assert delegator != null : "init() was not called!";
     ((ResourceLoaderAware) delegator).inform(loader);
   }

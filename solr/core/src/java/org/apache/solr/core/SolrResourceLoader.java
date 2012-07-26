@@ -604,7 +604,7 @@ public class SolrResourceLoader implements ResourceLoader
   /**
    * Tell all {@link ResourceLoaderAware} instances about the loader
    */
-  public void inform( ResourceLoader loader ) 
+  public void inform( ResourceLoader loader ) throws IOException
   {
 
      // make a copy to avoid potential deadlock of a callback adding to the list

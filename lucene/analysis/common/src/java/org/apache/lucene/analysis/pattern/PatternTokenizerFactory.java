@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.pattern.PatternTokenizer;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
 /**
@@ -84,12 +83,7 @@ public class PatternTokenizerFactory extends TokenizerFactory
     group = -1;  // use 'split'
     String g = args.get( GROUP );
     if( g != null ) {
-      try {
-        group = Integer.parseInt( g );
-      }
-      catch( Exception ex ) {
-        throw new InitializationException("invalid group argument: " + g);
-      }
+      group = Integer.parseInt( g );
     }
   }
   
@@ -100,7 +94,7 @@ public class PatternTokenizerFactory extends TokenizerFactory
     try {
       return new PatternTokenizer(in, pattern, group);
     } catch( IOException ex ) {
-      throw new InitializationException("IOException thrown creating PatternTokenizer instance", ex);
+      throw new RuntimeException("IOException thrown creating PatternTokenizer instance", ex);
     }
   }
 }

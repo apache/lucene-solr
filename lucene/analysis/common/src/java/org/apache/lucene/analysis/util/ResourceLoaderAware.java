@@ -17,6 +17,8 @@
 
 package org.apache.lucene.analysis.util;
 
+import java.io.IOException;
+
 /**
  * Interface for a component that needs to be initialized by
  * an implementation of {@link ResourceLoader}.
@@ -25,5 +27,5 @@ package org.apache.lucene.analysis.util;
  */
 public interface ResourceLoaderAware {
 
-  void inform(ResourceLoader loader);
+  void inform(ResourceLoader loader) throws IOException;
 }

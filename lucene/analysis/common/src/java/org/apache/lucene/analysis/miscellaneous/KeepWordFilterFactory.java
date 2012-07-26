@@ -44,17 +44,13 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     assureMatchVersion();
   }
 
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String wordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase", false);
     enablePositionIncrements = getBoolean("enablePositionIncrements",false);
 
     if (wordFiles != null) {
-      try {
-        words = getWordSet(loader, wordFiles, ignoreCase);
-      } catch (IOException e) {
-        throw new InitializationException("IOException thrown while loading words", e);
-      }
+      words = getWordSet(loader, wordFiles, ignoreCase);
     }
   }
 

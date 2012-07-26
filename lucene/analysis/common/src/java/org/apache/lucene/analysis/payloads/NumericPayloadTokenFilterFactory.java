@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.payloads;
 
 import org.apache.lucene.analysis.payloads.NumericPayloadTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import java.util.Map;
 
@@ -43,7 +42,7 @@ public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
     String payloadArg = args.get("payload");
     typeMatch = args.get("typeMatch");
     if (payloadArg == null || typeMatch == null) {
-      throw new InitializationException("Both payload and typeMatch are required");
+      throw new IllegalArgumentException("Both payload and typeMatch are required");
     }
     payload = Float.parseFloat(payloadArg);
   }

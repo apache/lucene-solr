@@ -73,7 +73,7 @@ import org.apache.lucene.util.IOUtils;
 public class CollationKeyFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent, ResourceLoaderAware {
   private Collator collator;
 
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String custom = args.get("custom");
     String language = args.get("language");
     String country = args.get("country");
@@ -82,11 +82,11 @@ public class CollationKeyFilterFactory extends TokenFilterFactory implements Mul
     String decomposition = args.get("decomposition");
     
     if (custom == null && language == null)
-      throw new InitializationException("Either custom or language is required.");
+      throw new IllegalArgumentException("Either custom or language is required.");
     
     if (custom != null && 
         (language != null || country != null || variant != null))
-      throw new InitializationException("Cannot specify both language and custom. "
+      throw new IllegalArgumentException("Cannot specify both language and custom. "
           + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
           + "Then save the entire customized ruleset to a file, and use with the custom parameter");
     
@@ -109,7 +109,7 @@ public class CollationKeyFilterFactory extends TokenFilterFactory implements Mul
       else if (strength.equalsIgnoreCase("identical"))
         collator.setStrength(Collator.IDENTICAL);
       else
-        throw new InitializationException("Invalid strength: " + strength);
+        throw new IllegalArgumentException("Invalid strength: " + strength);
     }
     
     // set the decomposition flag, otherwise it will be the default.
@@ -121,7 +121,7 @@ public class CollationKeyFilterFactory extends TokenFilterFactory implements Mul
       else if (decomposition.equalsIgnoreCase("full"))
         collator.setDecomposition(Collator.FULL_DECOMPOSITION);
       else
-        throw new InitializationException("Invalid decomposition: " + decomposition);
+        throw new IllegalArgumentException("Invalid decomposition: " + decomposition);
     }
   }
   
@@ -137,7 +137,7 @@ public class CollationKeyFilterFactory extends TokenFilterFactory implements Mul
     Locale locale;
     
     if (language != null && country == null && variant != null)
-      throw new InitializationException("To specify variant, country is required");
+      throw new IllegalArgumentException("To specify variant, country is required");
     else if (language != null && country != null && variant != null)
       locale = new Locale(language, country, variant);
     else if (language != null && country != null)
@@ -152,18 +152,15 @@ public class CollationKeyFilterFactory extends TokenFilterFactory implements Mul
    * Read custom rules from a file, and create a RuleBasedCollator
    * The file cannot support comments, as # might be in the rules!
    */
-  private Collator createFromRules(String fileName, ResourceLoader loader) {
+  private Collator createFromRules(String fileName, ResourceLoader loader) throws IOException {
     InputStream input = null;
     try {
      input = loader.openResource(fileName);
      String rules = toUTF8String(input);
      return new RuleBasedCollator(rules);
-    } catch (IOException e) {
-      // io error
-      throw new InitializationException("IOException thrown while loading rules", e);
     } catch (ParseException e) {
       // invalid rules
-      throw new InitializationException("ParseException thrown while parsing rules", e);
+      throw new IOException("ParseException thrown while parsing rules", e);
     } finally {
       IOUtils.closeWhileHandlingException(input);
     }

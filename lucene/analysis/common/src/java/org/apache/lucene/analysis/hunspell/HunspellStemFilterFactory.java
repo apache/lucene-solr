@@ -17,14 +17,15 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -66,11 +67,11 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
    *  
    * @param loader ResourceLoader used to load the files
    */
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     assureMatchVersion();
     String dictionaryArg = args.get(PARAM_DICTIONARY);
     if (dictionaryArg == null) {
-      throw new InitializationException("Parameter " + PARAM_DICTIONARY + " is mandatory.");
+      throw new IllegalArgumentException("Parameter " + PARAM_DICTIONARY + " is mandatory.");
     }
     String dictionaryFiles[] = args.get(PARAM_DICTIONARY).split(",");
     String affixFile = args.get(PARAM_AFFIX);
@@ -78,7 +79,7 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
     if(pic != null) {
       if(pic.equalsIgnoreCase(TRUE)) ignoreCase = true;
       else if(pic.equalsIgnoreCase(FALSE)) ignoreCase = false;
-      else throw new InitializationException("Unknown value for " + PARAM_IGNORE_CASE + ": " + pic + ". Must be true or false");
+      else throw new IllegalArgumentException("Unknown value for " + PARAM_IGNORE_CASE + ": " + pic + ". Must be true or false");
     }
 
     String strictAffixParsingParam = args.get(PARAM_STRICT_AFFIX_PARSING);
@@ -86,7 +87,7 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
     if(strictAffixParsingParam != null) {
       if(strictAffixParsingParam.equalsIgnoreCase(FALSE)) strictAffixParsing = false;
       else if(strictAffixParsingParam.equalsIgnoreCase(TRUE)) strictAffixParsing = true;
-      else throw new InitializationException("Unknown value for " + PARAM_STRICT_AFFIX_PARSING + ": " + strictAffixParsingParam + ". Must be true or false");
+      else throw new IllegalArgumentException("Unknown value for " + PARAM_STRICT_AFFIX_PARSING + ": " + strictAffixParsingParam + ". Must be true or false");
     }
 
     InputStream affix = null;
@@ -100,8 +101,8 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
       affix = loader.openResource(affixFile);
 
       this.dictionary = new HunspellDictionary(affix, dictionaries, luceneMatchVersion, ignoreCase, strictAffixParsing);
-    } catch (Exception e) {
-      throw new InitializationException("Unable to load hunspell data! [dictionary=" + args.get("dictionary") + ",affix=" + affixFile + "]", e);
+    } catch (ParseException e) {
+      throw new IOException("Unable to load hunspell data! [dictionary=" + args.get("dictionary") + ",affix=" + affixFile + "]", e);
     } finally {
       IOUtils.closeWhileHandlingException(affix);
       IOUtils.closeWhileHandlingException(dictionaries);

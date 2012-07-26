@@ -72,7 +72,7 @@ import com.ibm.icu.util.ULocale;
 public class ICUCollationKeyFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent, ResourceLoaderAware {
   private Collator collator;
 
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String custom = args.get("custom");
     String localeID = args.get("locale");
     String strength = args.get("strength");
@@ -85,10 +85,10 @@ public class ICUCollationKeyFilterFactory extends TokenFilterFactory implements 
     String variableTop = args.get("variableTop");
     
     if (custom == null && localeID == null)
-      throw new InitializationException("Either custom or locale is required.");
+      throw new IllegalArgumentException("Either custom or locale is required.");
     
     if (custom != null && localeID != null)
-      throw new InitializationException("Cannot specify both locale and custom. "
+      throw new IllegalArgumentException("Cannot specify both locale and custom. "
           + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
           + "Then save the entire customized ruleset to a file, and use with the custom parameter");
     
@@ -113,7 +113,7 @@ public class ICUCollationKeyFilterFactory extends TokenFilterFactory implements 
       else if (strength.equalsIgnoreCase("identical"))
         collator.setStrength(Collator.IDENTICAL);
       else
-        throw new InitializationException("Invalid strength: " + strength);
+        throw new IllegalArgumentException("Invalid strength: " + strength);
     }
     
     // set the decomposition flag, otherwise it will be the default.
@@ -123,7 +123,7 @@ public class ICUCollationKeyFilterFactory extends TokenFilterFactory implements 
       else if (decomposition.equalsIgnoreCase("canonical"))
         collator.setDecomposition(Collator.CANONICAL_DECOMPOSITION);
       else
-        throw new InitializationException("Invalid decomposition: " + decomposition);
+        throw new IllegalArgumentException("Invalid decomposition: " + decomposition);
     }
     
     // expert options: concrete subclasses are always a RuleBasedCollator
@@ -134,7 +134,7 @@ public class ICUCollationKeyFilterFactory extends TokenFilterFactory implements 
       } else if (alternate.equalsIgnoreCase("non-ignorable")) {
         rbc.setAlternateHandlingShifted(false);
       } else {
-        throw new InitializationException("Invalid alternate: " + alternate);
+        throw new IllegalArgumentException("Invalid alternate: " + alternate);
       }
     }
     if (caseLevel != null) {
@@ -146,7 +146,7 @@ public class ICUCollationKeyFilterFactory extends TokenFilterFactory implements 
       } else if (caseFirst.equalsIgnoreCase("upper")) {
         rbc.setUpperCaseFirst(true);
       } else {
-        throw new InitializationException("Invalid caseFirst: " + caseFirst);
+        throw new IllegalArgumentException("Invalid caseFirst: " + caseFirst);
       }
     }
     if (numeric != null) {

@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.util.IOUtils;
 
 import java.util.Map;
+import java.io.IOException;
 import java.io.InputStream;
 import org.xml.sax.InputSource;
 
@@ -75,7 +76,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
       encoding = args.get("encoding");
     hypFile = args.get("hyphenator");
     if (null == hypFile) {
-      throw new InitializationException("Missing required parameter: hyphenator");
+      throw new IllegalArgumentException("Missing required parameter: hyphenator");
     }
 
     minWordSize = getInt("minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
@@ -84,7 +85,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
     onlyLongestMatch = getBoolean("onlyLongestMatch", false);
   }
   
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     InputStream stream = null;
     try {
       if (dictFile != null) // the dictionary can be empty.
@@ -96,8 +97,6 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
       is.setEncoding(encoding); // if it's null let xml parser decide
       is.setSystemId(hypFile);
       hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
-    } catch (Exception e) { // TODO: getHyphenationTree really shouldn't throw "Exception"
-      throw new InitializationException("Exception thrown while loading dictionary and hyphenation file", e);
     } finally {
       IOUtils.closeWhileHandlingException(stream);
     }

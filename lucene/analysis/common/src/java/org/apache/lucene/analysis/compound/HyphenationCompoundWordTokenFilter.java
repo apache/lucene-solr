@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.compound;
  */
 
 import java.io.File;
+import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -134,7 +135,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @throws Exception
    */
   public static HyphenationTree getHyphenationTree(String hyphenationFilename)
-      throws Exception {
+      throws IOException {
     return getHyphenationTree(new InputSource(hyphenationFilename));
   }
 
@@ -146,7 +147,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @throws Exception
    */
   public static HyphenationTree getHyphenationTree(File hyphenationFile)
-      throws Exception {
+      throws IOException {
     return getHyphenationTree(new InputSource(hyphenationFile.toURL().toExternalForm()));
   }
 
@@ -158,7 +159,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @throws Exception
    */
   public static HyphenationTree getHyphenationTree(InputSource hyphenationSource)
-      throws Exception {
+      throws IOException {
     HyphenationTree tree = new HyphenationTree();
     tree.loadPatterns(hyphenationSource);
     return tree;

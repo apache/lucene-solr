@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.charfilter;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMappingCharFilterFactory extends LuceneTestCase {
@@ -29,7 +28,7 @@ public class TestMappingCharFilterFactory extends LuceneTestCase {
       f.parseString( "\\" );
       fail( "escape character cannot be alone." );
     }
-    catch (InitializationException expected) {}
+    catch (IllegalArgumentException expected) {}
     
     assertEquals( "unexpected escaped characters",
         "\\\"\n\t\r\b\f", f.parseString( "\\\\\\\"\\n\\t\\r\\b\\f" ) );
@@ -42,7 +41,7 @@ public class TestMappingCharFilterFactory extends LuceneTestCase {
       f.parseString( "\\u000" );
       fail( "invalid length check." );
     }
-    catch (InitializationException expected) {}
+    catch (IllegalArgumentException expected) {}
 
     try {
       f.parseString( "\\u123x" );

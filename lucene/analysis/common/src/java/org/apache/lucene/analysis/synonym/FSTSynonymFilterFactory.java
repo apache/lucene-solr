@@ -58,7 +58,7 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
   }
 
   @Override
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     final boolean ignoreCase = getBoolean("ignoreCase", false); 
     this.ignoreCase = ignoreCase;
 
@@ -84,10 +84,10 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
         map = loadWordnetSynonyms(loader, true, analyzer);
       } else {
         // TODO: somehow make this more pluggable
-        throw new InitializationException("Unrecognized synonyms format: " + format);
+        throw new IllegalArgumentException("Unrecognized synonyms format: " + format);
       }
-    } catch (Exception e) {
-      throw new InitializationException("Exception thrown while loading synonyms", e);
+    } catch (ParseException e) {
+      throw new IOException("Exception thrown while loading synonyms", e);
     }
   }
   
@@ -98,7 +98,7 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
     final boolean expand = getBoolean("expand", true);
     String synonyms = args.get("synonyms");
     if (synonyms == null)
-      throw new InitializationException("Missing required argument 'synonyms'.");
+      throw new IllegalArgumentException("Missing required argument 'synonyms'.");
     
     CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
       .onMalformedInput(CodingErrorAction.REPORT)
@@ -126,7 +126,7 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
     final boolean expand = getBoolean("expand", true);
     String synonyms = args.get("synonyms");
     if (synonyms == null)
-      throw new InitializationException("Missing required argument 'synonyms'.");
+      throw new IllegalArgumentException("Missing required argument 'synonyms'.");
     
     CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
       .onMalformedInput(CodingErrorAction.REPORT)
@@ -147,7 +147,7 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
     return parser.build();
   }
   
-  private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname){
+  private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname) throws IOException {
     TokenizerFactory tokFactory = loader.newInstance(cname, TokenizerFactory.class);
     tokFactory.setLuceneMatchVersion(luceneMatchVersion);
     tokFactory.init(args);

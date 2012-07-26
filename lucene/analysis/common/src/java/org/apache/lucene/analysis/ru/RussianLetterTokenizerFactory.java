@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.ru.RussianLetterTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory; // javadocs
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
 /** @deprecated Use {@link StandardTokenizerFactory} instead.
@@ -35,7 +34,7 @@ public class RussianLetterTokenizerFactory extends TokenizerFactory {
   public void init(Map<String, String> args) {
     super.init(args);
     if (args.containsKey("charset"))
-      throw new InitializationException(
+      throw new IllegalArgumentException(
           "The charset parameter is no longer supported.  "
           + "Please process your documents as Unicode instead.");
     assureMatchVersion();

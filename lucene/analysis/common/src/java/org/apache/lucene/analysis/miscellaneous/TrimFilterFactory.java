@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -45,13 +44,8 @@ public class TrimFilterFactory extends TokenFilterFactory {
     super.init( args );
     
     String v = args.get( "updateOffsets" );
-    if( v != null ) {
-      try {
-        updateOffsets = Boolean.valueOf( v );
-      }
-      catch( Exception ex ) {
-        throw new InitializationException("Error reading updateOffsets value.  Must be true or false.", ex);
-      }
+    if (v != null) {
+      updateOffsets = Boolean.valueOf( v );
     }
   }
   

@@ -39,26 +39,22 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
   private CharArrayMap<String> dictionary = null;
   private boolean ignoreCase;
 
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String dictionaryFiles = args.get("dictionary");
     ignoreCase = getBoolean("ignoreCase", false);
     if (dictionaryFiles != null) {
       assureMatchVersion();
       List<String> files = splitFileNames(dictionaryFiles);
-      try {
-        if (files.size() > 0) {
-          dictionary = new CharArrayMap<String>(luceneMatchVersion, 
-              files.size() * 10, ignoreCase);
-          for (String file : files) {
-            List<String> list = loader.getLines(file.trim());
-            for (String line : list) {
-              String[] mapping = line.split("\t", 2);
-              dictionary.put(mapping[0], mapping[1]);
-            }
+      if (files.size() > 0) {
+        dictionary = new CharArrayMap<String>(luceneMatchVersion, 
+            files.size() * 10, ignoreCase);
+        for (String file : files) {
+          List<String> list = loader.getLines(file.trim());
+          for (String line : list) {
+            String[] mapping = line.split("\t", 2);
+            dictionary.put(mapping[0], mapping[1]);
           }
         }
-      } catch (IOException e) {
-        throw new InitializationException("IOException thrown while loading dictionary", e);
       }
     }
   }
