@@ -29,16 +29,7 @@ import org.apache.lucene.analysis.CharFilter;
 public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<CharFilterFactory> loader =
-      getSPILoader(Thread.currentThread().getContextClassLoader());
-  
-  /**
-   * Used by e.g. Apache Solr to get a correctly configured instance
-   * of {@link AnalysisSPILoader} from Solr's classpath.
-   * @lucene.internal
-   */
-  public static AnalysisSPILoader<CharFilterFactory> getSPILoader(ClassLoader classloader) {
-    return new AnalysisSPILoader<CharFilterFactory>(CharFilterFactory.class, classloader);
-  }
+      new AnalysisSPILoader<CharFilterFactory>(CharFilterFactory.class);
   
   /** looks up a charfilter by name from context classpath */
   public static CharFilterFactory forName(String name) {
@@ -55,5 +46,21 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
     return loader.availableServices();
   }
 
+  /** 
+   * Reloads the factory list from the given {@link ClassLoader}.
+   * Changes to the factories are visible after the method ends, all
+   * iterators ({@link #availableCharFilters()},...) stay consistent. 
+   * 
+   * <p><b>NOTE:</b> Only new factories are added, existing ones are
+   * never removed or replaced.
+   * 
+   * <p><em>This method is expensive and should only be called for discovery
+   * of new factories on the given classpath/classloader!</em>
+   */
+  public static void reloadCharFilters(ClassLoader classloader) {
+    loader.reload(classloader);
+  }
+
+  /** Wraps the given Reader with a CharFilter. */
   public abstract Reader create(Reader input);
 }
