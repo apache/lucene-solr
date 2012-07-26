@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.stempel.StempelFilter;
 import org.apache.lucene.analysis.stempel.StempelStemmer;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.egothor.stemmer.Trie;
@@ -39,11 +38,7 @@ public class StempelPolishStemFilterFactory extends TokenFilterFactory implement
     return new StempelFilter(input, new StempelStemmer(stemmer));
   }
 
-  public void inform(ResourceLoader loader) {
-    try {
-      stemmer = StempelStemmer.load(loader.openResource(STEMTABLE));
-    } catch (IOException e) {
-      throw new InitializationException("Could not load stem table: " + STEMTABLE, e);
-    }
+  public void inform(ResourceLoader loader) throws IOException {
+    stemmer = StempelStemmer.load(loader.openResource(STEMTABLE));
   }
 }

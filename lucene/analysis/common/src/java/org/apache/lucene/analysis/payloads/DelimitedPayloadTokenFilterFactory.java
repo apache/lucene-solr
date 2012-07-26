@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.analysis.payloads.FloatEncoder;
 import org.apache.lucene.analysis.payloads.IntegerEncoder;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -62,7 +61,7 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
   public void inform(ResourceLoader loader) {
     String encoderClass = args.get(ENCODER_ATTR);
     if (encoderClass == null) {
-      throw new InitializationException("Parameter " + ENCODER_ATTR + " is mandatory");
+      throw new IllegalArgumentException("Parameter " + ENCODER_ATTR + " is mandatory");
     }
     if (encoderClass.equals("float")){
       encoder = new FloatEncoder();
@@ -79,7 +78,7 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
       if (delim.length() == 1) {
         delimiter = delim.charAt(0);
       } else{
-        throw new InitializationException("Delimiter must be one character only");
+        throw new IllegalArgumentException("Delimiter must be one character only");
       }
     }
   }

@@ -27,7 +27,6 @@ import org.apache.commons.codec.Encoder;
 import org.apache.commons.codec.language.*;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.PhoneticFilter;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -90,7 +89,7 @@ public class PhoneticFilterFactory extends TokenFilterFactory
     
     String name = args.get( ENCODER );
     if( name == null ) {
-      throw new InitializationException("Missing required parameter: " + ENCODER
+      throw new IllegalArgumentException("Missing required parameter: " + ENCODER
           + " [" + registry.keySet() + "]");
     }
     clazz = registry.get(name.toUpperCase(Locale.ROOT));
@@ -104,7 +103,7 @@ public class PhoneticFilterFactory extends TokenFilterFactory
       try {
         setMaxCodeLenMethod = clazz.getMethod("setMaxCodeLen", int.class);
       } catch (Exception e) {
-        throw new InitializationException("Encoder " + name + " / " + clazz + " does not support " + MAX_CODE_LENGTH, e);
+        throw new IllegalArgumentException("Encoder " + name + " / " + clazz + " does not support " + MAX_CODE_LENGTH, e);
       }
     }
 
@@ -119,9 +118,9 @@ public class PhoneticFilterFactory extends TokenFilterFactory
     try {
       return Class.forName(lookupName).asSubclass(Encoder.class);
     } catch (ClassNotFoundException cnfe) {
-      throw new InitializationException("Unknown encoder: " + name + " must be full class name or one of " + registry.keySet(), cnfe);
+      throw new IllegalArgumentException("Unknown encoder: " + name + " must be full class name or one of " + registry.keySet(), cnfe);
     } catch (ClassCastException e) {
-      throw new InitializationException("Not an encoder: " + name + " must be full class name or one of " + registry.keySet(), e);
+      throw new IllegalArgumentException("Not an encoder: " + name + " must be full class name or one of " + registry.keySet(), e);
     }
   }
 
@@ -138,7 +137,7 @@ public class PhoneticFilterFactory extends TokenFilterFactory
       return encoder;
     } catch (Exception e) {
       final Throwable t = (e instanceof InvocationTargetException) ? e.getCause() : e;
-      throw new InitializationException("Error initializing encoder: " + name + " / " + clazz, t);
+      throw new IllegalArgumentException("Error initializing encoder: " + name + " / " + clazz, t);
     }
   }
 

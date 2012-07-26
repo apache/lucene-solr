@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUTransformFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -47,7 +46,7 @@ public class ICUTransformFilterFactory extends TokenFilterFactory implements Mul
     super.init(args);
     String id = args.get("id");
     if (id == null) {
-      throw new InitializationException("id is required.");
+      throw new IllegalArgumentException("id is required.");
     }
     
     int dir;
@@ -57,7 +56,7 @@ public class ICUTransformFilterFactory extends TokenFilterFactory implements Mul
     else if (direction.equalsIgnoreCase("reverse"))
       dir = Transliterator.REVERSE;
     else
-      throw new InitializationException("invalid direction: " + direction);
+      throw new IllegalArgumentException("invalid direction: " + direction);
     
     transliterator = Transliterator.getInstance(id, dir);
   }

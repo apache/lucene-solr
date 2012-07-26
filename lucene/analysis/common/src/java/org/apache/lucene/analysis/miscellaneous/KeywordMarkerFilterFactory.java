@@ -39,15 +39,11 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
   private CharArraySet protectedWords;
   private boolean ignoreCase;
   
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String wordFiles = args.get(PROTECTED_TOKENS);
     ignoreCase = getBoolean("ignoreCase", false);
     if (wordFiles != null) {  
-      try {
-        protectedWords = getWordSet(loader, wordFiles, ignoreCase);
-      } catch (IOException e) {
-        throw new InitializationException("IOException thrown while loading protected words", e);
-      }
+      protectedWords = getWordSet(loader, wordFiles, ignoreCase);
     }
   }
   

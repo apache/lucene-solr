@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.ja;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -30,7 +31,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -68,26 +68,22 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   private boolean discardPunctuation;
 
   @Override
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     mode = getMode(args);
     String userDictionaryPath = args.get(USER_DICT_PATH);
-    try {
-      if (userDictionaryPath != null) {
-        InputStream stream = loader.openResource(userDictionaryPath);
-        String encoding = args.get(USER_DICT_ENCODING);
-        if (encoding == null) {
-          encoding = IOUtils.UTF_8;
-        }
-        CharsetDecoder decoder = Charset.forName(encoding).newDecoder()
-            .onMalformedInput(CodingErrorAction.REPORT)
-            .onUnmappableCharacter(CodingErrorAction.REPORT);
-        Reader reader = new InputStreamReader(stream, decoder);
-        userDictionary = new UserDictionary(reader);
-      } else {
-        userDictionary = null;
+    if (userDictionaryPath != null) {
+      InputStream stream = loader.openResource(userDictionaryPath);
+      String encoding = args.get(USER_DICT_ENCODING);
+      if (encoding == null) {
+        encoding = IOUtils.UTF_8;
       }
-    } catch (Exception e) {
-      throw new InitializationException("Exception thrown while loading dictionary", e);
+      CharsetDecoder decoder = Charset.forName(encoding).newDecoder()
+          .onMalformedInput(CodingErrorAction.REPORT)
+          .onUnmappableCharacter(CodingErrorAction.REPORT);
+      Reader reader = new InputStreamReader(stream, decoder);
+      userDictionary = new UserDictionary(reader);
+    } else {
+      userDictionary = null;
     }
     discardPunctuation = getBoolean(DISCARD_PUNCTUATION, true);
   }

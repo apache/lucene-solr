@@ -46,20 +46,16 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
   }
 
   @Override
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String stopWordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase",false);
     enablePositionIncrements = getBoolean("enablePositionIncrements",false);
 
     if (stopWordFiles != null) {
-      try {
-        if ("snowball".equalsIgnoreCase(args.get("format"))) {
-          stopWords = getSnowballWordSet(loader, stopWordFiles, ignoreCase);
-        } else {
-          stopWords = getWordSet(loader, stopWordFiles, ignoreCase);
-        }
-      } catch (IOException e) {
-        throw new InitializationException("IOException thrown while loading stopwords", e);
+      if ("snowball".equalsIgnoreCase(args.get("format"))) {
+        stopWords = getSnowballWordSet(loader, stopWordFiles, ignoreCase);
+      } else {
+        stopWords = getWordSet(loader, stopWordFiles, ignoreCase);
       }
     } else {
       stopWords = new CharArraySet(luceneMatchVersion, StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);

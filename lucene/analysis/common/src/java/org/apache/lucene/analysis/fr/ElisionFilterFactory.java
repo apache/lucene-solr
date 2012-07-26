@@ -39,16 +39,12 @@ public class ElisionFilterFactory extends TokenFilterFactory implements Resource
 
   private CharArraySet articles;
 
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String articlesFile = args.get("articles");
     boolean ignoreCase = getBoolean("ignoreCase", false);
 
     if (articlesFile != null) {
-      try {
-        articles = getWordSet(loader, articlesFile, ignoreCase);
-      } catch (IOException e) {
-        throw new InitializationException("IOException thrown while loading articles", e);
-      }
+      articles = getWordSet(loader, articlesFile, ignoreCase);
     }
   }
 

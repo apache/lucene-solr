@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.junit.Test;
@@ -96,8 +95,8 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamTestCase {
       typeTokenFilterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
       typeTokenFilterFactory.init(args);
       typeTokenFilterFactory.inform(new ResourceAsStreamResourceLoader(getClass()));
-      fail("not supplying 'types' parameter should cause an InitializationException");
-    } catch (InitializationException e) {
+      fail("not supplying 'types' parameter should cause an IllegalArgumentException");
+    } catch (IllegalArgumentException e) {
       // everything ok
     }
   }

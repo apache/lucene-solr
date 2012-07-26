@@ -49,30 +49,25 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
   protected NormalizeCharMap normMap;
   private String mapping;
 
-  public void inform(ResourceLoader loader) {
-    mapping = args.get( "mapping" );
+  // TODO: this should use inputstreams from the loader, not File!
+  public void inform(ResourceLoader loader) throws IOException {
+    mapping = args.get("mapping");
 
-    if( mapping != null ){
+    if (mapping != null) {
       List<String> wlist = null;
-      try{
-        File mappingFile = new File( mapping );
-        if( mappingFile.exists() ){
-          wlist = loader.getLines( mapping );
+      File mappingFile = new File(mapping);
+      if (mappingFile.exists()) {
+        wlist = loader.getLines(mapping);
+      } else {
+        List<String> files = splitFileNames(mapping);
+        wlist = new ArrayList<String>();
+        for (String file : files) {
+          List<String> lines = loader.getLines(file.trim());
+          wlist.addAll(lines);
         }
-        else{
-          List<String> files = splitFileNames( mapping );
-          wlist = new ArrayList<String>();
-          for( String file : files ){
-            List<String> lines = loader.getLines( file.trim() );
-            wlist.addAll( lines );
-          }
-        }
-      }
-      catch( IOException e ){
-        throw new InitializationException("IOException thrown while loading mappings", e);
       }
       final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
-      parseRules( wlist, builder );
+      parseRules(wlist, builder);
       normMap = builder.build();
       if (normMap.map == null) {
         // if the inner FST is null, it means it accepts nothing (e.g. the file is empty)
@@ -95,7 +90,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     for( String rule : rules ){
       Matcher m = p.matcher( rule );
       if( !m.find() )
-        throw new InitializationException("Invalid Mapping Rule : [" + rule + "], file = " + mapping);
+        throw new IllegalArgumentException("Invalid Mapping Rule : [" + rule + "], file = " + mapping);
       builder.add( parseString( m.group( 1 ) ), parseString( m.group( 2 ) ) );
     }
   }
@@ -110,7 +105,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
       char c = s.charAt( readPos++ );
       if( c == '\\' ){
         if( readPos >= len )
-          throw new InitializationException("Invalid escaped char in [" + s + "]");
+          throw new IllegalArgumentException("Invalid escaped char in [" + s + "]");
         c = s.charAt( readPos++ );
         switch( c ) {
           case '\\' : c = '\\'; break;
@@ -122,7 +117,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
           case 'f' : c = '\f'; break;
           case 'u' :
             if( readPos + 3 >= len )
-              throw new InitializationException("Invalid escaped char in [" + s + "]");
+              throw new IllegalArgumentException("Invalid escaped char in [" + s + "]");
             c = (char)Integer.parseInt( s.substring( readPos, readPos + 4 ), 16 );
             readPos += 4;
             break;

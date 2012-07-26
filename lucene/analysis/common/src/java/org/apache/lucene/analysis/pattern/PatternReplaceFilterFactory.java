@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.pattern;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pattern.PatternReplaceFilter;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
@@ -58,7 +57,7 @@ public class PatternReplaceFilterFactory extends TokenFilterFactory {
         if (r.equals("first")) {
           all = false;
         } else {
-          throw new InitializationException
+          throw new IllegalArgumentException
             ("Configuration Error: 'replace' must be 'first' or 'all' in "
              + this.getClass().getName());
         }

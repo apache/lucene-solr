@@ -48,7 +48,7 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
     assureMatchVersion();
     dictFile = args.get("dictionary");
     if (null == dictFile) {
-      throw new InitializationException("Missing required parameter: dictionary");
+      throw new IllegalArgumentException("Missing required parameter: dictionary");
     }
 
     minWordSize= getInt("minWordSize",CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
@@ -56,12 +56,8 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
     maxSubwordSize= getInt("maxSubwordSize",CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
     onlyLongestMatch = getBoolean("onlyLongestMatch",true);
   }
-  public void inform(ResourceLoader loader) {
-    try {
-      dictionary = super.getWordSet(loader, dictFile, false);
-    } catch (IOException e) {
-      throw new InitializationException("IOException thrown while loading dictionary", e);
-    }
+  public void inform(ResourceLoader loader) throws IOException {
+    dictionary = super.getWordSet(loader, dictFile, false);
   }
   public TokenStream create(TokenStream input) {
     // if the dictionary is null, it means it was empty

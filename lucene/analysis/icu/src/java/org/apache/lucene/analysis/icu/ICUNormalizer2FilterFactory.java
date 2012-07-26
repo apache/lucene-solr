@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -65,7 +64,7 @@ public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements M
     else if (mode.equals("decompose"))
       normalizer = Normalizer2.getInstance(null, name, Normalizer2.Mode.DECOMPOSE);
     else 
-      throw new InitializationException("Invalid mode: " + mode);
+      throw new IllegalArgumentException("Invalid mode: " + mode);
     
     String filter = args.get("filter");
     if (filter != null) {

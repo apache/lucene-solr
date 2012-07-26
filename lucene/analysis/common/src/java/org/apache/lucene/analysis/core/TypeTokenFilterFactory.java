@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.TypeTokenFilter;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -43,25 +42,21 @@ import java.util.Set;
 public class TypeTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
   @Override
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String stopTypesFiles = args.get("types");
     enablePositionIncrements = getBoolean("enablePositionIncrements", false);
     useWhitelist = getBoolean("useWhitelist", false);
     if (stopTypesFiles != null) {
-      try {
-        List<String> files = splitFileNames(stopTypesFiles);
-        if (files.size() > 0) {
-          stopTypes = new HashSet<String>();
-          for (String file : files) {
-            List<String> typesLines = loader.getLines(file.trim());
-            stopTypes.addAll(typesLines);
-          }
+      List<String> files = splitFileNames(stopTypesFiles);
+      if (files.size() > 0) {
+        stopTypes = new HashSet<String>();
+        for (String file : files) {
+          List<String> typesLines = loader.getLines(file.trim());
+          stopTypes.addAll(typesLines);
         }
-      } catch (IOException e) {
-        throw new InitializationException("IOException thrown while loading types", e);
       }
     } else {
-      throw new InitializationException("Missing required parameter: types.");
+      throw new IllegalArgumentException("Missing required parameter: types.");
     }
   }
 

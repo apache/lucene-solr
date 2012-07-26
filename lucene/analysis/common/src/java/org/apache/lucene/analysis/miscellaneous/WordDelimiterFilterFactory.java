@@ -53,28 +53,20 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   public static final String PROTECTED_TOKENS = "protected";
   public static final String TYPES = "types";
   
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String wordFiles = args.get(PROTECTED_TOKENS);
     if (wordFiles != null) {  
-      try {
-        protectedWords = getWordSet(loader, wordFiles, false);
-      } catch (IOException e) {
-        throw new InitializationException("IOException thrown while loading protected words", e);
-      }
+      protectedWords = getWordSet(loader, wordFiles, false);
     }
     String types = args.get(TYPES);
     if (types != null) {
-      try {
-        List<String> files = splitFileNames( types );
-        List<String> wlist = new ArrayList<String>();
-        for( String file : files ){
-          List<String> lines = loader.getLines( file.trim() );
-          wlist.addAll( lines );
-        }
-      typeTable = parseTypes(wlist);
-      } catch (IOException e) {
-        throw new InitializationException("IOException while loading types", e);
+      List<String> files = splitFileNames( types );
+      List<String> wlist = new ArrayList<String>();
+      for( String file : files ){
+        List<String> lines = loader.getLines( file.trim() );
+        wlist.addAll( lines );
       }
+      typeTable = parseTypes(wlist);
     }
   }
 
@@ -128,13 +120,13 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
     for( String rule : rules ){
       Matcher m = typePattern.matcher(rule);
       if( !m.find() )
-        throw new InitializationException("Invalid Mapping Rule : [" + rule + "]");
+        throw new IllegalArgumentException("Invalid Mapping Rule : [" + rule + "]");
       String lhs = parseString(m.group(1).trim());
       Byte rhs = parseType(m.group(2).trim());
       if (lhs.length() != 1)
-        throw new InitializationException("Invalid Mapping Rule : [" + rule + "]. Only a single character is allowed.");
+        throw new IllegalArgumentException("Invalid Mapping Rule : [" + rule + "]. Only a single character is allowed.");
       if (rhs == null)
-        throw new InitializationException("Invalid Mapping Rule : [" + rule + "]. Illegal type.");
+        throw new IllegalArgumentException("Invalid Mapping Rule : [" + rule + "]. Illegal type.");
       typeMap.put(lhs.charAt(0), rhs);
     }
     
@@ -174,7 +166,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
       char c = s.charAt( readPos++ );
       if( c == '\\' ){
         if( readPos >= len )
-          throw new InitializationException("Invalid escaped char in [" + s + "]");
+          throw new IllegalArgumentException("Invalid escaped char in [" + s + "]");
         c = s.charAt( readPos++ );
         switch( c ) {
           case '\\' : c = '\\'; break;
@@ -185,7 +177,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
           case 'f' : c = '\f'; break;
           case 'u' :
             if( readPos + 3 >= len )
-              throw new InitializationException("Invalid escaped char in [" + s + "]");
+              throw new IllegalArgumentException("Invalid escaped char in [" + s + "]");
             c = (char)Integer.parseInt( s.substring( readPos, readPos + 4 ), 16 );
             readPos += 4;
             break;

@@ -42,19 +42,15 @@ import org.apache.lucene.analysis.util.*;
 public class CommonGramsFilterFactory extends TokenFilterFactory implements
     ResourceLoaderAware {
 
-  public void inform(ResourceLoader loader) {
+  public void inform(ResourceLoader loader) throws IOException {
     String commonWordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase", false);
 
     if (commonWordFiles != null) {
-      try {
-        if ("snowball".equalsIgnoreCase(args.get("format"))) {
-          commonWords = getSnowballWordSet(loader, commonWordFiles, ignoreCase);
-        } else {
-          commonWords = getWordSet(loader, commonWordFiles, ignoreCase);
-        }
-      } catch (IOException e) {
-        throw new InitializationException("IOException thrown while loading common word file", e);
+      if ("snowball".equalsIgnoreCase(args.get("format"))) {
+        commonWords = getSnowballWordSet(loader, commonWordFiles, ignoreCase);
+      } else {
+        commonWords = getWordSet(loader, commonWordFiles, ignoreCase);
       }
     } else {
       commonWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;

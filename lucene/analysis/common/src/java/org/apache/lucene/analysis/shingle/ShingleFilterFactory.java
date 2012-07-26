@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.shingle;
 
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
@@ -49,17 +48,17 @@ public class ShingleFilterFactory extends TokenFilterFactory {
     maxShingleSize = getInt("maxShingleSize", 
                             ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
     if (maxShingleSize < 2) {
-      throw new InitializationException("Invalid maxShingleSize (" + maxShingleSize
+      throw new IllegalArgumentException("Invalid maxShingleSize (" + maxShingleSize
                               + ") - must be at least 2");
     }
     minShingleSize = getInt("minShingleSize",
                             ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE);
     if (minShingleSize < 2) {
-      throw new InitializationException("Invalid minShingleSize (" + minShingleSize
+      throw new IllegalArgumentException("Invalid minShingleSize (" + minShingleSize
                               + ") - must be at least 2");
     }
     if (minShingleSize > maxShingleSize) {
-      throw new InitializationException("Invalid minShingleSize (" + minShingleSize
+      throw new IllegalArgumentException("Invalid minShingleSize (" + minShingleSize
                               + ") - must be no greater than maxShingleSize ("
                               + maxShingleSize + ")");
     }

@@ -40,6 +40,7 @@ import javax.xml.xpath.XPathConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -109,7 +110,11 @@ public final class IndexSchema {
       is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
     }
     readSchema(is);
-    loader.inform( loader );
+    try {
+      loader.inform( loader );
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
   
   /**

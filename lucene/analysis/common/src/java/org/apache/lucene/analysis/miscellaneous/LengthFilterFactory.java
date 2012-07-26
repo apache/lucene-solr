@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.LengthFilter;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
@@ -47,7 +46,7 @@ public class LengthFilterFactory extends TokenFilterFactory {
     String minKey = args.get(MIN_KEY);
     String maxKey = args.get(MAX_KEY);
     if (minKey == null || maxKey == null) {
-      throw new InitializationException("Both " + MIN_KEY + " and " + MAX_KEY + " are mandatory");
+      throw new IllegalArgumentException("Both " + MIN_KEY + " and " + MAX_KEY + " are mandatory");
     }
     min=Integer.parseInt(minKey);
     max=Integer.parseInt(maxKey);

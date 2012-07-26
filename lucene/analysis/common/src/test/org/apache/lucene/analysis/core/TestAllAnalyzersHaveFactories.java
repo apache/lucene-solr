@@ -50,7 +50,6 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -127,7 +126,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
           if (!(instance instanceof ResourceLoaderAware)) {
             assertSame(c, instance.create(new StringReader("")).getClass());
           }
-        } catch (InitializationException e) {
+        } catch (IllegalArgumentException e) {
           // TODO: For now pass because some factories have not yet a default config that always works, some require ResourceLoader
         }
       } else if (TokenFilter.class.isAssignableFrom(c)) {
@@ -147,7 +146,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
               assertSame(c, createdClazz);
             }
           }
-        } catch (InitializationException e) {
+        } catch (IllegalArgumentException e) {
           // TODO: For now pass because some factories have not yet a default config that always works, some require ResourceLoader
         }
       } else if (CharFilter.class.isAssignableFrom(c)) {
@@ -167,7 +166,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
               assertSame(c, createdClazz);
             }
           }
-        } catch (InitializationException e) {
+        } catch (IllegalArgumentException e) {
           // TODO: For now pass because some factories have not yet a default config that always works, some require ResourceLoader
         }
       }
