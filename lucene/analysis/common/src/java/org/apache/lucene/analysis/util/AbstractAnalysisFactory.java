@@ -129,12 +129,16 @@ public abstract class AbstractAnalysisFactory {
       words = new CharArraySet(luceneMatchVersion,
           files.size() * 10, ignoreCase);
       for (String file : files) {
-        List<String> wlist = loader.getLines(file.trim());
+        List<String> wlist = getLines(loader, file.trim());
         words.addAll(StopFilter.makeStopSet(luceneMatchVersion, wlist,
             ignoreCase));
       }
     }
     return words;
+  }
+  
+  protected List<String> getLines(ResourceLoader loader, String resource) throws IOException {
+    return WordlistLoader.getLines(loader.openResource(resource), IOUtils.CHARSET_UTF_8);
   }
 
   /** same as {@link #getWordSet(ResourceLoader, String, boolean)},

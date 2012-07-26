@@ -49,7 +49,7 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
         dictionary = new CharArrayMap<String>(luceneMatchVersion, 
             files.size() * 10, ignoreCase);
         for (String file : files) {
-          List<String> list = loader.getLines(file.trim());
+          List<String> list = getLines(loader, file.trim());
           for (String line : list) {
             String[] mapping = line.split("\t", 2);
             dictionary.put(mapping[0], mapping[1]);

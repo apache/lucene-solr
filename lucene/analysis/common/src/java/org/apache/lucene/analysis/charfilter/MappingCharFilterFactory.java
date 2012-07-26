@@ -57,12 +57,12 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
       List<String> wlist = null;
       File mappingFile = new File(mapping);
       if (mappingFile.exists()) {
-        wlist = loader.getLines(mapping);
+        wlist = getLines(loader, mapping);
       } else {
         List<String> files = splitFileNames(mapping);
         wlist = new ArrayList<String>();
         for (String file : files) {
-          List<String> lines = loader.getLines(file.trim());
+          List<String> lines = getLines(loader, file.trim());
           wlist.addAll(lines);
         }
       }

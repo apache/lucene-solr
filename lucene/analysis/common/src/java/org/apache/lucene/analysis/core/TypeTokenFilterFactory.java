@@ -51,7 +51,7 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
       if (files.size() > 0) {
         stopTypes = new HashSet<String>();
         for (String file : files) {
-          List<String> typesLines = loader.getLines(file.trim());
+          List<String> typesLines = getLines(loader, file.trim());
           stopTypes.addAll(typesLines);
         }
       }
