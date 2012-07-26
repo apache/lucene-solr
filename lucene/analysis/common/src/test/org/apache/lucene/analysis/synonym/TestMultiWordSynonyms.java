@@ -1,3 +1,5 @@
+package org.apache.lucene.analysis.synonym;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,20 +17,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.StringMockResourceLoader;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,25 +39,9 @@ public class TestMultiWordSynonyms extends BaseTokenStreamTestCase {
     args.put("synonyms", "synonyms.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new StringMockSolrResourceLoader("a b c,d"));
+    factory.inform(new StringMockResourceLoader("a b c,d"));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("a e"), MockTokenizer.WHITESPACE, false));
     // This fails because ["e","e"] is the value of the token stream
     assertTokenStreamContents(ts, new String[] { "a", "e" });
-  }
-  
-  private class StringMockSolrResourceLoader implements ResourceLoader {
-    String text;
-
-    StringMockSolrResourceLoader(String text) {
-      this.text = text;
-    }
-
-    public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
-      return null;
-    }
-
-    public InputStream openResource(String resource) throws IOException {
-      return new ByteArrayInputStream(text.getBytes("UTF-8"));
-    }
   }
 }
