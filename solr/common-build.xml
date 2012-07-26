@@ -248,14 +248,7 @@
           depends="define-lucene-javadoc-url-SNAPSHOT,define-lucene-javadoc-url-release"/>
 
   <target name="define-lucene-javadoc-url-SNAPSHOT" if="version.contains.SNAPSHOT">
-    <pathconvert property="lucene.javadoc.url">
-      <dirset dir="${common.dir}" includes="build/docs"/>
-      <mapper>
-        <scriptmapper language="javascript">
-          self.addMappedName((new java.io.File(source)).toURI());
-        </scriptmapper>
-      </mapper>
-    </pathconvert>
+    <makeurl file="${common.dir}/build/docs" validate="false" property="lucene.javadoc.url"/>
   </target>
 
   <target name="define-lucene-javadoc-url-release" unless="version.contains.SNAPSHOT">
