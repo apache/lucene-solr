@@ -21,6 +21,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+/**
+ * Factory for {@link DistributedUpdateProcessor}.
+ *
+ * @see DistributedUpdateProcessor
+ */
 public class DistributedUpdateProcessorFactory 
   extends UpdateRequestProcessorFactory 
   implements DistributingUpdateProcessorFactory {

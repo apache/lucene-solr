@@ -35,12 +35,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <p>
  * A logging processor.  This keeps track of all commands that have passed through
  * the chain and prints them on finish().  At the Debug (FINE) level, a message
  * will be logged for each command prior to the next stage in the chain.
- * 
- * If the Log level is not >= INFO the processor will not be created or added to the chain.
- * 
+ * </p>
+ * <p>
+ * If the Log level is not &gt;= INFO the processor will not be created or added to the chain.
+ * </p>
+ *
  * @since solr 1.3
  */
 public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {

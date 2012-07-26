@@ -36,7 +36,7 @@ import java.util.ArrayList;
  * <p>
  * Chain can be configured via solrconfig.xml:
  * </p>
- * <pre>
+ * <pre class="prettyprint">
  * &lt;updateRequestProcessors name="key" default="true"&gt;
  *   &lt;processor class="PathToClass1" /&gt;
  *   &lt;processor class="PathToClass2" /&gt;
@@ -46,9 +46,16 @@ import java.util.ArrayList;
  *   &lt;processor class="solr.RunUpdateProcessorFactory" /&gt;
  * &lt;/updateRequestProcessors&gt;
  * </pre>
+ * <p>
+ * Allmost all processor chains should end with an instance of 
+ * {@link RunUpdateProcessorFactory} unless the user is explicitly 
+ * executing the update commands in an alternative custom 
+ * <code>UpdateRequestProcessorFactory</code>.
+ * </p>
  *
  * @see UpdateRequestProcessorFactory
  * @see #init
+ * @see #createProcessor
  * @since solr 1.3
  */
 public final class UpdateRequestProcessorChain implements PluginInfoInitialized
