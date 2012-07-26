@@ -869,7 +869,7 @@ public class TestPostingsFormat extends LuceneTestCase {
   }
 
   public void test() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("testPostingsFormat"));
 
     boolean indexPayloads = random().nextBoolean();
     // TODO test thread safety of buildIndex too
