@@ -292,10 +292,10 @@ public class SolrResourceLoader implements ResourceLoader
       if (is == null)
         is = classLoader.getResourceAsStream(getConfigDir() + resource);
     } catch (Exception e) {
-      throw new RuntimeException("Error opening " + resource, e);
+      throw new IOException("Error opening " + resource, e);
     }
     if (is==null) {
-      throw new RuntimeException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
+      throw new IOException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
     }
     return is;
   }
