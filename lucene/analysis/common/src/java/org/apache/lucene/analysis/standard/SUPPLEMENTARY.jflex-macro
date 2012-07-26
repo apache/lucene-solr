@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Generated using ICU4J 49.1.0.0 on Sunday, July 15, 2012 5:57:26 AM UTC
+// Generated using ICU4J 49.1.0.0 on Thursday, July 26, 2012 10:22:01 PM UTC
 // by org.apache.lucene.analysis.icu.GenerateJFlexSupplementaryMacros
 
 
@@ -115,8 +115,7 @@ HanSupp = (
 	| ([\ud84d][\uDC00-\uDFFF])
 	| ([\ud84c][\uDC00-\uDFFF])
 	| ([\ud84f][\uDC00-\uDFFF])
-	| Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-([\ud84e][\uDC00-\uDFFF])
+	| ([\ud84e][\uDC00-\uDFFF])
 	| ([\ud841][\uDC00-\uDFFF])
 	| ([\ud840][\uDC00-\uDFFF])
 	| ([\ud843][\uDC00-\uDFFF])
