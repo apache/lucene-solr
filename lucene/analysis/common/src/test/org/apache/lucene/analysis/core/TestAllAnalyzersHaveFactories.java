@@ -47,7 +47,9 @@ import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.sinks.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -95,6 +97,8 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
     );
   }
   
+  private static final ResourceLoader loader = new StringMockResourceLoader("");
+  
   public void test() throws Exception {
     List<Class<?>> analysisClasses = new ArrayList<Class<?>>();
     TestRandomChains.getClassesForPackage("org.apache.lucene.analysis", analysisClasses);
@@ -122,12 +126,12 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
         try {
           instance.setLuceneMatchVersion(TEST_VERSION_CURRENT);
           instance.init(Collections.<String,String>emptyMap());
-          // TODO: provide fake ResourceLoader
-          if (!(instance instanceof ResourceLoaderAware)) {
-            assertSame(c, instance.create(new StringReader("")).getClass());
+          if (instance instanceof ResourceLoaderAware) {
+            ((ResourceLoaderAware) instance).inform(loader);
           }
+          assertSame(c, instance.create(new StringReader("")).getClass());
         } catch (IllegalArgumentException e) {
-          // TODO: For now pass because some factories have not yet a default config that always works, some require ResourceLoader
+          // TODO: For now pass because some factories have not yet a default config that always works
         }
       } else if (TokenFilter.class.isAssignableFrom(c)) {
         String clazzName = c.getSimpleName();
@@ -138,16 +142,16 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
         try {
           instance.setLuceneMatchVersion(TEST_VERSION_CURRENT);
           instance.init(Collections.<String,String>emptyMap());
-          // TODO: provide fake ResourceLoader
-          if (!(instance instanceof ResourceLoaderAware)) {
-            Class<? extends TokenStream> createdClazz = instance.create(new KeywordTokenizer(new StringReader(""))).getClass();
-            // only check instance if factory have wrapped at all!
-            if (KeywordTokenizer.class != createdClazz) {
-              assertSame(c, createdClazz);
-            }
+          if (instance instanceof ResourceLoaderAware) {
+            ((ResourceLoaderAware) instance).inform(loader);
+          }
+          Class<? extends TokenStream> createdClazz = instance.create(new KeywordTokenizer(new StringReader(""))).getClass();
+          // only check instance if factory have wrapped at all!
+          if (KeywordTokenizer.class != createdClazz) {
+            assertSame(c, createdClazz);
           }
         } catch (IllegalArgumentException e) {
-          // TODO: For now pass because some factories have not yet a default config that always works, some require ResourceLoader
+          // TODO: For now pass because some factories have not yet a default config that always works
         }
       } else if (CharFilter.class.isAssignableFrom(c)) {
         String clazzName = c.getSimpleName();
@@ -158,16 +162,16 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
         try {
           instance.setLuceneMatchVersion(TEST_VERSION_CURRENT);
           instance.init(Collections.<String,String>emptyMap());
-          // TODO: provide fake ResourceLoader
-          if (!(instance instanceof ResourceLoaderAware)) {
-            Class<? extends Reader> createdClazz = instance.create(new StringReader("")).getClass();
-            // only check instance if factory have wrapped at all!
-            if (StringReader.class != createdClazz) {
-              assertSame(c, createdClazz);
-            }
+          if (instance instanceof ResourceLoaderAware) {
+            ((ResourceLoaderAware) instance).inform(loader);
+          }
+          Class<? extends Reader> createdClazz = instance.create(new StringReader("")).getClass();
+          // only check instance if factory have wrapped at all!
+          if (StringReader.class != createdClazz) {
+            assertSame(c, createdClazz);
           }
         } catch (IllegalArgumentException e) {
-          // TODO: For now pass because some factories have not yet a default config that always works, some require ResourceLoader
+          // TODO: For now pass because some factories have not yet a default config that always works
         }
       }
     }
