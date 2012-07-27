@@ -19,11 +19,13 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Collections;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
@@ -567,13 +569,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String cname = params.get(CoreAdminParams.CORE);
     boolean doPersist = false;
     NamedList<Object> status = new SimpleOrderedMap<Object>();
+    Map<String,Exception> allFailures = coreContainer.getCoreInitFailures();
     try {
       if (cname == null) {
         rsp.add("defaultCoreName", coreContainer.getDefaultCoreName());
         for (String name : coreContainer.getCoreNames()) {
           status.add(name, getCoreStatus(coreContainer, name));
         }
+        rsp.add("initFailures", allFailures);
       } else {
+        Map failures = allFailures.containsKey(cname)
+          ? Collections.singletonMap(cname, allFailures.get(cname))
+          : Collections.emptyMap();
+        rsp.add("initFailures", failures);
         status.add(cname, getCoreStatus(coreContainer, cname));
       }
       rsp.add("status", status);
