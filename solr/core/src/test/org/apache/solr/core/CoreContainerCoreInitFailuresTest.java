@@ -32,7 +32,9 @@ import org.apache.commons.io.FileUtils;
 
 import org.junit.Before;
 import org.junit.After;
+import org.junit.Ignore;
 
+@Ignore("SOLR-3634: some errors are localized and tests fail in non en, disabling temporarily")
 public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   
   File solrHome = null;
