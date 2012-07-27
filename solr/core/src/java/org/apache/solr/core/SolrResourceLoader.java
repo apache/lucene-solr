@@ -403,11 +403,11 @@ public class SolrResourceLoader implements ResourceLoader
       final String name = m.group(4);
       log.trace("Trying to load class from analysis SPI using name='{}'", name);
       try {
-        if (CharFilterFactory.class == expectedType) {
+        if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
           return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
-        } else if (TokenizerFactory.class == expectedType) {
+        } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
           return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
-        } else if (TokenFilterFactory.class == expectedType) {
+        } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
           return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
         } else {
           log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
