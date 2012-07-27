@@ -88,6 +88,10 @@ New Features
   lib folder. The factories are automatically made available with SPI.
   (Chris Male, Robert Muir, Uwe Schindler)
 
+* SOLR-3634: CoreContainer and CoreAdminHandler will now remember and report 
+  back information about failures to initialize SolrCores.  These failures will 
+  be accessible from the STATUS command until they are "reset" by 
+  creating/renaming a SolrCore with the same name.  (hossman)
 
 Bug Fixes
 ----------------------
