@@ -118,7 +118,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new UAX29URLEmailTokenizer with a given {@link AttributeFactory} 
+   * Creates a new UAX29URLEmailTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory}
    */
   public UAX29URLEmailTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(factory, input);
