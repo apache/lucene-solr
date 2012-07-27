@@ -287,11 +287,7 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
       this.text = text;
     }
 
-    public List<String> getLines(String resource) throws IOException {
-      return null;
-    }
-
-    public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
+    public <T> T newInstance(String cname, Class<T> expectedType) {
       return null;
     }
 

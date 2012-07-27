@@ -67,26 +67,6 @@ public class TestSnowballPorterFilterFactory extends BaseTokenStreamTestCase {
     }
     return sb.toString();
   }
-
-  class LinesMockSolrResourceLoader implements ResourceLoader {
-    List<String> lines;
-
-    LinesMockSolrResourceLoader(List<String> lines) {
-      this.lines = lines;
-    }
-
-    public List<String> getLines(String resource) throws IOException {
-      return lines;
-    }
-
-    public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
-      return null;
-    }
-
-    public InputStream openResource(String resource) throws IOException {
-      return null;
-    }
-  }
   
   /**
    * Test the protected words mechanism of SnowballPorterFilterFactory

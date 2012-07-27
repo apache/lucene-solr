@@ -275,7 +275,7 @@ public class TestSynonymMap extends LuceneTestCase {
     ff.inform( new ResourceLoader() {
 
       @Override
-      public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
+      public <T> T newInstance(String cname, Class<T> expectedType) {
         throw new RuntimeException("stub");
       }
 

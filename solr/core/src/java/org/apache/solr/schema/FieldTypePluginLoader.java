@@ -73,7 +73,7 @@ public final class FieldTypePluginLoader
 
 
   @Override
-  protected FieldType create( ResourceLoader loader, 
+  protected FieldType create( SolrResourceLoader loader, 
                               String name, 
                               String className, 
                               Node node ) throws Exception {
