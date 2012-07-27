@@ -21,6 +21,8 @@
   <!-- hackidty-hack-hack -->
 
   <property name="ivy.retrieve.pattern" value="${common-solr.dir}/lib/[artifact]-[revision].[ext]"/>
+  <!-- we cannot sync because solr/core and solr/solrj share the same lib/... clean this up! -->
+  <property name="ivy.sync" value="false"/>
 
   <!-- html file for testing -->
   <property name="rat.excludes" value="**/htmlStripReaderTest.html"/>
