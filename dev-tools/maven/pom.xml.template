@@ -143,7 +143,7 @@
       <dependency>
         <groupId>com.ibm.icu</groupId>
         <artifactId>icu4j</artifactId>
-        <version>4.8.1.1</version>
+        <version>49.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>

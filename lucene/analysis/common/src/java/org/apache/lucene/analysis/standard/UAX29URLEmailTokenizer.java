@@ -18,20 +18,18 @@ package org.apache.lucene.analysis.standard;
  */
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.std31.UAX29URLEmailTokenizerImpl31;
 import org.apache.lucene.analysis.standard.std34.UAX29URLEmailTokenizerImpl34;
+import org.apache.lucene.analysis.standard.std36.UAX29URLEmailTokenizerImpl36;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * This class implements Word Break rules from the Unicode Text Segmentation 
@@ -128,8 +126,10 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   }
 
   private static StandardTokenizerInterface getScannerFor(Version matchVersion, Reader input) {
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_40)) {
       return new UAX29URLEmailTokenizerImpl(input);
+    } else if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+      return new UAX29URLEmailTokenizerImpl36(input);
     } else if (matchVersion.onOrAfter(Version.LUCENE_34)) {
       return new UAX29URLEmailTokenizerImpl34(input);
     } else {

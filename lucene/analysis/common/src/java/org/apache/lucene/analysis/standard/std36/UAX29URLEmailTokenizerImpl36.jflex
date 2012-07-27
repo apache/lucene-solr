@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.standard;
+package org.apache.lucene.analysis.standard.std36;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,38 +17,27 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
+import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
- * This class implements Word Break rules from the Unicode Text Segmentation 
- * algorithm, as specified in 
- * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a> 
- * URLs and email addresses are also tokenized according to the relevant RFCs.
- * <p/>
- * Tokens produced are of the following types:
- * <ul>
- *   <li>&lt;ALPHANUM&gt;: A sequence of alphabetic and numeric characters</li>
- *   <li>&lt;NUM&gt;: A number</li>
- *   <li>&lt;URL&gt;: A URL</li>
- *   <li>&lt;EMAIL&gt;: An email address</li>
- *   <li>&lt;SOUTHEAST_ASIAN&gt;: A sequence of characters from South and Southeast
- *       Asian languages, including Thai, Lao, Myanmar, and Khmer</li>
- *   <li>&lt;IDEOGRAPHIC&gt;: A single CJKV ideographic character</li>
- *   <li>&lt;HIRAGANA&gt;: A single hiragana character</li>
- * </ul>
+ * This class implements UAX29URLEmailTokenizer using Unicode 6.0.0.
+ * @deprecated This class is only for exact backwards compatibility
  */
+@Deprecated
 %%
 
-%unicode 6.1
+%unicode 6.0
 %integer
 %final
 %public
-%class UAX29URLEmailTokenizerImpl
+%class UAX29URLEmailTokenizerImpl36
 %implements StandardTokenizerInterface
 %function getNextToken
 %char
 
-%include src/java/org/apache/lucene/analysis/standard/SUPPLEMENTARY.jflex-macro
+%include src/java/org/apache/lucene/analysis/standard/std36/SUPPLEMENTARY.jflex-macro
 ALetter = ([\p{WB:ALetter}] | {ALetterSupp})
 Format =  ([\p{WB:Format}] | {FormatSupp})
 Numeric = ([\p{WB:Numeric}] | {NumericSupp})
@@ -88,7 +77,7 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 //     RFC-5321: Simple Mail Transfer Protocol
 //     RFC-5322: Internet Message Format
 
-%include src/java/org/apache/lucene/analysis/standard/ASCIITLD.jflex-macro
+%include src/java/org/apache/lucene/analysis/standard/std36/ASCIITLD.jflex-macro
 
 DomainLabel = [A-Za-z0-9] ([-A-Za-z0-9]* [A-Za-z0-9])?
 DomainNameStrict = {DomainLabel} ("." {DomainLabel})* {ASCIITLD}

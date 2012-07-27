@@ -22,6 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.std31.StandardTokenizerImpl31;
+import org.apache.lucene.analysis.standard.std34.StandardTokenizerImpl34;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -146,8 +147,10 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   private final void init(Version matchVersion) {
-    if (matchVersion.onOrAfter(Version.LUCENE_34)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_40)) {
       this.scanner = new StandardTokenizerImpl(input);
+    } else if (matchVersion.onOrAfter(Version.LUCENE_34)) {
+      this.scanner = new StandardTokenizerImpl34(input);
     } else if (matchVersion.onOrAfter(Version.LUCENE_31)) {
       this.scanner = new StandardTokenizerImpl31(input);
     } else {
