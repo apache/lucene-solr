@@ -32,7 +32,7 @@ class StringMockSolrResourceLoader implements ResourceLoader {
     this.text = text;
   }
 
-  public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
+  public <T> T newInstance(String cname, Class<T> expectedType) {
     return null;
   }
 

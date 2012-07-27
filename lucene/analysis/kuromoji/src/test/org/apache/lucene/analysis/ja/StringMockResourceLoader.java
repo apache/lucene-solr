@@ -33,8 +33,7 @@ class StringMockResourceLoader implements ResourceLoader {
     this.text = text;
   }
 
-  // TODO: do this subpackages thing... wtf is that?
-  public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
+  public <T> T newInstance(String cname, Class<T> expectedType) {
     try {
       Class<? extends T> clazz = Class.forName(cname).asSubclass(expectedType);
       return clazz.newInstance();

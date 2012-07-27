@@ -33,5 +33,6 @@ public interface ResourceLoader {
   /**
    * Creates a class of the name and expected type
    */
-  public <T> T newInstance(String cname, Class<T> expectedType, String ... subpackages);
+  // TODO: fix exception handling
+  public <T> T newInstance(String cname, Class<T> expectedType);
 }

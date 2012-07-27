@@ -448,6 +448,12 @@ public class SolrResourceLoader implements ResourceLoader
       }
     }
   }
+  
+  static final String empty[] = new String[0];
+  
+  public <T> T newInstance(String name, Class<T> expectedType) {
+    return newInstance(name, expectedType, empty);
+  }
 
   public <T> T newInstance(String cname, Class<T> expectedType, String ... subpackages) {
     Class<? extends T> clazz = findClass(cname, expectedType, subpackages);

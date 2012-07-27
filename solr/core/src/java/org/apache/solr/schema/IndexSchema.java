@@ -698,7 +698,7 @@ public final class IndexSchema {
     return newArr;
   }
 
-  static SimilarityFactory readSimilarity(ResourceLoader loader, Node node) {
+  static SimilarityFactory readSimilarity(SolrResourceLoader loader, Node node) {
     if (node==null) {
       return null;
     } else {
