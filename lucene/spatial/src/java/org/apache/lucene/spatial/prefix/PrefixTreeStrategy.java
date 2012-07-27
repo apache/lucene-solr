@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -88,6 +89,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     FIELD_TYPE.setIndexed(true);
     FIELD_TYPE.setTokenized(true);
     FIELD_TYPE.setOmitNorms(true);
+    FIELD_TYPE.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
     FIELD_TYPE.freeze();
   }
 
