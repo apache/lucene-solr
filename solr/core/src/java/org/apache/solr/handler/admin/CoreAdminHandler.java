@@ -19,13 +19,12 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Collections;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
@@ -666,7 +665,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
   protected void handleRequestRecoveryAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws IOException {
     final SolrParams params = req.getParams();
-    log.info("The leader requested that we recover");
+    log.info("It has been requested that we recover");
     String cname = params.get(CoreAdminParams.CORE);
     if (cname == null) {
       cname = "";
@@ -675,6 +674,15 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       core = coreContainer.getCore(cname);
       if (core != null) {
+        // try to publish as recovering right away
+        try {
+          coreContainer.getZkController().publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
+        } catch (KeeperException e) {
+          SolrException.log(log, "", e);
+        } catch (InterruptedException e) {
+          SolrException.log(log, "", e);
+        }
+        
         core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, cname);
       } else {
         SolrException.log(log, "Cound not find core to call recovery:" + cname);

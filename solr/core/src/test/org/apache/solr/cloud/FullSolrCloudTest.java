@@ -114,6 +114,24 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     String url;
     CloudSolrServerClient client;
     public ZkNodeProps info;
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((url == null) ? 0 : url.hashCode());
+      return result;
+    }
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      CloudJettyRunner other = (CloudJettyRunner) obj;
+      if (url == null) {
+        if (other.url != null) return false;
+      } else if (!url.equals(other.url)) return false;
+      return true;
+    }
   }
   
   static class CloudSolrServerClient {
@@ -418,7 +436,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       List<CloudJettyRunner> jetties = shardToJetty.get(slice.getKey());
       assertNotNull("Test setup problem: We found no jetties for shard: " + slice.getKey()
           + " just:" + shardToJetty.keySet(), jetties);
-      assertTrue(jetties.size() > 0);
+      assertEquals(slice.getValue().getShards().size(), jetties.size());
     }
   }
   
