@@ -29,6 +29,7 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
@@ -112,7 +113,7 @@ public class TrieField extends PrimitiveFieldType {
   }
 
   @Override
-  public Object toObject(IndexableField f) {
+  public Object toObject(GeneralField f) {
     final Number val = f.numericValue();
     if (val != null) {
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
@@ -209,7 +210,7 @@ public class TrieField extends PrimitiveFieldType {
 
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
     writer.writeVal(name, toObject(f));
   }
 
@@ -333,13 +334,13 @@ public class TrieField extends PrimitiveFieldType {
     return readableToIndexed(val);
   }
 
-  static String badFieldString(IndexableField f) {
+  static String badFieldString(GeneralField f) {
     String s = f.stringValue();
     return "ERROR:SCHEMA-INDEX-MISMATCH,stringValue="+s;
   }
 
   @Override
-  public String toExternal(IndexableField f) {
+  public String toExternal(GeneralField f) {
     return (type == TrieTypes.DATE)
       ? dateField.toExternal((Date) toObject(f)) 
       : toObject(f).toString();
@@ -411,7 +412,7 @@ public class TrieField extends PrimitiveFieldType {
   }
 
   @Override
-  public String storedToIndexed(IndexableField f) {
+  public String storedToIndexed(GeneralField f) {
     final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
     final Number val = f.numericValue();
     if (val != null) {

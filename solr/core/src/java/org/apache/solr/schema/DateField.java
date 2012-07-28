@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.search.Query;
@@ -213,7 +214,7 @@ public class DateField extends PrimitiveFieldType {
   }
 
   @Override
-  public String toExternal(IndexableField f) {
+  public String toExternal(GeneralField f) {
     return indexedToReadable(f.stringValue());
   }
 
@@ -222,7 +223,7 @@ public class DateField extends PrimitiveFieldType {
   }
 
   @Override
-  public Date toObject(IndexableField f) {
+  public Date toObject(GeneralField f) {
     try {
       return parseDate( toExternal(f) );
     }
@@ -237,7 +238,7 @@ public class DateField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
     writer.writeDate(name, toExternal(f));
   }
 
@@ -442,6 +443,10 @@ public class DateField extends PrimitiveFieldType {
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),
             minInclusive, maxInclusive);
+  }
+
+  public String storedToIndexed(GeneralField f) {
+    return null;
   }
 
 }

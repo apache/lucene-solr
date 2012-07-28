@@ -240,7 +240,7 @@ final class DocFieldProcessor extends DocConsumer {
             docState, fp.fieldInfo);
         DocValuesConsumer consumer = docValuesConsumer.docValuesConsumer;
         if (docValuesConsumer.compatibility == null) {
-          consumer.add(docState.docID, (StorableField) field);
+          consumer.add(docState.docID, field);
           docValuesConsumer.compatibility = new TypeCompatibility(dvType,
               consumer.getValueSize());
         } else if (docValuesConsumer.compatibility.isCompatible(dvType,

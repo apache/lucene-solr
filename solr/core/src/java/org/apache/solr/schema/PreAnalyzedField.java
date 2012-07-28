@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.AttributeSource;
@@ -117,7 +118,7 @@ public class PreAnalyzedField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f)
+  public void write(TextResponseWriter writer, String name, GeneralField f)
           throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }

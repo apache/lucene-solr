@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.response.TextResponseWriter;
@@ -62,7 +63,7 @@ public class LongField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may
@@ -87,7 +88,7 @@ public class LongField extends PrimitiveFieldType {
   }
 
   @Override
-  public Long toObject(IndexableField f) {
+  public Long toObject(GeneralField f) {
     return Long.valueOf( toExternal(f) );
   }
 }

@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -97,7 +98,7 @@ public class RandomSortField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException { }
+  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException { }
 
 
   private static FieldComparatorSource randomComparatorSource = new FieldComparatorSource() {

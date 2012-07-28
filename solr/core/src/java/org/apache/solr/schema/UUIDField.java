@@ -22,6 +22,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
@@ -53,7 +54,7 @@ public class UUIDField extends StrField {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f)
+  public void write(TextResponseWriter writer, String name, GeneralField f)
       throws IOException {
     writer.writeStr(name, f.stringValue(), false);
   }
@@ -88,7 +89,7 @@ public class UUIDField extends StrField {
   }
 
   @Override
-  public UUID toObject(IndexableField f) {
+  public UUID toObject(GeneralField f) {
     return UUID.fromString(f.stringValue());
   }
 }

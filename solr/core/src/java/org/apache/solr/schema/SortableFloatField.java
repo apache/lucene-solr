@@ -29,6 +29,7 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 import org.apache.solr.search.QParser;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
@@ -71,12 +72,12 @@ public class SortableFloatField extends PrimitiveFieldType {
   }
 
   @Override
-  public String toExternal(IndexableField f) {
+  public String toExternal(GeneralField f) {
     return indexedToReadable(f.stringValue());
   }
 
   @Override
-  public Float toObject(IndexableField f) {
+  public Float toObject(GeneralField f) {
     return NumberUtils.SortableStr2float(f.stringValue());
   }
   
@@ -94,7 +95,7 @@ public class SortableFloatField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
     String sval = f.stringValue();
     writer.writeFloat(name, NumberUtils.SortableStr2float(sval));
   }

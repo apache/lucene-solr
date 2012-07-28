@@ -20,7 +20,9 @@ import java.io.*;
 import java.util.*;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -90,7 +92,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       if( o instanceof IndexableField ) {
         if(schema == null) schema = solrQueryRequest.getSchema(); 
         
-        IndexableField f = (IndexableField)o;
+        StorableField f = (StorableField)o;
         SchemaField sf = schema.getFieldOrNull(f.name());
         try {
           o = getValue(sf, f);
@@ -138,7 +140,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       context.iterator = ids.iterator();
       for (int i = 0; i < sz; i++) {
         int id = context.iterator.nextDoc();
-        Document doc = searcher.doc(id, fnames);
+        StoredDocument doc = searcher.doc(id, fnames);
         SolrDocument sdoc = getDoc(doc);
         if( transformer != null ) {
           transformer.transform(sdoc, id);
@@ -168,9 +170,9 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       writeResultsBody( ctx, codec );
     }
 
-    public SolrDocument getDoc(Document doc) {
+    public SolrDocument getDoc(StoredDocument doc) {
       SolrDocument solrDoc = new SolrDocument();
-      for (IndexableField f : doc) {
+      for (StorableField f : doc) {
         String fieldName = f.name();
         if( !returnFields.wantsField(fieldName) ) 
           continue;
@@ -198,7 +200,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       return solrDoc;
     }
     
-    public Object getValue(SchemaField sf, IndexableField f) throws Exception {
+    public Object getValue(SchemaField sf, StorableField f) throws Exception {
       FieldType ft = null;
       if(sf != null) ft =sf.getType();
       

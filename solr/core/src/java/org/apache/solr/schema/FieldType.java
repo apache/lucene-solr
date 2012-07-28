@@ -23,7 +23,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
@@ -319,7 +321,7 @@ public abstract class FieldType extends FieldProperties {
    * value
    * @see #toInternal
    */
-  public String toExternal(IndexableField f) {
+  public String toExternal(GeneralField f) {
     // currently used in writing XML of the search result (but perhaps
     // a more efficient toXML(IndexableField f, Writer w) should be used
     // in the future.
@@ -331,7 +333,7 @@ public abstract class FieldType extends FieldProperties {
    * @see #toInternal
    * @since solr 1.3
    */
-  public Object toObject(IndexableField f) {
+  public Object toObject(GeneralField f) {
     return toExternal(f); // by default use the string
   }
 
@@ -359,7 +361,7 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /** Given the stored field, return the indexed form */
-  public String storedToIndexed(IndexableField f) {
+  public String storedToIndexed(GeneralField f) {
     // right now, the transformation of single valued fields like SortableInt
     // is done when the Field is created, not at analysis time... this means
     // that the indexed form is the same as the stored field form.
@@ -528,7 +530,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * calls back to TextResponseWriter to write the field value
    */
-  public abstract void write(TextResponseWriter writer, String name, IndexableField f) throws IOException;
+  public abstract void write(TextResponseWriter writer, String name, GeneralField f) throws IOException;
 
 
   /**

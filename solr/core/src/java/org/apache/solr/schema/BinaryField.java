@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -35,7 +36,7 @@ public class BinaryField extends FieldType  {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
     writer.writeStr(name, toBase64String(toObject(f)), false);
   }
 
@@ -46,12 +47,12 @@ public class BinaryField extends FieldType  {
 
 
   @Override
-  public String toExternal(IndexableField f) {
+  public String toExternal(GeneralField f) {
     return toBase64String(toObject(f));
   }
 
   @Override
-  public ByteBuffer toObject(IndexableField f) {
+  public ByteBuffer toObject(GeneralField f) {
     BytesRef bytes = f.binaryValue();
     return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
   }

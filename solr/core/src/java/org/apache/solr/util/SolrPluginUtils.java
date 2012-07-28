@@ -18,7 +18,9 @@
 package org.apache.solr.util;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
@@ -332,7 +334,7 @@ public class SolrPluginUtils {
     for (int i=0; i<docs.size(); i++) {
       int id = iterator.nextDoc();
 
-      Document doc = searcher.doc(id);
+      StoredDocument doc = searcher.doc(id);
       String strid = schema.printableUniqueKey(doc);
 
       explainList.add(strid, searcher.explain(query, id) );
@@ -848,10 +850,10 @@ public class SolrPluginUtils {
     while (dit.hasNext()) {
       int docid = dit.nextDoc();
 
-      Document luceneDoc = searcher.doc(docid, fields);
+      StoredDocument luceneDoc = searcher.doc(docid, fields);
       SolrDocument doc = new SolrDocument();
       
-      for( IndexableField field : luceneDoc) {
+      for( StorableField field : luceneDoc) {
         if (null == fields || fields.contains(field.name())) {
           SchemaField sf = schema.getField( field.name() );
           doc.addField( field.name(), sf.getType().toObject( field ) );

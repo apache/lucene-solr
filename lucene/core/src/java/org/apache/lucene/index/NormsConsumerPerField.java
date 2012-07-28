@@ -54,7 +54,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
         StorableField field = norm.field();
         // some similarity might not compute any norms
         DocValuesConsumer consumer = getConsumer(norm.type());
-        consumer.add(docState.docID, (StorableField) field);
+        consumer.add(docState.docID, field);
       }
     }    
   }

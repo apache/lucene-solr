@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -73,14 +74,14 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f)
+  public void write(TextResponseWriter writer, String name, GeneralField f)
           throws IOException {
     writer.writeStr(name, toExternal(f), false);
   }
 
 
   @Override
-  public String toExternal(IndexableField f) {
+  public String toExternal(GeneralField f) {
     Point p = GeohashUtils.decode(f.stringValue(),ctx);
     return p.getY() + "," + p.getX();
   }

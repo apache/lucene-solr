@@ -17,6 +17,7 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -242,7 +243,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField field) throws IOException {
+  public void write(TextResponseWriter writer, String name, GeneralField field) throws IOException {
     writer.writeStr(name, field.stringValue(), false);
   }
 

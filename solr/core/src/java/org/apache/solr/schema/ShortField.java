@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 
@@ -67,7 +68,7 @@ public class ShortField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may
@@ -92,7 +93,7 @@ public class ShortField extends PrimitiveFieldType {
   }
 
   @Override
-  public Short toObject(IndexableField f) {
+  public Short toObject(GeneralField f) {
     return Short.valueOf(toExternal(f));
   }
 

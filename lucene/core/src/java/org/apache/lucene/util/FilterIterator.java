@@ -20,15 +20,15 @@ import java.util.NoSuchElementException;
  * the License.
  */
 
-public abstract class FilterIterator<T, U extends T> implements Iterator<T> {
+public abstract class FilterIterator<T> implements Iterator<T> {
   
-  private Iterator<U> iterator;
+  private Iterator<T> iterator;
   private T next = null;
   private boolean nextIsSet = false;
   
-  protected abstract boolean predicateFunction(U field);
+  protected abstract boolean predicateFunction(T field);
   
-  public FilterIterator(Iterator<U> baseIterator) {
+  public FilterIterator(Iterator<T> baseIterator) {
     this.iterator = baseIterator;
   }
   
@@ -56,7 +56,7 @@ public abstract class FilterIterator<T, U extends T> implements Iterator<T> {
   
   private boolean setNext() {
     while (iterator.hasNext()) {
-      U object = iterator.next();
+      T object = iterator.next();
       if (predicateFunction(object)) {
         next = object;
         nextIsSet = true;

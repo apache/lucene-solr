@@ -124,7 +124,7 @@ public final class Document implements IndexDocument{
   */
   public final BytesRef[] getBinaryValues(String name) {
     final List<BytesRef> result = new ArrayList<BytesRef>();
-    Iterator<StorableField> it = storedFieldsIterator();
+    Iterator<Field> it = storedFieldsIterator();
     
     while (it.hasNext()) {
       StorableField field = it.next();
@@ -149,7 +149,7 @@ public final class Document implements IndexDocument{
   * @return a <code>byte[]</code> containing the binary field value or <code>null</code>
   */
   public final BytesRef getBinaryValue(String name) {
-    Iterator<StorableField> it = storedFieldsIterator();
+    Iterator<Field> it = storedFieldsIterator();
     
     while (it.hasNext()) {
       StorableField field = it.next();
@@ -224,7 +224,7 @@ public final class Document implements IndexDocument{
    */
   public final String[] getValues(String name) {
     List<String> result = new ArrayList<String>();
-    Iterator<StorableField> it = storedFieldsIterator();
+    Iterator<Field> it = storedFieldsIterator();
     
     while (it.hasNext()) {
       StorableField field = it.next();
@@ -249,7 +249,7 @@ public final class Document implements IndexDocument{
    * the actual numeric field instance back, use {@link #getField}.
    */
   public final String get(String name) {
-    Iterator<StorableField> it = storedFieldsIterator();
+    Iterator<Field> it = storedFieldsIterator();
     
     while (it.hasNext()) {
       StorableField field = it.next();
@@ -277,7 +277,7 @@ public final class Document implements IndexDocument{
 
   @Override
   public Iterable<? extends IndexableField> indexableFields() {
-    Iterator<IndexableField> it = indexedFieldsIterator();
+    Iterator<Field> it = indexedFieldsIterator();
     
     List<IndexableField> result = new ArrayList<IndexableField>();
     while(it.hasNext()) {
@@ -289,7 +289,7 @@ public final class Document implements IndexDocument{
 
   @Override
   public Iterable<? extends StorableField> storableFields() {
-    Iterator<StorableField> it = storedFieldsIterator();
+    Iterator<Field> it = storedFieldsIterator();
     
     List<StorableField> result = new ArrayList<StorableField>();
     while(it.hasNext()) {
@@ -299,8 +299,8 @@ public final class Document implements IndexDocument{
     return result;
   }
 
-  public Iterator<StorableField> storedFieldsIterator() {
-    return new FilterIterator<StorableField, Field>(fields.iterator()) {
+  public Iterator<Field> storedFieldsIterator() {
+    return new FilterIterator<Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
         return field.type.stored();
@@ -308,8 +308,8 @@ public final class Document implements IndexDocument{
     };
   }
   
-  public Iterator<IndexableField> indexedFieldsIterator() {
-    return new FilterIterator<IndexableField, Field>(fields.iterator()) {
+  public Iterator<Field> indexedFieldsIterator() {
+    return new FilterIterator<Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
         return field.type.indexed();

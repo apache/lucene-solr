@@ -24,6 +24,7 @@ import java.util.StringTokenizer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.IndexReader;
 
 /**
@@ -54,7 +55,7 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
 
 
   @Override
-  protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
+  protected StoredDocument retrieveDoc(IndexReader ir, int id) throws IOException {
     if (fieldsToLoad == null) {
       return ir.document(id);
     } else {

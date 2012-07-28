@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
@@ -338,7 +339,7 @@ public class TestStressLucene extends TestRTGBase {
                   verbose("ERROR: Couldn't find a doc for id", id, "using reader",r);
                 }
                 assertTrue(docid >= 0);   // we should have found the document, or it's tombstone
-                Document doc = r.document(docid);
+                StoredDocument doc = r.document(docid);
                 long foundVal = Long.parseLong(doc.get(field));
                 if (foundVal < Math.abs(val)) {
                   verbose("ERROR: id",id,"model_val=",val," foundVal=",foundVal,"reader=",reader);

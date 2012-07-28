@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.search.function.FileFloatSource;
 import org.apache.solr.search.QParser;
@@ -81,7 +82,7 @@ public class ExternalFileField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
     throw new UnsupportedOperationException();
   }
 

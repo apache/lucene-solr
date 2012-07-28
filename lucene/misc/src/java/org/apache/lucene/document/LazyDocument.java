@@ -25,8 +25,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.BytesRef;
 
 /** Defers actually loading a field's value until you ask
@@ -38,7 +38,7 @@ public class LazyDocument {
   private final int docID;
 
   // null until first field is loaded
-  private Document doc;
+  private StoredDocument doc;
 
   private Map<Integer,Integer> fields = new HashMap<Integer,Integer>();
 
@@ -47,7 +47,7 @@ public class LazyDocument {
     this.docID = docID;
   }
 
-  public IndexableField getField(FieldInfo fieldInfo) {  
+  public StorableField getField(FieldInfo fieldInfo) {  
     Integer num = fields.get(fieldInfo.number);
     if (num == null) {
       num = 0;
@@ -59,7 +59,7 @@ public class LazyDocument {
     return new LazyField(fieldInfo.name, num);
   }
 
-  private synchronized Document getDocument() {
+  private synchronized StoredDocument getDocument() {
     if (doc == null) {
       try {
         doc = reader.document(docID);
@@ -71,7 +71,7 @@ public class LazyDocument {
     return doc;
   }
 
-  private class LazyField implements IndexableField {
+  private class LazyField implements StorableField {
     private String name;
     private int num;
     
@@ -83,11 +83,6 @@ public class LazyDocument {
     @Override
     public String name() {
       return name;
-    }
-
-    @Override
-    public float boost() {
-      return 1.0f;
     }
 
     @Override
@@ -132,15 +127,6 @@ public class LazyDocument {
         return getDocument().getField(name).fieldType();
       } else {
         return getDocument().getFields(name)[num].fieldType();
-      }
-    }
-
-    @Override
-    public TokenStream tokenStream(Analyzer analyzer) throws IOException {
-      if (num == 0) {
-        return getDocument().getField(name).tokenStream(analyzer);
-      } else {
-        return getDocument().getFields(name)[num].tokenStream(analyzer);
       }
     }
   }

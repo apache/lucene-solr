@@ -192,11 +192,14 @@ public class TestIndexableField extends LuceneTestCase {
                 @Override
                 public boolean hasNext() {
                   if (fieldUpto >= fieldCount) return false;
+
                   next = null;
-                  if (fieldUpto > 1) 
+                  if (fieldUpto == 0) {
+                    fieldUpto = 1;
+                    next = newStringField("id", ""+finalDocCount, Field.Store.YES);
+                  } else {
                     next = new MyField(finalBaseCount + (fieldUpto++-1));
-                  else 
-                    fieldUpto = 2;
+                  }
                   
                   if (next != null && next.fieldType().indexed()) return true;
                   else return this.hasNext();

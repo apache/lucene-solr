@@ -22,7 +22,9 @@ import java.io.Writer;
 import java.util.*;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -123,8 +125,8 @@ public abstract class TextResponseWriter {
     } else if (val instanceof String) {
       writeStr(name, val.toString(), true);
       // micro-optimization... using toString() avoids a cast first
-    } else if (val instanceof IndexableField) {
-      IndexableField f = (IndexableField)val;
+    } else if (val instanceof StorableField) {
+      StorableField f = (StorableField)val;
       SchemaField sf = schema.getFieldOrNull( f.name() );
       if( sf != null ) {
         sf.getType().write(this, name, f);
@@ -155,8 +157,8 @@ public abstract class TextResponseWriter {
       writeBool(name, val.toString());
     } else if (val instanceof Date) {
       writeDate(name,(Date)val);
-    } else if (val instanceof Document) {
-      SolrDocument doc = toSolrDocument( (Document)val );
+    } else if (val instanceof StoredDocument) {
+      SolrDocument doc = toSolrDocument( (StoredDocument)val );
       DocTransformer transformer = returnFields.getTransformer();
       if( transformer != null ) {
         TransformContext context = new TransformContext();
@@ -224,10 +226,10 @@ public abstract class TextResponseWriter {
     writeEndDocumentList();
   }
 
-  public final SolrDocument toSolrDocument( Document doc )
+  public final SolrDocument toSolrDocument( StoredDocument doc )
   {
     SolrDocument out = new SolrDocument();
-    for( IndexableField f : doc) {
+    for( StorableField f : doc.getFields()) {
       // Make sure multivalued fields are represented as lists
       Object existing = out.get(f.name());
       if (existing == null) {
@@ -267,7 +269,7 @@ public abstract class TextResponseWriter {
     Set<String> fnames = fields.getLuceneFieldNames();
     for (int i=0; i<sz; i++) {
       int id = context.iterator.nextDoc();
-      Document doc = context.searcher.doc(id, fnames);
+      StoredDocument doc = context.searcher.doc(id, fnames);
       SolrDocument sdoc = toSolrDocument( doc );
       if( transformer != null ) {
         transformer.transform( sdoc, id);
