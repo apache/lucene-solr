@@ -821,6 +821,8 @@
   <requestHandler name="/get" class="solr.RealTimeGetHandler">
      <lst name="defaults">
        <str name="omitHeader">true</str>
+       <str name="wt">json</str>
+       <str name="indent">true</str>
      </lst>
   </requestHandler>
 
