@@ -276,8 +276,10 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
     fail = failures.get("col_bad");
     assertNotNull("null failure for test core", fail);
+    assertTrue("init failure isn't SAXParseException",
+               fail instanceof SAXParseException);
     assertTrue("init failure doesn't mention problem: " + fail.toString(),
-               0 < fail.toString().indexOf("solrconfig.xml"));
+               0 < ((SAXParseException)fail).getSystemId().indexOf("solrconfig.xml"));
 
 
     // ----
