@@ -24,14 +24,14 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.tree.Node;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
-import org.apache.lucene.spatial.util.CachedDistanceValueSource;
+import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
 
 import java.util.Iterator;
 import java.util.List;
@@ -63,7 +63,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   @Override
-  public IndexableField createField(Shape shape, boolean index, boolean store) {
+  public IndexableField[] createIndexableFields(Shape shape) {
     int detailLevel = grid.getMaxLevelForPrecision(shape,distErrPct);
     List<Node> cells = grid.getNodes(shape, detailLevel, true);//true=intermediates cells
     //If shape isn't a point, add a full-resolution center-point so that
@@ -78,42 +78,19 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     //TODO is CellTokenStream supposed to be re-used somehow? see Uwe's comments:
     //  http://code.google.com/p/lucene-spatial-playground/issues/detail?id=4
 
-    String fname = getFieldName();
-    if( store ) {
-      //TODO figure out how to re-use original string instead of reconstituting it.
-      String wkt = grid.getSpatialContext().toString(shape);
-      if( index ) {
-        Field f = new Field(fname,wkt,TYPE_STORED);
-        f.setTokenStream(new CellTokenStream(cells.iterator()));
-        return f;
-      }
-      return new StoredField(fname,wkt);
-    }
-    
-    if( index ) {
-      return new Field(fname,new CellTokenStream(cells.iterator()),TYPE_NOT_STORED);
-    }
-    
-    throw new UnsupportedOperationException("Fields need to be indexed or store ["+fname+"]");
+    Field field = new Field(getFieldName(), new CellTokenStream(cells.iterator()), FIELD_TYPE);
+    return new IndexableField[]{field};
   }
 
   /* Indexed, tokenized, not stored. */
-  public static final FieldType TYPE_NOT_STORED = new FieldType();
-
-  /* Indexed, tokenized, stored. */
-  public static final FieldType TYPE_STORED = new FieldType();
+  public static final FieldType FIELD_TYPE = new FieldType();
 
   static {
-    TYPE_NOT_STORED.setIndexed(true);
-    TYPE_NOT_STORED.setTokenized(true);
-    TYPE_NOT_STORED.setOmitNorms(true);
-    TYPE_NOT_STORED.freeze();
-
-    TYPE_STORED.setStored(true);
-    TYPE_STORED.setIndexed(true);
-    TYPE_STORED.setTokenized(true);
-    TYPE_STORED.setOmitNorms(true);
-    TYPE_STORED.freeze();
+    FIELD_TYPE.setIndexed(true);
+    FIELD_TYPE.setTokenized(true);
+    FIELD_TYPE.setOmitNorms(true);
+    FIELD_TYPE.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
+    FIELD_TYPE.freeze();
   }
 
   /** Outputs the tokenString of a cell, and if its a leaf, outputs it again with the leaf byte. */
@@ -169,7 +146,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
       }
     }
     Point point = args.getShape().getCenter();
-    return new CachedDistanceValueSource(point, calc, p);
+    return new ShapeFieldCacheDistanceValueSource(point, calc, p);
   }
 
   public SpatialPrefixTree getGrid() {

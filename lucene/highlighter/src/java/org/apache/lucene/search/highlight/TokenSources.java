@@ -38,6 +38,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -129,6 +130,8 @@ public class TokenSources {
     if (termsEnum.next() != null) {
       DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
       if (dpEnum != null) {
+        int doc = dpEnum.nextDoc();
+        assert doc >= 0 && doc != DocIdSetIterator.NO_MORE_DOCS;
         int pos = dpEnum.nextPosition();
         if (pos >= 0) {
           return true;

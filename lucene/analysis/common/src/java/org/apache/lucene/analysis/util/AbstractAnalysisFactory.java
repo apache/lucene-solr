@@ -59,7 +59,7 @@ public abstract class AbstractAnalysisFactory {
    * to inform user, that for this factory a {@link #luceneMatchVersion} is required */
   protected final void assureMatchVersion() {
     if (luceneMatchVersion == null) {
-      throw new InitializationException("Configuration Error: Factory '" + this.getClass().getName() +
+      throw new IllegalArgumentException("Configuration Error: Factory '" + this.getClass().getName() +
         "' needs a 'luceneMatchVersion' parameter");
     }
   }
@@ -86,7 +86,7 @@ public abstract class AbstractAnalysisFactory {
       if (useDefault) {
         return defaultVal;
       }
-      throw new InitializationException("Configuration Error: missing parameter '" + name + "'");
+      throw new IllegalArgumentException("Configuration Error: missing parameter '" + name + "'");
     }
     return Integer.parseInt(s);
   }
@@ -99,7 +99,7 @@ public abstract class AbstractAnalysisFactory {
     String s = args.get(name);
     if (s==null) {
       if (useDefault) return defaultVal;
-      throw new InitializationException("Configuration Error: missing parameter '" + name + "'");
+      throw new IllegalArgumentException("Configuration Error: missing parameter '" + name + "'");
     }
     return Boolean.parseBoolean(s);
   }
@@ -108,11 +108,11 @@ public abstract class AbstractAnalysisFactory {
     try {
       String pat = args.get(name);
       if (null == pat) {
-        throw new InitializationException("Configuration Error: missing parameter '" + name + "'");
+        throw new IllegalArgumentException("Configuration Error: missing parameter '" + name + "'");
       }
       return Pattern.compile(args.get(name));
     } catch (PatternSyntaxException e) {
-      throw new InitializationException
+      throw new IllegalArgumentException
         ("Configuration Error: '" + name + "' can not be parsed in " +
          this.getClass().getSimpleName(), e);
     }
@@ -129,12 +129,16 @@ public abstract class AbstractAnalysisFactory {
       words = new CharArraySet(luceneMatchVersion,
           files.size() * 10, ignoreCase);
       for (String file : files) {
-        List<String> wlist = loader.getLines(file.trim());
+        List<String> wlist = getLines(loader, file.trim());
         words.addAll(StopFilter.makeStopSet(luceneMatchVersion, wlist,
             ignoreCase));
       }
     }
     return words;
+  }
+  
+  protected List<String> getLines(ResourceLoader loader, String resource) throws IOException {
+    return WordlistLoader.getLines(loader.openResource(resource), IOUtils.CHARSET_UTF_8);
   }
 
   /** same as {@link #getWordSet(ResourceLoader, String, boolean)},

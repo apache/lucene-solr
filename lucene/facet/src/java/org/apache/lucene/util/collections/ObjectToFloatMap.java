@@ -463,10 +463,8 @@ public class ObjectToFloatMap<K> {
    * Prints the baseHash array, used for debug purposes.
    */
   @SuppressWarnings("unused")
-  private void printBaseHash() {
-    for (int i = 0; i < this.baseHash.length; i++) {
-      System.out.println(i + ".\t" + baseHash[i]);
-    }
+  private String getBaseHashAsString() {
+    return Arrays.toString(baseHash);
   }
 
   /**

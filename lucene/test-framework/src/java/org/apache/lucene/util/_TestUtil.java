@@ -79,6 +79,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.junit.Assert;
 
+import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -731,8 +732,12 @@ public class _TestUtil {
     }
     String newSuffix = suffix == null ? ".tmp" : suffix;
     File result;
+    // just pull one long always: we don't want to rely upon what may or may not
+    // already exist. otherwise tests might not reproduce, depending on when you last
+    // ran 'ant clean'
+    final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
     do {
-      result = genTempFile(prefix, newSuffix, directory);
+      result = genTempFile(random, prefix, newSuffix, directory);
     } while (!result.createNewFile());
     return result;
   }
@@ -746,12 +751,12 @@ public class _TestUtil {
   private static class TempFileLocker {};
   private static TempFileLocker tempFileLocker = new TempFileLocker();
 
-  private static File genTempFile(String prefix, String suffix, File directory) {
+  private static File genTempFile(Random random, String prefix, String suffix, File directory) {
     int identify = 0;
 
     synchronized (tempFileLocker) {
       if (counter == 0) {
-        int newInt = new Random().nextInt();
+        int newInt = random.nextInt();
         counter = ((newInt / 65535) & 0xFFFF) + 0x2710;
         counterBase = counter;
       }

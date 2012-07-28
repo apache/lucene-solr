@@ -327,6 +327,11 @@ public class ToParentBlockJoinCollector extends Collector {
     public float score() {
       return score;
     }
+    
+    @Override
+    public float freq() {
+      return 1; // TODO: does anything else make sense?... duplicate of grouping's FakeScorer btw?
+    }
 
     @Override
     public int docID() {

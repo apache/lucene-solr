@@ -43,7 +43,6 @@
       <dependency org="org.apache.xmlbeans" name="xmlbeans" rev="2.3.0" transitive="false"/>
       <dependency org="dom4j" name="dom4j" rev="1.6.1" transitive="false"/>
       <dependency org="org.ccil.cowan.tagsoup" name="tagsoup" rev="1.2.1" transitive="false"/>
-      <dependency org="asm" name="asm" rev="3.1" transitive="false"/>
       <dependency org="com.googlecode.mp4parser" name="isoparser" rev="1.0-beta-5" transitive="false"/>
       <dependency org="net.sf.scannotation" name="scannotation" rev="1.0.2" transitive="false"/>
       <dependency org="javassist" name="javassist" rev="3.6.0.GA" transitive="false"/>
@@ -52,8 +51,8 @@
       <dependency org="rome" name="rome" rev="0.9" transitive="false"/>
       <dependency org="jdom" name="jdom" rev="1.0" transitive="false"/>
       <!-- Other ExtracingRequestHandler dependencies -->
-      <dependency org="com.ibm.icu" name="icu4j" rev="4.8.1.1" transitive="false"/>
-      <dependency org="xerces" name="xercesImpl" rev="2.8.1" transitive="false"/>
+      <dependency org="com.ibm.icu" name="icu4j" rev="49.1" transitive="false"/>
+      <dependency org="xerces" name="xercesImpl" rev="2.9.1" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

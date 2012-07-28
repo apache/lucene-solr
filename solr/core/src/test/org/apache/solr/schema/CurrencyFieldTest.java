@@ -158,7 +158,7 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
 
   @Ignore
   public void testPerformance() throws Exception {
-    Random r = new Random();
+    Random r = random();
     int initDocs = 200000;
 
     for (int i = 1; i <= initDocs; i++) {

@@ -158,7 +158,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       for (Weight w : weights) {
         // we will advance() subscorers
         Scorer subScorer = w.scorer(context, true, false, acceptDocs);
-        if (subScorer != null && subScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        if (subScorer != null) {
           scorers[idx++] = subScorer;
         }
       }

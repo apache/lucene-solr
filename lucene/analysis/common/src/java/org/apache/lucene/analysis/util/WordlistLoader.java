@@ -19,7 +19,11 @@ package org.apache.lucene.analysis.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
@@ -192,6 +196,47 @@ public class WordlistLoader {
       IOUtils.close(br);
     }
     return result;
+  }
+  
+  /**
+   * Accesses a resource by name and returns the (non comment) lines containing
+   * data using the given character encoding.
+   *
+   * <p>
+   * A comment line is any line that starts with the character "#"
+   * </p>
+   *
+   * @return a list of non-blank non-comment lines with whitespace trimmed
+   * @throws IOException
+   */
+  public static List<String> getLines(InputStream stream, Charset charset) throws IOException{
+    BufferedReader input = null;
+    ArrayList<String> lines;
+    boolean success = false;
+    try {
+      input = getBufferedReader(IOUtils.getDecodingReader(stream, charset));
+
+      lines = new ArrayList<String>();
+      for (String word=null; (word=input.readLine())!=null;) {
+        // skip initial bom marker
+        if (lines.isEmpty() && word.length() > 0 && word.charAt(0) == '\uFEFF')
+          word = word.substring(1);
+        // skip comments
+        if (word.startsWith("#")) continue;
+        word=word.trim();
+        // skip blank lines
+        if (word.length()==0) continue;
+        lines.add(word);
+      }
+      success = true;
+      return lines;
+    } finally {
+      if (success) {
+        IOUtils.close(input);
+      } else {
+        IOUtils.closeWhileHandlingException(input);
+      }
+    }
   }
   
   private static BufferedReader getBufferedReader(Reader reader) {

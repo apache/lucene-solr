@@ -26,6 +26,7 @@ import com.spatial4j.core.shape.simple.PointImpl;
 import com.spatial4j.core.util.GeohashUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.spatial.SpatialMatchConcern;
@@ -153,9 +154,11 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
   private Document newDoc(String id, Shape shape) {
     Document doc = new Document();
     doc.add(new StringField("id", id, Field.Store.YES));
-    for (IndexableField f : strategy.createFields(shape, true, storeShape)) {
+    for (IndexableField f : strategy.createIndexableFields(shape)) {
       doc.add(f);
     }
+    if (storeShape)
+      doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
     return doc;
   }
 

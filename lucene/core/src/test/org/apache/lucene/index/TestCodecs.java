@@ -116,7 +116,7 @@ public class TestCodecs extends LuceneTestCase {
         sumDF += term.docs.length;
         sumTotalTermCount += term.write(termsConsumer);
       }
-      termsConsumer.finish(sumTotalTermCount, sumDF, (int) visitedDocs.cardinality());
+      termsConsumer.finish(omitTF ? -1 : sumTotalTermCount, sumDF, (int) visitedDocs.cardinality());
     }
   }
 
@@ -154,7 +154,7 @@ public class TestCodecs extends LuceneTestCase {
       for(int i=0;i<docs.length;i++) {
         final int termDocFreq;
         if (field.omitTF) {
-          termDocFreq = 0;
+          termDocFreq = -1;
         } else {
           termDocFreq = positions[i].length;
         }
@@ -165,10 +165,10 @@ public class TestCodecs extends LuceneTestCase {
             final PositionData pos = positions[i][j];
             postingsConsumer.addPosition(pos.pos, pos.payload, -1, -1);
           }
-          postingsConsumer.finishDoc();
         }
+        postingsConsumer.finishDoc();
       }
-      termsConsumer.finishTerm(text, new TermStats(docs.length, totTF));
+      termsConsumer.finishTerm(text, new TermStats(docs.length, field.omitTF ? -1 : totTF));
       return totTF;
     }
   }
@@ -559,6 +559,7 @@ public class TestCodecs extends LuceneTestCase {
             }
             assertNotNull(docs);
             int upto2 = -1;
+            boolean ended = false;
             while(upto2 < term.docs.length-1) {
               // Maybe skip:
               final int left = term.docs.length-upto2;
@@ -574,6 +575,7 @@ public class TestCodecs extends LuceneTestCase {
                   if (doc == DocIdSetIterator.NO_MORE_DOCS) {
                     // skipped past last doc
                     assert upto2 == term.docs.length-1;
+                    ended = true;
                     break;
                   } else {
                     // skipped to next doc
@@ -597,7 +599,9 @@ public class TestCodecs extends LuceneTestCase {
               }
             }
 
-            assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
+            if (!ended) {
+              assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
+            }
           }
           upto++;
 

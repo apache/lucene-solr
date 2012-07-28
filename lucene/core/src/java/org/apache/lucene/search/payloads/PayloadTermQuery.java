@@ -28,6 +28,7 @@ import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
@@ -190,7 +191,8 @@ public class PayloadTermQuery extends SpanTermQuery {
           // whether to load the payload or not
           // GSI: I suppose we could toString the payload, but I don't think that
           // would be a good idea
-          Explanation payloadExpl = new Explanation(scorer.getPayloadScore(), "scorePayload(...)");
+          String field = ((SpanQuery)getQuery()).getField();
+          Explanation payloadExpl = function.explain(doc, field, scorer.payloadsSeen, scorer.payloadScore);
           payloadExpl.setValue(scorer.getPayloadScore());
           // combined
           ComplexExplanation result = new ComplexExplanation();

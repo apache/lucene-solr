@@ -24,6 +24,7 @@ import com.spatial4j.core.io.sample.SampleDataReader;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
@@ -84,11 +85,12 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       document.add(new StringField("id", data.id, Field.Store.YES));
       document.add(new StringField("name", data.name, Field.Store.YES));
       Shape shape = ctx.readShape(data.shape);
-      for (IndexableField f : strategy.createFields(shape, true, storeShape)) {
-        if( f != null ) { // null if incompatibleGeometry && ignore
-          document.add(f);
-        }
+      for (IndexableField f : strategy.createIndexableFields(shape)) {
+        document.add(f);
       }
+      if (storeShape)
+        document.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
+
       documents.add(document);
     }
     return documents;
@@ -113,6 +115,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
 
       String msg = q.line; //"Query: " + q.args.toString(ctx);
       SearchResults got = executeQuery(strategy.makeQuery(q.args), 100);
+      if (storeShape && got.numFound > 0) {
+        //check stored value is there & parses
+        assertNotNull(ctx.readShape(got.results.get(0).document.get(strategy.getFieldName())));
+      }
       if (concern.orderIsImportant) {
         Iterator<String> ids = q.ids.iterator();
         for (SearchResult r : got.results) {

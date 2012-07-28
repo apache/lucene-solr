@@ -28,7 +28,28 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.query.SpatialArgs;
 
 /**
- * must be thread safe
+ * The SpatialStrategy encapsulates an approach to indexing and searching based
+ * on shapes.
+ * <p/>
+ * Different implementations will support different features. A strategy should
+ * document these common elements:
+ * <ul>
+ *   <li>Can it index more than one shape per field?</li>
+ *   <li>What types of shapes can be indexed?</li>
+ *   <li>What types of query shapes can be used?</li>
+ *   <li>What types of query operations are supported?
+ *   This might vary per shape.</li>
+ *   <li>Are there caches?  Under what circumstances are they used?
+ *   Roughly how big are they?  Is it segmented by Lucene segments, such as is
+ *   done by the Lucene {@link org.apache.lucene.search.FieldCache} and
+ *   {@link org.apache.lucene.index.DocValues} (ideal) or is it for the entire
+ *   index?
+ * </ul>
+ * <p/>
+ * Note that a SpatialStrategy is not involved with the Lucene stored field
+ * values of shapes, which is immaterial to indexing & search.
+ * <p/>
+ * Thread-safe.
  *
  * @lucene.experimental
  */
@@ -54,11 +75,6 @@ public abstract class SpatialStrategy {
     return ctx;
   }
 
-  /** Corresponds with Solr's  FieldType.isPolyField(). */
-  public boolean isPolyField() {
-    return false;
-  }
-
   /**
    * The name of the field or the prefix of them if there are multiple
    * fields needed internally.
@@ -69,18 +85,19 @@ public abstract class SpatialStrategy {
   }
 
   /**
-   * Corresponds with Solr's FieldType.createField().
+   * Returns the IndexableField(s) from the <code>shape</code> that are to be
+   * added to the {@link org.apache.lucene.document.Document}.  These fields
+   * are expected to be marked as indexed and not stored.
+   * <p/>
+   * Note: If you want to <i>store</i> the shape as a string for retrieval in
+   * search results, you could add it like this:
+   * <pre>document.add(new StoredField(fieldName,ctx.toString(shape)));</pre>
+   * The particular string representation used doesn't matter to the Strategy
+   * since it doesn't use it.
    *
-   * This may return a null field if it does not want to make anything.
-   * This is reasonable behavior if 'ignoreIncompatibleGeometry=true' and the
-   * geometry is incompatible
+   * @return Not null nor will it have null elements.
    */
-  public abstract IndexableField createField(Shape shape, boolean index, boolean store);
-
-  /** Corresponds with Solr's FieldType.createFields(). */
-  public IndexableField[] createFields(Shape shape, boolean index, boolean store) {
-    return new IndexableField[] { createField(shape, index, store) };
-  }
+  public abstract IndexableField[] createIndexableFields(Shape shape);
 
   /**
    * The value source yields a number that is proportional to the distance between the query shape and indexed data.

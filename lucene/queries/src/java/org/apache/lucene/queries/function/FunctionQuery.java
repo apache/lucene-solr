@@ -158,6 +158,11 @@ public class FunctionQuery extends Query {
       return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
     }
 
+    @Override
+    public float freq() throws IOException {
+      return 1;
+    }
+
     public Explanation explain(int doc) throws IOException {
       float sc = qWeight * vals.floatVal(doc);
 

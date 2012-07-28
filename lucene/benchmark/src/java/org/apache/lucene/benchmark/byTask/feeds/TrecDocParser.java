@@ -80,7 +80,7 @@ public abstract class TrecDocParser {
    * parsers to alter their behavior according to the file path type. 
    */  
   public abstract DocData parse(DocData docData, String name, TrecContentSource trecSrc, 
-      StringBuilder docBuf, ParsePathType pathType) throws IOException, InterruptedException;
+      StringBuilder docBuf, ParsePathType pathType) throws IOException;
   
   /** 
    * strip tags from <code>buf</code>: each tag is replaced by a single blank.

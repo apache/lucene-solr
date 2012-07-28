@@ -72,12 +72,14 @@ public class FacetsCollector extends Collector {
   protected ScoredDocIdCollector initScoredDocCollector(
       FacetSearchParams facetSearchParams, IndexReader indexReader,
       TaxonomyReader taxonomyReader) {
+    boolean scoresNeeded = false;
     for (FacetRequest frq : facetSearchParams.getFacetRequests()) {
       if (frq.requireDocumentScore()) {
-        return ScoredDocIdCollector.create(1000, true);
+        scoresNeeded = true;
+        break;
       }
     }
-    return ScoredDocIdCollector.create(indexReader.maxDoc(), false);
+    return ScoredDocIdCollector.create(indexReader.maxDoc(), scoresNeeded);
   }
 
   /**

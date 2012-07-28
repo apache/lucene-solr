@@ -49,15 +49,7 @@
   <property name="tests.loggingfile" value="${common-solr.dir}/testlogging.properties"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
-  <property name="clover.db.dir" location="${dest}/test/clover/db"/>
-  <property name="clover.report.dir" location="${dest}/test/clover/reports"/>
-  <available property="clover.present" classname="com.cenqua.clover.tasks.CloverReportTask"/>
-  <condition property="clover.enabled">
-    <and>
-      <isset property="run.clover"/>
-      <isset property="clover.present"/>
-    </and>
-  </condition>
+  <property name="clover.report.dir" location="${dest}/clover/reports"/>
 
   <import file="${common-solr.dir}/../lucene/module-build.xml"/>
 
@@ -78,21 +70,32 @@
     -->
   <property name="solr.spec.version" value="5.0.0.${dateversion}" />
 
+  <path id="solr.lucene.libs">
+    <!-- List of jars that will be used as the foundation for both
+         the base classpath, as well as copied into the lucene-libs dir 
+	 in the release.
+    -->
+    <!-- NOTE: lucene-core is explicitly not included because of the 
+	 base.classpath (compilation & tests are done directly against   
+	 the class files w/o needing to build the jar)
+    -->
+    <pathelement location="${analyzers-common.jar}"/>
+    <pathelement location="${analyzers-kuromoji.jar}"/>
+    <pathelement location="${analyzers-phonetic.jar}"/>
+    <pathelement location="${highlighter.jar}"/>
+    <pathelement location="${memory.jar}"/>
+    <pathelement location="${misc.jar}"/>
+    <pathelement location="${spatial.jar}"/>
+    <pathelement location="${suggest.jar}"/>
+    <pathelement location="${grouping.jar}"/>
+    <pathelement location="${queries.jar}"/>
+    <pathelement location="${queryparser.jar}"/>
+  </path>
+
   <path id="solr.base.classpath">
-  	<pathelement path="${analyzers-common.jar}"/>
-  	<pathelement path="${analyzers-kuromoji.jar}"/>
-  	<pathelement path="${analyzers-phonetic.jar}"/>
-    <pathelement path="${analyzers-uima.jar}"/>
-  	<pathelement path="${highlighter.jar}"/>
-  	<pathelement path="${memory.jar}"/>
-  	<pathelement path="${misc.jar}"/>
-  	<pathelement path="${spatial.jar}"/>
-  	<pathelement path="${suggest.jar}"/>
-    <pathelement path="${grouping.jar}"/>
-    <pathelement path="${queries.jar}"/>
-    <pathelement path="${queryparser.jar}"/>
     <pathelement location="${common-solr.dir}/build/solr-solrj/classes/java"/>
     <pathelement location="${common-solr.dir}/build/solr-core/classes/java"/>
+    <path refid="solr.lucene.libs" />
     <path refid="additional.dependencies"/>
     <path refid="base.classpath"/>
   </path>
@@ -133,7 +136,7 @@
   </target>
 
   <target name="prep-lucene-jars" 
-  	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-analyzers-morfologik, jar-suggest, jar-highlighter, jar-memory,
+  	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-suggest, jar-highlighter, jar-memory,
   	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser">
   	  <property name="solr.deps.compiled" value="true"/>
   </target>
@@ -145,19 +148,11 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+      <path refid="solr.lucene.libs" />
+      <!-- NOTE: lucene-core is not already included in "solr.lucene.libs" 
+	   because of it's use in classpaths.
+      -->
       <fileset file="${lucene-core.jar}" />
-      <fileset file="${analyzers-common.jar}" />
-      <fileset file="${analyzers-kuromoji.jar}" />
-      <fileset file="${analyzers-phonetic.jar}" />
-      <fileset file="${suggest.jar}" />
-      <fileset file="${grouping.jar}" />
-      <fileset file="${queries.jar}" />
-      <fileset file="${queryparser.jar}" />
-      <fileset file="${highlighter.jar}" />
-      <fileset file="${memory.jar}" />
-      <fileset file="${misc.jar}" />
-      <fileset file="${spatial.jar}" />
-      <fileset refid="analyzers-morfologik.fileset" />
     </copy>
     </sequential>
   </target>
@@ -226,23 +221,23 @@
       <invoke-javadoc destdir="@{destdir}" title="@{title}" overview="@{overview}">
         <sources>
           <solrsources/>
-          <link offline="true" href="${lucene.javadoc.url}/core" packagelistloc="${lucenedocs}/core"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-common" packagelistloc="${lucenedocs}/analyzers-common"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-icu" packagelistloc="${lucenedocs}/analyzers-icu"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-kuromoji" packagelistloc="${lucenedocs}/analyzers-kuromoji"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-morfologik" packagelistloc="${lucenedocs}/analyzers-morfologik"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-phonetic" packagelistloc="${lucenedocs}/analyzers-phonetic"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-smartcn" packagelistloc="${lucenedocs}/analyzers-smartcn"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-stempel" packagelistloc="${lucenedocs}/analyzers-stempel"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-uima" packagelistloc="${lucenedocs}/analyzers-uima"/>
-          <link offline="true" href="${lucene.javadoc.url}/suggest" packagelistloc="${lucenedocs}/suggest"/>
-          <link offline="true" href="${lucene.javadoc.url}/grouping" packagelistloc="${lucenedocs}/grouping"/>
-          <link offline="true" href="${lucene.javadoc.url}/queries" packagelistloc="${lucenedocs}/queries"/>
-          <link offline="true" href="${lucene.javadoc.url}/queryparser" packagelistloc="${lucenedocs}/queryparser"/>
-          <link offline="true" href="${lucene.javadoc.url}/highlighter" packagelistloc="${lucenedocs}/highlighter"/>
-          <link offline="true" href="${lucene.javadoc.url}/memory" packagelistloc="${lucenedocs}/memory"/>
-          <link offline="true" href="${lucene.javadoc.url}/misc" packagelistloc="${lucenedocs}/misc"/>
-          <link offline="true" href="${lucene.javadoc.url}/spatial" packagelistloc="${lucenedocs}/spatial"/>
+          <link offline="true" href="${lucene.javadoc.url}core" packagelistloc="${lucenedocs}/core"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-common" packagelistloc="${lucenedocs}/analyzers-common"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-icu" packagelistloc="${lucenedocs}/analyzers-icu"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-kuromoji" packagelistloc="${lucenedocs}/analyzers-kuromoji"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-morfologik" packagelistloc="${lucenedocs}/analyzers-morfologik"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-phonetic" packagelistloc="${lucenedocs}/analyzers-phonetic"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-smartcn" packagelistloc="${lucenedocs}/analyzers-smartcn"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-stempel" packagelistloc="${lucenedocs}/analyzers-stempel"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-uima" packagelistloc="${lucenedocs}/analyzers-uima"/>
+          <link offline="true" href="${lucene.javadoc.url}suggest" packagelistloc="${lucenedocs}/suggest"/>
+          <link offline="true" href="${lucene.javadoc.url}grouping" packagelistloc="${lucenedocs}/grouping"/>
+          <link offline="true" href="${lucene.javadoc.url}queries" packagelistloc="${lucenedocs}/queries"/>
+          <link offline="true" href="${lucene.javadoc.url}queryparser" packagelistloc="${lucenedocs}/queryparser"/>
+          <link offline="true" href="${lucene.javadoc.url}highlighter" packagelistloc="${lucenedocs}/highlighter"/>
+          <link offline="true" href="${lucene.javadoc.url}memory" packagelistloc="${lucenedocs}/memory"/>
+          <link offline="true" href="${lucene.javadoc.url}misc" packagelistloc="${lucenedocs}/misc"/>
+          <link offline="true" href="${lucene.javadoc.url}spatial" packagelistloc="${lucenedocs}/spatial"/>
           <link href=""/>
         </sources>
       </invoke-javadoc>
@@ -253,8 +248,7 @@
           depends="define-lucene-javadoc-url-SNAPSHOT,define-lucene-javadoc-url-release"/>
 
   <target name="define-lucene-javadoc-url-SNAPSHOT" if="version.contains.SNAPSHOT">
-    <property name="lucene.javadoc.url"
-              value="${common.dir}/build/docs/"/>
+    <makeurl file="${common.dir}/build/docs/" validate="false" property="lucene.javadoc.url"/>
   </target>
 
   <target name="define-lucene-javadoc-url-release" unless="version.contains.SNAPSHOT">

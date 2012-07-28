@@ -50,7 +50,7 @@ public final class TokenizerChain extends SolrAnalyzer {
   @Override
   public Reader initReader(String fieldName, Reader reader) {
     if (charFilters != null && charFilters.length > 0) {
-      CharStream cs = CharReader.get( reader );
+      Reader cs = reader;
       for (CharFilterFactory charFilter : charFilters) {
         cs = charFilter.create(cs);
       }

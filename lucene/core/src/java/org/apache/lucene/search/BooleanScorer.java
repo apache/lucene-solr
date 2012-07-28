@@ -318,6 +318,11 @@ final class BooleanScorer extends Scorer {
   }
 
   @Override
+  public float freq() throws IOException {
+    return current.coord;
+  }
+
+  @Override
   public void score(Collector collector) throws IOException {
     score(collector, Integer.MAX_VALUE, -1);
   }
@@ -338,7 +343,8 @@ final class BooleanScorer extends Scorer {
   public Collection<ChildScorer> getChildren() {
     List<ChildScorer> children = new ArrayList<ChildScorer>();
     for (SubScorer sub = scorers; sub != null; sub = sub.next) {
-      children.add(new ChildScorer(sub.scorer, sub.prohibited ? Occur.MUST_NOT.toString() : Occur.SHOULD.toString()));
+      // TODO: fix this if BQ ever sends us required clauses
+      children.add(new ChildScorer(sub.scorer, sub.prohibited ? "MUST_NOT" : "SHOULD"));
     }
     return children;
   }

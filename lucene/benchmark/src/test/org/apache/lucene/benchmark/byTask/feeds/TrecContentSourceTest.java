@@ -166,6 +166,7 @@ public class TrecContentSourceTest extends LuceneTestCase {
                   "<title>\r\n" + 
                   "TEST-001 title\r\n" + 
                   "</title>\r\n" + 
+                  "<meta name=\"date\" content=\"Tue&#44; 09 Dec 2003 22&#58;39&#58;08 GMT\">" +
                   "</head>\r\n" + 
                   "\r\n" + 
                   "<body>\r\n" + 
@@ -183,7 +184,7 @@ public class TrecContentSourceTest extends LuceneTestCase {
     
     dd = source.getNextDocData(dd);
     assertDocData(dd, "TEST-001_0", "TEST-001 title", "TEST-001 text", source
-        .parseDate("Sun, 11 Jan 2009 08:01:00 GMT"));
+        .parseDate("Tue, 09 Dec 2003 22:39:08 GMT"));
     
     assertNoMoreDataException(source);
   }
@@ -331,6 +332,7 @@ public class TrecContentSourceTest extends LuceneTestCase {
     dd = source.getNextDocData(dd);
     assertDocData(dd, "TEST-000_1", "TEST-000 title", "TEST-000 text", source
         .parseDate("Sun, 11 Jan 2009 08:00:00 GMT"));
+    source.close();
 
     // Don't test that NoMoreDataException is thrown, since the forever flag is
     // turned on.

@@ -171,8 +171,9 @@ public class TestDocsAndPositions extends LuceneTestCase {
           }
 
           if (random().nextInt(10) == 0) { // once is a while advance
-            docsAndPosEnum
-                .advance(docID + 1 + random().nextInt((maxDoc - docID)));
+            if (docsAndPosEnum.advance(docID + 1 + random().nextInt((maxDoc - docID))) == DocIdSetIterator.NO_MORE_DOCS) {
+              break;
+            }
           }
 
         } while (docsAndPosEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

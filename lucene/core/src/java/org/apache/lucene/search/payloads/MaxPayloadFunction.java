@@ -1,6 +1,5 @@
 package org.apache.lucene.search.payloads;
 
-import org.apache.lucene.search.Explanation;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -40,14 +39,6 @@ public class MaxPayloadFunction extends PayloadFunction {
     return numPayloadsSeen > 0 ? payloadScore : 1;
   }
   
-  @Override
-  public Explanation explain(int doc, int numPayloadsSeen, float payloadScore) {
-	    Explanation expl = new Explanation();
-	    float maxPayloadScore = (numPayloadsSeen > 0 ? payloadScore : 1);
-	    expl.setValue(maxPayloadScore);
-	    expl.setDescription("MaxPayloadFunction(...)");
-	    return expl;
-	  } 
   @Override
   public int hashCode() {
     final int prime = 31;

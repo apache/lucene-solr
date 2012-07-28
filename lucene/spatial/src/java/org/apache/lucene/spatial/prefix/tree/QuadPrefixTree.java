@@ -24,6 +24,7 @@ import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 import com.spatial4j.core.shape.simple.PointImpl;
 
+import java.io.PrintStream;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -107,14 +108,14 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     this(ctx, ctx.getWorldBounds(), maxLevels);
   }
 
-  public void printInfo() {
+  public void printInfo(PrintStream out) {
     NumberFormat nf = NumberFormat.getNumberInstance(Locale.ROOT);
     nf.setMaximumFractionDigits(5);
     nf.setMinimumFractionDigits(5);
     nf.setMinimumIntegerDigits(3);
 
     for (int i = 0; i < maxLevels; i++) {
-      System.out.println(i + "]\t" + nf.format(levelW[i]) + "\t" + nf.format(levelH[i]) + "\t" +
+      out.println(i + "]\t" + nf.format(levelW[i]) + "\t" + nf.format(levelH[i]) + "\t" +
           levelS[i] + "\t" + (levelS[i] * levelS[i]));
     }
   }

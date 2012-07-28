@@ -210,16 +210,6 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   if keysURL is None:
     raise RuntimeError('%s is missing KEYS' % project)
 
-  if not os.path.exists('%s/apache-rat-0.8.jar' % tmpDir):
-    print '  downloading Apache RAT...'
-    download('apache-rat-incubating-0.8-bin.tar.bz2',
-             'http://archive.apache.org/dist/incubator/rat/binaries/apache-rat-incubating-0.8-bin.tar.bz2',
-             tmpDir)
-    t = tarfile.open('%s/apache-rat-incubating-0.8-bin.tar.bz2' % tmpDir)
-    t.extract('apache-rat-0.8/apache-rat-0.8.jar', '%s/apache-rat-0.8.jar' % tmpDir)
-  else:
-    print '  apache RAT already downloaded...'
-
   print '  get KEYS'
   download('%s.KEYS' % project, keysURL, tmpDir)
 
@@ -480,9 +470,6 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     print '    run "ant validate"'
     run('%s; ant validate' % javaExe('1.7'), '%s/validate.log' % unpackPath)
 
-    print '    run "ant rat-sources"'
-    run('%s; ant -lib "%s/apache-rat-0.8.jar/apache-rat-0.8" rat-sources' % (javaExe('1.7'), tmpDir), '%s/rat-sources.log' % unpackPath)
-    
     if project == 'lucene':
       print '    run tests w/ Java 6...'
       run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)

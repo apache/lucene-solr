@@ -23,7 +23,7 @@ import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -40,9 +40,6 @@ import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
-
-import java.text.NumberFormat;
-import java.util.Locale;
 
 
 /**
@@ -95,67 +92,17 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public IndexableField[] createFields(Shape shape, boolean index, boolean store) {
-
+  public IndexableField[] createIndexableFields(Shape shape) {
     Rectangle bbox = shape.getBoundingBox();
-    IndexableField[] fields = new IndexableField[store?6:5];
-    fields[0] = createDouble(field_minX, bbox.getMinX(), index, store);
-    fields[1] = createDouble(field_maxX, bbox.getMaxX(), index, store);
-    fields[2] = createDouble(field_minY, bbox.getMinY(), index, store);
-    fields[3] = createDouble(field_maxY, bbox.getMaxY(), index, store);
-
-    FieldType ft = new FieldType();
-    ft.setIndexed(index);
-    ft.setStored(store);
-    ft.setTokenized(false);
-    ft.setOmitNorms(true);
-    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
-    ft.freeze();
-
-    Field xdl = new Field( field_xdl, bbox.getCrossesDateLine()?"T":"F", ft );
-    fields[4] = xdl;
-    if( store ) {
-      FieldType ff = new FieldType();
-      ff.setIndexed(false);
-      ff.setStored(true);
-      ff.setOmitNorms(true);
-      ff.setIndexOptions(IndexOptions.DOCS_ONLY);
-      ff.freeze();
-
-      NumberFormat nf = NumberFormat.getInstance( Locale.ROOT );
-      nf.setMaximumFractionDigits( 5 );
-      nf.setMinimumFractionDigits( 5 );
-      nf.setGroupingUsed(false);
-      String ext =
-        nf.format( bbox.getMinX() ) + ' ' +
-        nf.format( bbox.getMinY() ) + ' ' +
-        nf.format( bbox.getMaxX() ) + ' ' +
-        nf.format( bbox.getMaxY() ) + ' ';
-      fields[5] = new Field( field_bbox, ext, ff );
-    }
+    FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
+    doubleFieldType.setNumericPrecisionStep(precisionStep);
+    IndexableField[] fields = new IndexableField[5];
+    fields[0] = new DoubleField(field_minX, bbox.getMinX(), doubleFieldType);
+    fields[1] = new DoubleField(field_maxX, bbox.getMaxX(), doubleFieldType);
+    fields[2] = new DoubleField(field_minY, bbox.getMinY(), doubleFieldType);
+    fields[3] = new DoubleField(field_maxY, bbox.getMaxY(), doubleFieldType);
+    fields[4] = new Field( field_xdl, bbox.getCrossesDateLine()?"T":"F", StringField.TYPE_NOT_STORED);
     return fields;
-  }
-
-  private IndexableField createDouble(String name, double v, boolean index, boolean store) {
-    if (!store && !index)
-      throw new IllegalArgumentException("field must be indexed or stored");
-
-    FieldType fieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
-    fieldType.setStored(store);
-    fieldType.setIndexed(index);
-    fieldType.setNumericPrecisionStep(precisionStep);
-    return new DoubleField(name,v,fieldType);
-  }
-
-  @Override
-  public IndexableField createField(Shape shape,
-                                    boolean index, boolean store) {
-    throw new UnsupportedOperationException("BBOX is poly field");
-  }
-
-  @Override
-  public boolean isPolyField() {
-    return true;
   }
 
   //---------------------------------

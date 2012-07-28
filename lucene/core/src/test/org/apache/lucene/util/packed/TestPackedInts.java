@@ -33,14 +33,14 @@ import org.apache.lucene.util.packed.PackedInts.Reader;
 
 @Slow
 public class TestPackedInts extends LuceneTestCase {
-  public void testBitsRequired() throws Exception {
+  public void testBitsRequired() {
     assertEquals(61, PackedInts.bitsRequired((long)Math.pow(2, 61)-1));
     assertEquals(61, PackedInts.bitsRequired(0x1FFFFFFFFFFFFFFFL));
     assertEquals(62, PackedInts.bitsRequired(0x3FFFFFFFFFFFFFFFL));
     assertEquals(63, PackedInts.bitsRequired(0x7FFFFFFFFFFFFFFFL));
   }
 
-  public void testMaxValues() throws Exception {
+  public void testMaxValues() {
     assertEquals("1 bit -> max == 1",
             1, PackedInts.maxValue(1));
     assertEquals("2 bit -> max == 3",
@@ -54,11 +54,11 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testPackedInts() throws IOException {
-    int num = atLeast(5);
+    int num = atLeast(3);
     for (int iter = 0; iter < num; iter++) {
       for(int nbits=1;nbits<=64;nbits++) {
         final long maxValue = PackedInts.maxValue(nbits);
-        final int valueCount = 100+random().nextInt(500);
+        final int valueCount = _TestUtil.nextInt(random(), 1, 600);
         final int bufferSize = random().nextBoolean()
             ? _TestUtil.nextInt(random(), 0, 48)
             : _TestUtil.nextInt(random(), 0, 4096);
@@ -183,7 +183,7 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testRandomBulkCopy() {
-    final int numIters = atLeast(10);
+    final int numIters = atLeast(3);
     for(int iter=0;iter<numIters;iter++) {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
@@ -212,8 +212,8 @@ public class TestPackedInts extends LuceneTestCase {
 
       final long[] buffer = new long[valueCount];
 
-      // Copy random slice over, 100 times:
-      for(int iter2=0;iter2<100;iter2++) {
+      // Copy random slice over, 20 times:
+      for(int iter2=0;iter2<20;iter2++) {
         int start = random().nextInt(valueCount-1);
         int len = _TestUtil.nextInt(random(), 1, valueCount-start);
         int offset;
@@ -248,20 +248,19 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testRandomEquality() {
-    final int[] VALUE_COUNTS = new int[]{0, 1, 5, 8, 100, 500};
-    final int MIN_BITS_PER_VALUE = 1;
-    final int MAX_BITS_PER_VALUE = 64;
+    final int numIters = atLeast(2);
+    for (int i = 0; i < numIters; ++i) {
+      final int valueCount = _TestUtil.nextInt(random(), 1, 300);
 
-    for (int valueCount: VALUE_COUNTS) {
-      for (int bitsPerValue = MIN_BITS_PER_VALUE ;
-           bitsPerValue <= MAX_BITS_PER_VALUE ;
+      for (int bitsPerValue = 1 ;
+           bitsPerValue <= 64 ;
            bitsPerValue++) {
         assertRandomEquality(valueCount, bitsPerValue, random().nextLong());
       }
     }
   }
 
-  private void assertRandomEquality(int valueCount, int bitsPerValue, long randomSeed) {
+  private static void assertRandomEquality(int valueCount, int bitsPerValue, long randomSeed) {
     List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bitsPerValue);
     for (PackedInts.Mutable packedInt: packedInts) {
       try {
@@ -277,7 +276,7 @@ public class TestPackedInts extends LuceneTestCase {
     assertListEquality(packedInts);
   }
 
-  private List<PackedInts.Mutable> createPackedInts(
+  private static List<PackedInts.Mutable> createPackedInts(
           int valueCount, int bitsPerValue) {
     List<PackedInts.Mutable> packedInts = new ArrayList<PackedInts.Mutable>();
     if (bitsPerValue <= 8) {
@@ -307,7 +306,7 @@ public class TestPackedInts extends LuceneTestCase {
     return packedInts;
   }
 
-  private void fill(PackedInts.Mutable packedInt, long maxValue, long randomSeed) {
+  private static void fill(PackedInts.Mutable packedInt, long maxValue, long randomSeed) {
     Random rnd2 = new Random(randomSeed);
     for (int i = 0 ; i < packedInt.size() ; i++) {
       long value = _TestUtil.nextLong(rnd2, 0, maxValue);
@@ -319,12 +318,12 @@ public class TestPackedInts extends LuceneTestCase {
     }
   }
 
-  private void assertListEquality(
+  private static void assertListEquality(
           List<? extends PackedInts.Reader> packedInts) {
     assertListEquality("", packedInts);
   }
 
-  private void assertListEquality(
+  private static void assertListEquality(
             String message, List<? extends PackedInts.Reader> packedInts) {
     if (packedInts.size() == 0) {
       return;
@@ -369,7 +368,7 @@ public class TestPackedInts extends LuceneTestCase {
     }
   }
 
-  public void testSecondaryBlockChange() throws IOException {
+  public void testSecondaryBlockChange() {
     PackedInts.Mutable mutable = new Packed64(26, 5);
     mutable.set(24, 31);
     assertEquals("The value #24 should be correct", 31, mutable.get(24));
@@ -404,21 +403,17 @@ public class TestPackedInts extends LuceneTestCase {
       p64 = null;
     }
 
-    for (int bits = 1; bits <=64; ++bits) {
-      if (Packed64SingleBlock.isSupported(bits)) {
-        int index = Integer.MAX_VALUE / bits + (bits == 1 ? 0 : 1);
-        Packed64SingleBlock p64sb = null;
-        try {
-          p64sb = Packed64SingleBlock.create(index, bits);
-        } catch (OutOfMemoryError oome) {
-          // Ignore: see comment above
-          continue;
-        }
-        p64sb.set(index - 1, 1);
-        assertEquals("The value at position " + (index-1)
-            + " should be correct for " + p64sb.getClass().getSimpleName(),
-            1, p64sb.get(index-1));
-      }
+    Packed64SingleBlock p64sb = null;
+    try {
+      p64sb = Packed64SingleBlock.create(INDEX, BITS);
+    } catch (OutOfMemoryError oome) {
+      // Ignore: see comment above
+    }
+    if (p64sb != null) {
+      p64sb.set(INDEX - 1, 1);
+      assertEquals("The value at position " + (INDEX-1)
+          + " should be correct for " + p64sb.getClass().getSimpleName(),
+          1, p64sb.get(INDEX-1));
     }
 
     int index = Integer.MAX_VALUE / 24 + 1;
@@ -541,7 +536,7 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testCopy() {
-    final int valueCount = 689;
+    final int valueCount = _TestUtil.nextInt(random(), 5, 600);
     final int off1 = random().nextInt(valueCount);
     final int off2 = random().nextInt(valueCount);
     final int len = random().nextInt(Math.min(valueCount - off1, valueCount - off2));

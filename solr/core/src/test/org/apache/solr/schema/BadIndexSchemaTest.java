@@ -17,38 +17,15 @@
 
 package org.apache.solr.schema;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.AbstractBadConfigTestBase;
 
 import java.util.regex.Pattern;
 
-import org.junit.Test;
-
-public class BadIndexSchemaTest extends SolrTestCaseJ4 {
+public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 
   private void doTest(final String schema, final String errString) 
     throws Exception {
-
-    ignoreException(Pattern.quote(errString));
-    try {
-      initCore( "solrconfig.xml", schema );
-    } catch (SolrException e) {
-      // short circuit out if we found what we expected
-      if (-1 != e.getMessage().indexOf(errString)) return;
-      // Test the cause too in case the expected error is wrapped
-      if (null != e.getCause() && 
-          -1 != e.getCause().getMessage().indexOf(errString)) return;
-
-      // otherwise, rethrow it, possibly completley unrelated
-      throw new SolrException
-        (ErrorCode.SERVER_ERROR, 
-         "Unexpected error, expected error matching: " + errString, e);
-    } finally {
-      deleteCore();
-    }
-    fail("Did not encounter any exception from: " + schema);
+    assertConfigs("solrconfig.xml", schema, errString);
   }
 
   public void testSevereErrorsForInvalidFieldOptions() throws Exception {
@@ -88,6 +65,10 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
 
   public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {
     doTest("bad-schema-sim-global-vs-ft-mismatch.xml", "global similarity does not support it");
+  }
+  
+  public void testPerFieldtypePostingsFormatButNoSchemaCodecFactory() throws Exception {
+    doTest("bad-schema-codec-global-vs-ft-mismatch.xml", "codec does not support");
   }
 
 

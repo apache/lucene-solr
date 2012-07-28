@@ -22,11 +22,11 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -81,7 +81,7 @@ public abstract class AbstractPluginLoader<T>
    * @param node - the XML node defining this plugin
    */
   @SuppressWarnings("unchecked")
-  protected T create( ResourceLoader loader, String name, String className, Node node ) throws Exception
+  protected T create( SolrResourceLoader loader, String name, String className, Node node ) throws Exception
   {
     return loader.newInstance(className, pluginClassType, getDefaultPackages());
   }
@@ -124,7 +124,7 @@ public abstract class AbstractPluginLoader<T>
    * If a default element is defined, it will be returned from this function.
    * 
    */
-  public T load( ResourceLoader loader, NodeList nodes )
+  public T load( SolrResourceLoader loader, NodeList nodes )
   {
     List<PluginInitInfo> info = new ArrayList<PluginInitInfo>();
     T defaultPlugin = null;
@@ -204,7 +204,7 @@ public abstract class AbstractPluginLoader<T>
    * The created class for the plugin will be returned from this function.
    * 
    */
-  public T loadSingle(ResourceLoader loader, Node node) {
+  public T loadSingle(SolrResourceLoader loader, Node node) {
     List<PluginInitInfo> info = new ArrayList<PluginInitInfo>();
     T plugin = null;
 

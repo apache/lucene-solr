@@ -18,7 +18,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.IOException;
-import java.io.Reader;
+import java.io.StringReader;
 import java.util.Date;
 
 /**
@@ -31,29 +31,24 @@ public class TrecGov2Parser extends TrecDocParser {
   
   private static final String DOCHDR = "<DOCHDR>";
   private static final String TERMINATING_DOCHDR = "</DOCHDR>";
-  private static final int TERMINATING_DOCHDR_LENGTH = TERMINATING_DOCHDR.length();
 
   @Override
   public DocData parse(DocData docData, String name, TrecContentSource trecSrc, 
-      StringBuilder docBuf, ParsePathType pathType) throws IOException, InterruptedException {
-    // Set up a (per-thread) reused Reader over the read content, reset it to re-read from docBuf
-    Reader r = trecSrc.getTrecDocReader(docBuf);
-
-    // skip some of the text, optionally set date
+      StringBuilder docBuf, ParsePathType pathType) throws IOException {
+    // skip some of the non-html text, optionally set date
     Date date = null;
-    int h1 = docBuf.indexOf(DOCHDR);
-    if (h1>=0) {
-      int h2 = docBuf.indexOf(TERMINATING_DOCHDR,h1);
-      String dateStr = extract(docBuf, DATE, DATE_END, h2, null);
+    int start = 0;
+    final int h1 = docBuf.indexOf(DOCHDR);
+    if (h1 >= 0) {
+      final int h2 = docBuf.indexOf(TERMINATING_DOCHDR, h1);
+      final String dateStr = extract(docBuf, DATE, DATE_END, h2, null);
       if (dateStr != null) {
         date = trecSrc.parseDate(dateStr);
       }
-      r.mark(h2+TERMINATING_DOCHDR_LENGTH);
+      start = h2 + TERMINATING_DOCHDR.length();
     }
-
-    r.reset();
-    HTMLParser htmlParser = trecSrc.getHtmlParser();
-    return htmlParser.parse(docData, name, date, null, r, null);
+    final String html = docBuf.substring(start);
+    return trecSrc.getHtmlParser().parse(docData, name, date, new StringReader(html), trecSrc);
   }
   
 }

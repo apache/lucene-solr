@@ -39,6 +39,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
 import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
 import org.junit.Test;
@@ -81,11 +82,12 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
     assertResults(((StringWriter) w).getBuffer().toString().getBytes("UTF-8"));
     
     // again with default file
-    File tmpFile = File.createTempFile("solr", ".xml", TEMP_DIR);
+    File tmpFile = _TestUtil.getTempDir("solr.xml");
     
     serializer.persistFile(tmpFile, solrXMLDef);
 
     assertResults(FileUtils.readFileToString(tmpFile, "UTF-8").getBytes("UTF-8"));
+    tmpFile.delete();
   }
 
   private void assertResults(byte[] bytes)

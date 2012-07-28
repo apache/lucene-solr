@@ -123,7 +123,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomHtmlishString(random(), 20);
       StringReader reader = new StringReader(s);
-      MockCharFilter charfilter = new MockCharFilter(CharReader.get(reader), 2);
+      MockCharFilter charfilter = new MockCharFilter(reader, 2);
       MockAnalyzer analyzer = new MockAnalyzer(random());
       TokenStream ts = analyzer.tokenStream("bogus", charfilter);
       ts.reset();

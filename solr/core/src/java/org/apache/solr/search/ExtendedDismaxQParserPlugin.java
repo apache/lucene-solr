@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.queries.function.BoostedQuery;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -36,7 +37,6 @@ import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
-import org.apache.solr.analysis.StopFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.search.SolrQueryParser.MagicFieldName;
 import org.apache.solr.common.params.DisMaxParams;
@@ -624,6 +624,7 @@ class ExtendedDismaxQParser extends QParser {
     }
 
     String field;
+    String rawField;  // if the clause is +(foo:bar) then rawField=(foo
     boolean isPhrase;
     boolean hasWhitespace;
     boolean hasSpecialSyntax;
@@ -667,7 +668,9 @@ class ExtendedDismaxQParser extends QParser {
       }
       if (clause.field != null) {
         disallowUserField = false;
-        pos += clause.field.length(); // skip the field name
+        int colon = s.indexOf(':',pos);
+        clause.rawField = s.substring(pos, colon);
+        pos += colon - pos; // skip the field name
         pos++;  // skip the ':'
       }
 
@@ -798,6 +801,10 @@ class ExtendedDismaxQParser extends QParser {
     // make sure there is space after the colon, but not whitespace
     if (colon<=pos || colon+1>=end || Character.isWhitespace(s.charAt(colon+1))) return null;
     char ch = s.charAt(p++);
+    while ((ch=='(' || ch=='+' || ch=='-') && (pos<end)) {
+      ch = s.charAt(p++);
+      pos++;
+    }
     if (!Character.isJavaIdentifierPart(ch)) return null;
     while (p<colon) {
       ch = s.charAt(p++);

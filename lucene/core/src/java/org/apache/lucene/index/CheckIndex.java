@@ -669,7 +669,7 @@ public class CheckIndex {
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint) throws IOException {
+  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
@@ -864,17 +864,21 @@ public class CheckIndex {
               if (hasOffsets) {
                 int startOffset = postings.startOffset();
                 int endOffset = postings.endOffset();
-                if (startOffset < 0) {
-                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
-                }
-                if (startOffset < lastOffset) {
-                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset);
-                }
-                if (endOffset < 0) {
-                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
-                }
-                if (endOffset < startOffset) {
-                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
+                // NOTE: we cannot enforce any bounds whatsoever on vectors... they were a free-for-all before?
+                // but for offsets in the postings lists these checks are fine: they were always enforced by IndexWriter
+                if (!isVectors) {
+                  if (startOffset < 0) {
+                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
+                  }
+                  if (startOffset < lastOffset) {
+                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset);
+                  }
+                  if (endOffset < 0) {
+                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
+                  }
+                  if (endOffset < startOffset) {
+                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
+                  }
                 }
                 lastOffset = startOffset;
               }
@@ -957,17 +961,21 @@ public class CheckIndex {
                 if (hasOffsets) {
                   int startOffset = postings.startOffset();
                   int endOffset = postings.endOffset();
-                  if (startOffset < 0) {
-                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
-                  }
-                  if (startOffset < lastOffset) {
-                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset);
-                  }
-                  if (endOffset < 0) {
-                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
-                  }
-                  if (endOffset < startOffset) {
-                    throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
+                  // NOTE: we cannot enforce any bounds whatsoever on vectors... they were a free-for-all before?
+                  // but for offsets in the postings lists these checks are fine: they were always enforced by IndexWriter
+                  if (!isVectors) {
+                    if (startOffset < 0) {
+                      throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
+                    }
+                    if (startOffset < lastOffset) {
+                      throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset);
+                    }
+                    if (endOffset < 0) {
+                      throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
+                    }
+                    if (endOffset < startOffset) {
+                      throw new RuntimeException("term " + term + ": doc " + docID + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
+                    }
                   }
                   lastOffset = startOffset;
                 }
@@ -1194,12 +1202,12 @@ public class CheckIndex {
       }
 
       final Fields fields = reader.fields();
-      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, true);
+      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, true, false);
       if (liveDocs != null) {
         if (infoStream != null) {
           infoStream.print("    test (ignoring deletes): terms, freq, prox...");
         }
-        checkFields(fields, null, maxDoc, fieldInfos, true);
+        checkFields(fields, null, maxDoc, fieldInfos, true, false);
       }
     } catch (Throwable e) {
       msg("ERROR: " + e);
@@ -1416,10 +1424,10 @@ public class CheckIndex {
 
         if (tfv != null) {
           // First run with no deletions:
-          checkFields(tfv, null, 1, fieldInfos, false);
+          checkFields(tfv, null, 1, fieldInfos, false, true);
 
           // Again, with the one doc deleted:
-          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false);
+          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true);
 
           // Only agg stats if the doc is live:
           final boolean doStats = liveDocs == null || liveDocs.get(j);
@@ -1594,8 +1602,9 @@ public class CheckIndex {
           }
         }
       }
+      float vectorAvg = status.docCount == 0 ? 0 : status.totVectors / (float)status.docCount;
       msg("OK [" + status.totVectors + " total vector count; avg " + 
-          format.format((((float) status.totVectors) / status.docCount)) + " term/freq vector fields per doc]");
+          format.format(vectorAvg) + " term/freq vector fields per doc]");
     } catch (Throwable e) {
       msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;

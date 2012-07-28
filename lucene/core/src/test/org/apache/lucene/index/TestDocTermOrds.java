@@ -89,7 +89,7 @@ public class TestDocTermOrds extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    MockDirectoryWrapper dir = newDirectory();
+    Directory dir = newDirectory();
 
     final int NUM_TERMS = atLeast(20);
     final Set<BytesRef> terms = new HashSet<BytesRef>();
@@ -176,7 +176,7 @@ public class TestDocTermOrds extends LuceneTestCase {
   }
 
   public void testRandomWithPrefix() throws Exception {
-    MockDirectoryWrapper dir = newDirectory();
+    Directory dir = newDirectory();
 
     final Set<String> prefixes = new HashSet<String>();
     final int numPrefix = _TestUtil.nextInt(random(), 2, 7);

@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
 public class RecoveryStrategy extends Thread implements SafeStopThread {
   private static final int MAX_RETRIES = 500;
   private static final int INTERRUPTED = MAX_RETRIES + 1;
-  private static final int START_TIMEOUT = 100;
+  private static final int STARTING_RECOVERY_DELAY = 1000;
   
   private static final String REPLICATION_HANDLER = "/replication";
 
@@ -409,10 +409,11 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         }
 
         try {
-          // if (!isClosed()) Thread.sleep(Math.min(START_TIMEOUT * retries, 60000));
-          for (int i = 0; i<Math.min(retries, 600); i++) {
+          // start at 1 sec and work up to a couple min
+          double loopCount = Math.min(Math.pow(2, retries), 600); 
+          for (int i = 0; i < loopCount; i++) {
             if (isClosed()) break; // check if someone closed us
-            Thread.sleep(START_TIMEOUT);
+            Thread.sleep(STARTING_RECOVERY_DELAY);
           }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();

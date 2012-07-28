@@ -73,13 +73,13 @@ final class TrieTokenizer extends Tokenizer {
     this.precisionStep = precisionStep;
     this.ts = ts;
 
-    reset(input);
+    setReader(input);
   }
 
   @Override
-  public void reset(Reader input) {
+  public void setReader(Reader input) {
    try {
-      super.reset(input);
+      super.setReader(input);
       input = super.input;
       char[] buf = new char[32];
       int len = input.read(buf);

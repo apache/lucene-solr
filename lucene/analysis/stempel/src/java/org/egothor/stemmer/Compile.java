@@ -85,7 +85,7 @@ public class Compile {
    * 
    * @param args the command line arguments
    */
-  public static void main(java.lang.String[] args) {
+  public static void main(java.lang.String[] args) throws Exception {
     if (args.length < 1) {
       return;
     }
@@ -117,82 +117,75 @@ public class Compile {
       LineNumberReader in;
       // System.out.println("[" + args[i] + "]");
       Diff diff = new Diff();
-      try {
-        int stems = 0;
-        int words = 0;
-        
-        allocTrie();
-        
-        System.out.println(args[i]);
-        in = new LineNumberReader(new BufferedReader(new InputStreamReader(
-            new FileInputStream(args[i]), charset)));
-        for (String line = in.readLine(); line != null; line = in.readLine()) {
-          try {
-            line = line.toLowerCase(Locale.ROOT);
-            StringTokenizer st = new StringTokenizer(line);
-            String stem = st.nextToken();
-            if (storeorig) {
-              trie.add(stem, "-a");
+      int stems = 0;
+      int words = 0;
+      
+      allocTrie();
+      
+      System.out.println(args[i]);
+      in = new LineNumberReader(new BufferedReader(new InputStreamReader(
+          new FileInputStream(args[i]), charset)));
+      for (String line = in.readLine(); line != null; line = in.readLine()) {
+        try {
+          line = line.toLowerCase(Locale.ROOT);
+          StringTokenizer st = new StringTokenizer(line);
+          String stem = st.nextToken();
+          if (storeorig) {
+            trie.add(stem, "-a");
+            words++;
+          }
+          while (st.hasMoreTokens()) {
+            String token = st.nextToken();
+            if (token.equals(stem) == false) {
+              trie.add(token, diff.exec(token, stem));
               words++;
             }
-            while (st.hasMoreTokens()) {
-              String token = st.nextToken();
-              if (token.equals(stem) == false) {
-                trie.add(token, diff.exec(token, stem));
-                words++;
-              }
-            }
-          } catch (java.util.NoSuchElementException x) {
-            // no base token (stem) on a line
           }
+        } catch (java.util.NoSuchElementException x) {
+          // no base token (stem) on a line
         }
-        
-        Optimizer o = new Optimizer();
-        Optimizer2 o2 = new Optimizer2();
-        Lift l = new Lift(true);
-        Lift e = new Lift(false);
-        Gener g = new Gener();
-        
-        for (int j = 0; j < optimizer.length; j++) {
-          String prefix;
-          switch (optimizer[j]) {
-            case 'G':
-              trie = trie.reduce(g);
-              prefix = "G: ";
-              break;
-            case 'L':
-              trie = trie.reduce(l);
-              prefix = "L: ";
-              break;
-            case 'E':
-              trie = trie.reduce(e);
-              prefix = "E: ";
-              break;
-            case '2':
-              trie = trie.reduce(o2);
-              prefix = "2: ";
-              break;
-            case '1':
-              trie = trie.reduce(o);
-              prefix = "1: ";
-              break;
-            default:
-              continue;
-          }
-          trie.printInfo(prefix + " ");
-        }
-               
-        DataOutputStream os = new DataOutputStream(new BufferedOutputStream(
-            new FileOutputStream(args[i] + ".out")));
-        os.writeUTF(args[0]);
-        trie.store(os);
-        os.close();
-        
-      } catch (FileNotFoundException x) {
-        x.printStackTrace();
-      } catch (IOException x) {
-        x.printStackTrace();
       }
+      
+      Optimizer o = new Optimizer();
+      Optimizer2 o2 = new Optimizer2();
+      Lift l = new Lift(true);
+      Lift e = new Lift(false);
+      Gener g = new Gener();
+      
+      for (int j = 0; j < optimizer.length; j++) {
+        String prefix;
+        switch (optimizer[j]) {
+          case 'G':
+            trie = trie.reduce(g);
+            prefix = "G: ";
+            break;
+          case 'L':
+            trie = trie.reduce(l);
+            prefix = "L: ";
+            break;
+          case 'E':
+            trie = trie.reduce(e);
+            prefix = "E: ";
+            break;
+          case '2':
+            trie = trie.reduce(o2);
+            prefix = "2: ";
+            break;
+          case '1':
+            trie = trie.reduce(o);
+            prefix = "1: ";
+            break;
+          default:
+            continue;
+        }
+        trie.printInfo(System.out, prefix + " ");
+      }
+      
+      DataOutputStream os = new DataOutputStream(new BufferedOutputStream(
+          new FileOutputStream(args[i] + ".out")));
+      os.writeUTF(args[0]);
+      trie.store(os);
+      os.close();
     }
   }
   

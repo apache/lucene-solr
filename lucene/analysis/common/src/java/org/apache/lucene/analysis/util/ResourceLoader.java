@@ -19,29 +19,20 @@ package org.apache.lucene.analysis.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 
 /**
  * Abstraction for loading resources (streams, files, and classes).
  */
 public interface ResourceLoader {
 
+  /**
+   * Opens a named resource
+   */
   public InputStream openResource(String resource) throws IOException;
   
   /**
-   * Accesses a resource by name and returns the (non comment) lines
-   * containing data.
-   *
-   * <p>
-   * A comment line is any line that starts with the character "#"
-   * </p>
-   *
-   * @param resource
-   * @return a list of non-blank non-comment lines with whitespace trimmed
-   * from front and back.
-   * @throws IOException
+   * Creates a class of the name and expected type
    */
-  public List<String> getLines(String resource) throws IOException;
-  
-  public <T> T newInstance(String cname, Class<T> expectedType, String ... subpackages);
+  // TODO: fix exception handling
+  public <T> T newInstance(String cname, Class<T> expectedType);
 }

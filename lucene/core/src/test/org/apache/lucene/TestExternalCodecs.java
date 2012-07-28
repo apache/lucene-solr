@@ -59,7 +59,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       System.out.println("TEST: NUM_DOCS=" + NUM_DOCS);
     }
 
-    MockDirectoryWrapper dir = newDirectory();
+    BaseDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(
         dir,

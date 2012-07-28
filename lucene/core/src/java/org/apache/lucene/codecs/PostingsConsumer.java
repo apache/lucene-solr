@@ -49,14 +49,17 @@ import org.apache.lucene.util.FixedBitSet;
  */
 public abstract class PostingsConsumer {
 
-  /** Adds a new doc in this term. */
+  /** Adds a new doc in this term. 
+   * <code>freq</code> will be -1 when term frequencies are omitted
+   * for the field. */
   public abstract void startDoc(int docID, int freq) throws IOException;
 
   /** Add a new position & payload, and start/end offset.  A
    *  null payload means no payload; a non-null payload with
    *  zero length also means no payload.  Caller may reuse
    *  the {@link BytesRef} for the payload between calls
-   *  (method must fully consume the payload). */
+   *  (method must fully consume the payload). <code>startOffset</code>
+   *  and <code>endOffset</code> will be -1 when offsets are not indexed. */
   public abstract void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException;
 
   /** Called when we are done adding positions & payloads
@@ -78,7 +81,7 @@ public abstract class PostingsConsumer {
           break;
         }
         visitedDocs.set(doc);
-        this.startDoc(doc, 0);
+        this.startDoc(doc, -1);
         this.finishDoc();
         df++;
       }
@@ -146,6 +149,6 @@ public abstract class PostingsConsumer {
         df++;
       }
     }
-    return new TermStats(df, totTF);
+    return new TermStats(df, indexOptions == IndexOptions.DOCS_ONLY ? -1 : totTF);
   }
 }

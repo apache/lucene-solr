@@ -25,6 +25,7 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FilteredQuery;
@@ -77,7 +78,7 @@ public class PortedSolr3Test extends StrategyTestCase {
   static class Param {
     SpatialStrategy strategy;
     String description;
-    
+
     Param(SpatialStrategy strategy, String description) {
       this.strategy = strategy;
       this.description = description;
@@ -193,9 +194,11 @@ public class PortedSolr3Test extends StrategyTestCase {
   private Document newDoc(String id, Shape shape) {
     Document doc = new Document();
     doc.add(new StringField("id", id, Field.Store.YES));
-    for (IndexableField f : strategy.createFields(shape, true, storeShape)) {
+    for (IndexableField f : strategy.createIndexableFields(shape)) {
       doc.add(f);
     }
+    if (storeShape)
+      doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
     return doc;
   }
 

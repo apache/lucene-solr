@@ -18,7 +18,8 @@
 package org.apache.lucene.analysis.compound.hyphenation;
 
 import java.io.File;
-import java.net.MalformedURLException;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -107,25 +108,20 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
    * Read hyphenation patterns from an XML file.
    * 
    * @param f the filename
-   * @throws HyphenationException In case the parsing fails
+   * @throws IOException In case the parsing fails
    */
-  public void loadPatterns(File f) throws HyphenationException {
-    try {
-      InputSource src = new InputSource(f.toURL().toExternalForm());
-      loadPatterns(src);
-    } catch (MalformedURLException e) {
-      throw new HyphenationException("Error converting the File '" + f
-          + "' to a URL: " + e.getMessage());
-    }
+  public void loadPatterns(File f) throws IOException {
+    InputSource src = new InputSource(f.toURL().toExternalForm());
+    loadPatterns(src);
   }
 
   /**
    * Read hyphenation patterns from an XML file.
    * 
    * @param source the InputSource for the file
-   * @throws HyphenationException In case the parsing fails
+   * @throws IOException In case the parsing fails
    */
-  public void loadPatterns(InputSource source) throws HyphenationException {
+  public void loadPatterns(InputSource source) throws IOException {
     PatternParser pp = new PatternParser(this);
     ivalues = new TernaryTree();
 
@@ -463,10 +459,10 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
   }
 
   @Override
-  public void printStats() {
-    System.out.println("Value space size = "
+  public void printStats(PrintStream out) {
+    out.println("Value space size = "
         + Integer.toString(vspace.length()));
-    super.printStats();
+    super.printStats(out);
 
   }
 }

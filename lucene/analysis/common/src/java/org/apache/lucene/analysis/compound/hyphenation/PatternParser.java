@@ -27,9 +27,7 @@ import org.xml.sax.Attributes;
 
 // Java
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 
 import javax.xml.parsers.SAXParserFactory;
@@ -40,7 +38,7 @@ import javax.xml.parsers.SAXParserFactory;
  * 
  * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
  */
-public class PatternParser extends DefaultHandler implements PatternConsumer {
+public class PatternParser extends DefaultHandler {
 
   XMLReader parser;
 
@@ -87,9 +85,9 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
    * Parses a hyphenation pattern file.
    * 
    * @param filename the filename
-   * @throws HyphenationException In case of an exception while parsing
+   * @throws IOException In case of an exception while parsing
    */
-  public void parse(String filename) throws HyphenationException {
+  public void parse(String filename) throws IOException {
     parse(new InputSource(filename));
   }
 
@@ -97,33 +95,24 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
    * Parses a hyphenation pattern file.
    * 
    * @param file the pattern file
-   * @throws HyphenationException In case of an exception while parsing
+   * @throws IOException In case of an exception while parsing
    */
-  public void parse(File file) throws HyphenationException {
-    try {
-      InputSource src = new InputSource(file.toURL().toExternalForm());
-      parse(src);
-    } catch (MalformedURLException e) {
-      throw new HyphenationException("Error converting the File '" + file
-          + "' to a URL: " + e.getMessage());
-    }
+  public void parse(File file) throws IOException {
+    InputSource src = new InputSource(file.toURL().toExternalForm());
+    parse(src);
   }
 
   /**
    * Parses a hyphenation pattern file.
    * 
    * @param source the InputSource for the file
-   * @throws HyphenationException In case of an exception while parsing
+   * @throws IOException In case of an exception while parsing
    */
-  public void parse(InputSource source) throws HyphenationException {
+  public void parse(InputSource source) throws IOException {
     try {
       parser.parse(source);
-    } catch (FileNotFoundException fnfe) {
-      throw new HyphenationException("File not found: " + fnfe.getMessage());
-    } catch (IOException ioe) {
-      throw new HyphenationException(ioe.getMessage());
     } catch (SAXException e) {
-      throw new HyphenationException(errMsg);
+      throw new IOException(e);
     }
   }
 
@@ -402,25 +391,4 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
     return str.toString();
 
   } // getLocationString(SAXParseException):String
-
-  // PatternConsumer implementation for testing purposes
-  public void addClass(String c) {
-    System.out.println("class: " + c);
-  }
-
-  public void addException(String w, ArrayList<Object> e) {
-    System.out.println("exception: " + w + " : " + e.toString());
-  }
-
-  public void addPattern(String p, String v) {
-    System.out.println("pattern: " + p + " : " + v);
-  }
-
-  public static void main(String[] args) throws Exception {
-    if (args.length > 0) {
-      PatternParser pp = new PatternParser();
-      pp.setConsumer(pp);
-      pp.parse(args[0]);
-    }
-  }
 }

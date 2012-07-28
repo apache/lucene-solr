@@ -40,7 +40,7 @@ public class DummyCustomParamSpellChecker extends SolrSpellChecker {
   }
 
   @Override
-  public void build(SolrCore core, SolrIndexSearcher searcher) {
+  public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
 
   }
 

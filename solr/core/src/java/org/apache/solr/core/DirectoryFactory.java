@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -29,6 +30,24 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     Closeable {
+  
+  /**
+   * Indicates a Directory will no longer be used, and when it's ref count
+   * hits 0, it can be closed. On shutdown all directories will be closed
+   * with this has been called or not. This is simply to allow early cleanup.
+   * 
+   * @param directory
+   * @throws IOException 
+   */
+  public abstract void doneWithDirectory(Directory directory) throws IOException;
+  
+  /**
+   * Adds a close listener for a Directory.
+   * 
+   * @param dir
+   * @param closeListener
+   */
+  public abstract void addCloseListener(Directory dir, CloseListener closeListener);
   
   /**
    * Close the this and all of the Directories it contains.
@@ -62,7 +81,9 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   /**
    * Returns the Directory for a given path, using the specified rawLockType.
    * Will return the same Directory instance for the same path unless forceNew,
-   * in which case a new Directory is returned.
+   * in which case a new Directory is returned. There is no need to call
+   * {@link #doneWithDirectory(Directory)} in this case - the old Directory
+   * will be closed when it's ref count hits 0.
    * 
    * @throws IOException
    */

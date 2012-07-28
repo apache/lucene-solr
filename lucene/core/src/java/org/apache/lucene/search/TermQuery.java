@@ -85,27 +85,20 @@ public class TermQuery extends Query {
       }
       DocsEnum docs = termsEnum.docs(acceptDocs, null, true);
       if (docs != null) {
-        return new TermScorer(this, docs, createDocScorer(context));
+        return new TermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
       } else {
         // Index does not store freq info
         docs = termsEnum.docs(acceptDocs, null, false);
         assert docs != null;
-        return new MatchOnlyTermScorer(this, docs, createDocScorer(context));
+        return new MatchOnlyTermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
       }
-    }
-    
-    /**
-     * Creates an {@link ExactSimScorer} for this {@link TermWeight}*/
-    ExactSimScorer createDocScorer(AtomicReaderContext context)
-        throws IOException {
-      return similarity.exactSimScorer(stats, context);
     }
     
     /**
      * Returns a {@link TermsEnum} positioned at this weights Term or null if
      * the term does not exist in the given context
      */
-    TermsEnum getTermsEnum(AtomicReaderContext context) throws IOException {
+    private TermsEnum getTermsEnum(AtomicReaderContext context) throws IOException {
       final TermState state = termStates.get(context.ord);
       if (state == null) { // term is not present in that reader
         assert termNotInReader(context.reader(), term.field(), term.bytes()) : "no termstate found but term exists in reader term=" + term;

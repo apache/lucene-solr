@@ -35,8 +35,8 @@
       <path refid="base.classpath"/>
     </path>
 
-    <target name="compile" depends="jar-queries,common.compile-core" description="Compiles grouping classes" />
-    <target name="jar-core" depends="common.jar-core" />
+    <target name="init" depends="module-build.init,jar-queries"/>
+
     <target name="javadocs" depends="javadocs-queries,compile-core">
       <invoke-module-javadoc>
         <links>

@@ -25,6 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +98,8 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       }
       langField = params.get(LANG_FIELD, DOCID_LANGFIELD_DEFAULT);
       langsField = params.get(LANGS_FIELD, DOCID_LANGSFIELD_DEFAULT);
-      docIdField = params.get(DOCID_PARAM, DOCID_FIELD_DEFAULT);
+      SchemaField uniqueKeyField = schema.getUniqueKeyField();
+      docIdField = params.get(DOCID_PARAM, uniqueKeyField == null ? DOCID_FIELD_DEFAULT : uniqueKeyField.getName());
       fallbackValue = params.get(FALLBACK);
       if(params.get(FALLBACK_FIELDS, "").length() > 0) {
         fallbackFields = params.get(FALLBACK_FIELDS).split(",");

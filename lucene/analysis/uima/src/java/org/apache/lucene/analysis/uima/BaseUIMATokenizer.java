@@ -80,8 +80,8 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
+  public void setReader(Reader input) throws IOException {
+    super.setReader(input);
     iterator = null;
   }
 

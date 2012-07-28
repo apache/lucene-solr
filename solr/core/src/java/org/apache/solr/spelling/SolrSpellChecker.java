@@ -167,7 +167,7 @@ public abstract class SolrSpellChecker {
   /**
    * (re)Builds the spelling index.  May be a NOOP if the implementation doesn't require building, or can't be rebuilt.
    */
-  public abstract void build(SolrCore core, SolrIndexSearcher searcher);
+  public abstract void build(SolrCore core, SolrIndexSearcher searcher) throws IOException;
   
   /**
    * Get the value of {@link SpellingParams#SPELLCHECK_ACCURACY} if supported.  

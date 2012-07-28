@@ -194,6 +194,11 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
+    public float freq() throws IOException {
+      return 1;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
     }

@@ -68,6 +68,11 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
+    public float freq() {
+      return 1;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       doc = target-1;
       return nextDoc();

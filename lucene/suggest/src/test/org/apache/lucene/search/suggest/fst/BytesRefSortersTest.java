@@ -25,7 +25,9 @@ import org.junit.Test;
 public class BytesRefSortersTest extends LuceneTestCase {
   @Test
   public void testExternalRefSorter() throws Exception {
-    check(new ExternalRefSorter(new Sort()));
+    ExternalRefSorter s = new ExternalRefSorter(new Sort());
+    check(s);
+    s.close();
   }
 
   @Test

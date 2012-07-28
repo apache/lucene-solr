@@ -19,8 +19,11 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
@@ -28,6 +31,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.SyncStrategy;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
@@ -47,8 +52,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -69,8 +72,6 @@ import org.slf4j.LoggerFactory;
 public class CoreAdminHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(CoreAdminHandler.class);
   protected final CoreContainer coreContainer;
-  private ShardHandlerFactory shardHandlerFactory;
-  private ShardHandler shardHandler;
 
   public CoreAdminHandler() {
     super();
@@ -87,8 +88,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
    */
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    shardHandlerFactory = coreContainer.getShardHandlerFactory();
-    shardHandler = shardHandlerFactory.getShardHandler();
   }
 
 
@@ -179,6 +178,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
         
         case REQUESTRECOVERY: {
           this.handleRequestRecoveryAction(req, rsp);
+          break;
+        }
+        
+        case REQUESTSYNCSHARD: {
+          this.handleRequestSyncAction(req, rsp);
           break;
         }
         
@@ -564,13 +568,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String cname = params.get(CoreAdminParams.CORE);
     boolean doPersist = false;
     NamedList<Object> status = new SimpleOrderedMap<Object>();
+    Map<String,Exception> allFailures = coreContainer.getCoreInitFailures();
     try {
       if (cname == null) {
         rsp.add("defaultCoreName", coreContainer.getDefaultCoreName());
         for (String name : coreContainer.getCoreNames()) {
           status.add(name, getCoreStatus(coreContainer, name));
         }
+        rsp.add("initFailures", allFailures);
       } else {
+        Map failures = allFailures.containsKey(cname)
+          ? Collections.singletonMap(cname, allFailures.get(cname))
+          : Collections.emptyMap();
+        rsp.add("initFailures", failures);
         status.add(cname, getCoreStatus(coreContainer, cname));
       }
       rsp.add("status", status);
@@ -655,7 +665,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
   protected void handleRequestRecoveryAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws IOException {
     final SolrParams params = req.getParams();
-    
+    log.info("It has been requested that we recover");
     String cname = params.get(CoreAdminParams.CORE);
     if (cname == null) {
       cname = "";
@@ -664,6 +674,15 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       core = coreContainer.getCore(cname);
       if (core != null) {
+        // try to publish as recovering right away
+        try {
+          coreContainer.getZkController().publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
+        } catch (KeeperException e) {
+          SolrException.log(log, "", e);
+        } catch (InterruptedException e) {
+          SolrException.log(log, "", e);
+        }
+        
         core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, cname);
       } else {
         SolrException.log(log, "Cound not find core to call recovery:" + cname);
@@ -674,6 +693,48 @@ public class CoreAdminHandler extends RequestHandlerBase {
         core.close();
       }
     }
+  }
+  
+  protected void handleRequestSyncAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws IOException {
+    final SolrParams params = req.getParams();
+
+    log.info("I have been requested to sync up my shard");
+    ZkController zkController = coreContainer.getZkController();
+    if (zkController == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Only valid for SolrCloud");
+    }
+    
+    String cname = params.get(CoreAdminParams.CORE);
+    if (cname == null) {
+      throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
+    }
+    SolrCore core = null;
+    try {
+      core = coreContainer.getCore(cname);
+      if (core != null) {
+        SyncStrategy syncStrategy = new SyncStrategy();
+
+        Map<String,String> props = new HashMap<String,String>();
+        props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());
+        props.put(ZkStateReader.CORE_NAME_PROP, cname);
+        props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
+        
+        boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props));
+        if (!success) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Sync Failed");
+        }
+      } else {
+        SolrException.log(log, "Cound not find core to call sync:" + cname);
+      }
+    } finally {
+      // no recoveryStrat close for now
+      if (core != null) {
+        core.close();
+      }
+    }
+    
+
   }
   
   protected void handleWaitForStateAction(SolrQueryRequest req,

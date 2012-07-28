@@ -165,7 +165,7 @@ public class PeerSync  {
     String myURL = "";
 
     if (zkController != null) {
-      myURL = zkController.getZkServerAddress();
+      myURL = zkController.getBaseUrl();
     }
 
     // TODO: core name turns up blank in many tests - find URL if cloud enabled?

@@ -18,6 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * A {@link Scorer} which wraps another scorer and caches the score of the
@@ -59,6 +61,11 @@ public class ScoreCachingWrappingScorer extends Scorer {
   }
 
   @Override
+  public float freq() throws IOException {
+    return scorer.freq();
+  }
+
+  @Override
   public int docID() {
     return scorer.docID();
   }
@@ -77,5 +84,9 @@ public class ScoreCachingWrappingScorer extends Scorer {
   public int advance(int target) throws IOException {
     return scorer.advance(target);
   }
-  
+
+  @Override
+  public Collection<ChildScorer> getChildren() {
+    return Collections.singleton(new ChildScorer(scorer, "CACHED"));
+  }
 }

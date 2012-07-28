@@ -17,6 +17,8 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -63,7 +65,7 @@ public abstract class ElectionContext {
 }
 
 class ShardLeaderElectionContextBase extends ElectionContext {
-  
+  private static Logger log = LoggerFactory.getLogger(ShardLeaderElectionContextBase.class);
   protected final SolrZkClient zkClient;
   protected String shardId;
   protected String collection;
@@ -111,6 +113,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
 // add core container and stop passing core around...
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
+  private static Logger log = LoggerFactory.getLogger(ShardLeaderElectionContext.class);
+  
   private ZkController zkController;
   private CoreContainer cc;
   private SyncStrategy syncStrategy = new SyncStrategy();
@@ -131,8 +135,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       String coreName = leaderProps.get(ZkStateReader.CORE_NAME_PROP);
       SolrCore core = null;
       try {
-        // the first time we are run, we will get a startupCore - after
-        // we will get null and must use cc.getCore
      
         core = cc.getCore(coreName);
 
@@ -181,7 +183,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     // remove our ephemeral and re join the election
     // System.out.println("sync failed, delete our election node:"
     // + leaderSeqPath);
-
+    log.info("There is a better leader candidate than us - going back into recovery");
+    
     zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
     
     cancelElection();

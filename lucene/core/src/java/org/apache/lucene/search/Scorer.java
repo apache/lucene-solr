@@ -98,9 +98,7 @@ public abstract class Scorer extends DocIdSetIterator {
    *  "sloppy" the match was.
    *
    * @lucene.experimental */
-  public float freq() throws IOException {
-    throw new UnsupportedOperationException(this + " does not implement freq()");
-  }
+  public abstract float freq() throws IOException;
   
   /** returns parent Weight
    * @lucene.experimental

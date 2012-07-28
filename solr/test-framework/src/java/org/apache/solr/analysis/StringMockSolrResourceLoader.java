@@ -32,11 +32,7 @@ class StringMockSolrResourceLoader implements ResourceLoader {
     this.text = text;
   }
 
-  public List<String> getLines(String resource) throws IOException {
-    return Arrays.asList(text.split("\n"));
-  }
-
-  public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
+  public <T> T newInstance(String cname, Class<T> expectedType) {
     return null;
   }
 

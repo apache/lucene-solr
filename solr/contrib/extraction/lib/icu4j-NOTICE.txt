@@ -1,3 +1,0 @@
-ICU4J, (under contrib/icu) is licensed under an MIT styles license
-(contrib/icu/lib/ICU-LICENSE.txt) and Copyright (c) 1995-2008
-International Business Machines Corporation and others

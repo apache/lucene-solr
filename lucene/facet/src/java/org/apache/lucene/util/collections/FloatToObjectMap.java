@@ -462,10 +462,8 @@ public class FloatToObjectMap<T> implements Iterable<T> {
    * Prints the baseHash array, used for DEBUG purposes.
    */
   @SuppressWarnings("unused")
-  private void printBaseHash() {
-    for (int i = 0; i < this.baseHash.length; i++) {
-      System.out.println(i + ".\t" + baseHash[i]);
-    }
+  private String getBaseHashAsString() {
+    return Arrays.toString(this.baseHash);
   }
 
   /**

@@ -709,7 +709,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   // Stress test reopen during addIndexes
   public void testDuringAddIndexes() throws Exception {
-    MockDirectoryWrapper dir1 = newDirectory();
+    Directory dir1 = newDirectory();
     final IndexWriter writer = new IndexWriter(
         dir1,
         newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).
@@ -782,8 +782,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     assertEquals(0, excs.size());
     r.close();
-    final Collection<String> openDeletedFiles = dir1.getOpenDeletedFiles();
-    assertEquals("openDeleted=" + openDeletedFiles, 0, openDeletedFiles.size());
+    if (dir1 instanceof MockDirectoryWrapper) {
+      final Collection<String> openDeletedFiles = ((MockDirectoryWrapper)dir1).getOpenDeletedFiles();
+      assertEquals("openDeleted=" + openDeletedFiles, 0, openDeletedFiles.size());
+    }
 
     writer.close();
 
@@ -977,7 +979,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // Don't proceed if picked Codec is in the list of illegal ones.
     final String format = _TestUtil.getPostingsFormat("f");
     assumeFalse("Format: " + format + " does not support ReaderTermsIndexDivisor!",
-        (format.equals("SimpleText") || format.equals("Memory")));
+                (format.equals("SimpleText") || format.equals("Memory") || format.equals("Direct")));
 
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, conf);

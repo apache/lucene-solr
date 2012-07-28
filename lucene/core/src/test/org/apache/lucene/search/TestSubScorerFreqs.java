@@ -75,7 +75,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     private final Set<String> relationships;
 
     public CountingCollector(Collector other) {
-      this(other, new HashSet<String>(Arrays.asList(Occur.MUST.toString(), Occur.SHOULD.toString(), Occur.MUST_NOT.toString())));
+      this(other, new HashSet<String>(Arrays.asList("MUST", "SHOULD", "MUST_NOT")));
     }
 
     public CountingCollector(Collector other, Set<String> relationships) {
@@ -161,9 +161,9 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     query.add(inner, Occur.MUST);
     query.add(aQuery, Occur.MUST);
     query.add(dQuery, Occur.MUST);
-    @SuppressWarnings({"rawtypes","unchecked"}) Set<String>[] occurList = new Set[] {
-        Collections.singleton(Occur.MUST.toString()), 
-        new HashSet<String>(Arrays.asList(Occur.MUST.toString(), Occur.SHOULD.toString()))
+    Set<String>[] occurList = new Set[] {
+        Collections.singleton("MUST"), 
+        new HashSet<String>(Arrays.asList("MUST", "SHOULD"))
     };
     for (Set<String> occur : occurList) {
       CountingCollector c = new CountingCollector(TopScoreDocCollector.create(
@@ -171,7 +171,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       s.search(query, null, c);
       final int maxDocs = s.getIndexReader().maxDoc();
       assertEquals(maxDocs, c.docCounts.size());
-      boolean includeOptional = occur.contains(Occur.SHOULD.toString());
+      boolean includeOptional = occur.contains("SHOULD");
       for (int i = 0; i < maxDocs; i++) {
         Map<Query, Float> doc0 = c.docCounts.get(i);
         assertEquals(includeOptional ? 5 : 4, doc0.size());

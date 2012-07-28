@@ -29,9 +29,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Locale;
 
-import org.apache.lucene.util.IOUtils;
-
-
 /**
  * Three concrete implementations for ContentStream - one for File/URL/String
  * 
@@ -133,7 +130,7 @@ public abstract class ContentStreamBase implements ContentStream
     public Reader getReader() throws IOException {
       String charset = getCharsetFromContentType( contentType );
       return charset == null 
-        ? new InputStreamReader(getStream(), IOUtils.CHARSET_UTF_8)
+        ? new InputStreamReader(getStream(), "UTF-8")
         : new InputStreamReader( getStream(), charset );
     }
   }

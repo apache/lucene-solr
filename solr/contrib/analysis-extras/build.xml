@@ -24,13 +24,17 @@
   </description>
 
   <import file="../contrib-build.xml"/>
+  
+  <path id="analysis.extras.lucene.libs">
+    <pathelement location="${analyzers-icu.jar}"/>
+    <pathelement location="${analyzers-smartcn.jar}"/>
+    <pathelement location="${analyzers-stempel.jar}"/>
+    <pathelement location="${analyzers-morfologik.jar}"/>
+  </path>
 
   <path id="classpath">
-        <fileset dir="lib" excludes="${common.classpath.excludes}"/>
-  	<pathelement path="${analyzers-icu.jar}"/>
-  	<pathelement path="${analyzers-smartcn.jar}"/>
-  	<pathelement path="${analyzers-stempel.jar}"/>
-  	<fileset refid="analyzers-morfologik.fileset" />
+    <fileset dir="lib" excludes="${common.classpath.excludes}"/>
+    <path refid="analysis.extras.lucene.libs" />
     <path refid="solr.base.classpath"/>
   </path>
 
@@ -38,10 +42,7 @@
           depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel, jar-analyzers-morfologik">
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
-      <fileset file="${analyzers-icu.jar}"/>
-      <fileset file="${analyzers-smartcn.jar}"/>
-      <fileset file="${analyzers-stempel.jar}"/>
-      <fileset refid="analyzers-morfologik.fileset" />
+      <path refid="analysis.extras.lucene.libs" />
     </copy>
   </target>
 

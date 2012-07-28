@@ -66,12 +66,9 @@ public class AnalyzerProfile {
 
     if (ANALYSIS_DATA_DIR.length() == 0) {
       // Dictionary directory cannot be found.
-      System.err
-          .println("WARNING: Can not find lexical dictionary directory!");
-      System.err
-          .println("WARNING: This will cause unpredictable exceptions in your application!");
-      System.err
-          .println("WARNING: Please refer to the manual to download the dictionaries.");
+      throw new RuntimeException("WARNING: Can not find lexical dictionary directory!"
+       + " This will cause unpredictable exceptions in your application!"
+       + " Please refer to the manual to download the dictionaries.");
     }
 
   }

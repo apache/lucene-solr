@@ -22,6 +22,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageIdentifierUpdateProcessorFactoryTestCase {
   @Override
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters) throws Exception {
-    return new TikaLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(null, parameters, null), resp, null);
+    return new TikaLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(h.getCore(), parameters, null), resp, null);
   }
 }

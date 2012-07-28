@@ -3,7 +3,7 @@
   #parse("head.vm")
 </head>
   <body>
-    <div id="admin"><a href="#url_for_solr">Solr Admin</a></div>
+    <div id="admin"><a href="#url_root/#/#core_name">Solr Admin</a></div>
     <div id="header">
       #parse("header.vm")
     </div>

@@ -65,7 +65,7 @@ public final class IOUtils {
    * } catch (ExpectedException e) {
    *   priorE = e;
    * } finally {
-   *   closeSafely(priorE, resource1, resource2, resource3);
+   *   closeWhileHandlingException(priorE, resource1, resource2, resource3);
    * }
    * </pre>
    * </p>

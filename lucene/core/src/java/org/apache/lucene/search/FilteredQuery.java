@@ -24,6 +24,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 
@@ -220,6 +222,14 @@ public class FilteredQuery extends Query {
             @Override
             public float score() throws IOException {
               return scorer.score();
+            }
+            
+            @Override
+            public float freq() throws IOException { return scorer.freq(); }
+            
+            @Override
+            public Collection<ChildScorer> getChildren() {
+              return Collections.singleton(new ChildScorer(scorer, "FILTERED"));
             }
           };
         }

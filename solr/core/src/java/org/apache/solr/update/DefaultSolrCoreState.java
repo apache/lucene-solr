@@ -21,9 +21,11 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.cloud.RecoveryStrategy;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,30 +42,86 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   private boolean recoveryRunning;
   private RecoveryStrategy recoveryStrat;
   private boolean closed = false;
+
+  private RefCounted<IndexWriter> refCntWriter;
+
+  private boolean pauseWriter;
+  private boolean writerFree = true;
   
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
     this.directoryFactory = directoryFactory;
   }
   
   @Override
-  public synchronized IndexWriter getIndexWriter(SolrCore core) throws IOException {
-    if (indexWriter == null) {
-      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false, false);
+  public synchronized RefCounted<IndexWriter> getIndexWriter(SolrCore core)
+      throws IOException {
+
+    if (core == null) {
+      // core == null is a signal to just return the current writer, or null if none.
+      if (refCntWriter != null) refCntWriter.incref();
+      return refCntWriter;
     }
-    return indexWriter;
+
+    while (pauseWriter) {
+      try {
+        wait();
+      } catch (InterruptedException e) {}
+    }
+
+    if (indexWriter == null) {
+      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false,
+          false);
+    }
+    if (refCntWriter == null) {
+      refCntWriter = new RefCounted<IndexWriter>(indexWriter) {
+        @Override
+        public void close() {
+          synchronized (DefaultSolrCoreState.this) {
+            writerFree = true;
+            DefaultSolrCoreState.this.notifyAll();
+          }
+        }
+      };
+    }
+    writerFree = false;
+    notifyAll();
+    refCntWriter.incref();
+    return refCntWriter;
   }
 
   @Override
   public synchronized void newIndexWriter(SolrCore core) throws IOException {
-    if (indexWriter != null) {
-      indexWriter.close();
+    // we need to wait for the Writer to fall out of use
+    // first lets stop it from being lent out
+    pauseWriter = true;
+    // then lets wait until its out of use
+    while(!writerFree) {
+      try {
+        wait();
+      } catch (InterruptedException e) {}
     }
-    indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2",
-        false, true);
+    
+    try {
+      if (indexWriter != null) {
+        try {
+          indexWriter.close();
+        } catch (Throwable t) {
+          SolrException.log(log, "Error closing old IndexWriter", t);
+        }
+      }
+      
+      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false,
+          true);
+      // we need to null this so it picks up the new writer next get call
+      refCntWriter = null;
+    } finally {
+      pauseWriter = false;
+      notifyAll();
+    }
   }
 
   @Override
-  public  void decref(IndexWriterCloser closer) {
+  public void decref(IndexWriterCloser closer) {
     synchronized (this) {
       refCnt--;
       if (refCnt == 0) {
@@ -125,6 +183,11 @@ public final class DefaultSolrCoreState extends SolrCoreState {
       return;
     }
     
+    if (cc.isShutDown()) {
+      log.warn("Skipping recovery because Solr is shutdown");
+      return;
+    }
+    
     cancelRecovery();
     synchronized (recoveryLock) {
       while (recoveryRunning) {
@@ -132,6 +195,11 @@ public final class DefaultSolrCoreState extends SolrCoreState {
           recoveryLock.wait(1000);
         } catch (InterruptedException e) {
 
+        }
+        // check again for those that were waiting
+        if (cc.isShutDown()) {
+          log.warn("Skipping recovery because Solr is shutdown");
+          return;
         }
         if (closed) return;
       }

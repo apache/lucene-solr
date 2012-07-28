@@ -30,7 +30,9 @@ import java.util.TimeZone;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.appending.AppendingCodec;
+import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
 import org.apache.lucene.search.RandomSimilarityProvider;
@@ -85,33 +87,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     restoreProperties.put("solr.solr.home", System.getProperty("solr.solr.home"));
     restoreProperties.put("solr.data.dir", System.getProperty("solr.data.dir"));
 
-    // enable the Lucene 3.x PreflexRW codec explicitly, to work around bugs in IBM J9 / Harmony ServiceLoader:
-    try {
-      final java.lang.reflect.Field spiLoaderField = Codec.class.getDeclaredField("loader");
-      spiLoaderField.setAccessible(true);
-      final Object spiLoader = spiLoaderField.get(null);
-      final java.lang.reflect.Field modifiableServicesField = NamedSPILoader.class.getDeclaredField("modifiableServices");
-      modifiableServicesField.setAccessible(true);
-      /* note: re-enable this if we make a Lucene4x impersonator 
-      @SuppressWarnings({"unchecked","rawtypes"}) final Map<String,Codec> serviceMap =
-        (Map) modifiableServicesField.get(spiLoader);
-      if (!(Codec.forName("Lucene3x") instanceof PreFlexRWCodec)) {
-        if (Constants.JAVA_VENDOR.startsWith("IBM")) {
-          // definitely a buggy version
-          System.err.println("ERROR: Your VM's java.util.ServiceLoader implementation is buggy"+
-            " and does not respect classpath order, please report this to the vendor.");
-        } else {
-          // could just be a classpath issue
-          System.err.println("ERROR: fix your classpath to have tests-framework.jar before lucene-core.jar!"+
-              " If you have already done this, then your VM's java.util.ServiceLoader implementation is buggy"+
-              " and does not respect classpath order, please report this to the vendor.");
-        }
-        serviceMap.put("Lucene3x", new PreFlexRWCodec());
-      } */
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot access internals of Codec and NamedSPILoader classes", e);
-    }
-    
     // if verbose: print some debugging stuff about which codecs are loaded.
     if (VERBOSE) {
       Set<String> codecs = Codec.availableCodecs();
@@ -167,9 +142,13 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
     } else */ if (!"random".equals(TEST_POSTINGSFORMAT)) {
-      codec = new Lucene40Codec() {
-        private final PostingsFormat format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
-        
+      final PostingsFormat format;
+      if ("MockRandom".equals(TEST_POSTINGSFORMAT)) {
+        format = new MockRandomPostingsFormat(random);
+      } else {
+        format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
+      }
+      codec = new Lucene40Codec() {       
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
           return format;
@@ -184,6 +163,8 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       codec = new SimpleTextCodec();
     } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
       codec = new AppendingCodec();
+    } else if ("Asserting".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 7 && !shouldAvoidCodec("Asserting"))) {
+      codec = new AssertingCodec();
     } else if (!"random".equals(TEST_CODEC)) {
       codec = Codec.forName(TEST_CODEC);
     } else if ("random".equals(TEST_POSTINGSFORMAT)) {
