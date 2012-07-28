@@ -93,6 +93,9 @@ New Features
   be accessible from the STATUS command until they are "reset" by 
   creating/renaming a SolrCore with the same name.  (hossman)
 
+* SOLR-1280: Added commented-out example of the new script update processor
+  to the example configuration.  See http://wiki.apache.org/solr/ScriptUpdateProcessor (ehatcher)
+
 Bug Fixes
 ----------------------
 
