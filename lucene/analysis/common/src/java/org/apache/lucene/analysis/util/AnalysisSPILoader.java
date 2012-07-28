@@ -31,7 +31,7 @@ import org.apache.lucene.util.SPIClassIterator;
  * Helper class for loading named SPIs from classpath (e.g. Tokenizers, TokenStreams).
  * @lucene.internal
  */
-public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
+final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
   private volatile Map<String,Class<? extends S>> services = Collections.emptyMap();
   private final Class<S> clazz;

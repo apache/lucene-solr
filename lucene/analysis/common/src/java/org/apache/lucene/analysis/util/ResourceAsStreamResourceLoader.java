@@ -25,7 +25,7 @@ import java.io.InputStream;
  * and Class.forName to open resources and classes, respectively.
  */
 public class ResourceAsStreamResourceLoader implements ResourceLoader {
-  Class<?> clazz;
+  private final Class<?> clazz;
   
   public ResourceAsStreamResourceLoader(Class<?> clazz) {
     this.clazz = clazz;
