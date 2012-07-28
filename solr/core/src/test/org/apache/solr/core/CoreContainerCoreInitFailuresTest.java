@@ -30,11 +30,11 @@ import org.apache.lucene.util.IOUtils;
 
 import org.apache.commons.io.FileUtils;
 
+import org.xml.sax.SAXParseException;
+
 import org.junit.Before;
 import org.junit.After;
-import org.junit.Ignore;
 
-@Ignore("SOLR-3634: some errors are localized and tests fail in non en, disabling temporarily")
 public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   
   File solrHome = null;
@@ -250,12 +250,12 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
     try {
       cc.reload("col_bad");
-      fail("corrupd solrconfig.xml failed to trigger exception from reload");
-    } catch (Exception e) {
+      fail("corrupt solrconfig.xml failed to trigger exception from reload");
+    } catch (SAXParseException e) {
       // :TODO: should really tighten up the exceptions CoreContainer throws (ie: just SolrException)
       
-      assertTrue("reload exception doesn't mention bad prolog: " + e.getMessage(),
-                 0 < e.getMessage().indexOf("prolog"));
+      assertTrue("reload exception doesn't refer to slrconfig.xml " + e.getSystemId(),
+                 0 < e.getSystemId().indexOf("solrconfig.xml"));
       
     }
 
@@ -276,8 +276,8 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
     fail = failures.get("col_bad");
     assertNotNull("null failure for test core", fail);
-    assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
-               0 < fail.getMessage().indexOf("prolog"));
+    assertTrue("init failure doesn't mention problem: " + fail.toString(),
+               0 < fail.toString().indexOf("solrconfig.xml"));
 
 
     // ----
