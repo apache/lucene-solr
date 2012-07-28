@@ -153,6 +153,10 @@ Bug Fixes
   when 'gap' is zero -- or effectively zero due to floating point arithmetic 
   underflow. (hossman)
 
+* SOLR-3648: Fixed VelocityResponseWriter template loading in SolrCloud mode.
+  For the example configuration, this means /browse now works with SolrCloud.
+  (janhoy, ehatcher)
+
 Other Changes
 ----------------------
 
