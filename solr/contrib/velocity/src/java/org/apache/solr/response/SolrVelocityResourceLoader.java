@@ -25,7 +25,9 @@ import org.apache.solr.core.SolrResourceLoader;
 import java.io.IOException;
 import java.io.InputStream;
 
-// TODO: the name of this class seems ridiculous
+/**
+  * Velocity resource loader wrapper around Solr resource loader
+  */
 public class SolrVelocityResourceLoader extends ResourceLoader {
   private SolrResourceLoader loader;
 
@@ -41,7 +43,7 @@ public class SolrVelocityResourceLoader extends ResourceLoader {
   @Override
   public InputStream getResourceStream(String template_name) throws ResourceNotFoundException {
     try {
-      return loader.openResource(template_name);
+      return loader.openResource("velocity/" + template_name);
     } catch (IOException ioe) {
       throw new ResourceNotFoundException(ioe);
     }
