@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -77,7 +76,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
   public SyncSliceTest() {
     super();
     sliceCount = 1;
-    shardCount = 3;
+    shardCount = TEST_NIGHTLY ? 7 : 3;
   }
   
   @Override
@@ -91,25 +90,31 @@ public class SyncSliceTest extends FullSolrCloudTest {
 
     del("*:*");
     List<String> skipServers = new ArrayList<String>();
-    
-    indexDoc(skipServers, id, 0, i1, 50, tlong, 50, t1,
+    int docId = 0;
+    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "to come to the aid of their country.");
     
-    indexDoc(skipServers, id, 1, i1, 50, tlong, 50, t1,
+    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "old haven was blue.");
     
     skipServers.add(shardToJetty.get("shard1").get(1).url + "/");
     
-    indexDoc(skipServers, id, 2, i1, 50, tlong, 50, t1,
+    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "but the song was fancy.");
     
     skipServers.add(shardToJetty.get("shard1").get(2).url + "/");
     
-    indexDoc(skipServers, id, 3, i1, 50, tlong, 50, t1,
+    indexDoc(skipServers, id,docId++, i1, 50, tlong, 50, t1,
         "under the moon and over the lake");
     
     commit();
+    
+    waitForRecoveriesToFinish(false);
 
+    // shard should be inconsistent
+    String shardFailMessage = checkShardConsistency("shard1", true);
+    assertNotNull(shardFailMessage);
+    
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.SYNCSHARD.toString());
     params.set("collection", "collection1");
@@ -131,32 +136,28 @@ public class SyncSliceTest extends FullSolrCloudTest {
     long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(4, cloudClientDocs);
     
-    skipServers = new ArrayList<String>();
-    
-    skipServers.add(shardToJetty.get("shard1").get(random().nextInt(shardCount)).url + "/");
-    
-    // this doc won't be on one node
-    indexDoc(skipServers, id, 4, i1, 50, tlong, 50, t1,
-        "to come to the aid of their country.");
     
     // kill the leader - new leader could have all the docs or be missing one
     CloudJettyRunner leaderJetty = shardToLeaderJetty.get("shard1");
-
+    
+    skipServers = getRandomOtherJetty(leaderJetty, null); // but not the leader
+    
+    // this doc won't be on one node
+    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
+        "to come to the aid of their country.");
+    
+    
     Set<CloudJettyRunner> jetties = new HashSet<CloudJettyRunner>();
     jetties.addAll(shardToJetty.get("shard1"));
     jetties.remove(leaderJetty);
+    assertEquals(shardCount - 1, jetties.size());
     
     chaosMonkey.killJetty(leaderJetty);
 
     // we are careful to make sure the downed node is no longer in the state,
     // because on some systems (especially freebsd w/ blackhole enabled), trying
     // to talk to a downed node causes grief
-    for (CloudJettyRunner cjetty : jetties) {
-      waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
-          .getFilter()).getCores().getZkController().getZkStateReader(),
-          leaderJetty);
-    }
-    waitToSeeNotLive(cloudClient.getZkStateReader(), leaderJetty);
+    waitToSeeDownInCloudState(leaderJetty, jetties);
 
     waitForThingsToLevelOut();
     
@@ -164,6 +165,105 @@ public class SyncSliceTest extends FullSolrCloudTest {
     
     cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(5, cloudClientDocs);
+    
+    CloudJettyRunner deadJetty = leaderJetty;
+    
+    // let's get the latest leader
+    while (deadJetty == leaderJetty) {
+      updateMappingsFromZk(this.jettys, this.clients);
+      leaderJetty = shardToLeaderJetty.get("shard1");
+    }
+    
+    // bring back dead node
+    ChaosMonkey.start(deadJetty.jetty); // he is not the leader anymore
+    
+    // give a moment to be sure it has started recovering
+    Thread.sleep(2000);
+    
+    waitForThingsToLevelOut();
+    waitForRecoveriesToFinish(false);
+    
+    skipServers = getRandomOtherJetty(leaderJetty, null);
+    
+    // skip list should be 
+    
+    //System.out.println("leader:" + leaderJetty.url);
+    //System.out.println("skip list:" + skipServers);
+    
+    // we are skipping the leader and one node
+    assertEquals(1, skipServers.size());
+    
+    // more docs than can peer sync
+    for (int i = 0; i < 300; i++) {
+      indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
+          "to come to the aid of their country.");
+    }
+    
+    commit();
+    
+    waitForRecoveriesToFinish(false);
+    
+    // shard should be inconsistent
+    shardFailMessage = checkShardConsistency("shard1", true);
+    assertNotNull(shardFailMessage);
+    
+    
+    jetties = new HashSet<CloudJettyRunner>();
+    jetties.addAll(shardToJetty.get("shard1"));
+    jetties.remove(leaderJetty);
+    assertEquals(shardCount - 1, jetties.size());
+
+    
+    // kill the current leader
+    chaosMonkey.killJetty(leaderJetty);
+    
+    waitToSeeDownInCloudState(leaderJetty, jetties);
+    
+    Thread.sleep(4000);
+    
+    waitForRecoveriesToFinish(false);
+    
+    
+    // TODO: for now, we just check consistency -
+    // there will be 305 or 5 docs depending on who
+    // becomes the leader - eventually we want that to
+    // always be the 305
+    //checkShardConsistency(true, true);
+    checkShardConsistency(false, true);
+    
+  }
+
+  private List<String> getRandomJetty() {
+    return getRandomOtherJetty(null, null);
+  }
+  
+  private List<String> getRandomOtherJetty(CloudJettyRunner leader, CloudJettyRunner down) {
+    List<String> skipServers = new ArrayList<String>();
+    List<CloudJettyRunner> candidates = new ArrayList<CloudJettyRunner>();
+    candidates.addAll(shardToJetty.get("shard1"));
+
+    if (leader != null) {
+      candidates.remove(leader);
+    }
+    
+    if (down != null) {
+      candidates.remove(down);
+    }
+    
+    CloudJettyRunner cjetty = candidates.get(random().nextInt(candidates.size()));
+    skipServers.add(cjetty.url + "/");
+    return skipServers;
+  }
+
+  private void waitToSeeDownInCloudState(CloudJettyRunner leaderJetty,
+      Set<CloudJettyRunner> jetties) throws InterruptedException {
+
+    for (CloudJettyRunner cjetty : jetties) {
+      waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
+          .getFilter()).getCores().getZkController().getZkStateReader(),
+          leaderJetty);
+    }
+    waitToSeeNotLive(cloudClient.getZkStateReader(), leaderJetty);
   }
 
   private void waitForThingsToLevelOut() throws Exception {
