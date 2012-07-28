@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 
 /**
  * Simple tests to ensure the Hunspell stemmer loads from factory
@@ -38,7 +38,7 @@ public class TestHunspellStemFilterFactory extends BaseTokenStreamTestCase {
     args.put("affix", "test.aff");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new ResourceAsStreamResourceLoader(getClass()));
+    factory.inform(new ClasspathResourceLoader(getClass()));
     
     Reader reader = new StringReader("abc");
     TokenStream stream = factory.create(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));

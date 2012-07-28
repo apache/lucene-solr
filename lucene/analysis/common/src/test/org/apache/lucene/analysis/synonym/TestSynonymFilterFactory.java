@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
-import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.util.Version;
 
@@ -37,7 +37,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamTestCase {
     args.put("synonyms", "synonyms.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
-    factory.inform(new ResourceAsStreamResourceLoader(getClass()));
+    factory.inform(new ClasspathResourceLoader(getClass()));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
     assertTrue(ts instanceof SynonymFilter);
     assertTokenStreamContents(ts, 
@@ -54,7 +54,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamTestCase {
     args.put("synonyms", "synonyms.txt");
     factory.setLuceneMatchVersion(Version.LUCENE_33);
     factory.init(args);
-    factory.inform(new ResourceAsStreamResourceLoader(getClass()));
+    factory.inform(new ClasspathResourceLoader(getClass()));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
     assertTrue(ts instanceof SlowSynonymFilter);
     assertTokenStreamContents(ts, 

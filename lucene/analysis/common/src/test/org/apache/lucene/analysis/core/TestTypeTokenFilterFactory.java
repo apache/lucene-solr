@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.junit.Test;
 
@@ -34,7 +34,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamTestCase {
 
   @Test
   public void testInform() throws Exception {
-    ResourceLoader loader = new ResourceAsStreamResourceLoader(getClass());
+    ResourceLoader loader = new ClasspathResourceLoader(getClass());
     TypeTokenFilterFactory factory = new TypeTokenFilterFactory();
     Map<String, String> args = new HashMap<String, String>();
     args.put("types", "stoptypes-1.txt");
@@ -94,7 +94,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamTestCase {
       args.put("enablePositionIncrements", "false");
       typeTokenFilterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
       typeTokenFilterFactory.init(args);
-      typeTokenFilterFactory.inform(new ResourceAsStreamResourceLoader(getClass()));
+      typeTokenFilterFactory.inform(new ClasspathResourceLoader(getClass()));
       fail("not supplying 'types' parameter should cause an IllegalArgumentException");
     } catch (IllegalArgumentException e) {
       // everything ok
