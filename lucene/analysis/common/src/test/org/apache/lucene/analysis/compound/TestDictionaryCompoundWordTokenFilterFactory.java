@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 
 /**
@@ -40,7 +40,7 @@ public class TestDictionaryCompoundWordTokenFilterFactory extends BaseTokenStrea
     Reader reader = new StringReader("I like to play softball");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     DictionaryCompoundWordTokenFilterFactory factory = new DictionaryCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new ResourceAsStreamResourceLoader(getClass());
+    ResourceLoader loader = new ClasspathResourceLoader(getClass());
     Map<String,String> args = new HashMap<String,String>();
     args.put("dictionary", "compoundDictionary.txt");
     factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
