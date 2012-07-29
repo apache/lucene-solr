@@ -46,6 +46,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -1835,5 +1836,54 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
     dir.close();
+  }
+  
+  //LUCENE-1468 -- make sure opening an IndexWriter with
+  // create=true does not remove non-index files
+  
+  public void testOtherFiles() throws Throwable {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    iw.addDocument(new Document());
+    iw.close();
+    try {
+      // Create my own random file:
+      IndexOutput out = dir.createOutput("myrandomfile", newIOContext(random()));
+      out.writeByte((byte) 42);
+      out.close();
+      
+      new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
+      
+      assertTrue(dir.fileExists("myrandomfile"));
+    } finally {
+      dir.close();
+    }
+  }
+  
+  // here we do better, there is no current segments file, so we don't delete anything.
+  // however, if you actually go and make a commit, the next time you run indexwriter
+  // this file will be gone.
+  public void testOtherFiles2() throws Throwable {
+    Directory dir = newDirectory();
+    try {
+      // Create my own random file:
+      IndexOutput out = dir.createOutput("_a.frq", newIOContext(random()));
+      out.writeByte((byte) 42);
+      out.close();
+      
+      new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
+      
+      assertTrue(dir.fileExists("_a.frq"));
+      
+      IndexWriter iw = new IndexWriter(dir, 
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+      iw.addDocument(new Document());
+      iw.close();
+      
+      assertFalse(dir.fileExists("_a.frq"));
+    } finally {
+      dir.close();
+    }
   }
 }

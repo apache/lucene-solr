@@ -116,6 +116,12 @@ Bug Fixes
 * LUCENE-4245: Make IndexWriter#close() and MergeScheduler#close()
   non-interruptible.  (Mark Miller, Uwe Schindler)
 
+* LUCENE-4190: restrict allowed filenames that a codec may create to
+  the patterns recognized by IndexFileNames.  This also fixes
+  IndexWriter to only delete files matching this pattern from an index
+  directory, to reduce risk when the wrong index path is accidentally
+  passed to IndexWriter (Robert Muir, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-4109: Enable position increments in the flexible queryparser by default.
