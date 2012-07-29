@@ -25,6 +25,7 @@ import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 import org.apache.lucene.queryParser.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FieldableNode;
 import org.apache.lucene.queryParser.core.nodes.GroupQueryNode;
+import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
@@ -108,7 +109,7 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 
             }
 
-            return new GroupQueryNode(new BooleanQueryNode(children));
+            return new GroupQueryNode(new OrQueryNode(children));
 
           }
 

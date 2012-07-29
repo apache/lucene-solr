@@ -63,6 +63,7 @@ import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorPipeline;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
+import org.apache.lucene.queryParser.standard.StandardQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -467,6 +468,27 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
+  }
+  
+  public void testGroup() throws Exception {
+    assertQueryEquals("!(a AND b) OR c", null, "-(+a +b) c");
+    assertQueryEquals("!(a AND b) AND c", null, "-(+a +b) +c");
+    assertQueryEquals("((a AND b) AND c)", null, "+(+a +b) +c");
+    assertQueryEquals("(a AND b) AND c", null, "+(+a +b) +c");
+    assertQueryEquals("b !(a AND b)", null, "b -(+a +b)");
+    assertQueryEquals("(a AND b)^4 OR c", null, "((+a +b)^4.0) c");
+  }
+  
+  public void testParens() throws Exception {
+    StandardQueryParser qp = new StandardQueryParser(new MockAnalyzer(random));
+    String query = "(field:[1 TO *] AND field:[* TO 2]) AND field2:(z)";
+    BooleanQuery q = new BooleanQuery();
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermRangeQuery("field", "1", "*", true, true), BooleanClause.Occur.MUST);
+    bq.add(new TermRangeQuery("field", "*", "2", true, true), BooleanClause.Occur.MUST);
+    q.add(bq, BooleanClause.Occur.MUST);
+    q.add(new TermQuery(new Term("field2", "z")), BooleanClause.Occur.MUST);
+    assertEquals(q, qp.parse(query, "foo"));
   }
 
   public void testSlop() throws Exception {

@@ -19,6 +19,7 @@ package org.apache.lucene.queryParser.precedence.processors;
 
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 import org.apache.lucene.queryParser.precedence.PrecedenceQueryParser;
+import org.apache.lucene.queryParser.standard.processors.BooleanQuery2ModifierNodeProcessor;
 import org.apache.lucene.queryParser.standard.processors.GroupQueryNodeProcessor;
 import org.apache.lucene.queryParser.standard.processors.StandardQueryNodeProcessorPipeline;
 
@@ -46,7 +47,7 @@ public class PrecedenceQueryNodeProcessorPipeline extends StandardQueryNodeProce
     
     for (int i = 0 ; i < size() ; i++) {
       
-      if (get(i).getClass().equals(GroupQueryNodeProcessor.class)) {
+      if (get(i).getClass().equals(BooleanQuery2ModifierNodeProcessor.class)) {
         remove(i--);
       }
       
