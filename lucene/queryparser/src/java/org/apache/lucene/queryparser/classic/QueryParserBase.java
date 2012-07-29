@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
+import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
@@ -37,7 +38,7 @@ import org.apache.lucene.util.Version;
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file. 
  */
-public abstract class QueryParserBase {
+public abstract class QueryParserBase implements CommonQueryParserConfiguration {
 
   /** Do not catch this exception in your code, it means you are using methods that you should no longer use. */
   public static class MethodRemovedUseAnother extends Throwable {}

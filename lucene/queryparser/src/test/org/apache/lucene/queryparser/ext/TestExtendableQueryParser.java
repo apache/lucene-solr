@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
-import org.apache.lucene.queryparser.util.QueryParserTestBase;
+import org.apache.lucene.queryparser.classic.TestQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -34,7 +34,7 @@ import org.apache.lucene.search.TermQuery;
 /**
  * Testcase for the class {@link ExtendableQueryParser}
  */
-public class TestExtendableQueryParser extends QueryParserTestBase {
+public class TestExtendableQueryParser extends TestQueryParser {
   private static char[] DELIMITERS = new char[] {
       Extensions.DEFAULT_EXTENSION_FIELD_DELIMITER, '-', '|' };
 
@@ -48,8 +48,8 @@ public class TestExtendableQueryParser extends QueryParserTestBase {
     if (a == null)
       a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
     QueryParser qp = extensions == null ? new ExtendableQueryParser(
-        TEST_VERSION_CURRENT, "field", a) : new ExtendableQueryParser(
-        TEST_VERSION_CURRENT, "field", a, extensions);
+        TEST_VERSION_CURRENT, getDefaultField(), a) : new ExtendableQueryParser(
+        TEST_VERSION_CURRENT, getDefaultField(), a, extensions);
     qp.setDefaultOperator(QueryParserBase.OR_OPERATOR);
     return qp;
   }
@@ -92,7 +92,7 @@ public class TestExtendableQueryParser extends QueryParserTestBase {
       assertTrue("expected instance of TermQuery but was " + query.getClass(),
           query instanceof TermQuery);
       tquery = (TermQuery) query;
-      assertEquals("field", tquery.getTerm().field());
+      assertEquals(getDefaultField(), tquery.getTerm().field());
       assertEquals("bar", tquery.getTerm().text());
     }
   }
@@ -108,7 +108,7 @@ public class TestExtendableQueryParser extends QueryParserTestBase {
       assertTrue("expected instance of TermQuery but was " + parse.getClass(),
           parse instanceof TermQuery);
       TermQuery tquery = (TermQuery) parse;
-      assertEquals("field", tquery.getTerm().field());
+      assertEquals(getDefaultField(), tquery.getTerm().field());
       assertEquals("foo & bar", tquery.getTerm().text());
     }
   }

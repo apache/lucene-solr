@@ -63,7 +63,8 @@ public class StandardQueryNodeProcessorPipeline extends
     add(new AllowLeadingWildcardProcessor());    
     add(new AnalyzerQueryNodeProcessor());
     add(new PhraseSlopQueryNodeProcessor());
-    add(new GroupQueryNodeProcessor());
+    //add(new GroupQueryNodeProcessor());
+    add(new BooleanQuery2ModifierNodeProcessor());
     add(new NoChildOptimizationQueryNodeProcessor());
     add(new RemoveDeletedQueryNodesProcessor());
     add(new RemoveEmptyNonLeafQueryNodeProcessor());
