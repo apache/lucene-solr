@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
@@ -251,16 +252,31 @@ public final class SegmentInfo {
   private Set<String> setFiles;
 
   public void setFiles(Set<String> files) {
+    checkFileNames(files);
     setFiles = files;
     sizeInBytes = -1;
   }
 
   public void addFiles(Collection<String> files) {
+    checkFileNames(files);
     setFiles.addAll(files);
+    sizeInBytes = -1;
   }
 
   public void addFile(String file) {
+    checkFileNames(Collections.singleton(file));
     setFiles.add(file);
+    sizeInBytes = -1;
+  }
+  
+  private void checkFileNames(Collection<String> files) {
+    Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
+    for (String file : files) {
+      m.reset(file);
+      if (!m.matches()) {
+        throw new IllegalArgumentException("invalid codec filename '" + file + "', must match: " + IndexFileNames.CODEC_FILE_PATTERN.pattern());
+      }
+    }
   }
     
   /**
