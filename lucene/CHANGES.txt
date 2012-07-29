@@ -82,6 +82,9 @@ Optimizations
 
 Bug Fixes
 
+* LUCENE-4109: BooleanQueries are not parsed correctly with the 
+  flexible query parser. (Karsten Rauch via Robert Muir)
+
 * LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,
   so that it works correctly with Analyzers that produce binary non-UTF-8 terms
   such as CollationAnalyzer. (Nattapong Sirilappanich via Robert Muir) 
@@ -112,6 +115,11 @@ Bug Fixes
 
 * LUCENE-4245: Make IndexWriter#close() and MergeScheduler#close()
   non-interruptible.  (Mark Miller, Uwe Schindler)
+
+Changes in Runtime Behavior
+
+* LUCENE-4109: Enable position increments in the flexible queryparser by default.
+  (Karsten Rauch via Robert Muir)
 
 Build
 
