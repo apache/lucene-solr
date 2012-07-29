@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import java.io.File;
 import java.util.*;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
@@ -35,7 +36,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
 import org.apache.solr.spelling.SolrSpellChecker;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -99,8 +99,8 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
 
   @Test
-  @Ignore("This test fails in most cases with Java 8+, looks like it depends on order of some HashSet/HashMap whatever")
   public void testPerDictionary() throws Exception {
+    assumeFalse("This test fails in most cases with Java 8+, looks like it depends on order of some HashSet/HashMap whatever", Constants.JRE_IS_MINIMUM_JAVA8);
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","documemt"
         , SpellingParams.SPELLCHECK_DICT, "perDict", SpellingParams.SPELLCHECK_PREFIX + ".perDict.foo", "bar", SpellingParams.SPELLCHECK_PREFIX + ".perDict.bar", "foo")
        ,"/spellcheck/suggestions/bar=={'numFound':1, 'startOffset':0, 'endOffset':1, 'suggestion':['foo']}"
