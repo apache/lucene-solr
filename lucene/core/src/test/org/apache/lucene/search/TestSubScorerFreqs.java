@@ -145,7 +145,6 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     }
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void testBooleanQuery() throws Exception {
     TermQuery aQuery = new TermQuery(new Term("f", "a"));
@@ -161,7 +160,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     query.add(inner, Occur.MUST);
     query.add(aQuery, Occur.MUST);
     query.add(dQuery, Occur.MUST);
-    Set<String>[] occurList = new Set[] {
+    @SuppressWarnings({"unchecked","rawtypes"}) Set<String>[] occurList = new Set[] {
         Collections.singleton("MUST"), 
         new HashSet<String>(Arrays.asList("MUST", "SHOULD"))
     };
