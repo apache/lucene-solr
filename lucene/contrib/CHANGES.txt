@@ -10,6 +10,8 @@ Bug Fixes
 * LUCENE-4109: BooleanQueries are not parsed correctly with the
   flexible query parser. (Karsten Rauch via Robert Muir)
 
+* LUCENE-4269: Deprecate BalancedSegmentMergePolicy (Mike McCandless)
+
 ======================= Lucene 3.6.1 ================
 
 Bug Fixes

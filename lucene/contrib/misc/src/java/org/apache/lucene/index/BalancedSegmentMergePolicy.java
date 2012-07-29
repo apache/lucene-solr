@@ -30,7 +30,19 @@ import java.util.Map;
  *
  * <p>This is based on code from zoie, described in more detail
  * at http://code.google.com/p/zoie/wiki/ZoieMergePolicy.</p>
+ *
+ * <p><b>WARNING</b>: there is a known bug in this merge policy
+ * that causes it to run forever, merging the same single
+ * segment over and over.  If you use {@link
+ * SerialMergeScheduler} this can cause an index thread to
+ * hang forever merging.  See <a
+ * href="https://issues.apache.org/jira/browse/LUCENE-4269">LUCENE-4269</a>
+ * for details.</p>
+ *
+ * @deprecated This class is removed in 4.0; use {@link
+ * TieredMergePolicy} instead.
  */
+@Deprecated
 public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   
   public static final int DEFAULT_NUM_LARGE_SEGMENTS = 10;
