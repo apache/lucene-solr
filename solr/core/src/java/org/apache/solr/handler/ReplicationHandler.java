@@ -887,7 +887,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
 
           // reboot the writer on the new index
-          core.getUpdateHandler().newIndexWriter();
+          core.getUpdateHandler().newIndexWriter(true);
 
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);
