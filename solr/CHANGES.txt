@@ -166,6 +166,10 @@ Bug Fixes
   For the example configuration, this means /browse now works with SolrCloud.
   (janhoy, ehatcher)
 
+* SOLR-3677: Fixed missleading error message in web ui to distinguish between 
+  no SolrCores loaded vs. no /admin/ handler available.
+  (hossman, steffkes)
+
 Other Changes
 ----------------------
 
