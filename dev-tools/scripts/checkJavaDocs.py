@@ -23,7 +23,7 @@ reMarkup = re.compile('<.*?>')
 
 def checkSummary(fullPath):
   printed = False
-  f = open(fullPath)
+  f = open(fullPath, encoding='UTF-8')
   anyMissing = False
   sawPackage = False
   desc = []
