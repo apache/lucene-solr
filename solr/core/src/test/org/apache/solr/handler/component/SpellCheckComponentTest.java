@@ -100,7 +100,6 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPerDictionary() throws Exception {
-    assumeFalse("This test fails in most cases with Java 8+, looks like it depends on order of some HashSet/HashMap whatever", Constants.JRE_IS_MINIMUM_JAVA8);
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","documemt"
         , SpellingParams.SPELLCHECK_DICT, "perDict", SpellingParams.SPELLCHECK_PREFIX + ".perDict.foo", "bar", SpellingParams.SPELLCHECK_PREFIX + ".perDict.bar", "foo")
        ,"/spellcheck/suggestions/bar=={'numFound':1, 'startOffset':0, 'endOffset':1, 'suggestion':['foo']}"
