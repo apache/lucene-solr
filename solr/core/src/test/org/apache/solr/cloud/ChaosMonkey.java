@@ -99,9 +99,9 @@ public class ChaosMonkey {
   public void expireRandomSession() throws KeeperException, InterruptedException {
     String sliceName = getRandomSlice();
     
-    JettySolrRunner jetty = getRandomJetty(sliceName, aggressivelyKillLeaders).jetty;
+    CloudJettyRunner jetty = getRandomJetty(sliceName, aggressivelyKillLeaders);
     if (jetty != null) {
-      expireSession(jetty);
+      expireSession(jetty.jetty);
       expires.incrementAndGet();
     }
   }
@@ -110,9 +110,9 @@ public class ChaosMonkey {
     monkeyLog("cause connection loss!");
     
     String sliceName = getRandomSlice();
-    JettySolrRunner jetty = getRandomJetty(sliceName, aggressivelyKillLeaders).jetty;
+    CloudJettyRunner jetty = getRandomJetty(sliceName, aggressivelyKillLeaders);
     if (jetty != null) {
-      causeConnectionLoss(jetty);
+      causeConnectionLoss(jetty.jetty);
       connloss.incrementAndGet();
     }
   }
