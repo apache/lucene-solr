@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.pfor;
+package org.apache.lucene.codecs.blockpacked;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,65 +18,59 @@ package org.apache.lucene.codecs.pfor;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.FixedGapTermsIndexReader;
-import org.apache.lucene.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.TermsIndexReaderBase;
-import org.apache.lucene.codecs.TermsIndexWriterBase;
-import org.apache.lucene.codecs.sep.SepPostingsReader;
-import org.apache.lucene.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Pass PForFactory to a PostingsWriter/ReaderBase, and get 
+ * Pass ForFactory to a PostingsWriter/ReaderBase, and get 
  * customized postings format plugged.
  */
-public final class PForPostingsFormat extends PostingsFormat {
-  private final int minBlockSize;
-  private final int maxBlockSize;
+public final class BlockPackedPostingsFormat extends PostingsFormat {
+  public static final String DOC_EXTENSION = "doc";
+  public static final String POS_EXTENSION = "pos";
+  public static final String PAY_EXTENSION = "pay";
+
+  private final int minTermBlockSize;
+  private final int maxTermBlockSize;
   public final static int DEFAULT_BLOCK_SIZE = 128;
 
-  public PForPostingsFormat() {
-    super("PFor");
-    this.minBlockSize = BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE;
-    this.maxBlockSize = BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE;
+  public BlockPackedPostingsFormat() {
+    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
-  public PForPostingsFormat(int minBlockSize, int maxBlockSize) {
-    super("PFor");
-    this.minBlockSize = minBlockSize;
-    assert minBlockSize > 1;
-    this.maxBlockSize = maxBlockSize;
-    assert minBlockSize <= maxBlockSize;
+
+  public BlockPackedPostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
+    super("BlockPacked");
+    this.minTermBlockSize = minTermBlockSize;
+    assert minTermBlockSize > 1;
+    this.maxTermBlockSize = maxTermBlockSize;
+    assert minTermBlockSize <= maxTermBlockSize;
   }
 
   @Override
   public String toString() {
-    return getName() + "(blocksize=" + DEFAULT_BLOCK_SIZE+ ")";
+    return getName() + "(blocksize=" + DEFAULT_BLOCK_SIZE + ")";
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     // TODO: implement a new PostingsWriterBase to improve skip-settings
-    PostingsWriterBase postingsWriter = new SepPostingsWriter(state, new PForFactory()); 
+    PostingsWriterBase postingsWriter = new BlockPackedPostingsWriter(state, 128);
+
     boolean success = false;
     try {
       FieldsConsumer ret = new BlockTreeTermsWriter(state, 
                                                     postingsWriter,
-                                                    minBlockSize, 
-                                                    maxBlockSize);
+                                                    minTermBlockSize, 
+                                                    maxTermBlockSize);
       success = true;
       return ret;
     } finally {
@@ -88,13 +82,12 @@ public final class PForPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new SepPostingsReader(state.dir,
-                                                              state.fieldInfos,
-                                                              state.segmentInfo,
-                                                              state.context,
-                                                              new PForFactory(),
-                                                              state.segmentSuffix);
-
+    PostingsReaderBase postingsReader = new BlockPackedPostingsReader(state.dir,
+                                                                      state.fieldInfos,
+                                                                      state.segmentInfo,
+                                                                      state.context,
+                                                                      state.segmentSuffix,
+                                                                      128);
     boolean success = false;
     try {
       FieldsProducer ret = new BlockTreeTermsReader(state.dir,

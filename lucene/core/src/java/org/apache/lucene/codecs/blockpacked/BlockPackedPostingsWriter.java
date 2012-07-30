@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.block;
+package org.apache.lucene.codecs.blockpacked;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.block;
 import java.io.IOException;
 import java.nio.ByteBuffer;      
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,18 +40,18 @@ import org.apache.lucene.util.IOUtils;
 
 // nocommit javadocs
 
-public final class BlockPostingsWriter extends PostingsWriterBase {
+public final class BlockPackedPostingsWriter extends PostingsWriterBase {
 
-  private boolean DEBUG = BlockPostingsReader.DEBUG;
+  private boolean DEBUG = BlockPackedPostingsReader.DEBUG;
 
   // nocommit move these constants to the PF:
 
   static final int maxSkipLevels = 10;
 
-  final static String TERMS_CODEC = "BlockPostingsWriterTerms";
-  final static String DOC_CODEC = "BlockPostingsWriterDoc";
-  final static String POS_CODEC = "BlockPostingsWriterPos";
-  final static String PAY_CODEC = "BlockPostingsWriterPay";
+  final static String TERMS_CODEC = "BlockPackedPostingsWriterTerms";
+  final static String DOC_CODEC = "BlockPackedPostingsWriterDoc";
+  final static String POS_CODEC = "BlockPackedPostingsWriterPos";
+  final static String PAY_CODEC = "BlockPackedPostingsWriterPay";
 
   // Increment version to change it:
   final static int VERSION_START = 0;
@@ -77,14 +78,20 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   private long posTermStartFP;
   private long payTermStartFP;
 
-  final int[] docDeltaBuffer;
-  final int[] freqBuffer;
+  final long[] docDeltaBuffer;
+  final long[] freqBuffer;
+  final LongBuffer docDeltaLBuffer;
+  final LongBuffer freqLBuffer;
   private int docBufferUpto;
 
-  final int[] posDeltaBuffer;
-  final int[] payloadLengthBuffer;
-  final int[] offsetStartDeltaBuffer;
-  final int[] offsetLengthBuffer;
+  final long[] posDeltaBuffer;
+  final long[] payloadLengthBuffer;
+  final long[] offsetStartDeltaBuffer;
+  final long[] offsetLengthBuffer;
+  final LongBuffer posDeltaLBuffer;
+  final LongBuffer payloadLengthLBuffer;
+  final LongBuffer offsetStartDeltaLBuffer;
+  final LongBuffer offsetLengthLBuffer;
   private int posBufferUpto;
 
   private byte[] payloadBytes;
@@ -103,15 +110,15 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   private int docCount;
 
   final byte[] encoded;
-  final IntBuffer encodedBuffer;
+  final LongBuffer encodedBuffer;
 
-  private final BlockSkipWriter skipWriter;
+  private final BlockPackedSkipWriter skipWriter;
   
-  public BlockPostingsWriter(SegmentWriteState state, int blockSize) throws IOException {
+  public BlockPackedPostingsWriter(SegmentWriteState state, int blockSize) throws IOException {
     super();
     this.blockSize = blockSize;
 
-    docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPostingsFormat.DOC_EXTENSION),
+    docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPackedPostingsFormat.DOC_EXTENSION),
                                           state.context);
     IndexOutput posOut = null;
     IndexOutput payOut = null;
@@ -119,29 +126,36 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
     try {
       CodecUtil.writeHeader(docOut, DOC_CODEC, VERSION_CURRENT);
       if (state.fieldInfos.hasProx()) {
-        posDeltaBuffer = new int[blockSize];
-        posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPostingsFormat.POS_EXTENSION),
+        posDeltaBuffer = new long[blockSize];
+        posDeltaLBuffer = LongBuffer.wrap(posDeltaBuffer);
+        posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPackedPostingsFormat.POS_EXTENSION),
                                               state.context);
         CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
 
         if (state.fieldInfos.hasPayloads()) {
           payloadBytes = new byte[128];
-          payloadLengthBuffer = new int[blockSize];
+          payloadLengthBuffer = new long[blockSize];
+          payloadLengthLBuffer = LongBuffer.wrap(payloadLengthBuffer);
         } else {
           payloadBytes = null;
           payloadLengthBuffer = null;
+          payloadLengthLBuffer = null;
         }
 
         if (state.fieldInfos.hasOffsets()) {
-          offsetStartDeltaBuffer = new int[blockSize];
-          offsetLengthBuffer = new int[blockSize];
+          offsetStartDeltaBuffer = new long[blockSize];
+          offsetLengthBuffer = new long[blockSize];
+          offsetStartDeltaLBuffer = LongBuffer.wrap(offsetStartDeltaBuffer);
+          offsetLengthLBuffer = LongBuffer.wrap(offsetLengthBuffer);
         } else {
           offsetStartDeltaBuffer = null;
           offsetLengthBuffer = null;
+          offsetStartDeltaLBuffer = null;
+          offsetLengthLBuffer = null;
         }
 
         if (state.fieldInfos.hasPayloads() || state.fieldInfos.hasOffsets()) {
-          payOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPostingsFormat.PAY_EXTENSION),
+          payOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPackedPostingsFormat.PAY_EXTENSION),
                                                 state.context);
           CodecUtil.writeHeader(payOut, PAY_CODEC, VERSION_CURRENT);
         }
@@ -151,6 +165,10 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
         offsetStartDeltaBuffer = null;
         offsetLengthBuffer = null;
         payloadBytes = null;
+        posDeltaLBuffer = null;
+        payloadLengthLBuffer = null;
+        offsetStartDeltaLBuffer = null;
+        offsetLengthLBuffer = null;
       }
       this.payOut = payOut;
       this.posOut = posOut;
@@ -161,18 +179,20 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
       }
     }
 
-    docDeltaBuffer = new int[blockSize];
-    freqBuffer = new int[blockSize];
+    docDeltaBuffer = new long[blockSize];
+    freqBuffer = new long[blockSize];
+    docDeltaLBuffer = LongBuffer.wrap(docDeltaBuffer);
+    freqLBuffer = LongBuffer.wrap(freqBuffer);
 
-    skipWriter = new BlockSkipWriter(blockSize,
+    skipWriter = new BlockPackedSkipWriter(blockSize,
                                      maxSkipLevels, 
                                      state.segmentInfo.getDocCount(),
                                      docOut,
                                      posOut,
                                      payOut);
 
-    encoded = new byte[blockSize*4 + 4];
-    encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
+    encoded = new byte[blockSize*4];
+    encodedBuffer = ByteBuffer.wrap(encoded).asLongBuffer();
   }
 
   @Override
@@ -209,9 +229,8 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
     skipWriter.resetSkip();
   }
 
-  private void writeBlock(int[] buffer, IndexOutput out) throws IOException {
+  private void writeBlock(LongBuffer buffer, IndexOutput out) throws IOException {
     final int header = ForUtil.compress(buffer, encodedBuffer);
-    //System.out.println("    block has " + numBytes + " bytes");
     out.writeVInt(header);
     out.writeBytes(encoded, ForUtil.getEncodedSize(header));
   }
@@ -277,12 +296,12 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
       if (DEBUG) {
         System.out.println("  write docDelta block @ fp=" + docOut.getFilePointer());
       }
-      writeBlock(docDeltaBuffer, docOut);
+      writeBlock(docDeltaLBuffer, docOut);
       if (fieldHasFreqs) {
         if (DEBUG) {
           System.out.println("  write freq block @ fp=" + docOut.getFilePointer());
         }
-        writeBlock(freqBuffer, docOut);
+        writeBlock(freqLBuffer, docOut);
       }
       docBufferUpto = 0;
     }
@@ -326,17 +345,17 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
       if (DEBUG) {
         System.out.println("  write pos bulk block @ fp=" + posOut.getFilePointer());
       }
-      writeBlock(posDeltaBuffer, posOut);
+      writeBlock(posDeltaLBuffer, posOut);
 
       if (fieldHasPayloads) {
-        writeBlock(payloadLengthBuffer, payOut);
+        writeBlock(payloadLengthLBuffer, payOut);
         payOut.writeVInt(payloadByteUpto);
         payOut.writeBytes(payloadBytes, 0, payloadByteUpto);
         payloadByteUpto = 0;
       }
       if (fieldHasOffsets) {
-        writeBlock(offsetStartDeltaBuffer, payOut);
-        writeBlock(offsetLengthBuffer, payOut);
+        writeBlock(offsetStartDeltaLBuffer, payOut);
+        writeBlock(offsetLengthLBuffer, payOut);
       }
       posBufferUpto = 0;
     }
@@ -399,8 +418,8 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
 
     // vInt encode the remaining doc deltas and freqs:
     for(int i=0;i<docBufferUpto;i++) {
-      final int docDelta = docDeltaBuffer[i];
-      final int freq = freqBuffer[i];
+      final int docDelta = (int)docDeltaBuffer[i];
+      final int freq = (int)freqBuffer[i];
       if (!fieldHasFreqs) {
         docOut.writeVInt(docDelta);
       } else if (freqBuffer[i] == 1) {
@@ -438,9 +457,9 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
         int lastPayloadLength = -1;
         int payloadBytesReadUpto = 0;
         for(int i=0;i<posBufferUpto;i++) {
-          final int posDelta = posDeltaBuffer[i];
+          final int posDelta = (int)posDeltaBuffer[i];
           if (fieldHasPayloads) {
-            final int payloadLength = payloadLengthBuffer[i];
+            final int payloadLength = (int)payloadLengthBuffer[i];
             if (payloadLength != lastPayloadLength) {
               lastPayloadLength = payloadLength;
               posOut.writeVInt((posDelta<<1)|1);
@@ -468,8 +487,8 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
             if (DEBUG) {
               System.out.println("          write offset @ pos.fp=" + posOut.getFilePointer());
             }
-            posOut.writeVInt(offsetStartDeltaBuffer[i]);
-            posOut.writeVInt(offsetLengthBuffer[i]);
+            posOut.writeVInt((int)offsetStartDeltaBuffer[i]);
+            posOut.writeVInt((int)offsetLengthBuffer[i]);
           }
         }
 

@@ -282,9 +282,7 @@ public abstract class LuceneTestCase extends Assert {
     "MockFixedIntBlock",
     "MockVariableIntBlock",
     "MockSep",
-    "MockRandom",
-    "For",
-    "PFor"
+    "MockRandom"
   ));
   
   // -----------------------------------------------------------------

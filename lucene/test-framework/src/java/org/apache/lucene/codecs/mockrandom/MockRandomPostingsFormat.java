@@ -61,7 +61,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.codecs.pfor.*;
 
 /**
  * Randomly combines terms index impl w/ postings impls.
@@ -103,8 +102,6 @@ public class MockRandomPostingsFormat extends PostingsFormat {
       final int baseBlockSize = _TestUtil.nextInt(random, 1, 127);
       delegates.add(new MockVariableIntBlockPostingsFormat.MockIntFactory(baseBlockSize));
       // TODO: others
-      delegates.add(new ForFactory());
-      delegates.add(new PForFactory());
     }
 
     private static String getExtension(String fileName) {

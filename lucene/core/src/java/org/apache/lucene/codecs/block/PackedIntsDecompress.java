@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.pfor;
+package org.apache.lucene.codecs.block;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
