@@ -291,7 +291,7 @@
 	
 	<field name="subject" type="text" indexed="true" stored="true" />
 	<field name="title" type="text" indexed="true" stored="true" />
-	<field name="link" type="string" indexed="true" stored="true" />
+	<field name="link" type="string" indexed="true" stored="true" multiValued="false" />
 	<field name="description" type="html" indexed="true" stored="true" />
 	<field name="creator" type="string" indexed="false" stored="true" />
 	<field name="item-subject" type="string" indexed="true" stored="false" />

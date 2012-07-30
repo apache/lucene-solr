@@ -34,6 +34,15 @@ Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.3.5
 
+Upgrading from Solr 4.0.0-ALPHA
+----------------------
+
+Solr is now much more strict about requiring that the uniqueKeyField feature 
+(if used) must refer to a field which is not multiValued.  If you upgrade from 
+an earlier version of Solr and see an error that your uniqueKeyField "can not 
+be configured to be multivalued" please add 'multiValued="false"' to the 
+<field /> declaration for your uniqueKeyField.  See SOLR-3682 for more details.
+
 Detailed Change List
 ----------------------
 
@@ -187,6 +196,8 @@ Other Changes
   
 * SOLR-3683: Improved error handling if an <analyzer> contains both an 
   explicit class attribute, as well as nested factories. (hossman)
+
+* SOLR-3682: Fail to parse schema.xml if uniqueKeyField is multivalued (hossman)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 

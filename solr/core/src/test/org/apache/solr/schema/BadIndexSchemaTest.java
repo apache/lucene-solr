@@ -62,6 +62,8 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "can not be the dest of a copyField");
     doTest("bad-schema-uniquekey-uses-default.xml", 
            "can not be configured with a default value");
+    doTest("bad-schema-uniquekey-multivalued.xml", 
+           "can not be configured to be multivalued");
   }
 
   public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {
