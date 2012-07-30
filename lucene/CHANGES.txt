@@ -69,6 +69,9 @@ API Changes
 
 * LUCENE-3747: Support Unicode 6.1.0. (Steve Rowe)
 
+* LUCENE-3884: Moved ElisionFilter out of org.apache.lucene.analysis.fr
+  package into org.apache.lucene.analysis.util.  (Robert Muir)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.

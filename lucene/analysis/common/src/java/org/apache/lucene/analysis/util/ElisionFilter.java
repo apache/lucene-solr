@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.fr;
+package org.apache.lucene.analysis.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,13 +18,11 @@ package org.apache.lucene.analysis.fr;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Removes elisions from a {@link TokenStream}. For example, "l'avion" (the plane) will be
@@ -33,31 +31,17 @@ import org.apache.lucene.util.Version;
  * @see <a href="http://fr.wikipedia.org/wiki/%C3%89lision">Elision in Wikipedia</a>
  */
 public final class ElisionFilter extends TokenFilter {
-  private CharArraySet articles = CharArraySet.EMPTY_SET;
+  private final CharArraySet articles;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
-      new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(
-          "l", "m", "t", "qu", "n", "s", "j"), true));
   
-  private static char[] apostrophes = {'\'', '\u2019'};
-  
-  /**
-   * Constructs an elision filter with standard stop words
-   */
-  public ElisionFilter(Version matchVersion, TokenStream input) {
-    this(matchVersion, input, DEFAULT_ARTICLES);
-  }
-
   /**
    * Constructs an elision filter with a Set of stop words
-   * @param matchVersion the lucene backwards compatibility version
    * @param input the source {@link TokenStream}
    * @param articles a set of stopword articles
    */
-  public ElisionFilter(Version matchVersion, TokenStream input, CharArraySet articles) {
+  public ElisionFilter(TokenStream input, CharArraySet articles) {
     super(input);
-    this.articles = CharArraySet.unmodifiableSet(
-        new CharArraySet(matchVersion, articles, true));
+    this.articles = articles;
   }
 
   /**
@@ -69,22 +53,18 @@ public final class ElisionFilter extends TokenFilter {
       char[] termBuffer = termAtt.buffer();
       int termLength = termAtt.length();
 
-      int minPoz = Integer.MAX_VALUE;
-      for (int i = 0; i < apostrophes.length; i++) {
-        char apos = apostrophes[i];
-        // The equivalent of String.indexOf(ch)
-        for (int poz = 0; poz < termLength ; poz++) {
-          if (termBuffer[poz] == apos) {
-            minPoz = Math.min(poz, minPoz);
-            break;
-          }
+      int index = -1;
+      for (int i = 0; i < termLength; i++) {
+        char ch = termBuffer[i];
+        if (ch == '\'' || ch == '\u2019') {
+          index = i;
+          break;
         }
       }
 
       // An apostrophe has been found. If the prefix is an article strip it off.
-      if (minPoz != Integer.MAX_VALUE
-          && articles.contains(termAtt.buffer(), 0, minPoz)) {
-        termAtt.copyBuffer(termAtt.buffer(), minPoz + 1, termAtt.length() - (minPoz + 1));
+      if (index >= 0 && articles.contains(termBuffer, 0, index)) {
+        termAtt.copyBuffer(termBuffer, index + 1, termLength - (index + 1));
       }
 
       return true;

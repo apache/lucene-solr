@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ElisionFilter;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
@@ -35,6 +36,7 @@ import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 
 /**
  * {@link Analyzer} for French language. 
@@ -54,6 +56,11 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   /** File containing default French stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "french_stop.txt";
   
+  /** Default set of articles for ElisionFilter */
+  public static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
+      new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(
+          "l", "m", "t", "qu", "n", "s", "j"), true));
+
   /**
    * Contains words that should be indexed but not stemmed.
    */
@@ -134,7 +141,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
-    result = new ElisionFilter(matchVersion, result);
+    result = new ElisionFilter(result, DEFAULT_ARTICLES);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!excltable.isEmpty())

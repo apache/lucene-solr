@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.fr;
+package org.apache.lucene.analysis.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,10 +17,9 @@ package org.apache.lucene.analysis.fr;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.util.*;
-
 import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.fr.FrenchAnalyzer;
 
 /**
  * Factory for {@link ElisionFilter}.
@@ -46,12 +45,13 @@ public class ElisionFilterFactory extends TokenFilterFactory implements Resource
     if (articlesFile != null) {
       articles = getWordSet(loader, articlesFile, ignoreCase);
     }
+    if (articles == null) {
+      articles = FrenchAnalyzer.DEFAULT_ARTICLES;
+    }
   }
 
   public ElisionFilter create(TokenStream input) {
-    assureMatchVersion();
-    return articles == null ? new ElisionFilter(luceneMatchVersion,input) : 
-        new ElisionFilter(luceneMatchVersion,input,articles);
+    return new ElisionFilter(input, articles);
   }
 }
 
