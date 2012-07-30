@@ -76,7 +76,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
   public SyncSliceTest() {
     super();
     sliceCount = 1;
-    shardCount = TEST_NIGHTLY ? 7 : 3;
+    shardCount = TEST_NIGHTLY ? 7 : 4;
   }
   
   @Override
@@ -184,14 +184,14 @@ public class SyncSliceTest extends FullSolrCloudTest {
     waitForRecoveriesToFinish(false);
     
     skipServers = getRandomOtherJetty(leaderJetty, null);
-    
+    skipServers.addAll( getRandomOtherJetty(leaderJetty, null));
     // skip list should be 
     
     //System.out.println("leader:" + leaderJetty.url);
     //System.out.println("skip list:" + skipServers);
     
-    // we are skipping the leader and one node
-    assertEquals(1, skipServers.size());
+    // we are skipping  one nodes
+    assertEquals(2, skipServers.size());
     
     // more docs than can peer sync
     for (int i = 0; i < 300; i++) {
@@ -222,15 +222,8 @@ public class SyncSliceTest extends FullSolrCloudTest {
     Thread.sleep(4000);
     
     waitForRecoveriesToFinish(false);
-    
-    
-    // TODO: for now, we just check consistency -
-    // there will be 305 or 5 docs depending on who
-    // becomes the leader - eventually we want that to
-    // always be the 305
-    //checkShardConsistency(true, true);
-    checkShardConsistency(false, true);
-    
+
+    checkShardConsistency(true, true);
   }
 
   private List<String> getRandomJetty() {
