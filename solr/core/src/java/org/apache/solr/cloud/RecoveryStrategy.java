@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -243,7 +244,10 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
     try {
       recentVersions = recentUpdates.getVersions(ulog.numRecordsToKeep);
-    } finally {
+    } catch (Throwable t) {
+      SolrException.log(log, "Corrupt tlog - ignoring", t);
+      recentVersions = new ArrayList<Long>(0);
+    }finally {
       recentUpdates.close();
     }
 
