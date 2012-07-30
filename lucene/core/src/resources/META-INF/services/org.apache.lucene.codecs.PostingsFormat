@@ -19,4 +19,5 @@ org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat
 org.apache.lucene.codecs.memory.MemoryPostingsFormat
 org.apache.lucene.codecs.bulkvint.BulkVIntPostingsFormat
 org.apache.lucene.codecs.block.BlockPostingsFormat
+org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat
 org.apache.lucene.codecs.memory.DirectPostingsFormat
