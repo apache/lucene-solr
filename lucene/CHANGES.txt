@@ -34,6 +34,12 @@ New features
   CharFilterFactories to the lucene-analysis module. The API is still
   experimental.  (Chris Male, Robert Muir, Uwe Schindler)
 
+* LUCENE-4230: When pulling a DocsAndPositionsEnum you can now
+  specify whether or not you require payloads (in addition to
+  offsets); turning one or both off may allow some codec
+  implementations to optimize the enum implementation.  (Robert Muir,
+  Mike McCandless)
+
 API Changes
 
 * LUCENE-4138: update of morfologik (Polish morphological analyzer) to 1.5.3.
@@ -71,6 +77,11 @@ API Changes
 
 * LUCENE-3884: Moved ElisionFilter out of org.apache.lucene.analysis.fr
   package into org.apache.lucene.analysis.util.  (Robert Muir)
+
+* LUCENE-4230: When pulling a DocsAndPositionsEnum you now pass an int
+  flags instead of the previous boolean needOffsets.  Currently
+  recognized flags are DocsAndPositionsEnum.FLAG_PAYLOADS and
+  DocsAndPositionsEnum.FLAG_OFFSETS (Robert Muir, Mike McCandless)
 
 Optimizations
 

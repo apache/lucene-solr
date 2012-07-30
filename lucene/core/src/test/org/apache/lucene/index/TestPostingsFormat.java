@@ -518,7 +518,7 @@ public class TestPostingsFormat extends LuceneTestCase {
       maxIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     boolean doCheckOffsets = allowOffsets && random().nextInt(3) <= 2;
 
-    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads();
+    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && random().nextInt(3) <= 2;;
 
     DocsEnum prevDocsEnum = null;
 
@@ -528,15 +528,24 @@ public class TestPostingsFormat extends LuceneTestCase {
     if (!doCheckPositions) {
       if (allowPositions && random().nextInt(10) == 7) {
         // 10% of the time, even though we will not check positions, pull a DocsAndPositions enum
-        if (VERBOSE) {
-          System.out.println("  get DocsAndPositionsEnum (but we won't check positions)");
-        }
         
         if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
           prevDocsEnum = threadState.reuseDocsAndPositionsEnum;
         }
 
-        threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, false);
+        int flags = 0;
+        if (random().nextBoolean()) {
+          flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
+        }
+        if (random().nextBoolean()) {
+          flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
+        }
+
+        if (VERBOSE) {
+          System.out.println("  get DocsAndPositionsEnum (but we won't check positions) flags=" + flags);
+        }
+
+        threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, flags);
         docsEnum = threadState.reuseDocsAndPositionsEnum;
         docsAndPositionsEnum = threadState.reuseDocsAndPositionsEnum;
       } else {
@@ -551,13 +560,23 @@ public class TestPostingsFormat extends LuceneTestCase {
         docsAndPositionsEnum = null;
       }
     } else {
-      if (VERBOSE) {
-        System.out.println("  get DocsAndPositionsEnum");
-      }
       if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
         prevDocsEnum = threadState.reuseDocsAndPositionsEnum;
       }
-      threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, doCheckOffsets);
+
+      int flags = 0;
+      if (doCheckOffsets || random().nextInt(3) == 1) {
+        flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
+      }
+      if (doCheckPayloads|| random().nextInt(3) == 1) {
+        flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
+      }
+
+      if (VERBOSE) {
+        System.out.println("  get DocsAndPositionsEnum flags=" + flags);
+      }
+
+      threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, flags);
       docsEnum = threadState.reuseDocsAndPositionsEnum;
       docsAndPositionsEnum = threadState.reuseDocsAndPositionsEnum;
     }

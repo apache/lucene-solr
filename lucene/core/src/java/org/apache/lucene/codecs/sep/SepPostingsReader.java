@@ -278,12 +278,8 @@ public class SepPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, boolean needsOffsets)
+                                               DocsAndPositionsEnum reuse, int flags)
     throws IOException {
-
-    if (needsOffsets) {
-      return null;
-    }
 
     assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     final SepTermState termState = (SepTermState) _termState;

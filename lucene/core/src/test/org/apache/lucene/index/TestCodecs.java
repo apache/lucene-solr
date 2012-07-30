@@ -474,7 +474,7 @@ public class TestCodecs extends LuceneTestCase {
         if (field.omitTF) {
           this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random(), termsEnum, null, null, false), false);
         } else {
-          this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null, false), true);
+          this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
         }
 
         // Test random seek by ord:
@@ -494,7 +494,7 @@ public class TestCodecs extends LuceneTestCase {
           if (field.omitTF) {
             this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random(), termsEnum, null, null, false), false);
           } else {
-            this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null, false), true);
+            this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
           }
         }
 
@@ -546,7 +546,7 @@ public class TestCodecs extends LuceneTestCase {
             final DocsEnum docsAndFreqs;
             final DocsAndPositionsEnum postings;
             if (!field.omitTF) {
-              postings = termsEnum.docsAndPositions(null, null, false);
+              postings = termsEnum.docsAndPositions(null, null);
               if (postings != null) {
                 docs = docsAndFreqs = postings;
               } else {

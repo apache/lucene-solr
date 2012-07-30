@@ -490,10 +490,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
-      if (needsOffsets && !storeOffsets) {
-        return null;
-      }
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
 
       if (!storePositions && !storeOffsets) {
         return null;
@@ -640,14 +637,20 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
     @Override
     public int startOffset() {
-      assert startOffsets != null;
-      return startOffsets[nextPos-1];
+      if (startOffsets == null) {
+        return -1;
+      } else {
+        return startOffsets[nextPos-1];
+      }
     }
 
     @Override
     public int endOffset() {
-      assert endOffsets != null;
-      return endOffsets[nextPos-1];
+      if (endOffsets == null) {
+        return -1;
+      } else {
+        return endOffsets[nextPos-1];
+      }
     }
   }
 

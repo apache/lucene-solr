@@ -133,12 +133,24 @@ public abstract class AtomicReader extends IndexReader {
     }
     return null;
   }
+  
+  /** Returns {@link DocsAndPositionsEnum} for the specified
+   *  field & term.  This will return null if either the
+   *  field or term does not exist or positions weren't indexed. 
+   *  @see #termPositionsEnum(Bits, String, BytesRef, int) */
+  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
+    return termPositionsEnum(liveDocs, field, term, DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS);
+  }
+
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
-   *  field & term.  This may return null, if either the
-   *  field or term does not exist, or needsOffsets is
-   *  true but offsets were not indexed for this field. */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, boolean needsOffsets) throws IOException {
+   *  field & term, with control over whether offsets and payloads are
+   *  required.  Some codecs may be able to optimize their
+   *  implementation when offsets and/or payloads are not required.
+   *  This will return null, if either the field or term
+   *  does not exist or positions weren't indexed.  See
+   *  {@link TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)}. */
+  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, int flags) throws IOException {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
@@ -147,7 +159,7 @@ public abstract class AtomicReader extends IndexReader {
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
         if (termsEnum.seekExact(term, true)) {
-          return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
+          return termsEnum.docsAndPositions(liveDocs, null, flags);
         }
       }
     }

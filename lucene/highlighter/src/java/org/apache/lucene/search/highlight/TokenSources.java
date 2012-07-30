@@ -127,7 +127,7 @@ public class TokenSources {
   private static boolean hasPositions(Terms vector) throws IOException {
     final TermsEnum termsEnum = vector.iterator(null);
     if (termsEnum.next() != null) {
-      DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
+      DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_PAYLOADS);
       if (dpEnum != null) {
         int doc = dpEnum.nextDoc();
         assert doc >= 0 && doc != DocIdSetIterator.NO_MORE_DOCS;
@@ -222,18 +222,21 @@ public class TokenSources {
     DocsAndPositionsEnum dpEnum = null;
     while ((text = termsEnum.next()) != null) {
 
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       if (dpEnum == null) {
         throw new IllegalArgumentException(
             "Required TermVector Offset information was not found");
       }
-
       final String term = text.utf8ToString();
 
       dpEnum.nextDoc();
       final int freq = dpEnum.freq();
       for(int posUpto=0;posUpto<freq;posUpto++) {
         final int pos = dpEnum.nextPosition();
+        if (dpEnum.startOffset() < 0) {
+          throw new IllegalArgumentException(
+              "Required TermVector Offset information was not found");
+        }
         final Token token = new Token(term,
                                       dpEnum.startOffset(),
                                       dpEnum.endOffset());

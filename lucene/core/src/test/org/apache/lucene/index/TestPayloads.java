@@ -188,8 +188,7 @@ public class TestPayloads extends LuceneTestCase {
           tps[i] = MultiFields.getTermPositionsEnum(reader,
                                                     MultiFields.getLiveDocs(reader),
                                                     terms[i].field(),
-                                                    new BytesRef(terms[i].text()),
-                                                    false);
+                                                    new BytesRef(terms[i].text()));
         }
         
         while (tps[0].nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -226,8 +225,7 @@ public class TestPayloads extends LuceneTestCase {
         DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
                                                                    MultiFields.getLiveDocs(reader),
                                                                    terms[0].field(),
-                                                                   new BytesRef(terms[0].text()),
-                                                                   false);
+                                                                   new BytesRef(terms[0].text()));
         tp.nextDoc();
         tp.nextPosition();
         // NOTE: prior rev of this test was failing to first
@@ -255,8 +253,7 @@ public class TestPayloads extends LuceneTestCase {
         tp = MultiFields.getTermPositionsEnum(reader,
                                               MultiFields.getLiveDocs(reader),
                                               terms[1].field(),
-                                              new BytesRef(terms[1].text()),
-                                              false);
+                                              new BytesRef(terms[1].text()));
         tp.nextDoc();
         tp.nextPosition();
         assertEquals("Wrong payload length.", 1, tp.getPayload().length);
@@ -299,8 +296,7 @@ public class TestPayloads extends LuceneTestCase {
         tp = MultiFields.getTermPositionsEnum(reader,
                                               MultiFields.getLiveDocs(reader),
                                               fieldName,
-                                              new BytesRef(singleTerm),
-                                              false);
+                                              new BytesRef(singleTerm));
         tp.nextDoc();
         tp.nextPosition();
         
@@ -501,7 +497,7 @@ public class TestPayloads extends LuceneTestCase {
         DocsAndPositionsEnum tp = null;
         while (terms.next() != null) {
           String termText = terms.term().utf8ToString();
-          tp = terms.docsAndPositions(liveDocs, tp, false);
+          tp = terms.docsAndPositions(liveDocs, tp);
           while(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             int freq = tp.freq();
             for (int i = 0; i < freq; i++) {

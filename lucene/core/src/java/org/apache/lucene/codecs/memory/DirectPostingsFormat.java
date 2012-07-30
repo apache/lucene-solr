@@ -314,7 +314,7 @@ public class DirectPostingsFormat extends PostingsFormat {
         termOffsets[count+1] = termOffset;
 
         if (hasPos) {
-          docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum, hasOffsets);
+          docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
         } else {
           docsEnum = termsEnum.docs(null, docsEnum, hasFreq);
         }
@@ -858,11 +858,8 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
         if (!hasPos) {
-          return null;
-        }
-        if (needsOffsets && !hasOffsets) {
           return null;
         }
 
@@ -1420,11 +1417,8 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
         if (!hasPos) {
-          return null;
-        }
-        if (needsOffsets && !hasOffsets) {
           return null;
         }
 

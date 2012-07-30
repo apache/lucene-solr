@@ -250,10 +250,13 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, boolean needsOffsets)
+                                               DocsAndPositionsEnum reuse, int flags)
     throws IOException {
 
     boolean hasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+
+    // TODO: can we optimize if FLAG_PAYLOADS / FLAG_OFFSETS
+    // isn't passed?
 
     // TODO: refactor
     if (fieldInfo.hasPayloads() || hasOffsets) {

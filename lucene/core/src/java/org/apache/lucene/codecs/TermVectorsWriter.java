@@ -224,16 +224,9 @@ public abstract class TermVectorsWriter implements Closeable {
         // TODO: we need a "query" API where we can ask (via
         // flex API) what this term was indexed with...
         // Both positions & offsets:
-        docsAndPositionsEnum = termsEnum.docsAndPositions(null, null, true);
-        final boolean hasOffsets;
+        docsAndPositionsEnum = termsEnum.docsAndPositions(null, null);
+        boolean hasOffsets = false;
         boolean hasPositions = false;
-        if (docsAndPositionsEnum == null) {
-          // Fallback: no offsets
-          docsAndPositionsEnum = termsEnum.docsAndPositions(null, null, false);
-          hasOffsets = false;
-        } else {
-          hasOffsets = true;
-        }
 
         if (docsAndPositionsEnum != null) {
           final int docID = docsAndPositionsEnum.nextDoc();
@@ -242,23 +235,19 @@ public abstract class TermVectorsWriter implements Closeable {
 
           for(int posUpto=0; posUpto<freq; posUpto++) {
             final int pos = docsAndPositionsEnum.nextPosition();
+            final int startOffset = docsAndPositionsEnum.startOffset();
+            final int endOffset = docsAndPositionsEnum.endOffset();
             if (!startedField) {
               assert numTerms > 0;
               hasPositions = pos != -1;
+              hasOffsets = startOffset != -1;
               startField(fieldInfo, numTerms, hasPositions, hasOffsets);
               startTerm(termsEnum.term(), freq);
               startedField = true;
             }
-            final int startOffset;
-            final int endOffset;
             if (hasOffsets) {
-              startOffset = docsAndPositionsEnum.startOffset();
-              endOffset = docsAndPositionsEnum.endOffset();
               assert startOffset != -1;
               assert endOffset != -1;
-            } else {
-              startOffset = -1;
-              endOffset = -1;
             }
             assert !hasPositions || pos >= 0;
             addPosition(pos, startOffset, endOffset);

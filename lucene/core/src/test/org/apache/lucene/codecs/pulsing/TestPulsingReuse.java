@@ -35,7 +35,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -71,7 +70,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     DocsAndPositionsEnum posReuse = null;
     te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
-      posReuse = te.docsAndPositions(null, posReuse, false);
+      posReuse = te.docsAndPositions(null, posReuse);
       allEnums.put(posReuse, true);
     }
     
@@ -113,7 +112,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     DocsAndPositionsEnum posReuse = null;
     te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
-      posReuse = te.docsAndPositions(null, posReuse, false);
+      posReuse = te.docsAndPositions(null, posReuse);
       allEnums.put(posReuse, true);
     }
     

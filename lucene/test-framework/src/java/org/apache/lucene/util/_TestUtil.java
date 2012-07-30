@@ -866,13 +866,23 @@ public class _TestUtil {
     if (!termsEnum.seekExact(term, random.nextBoolean())) {
       return null;
     }
+    return docs(random, termsEnum, liveDocs, reuse, needsFreqs);
+  }
+
+  // Returns a DocsEnum from a positioned TermsEnum, but
+  // randomly sometimes uses a DocsAndFreqsEnum, DocsAndPositionsEnum.
+  public static DocsEnum docs(Random random, TermsEnum termsEnum, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
     if (random.nextBoolean()) {
       if (random.nextBoolean()) {
-        // TODO: cast re-use to D&PE if we can...?
-        DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, true);
-        if (docsAndPositions == null) {
-          docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, false);
+        final int flags;
+        switch (random.nextInt(4)) {
+          case 0: flags = 0; break;
+          case 1: flags = DocsAndPositionsEnum.FLAG_OFFSETS; break;
+          case 2: flags = DocsAndPositionsEnum.FLAG_PAYLOADS; break;
+          default: flags = DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS; break;
         }
+        // TODO: cast to DocsAndPositionsEnum?
+        DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, flags);
         if (docsAndPositions != null) {
           return docsAndPositions;
         }
@@ -883,28 +893,6 @@ public class _TestUtil {
       }
     }
     return termsEnum.docs(liveDocs, reuse, needsFreqs);
-  }
-
-  // Returns a DocsEnum from a positioned TermsEnum, but
-  // randomly sometimes uses a DocsAndFreqsEnum, DocsAndPositionsEnum.
-  public static DocsEnum docs(Random random, TermsEnum termsEnum, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-    if (random.nextBoolean()) {
-      if (random.nextBoolean()) {
-        // TODO: cast re-use to D&PE if we can...?
-        DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, true);
-        if (docsAndPositions == null) {
-          docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, false);
-        }
-        if (docsAndPositions != null) {
-          return docsAndPositions;
-        }
-      }
-      final DocsEnum docsAndFreqs = termsEnum.docs(liveDocs, null, true);
-      if (docsAndFreqs != null) {
-        return docsAndFreqs;
-      }
-    }
-    return termsEnum.docs(liveDocs, null, needsFreqs);
   }
   
   public static CharSequence stringToCharSequence(String string, Random random) {
