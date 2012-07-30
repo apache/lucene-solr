@@ -49,6 +49,7 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 
   public void testSevereErrorsForUnexpectedAnalyzer() throws Exception {
     doTest("bad-schema-nontext-analyzer.xml", "StrField (bad_type)");
+    doTest("bad-schema-analyzer-class-and-nested.xml", "bad_type");
   }
 
   public void testBadExternalFileField() throws Exception {
