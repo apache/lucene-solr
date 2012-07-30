@@ -535,7 +535,7 @@ public class SnapPuller {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
     // reboot the writer on the new index and get a new searcher
-    solrCore.getUpdateHandler().newIndexWriter();
+    solrCore.getUpdateHandler().newIndexWriter(true);
     
     try {
       // first try to open an NRT searcher so that the new 
