@@ -106,6 +106,9 @@ New Features
 * SOLR-1280: Added commented-out example of the new script update processor
   to the example configuration.  See http://wiki.apache.org/solr/ScriptUpdateProcessor (ehatcher)
 
+* SOLR-3672: SimplePostTool: Improvements for posting files
+  Support for auto mode, recursive and wildcards (janhoy)
+
 Bug Fixes
 ----------------------
 
