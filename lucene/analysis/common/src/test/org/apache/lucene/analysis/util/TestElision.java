@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.fr;
+package org.apache.lucene.analysis.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.fr.FrenchAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -41,7 +42,7 @@ public class TestElision extends BaseTokenStreamTestCase {
     String test = "Plop, juste pour voir l'embrouille avec O'brian. M'enfin.";
     Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(test));
     CharArraySet articles = new CharArraySet(TEST_VERSION_CURRENT, asSet("l", "M"), false);
-    TokenFilter filter = new ElisionFilter(TEST_VERSION_CURRENT, tokenizer, articles);
+    TokenFilter filter = new ElisionFilter(tokenizer, articles);
     List<String> tas = filter(filter);
     assertEquals("embrouille", tas.get(4));
     assertEquals("O'brian", tas.get(6));
@@ -62,7 +63,7 @@ public class TestElision extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(tokenizer, new ElisionFilter(TEST_VERSION_CURRENT, tokenizer));
+        return new TokenStreamComponents(tokenizer, new ElisionFilter(tokenizer, FrenchAnalyzer.DEFAULT_ARTICLES));
       }
     };
     checkOneTermReuse(a, "", "");
