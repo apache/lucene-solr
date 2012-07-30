@@ -231,6 +231,29 @@ var solr_admin = function( app_config )
               .append( core_tpl );
           }
 
+          if( response.initFailures )
+          {
+            var failures = [];
+            for( var core_name in response.initFailures )
+            {
+              failures.push
+              (
+                '<li>' + 
+                  '<strong>' + core_name.esc() + ':</strong>' + "\n" +
+                  response.initFailures[core_name].esc() + "\n" +
+                '</li>'
+              );
+            }
+
+            if( 0 !== failures.length )
+            {
+              var init_failures = $( '#init-failures' );
+
+              init_failures.show();
+              $( 'ul', init_failures ).html( failures.join( "\n" ) );
+            }
+          }
+
           if( 0 === core_count )
           {
             show_global_error
