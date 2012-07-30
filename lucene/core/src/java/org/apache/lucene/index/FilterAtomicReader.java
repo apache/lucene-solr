@@ -186,8 +186,8 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
-      return in.docsAndPositions(liveDocs, reuse, needsOffsets);
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+      return in.docsAndPositions(liveDocs, reuse, flags);
     }
 
     @Override

@@ -213,7 +213,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse,
-                                               boolean needsOffsets) throws IOException {
+                                               int flags) throws IOException {
 
     final PulsingTermState termState = (PulsingTermState) _termState;
 
@@ -240,11 +240,11 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     } else {
       if (reuse instanceof PulsingDocsAndPositionsEnum) {
         DocsAndPositionsEnum wrapped = wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, (DocsAndPositionsEnum) getOther(reuse),
-                                                                              needsOffsets);
+                                                                              flags);
         setOther(wrapped, reuse); // wrapped.other = reuse
         return wrapped;
       } else {
-        return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, reuse, needsOffsets);
+        return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, reuse, flags);
       }
     }
   }

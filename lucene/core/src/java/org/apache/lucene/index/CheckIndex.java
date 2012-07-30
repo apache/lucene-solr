@@ -34,6 +34,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -684,7 +685,6 @@ public class CheckIndex {
     DocsEnum docs = null;
     DocsEnum docsAndFreqs = null;
     DocsAndPositionsEnum postings = null;
-    DocsAndPositionsEnum offsets = null;
     
     String lastField = null;
     final FieldsEnum fieldsEnum = fields.iterator();
@@ -701,11 +701,11 @@ public class CheckIndex {
       
       // check that the field is in fieldinfos, and is indexed.
       // TODO: add a separate test to check this for different reader impls
-      FieldInfo fi = fieldInfos.fieldInfo(field);
-      if (fi == null) {
+      FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+      if (fieldInfo == null) {
         throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, no fieldInfos for: " + field);
       }
-      if (!fi.isIndexed()) {
+      if (!fieldInfo.isIndexed()) {
         throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, isIndexed == false for: " + field);
       }
       
@@ -759,8 +759,7 @@ public class CheckIndex {
         
         docs = termsEnum.docs(liveDocs, docs, false);
         docsAndFreqs = termsEnum.docs(liveDocs, docsAndFreqs, true);
-        postings = termsEnum.docsAndPositions(liveDocs, postings, false);
-        offsets = termsEnum.docsAndPositions(liveDocs, offsets, true);
+        postings = termsEnum.docsAndPositions(liveDocs, postings);
         
         if (hasOrd) {
           long ord = -1;
@@ -784,29 +783,20 @@ public class CheckIndex {
         final DocsEnum docsAndFreqs2;
         final boolean hasPositions;
         final boolean hasFreqs;
-        final boolean hasOffsets;
-        if (offsets != null) {
-          docs2 = postings = offsets;
-          docsAndFreqs2 = postings = offsets;
-          hasOffsets = true;
-          hasPositions = true;
-          hasFreqs = true;
-        } else if (postings != null) {
+        final boolean hasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+        if (postings != null) {
           docs2 = postings;
           docsAndFreqs2 = postings;
-          hasOffsets = false;
           hasPositions = true;
           hasFreqs = true;
         } else if (docsAndFreqs != null) {
           docs2 = docsAndFreqs;
           docsAndFreqs2 = docsAndFreqs;
-          hasOffsets = false;
           hasPositions = false;
           hasFreqs = true;
         } else {
           docs2 = docs;
           docsAndFreqs2 = null;
-          hasOffsets = false;
           hasPositions = false;
           hasFreqs = false;
         }
@@ -929,7 +919,7 @@ public class CheckIndex {
         if (hasPositions) {
           for(int idx=0;idx<7;idx++) {
             final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-            postings = termsEnum.docsAndPositions(liveDocs, postings, hasOffsets);
+            postings = termsEnum.docsAndPositions(liveDocs, postings);
             final int docID = postings.advance(skipDocID);
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
@@ -1462,44 +1452,35 @@ public class CheckIndex {
               BytesRef term = null;
               while ((term = termsEnum.next()) != null) {
                 
-                final boolean hasPositions;
-                final boolean hasOffsets;
+                final boolean hasProx;
                 final boolean hasFreqs;
 
                 // TODO: really we need a reflection/query
                 // API so we can just ask what was indexed
                 // instead of "probing"...
 
+                // TODO: cleanup:
+
                 // Try offsets:
-                postings = termsEnum.docsAndPositions(null, postings, true);
+                postings = termsEnum.docsAndPositions(null, postings);
                 if (postings == null) {
-                  hasOffsets = false;
-                  // Try only positions:
-                  postings = termsEnum.docsAndPositions(null, postings, false);
-                  if (postings == null) {
-                    hasPositions = false;
-                    // Try docIDs & freqs:
-                    docs = termsEnum.docs(null, docs, true);
-                    if (docs == null) {
-                      // OK, only docIDs:
-                      hasFreqs = false;
-                      docs = termsEnum.docs(null, docs, false);
-                    } else {
-                      hasFreqs = true;
-                    }
+                  hasProx = false;
+                  // Try docIDs & freqs:
+                  docs = termsEnum.docs(null, docs, true);
+                  if (docs == null) {
+                    // OK, only docIDs:
+                    hasFreqs = false;
+                    docs = termsEnum.docs(null, docs, false);
                   } else {
-                    hasPositions = true;
-                    hasFreqs = true;
+                      hasFreqs = true;
                   }
                 } else {
-                  hasOffsets = true;
-                  // NOTE: may be a lie... but we accept -1
-                  hasPositions = true;
+                  hasProx = true;
                   hasFreqs = true;
                 }
 
                 final DocsEnum docs2;
-                if (hasPositions || hasOffsets) {
+                if (hasProx) {
                   assert postings != null;
                   docs2 = postings;
                 } else {
@@ -1512,23 +1493,18 @@ public class CheckIndex {
                 if (!postingsTermsEnum.seekExact(term, true)) {
                   throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                 }
-                postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings, true);
+                postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings);
                 if (postingsPostings == null) {
-                  // Term vectors were indexed w/ offsets but postings were not
-                  postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings, false);
-                  if (postingsPostings == null) {
-                    postingsDocs = postingsTermsEnum.docs(null, postingsDocs, true);
+                  // Term vectors were indexed w/ pos but postings were not
+                  postingsDocs = postingsTermsEnum.docs(null, postingsDocs, true);
+                  if (postingsDocs == null) {
+                    postingsHasFreq = false;
+                    postingsDocs = postingsTermsEnum.docs(null, postingsDocs, false);
                     if (postingsDocs == null) {
-                      postingsHasFreq = false;
-                      postingsDocs = postingsTermsEnum.docs(null, postingsDocs, false);
-                      if (postingsDocs == null) {
-                        throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
-                      }
-                    } else {
-                      postingsHasFreq = true;
+                      throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                     }
                   } else {
-                    postingsHasFreq = true;
+                      postingsHasFreq = true;
                   }
                 } else {
                   postingsHasFreq = true;
@@ -1557,7 +1533,7 @@ public class CheckIndex {
                     throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());
                   }
                 
-                  if (hasPositions || hasOffsets) {
+                  if (hasProx) {
                     for (int i = 0; i < tf; i++) {
                       int pos = postings.nextPosition();
                       if (postingsPostings != null) {
@@ -1567,32 +1543,30 @@ public class CheckIndex {
                         }
                       }
 
-                      if (hasOffsets) {
-                        // Call the methods to at least make
-                        // sure they don't throw exc:
-                        final int startOffset = postings.startOffset();
-                        final int endOffset = postings.endOffset();
-                        // TODO: these are too anal...?
-                        /*
-                          if (endOffset < startOffset) {
-                          throw new RuntimeException("vector startOffset=" + startOffset + " is > endOffset=" + endOffset);
-                          }
-                          if (startOffset < lastStartOffset) {
-                          throw new RuntimeException("vector startOffset=" + startOffset + " is < prior startOffset=" + lastStartOffset);
-                          }
-                          lastStartOffset = startOffset;
-                        */
+                      // Call the methods to at least make
+                      // sure they don't throw exc:
+                      final int startOffset = postings.startOffset();
+                      final int endOffset = postings.endOffset();
+                      // TODO: these are too anal...?
+                      /*
+                        if (endOffset < startOffset) {
+                        throw new RuntimeException("vector startOffset=" + startOffset + " is > endOffset=" + endOffset);
+                        }
+                        if (startOffset < lastStartOffset) {
+                        throw new RuntimeException("vector startOffset=" + startOffset + " is < prior startOffset=" + lastStartOffset);
+                        }
+                        lastStartOffset = startOffset;
+                      */
 
-                        if (postingsPostings != null) {
-                          final int postingsStartOffset = postingsPostings.startOffset();
+                      if (postingsPostings != null) {
+                        final int postingsStartOffset = postingsPostings.startOffset();
 
-                          final int postingsEndOffset = postingsPostings.endOffset();
-                          if (startOffset != -1 && postingsStartOffset != -1 && startOffset != postingsStartOffset) {
-                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": startOffset=" + startOffset + " differs from postings startOffset=" + postingsStartOffset);
-                          }
-                          if (endOffset != -1 && postingsEndOffset != -1 && endOffset != postingsEndOffset) {
-                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": endOffset=" + endOffset + " differs from postings endOffset=" + postingsEndOffset);
-                          }
+                        final int postingsEndOffset = postingsPostings.endOffset();
+                        if (startOffset != -1 && postingsStartOffset != -1 && startOffset != postingsStartOffset) {
+                          throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": startOffset=" + startOffset + " differs from postings startOffset=" + postingsStartOffset);
+                        }
+                        if (endOffset != -1 && postingsEndOffset != -1 && endOffset != postingsEndOffset) {
+                          throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": endOffset=" + endOffset + " differs from postings endOffset=" + postingsEndOffset);
                         }
                       }
                     }

@@ -278,8 +278,8 @@ public class FuzzyTermsEnum extends TermsEnum {
   
   @Override
   public DocsAndPositionsEnum docsAndPositions(Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
-    return actualEnum.docsAndPositions(liveDocs, reuse, needsOffsets);
+                                               DocsAndPositionsEnum reuse, int flags) throws IOException {
+    return actualEnum.docsAndPositions(liveDocs, reuse, flags);
   }
   
   @Override

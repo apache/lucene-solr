@@ -89,8 +89,8 @@ public class TestFilterAtomicReader extends LuceneTestCase {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
-        return new TestPositions(super.docsAndPositions(liveDocs, reuse == null ? null : ((FilterDocsAndPositionsEnum) reuse).in, needsOffsets));
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+        return new TestPositions(super.docsAndPositions(liveDocs, reuse == null ? null : ((FilterDocsAndPositionsEnum) reuse).in, flags));
       }
     }
 
@@ -164,8 +164,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seekCeil(new BytesRef("one")));
     
-    DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getLiveDocs(reader),
-                                                            null, false);
+    DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getLiveDocs(reader), null);
     while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       assertTrue((positions.docID() % 2) == 1);
     }

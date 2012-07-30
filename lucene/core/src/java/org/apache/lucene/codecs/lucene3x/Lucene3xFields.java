@@ -948,12 +948,7 @@ class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
-      if (needsOffsets) {
-        // Pre-4.0 indices never have offsets:
-        return null;
-      }
-
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
       PreDocsAndPositionsEnum docsPosEnum;
       if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         return null;
