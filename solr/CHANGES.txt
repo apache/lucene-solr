@@ -185,6 +185,8 @@ Other Changes
 * SOLR-3215: Clone SolrInputDocument when distrib indexing so that update processors after
   the distrib update process do not process the document twice. (Mark Miller)
   
+* SOLR-3683: Improved error handling if an <analyzer> contains both an 
+  explicit class attribute, as well as nested factories. (hossman)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
