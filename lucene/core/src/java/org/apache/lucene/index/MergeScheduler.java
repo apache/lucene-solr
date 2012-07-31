@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /** <p>Expert: {@link IndexWriter} uses an instance
@@ -26,7 +27,7 @@ import java.io.IOException;
  *
  * @lucene.experimental
 */
-public abstract class MergeScheduler {
+public abstract class MergeScheduler implements Closeable {
 
   /** Run the merges provided by {@link IndexWriter#getNextMerge()}. */
   public abstract void merge(IndexWriter writer) throws IOException;

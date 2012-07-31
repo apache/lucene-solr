@@ -284,6 +284,38 @@ ul
   border-color: #66b866;
 }
 
+#init-failures
+{
+  border: 1px solid #f00;
+  display: none;
+  margin-left: 150px;
+  margin-bottom: 20px;
+}
+
+#main.error #init-failures
+{
+  margin-left: 0;
+}
+
+#init-failures h2,
+#init-failures ul,
+#init-failures p
+{
+  padding: 10px;
+}
+
+#init-failures h2
+{
+  background-color: #f00;
+  color: #fff;
+  font-weight: bold;
+}
+
+#init-failures p
+{
+  color: #c0c0c0;
+  padding-top: 0;
+}
 
 #content-wrapper
 {

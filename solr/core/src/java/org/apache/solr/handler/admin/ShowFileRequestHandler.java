@@ -144,6 +144,9 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       if (fname.indexOf("..") >= 0) {
         throw new SolrException(ErrorCode.FORBIDDEN, "Invalid path: " + fname);
       }
+      if (fname.startsWith("/")) { // Only files relative to conf are valid
+        fname = fname.substring(1);
+      }
       adminFile = confPath + "/" + fname;
     }
     

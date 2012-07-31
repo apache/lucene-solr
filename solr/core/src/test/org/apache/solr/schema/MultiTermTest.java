@@ -18,6 +18,12 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.charfilter.MappingCharFilterFactory;
+import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
+import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
+import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
+import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
+import org.apache.lucene.analysis.miscellaneous.TrimFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analysis.*;

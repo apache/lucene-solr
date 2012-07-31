@@ -49,6 +49,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.BooleanModifierNode
  * Example: TODO: describe a good example to show how this processor works
  * 
  * @see org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler
+ * @deprecated use {@link BooleanQuery2ModifierNodeProcessor} instead
  */
 public class GroupQueryNodeProcessor implements QueryNodeProcessor {
 

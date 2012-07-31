@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.hunspell;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,6 +37,11 @@ public class HunspellStemmerTest extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws IOException, ParseException {
     createStemmer(true);
+  }
+  
+  @AfterClass
+  public static void afterClass() {
+    stemmer = null;
   }
 
   @Test

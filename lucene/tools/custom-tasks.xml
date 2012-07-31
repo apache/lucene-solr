@@ -18,12 +18,13 @@
 
   <macrodef name="license-check-macro">
     <attribute name="dir" />
+    <attribute name="licensedir" />
     <element name="additional-excludes" optional="true" />
     <element name="additional-filters"  optional="true" />
     <sequential>
       <!-- LICENSE and NOTICE verification macro. -->
       <echo>License check under: @{dir}</echo>
-      <licenses>
+      <licenses licenseDirectory="@{licensedir}">
         <fileset dir="@{dir}">
           <include name="**/*.jar" />
           <!-- Speed up scanning a bit. -->

@@ -414,7 +414,32 @@
   
   <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
   
- </types>
+  <!-- 
+    Example of using PathHierarchyTokenizerFactory at index time, so
+    queries for paths match documents at that path, or in descendent paths
+  -->
+  <fieldType name="path" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/" />
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.KeywordTokenizerFactory" />
+    </analyzer>
+  </fieldType>
+  <!-- 
+    Example of using PathHierarchyTokenizerFactory at query time, so
+    queries for paths match documents at that path, or in ancestor paths
+  -->
+  <fieldType name="ancestor_path" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.KeywordTokenizerFactory" />
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/" />
+    </analyzer>
+  </fieldType>
+
+</types>
 
 
  <fields>
@@ -640,6 +665,10 @@
 
    <!-- Type used to index the lat and lon components for the "location" FieldType -->
    <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false" omitNorms="true" />
+
+   <dynamicField name="*_path"  type="path" indexed="true" stored="true" omitNorms="true" multiValued="true" />
+   <dynamicField name="*_ancestor"  type="ancestor_path" indexed="true" stored="true" omitNorms="true" multiValued="true" />
+
  </fields>
 
  <defaultSearchField>text</defaultSearchField>
@@ -673,6 +702,7 @@
 
    <!-- dynamic destination -->
    <copyField source="*_dynamic" dest="dynamic_*"/>
+   <copyField source="*_path" dest="*_ancestor"/>
 
  <!-- example of a custom similarity -->
  <similarity class="solr.CustomSimilarityFactory">

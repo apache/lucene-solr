@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
+import java.util.Set;
+
 import org.apache.lucene.analysis.TokenStream;
 
 /**
@@ -24,6 +26,40 @@ import org.apache.lucene.analysis.TokenStream;
  * instances.
  */
 public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
+
+  private static final AnalysisSPILoader<TokenFilterFactory> loader =
+      new AnalysisSPILoader<TokenFilterFactory>(TokenFilterFactory.class,
+          new String[] { "TokenFilterFactory", "FilterFactory" });
+  
+  /** looks up a tokenfilter by name from context classpath */
+  public static TokenFilterFactory forName(String name) {
+    return loader.newInstance(name);
+  }
+  
+  /** looks up a tokenfilter class by name from context classpath */
+  public static Class<? extends TokenFilterFactory> lookupClass(String name) {
+    return loader.lookupClass(name);
+  }
+  
+  /** returns a list of all available tokenfilter names from context classpath */
+  public static Set<String> availableTokenFilters() {
+    return loader.availableServices();
+  }
+  
+  /** 
+   * Reloads the factory list from the given {@link ClassLoader}.
+   * Changes to the factories are visible after the method ends, all
+   * iterators ({@link #availableTokenFilters()},...) stay consistent. 
+   * 
+   * <p><b>NOTE:</b> Only new factories are added, existing ones are
+   * never removed or replaced.
+   * 
+   * <p><em>This method is expensive and should only be called for discovery
+   * of new factories on the given classpath/classloader!</em>
+   */
+  public static void reloadTokenFilters(ClassLoader classloader) {
+    loader.reload(classloader);
+  }
 
   /** Transform the specified input TokenStream */
   public abstract TokenStream create(TokenStream input);

@@ -60,6 +60,7 @@
   <property name="ivy.resource" value="org/apache/ivy/ant/antlib.xml" />
   <available resource="${ivy.resource}" property="ivy.available" />
   <property name="ivy.default.configuration" value="*"/>
+  <property name="ivy.sync" value="true"/>
 
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" value="${common.dir}/test-framework/lib/${junit.jar}"/>
@@ -294,7 +295,7 @@
     <!-- todo, make this a property or something. 
          only special cases need bundles -->
     <ivy:retrieve type="jar,bundle" log="download-only" 
-                  conf="${ivy.default.configuration}"/>
+                  conf="${ivy.default.configuration}" sync="${ivy.sync}"/>
   </target>
 
   <property name="ivy_install_path" location="${user.home}/.ant/lib" />
@@ -1700,7 +1701,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        <attribute name="dir"/>
        <attribute name="level" default="class"/>
      <sequential>
-       <exec dir="." executable="${python.exe}" failonerror="true">
+       <exec dir="." executable="${python32.exe}" failonerror="true">
          <arg value="${dev-tools.dir}/scripts/checkJavaDocs.py"/>
          <arg value="@{dir}"/>
          <arg value="@{level}"/>

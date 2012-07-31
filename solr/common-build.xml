@@ -221,23 +221,23 @@
       <invoke-javadoc destdir="@{destdir}" title="@{title}" overview="@{overview}">
         <sources>
           <solrsources/>
-          <link offline="true" href="${lucene.javadoc.url}/core" packagelistloc="${lucenedocs}/core"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-common" packagelistloc="${lucenedocs}/analyzers-common"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-icu" packagelistloc="${lucenedocs}/analyzers-icu"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-kuromoji" packagelistloc="${lucenedocs}/analyzers-kuromoji"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-morfologik" packagelistloc="${lucenedocs}/analyzers-morfologik"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-phonetic" packagelistloc="${lucenedocs}/analyzers-phonetic"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-smartcn" packagelistloc="${lucenedocs}/analyzers-smartcn"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-stempel" packagelistloc="${lucenedocs}/analyzers-stempel"/>
-          <link offline="true" href="${lucene.javadoc.url}/analyzers-uima" packagelistloc="${lucenedocs}/analyzers-uima"/>
-          <link offline="true" href="${lucene.javadoc.url}/suggest" packagelistloc="${lucenedocs}/suggest"/>
-          <link offline="true" href="${lucene.javadoc.url}/grouping" packagelistloc="${lucenedocs}/grouping"/>
-          <link offline="true" href="${lucene.javadoc.url}/queries" packagelistloc="${lucenedocs}/queries"/>
-          <link offline="true" href="${lucene.javadoc.url}/queryparser" packagelistloc="${lucenedocs}/queryparser"/>
-          <link offline="true" href="${lucene.javadoc.url}/highlighter" packagelistloc="${lucenedocs}/highlighter"/>
-          <link offline="true" href="${lucene.javadoc.url}/memory" packagelistloc="${lucenedocs}/memory"/>
-          <link offline="true" href="${lucene.javadoc.url}/misc" packagelistloc="${lucenedocs}/misc"/>
-          <link offline="true" href="${lucene.javadoc.url}/spatial" packagelistloc="${lucenedocs}/spatial"/>
+          <link offline="true" href="${lucene.javadoc.url}core" packagelistloc="${lucenedocs}/core"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-common" packagelistloc="${lucenedocs}/analyzers-common"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-icu" packagelistloc="${lucenedocs}/analyzers-icu"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-kuromoji" packagelistloc="${lucenedocs}/analyzers-kuromoji"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-morfologik" packagelistloc="${lucenedocs}/analyzers-morfologik"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-phonetic" packagelistloc="${lucenedocs}/analyzers-phonetic"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-smartcn" packagelistloc="${lucenedocs}/analyzers-smartcn"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-stempel" packagelistloc="${lucenedocs}/analyzers-stempel"/>
+          <link offline="true" href="${lucene.javadoc.url}analyzers-uima" packagelistloc="${lucenedocs}/analyzers-uima"/>
+          <link offline="true" href="${lucene.javadoc.url}suggest" packagelistloc="${lucenedocs}/suggest"/>
+          <link offline="true" href="${lucene.javadoc.url}grouping" packagelistloc="${lucenedocs}/grouping"/>
+          <link offline="true" href="${lucene.javadoc.url}queries" packagelistloc="${lucenedocs}/queries"/>
+          <link offline="true" href="${lucene.javadoc.url}queryparser" packagelistloc="${lucenedocs}/queryparser"/>
+          <link offline="true" href="${lucene.javadoc.url}highlighter" packagelistloc="${lucenedocs}/highlighter"/>
+          <link offline="true" href="${lucene.javadoc.url}memory" packagelistloc="${lucenedocs}/memory"/>
+          <link offline="true" href="${lucene.javadoc.url}misc" packagelistloc="${lucenedocs}/misc"/>
+          <link offline="true" href="${lucene.javadoc.url}spatial" packagelistloc="${lucenedocs}/spatial"/>
           <link href=""/>
         </sources>
       </invoke-javadoc>
@@ -248,8 +248,7 @@
           depends="define-lucene-javadoc-url-SNAPSHOT,define-lucene-javadoc-url-release"/>
 
   <target name="define-lucene-javadoc-url-SNAPSHOT" if="version.contains.SNAPSHOT">
-    <property name="lucene.javadoc.url"
-              value="${common.dir}/build/docs/"/>
+    <makeurl file="${common.dir}/build/docs/" validate="false" property="lucene.javadoc.url"/>
   </target>
 
   <target name="define-lucene-javadoc-url-release" unless="version.contains.SNAPSHOT">

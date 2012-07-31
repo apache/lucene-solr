@@ -20,6 +20,7 @@ package org.apache.solr.response;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.velocity.Template;
@@ -113,19 +114,32 @@ public class VelocityResponseWriter implements QueryResponseWriter {
 
   private VelocityEngine getEngine(SolrQueryRequest request) {
     VelocityEngine engine = new VelocityEngine();
-    String template_root = request.getParams().get("v.base_dir");
-    File baseDir = new File(request.getCore().getResourceLoader().getConfigDir(), "velocity");
-    if (template_root != null) {
-      baseDir = new File(template_root);
-    }
-    engine.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, baseDir.getAbsolutePath());
+
     engine.setProperty("params.resource.loader.instance", new SolrParamResourceLoader(request));
     SolrVelocityResourceLoader resourceLoader =
         new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader());
     engine.setProperty("solr.resource.loader.instance", resourceLoader);
 
+    File fileResourceLoaderBaseDir = null;
+    try {
+      String template_root = request.getParams().get("v.base_dir");
+      fileResourceLoaderBaseDir = new File(request.getCore().getResourceLoader().getConfigDir(), "velocity");
+      if (template_root != null) {
+        fileResourceLoaderBaseDir = new File(template_root);
+      }
+    } catch (SolrException e) {
+      // no worries... probably in ZooKeeper mode and getConfigDir() isn't available, so we'll just ignore omit
+      // the file system resource loader
+    }
+
+    if (fileResourceLoaderBaseDir != null) {
+      engine.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, fileResourceLoaderBaseDir.getAbsolutePath());
+      engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,file,solr");
+    } else {
+      engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,solr");
+    }
+
     // TODO: Externalize Velocity properties
-    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,file,solr");
     String propFile = request.getParams().get("v.properties");
     try {
       if (propFile == null)

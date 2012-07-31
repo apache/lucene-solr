@@ -250,7 +250,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
     BlockDocsEnum docsEnum;
     if (reuse instanceof BlockDocsEnum) {
       docsEnum = (BlockDocsEnum) reuse;
@@ -267,11 +267,11 @@ public final class BlockPostingsReader extends PostingsReaderBase {
   
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, boolean needsOffsets)
+                                               DocsAndPositionsEnum reuse, int flags)
     throws IOException {
 
-    // nocommit use needsPayloads here:
-    if (!needsOffsets && !fieldInfo.hasPayloads()) {
+    if ((flags & DocsAndPositionsEnum.FLAG_OFFSETS) == 0 &&
+        (!fieldInfo.hasPayloads() || (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) == 0)) {
       BlockDocsAndPositionsEnum docsAndPositionsEnum;
       if (reuse instanceof BlockDocsAndPositionsEnum) {
         docsAndPositionsEnum = (BlockDocsAndPositionsEnum) reuse;

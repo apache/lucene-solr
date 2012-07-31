@@ -49,6 +49,7 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 
   public void testSevereErrorsForUnexpectedAnalyzer() throws Exception {
     doTest("bad-schema-nontext-analyzer.xml", "StrField (bad_type)");
+    doTest("bad-schema-analyzer-class-and-nested.xml", "bad_type");
   }
 
   public void testBadExternalFileField() throws Exception {
@@ -61,6 +62,8 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "can not be the dest of a copyField");
     doTest("bad-schema-uniquekey-uses-default.xml", 
            "can not be configured with a default value");
+    doTest("bad-schema-uniquekey-multivalued.xml", 
+           "can not be configured to be multivalued");
   }
 
   public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {

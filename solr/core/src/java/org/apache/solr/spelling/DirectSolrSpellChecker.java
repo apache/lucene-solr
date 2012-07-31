@@ -168,11 +168,10 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   }
   
   @Override
-  public void reload(SolrCore core, SolrIndexSearcher searcher)
-      throws IOException {}
+  public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
 
   @Override
-  public void build(SolrCore core, SolrIndexSearcher searcher) {}
+  public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options)

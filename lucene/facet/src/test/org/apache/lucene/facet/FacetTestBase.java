@@ -284,7 +284,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
       TermsEnum te = terms.iterator(null);
       DocsEnum de = null;
       while (te.next() != null) {
-        de = _TestUtil.docs(random(), te, liveDocs, de, false);
+        de = _TestUtil.docs(random(), te, liveDocs, de, 0);
         int cnt = 0;
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           cnt++;

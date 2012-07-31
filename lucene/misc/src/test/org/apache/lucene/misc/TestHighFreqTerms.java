@@ -56,6 +56,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     dir.close();
     dir = null;
     reader = null;
+    writer = null;
   }
 /******************** Tests for getHighFreqTerms **********************************/
   

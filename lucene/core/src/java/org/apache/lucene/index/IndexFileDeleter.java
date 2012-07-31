@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoSuchDirectoryException;
@@ -146,57 +147,61 @@ final class IndexFileDeleter {
       // it means the directory is empty, so ignore it.
       files = new String[0];
     }
-
-    for (String fileName : files) {
-
-      if (!fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
-
-        // Add this file to refCounts with initial count 0:
-        getRefCount(fileName);
-
-        if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
-
-          // This is a commit (segments or segments_N), and
-          // it's valid (<= the max gen).  Load it, then
-          // incref all files it refers to:
-          if (infoStream.isEnabled("IFD")) {
-            infoStream.message("IFD", "init: load commit \"" + fileName + "\"");
-          }
-          SegmentInfos sis = new SegmentInfos();
-          try {
-            sis.read(directory, fileName);
-          } catch (FileNotFoundException e) {
-            // LUCENE-948: on NFS (and maybe others), if
-            // you have writers switching back and forth
-            // between machines, it's very likely that the
-            // dir listing will be stale and will claim a
-            // file segments_X exists when in fact it
-            // doesn't.  So, we catch this and handle it
-            // as if the file does not exist
+    
+    if (currentSegmentsFile != null) {
+      Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
+      for (String fileName : files) {
+        m.reset(fileName);
+        if (!fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)
+            && (m.matches() || fileName.startsWith(IndexFileNames.SEGMENTS))) {
+          
+          // Add this file to refCounts with initial count 0:
+          getRefCount(fileName);
+          
+          if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+            
+            // This is a commit (segments or segments_N), and
+            // it's valid (<= the max gen).  Load it, then
+            // incref all files it refers to:
             if (infoStream.isEnabled("IFD")) {
-              infoStream.message("IFD", "init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
+              infoStream.message("IFD", "init: load commit \"" + fileName + "\"");
             }
-            sis = null;
-          } catch (IOException e) {
-            if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen && directory.fileLength(fileName) > 0) {
-              throw e;
-            } else {
-              // Most likely we are opening an index that
-              // has an aborted "future" commit, so suppress
-              // exc in this case
+            SegmentInfos sis = new SegmentInfos();
+            try {
+              sis.read(directory, fileName);
+            } catch (FileNotFoundException e) {
+              // LUCENE-948: on NFS (and maybe others), if
+              // you have writers switching back and forth
+              // between machines, it's very likely that the
+              // dir listing will be stale and will claim a
+              // file segments_X exists when in fact it
+              // doesn't.  So, we catch this and handle it
+              // as if the file does not exist
+              if (infoStream.isEnabled("IFD")) {
+                infoStream.message("IFD", "init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
+              }
               sis = null;
+            } catch (IOException e) {
+              if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen && directory.fileLength(fileName) > 0) {
+                throw e;
+              } else {
+                // Most likely we are opening an index that
+                // has an aborted "future" commit, so suppress
+                // exc in this case
+                sis = null;
+              }
             }
-          }
-          if (sis != null) {
-            final CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
-            if (sis.getGeneration() == segmentInfos.getGeneration()) {
-              currentCommitPoint = commitPoint;
-            }
-            commits.add(commitPoint);
-            incRef(sis, true);
-
-            if (lastSegmentInfos == null || sis.getGeneration() > lastSegmentInfos.getGeneration()) {
-              lastSegmentInfos = sis;
+            if (sis != null) {
+              final CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
+              if (sis.getGeneration() == segmentInfos.getGeneration()) {
+                currentCommitPoint = commitPoint;
+              }
+              commits.add(commitPoint);
+              incRef(sis, true);
+              
+              if (lastSegmentInfos == null || sis.getGeneration() > lastSegmentInfos.getGeneration()) {
+                lastSegmentInfos = sis;
+              }
             }
           }
         }

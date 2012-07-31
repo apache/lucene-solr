@@ -507,7 +507,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
                                     new BytesRef(t.text()),
                                     MultiFields.getLiveDocs(reader),
                                     null,
-                                    false);
+                                    0);
 
     int count = 0;
     while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {

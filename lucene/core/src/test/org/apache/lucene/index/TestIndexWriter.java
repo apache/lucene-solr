@@ -46,6 +46,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -540,7 +541,7 @@ public class TestIndexWriter extends LuceneTestCase {
                                    new BytesRef("a"),
                                    MultiFields.getLiveDocs(reader),
                                    null,
-                                   true);
+                                   DocsEnum.FLAG_FREQS);
       td.nextDoc();
       assertEquals(128*1024, td.freq());
       reader.close();
@@ -939,14 +940,14 @@ public class TestIndexWriter extends LuceneTestCase {
     Terms tpv = r.getTermVectors(0).terms("field");
     TermsEnum termsEnum = tpv.iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
+    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
     assertEquals(100, dpEnum.nextPosition());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
+    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
@@ -1181,12 +1182,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     // test that the terms were indexed.
-    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc1field1"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc2field1"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc3field1"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc1field2"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc2field2"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc3field2"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc1field1"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc2field1"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc3field1"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc1field2"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc2field2"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc3field2"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     ir.close();
     dir.close();
@@ -1258,7 +1259,7 @@ public class TestIndexWriter extends LuceneTestCase {
     TermsEnum t = r.fields().terms("field").iterator(null);
     int count = 0;
     while(t.next() != null) {
-      final DocsEnum docs = _TestUtil.docs(random(), t, null, null, false);
+      final DocsEnum docs = _TestUtil.docs(random(), t, null, null, 0);
       assertEquals(0, docs.nextDoc());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
       count++;
@@ -1587,7 +1588,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // Make sure position is still incremented when
     // massive term is skipped:
-    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"), false);
+    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"));
     assertEquals(0, tps.nextDoc());
     assertEquals(1, tps.freq());
     assertEquals(3, tps.nextPosition());
@@ -1835,5 +1836,54 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
     dir.close();
+  }
+  
+  //LUCENE-1468 -- make sure opening an IndexWriter with
+  // create=true does not remove non-index files
+  
+  public void testOtherFiles() throws Throwable {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    iw.addDocument(new Document());
+    iw.close();
+    try {
+      // Create my own random file:
+      IndexOutput out = dir.createOutput("myrandomfile", newIOContext(random()));
+      out.writeByte((byte) 42);
+      out.close();
+      
+      new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
+      
+      assertTrue(dir.fileExists("myrandomfile"));
+    } finally {
+      dir.close();
+    }
+  }
+  
+  // here we do better, there is no current segments file, so we don't delete anything.
+  // however, if you actually go and make a commit, the next time you run indexwriter
+  // this file will be gone.
+  public void testOtherFiles2() throws Throwable {
+    Directory dir = newDirectory();
+    try {
+      // Create my own random file:
+      IndexOutput out = dir.createOutput("_a.frq", newIOContext(random()));
+      out.writeByte((byte) 42);
+      out.close();
+      
+      new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
+      
+      assertTrue(dir.fileExists("_a.frq"));
+      
+      IndexWriter iw = new IndexWriter(dir, 
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+      iw.addDocument(new Document());
+      iw.close();
+      
+      assertFalse(dir.fileExists("_a.frq"));
+    } finally {
+      dir.close();
+    }
   }
 }

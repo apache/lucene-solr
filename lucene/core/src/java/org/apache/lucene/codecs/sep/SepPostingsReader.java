@@ -258,7 +258,7 @@ public class SepPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
     SepDocsEnum docsEnum;
     if (reuse == null || !(reuse instanceof SepDocsEnum)) {
@@ -278,12 +278,8 @@ public class SepPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, boolean needsOffsets)
+                                               DocsAndPositionsEnum reuse, int flags)
     throws IOException {
-
-    if (needsOffsets) {
-      return null;
-    }
 
     assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     final SepTermState termState = (SepTermState) _termState;
@@ -370,6 +366,7 @@ public class SepPostingsReader extends PostingsReaderBase {
       count = 0;
       doc = -1;
       accum = 0;
+      freq = 1;
       skipped = false;
 
       return this;
@@ -403,7 +400,6 @@ public class SepPostingsReader extends PostingsReaderBase {
 
     @Override
     public int freq() throws IOException {
-      assert !omitTF;
       return freq;
     }
 

@@ -299,14 +299,14 @@
 
     <fieldType name="uima_sentences" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
-        <tokenizer class="org.apache.solr.uima.analysis.UIMAAnnotationsTokenizerFactory"
+        <tokenizer class="solr.UIMAAnnotationsTokenizerFactory"
                    descriptorPath="/uima/AggregateSentenceAE.xml" tokenType="org.apache.uima.SentenceAnnotation"/>
       </analyzer>
     </fieldType>
 
     <fieldType name="uima_nouns" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
-        <tokenizer class="org.apache.solr.uima.analysis.UIMATypeAwareAnnotationsTokenizerFactory"
+        <tokenizer class="solr.UIMATypeAwareAnnotationsTokenizerFactory"
                    descriptorPath="/uima/AggregateSentenceAE.xml" tokenType="org.apache.uima.TokenAnnotation"
                    featurePath="posTag"/>
         <filter class="solr.TypeTokenFilterFactory" types="uima/stoptypes.txt" />

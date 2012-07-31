@@ -324,7 +324,8 @@ public class SnapPuller {
       successfulInstall = false;
       boolean deleteTmpIdxDir = true;
 
-      final File indexDir = new File(core.getIndexDir());
+      // make sure it's the newest known index dir...
+      final File indexDir = new File(core.getNewIndexDir());
       Directory oldDirectory = null;
       try {
         downloadIndexFiles(isFullCopyNeeded, tmpIndexDir, latestGeneration);
@@ -534,7 +535,7 @@ public class SnapPuller {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
     // reboot the writer on the new index and get a new searcher
-    solrCore.getUpdateHandler().newIndexWriter();
+    solrCore.getUpdateHandler().newIndexWriter(true);
     
     try {
       // first try to open an NRT searcher so that the new 

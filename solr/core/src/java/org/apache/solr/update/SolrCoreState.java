@@ -31,15 +31,21 @@ import org.apache.solr.util.RefCounted;
  * 
  */
 public abstract class SolrCoreState {
+  private final Object deleteLock = new Object();
+  
+  public Object getUpdateLock() {
+    return deleteLock;
+  }
   
   /**
    * Force the creation of a new IndexWriter using the settings from the given
    * SolrCore.
    * 
    * @param core
+   * @param rollback close IndexWriter if false, else rollback
    * @throws IOException
    */
-  public abstract void newIndexWriter(SolrCore core) throws IOException;
+  public abstract void newIndexWriter(SolrCore core, boolean rollback) throws IOException;
   
   /**
    * Get the current IndexWriter. If a new IndexWriter must be created, use the

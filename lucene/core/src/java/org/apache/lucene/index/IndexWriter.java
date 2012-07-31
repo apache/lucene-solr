@@ -842,7 +842,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (hitOOM) {
           rollbackInternal();
         } else {
-          closeInternal(waitForMerges, !hitOOM);
+          closeInternal(waitForMerges, true);
         }
       }
     }
@@ -870,7 +870,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   private void closeInternal(boolean waitForMerges, boolean doFlush) throws IOException {
-
+    boolean interrupted = false;
     try {
 
       if (pendingCommit != null) {
@@ -883,26 +883,57 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       docWriter.close();
 
-      // Only allow a new merge to be triggered if we are
-      // going to wait for merges:
-      if (doFlush) {
-        flush(waitForMerges, true);
-      } else {
-        docWriter.abort(); // already closed
+      try {
+        // Only allow a new merge to be triggered if we are
+        // going to wait for merges:
+        if (doFlush) {
+          flush(waitForMerges, true);
+        } else {
+          docWriter.abort(); // already closed
+        }
+        
+      } finally {
+        try {
+          // clean up merge scheduler in all cases, although flushing may have failed:
+          interrupted = Thread.interrupted();
+        
+          if (waitForMerges) {
+            try {
+              // Give merge scheduler last chance to run, in case
+              // any pending merges are waiting:
+              mergeScheduler.merge(this);
+            } catch (ThreadInterruptedException tie) {
+              // ignore any interruption, does not matter
+              interrupted = true;
+              if (infoStream.isEnabled("IW")) {
+                infoStream.message("IW", "interrupted while waiting for final merges");
+              }
+            }
+          }
+          
+          synchronized(this) {
+            for (;;) {
+              try {
+                finishMerges(waitForMerges && !interrupted);
+                break;
+              } catch (ThreadInterruptedException tie) {
+                // by setting the interrupted status, the
+                // next call to finishMerges will pass false,
+                // so it will not wait
+                interrupted = true;
+                if (infoStream.isEnabled("IW")) {
+                  infoStream.message("IW", "interrupted while waiting for merges to finish");
+                }
+              }
+            }
+            stopMerges = true;
+          }
+          
+        } finally {
+          // shutdown policy, scheduler and all threads (this call is not interruptible):
+          IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler);
+        }
       }
-
-      if (waitForMerges)
-        // Give merge scheduler last chance to run, in case
-        // any pending merges are waiting:
-        mergeScheduler.merge(this);
-
-      mergePolicy.close();
-
-      synchronized(this) {
-        finishMerges(waitForMerges);
-        stopMerges = true;
-      }
-      mergeScheduler.close();
 
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "now call final commit()");
@@ -943,6 +974,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
         }
       }
+      // finally, restore interrupt status:
+      if (interrupted) Thread.currentThread().interrupt();
     }
   }
 
@@ -3052,7 +3085,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     checkpoint();
 
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "after commit: " + segString());
+      infoStream.message("IW", "after commitMerge: " + segString());
     }
 
     if (merge.maxNumSegments != -1 && !dropSegment) {

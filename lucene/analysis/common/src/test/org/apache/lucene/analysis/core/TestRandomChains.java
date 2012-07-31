@@ -235,7 +235,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   private static <T> Constructor<T> castConstructor(Class<T> instanceClazz, Constructor<?> ctor) {
     return (Constructor<T>) ctor;
   }
-  private static void getClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
+  static void getClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
     final ClassLoader cld = TestRandomChains.class.getClassLoader();
     final String path = pckgname.replace('.', '/');
     final Enumeration<URL> resources = cld.getResources(path);

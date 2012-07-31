@@ -73,31 +73,27 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   }
 
   @Override
-  public void build(SolrCore core, SolrIndexSearcher searcher) {
+  public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     IndexReader reader = null;
-    try {
-      if (sourceLocation == null) {
-        // Load from Solr's index
-        reader = searcher.getIndexReader();
-      } else {
-        // Load from Lucene index at given sourceLocation
-        reader = this.reader;
-      }
-
-      // Create the dictionary
-      dictionary = new HighFrequencyDictionary(reader, field,
-          threshold);
-      // TODO: maybe whether or not to clear the index should be configurable?
-      // an incremental update is faster (just adds new terms), but if you 'expunged'
-      // old terms I think they might hang around.
-      spellChecker.clearIndex();
-      // TODO: you should be able to specify the IWC params?
-      // TODO: if we enable this, codec gets angry since field won't exist in the schema
-      // config.setCodec(core.getCodec());
-      spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    if (sourceLocation == null) {
+      // Load from Solr's index
+      reader = searcher.getIndexReader();
+    } else {
+      // Load from Lucene index at given sourceLocation
+      reader = this.reader;
     }
+
+    // Create the dictionary
+    dictionary = new HighFrequencyDictionary(reader, field,
+        threshold);
+    // TODO: maybe whether or not to clear the index should be configurable?
+    // an incremental update is faster (just adds new terms), but if you 'expunged'
+    // old terms I think they might hang around.
+    spellChecker.clearIndex();
+    // TODO: you should be able to specify the IWC params?
+    // TODO: if we enable this, codec gets angry since field won't exist in the schema
+    // config.setCodec(core.getCodec());
+    spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
   }
 
   @Override

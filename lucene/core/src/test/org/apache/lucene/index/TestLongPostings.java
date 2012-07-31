@@ -170,7 +170,7 @@ public class TestLongPostings extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " doS1=" + doS1);
       }
         
-      final DocsAndPositionsEnum postings = MultiFields.getTermPositionsEnum(r, null, "field", new BytesRef(term), false);
+      final DocsAndPositionsEnum postings = MultiFields.getTermPositionsEnum(r, null, "field", new BytesRef(term));
 
       int docID = -1;
       while(docID < DocIdSetIterator.NO_MORE_DOCS) {
@@ -368,10 +368,10 @@ public class TestLongPostings extends LuceneTestCase {
       final DocsEnum postings;
 
       if (options == IndexOptions.DOCS_ONLY) {
-        docs = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, false);
+        docs = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, 0);
         postings = null;
       } else {
-        docs = postings = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, true);
+        docs = postings = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, DocsEnum.FLAG_FREQS);
         assert postings != null;
       }
       assert docs != null;

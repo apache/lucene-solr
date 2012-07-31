@@ -117,6 +117,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveJetty.stop();
     master.tearDown();
     slave.tearDown();
+    masterJetty = slaveJetty = null;
+    master = slave = null;
+    masterClient = slaveClient = null;
   }
 
   private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {

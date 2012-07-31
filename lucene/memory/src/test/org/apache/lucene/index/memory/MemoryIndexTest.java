@@ -205,7 +205,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     MemoryIndex memory = new MemoryIndex();
     memory.addField("foo", "bar", analyzer);
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
-    DocsEnum disi = _TestUtil.docs(random(), reader, "foo", new BytesRef("bar"), null, null, false);
+    DocsEnum disi = _TestUtil.docs(random(), reader, "foo", new BytesRef("bar"), null, null, 0);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -213,7 +213,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     // now reuse and check again
     TermsEnum te = reader.terms("foo").iterator(null);
     assertTrue(te.seekExact(new BytesRef("bar"), true));
-    disi = te.docs(null, disi, false);
+    disi = te.docs(null, disi, 0);
     docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -225,7 +225,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     MemoryIndex memory = new MemoryIndex(true);
     memory.addField("foo", "bar", analyzer);
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
-    DocsAndPositionsEnum disi = reader.termPositionsEnum(null, "foo", new BytesRef("bar"), false);
+    DocsAndPositionsEnum disi = reader.termPositionsEnum(null, "foo", new BytesRef("bar"));
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -236,7 +236,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     // now reuse and check again
     TermsEnum te = reader.terms("foo").iterator(null);
     assertTrue(te.seekExact(new BytesRef("bar"), true));
-    disi = te.docsAndPositions(null, disi, false);
+    disi = te.docsAndPositions(null, disi);
     docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

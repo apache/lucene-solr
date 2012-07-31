@@ -91,7 +91,7 @@
       trailing underscores (e.g. _version_) are reserved.
    -->
         
-   <field name="id" type="string" indexed="true" stored="true" required="true" /> 
+   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" /> 
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text_general" indexed="true" stored="true"/>
    <field name="manu" type="text_general" indexed="true" stored="true" omitNorms="true"/>
@@ -136,7 +136,6 @@
    <field name="manu_exact" type="string" indexed="true" stored="false"/>
 
    <field name="payloads" type="payloads" indexed="true" stored="true"/>
-
 
    <field name="_version_" type="long" indexed="true" stored="true"/>
 
@@ -607,12 +606,30 @@
       </analyzer>
     </fieldType>
 
-    <fieldType name="text_path" class="solr.TextField" positionIncrementGap="100">
-      <analyzer>
-        <tokenizer class="solr.PathHierarchyTokenizerFactory"/>
+    <!-- 
+      Example of using PathHierarchyTokenizerFactory at index time, so
+      queries for paths match documents at that path, or in descendent paths
+    -->
+    <fieldType name="descendent_path" class="solr.TextField">
+      <analyzer type="index">
+	<tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/" />
+      </analyzer>
+      <analyzer type="query">
+	<tokenizer class="solr.KeywordTokenizerFactory" />
       </analyzer>
     </fieldType>
-
+    <!-- 
+      Example of using PathHierarchyTokenizerFactory at query time, so
+      queries for paths match documents at that path, or in ancestor paths
+    -->
+    <fieldType name="ancestor_path" class="solr.TextField">
+      <analyzer type="index">
+	<tokenizer class="solr.KeywordTokenizerFactory" />
+      </analyzer>
+      <analyzer type="query">
+	<tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/" />
+      </analyzer>
+    </fieldType>
 
     <!-- since fields of this type are by default not stored or indexed,
          any data added to them will be ignored outright.  --> 
@@ -1041,6 +1058,7 @@
         <filter class="solr.SnowballPorterFilterFactory" language="Turkish"/>
       </analyzer>
     </fieldType>
+
  </types>
   
   <!-- Similarity is the scoring routine for each document vs. a query.

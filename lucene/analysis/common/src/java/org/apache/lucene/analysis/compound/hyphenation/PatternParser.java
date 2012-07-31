@@ -27,9 +27,7 @@ import org.xml.sax.Attributes;
 
 // Java
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 
 import javax.xml.parsers.SAXParserFactory;
@@ -87,9 +85,9 @@ public class PatternParser extends DefaultHandler {
    * Parses a hyphenation pattern file.
    * 
    * @param filename the filename
-   * @throws HyphenationException In case of an exception while parsing
+   * @throws IOException In case of an exception while parsing
    */
-  public void parse(String filename) throws HyphenationException {
+  public void parse(String filename) throws IOException {
     parse(new InputSource(filename));
   }
 
@@ -97,33 +95,24 @@ public class PatternParser extends DefaultHandler {
    * Parses a hyphenation pattern file.
    * 
    * @param file the pattern file
-   * @throws HyphenationException In case of an exception while parsing
+   * @throws IOException In case of an exception while parsing
    */
-  public void parse(File file) throws HyphenationException {
-    try {
-      InputSource src = new InputSource(file.toURL().toExternalForm());
-      parse(src);
-    } catch (MalformedURLException e) {
-      throw new HyphenationException("Error converting the File '" + file
-          + "' to a URL: " + e.getMessage());
-    }
+  public void parse(File file) throws IOException {
+    InputSource src = new InputSource(file.toURL().toExternalForm());
+    parse(src);
   }
 
   /**
    * Parses a hyphenation pattern file.
    * 
    * @param source the InputSource for the file
-   * @throws HyphenationException In case of an exception while parsing
+   * @throws IOException In case of an exception while parsing
    */
-  public void parse(InputSource source) throws HyphenationException {
+  public void parse(InputSource source) throws IOException {
     try {
       parser.parse(source);
-    } catch (FileNotFoundException fnfe) {
-      throw new HyphenationException("File not found: " + fnfe.getMessage());
-    } catch (IOException ioe) {
-      throw new HyphenationException(ioe.getMessage());
     } catch (SAXException e) {
-      throw new HyphenationException(errMsg);
+      throw new IOException(e);
     }
   }
 

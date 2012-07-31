@@ -756,7 +756,7 @@ public class SimpleFacets {
             // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
             // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
             // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
-            docsEnum = termsEnum.docs(null, docsEnum, false);
+            docsEnum = termsEnum.docs(null, docsEnum, 0);
             c=0;
 
             if (docsEnum instanceof MultiDocsEnum) {
@@ -923,6 +923,11 @@ public class SimpleFacets {
           throw new SolrException
               (SolrException.ErrorCode.BAD_REQUEST,
                   "date facet infinite loop (is gap negative?)");
+        }
+        if (high.equals(low)) {
+          throw new SolrException
+            (SolrException.ErrorCode.BAD_REQUEST,
+             "date facet infinite loop: gap is effectively zero");
         }
         final boolean includeLower =
             (include.contains(FacetRangeInclude.LOWER) ||
@@ -1112,6 +1117,11 @@ public class SimpleFacets {
         throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
            "range facet infinite loop (is gap negative? did the math overflow?)");
+      }
+      if (high.compareTo(low) == 0) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high );
       }
       
       final boolean includeLower = 

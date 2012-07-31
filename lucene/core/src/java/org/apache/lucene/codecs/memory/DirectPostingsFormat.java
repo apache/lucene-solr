@@ -314,9 +314,9 @@ public class DirectPostingsFormat extends PostingsFormat {
         termOffsets[count+1] = termOffset;
 
         if (hasPos) {
-          docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum, hasOffsets);
+          docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
         } else {
-          docsEnum = termsEnum.docs(null, docsEnum, hasFreq);
+          docsEnum = termsEnum.docs(null, docsEnum);
         }
 
         final TermAndSkip ent;
@@ -781,11 +781,7 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
-        if (needsFreqs && !hasFreq) {
-          return null;
-        }
-
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
         // TODO: implement reuse, something like Pulsing:
         // it's hairy!
 
@@ -858,11 +854,8 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
         if (!hasPos) {
-          return null;
-        }
-        if (needsOffsets && !hasOffsets) {
           return null;
         }
 
@@ -1384,11 +1377,7 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
-        if (needsFreqs && !hasFreq) {
-          return null;
-        }
-
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
         // TODO: implement reuse, something like Pulsing:
         // it's hairy!
 
@@ -1420,11 +1409,8 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
         if (!hasPos) {
-          return null;
-        }
-        if (needsOffsets && !hasOffsets) {
           return null;
         }
 
@@ -1507,7 +1493,6 @@ public class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int freq() {
-      assert false;
       return 1;
     }
 
@@ -1852,7 +1837,7 @@ public class DirectPostingsFormat extends PostingsFormat {
     public DocsEnum reset(int[] docIDs, int[] freqs) {
       this.docIDs = docIDs;
       this.freqs = freqs;
-      upto = -1;
+      docID = upto = -1;
       return this;
     }
 
@@ -1882,7 +1867,11 @@ public class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int freq() {
-      return freqs[upto];
+      if (freqs == null) {
+        return 1;
+      } else {
+        return freqs[upto];
+      }
     }
 
     @Override

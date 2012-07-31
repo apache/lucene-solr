@@ -167,7 +167,7 @@
   <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
-    <license-check-macro dir="${basedir}" />
+    <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses" />
   </target>
 
   <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
@@ -275,14 +275,9 @@
   </target>
   
   <target name="process-webpages" depends="resolve-pegdown">
-    <pathconvert pathsep="|" property="buildfiles">
+    <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
-      <mapper>
-        <scriptmapper language="javascript">
-          self.addMappedName((new java.io.File(source)).toURI());
-        </scriptmapper>
-      </mapper>
-    </pathconvert>
+    </makeurl>
     <!--
       The XSL input file is ignored completely, but XSL expects one to be given,
       so we pass ourself (${ant.file}) here. The list of module build.xmls is given
@@ -293,7 +288,7 @@
       <outputproperty name="version" value="4.0"/>
       <outputproperty name="encoding" value="UTF-8"/>
       <outputproperty name="indent" value="yes"/>
-      <param name="buildfiles" expression="${buildfiles}"/>
+      <param name="buildfiles" expression="${process-webpages.buildfiles}"/>
       <param name="version" expression="${version}"/>
     </xslt>
     

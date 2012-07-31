@@ -11,6 +11,10 @@ http://s.apache.org/luceneversions
 
 New features
 
+* LUCENE-4249: Changed the explanation of the PayloadTermWeight to use the
+  underlying PayloadFunction's explanation as the explanation
+  for the payload score. (Scott Smerchek via Robert Muir)
+  
 * LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
   iteration marks. (Robert Muir, Christian Moen)
 
@@ -25,6 +29,16 @@ New features
 * LUCENE-4227: Added DirectPostingsFormat, to hold all postings in
   memory as uncompressed simple arrays.  This uses a tremendous amount
   of RAM but gives good search performance gains.  (Mike McCandless)
+
+* LUCENE-2510, LUCENE-4044: Migrated Solr's Tokenizer-, TokenFilter-, and
+  CharFilterFactories to the lucene-analysis module. The API is still
+  experimental.  (Chris Male, Robert Muir, Uwe Schindler)
+
+* LUCENE-4230: When pulling a DocsAndPositionsEnum you can now
+  specify whether or not you require payloads (in addition to
+  offsets); turning one or both off may allow some codec
+  implementations to optimize the enum implementation.  (Robert Muir,
+  Mike McCandless)
 
 API Changes
 
@@ -55,6 +69,25 @@ API Changes
   at all. If you want to tweak things like positionIncrementGap and offsetGap,
   analyze the field with KeywordTokenizer instead.  (Grant Ingersoll, Robert Muir)
 
+* LUCENE-4250: Pass fieldName to the PayloadFunction explain method, so it
+  parallels with docScore and the default implementation is correct.
+  (Robert Muir)
+
+* LUCENE-3747: Support Unicode 6.1.0. (Steve Rowe)
+
+* LUCENE-3884: Moved ElisionFilter out of org.apache.lucene.analysis.fr
+  package into org.apache.lucene.analysis.util.  (Robert Muir)
+
+* LUCENE-4230: When pulling a DocsAndPositionsEnum you now pass an int
+  flags instead of the previous boolean needOffsets.  Currently
+  recognized flags are DocsAndPositionsEnum.FLAG_PAYLOADS and
+  DocsAndPositionsEnum.FLAG_OFFSETS (Robert Muir, Mike McCandless)
+
+* LUCENE-4273: When pulling a DocsEnum, you can pass an int flags
+  instead of the previous boolean needsFlags; consistent with the changes
+  for DocsAndPositionsEnum in LUCENE-4230. Currently othe only flag
+  is DocsEnum.FLAG_FREQS. (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.
@@ -67,6 +100,9 @@ Optimizations
   (Uwe Schindler)
 
 Bug Fixes
+
+* LUCENE-4109: BooleanQueries are not parsed correctly with the 
+  flexible query parser. (Karsten Rauch via Robert Muir)
 
 * LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,
   so that it works correctly with Analyzers that produce binary non-UTF-8 terms
@@ -95,6 +131,20 @@ Bug Fixes
 
 * LUCENE-4234: Exception when FacetsCollector is used with ScoreFacetRequest, 
   and the number of matching documents is too large. (Gilad Barkai via Shai Erera)
+
+* LUCENE-4245: Make IndexWriter#close() and MergeScheduler#close()
+  non-interruptible.  (Mark Miller, Uwe Schindler)
+
+* LUCENE-4190: restrict allowed filenames that a codec may create to
+  the patterns recognized by IndexFileNames.  This also fixes
+  IndexWriter to only delete files matching this pattern from an index
+  directory, to reduce risk when the wrong index path is accidentally
+  passed to IndexWriter (Robert Muir, Mike McCandless)
+
+Changes in Runtime Behavior
+
+* LUCENE-4109: Enable position increments in the flexible queryparser by default.
+  (Karsten Rauch via Robert Muir)
 
 Build
 

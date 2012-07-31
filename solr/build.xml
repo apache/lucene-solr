@@ -174,18 +174,18 @@
   <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
-    <license-check-macro dir="${basedir}">
+    <license-check-macro dir="${basedir}" licensedir="${common-solr.dir}/licenses">
       <additional-excludes>
         <!-- Exclude start.jar only (it'd be weird to have a license file there?) -->
         <exclude name="example/start.jar" />
         <exclude name="example/exampledocs/post.jar" />
-        <exclude name="example/work/**" />
+        <exclude name="example/solr-webapp/**" />
       </additional-excludes>
       <additional-filters>
-        <replaceregex pattern="/jetty([^/]+)$" replace="/jetty" flags="gi" />
-        <replaceregex pattern="/apache-solr-commons-csv-([^/]+)$" replace="/apache-solr-commons-csv" flags="gi" />
-        <replaceregex pattern="/slf4j-([^/]+)$" replace="/slf4j" flags="gi" />
-        <replaceregex pattern="/(bcmail|bcprov)-([^/]+)$" replace="/\1" flags="gi" />
+        <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
+        <replaceregex pattern="apache-solr-commons-csv-([^/]+)$" replace="apache-solr-commons-csv" flags="gi" />
+        <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
+        <replaceregex pattern="(bcmail|bcprov)-([^/]+)$" replace="\1" flags="gi" />
       </additional-filters>
     </license-check-macro>
   </target>
@@ -243,7 +243,7 @@
       <fileset dir="example">
         <include name="**/data/**/*" />
         <include name="webapps/**/*" />
-        <include name="work/**/*" />
+        <include name="solr-webapp/**/*" />
         <exclude name="**/.gitignore" />
       </fileset>
     </delete>

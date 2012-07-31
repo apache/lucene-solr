@@ -48,7 +48,8 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() {
-
+    zkServer = null;
+    zkDir = null;
   }
   
   @Override

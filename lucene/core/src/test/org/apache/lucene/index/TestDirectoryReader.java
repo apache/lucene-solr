@@ -97,13 +97,13 @@ public class TestDirectoryReader extends LuceneTestCase {
                                  te2.term(),
                                  MultiFields.getLiveDocs(mr2),
                                  null,
-                                 false);
+                                 0);
 
     TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator(null);
     te3.seekCeil(new BytesRef("wow"));
     td = _TestUtil.docs(random(), te3, MultiFields.getLiveDocs(mr3),
                         td,
-                        false);
+                        0);
     
     int ret = 0;
 
@@ -355,7 +355,7 @@ void assertTermDocsCount(String msg,
                                   new BytesRef(term.text()),
                                   MultiFields.getLiveDocs(reader),
                                   null,
-                                  false);
+                                  0);
   int count = 0;
   if (tdocs != null) {
     while(tdocs.nextDoc()!= DocIdSetIterator.NO_MORE_DOCS) {
@@ -631,8 +631,8 @@ public void testFilesOpenClose() throws IOException {
 
       while(enum1.next() != null) {
         assertEquals("Different terms", enum1.term(), enum2.next());
-        DocsAndPositionsEnum tp1 = enum1.docsAndPositions(liveDocs, null, false);
-        DocsAndPositionsEnum tp2 = enum2.docsAndPositions(liveDocs, null, false);
+        DocsAndPositionsEnum tp1 = enum1.docsAndPositions(liveDocs, null);
+        DocsAndPositionsEnum tp2 = enum2.docsAndPositions(liveDocs, null);
 
         while(tp1.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           assertTrue(tp2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

@@ -350,7 +350,6 @@ public abstract class LuceneTestCase extends Assert {
     .around(new TestRuleNoStaticHooksShadowing())
     .around(new TestRuleNoInstanceHooksOverrides())
     .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
-    .around(new TestRuleIcuHack())
     .around(classNameRule = new TestRuleStoreClassName())
     .around(new TestRuleReportUncaughtExceptions())
     .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv());

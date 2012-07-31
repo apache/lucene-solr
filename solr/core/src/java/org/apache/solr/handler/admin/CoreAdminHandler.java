@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -567,13 +568,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String cname = params.get(CoreAdminParams.CORE);
     boolean doPersist = false;
     NamedList<Object> status = new SimpleOrderedMap<Object>();
+    Map<String,Exception> allFailures = coreContainer.getCoreInitFailures();
     try {
       if (cname == null) {
         rsp.add("defaultCoreName", coreContainer.getDefaultCoreName());
         for (String name : coreContainer.getCoreNames()) {
           status.add(name, getCoreStatus(coreContainer, name));
         }
+        rsp.add("initFailures", allFailures);
       } else {
+        Map failures = allFailures.containsKey(cname)
+          ? Collections.singletonMap(cname, allFailures.get(cname))
+          : Collections.emptyMap();
+        rsp.add("initFailures", failures);
         status.add(cname, getCoreStatus(coreContainer, cname));
       }
       rsp.add("status", status);
@@ -658,7 +665,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
   protected void handleRequestRecoveryAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws IOException {
     final SolrParams params = req.getParams();
-    log.info("The leader requested that we recover");
+    log.info("It has been requested that we recover");
     String cname = params.get(CoreAdminParams.CORE);
     if (cname == null) {
       cname = "";
@@ -667,6 +674,15 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       core = coreContainer.getCore(cname);
       if (core != null) {
+        // try to publish as recovering right away
+        try {
+          coreContainer.getZkController().publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
+        } catch (KeeperException e) {
+          SolrException.log(log, "", e);
+        } catch (InterruptedException e) {
+          SolrException.log(log, "", e);
+        }
+        
         core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, cname);
       } else {
         SolrException.log(log, "Cound not find core to call recovery:" + cname);

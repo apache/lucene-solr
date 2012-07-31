@@ -357,20 +357,17 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       // TODO: reuse
       SimpleTVDocsEnum e = new SimpleTVDocsEnum();
-      e.reset(liveDocs, needsFreqs ? current.getValue().freq : -1);
+      e.reset(liveDocs, (flags & DocsEnum.FLAG_FREQS) == 0 ? 1 : current.getValue().freq);
       return e;
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
       SimpleTVPostings postings = current.getValue();
       if (postings.positions == null && postings.startOffsets == null) {
-        return null;
-      }
-      if (needsOffsets && (postings.startOffsets == null || postings.endOffsets == null)) {
         return null;
       }
       // TODO: reuse
@@ -507,12 +504,20 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int startOffset() {
-      return startOffsets[nextPos-1];
+      if (startOffsets == null) {
+        return -1;
+      } else {
+        return startOffsets[nextPos-1];
+      }
     }
 
     @Override
     public int endOffset() {
-      return endOffsets[nextPos-1];
+      if (endOffsets == null) {
+        return -1;
+      } else {
+        return endOffsets[nextPos-1];
+      }
     }
   }
 }

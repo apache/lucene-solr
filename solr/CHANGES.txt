@@ -34,6 +34,15 @@ Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.3.5
 
+Upgrading from Solr 4.0.0-ALPHA
+----------------------
+
+Solr is now much more strict about requiring that the uniqueKeyField feature 
+(if used) must refer to a field which is not multiValued.  If you upgrade from 
+an earlier version of Solr and see an error that your uniqueKeyField "can not 
+be configured to be multivalued" please add 'multiValued="false"' to the 
+<field /> declaration for your uniqueKeyField.  See SOLR-3682 for more details.
+
 Detailed Change List
 ----------------------
 
@@ -81,6 +90,24 @@ New Features
   already exist.  To assert that the document must exist, use the optimistic
   concurrency feature by specifying a _version_ of 1.  (yonik)
 
+* LUCENE-2510, LUCENE-4044: Migrated Solr's Tokenizer-, TokenFilter-, and
+  CharFilterFactories to the lucene-analysis module. To add new analysis
+  modules to Solr (like ICU, SmartChinese, Morfologik,...), just drop in
+  the JAR files from Lucene's binary distribution into your Solr instance's
+  lib folder. The factories are automatically made available with SPI.
+  (Chris Male, Robert Muir, Uwe Schindler)
+
+* SOLR-3634, SOLR-3635: CoreContainer and CoreAdminHandler will now remember 
+  and report back information about failures to initialize SolrCores.  These 
+  failures will be accessible from the web UI and CoreAdminHandler STATUS 
+  command until they are "reset" by creating/renaming a SolrCore with the 
+  same name.  (hossman, steffkes)
+
+* SOLR-1280: Added commented-out example of the new script update processor
+  to the example configuration.  See http://wiki.apache.org/solr/ScriptUpdateProcessor (ehatcher)
+
+* SOLR-3672: SimplePostTool: Improvements for posting files
+  Support for auto mode, recursive and wildcards (janhoy)
 
 Bug Fixes
 ----------------------
@@ -104,7 +131,8 @@ Bug Fixes
 * SOLR-3621: Fix rare concurrency issue when opening a new IndexWriter for replication or rollback.
   (Mark Miller)
 
-* SOLR-1781: Replication index directories not always cleaned up. (Terje Sten Bjerkseth, Mark Miller)
+* SOLR-1781: Replication index directories not always cleaned up. 
+  (Markus Jelsma, Terje Sten Bjerkseth, Mark Miller)
 
 * SOLR-3639: Update ZooKeeper to 3.3.5 for a variety of bug fixes. (Mark Miller)
 
@@ -134,6 +162,18 @@ Bug Fixes
 * SOLR-3623: Fixed inconsistent treatment of third-party dependencies for 
   solr contribs analysis-extras & uima (hossman) 
 
+* SOLR-3652: Fixed range faceting to error instead of looping infinitely 
+  when 'gap' is zero -- or effectively zero due to floating point arithmetic 
+  underflow. (hossman)
+
+* SOLR-3648: Fixed VelocityResponseWriter template loading in SolrCloud mode.
+  For the example configuration, this means /browse now works with SolrCloud.
+  (janhoy, ehatcher)
+
+* SOLR-3677: Fixed missleading error message in web ui to distinguish between 
+  no SolrCores loaded vs. no /admin/ handler available.
+  (hossman, steffkes)
+
 Other Changes
 ----------------------
 
@@ -162,6 +202,10 @@ Other Changes
 * SOLR-3215: Clone SolrInputDocument when distrib indexing so that update processors after
   the distrib update process do not process the document twice. (Mark Miller)
   
+* SOLR-3683: Improved error handling if an <analyzer> contains both an 
+  explicit class attribute, as well as nested factories. (hossman)
+
+* SOLR-3682: Fail to parse schema.xml if uniqueKeyField is multivalued (hossman)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
@@ -510,6 +554,11 @@ New Features
 * SOLR-3542: Add WeightedFragListBuilder for FVH and set it to default fragListBuilder
   in example solrconfig.xml. (Sebastian Lutze, koji)
 
+* SOLR-2396: Add ICUCollationField to contrib/analysis-extras, which is much 
+  more efficient than the Solr 3.x ICUCollationKeyFilterFactory, and also 
+  supports Locale-sensitive range queries.  (rmuir)
+
+
 Optimizations
 ----------------------
 
@@ -656,6 +705,10 @@ Bug Fixes
   parser or the strdist() function, as well as some minor improvements to 
   the hashCode implementation of {!bbox} and {!geofilt} queries.
   (hossman)
+
+* SOLR-3470: contrib/clustering: custom Carrot2 tokenizer and stemmer factories
+  are respected now (Stanislaw Osinski, Dawid Weiss)
+
 
 Other Changes
 ----------------------
@@ -842,6 +895,9 @@ Bug Fixes:
 
 * SOLR-3477: SOLR does not start up when no cores are defined (Tomás Fernández Löbbe via tommaso)
 
+* SOLR-3470: contrib/clustering: custom Carrot2 tokenizer and stemmer factories
+  are respected now (Stanislaw Osinski, Dawid Weiss)
+
 ==================  3.6.0  ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
@@ -983,6 +1039,16 @@ New Features
   no documents if the query parser returns null.  This also prevents an
   exception from being thrown by the default parser if "q" is missing. (yonik)
   SOLR-435: if q is "" then it's also acceptable. (dsmiley, hoss)
+
+* SOLR-2919: Added parametric tailoring options to ICUCollationKeyFilterFactory.
+  These can be used to customize range query/sort behavior, for example to
+  support numeric collation, ignore punctuation/whitespace, ignore accents but
+  not case, control whether upper/lowercase values are sorted first, etc.  (rmuir)
+
+* SOLR-2346: Add a chance to set content encoding explicitly via content type 
+  of stream for extracting request handler.  This is convenient when Tika's 
+  auto detector cannot detect encoding, especially the text file is too short 
+  to detect encoding. (koji)
 
 Optimizations
 ----------------------
@@ -1145,6 +1211,35 @@ Bug Fixes
 * SOLR-3316: Distributed grouping failed when rows parameter was set to 0 and 
   sometimes returned a wrong hit count as matches. (Cody Young, Martijn van Groningen)
 
+* SOLR-3107: contrib/langid: When using the LangDetect implementation of 
+  langid, set the random seed to 0, so that the same document is detected as 
+  the same language with the same probability every time.  
+  (Christian Moen via rmuir)
+
+* SOLR-2937: Configuring the number of contextual snippets used for 
+  search results clustering. The hl.snippets parameter is now respected
+  by the clustering plugin, can be overridden by carrot.summarySnippets
+  if needed (Stanislaw Osinski).
+
+* SOLR-2938: Clustering on multiple fields. The carrot.title and 
+  carrot.snippet can now take comma- or space-separated lists of
+  field names to cluster (Stanislaw Osinski).
+
+* SOLR-2939: Clustering of multilingual search results. The document's
+  language field be passed in the carrot.lang parameter, the carrot.lcmap
+  parameter enables mapping of language codes to ISO 639 (Stanislaw Osinski).
+
+* SOLR-2940: Passing values for custom Carrot2 fields to Clustering component. 
+  The custom field mapping are defined using the carrot.custom parameter 
+  (Stanislaw Osinski).
+
+* SOLR-2941: NullPointerException on clustering component initialization 
+  when schema does not have a unique key field (Stanislaw Osinski).
+
+* SOLR-2942: ClassCastException when passing non-textual fields to  
+  clustering component (Stanislaw Osinski).
+
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
@@ -1195,6 +1290,12 @@ Other Changes
   1.5-compatible carrot2-core-3.5.0.1.jar (hosted on the Maven Central
   repository).  Also updated dependencies jackson-core-asl and
   jackson-mapper-asl (both v1.5.2 -> v1.7.4).  (Dawid Weiss, Steve Rowe)
+
+* SOLR-3295: netcdf jar is excluded from the binary release (and disabled in 
+  ivy.xml) because it requires java 6. If you want to parse this content with 
+  extracting request handler and are willing to use java 6, just add the jar. 
+  (rmuir)
+
 
 Build
 ----------------------
@@ -1249,6 +1350,9 @@ New Features
 * SOLR-2578: ReplicationHandler's backup command now supports a 'numberToKeep' 
   request param that can be used to delete all but the most recent N backups.
   (James Dyer via hossman)
+
+* SOLR-2839: Add alternative implementation to contrib/langid supporting 53 
+  languages, based on http://code.google.com/p/language-detection/ (rmuir)
 
 Optimizations
 ----------------------
@@ -1325,6 +1429,9 @@ Bug Fixes
 * SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
 
 * SOLR-2591: Remove commitLockTimeout option from solrconfig.xml (Luca Cavanna via Martijn van Groningen)
+
+* SOLR-2746: Upgraded UIMA dependencies from *-2.3.1-SNAPSHOT.jar to *-2.3.1.jar.
+
 
 ==================  3.4.0  ==================
 
@@ -1472,11 +1579,20 @@ Bug Fixes
   failed due to sort by function changes introduced in SOLR-1297
   (Mitsu Hadeishi, hossman)
 
+* SOLR-2706: contrib/clustering: The carrot.lexicalResourcesDir parameter 
+  now works with absolute directories (Stanislaw Osinski)
+  
+* SOLR-2692: contrib/clustering: Typo in param name fixed: "carrot.fragzise" 
+  changed to "carrot.fragSize" (Stanislaw Osinski).
+
  Other Changes
 ----------------------
 
 * SOLR-2629: Eliminate deprecation warnings in some JSPs.
   (Bernd Fehling, hossman)
+
+* SOLR-2743: Remove commons logging from contrib/extraction. (koji)
+
 
 Build
 ----------------------
@@ -1549,6 +1665,13 @@ New Features
 
 * SOLR-2610 -- Add an option to delete index through CoreAdmin UNLOAD action (shalin)
 
+* SOLR-2480: Add ignoreTikaException flag to the extraction request handler so 
+  that users can ignore TikaException but index meta data. 
+  (Shinichiro Abe, koji)
+
+* SOLR-2582: Use uniqueKey for error log in UIMAUpdateRequestProcessor.
+  (Tommaso Teofili via koji)
+
 Optimizations
 ----------------------
 
@@ -1567,6 +1690,12 @@ Bug Fixes
   Separately, an additional spellcheck.maxCollationEvaluations (default=10000)
   parameter is added to avoid excessive CPU time in extreme cases (e.g. long
   queries with many misspelled words).  (James Dyer via rmuir)
+
+* SOLR-2579: UIMAUpdateRequestProcessor ignore error fails if text.length() < 100.
+  (Elmer Garduno via koji)
+
+* SOLR-2581: UIMAToSolrMapper wrongly instantiates Type with reflection.
+  (Tommaso Teofili via koji)
 
 Other Changes
 ----------------------
@@ -1607,6 +1736,10 @@ Upgrading from Solr 3.1
   with update.chain rather than update.processor. The latter still works,
   but has been deprecated.
 
+* <uimaConfig/> just beneath <config> ... </config> is no longer supported.
+  It should move to UIMAUpdateRequestProcessorFactory setting.
+  See contrib/uima/README.txt for more details. (SOLR-2436)
+
 Detailed Change List
 ----------------------
 
@@ -1626,6 +1759,18 @@ New Features
 * SOLR-1915: DebugComponent now supports using a NamedList to model
   Explanation objects in it's responses instead of
   Explanation.toString  (hossman)
+
+* SOLR-2448: Search results clustering updates: bisecting k-means
+  clustering algorithm added, loading of Carrot2 stop words from
+  <solr.home>/conf/carrot2 (SOLR-2449), using Solr's stopwords.txt
+  for clustering (SOLR-2450), output of cluster scores (SOLR-2505)
+  (Stanislaw Osinski, Dawid Weiss).
+
+* SOLR-2503: extend UIMAUpdateRequestProcessorFactory mapping function to 
+  map feature value to dynamicField. (koji)
+
+* SOLR-2512: add ignoreErrors flag to UIMAUpdateRequestProcessorFactory so 
+  that users can ignore exceptions in AE. (Tommaso Teofili, koji)
 
 Optimizations
 ----------------------
@@ -1712,6 +1857,12 @@ Other Changes
 
 * SOLR-2528: Remove default="true" from HtmlEncoder in example solrconfig.xml,
   because html encoding confuses non-ascii users. (koji)
+
+* SOLR-2387: add mock annotators for improved testing in contrib/uima,
+  (Tommaso Teofili via rmuir)
+
+* SOLR-2436: move uimaConfig to under the uima's update processor in 
+  solrconfig.xml.  (Tommaso Teofili, koji)
 
 Build
 ----------------------
@@ -1970,6 +2121,26 @@ New Features
 
 * SOLR-1057: Add PathHierarchyTokenizerFactory. (ryan, koji)
 
+* SOLR-1804: Re-enabled clustering component on trunk, updated to latest 
+  version of Carrot2.  No more LGPL run-time dependencies.  This release of 
+  C2 also does not have a specific Lucene dependency.  
+  (Stanislaw Osinski, gsingers)
+
+* SOLR-2282: Add distributed search support for search result clustering.
+  (Brad Giaccio, Dawid Weiss, Stanislaw Osinski, rmuir, koji)
+
+* SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
+  tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-2211,LUCENE-2763: Added UAX29URLEmailTokenizerFactory, which implements
+  UAX#29, a unicode algorithm with good results for most languages, as well as
+  URL and E-mail tokenization according to the relevant RFCs.
+  (Tom Burton-West via rmuir)
+
+* SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
+
 Optimizations
 ----------------------
 
@@ -1990,6 +2161,10 @@ Optimizations
   yield speedups over 3x. (yonik)
 
 * SOLR-2046: add common functions to scripts-util. (koji)
+
+* SOLR-1684: Switch clustering component to use the 
+  SolrIndexSearcher.doc(int, Set<String>) method b/c it can use the document 
+  cache (gsingers)
 
 Bug Fixes
 ----------------------
@@ -2245,6 +2420,15 @@ Bug Fixes
 * SOLR-2192: StreamingUpdateSolrServer.blockUntilFinished was not
   thread safe and could throw an exception. (yonik)
 
+* SOLR-1692: Fix bug in clustering component relating to carrot.produceSummary 
+  option (gsingers)
+
+* SOLR-1756: The date.format setting for extraction request handler causes 
+  ClassCastException when enabled and the config code that parses this setting 
+  does not properly use the same iterator instance. 
+  (Christoph Brill, Mark Miller)
+
+
 Other Changes
 ----------------------
 
@@ -2372,6 +2556,10 @@ Other Changes
 * SOLR-141: Errors and Exceptions are formated by ResponseWriter.
   (Mike Sokolov, Rich Cariens, Daniel Naber, ryan)
 
+* SOLR-1902: Upgraded to Tika 0.8 and changed deprecated parse call
+
+* SOLR-1813: Add ICU4j to contrib/extraction libs and add tests for Arabic 
+  extraction (Robert Muir via gsingers)
 
 Build
 ----------------------
@@ -2742,6 +2930,11 @@ New Features
 84. SOLR-1449: Add <lib> elements to solrconfig.xml to specifying additional
     classpath directories and regular expressions. (hossman via yonik)
 
+85. SOLR-1128: Added metadata output to extraction request handler "extract 
+    only" option.  (gsingers)
+
+86. SOLR-1274: Added text serialization output for extractOnly 
+    (Peter Wolanin, gsingers)  
 
 Optimizations
 ----------------------
@@ -3155,6 +3348,14 @@ Other Changes
     broken with it anyway.  (Mark Miller)
 
 50. SOLR-1357 SolrInputDocument cannot process dynamic fields (Lars Grote via noble)
+
+51. SOLR-1075: Upgrade to Tika 0.3.  See http://www.apache.org/dist/lucene/tika/CHANGES-0.3.txt (gsingers)
+
+52. SOLR-1310: Upgrade to Tika 0.4. Note there are some differences in 
+    detecting Languages now in extracting request handler.
+    See http://www.lucidimagination.com/search/document/d6f1899a85b2a45c/vote_apache_tika_0_4_release_candidate_2#d6f1899a85b2a45c
+    for discussion on language detection.
+    See http://www.apache.org/dist/lucene/tika/CHANGES-0.4.txt. (gsingers)
 
 Build
 ----------------------

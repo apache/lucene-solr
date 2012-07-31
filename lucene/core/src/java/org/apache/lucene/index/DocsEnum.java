@@ -27,6 +27,10 @@ import org.apache.lucene.util.AttributeSource;
  *  any of the per-doc methods. */
 public abstract class DocsEnum extends DocIdSetIterator {
 
+  /** Flag to pass to {@link TermsEnum#docs(Bits,DocsEnum,int)}
+   *  if you require term frequencies in the returned enum. */
+  public static final int FLAG_FREQS = 0x1;
+
   private AttributeSource atts = null;
 
   /** Returns term frequency in the current document.  Do

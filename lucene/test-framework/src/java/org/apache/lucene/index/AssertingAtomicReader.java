@@ -125,7 +125,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
 
       // TODO: should we give this thing a random to be super-evil,
@@ -133,12 +133,12 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       if (reuse instanceof AssertingDocsEnum) {
         reuse = ((AssertingDocsEnum) reuse).in;
       }
-      DocsEnum docs = super.docs(liveDocs, reuse, needsFreqs);
+      DocsEnum docs = super.docs(liveDocs, reuse, flags);
       return docs == null ? null : new AssertingDocsEnum(docs);
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
       assert state == State.POSITIONED: "docsAndPositions(...) called on unpositioned TermsEnum";
 
       // TODO: should we give this thing a random to be super-evil,
@@ -146,7 +146,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       if (reuse instanceof AssertingDocsAndPositionsEnum) {
         reuse = ((AssertingDocsAndPositionsEnum) reuse).in;
       }
-      DocsAndPositionsEnum docs = super.docsAndPositions(liveDocs, reuse, needsOffsets);
+      DocsAndPositionsEnum docs = super.docsAndPositions(liveDocs, reuse, flags);
       return docs == null ? null : new AssertingDocsAndPositionsEnum(docs);
     }
 

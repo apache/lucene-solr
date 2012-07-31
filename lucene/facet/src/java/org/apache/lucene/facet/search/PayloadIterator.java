@@ -53,7 +53,7 @@ public class PayloadIterator {
     this.buffer = buffer;
     // TODO (Facet): avoid Multi*?
     Bits liveDocs = MultiFields.getLiveDocs(indexReader);
-    this.tp = MultiFields.getTermPositionsEnum(indexReader, liveDocs, term.field(), term.bytes(), false);
+    this.tp = MultiFields.getTermPositionsEnum(indexReader, liveDocs, term.field(), term.bytes(), DocsAndPositionsEnum.FLAG_PAYLOADS);
   }
 
   /**

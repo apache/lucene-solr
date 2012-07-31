@@ -20,16 +20,20 @@ package org.apache.solr.handler.admin;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.SolrTestCaseJ4;
 
+import java.util.Map;
 import java.io.File;
 import java.io.IOException;
 
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.SolrTestCaseJ4;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXException;
@@ -94,7 +98,49 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
        ,"/solr/cores/core[@name='props']/property[@name='hoss' and @value='man']"
        ,"/solr/cores/core[@name='props']/property[@name='foo' and @value='baz']"
        );
-    
+
+    // attempt to create a bogus core and confirm failure
+    try {
+      resp = new SolrQueryResponse();
+      admin.handleRequestBody
+        (req(CoreAdminParams.ACTION, 
+             CoreAdminParams.CoreAdminAction.CREATE.toString(),
+             CoreAdminParams.NAME, "bogus_dir_core",
+             CoreAdminParams.INSTANCE_DIR, "dir_does_not_exist_127896"),
+         resp);
+      fail("bogus collection created ok");
+    } catch (SolrException e) {
+      // :NOOP:
+      // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could asert something useful here
+    }
+
+    // check specificly for status of the failed core name
+    resp = new SolrQueryResponse();
+    admin.handleRequestBody
+      (req(CoreAdminParams.ACTION, 
+           CoreAdminParams.CoreAdminAction.STATUS.toString(),
+           CoreAdminParams.CORE, "bogus_dir_core"),
+         resp);
+    Map<String,Exception> failures = 
+      (Map<String,Exception>) resp.getValues().get("initFailures");
+    assertNotNull("core failures is null", failures);
+
+    NamedList<Object> status = 
+      (NamedList<Object>)resp.getValues().get("status");
+    assertNotNull("core status is null", status);
+
+    assertEquals("wrong number of core failures", 1, failures.size());
+    Exception fail = failures.get("bogus_dir_core");
+    assertNotNull("null failure for test core", fail);
+    assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
+               0 < fail.getMessage().indexOf("dir_does_not_exist"));
+
+    assertEquals("bogus_dir_core status isn't empty",
+                 0, ((NamedList)status.get("bogus_dir_core")).size());
+
+               
+    // :TODO: because of SOLR-3665 we can't ask for status from all cores
+
   }
 
   

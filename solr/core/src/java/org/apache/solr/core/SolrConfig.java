@@ -436,9 +436,7 @@ public class SolrConfig extends Config {
    */
   public List<PluginInfo> getPluginInfos(String  type){
     List<PluginInfo> result = pluginStore.get(type);
-    return result == null ?
-            (List<PluginInfo>) Collections.EMPTY_LIST:
-            result; 
+    return result == null ? Collections.<PluginInfo>emptyList(): result; 
   }
   public PluginInfo getPluginInfo(String  type){
     List<PluginInfo> result = pluginStore.get(type);
@@ -446,29 +444,31 @@ public class SolrConfig extends Config {
   }
   
   private void initLibs() {
-    
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
-    if (nodes==null || nodes.getLength()==0)
-      return;
+    if (nodes == null || nodes.getLength() == 0) return;
     
     log.info("Adding specified lib dirs to ClassLoader");
     
-     for (int i=0; i<nodes.getLength(); i++) {
-       Node node = nodes.item(i);
-
-       String baseDir = DOMUtil.getAttr(node, "dir");
-       String path = DOMUtil.getAttr(node, "path");
-       if (null != baseDir) {
-         // :TODO: add support for a simpler 'glob' mutually eclusive of regex
-         String regex = DOMUtil.getAttr(node, "regex");
-         FileFilter filter = (null == regex) ? null : new RegexFileFilter(regex);
-         getResourceLoader().addToClassLoader(baseDir, filter);
-       } else if (null != path) {
-         getResourceLoader().addToClassLoader(path);
-       } else {
-         throw new RuntimeException
-           ("lib: missing mandatory attributes: 'dir' or 'path'");
-       }
-     }
+    try {
+      for (int i = 0; i < nodes.getLength(); i++) {
+        Node node = nodes.item(i);
+        
+        String baseDir = DOMUtil.getAttr(node, "dir");
+        String path = DOMUtil.getAttr(node, "path");
+        if (null != baseDir) {
+          // :TODO: add support for a simpler 'glob' mutually eclusive of regex
+          String regex = DOMUtil.getAttr(node, "regex");
+          FileFilter filter = (null == regex) ? null : new RegexFileFilter(regex);
+          getResourceLoader().addToClassLoader(baseDir, filter);
+        } else if (null != path) {
+          getResourceLoader().addToClassLoader(path);
+        } else {
+          throw new RuntimeException(
+              "lib: missing mandatory attributes: 'dir' or 'path'");
+        }
+      }
+    } finally {
+      getResourceLoader().reloadLuceneSPI();
+    }
   }
 }
