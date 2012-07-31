@@ -217,7 +217,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       IndexReaderContext topReaderContext = reader.getTopReaderContext();
       for (AtomicReaderContext context : topReaderContext.leaves()) {
         int maxDoc = context.reader().maxDoc();
-        DocsEnum docsEnum = _TestUtil.docs(random(), context.reader(), fieldName, bytes, null, null, true);
+        DocsEnum docsEnum = _TestUtil.docs(random(), context.reader(), fieldName, bytes, null, null, DocsEnum.FLAG_FREQS);
         if (findNext(freqInDoc, context.docBase, context.docBase + maxDoc) == Integer.MAX_VALUE) {
           assertNull(docsEnum);
           continue;
@@ -327,7 +327,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     AtomicReader r = getOnlySegmentReader(reader);
-    DocsEnum disi = _TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, null, false);
+    DocsEnum disi = _TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, null, 0);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -335,7 +335,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator(null);
     assertTrue(te.seekExact(new BytesRef("bar"), true));
-    disi = _TestUtil.docs(random(), te, null, disi, false);
+    disi = _TestUtil.docs(random(), te, null, disi, 0);
     docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

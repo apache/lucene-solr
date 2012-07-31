@@ -194,17 +194,14 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
  
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-      if (needsFreqs && indexOptions == IndexOptions.DOCS_ONLY) {
-        return null;
-      }
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       SimpleTextDocsEnum docsEnum;
       if (reuse != null && reuse instanceof SimpleTextDocsEnum && ((SimpleTextDocsEnum) reuse).canReuse(SimpleTextFieldsReader.this.in)) {
         docsEnum = (SimpleTextDocsEnum) reuse;
       } else {
         docsEnum = new SimpleTextDocsEnum();
       }
-      return docsEnum.reset(docsStart, liveDocs, !needsFreqs);
+      return docsEnum.reset(docsStart, liveDocs, indexOptions == IndexOptions.DOCS_ONLY);
     }
 
     @Override
@@ -254,6 +251,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       in.seek(fp);
       this.omitTF = omitTF;
       docID = -1;
+      tf = 1;
       return this;
     }
 
@@ -264,7 +262,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public int freq() throws IOException {
-      assert !omitTF;
       return tf;
     }
 

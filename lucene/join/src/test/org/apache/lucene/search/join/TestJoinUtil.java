@@ -682,7 +682,7 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
         for (RandomDoc otherSideDoc : otherMatchingDocs) {
-          DocsEnum docsEnum = MultiFields.getTermDocsEnum(topLevelReader, MultiFields.getLiveDocs(topLevelReader), "id", new BytesRef(otherSideDoc.id), false);
+          DocsEnum docsEnum = MultiFields.getTermDocsEnum(topLevelReader, MultiFields.getLiveDocs(topLevelReader), "id", new BytesRef(otherSideDoc.id), 0);
           assert docsEnum != null;
           int doc = docsEnum.nextDoc();
           expectedResult.set(doc);

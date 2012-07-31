@@ -116,9 +116,19 @@ public abstract class AtomicReader extends IndexReader {
   }
 
   /** Returns {@link DocsEnum} for the specified field &
-   *  term.  This may return null, if either the field or
+   *  term.  This will return null if either the field or
    *  term does not exist. */
-  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, boolean needsFreqs) throws IOException {
+  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
+    return termDocsEnum(liveDocs, field, term, DocsEnum.FLAG_FREQS);
+  }
+
+  /** Returns {@link DocsEnum} for the specified field &
+   *  term, with control over whether freqs are required.
+   *  Some codecs may be able to optimize their
+   *  implementation when freqs are not required. This will
+   *  return null if the field or term does not
+   *  exist.  See {@link TermsEnum#docs(Bits,DocsEnum,int)}. */
+  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, int flags) throws IOException {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
@@ -127,7 +137,7 @@ public abstract class AtomicReader extends IndexReader {
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
         if (termsEnum.seekExact(term, true)) {
-          return termsEnum.docs(liveDocs, null, needsFreqs);
+          return termsEnum.docs(liveDocs, null, flags);
         }
       }
     }
@@ -135,7 +145,7 @@ public abstract class AtomicReader extends IndexReader {
   }
   
   /** Returns {@link DocsAndPositionsEnum} for the specified
-   *  field & term.  This will return null if either the
+   *  field & term.  This will return null if the
    *  field or term does not exist or positions weren't indexed. 
    *  @see #termPositionsEnum(Bits, String, BytesRef, int) */
   public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
@@ -147,7 +157,7 @@ public abstract class AtomicReader extends IndexReader {
    *  field & term, with control over whether offsets and payloads are
    *  required.  Some codecs may be able to optimize their
    *  implementation when offsets and/or payloads are not required.
-   *  This will return null, if either the field or term
+   *  This will return null if the field or term
    *  does not exist or positions weren't indexed.  See
    *  {@link TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)}. */
   public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, int flags) throws IOException {

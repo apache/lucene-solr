@@ -83,6 +83,11 @@ API Changes
   recognized flags are DocsAndPositionsEnum.FLAG_PAYLOADS and
   DocsAndPositionsEnum.FLAG_OFFSETS (Robert Muir, Mike McCandless)
 
+* LUCENE-4273: When pulling a DocsEnum, you can pass an int flags
+  instead of the previous boolean needsFlags; consistent with the changes
+  for DocsAndPositionsEnum in LUCENE-4230. Currently othe only flag
+  is DocsEnum.FLAG_FREQS. (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.

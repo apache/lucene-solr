@@ -755,8 +755,7 @@ public class CheckIndex {
         status.totFreq += docFreq;
         sumDocFreq += docFreq;
         
-        docs = termsEnum.docs(liveDocs, docs, false);
-        docsAndFreqs = termsEnum.docs(liveDocs, docsAndFreqs, true);
+        docs = termsEnum.docs(liveDocs, docs);
         postings = termsEnum.docsAndPositions(liveDocs, postings);
         
         if (hasOrd) {
@@ -778,25 +777,17 @@ public class CheckIndex {
         status.termCount++;
         
         final DocsEnum docs2;
-        final DocsEnum docsAndFreqs2;
         final boolean hasPositions;
-        final boolean hasFreqs;
-        final boolean hasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+        // if we are checking vectors, we have freqs implicitly
+        final boolean hasFreqs = isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+        // if we are checking vectors, offsets are a free-for-all anyway
+        final boolean hasOffsets = isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
         if (postings != null) {
           docs2 = postings;
-          docsAndFreqs2 = postings;
           hasPositions = true;
-          hasFreqs = true;
-        } else if (docsAndFreqs != null) {
-          docs2 = docsAndFreqs;
-          docsAndFreqs2 = docsAndFreqs;
-          hasPositions = false;
-          hasFreqs = true;
         } else {
           docs2 = docs;
-          docsAndFreqs2 = null;
           hasPositions = false;
-          hasFreqs = false;
         }
         
         int lastDoc = -1;
@@ -810,7 +801,7 @@ public class CheckIndex {
           visitedDocs.set(doc);
           int freq = -1;
           if (hasFreqs) {
-            freq = docsAndFreqs2.freq();
+            freq = docs2.freq();
             if (freq <= 0) {
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
             }
@@ -876,12 +867,12 @@ public class CheckIndex {
         }
         
         final long totalTermFreq2 = termsEnum.totalTermFreq();
-        final boolean hasTotalTermFreq = postings != null && totalTermFreq2 != -1;
+        final boolean hasTotalTermFreq = hasFreqs && totalTermFreq2 != -1;
         
         // Re-count if there are deleted docs:
         if (liveDocs != null) {
           if (hasFreqs) {
-            final DocsEnum docsNoDel = termsEnum.docs(null, docsAndFreqs, true);
+            final DocsEnum docsNoDel = termsEnum.docs(null, docsAndFreqs);
             docCount = 0;
             totalTermFreq = 0;
             while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -890,7 +881,7 @@ public class CheckIndex {
               totalTermFreq += docsNoDel.freq();
             }
           } else {
-            final DocsEnum docsNoDel = termsEnum.docs(null, docs, false);
+            final DocsEnum docsNoDel = termsEnum.docs(null, docs, 0);
             docCount = 0;
             totalTermFreq = -1;
             while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -982,7 +973,7 @@ public class CheckIndex {
         } else {
           for(int idx=0;idx<7;idx++) {
             final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-            docs = termsEnum.docs(liveDocs, docs, false);
+            docs = termsEnum.docs(liveDocs, docs, 0);
             final int docID = docs.advance(skipDocID);
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
@@ -1052,7 +1043,7 @@ public class CheckIndex {
           }
           
           int expectedDocFreq = termsEnum.docFreq();
-          DocsEnum d = termsEnum.docs(null, null, false);
+          DocsEnum d = termsEnum.docs(null, null, 0);
           int docFreq = 0;
           while (d.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             docFreq++;
@@ -1093,7 +1084,7 @@ public class CheckIndex {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
-              docs = termsEnum.docs(liveDocs, docs, false);
+              docs = termsEnum.docs(liveDocs, docs, 0);
               if (docs == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
@@ -1111,7 +1102,7 @@ public class CheckIndex {
               }
               
               totDocFreq += termsEnum.docFreq();
-              docs = termsEnum.docs(null, docs, false);
+              docs = termsEnum.docs(null, docs, 0);
               if (docs == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
@@ -1440,6 +1431,7 @@ public class CheckIndex {
             if (crossCheckTermVectors) {
               Terms terms = tfv.terms(field);
               termsEnum = terms.iterator(termsEnum);
+              final boolean postingsHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
 
               Terms postingsTerms = postingsFields.terms(field);
               if (postingsTerms == null) {
@@ -1451,30 +1443,15 @@ public class CheckIndex {
               while ((term = termsEnum.next()) != null) {
                 
                 final boolean hasProx;
-                final boolean hasFreqs;
 
-                // TODO: really we need a reflection/query
-                // API so we can just ask what was indexed
-                // instead of "probing"...
-
-                // TODO: cleanup:
-
-                // Try offsets:
+                // Try positions:
                 postings = termsEnum.docsAndPositions(null, postings);
                 if (postings == null) {
                   hasProx = false;
                   // Try docIDs & freqs:
-                  docs = termsEnum.docs(null, docs, true);
-                  if (docs == null) {
-                    // OK, only docIDs:
-                    hasFreqs = false;
-                    docs = termsEnum.docs(null, docs, false);
-                  } else {
-                      hasFreqs = true;
-                  }
+                  docs = termsEnum.docs(null, docs);
                 } else {
                   hasProx = true;
-                  hasFreqs = true;
                 }
 
                 final DocsEnum docs2;
@@ -1487,25 +1464,16 @@ public class CheckIndex {
                 }
 
                 final DocsEnum postingsDocs2;
-                final boolean postingsHasFreq;
                 if (!postingsTermsEnum.seekExact(term, true)) {
                   throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                 }
                 postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings);
                 if (postingsPostings == null) {
                   // Term vectors were indexed w/ pos but postings were not
-                  postingsDocs = postingsTermsEnum.docs(null, postingsDocs, true);
+                  postingsDocs = postingsTermsEnum.docs(null, postingsDocs);
                   if (postingsDocs == null) {
-                    postingsHasFreq = false;
-                    postingsDocs = postingsTermsEnum.docs(null, postingsDocs, false);
-                    if (postingsDocs == null) {
-                      throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
-                    }
-                  } else {
-                      postingsHasFreq = true;
+                    throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                   }
-                } else {
-                  postingsHasFreq = true;
                 }
 
                 if (postingsPostings != null) {
@@ -1525,7 +1493,7 @@ public class CheckIndex {
                   throw new RuntimeException("vector for doc " + j + " didn't return docID=0: got docID=" + doc);
                 }
 
-                if (hasFreqs) {
+                if (postingsHasFreq) {
                   final int tf = docs2.freq();
                   if (postingsHasFreq && postingsDocs2.freq() != tf) {
                     throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());

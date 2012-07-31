@@ -88,7 +88,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     // Obtain facets results and hand-test them
     assertCorrectResults(facetsCollector);
 
-    DocsEnum td = _TestUtil.docs(random(), ir, "$facets", new BytesRef("$fulltree$"), MultiFields.getLiveDocs(ir), null, false);
+    DocsEnum td = _TestUtil.docs(random(), ir, "$facets", new BytesRef("$fulltree$"), MultiFields.getLiveDocs(ir), null, 0);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     tr.close();
@@ -182,7 +182,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   }
 
   private void assertPostingListExists(String field, String text, IndexReader ir) throws IOException {
-    DocsEnum de = _TestUtil.docs(random(), ir, field, new BytesRef(text), null, null, false);
+    DocsEnum de = _TestUtil.docs(random(), ir, field, new BytesRef(text), null, null, 0);
     assertTrue(de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
   }
 

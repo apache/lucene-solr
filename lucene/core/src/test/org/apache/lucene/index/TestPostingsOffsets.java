@@ -208,7 +208,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     // check that other fields (without offsets) work correctly
     
     for (int i = 0; i < numDocs; i++) {
-      DocsEnum dp = MultiFields.getTermDocsEnum(reader, null, "id", new BytesRef("" + i), false);
+      DocsEnum dp = MultiFields.getTermDocsEnum(reader, null, "id", new BytesRef("" + i), 0);
       assertEquals(i, dp.nextDoc());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
     }
@@ -301,7 +301,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       for(String term : terms) {
         //System.out.println("  term=" + term);
         if (termsEnum.seekExact(new BytesRef(term), random().nextBoolean())) {
-          docs = termsEnum.docs(null, docs, true);
+          docs = termsEnum.docs(null, docs);
           assertNotNull(docs);
           int doc;
           //System.out.println("    doc/freq");

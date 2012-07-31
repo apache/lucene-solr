@@ -341,7 +341,7 @@ class JoinQuery extends Query {
         if (freq < minDocFreqFrom) {
           fromTermDirectCount++;
           // OK to skip liveDocs, since we check for intersection with docs matching query
-          fromDeState.docsEnum = fromDeState.termsEnum.docs(null, fromDeState.docsEnum, false);
+          fromDeState.docsEnum = fromDeState.termsEnum.docs(null, fromDeState.docsEnum, 0);
           DocsEnum docsEnum = fromDeState.docsEnum;
 
           if (docsEnum instanceof MultiDocsEnum) {
@@ -406,7 +406,7 @@ class JoinQuery extends Query {
               toTermDirectCount++;
 
               // need to use liveDocs here so we don't map to any deleted ones
-              toDeState.docsEnum = toDeState.termsEnum.docs(toDeState.liveDocs, toDeState.docsEnum, false);
+              toDeState.docsEnum = toDeState.termsEnum.docs(toDeState.liveDocs, toDeState.docsEnum, 0);
               DocsEnum docsEnum = toDeState.docsEnum;              
 
               if (docsEnum instanceof MultiDocsEnum) {

@@ -196,7 +196,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
       indexReaderLock.readLock().lock();
       // TODO (Facet): avoid Multi*?
       Bits liveDocs = MultiFields.getLiveDocs(indexReader);
-      DocsEnum docs = MultiFields.getTermDocsEnum(indexReader, liveDocs, Consts.FULL, new BytesRef(path), false);
+      DocsEnum docs = MultiFields.getTermDocsEnum(indexReader, liveDocs, Consts.FULL, new BytesRef(path), 0);
       if (docs != null && docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         ret = docs.docID();
       }
