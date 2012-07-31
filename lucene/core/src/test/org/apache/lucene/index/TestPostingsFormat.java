@@ -557,7 +557,7 @@ public class TestPostingsFormat extends LuceneTestCase {
         if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
           prevDocsEnum = threadState.reuseDocsEnum;
         }
-        threadState.reuseDocsEnum = termsEnum.docs(liveDocs, prevDocsEnum, doCheckFreqs);
+        threadState.reuseDocsEnum = termsEnum.docs(liveDocs, prevDocsEnum, doCheckFreqs ? DocsEnum.FLAG_FREQS : 0);
         docsEnum = threadState.reuseDocsEnum;
         docsAndPositionsEnum = null;
       }

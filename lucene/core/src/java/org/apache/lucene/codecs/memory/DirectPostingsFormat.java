@@ -316,7 +316,7 @@ public class DirectPostingsFormat extends PostingsFormat {
         if (hasPos) {
           docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
         } else {
-          docsEnum = termsEnum.docs(null, docsEnum, hasFreq);
+          docsEnum = termsEnum.docs(null, docsEnum);
         }
 
         final TermAndSkip ent;
@@ -781,11 +781,7 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
-        if (needsFreqs && !hasFreq) {
-          return null;
-        }
-
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
         // TODO: implement reuse, something like Pulsing:
         // it's hairy!
 
@@ -1381,11 +1377,7 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
-        if (needsFreqs && !hasFreq) {
-          return null;
-        }
-
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
         // TODO: implement reuse, something like Pulsing:
         // it's hairy!
 
@@ -1501,7 +1493,6 @@ public class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int freq() {
-      assert false;
       return 1;
     }
 
@@ -1876,7 +1867,11 @@ public class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int freq() {
-      return freqs[upto];
+      if (freqs == null) {
+        return 1;
+      } else {
+        return freqs[upto];
+      }
     }
 
     @Override

@@ -138,20 +138,29 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  deleted documents into account. */
   public abstract long totalTermFreq() throws IOException;
 
-  // TODO: cutover to flags / make needsFreqs "a hint" / add
-  // default w/ needsFreqs=true
   /** Get {@link DocsEnum} for the current term.  Do not
    *  call this when the enum is unpositioned.  This method
-   *  may return null (if needsFreqs is true but freqs were
-   *  not indexed for this field).
+   *  will not return null.
+   *  
+   * @param liveDocs unset bits are documents that should not
+   * be returned
+   * @param reuse pass a prior DocsEnum for possible reuse */
+  public final DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+    return docs(liveDocs, reuse, DocsEnum.FLAG_FREQS);
+  }
+
+  /** Get {@link DocsEnum} for the current term, with
+   *  control over whether freqs are required.  Do not
+   *  call this when the enum is unpositioned.  This method
+   *  will not return null.
    *  
    * @param liveDocs unset bits are documents that should not
    * be returned
    * @param reuse pass a prior DocsEnum for possible reuse
-   * @param needsFreqs true if the caller intends to call
-   * {@link DocsEnum#freq}.  If you pass false you must not
-   * call {@link DocsEnum#freq} in the returned DocsEnum. */
-  public abstract DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException;
+   * @param flags specifies which optional per-document values
+   *        you require; see {@link DocsEnum#FLAG_FREQS} 
+   * @see #docs(Bits, DocsEnum, int) */
+  public abstract DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException;
 
   /** Get {@link DocsAndPositionsEnum} for the current term.
    *  Do not call this when the enum is unpositioned.  This
@@ -240,7 +249,7 @@ public abstract class TermsEnum implements BytesRefIterator {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
       throw new IllegalStateException("this method should never be called");
     }
       

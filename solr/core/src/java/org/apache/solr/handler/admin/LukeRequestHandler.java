@@ -390,7 +390,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       docsEnum = reader.termDocsEnum(reader.getLiveDocs(),
           term.field(),
           new BytesRef(term.text()),
-          false);
+          0);
       if (docsEnum != null) {
         int docId;
         if ((docId = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {

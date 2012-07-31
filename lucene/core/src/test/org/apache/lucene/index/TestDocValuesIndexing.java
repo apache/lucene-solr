@@ -884,7 +884,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public int docId(AtomicReader reader, Term term) throws IOException {
     int docFreq = reader.docFreq(term);
     assertEquals(1, docFreq);
-    DocsEnum termDocsEnum = reader.termDocsEnum(null, term.field, term.bytes, false);
+    DocsEnum termDocsEnum = reader.termDocsEnum(null, term.field, term.bytes, 0);
     int nextDoc = termDocsEnum.nextDoc();
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, termDocsEnum.nextDoc());
     return nextDoc;

@@ -893,12 +893,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+      public DocsEnum docs(Bits skipDocs, DocsEnum reuse, int flags) throws IOException {
         currentFrame.decodeMetaData();
-        if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-          return null;
-        }
-        return postingsReader.docs(fieldInfo, currentFrame.termState, skipDocs, reuse, needsFreqs);
+        return postingsReader.docs(fieldInfo, currentFrame.termState, skipDocs, reuse, flags);
       }
 
       @Override
@@ -2115,10 +2112,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-        if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-          return null;
-        }
+      public DocsEnum docs(Bits skipDocs, DocsEnum reuse, int flags) throws IOException {
         assert !eof;
         //if (DEBUG) {
         //System.out.println("BTTR.docs seg=" + segment);
@@ -2127,7 +2121,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         //if (DEBUG) {
         //System.out.println("  state=" + currentFrame.state);
         //}
-        return postingsReader.docs(fieldInfo, currentFrame.state, skipDocs, reuse, needsFreqs);
+        return postingsReader.docs(fieldInfo, currentFrame.state, skipDocs, reuse, flags);
       }
 
       @Override

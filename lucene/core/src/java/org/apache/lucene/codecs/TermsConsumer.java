@@ -98,7 +98,7 @@ public abstract class TermsConsumer {
       while((term = termsEnum.next()) != null) {
         // We can pass null for liveDocs, because the
         // mapping enum will skip the non-live docs:
-        docsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsEnumIn, false);
+        docsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsEnumIn, 0);
         if (docsEnumIn != null) {
           docsEnum.reset(docsEnumIn);
           final PostingsConsumer postingsConsumer = startTerm(term);
@@ -126,7 +126,7 @@ public abstract class TermsConsumer {
       while((term = termsEnum.next()) != null) {
         // We can pass null for liveDocs, because the
         // mapping enum will skip the non-live docs:
-        docsAndFreqsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsAndFreqsEnumIn, true);
+        docsAndFreqsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsAndFreqsEnumIn);
         assert docsAndFreqsEnumIn != null;
         docsAndFreqsEnum.reset(docsAndFreqsEnumIn);
         final PostingsConsumer postingsConsumer = startTerm(term);

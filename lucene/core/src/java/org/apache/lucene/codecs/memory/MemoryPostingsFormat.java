@@ -344,6 +344,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       docID = -1;
       accum = 0;
       docUpto = 0;
+      freq = 1;
       payloadLen = 0;
       this.numDocs = numDocs;
       return this;
@@ -428,7 +429,6 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
     @Override
     public int freq() {
-      assert indexOptions != IndexOptions.DOCS_ONLY;
       return freq;
     }
   }
@@ -696,13 +696,11 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
       decodeMetaData();
       FSTDocsEnum docsEnum;
 
-      if (needsFreqs && field.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-        return null;
-      } else if (reuse == null || !(reuse instanceof FSTDocsEnum)) {
+      if (reuse == null || !(reuse instanceof FSTDocsEnum)) {
         docsEnum = new FSTDocsEnum(field.getIndexOptions(), field.hasPayloads());
       } else {
         docsEnum = (FSTDocsEnum) reuse;        

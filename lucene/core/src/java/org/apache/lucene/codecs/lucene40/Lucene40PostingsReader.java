@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
@@ -218,7 +219,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
     if (canReuse(reuse, liveDocs)) {
       // if (DEBUG) System.out.println("SPR.docs ts=" + termState);
       return ((SegmentDocsEnumBase) reuse).reset(fieldInfo, (StandardTermState)termState);
@@ -351,13 +352,16 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
       start = -1;
       count = 0;
+      freq = 1;
+      if (indexOmitsTF) {
+        Arrays.fill(freqs, 1);
+      }
       maxBufferedDocId = -1;
       return this;
     }
     
     @Override
     public final int freq() {
-      assert !indexOmitsTF;
       return freq;
     }
 
