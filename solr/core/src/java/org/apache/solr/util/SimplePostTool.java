@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.Locale;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
@@ -392,7 +393,7 @@ public class SimplePostTool {
   private String guessType(File file) {
     String name = file.getName();
     String suffix = name.substring(name.lastIndexOf(".")+1);
-    return mimeMap.get(suffix.toLowerCase());
+    return mimeMap.get(suffix.toLowerCase(Locale.ROOT));
   }
 
   /**
