@@ -187,7 +187,7 @@ public class TestPostingsFormat extends LuceneTestCase {
         } else if (random().nextInt(10) == 3 && numMediumTerms < 5) {
           // 10% of the time make a medium freq term:
           // TODO not high enough to test level 1 skipping:
-          numDocs = RANDOM_MULTIPLIER * atLeast(3000);
+          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 3000, 6000);
           numMediumTerms++;
           term = "medium_" + term;
         } else if (random().nextBoolean()) {
@@ -520,7 +520,7 @@ public class TestPostingsFormat extends LuceneTestCase {
       maxIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     boolean doCheckOffsets = allowOffsets && random().nextInt(3) <= 2;
 
-    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && random().nextInt(3) <= 2;;
+    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && random().nextInt(3) <= 2;
 
     DocsEnum prevDocsEnum = null;
 
