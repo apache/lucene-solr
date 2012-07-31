@@ -1045,6 +1045,11 @@ New Features
   support numeric collation, ignore punctuation/whitespace, ignore accents but
   not case, control whether upper/lowercase values are sorted first, etc.  (rmuir)
 
+* SOLR-2346: Add a chance to set content encoding explicitly via content type 
+  of stream for extracting request handler.  This is convenient when Tika's 
+  auto detector cannot detect encoding, especially the text file is too short 
+  to detect encoding. (koji)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
@@ -1286,6 +1291,12 @@ Other Changes
   repository).  Also updated dependencies jackson-core-asl and
   jackson-mapper-asl (both v1.5.2 -> v1.7.4).  (Dawid Weiss, Steve Rowe)
 
+* SOLR-3295: netcdf jar is excluded from the binary release (and disabled in 
+  ivy.xml) because it requires java 6. If you want to parse this content with 
+  extracting request handler and are willing to use java 6, just add the jar. 
+  (rmuir)
+
+
 Build
 ----------------------
 * SOLR-2487: Add build target to package war without slf4j jars (janhoy)
@@ -1418,6 +1429,9 @@ Bug Fixes
 * SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
 
 * SOLR-2591: Remove commitLockTimeout option from solrconfig.xml (Luca Cavanna via Martijn van Groningen)
+
+* SOLR-2746: Upgraded UIMA dependencies from *-2.3.1-SNAPSHOT.jar to *-2.3.1.jar.
+
 
 ==================  3.4.0  ==================
 
@@ -1577,6 +1591,9 @@ Bug Fixes
 * SOLR-2629: Eliminate deprecation warnings in some JSPs.
   (Bernd Fehling, hossman)
 
+* SOLR-2743: Remove commons logging from contrib/extraction. (koji)
+
+
 Build
 ----------------------
 
@@ -1648,6 +1665,13 @@ New Features
 
 * SOLR-2610 -- Add an option to delete index through CoreAdmin UNLOAD action (shalin)
 
+* SOLR-2480: Add ignoreTikaException flag to the extraction request handler so 
+  that users can ignore TikaException but index meta data. 
+  (Shinichiro Abe, koji)
+
+* SOLR-2582: Use uniqueKey for error log in UIMAUpdateRequestProcessor.
+  (Tommaso Teofili via koji)
+
 Optimizations
 ----------------------
 
@@ -1666,6 +1690,12 @@ Bug Fixes
   Separately, an additional spellcheck.maxCollationEvaluations (default=10000)
   parameter is added to avoid excessive CPU time in extreme cases (e.g. long
   queries with many misspelled words).  (James Dyer via rmuir)
+
+* SOLR-2579: UIMAUpdateRequestProcessor ignore error fails if text.length() < 100.
+  (Elmer Garduno via koji)
+
+* SOLR-2581: UIMAToSolrMapper wrongly instantiates Type with reflection.
+  (Tommaso Teofili via koji)
 
 Other Changes
 ----------------------
@@ -1706,6 +1736,10 @@ Upgrading from Solr 3.1
   with update.chain rather than update.processor. The latter still works,
   but has been deprecated.
 
+* <uimaConfig/> just beneath <config> ... </config> is no longer supported.
+  It should move to UIMAUpdateRequestProcessorFactory setting.
+  See contrib/uima/README.txt for more details. (SOLR-2436)
+
 Detailed Change List
 ----------------------
 
@@ -1731,6 +1765,12 @@ New Features
   <solr.home>/conf/carrot2 (SOLR-2449), using Solr's stopwords.txt
   for clustering (SOLR-2450), output of cluster scores (SOLR-2505)
   (Stanislaw Osinski, Dawid Weiss).
+
+* SOLR-2503: extend UIMAUpdateRequestProcessorFactory mapping function to 
+  map feature value to dynamicField. (koji)
+
+* SOLR-2512: add ignoreErrors flag to UIMAUpdateRequestProcessorFactory so 
+  that users can ignore exceptions in AE. (Tommaso Teofili, koji)
 
 Optimizations
 ----------------------
@@ -1817,6 +1857,12 @@ Other Changes
 
 * SOLR-2528: Remove default="true" from HtmlEncoder in example solrconfig.xml,
   because html encoding confuses non-ascii users. (koji)
+
+* SOLR-2387: add mock annotators for improved testing in contrib/uima,
+  (Tommaso Teofili via rmuir)
+
+* SOLR-2436: move uimaConfig to under the uima's update processor in 
+  solrconfig.xml.  (Tommaso Teofili, koji)
 
 Build
 ----------------------
@@ -2377,6 +2423,12 @@ Bug Fixes
 * SOLR-1692: Fix bug in clustering component relating to carrot.produceSummary 
   option (gsingers)
 
+* SOLR-1756: The date.format setting for extraction request handler causes 
+  ClassCastException when enabled and the config code that parses this setting 
+  does not properly use the same iterator instance. 
+  (Christoph Brill, Mark Miller)
+
+
 Other Changes
 ----------------------
 
@@ -2504,6 +2556,10 @@ Other Changes
 * SOLR-141: Errors and Exceptions are formated by ResponseWriter.
   (Mike Sokolov, Rich Cariens, Daniel Naber, ryan)
 
+* SOLR-1902: Upgraded to Tika 0.8 and changed deprecated parse call
+
+* SOLR-1813: Add ICU4j to contrib/extraction libs and add tests for Arabic 
+  extraction (Robert Muir via gsingers)
 
 Build
 ----------------------
@@ -2874,6 +2930,11 @@ New Features
 84. SOLR-1449: Add <lib> elements to solrconfig.xml to specifying additional
     classpath directories and regular expressions. (hossman via yonik)
 
+85. SOLR-1128: Added metadata output to extraction request handler "extract 
+    only" option.  (gsingers)
+
+86. SOLR-1274: Added text serialization output for extractOnly 
+    (Peter Wolanin, gsingers)  
 
 Optimizations
 ----------------------
@@ -3287,6 +3348,14 @@ Other Changes
     broken with it anyway.  (Mark Miller)
 
 50. SOLR-1357 SolrInputDocument cannot process dynamic fields (Lars Grote via noble)
+
+51. SOLR-1075: Upgrade to Tika 0.3.  See http://www.apache.org/dist/lucene/tika/CHANGES-0.3.txt (gsingers)
+
+52. SOLR-1310: Upgrade to Tika 0.4. Note there are some differences in 
+    detecting Languages now in extracting request handler.
+    See http://www.lucidimagination.com/search/document/d6f1899a85b2a45c/vote_apache_tika_0_4_release_candidate_2#d6f1899a85b2a45c
+    for discussion on language detection.
+    See http://www.apache.org/dist/lucene/tika/CHANGES-0.4.txt. (gsingers)
 
 Build
 ----------------------
