@@ -109,7 +109,7 @@ public class TestSegmentMerger extends LuceneTestCase {
                                        new BytesRef("field"),
                                        MultiFields.getLiveDocs(mergedReader),
                                        null,
-                                       0);
+                                       false);
     assertTrue(termDocs != null);
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 

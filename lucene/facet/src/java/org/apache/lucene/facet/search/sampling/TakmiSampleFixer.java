@@ -108,7 +108,7 @@ class TakmiSampleFixer implements SampleFixer {
     Bits liveDocs = MultiFields.getLiveDocs(indexReader);
     int updatedCount = countIntersection(MultiFields.getTermDocsEnum(indexReader, liveDocs,
                                                                      drillDownTerm.field(), drillDownTerm.bytes(),
-                                                                     0),
+                                                                     false),
                                          docIds.iterator());
 
     fresNode.setValue(updatedCount);

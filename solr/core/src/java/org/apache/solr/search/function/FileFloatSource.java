@@ -278,7 +278,7 @@ public class FileFloatSource extends ValueSource {
           continue;
         }
 
-        docsEnum = termsEnum.docs(null, docsEnum, 0);
+        docsEnum = termsEnum.docs(null, docsEnum, false);
         int doc;
         while ((doc = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           vals[doc] = fval;

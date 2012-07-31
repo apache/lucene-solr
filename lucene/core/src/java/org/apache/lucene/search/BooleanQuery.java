@@ -361,9 +361,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         final Scorer scorer = weight.scorer(context, true, false, acceptDocs);
         if (scorer == null) {
           return null;
-        } else {
-          assert scorer instanceof TermScorer;
+        }
+        if (scorer instanceof TermScorer) {
           docsAndFreqs[i] = new DocsAndFreqs((TermScorer) scorer);
+        } else {
+          docsAndFreqs[i] = new DocsAndFreqs((MatchOnlyTermScorer) scorer);
         }
       }
       return new ConjunctionTermScorer(this, disableCoord ? 1.0f : coord(

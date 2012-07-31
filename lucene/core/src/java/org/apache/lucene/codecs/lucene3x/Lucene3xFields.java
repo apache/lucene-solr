@@ -932,9 +932,11 @@ class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
       PreDocsEnum docsEnum;
-      if (reuse == null || !(reuse instanceof PreDocsEnum)) {
+      if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
+        return null;
+      } else if (reuse == null || !(reuse instanceof PreDocsEnum)) {
         docsEnum = new PreDocsEnum();
       } else {
         docsEnum = (PreDocsEnum) reuse;

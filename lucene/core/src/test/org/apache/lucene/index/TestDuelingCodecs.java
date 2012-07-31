@@ -342,39 +342,39 @@ public class TestDuelingCodecs extends LuceneTestCase {
                                 rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions));
 
         // with freqs:
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs),
-            rightDocs = rightTermsEnum.docs(null, rightDocs),
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, true),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, true),
             true);
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs),
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, true),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, true),
             true);
 
         // w/o freqs:
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(null, rightDocs, 0),
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, false),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, false),
             false);
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0),
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, false),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, false),
             false);
         
         // with freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(null, leftDocs),
-            rightDocs = rightTermsEnum.docs(null, rightDocs),
+            leftDocs = leftTermsEnum.docs(null, leftDocs, true),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, true),
             true);
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs),
+            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, true),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, true),
             true);
 
         // w/o freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(null, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(null, rightDocs, 0),
+            leftDocs = leftTermsEnum.docs(null, leftDocs, false),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, false),
             false);
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0),
+            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, false),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, false),
             false);
       }
     }

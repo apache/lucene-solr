@@ -344,7 +344,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+  public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
     MultiDocsEnum docsEnum;
     // Can only reuse if incoming enum is also a MultiDocsEnum
     if (reuse != null && reuse instanceof MultiDocsEnum) {
@@ -394,15 +394,16 @@ public final class MultiTermsEnum extends TermsEnum {
       }
 
       assert entry.index < docsEnum.subDocsEnum.length: entry.index + " vs " + docsEnum.subDocsEnum.length + "; " + subs.length;
-      final DocsEnum subDocsEnum = entry.terms.docs(b, docsEnum.subDocsEnum[entry.index], flags);
+      final DocsEnum subDocsEnum = entry.terms.docs(b, docsEnum.subDocsEnum[entry.index], needsFreqs);
       if (subDocsEnum != null) {
         docsEnum.subDocsEnum[entry.index] = subDocsEnum;
         subDocs[upto].docsEnum = subDocsEnum;
         subDocs[upto].slice = entry.subSlice;
         upto++;
       } else {
-        // One of our subs cannot provide a docsenum:
-        assert false;
+        // One of our subs cannot provide freqs:
+        assert needsFreqs;
+        return null;
       }
     }
 
@@ -473,7 +474,7 @@ public final class MultiTermsEnum extends TermsEnum {
         subDocsAndPositions[upto].slice = entry.subSlice;
         upto++;
       } else {
-        if (entry.terms.docs(b, null, 0) != null) {
+        if (entry.terms.docs(b, null, false) != null) {
           // At least one of our subs does not store
           // offsets or positions -- we can't correctly
           // produce a MultiDocsAndPositions enum

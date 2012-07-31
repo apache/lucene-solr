@@ -184,7 +184,7 @@ class TermsIncludingScoreQuery extends Query {
         scoreUpto = upto;
         TermsEnum.SeekStatus status = termsEnum.seekCeil(terms.get(ords[upto++], spare), true);
         if (status == TermsEnum.SeekStatus.FOUND) {
-          docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, 0);
+          docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, false);
         }
       } while (docsEnum == null);
 
@@ -253,7 +253,7 @@ class TermsIncludingScoreQuery extends Query {
           scoreUpto = upto;
           TermsEnum.SeekStatus status = termsEnum.seekCeil(terms.get(ords[upto++], spare), true);
           if (status == TermsEnum.SeekStatus.FOUND) {
-            docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, 0);
+            docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, false);
           }
         } while (docsEnum == null);
 

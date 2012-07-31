@@ -200,8 +200,7 @@ public class HighFreqTerms {
           continue;
         } // otherwise we fall-through
       }
-      // note: what should we do if field omits freqs? currently it counts as 1...
-      DocsEnum de = r.termDocsEnum(liveDocs, field, termText);
+      DocsEnum de = r.termDocsEnum(liveDocs, field, termText, true);
       if (de != null) {
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
           totalTF += de.freq();
