@@ -196,7 +196,8 @@ public class TestPostingsFormat extends LuceneTestCase {
           term = "low_" + term;
         }
 
-        numDocs *= RANDOM_MULTIPLIER;
+        // TODO: reduce the ram usage of this test so we can safely do this
+        // numDocs *= RANDOM_MULTIPLIER;
 
         List<Posting> termPostings = new ArrayList<Posting>();
         postings.put(new BytesRef(term), termPostings);
