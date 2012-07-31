@@ -115,7 +115,7 @@ public class TestPostingsFormat extends LuceneTestCase {
     int endOffset;
   }
 
-  private static class Posting implements Comparable<Posting>{
+  private static class Posting implements Comparable<Posting> {
     int docID;
     List<Position> positions;
 
@@ -179,25 +179,26 @@ public class TestPostingsFormat extends LuceneTestCase {
         seenTerms.add(term);
 
         int numDocs;
-        if (random().nextInt(10) == 3 && numBigTerms < 3) {
+        if (random().nextInt(10) == 3 && numBigTerms < 2) {
           // 10% of the time make a highish freq term:
-          numDocs = _TestUtil.nextInt(random(), 50000, 70000);
+          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 50000, 70000);
           numBigTerms++;
           term = "big_" + term;
-        } else if (random().nextInt(10) == 3 && numMediumTerms < 10) {
+        } else if (random().nextInt(10) == 3 && numMediumTerms < 5) {
           // 10% of the time make a medium freq term:
           // TODO not high enough to test level 1 skipping:
-          numDocs = atLeast(3000);
+          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 3000, 6000);
           numMediumTerms++;
           term = "medium_" + term;
-        } else {
+        } else if (random().nextBoolean()) {
           // Low freq term:
-          numDocs = _TestUtil.nextInt(random(), 1, 40);
+          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 1, 40);
           term = "low_" + term;
+        } else {
+          // Very low freq term (don't multiply by RANDOM_MULTIPLIER):
+          numDocs = _TestUtil.nextInt(random(), 1, 3);
+          term = "verylow_" + term;
         }
-
-        // TODO: reduce the ram usage of this test so we can safely do this
-        // numDocs *= RANDOM_MULTIPLIER;
 
         List<Posting> termPostings = new ArrayList<Posting>();
         postings.put(new BytesRef(term), termPostings);
@@ -519,7 +520,7 @@ public class TestPostingsFormat extends LuceneTestCase {
       maxIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     boolean doCheckOffsets = allowOffsets && random().nextInt(3) <= 2;
 
-    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && random().nextInt(3) <= 2;;
+    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && random().nextInt(3) <= 2;
 
     DocsEnum prevDocsEnum = null;
 
