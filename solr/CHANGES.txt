@@ -554,6 +554,11 @@ New Features
 * SOLR-3542: Add WeightedFragListBuilder for FVH and set it to default fragListBuilder
   in example solrconfig.xml. (Sebastian Lutze, koji)
 
+* SOLR-2396: Add ICUCollationField to contrib/analysis-extras, which is much 
+  more efficient than the Solr 3.x ICUCollationKeyFilterFactory, and also 
+  supports Locale-sensitive range queries.  (rmuir)
+
+
 Optimizations
 ----------------------
 
@@ -700,6 +705,10 @@ Bug Fixes
   parser or the strdist() function, as well as some minor improvements to 
   the hashCode implementation of {!bbox} and {!geofilt} queries.
   (hossman)
+
+* SOLR-3470: contrib/clustering: custom Carrot2 tokenizer and stemmer factories
+  are respected now (Stanislaw Osinski, Dawid Weiss)
+
 
 Other Changes
 ----------------------
@@ -886,6 +895,9 @@ Bug Fixes:
 
 * SOLR-3477: SOLR does not start up when no cores are defined (Tomás Fernández Löbbe via tommaso)
 
+* SOLR-3470: contrib/clustering: custom Carrot2 tokenizer and stemmer factories
+  are respected now (Stanislaw Osinski, Dawid Weiss)
+
 ==================  3.6.0  ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
@@ -1027,6 +1039,11 @@ New Features
   no documents if the query parser returns null.  This also prevents an
   exception from being thrown by the default parser if "q" is missing. (yonik)
   SOLR-435: if q is "" then it's also acceptable. (dsmiley, hoss)
+
+* SOLR-2919: Added parametric tailoring options to ICUCollationKeyFilterFactory.
+  These can be used to customize range query/sort behavior, for example to
+  support numeric collation, ignore punctuation/whitespace, ignore accents but
+  not case, control whether upper/lowercase values are sorted first, etc.  (rmuir)
 
 Optimizations
 ----------------------
@@ -1189,6 +1206,35 @@ Bug Fixes
 * SOLR-3316: Distributed grouping failed when rows parameter was set to 0 and 
   sometimes returned a wrong hit count as matches. (Cody Young, Martijn van Groningen)
 
+* SOLR-3107: contrib/langid: When using the LangDetect implementation of 
+  langid, set the random seed to 0, so that the same document is detected as 
+  the same language with the same probability every time.  
+  (Christian Moen via rmuir)
+
+* SOLR-2937: Configuring the number of contextual snippets used for 
+  search results clustering. The hl.snippets parameter is now respected
+  by the clustering plugin, can be overridden by carrot.summarySnippets
+  if needed (Stanislaw Osinski).
+
+* SOLR-2938: Clustering on multiple fields. The carrot.title and 
+  carrot.snippet can now take comma- or space-separated lists of
+  field names to cluster (Stanislaw Osinski).
+
+* SOLR-2939: Clustering of multilingual search results. The document's
+  language field be passed in the carrot.lang parameter, the carrot.lcmap
+  parameter enables mapping of language codes to ISO 639 (Stanislaw Osinski).
+
+* SOLR-2940: Passing values for custom Carrot2 fields to Clustering component. 
+  The custom field mapping are defined using the carrot.custom parameter 
+  (Stanislaw Osinski).
+
+* SOLR-2941: NullPointerException on clustering component initialization 
+  when schema does not have a unique key field (Stanislaw Osinski).
+
+* SOLR-2942: ClassCastException when passing non-textual fields to  
+  clustering component (Stanislaw Osinski).
+
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
@@ -1293,6 +1339,9 @@ New Features
 * SOLR-2578: ReplicationHandler's backup command now supports a 'numberToKeep' 
   request param that can be used to delete all but the most recent N backups.
   (James Dyer via hossman)
+
+* SOLR-2839: Add alternative implementation to contrib/langid supporting 53 
+  languages, based on http://code.google.com/p/language-detection/ (rmuir)
 
 Optimizations
 ----------------------
@@ -1516,6 +1565,12 @@ Bug Fixes
   failed due to sort by function changes introduced in SOLR-1297
   (Mitsu Hadeishi, hossman)
 
+* SOLR-2706: contrib/clustering: The carrot.lexicalResourcesDir parameter 
+  now works with absolute directories (Stanislaw Osinski)
+  
+* SOLR-2692: contrib/clustering: Typo in param name fixed: "carrot.fragzise" 
+  changed to "carrot.fragSize" (Stanislaw Osinski).
+
  Other Changes
 ----------------------
 
@@ -1670,6 +1725,12 @@ New Features
 * SOLR-1915: DebugComponent now supports using a NamedList to model
   Explanation objects in it's responses instead of
   Explanation.toString  (hossman)
+
+* SOLR-2448: Search results clustering updates: bisecting k-means
+  clustering algorithm added, loading of Carrot2 stop words from
+  <solr.home>/conf/carrot2 (SOLR-2449), using Solr's stopwords.txt
+  for clustering (SOLR-2450), output of cluster scores (SOLR-2505)
+  (Stanislaw Osinski, Dawid Weiss).
 
 Optimizations
 ----------------------
@@ -2014,6 +2075,26 @@ New Features
 
 * SOLR-1057: Add PathHierarchyTokenizerFactory. (ryan, koji)
 
+* SOLR-1804: Re-enabled clustering component on trunk, updated to latest 
+  version of Carrot2.  No more LGPL run-time dependencies.  This release of 
+  C2 also does not have a specific Lucene dependency.  
+  (Stanislaw Osinski, gsingers)
+
+* SOLR-2282: Add distributed search support for search result clustering.
+  (Brad Giaccio, Dawid Weiss, Stanislaw Osinski, rmuir, koji)
+
+* SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
+  tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-2211,LUCENE-2763: Added UAX29URLEmailTokenizerFactory, which implements
+  UAX#29, a unicode algorithm with good results for most languages, as well as
+  URL and E-mail tokenization according to the relevant RFCs.
+  (Tom Burton-West via rmuir)
+
+* SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
+
 Optimizations
 ----------------------
 
@@ -2034,6 +2115,10 @@ Optimizations
   yield speedups over 3x. (yonik)
 
 * SOLR-2046: add common functions to scripts-util. (koji)
+
+* SOLR-1684: Switch clustering component to use the 
+  SolrIndexSearcher.doc(int, Set<String>) method b/c it can use the document 
+  cache (gsingers)
 
 Bug Fixes
 ----------------------
@@ -2288,6 +2373,9 @@ Bug Fixes
 
 * SOLR-2192: StreamingUpdateSolrServer.blockUntilFinished was not
   thread safe and could throw an exception. (yonik)
+
+* SOLR-1692: Fix bug in clustering component relating to carrot.produceSummary 
+  option (gsingers)
 
 Other Changes
 ----------------------
