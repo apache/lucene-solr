@@ -225,7 +225,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         //System.out.println("Term: " + term);
         assertEquals(testTerms[i], term);
         
-        docsEnum = _TestUtil.docs(random(), termsEnum, null, docsEnum, false);
+        docsEnum = _TestUtil.docs(random(), termsEnum, null, docsEnum, 0);
         assertNotNull(docsEnum);
         int doc = docsEnum.docID();
         assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);

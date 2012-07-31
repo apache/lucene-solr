@@ -83,15 +83,9 @@ public class TermQuery extends Query {
       if (termsEnum == null) {
         return null;
       }
-      DocsEnum docs = termsEnum.docs(acceptDocs, null, true);
-      if (docs != null) {
-        return new TermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
-      } else {
-        // Index does not store freq info
-        docs = termsEnum.docs(acceptDocs, null, false);
-        assert docs != null;
-        return new MatchOnlyTermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
-      }
+      DocsEnum docs = termsEnum.docs(acceptDocs, null);
+      assert docs != null;
+      return new TermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
     }
     
     /**

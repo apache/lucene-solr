@@ -181,8 +181,8 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-      return in.docs(liveDocs, reuse, needsFreqs);
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+      return in.docs(liveDocs, reuse, flags);
     }
 
     @Override

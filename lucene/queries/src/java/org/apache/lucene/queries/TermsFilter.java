@@ -82,7 +82,7 @@ public class TermsFilter extends Filter {
         br.copyBytes(term.bytes());
         assert termsEnum != null;
         if (termsEnum.seekCeil(br) == TermsEnum.SeekStatus.FOUND) {
-          docs = termsEnum.docs(acceptDocs, docs, false);
+          docs = termsEnum.docs(acceptDocs, docs, 0);
           while (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             result.set(docs.docID());
           }

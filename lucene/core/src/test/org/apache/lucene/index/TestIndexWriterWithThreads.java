@@ -226,7 +226,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
                                       new BytesRef("aaa"),
                                       MultiFields.getLiveDocs(reader),
                                       null,
-                                      false);
+                                      0);
       int count = 0;
       while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         count++;

@@ -112,7 +112,6 @@ class SegmentTermDocs {
 
   public final int doc() { return doc; }
   public final int freq() {
-    assert indexOptions != IndexOptions.DOCS_ONLY;
     return freq;
   }
 

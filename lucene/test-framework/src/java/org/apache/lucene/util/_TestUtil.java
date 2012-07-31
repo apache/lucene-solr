@@ -857,7 +857,7 @@ public class _TestUtil {
   // Returns a DocsEnum, but randomly sometimes uses a
   // DocsAndFreqsEnum, DocsAndPositionsEnum.  Returns null
   // if field/term doesn't exist:
-  public static DocsEnum docs(Random random, IndexReader r, String field, BytesRef term, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+  public static DocsEnum docs(Random random, IndexReader r, String field, BytesRef term, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
     final Terms terms = MultiFields.getTerms(r, field);
     if (terms == null) {
       return null;
@@ -866,33 +866,30 @@ public class _TestUtil {
     if (!termsEnum.seekExact(term, random.nextBoolean())) {
       return null;
     }
-    return docs(random, termsEnum, liveDocs, reuse, needsFreqs);
+    return docs(random, termsEnum, liveDocs, reuse, flags);
   }
 
   // Returns a DocsEnum from a positioned TermsEnum, but
   // randomly sometimes uses a DocsAndFreqsEnum, DocsAndPositionsEnum.
-  public static DocsEnum docs(Random random, TermsEnum termsEnum, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+  public static DocsEnum docs(Random random, TermsEnum termsEnum, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
     if (random.nextBoolean()) {
       if (random.nextBoolean()) {
-        final int flags;
+        final int posFlags;
         switch (random.nextInt(4)) {
-          case 0: flags = 0; break;
-          case 1: flags = DocsAndPositionsEnum.FLAG_OFFSETS; break;
-          case 2: flags = DocsAndPositionsEnum.FLAG_PAYLOADS; break;
-          default: flags = DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS; break;
+          case 0: posFlags = 0; break;
+          case 1: posFlags = DocsAndPositionsEnum.FLAG_OFFSETS; break;
+          case 2: posFlags = DocsAndPositionsEnum.FLAG_PAYLOADS; break;
+          default: posFlags = DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS; break;
         }
         // TODO: cast to DocsAndPositionsEnum?
-        DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, flags);
+        DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, posFlags);
         if (docsAndPositions != null) {
           return docsAndPositions;
         }
       }
-      final DocsEnum docsAndFreqs = termsEnum.docs(liveDocs, reuse, true);
-      if (docsAndFreqs != null) {
-        return docsAndFreqs;
-      }
+      flags |= DocsEnum.FLAG_FREQS;
     }
-    return termsEnum.docs(liveDocs, reuse, needsFreqs);
+    return termsEnum.docs(liveDocs, reuse, flags);
   }
   
   public static CharSequence stringToCharSequence(String string, Random random) {

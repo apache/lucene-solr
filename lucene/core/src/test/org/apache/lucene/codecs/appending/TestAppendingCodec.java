@@ -142,7 +142,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     assertEquals(SeekStatus.FOUND, te.seekCeil(new BytesRef("lazy")));
     assertEquals(SeekStatus.FOUND, te.seekCeil(new BytesRef("dog")));
     assertEquals(SeekStatus.FOUND, te.seekCeil(new BytesRef("the")));
-    DocsEnum de = te.docs(null, null, true);
+    DocsEnum de = te.docs(null, null);
     assertTrue(de.advance(0) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(2, de.freq());
     assertTrue(de.advance(1) != DocIdSetIterator.NO_MORE_DOCS);

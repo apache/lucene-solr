@@ -411,7 +411,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter));
       int base = 0;
       for (AtomicReader r : reader.getSequentialSubReaders()) {
-        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, false);
+        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, 0);
         if (docs != null) {
           doc = docs.nextDoc() + base;
           break;
@@ -454,7 +454,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter, prefixLen));
       int base = 0;
       for (AtomicReader r : reader.getSequentialSubReaders()) {
-        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, false);
+        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, 0);
         if (docs != null) {
           doc = docs.nextDoc() + base;
           break;
@@ -767,7 +767,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
               // 'validation' checks.
               cp.clear();
               cp.add(t.utf8ToString(), delimiter);
-              docsEnum = termsEnum.docs(null, docsEnum, false);
+              docsEnum = termsEnum.docs(null, docsEnum, 0);
               boolean res = cache.put(cp, docsEnum.nextDoc() + base);
               assert !res : "entries should not have been evicted from the cache";
             } else {
@@ -859,7 +859,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
             // the findCategory() call above failed to find it.
             ordinal = addCategory(cp);
           }
-          docs = te.docs(null, docs, false);
+          docs = te.docs(null, docs, 0);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);
         }
         base += ar.maxDoc(); // no deletions, so we're ok
