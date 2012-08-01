@@ -31,8 +31,6 @@ import org.apache.lucene.util._TestUtil;
 public class BaseDirectoryWrapper extends Directory {
   /** our in directory */
   protected final Directory delegate;
-  /** best effort: base on in Directory is volatile */
-  protected boolean open;
   
   private boolean checkIndexOnClose = true;
   private boolean crossCheckTermVectorsOnClose = true;
@@ -43,7 +41,7 @@ public class BaseDirectoryWrapper extends Directory {
 
   @Override
   public void close() throws IOException {
-    open = false;
+    isOpen = false;
     if (checkIndexOnClose && indexPossiblyExists()) {
       _TestUtil.checkIndex(this, crossCheckTermVectorsOnClose);
     }
@@ -51,7 +49,7 @@ public class BaseDirectoryWrapper extends Directory {
   }
   
   public boolean isOpen() {
-    return open;
+    return isOpen;
   }
   
   /** 
