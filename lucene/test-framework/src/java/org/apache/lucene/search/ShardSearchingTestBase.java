@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,15 +26,17 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util._TestUtil;
 
 // TODO
 //   - doc blocks?  so we can test joins/grouping...
@@ -423,11 +424,16 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
     private volatile ShardIndexSearcher currentShardSearcher;
 
-    public NodeState(Random random, String baseDir, int nodeID, int numNodes) throws IOException {
+    public NodeState(Random random, int nodeID, int numNodes) throws IOException {
       myNodeID = nodeID;
-      dir = newFSDirectory(new File(baseDir + "." + myNodeID));
+      dir = newFSDirectory(_TestUtil.getTempDir("ShardSearchingTestBase"));
       // TODO: set warmer
-      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+      iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+      if (VERBOSE) {
+        iwc.setInfoStream(new PrintStreamInfoStream(System.out));
+      }
+      writer = new IndexWriter(dir, iwc);
       mgr = new SearcherManager(writer, true, null);
       searchers = new SearcherLifetimeManager();
 
@@ -556,14 +562,14 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
   long endTimeNanos;
   private Thread changeIndicesThread;
 
-  protected void start(String baseDirName, int numNodes, double runTimeSec, int maxSearcherAgeSeconds) throws IOException {
+  protected void start(int numNodes, double runTimeSec, int maxSearcherAgeSeconds) throws IOException {
 
     endTimeNanos = System.nanoTime() + (long) (runTimeSec*1000000000);
     this.maxSearcherAgeSeconds = maxSearcherAgeSeconds;
 
     nodes = new NodeState[numNodes];
     for(int nodeID=0;nodeID<numNodes;nodeID++) {
-      nodes[nodeID] = new NodeState(random(), baseDirName, nodeID, numNodes);
+      nodes[nodeID] = new NodeState(random(), nodeID, numNodes);
     }
 
     long[] nodeVersions = new long[nodes.length];
