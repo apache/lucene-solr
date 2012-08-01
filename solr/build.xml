@@ -402,7 +402,7 @@
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt example/**
                              client/README.txt client/ruby/solr-ruby/** contrib/**/lib/**
-                             contrib/**/README.txt contrib/**/CHANGES.txt"
+                             contrib/**/README.txt"
                   excludes="lib/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
