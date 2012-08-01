@@ -551,7 +551,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (noDeleteOpenFile && openLocks.size() > 0) {
       throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks);
     }
-    open = false;
+    isOpen = false;
     if (getCheckIndexOnClose()) {
       if (indexPossiblyExists()) {
         if (LuceneTestCase.VERBOSE) {
@@ -613,11 +613,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   
   public synchronized void removeIndexInput(IndexInput in, String name) {
     removeOpenFile(in, name);
-  }
-
-  @Override
-  public synchronized boolean isOpen() {
-    return open;
   }
   
   /**
