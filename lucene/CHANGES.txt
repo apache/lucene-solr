@@ -99,6 +99,10 @@ Optimizations
 * LUCENE-4235: Remove enforcing of Filter rewrite for NRQ queries.
   (Uwe Schindler)
 
+* LUCENE-4279: Regenerated snowball Stemmers from snowball r554,
+  making them substantially more lightweight. Behavior is unchanged. 
+  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4109: BooleanQueries are not parsed correctly with the 
