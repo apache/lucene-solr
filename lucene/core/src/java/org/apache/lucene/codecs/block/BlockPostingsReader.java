@@ -958,7 +958,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     private int payloadByteUpto;
     private int payloadLength;
 
-    private int lastEndOffset;
+    private int lastStartOffset;
     private int startOffset;
     private int endOffset;
 
@@ -1248,7 +1248,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           }
           position = 0;
           payloadLength = 0;
-          lastEndOffset = 0;
+          lastStartOffset = 0;
           return doc;
         }
 
@@ -1305,7 +1305,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           // Skipper moved
 
           if (DEBUG) {
-            System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto() + " pay.fp=" + skipper.getPayPointer() + " lastEndOffset=" + lastEndOffset);
+            System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto() + " pay.fp=" + skipper.getPayPointer() + " lastStartOffset=" + lastStartOffset);
           }
 
           assert newDocUpto % blockSize == (blockSize-1): "got " + newDocUpto;
@@ -1318,7 +1318,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           posPendingFP = skipper.getPosPointer();
           payPendingFP = skipper.getPayPointer();
           posPendingCount = skipper.getPosBufferUpto();
-          lastEndOffset = skipper.getEndOffset();
+          lastStartOffset = skipper.getStartOffset();
           payloadByteUpto = skipper.getPayloadByteUpto();
         }
       }
@@ -1359,7 +1359,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
             payloadByteUpto += payloadLengthBuffer[posBufferUpto];
           }
           if (indexHasOffsets) {
-            lastEndOffset += offsetStartDeltaBuffer[posBufferUpto] + offsetLengthBuffer[posBufferUpto];
+            lastStartOffset += offsetStartDeltaBuffer[posBufferUpto] + offsetLengthBuffer[posBufferUpto];
           }
           posBufferUpto++;
         }
@@ -1386,11 +1386,11 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
           if (indexHasOffsets) {
             // Must load offset blocks merely to sum
-            // up into lastEndOffset:
+            // up into lastStartOffset:
             readBlock(payIn, encoded, encodedBuffer, offsetStartDeltaBuffer);
             readBlock(payIn, encoded, encodedBuffer, offsetLengthBuffer);
             for(int i=0;i<blockSize;i++) {
-              lastEndOffset += offsetStartDeltaBuffer[i] + offsetLengthBuffer[i];
+              lastStartOffset += offsetStartDeltaBuffer[i] + offsetLengthBuffer[i];
             }
           }
           toSkip -= blockSize;
@@ -1403,7 +1403,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
             payloadByteUpto += payloadLengthBuffer[posBufferUpto];
           }
           if (indexHasOffsets) {
-            lastEndOffset += offsetStartDeltaBuffer[posBufferUpto] + offsetLengthBuffer[posBufferUpto];
+            lastStartOffset += offsetStartDeltaBuffer[posBufferUpto] + offsetLengthBuffer[posBufferUpto];
           }
           posBufferUpto++;
         }
@@ -1414,7 +1414,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
       position = 0;
       payloadLength = 0;
-      lastEndOffset = 0;
+      // nocommit why carefully sum up lastStartOffset above
+      // only to set it to 0 now?
+      lastStartOffset = 0;
     }
 
     @Override
@@ -1467,9 +1469,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
 
       if (indexHasOffsets) {
-        startOffset = lastEndOffset + offsetStartDeltaBuffer[posBufferUpto];
+        startOffset = lastStartOffset + offsetStartDeltaBuffer[posBufferUpto];
         endOffset = startOffset + offsetLengthBuffer[posBufferUpto];
-        lastEndOffset = endOffset;
+        lastStartOffset = startOffset;
       }
 
       posBufferUpto++;

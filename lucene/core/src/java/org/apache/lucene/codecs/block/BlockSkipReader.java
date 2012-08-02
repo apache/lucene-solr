@@ -37,12 +37,12 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
   private long posPointer[];
   private long payPointer[];
   private int posBufferUpto[];
-  private int endOffset[];
+  private int startOffset[];
   private int payloadByteUpto[];
 
   private long lastPosPointer;
   private long lastPayPointer;
-  private int lastEndOffset;
+  private int lastStartOffset;
   private int lastPayloadByteUpto;
   private long lastDocPointer;
   private int lastPosBufferUpto;
@@ -59,9 +59,9 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
         payloadByteUpto = null;
       }
       if (hasOffsets) {
-        endOffset = new int[maxSkipLevels];
+        startOffset = new int[maxSkipLevels];
       } else {
-        endOffset = null;
+        startOffset = null;
       }
       if (hasOffsets || hasPayloads) {
         payPointer = new long[maxSkipLevels];
@@ -108,8 +108,8 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
     return lastPayPointer;
   }
 
-  public int getEndOffset() {
-    return lastEndOffset;
+  public int getStartOffset() {
+    return lastStartOffset;
   }
 
   public int getPayloadByteUpto() {
@@ -126,8 +126,8 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
     if (posPointer != null) {
       posPointer[level] = lastPosPointer;
       posBufferUpto[level] = lastPosBufferUpto;
-      if (endOffset != null) {
-        endOffset[level] = lastEndOffset;
+      if (startOffset != null) {
+        startOffset[level] = lastStartOffset;
       }
       if (payloadByteUpto != null) {
         payloadByteUpto[level] = lastPayloadByteUpto;
@@ -155,8 +155,8 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
       if (payPointer != null) {
         lastPayPointer = payPointer[level];
       }
-      if (endOffset != null) {
-        lastEndOffset = endOffset[level];
+      if (startOffset != null) {
+        lastStartOffset = startOffset[level];
       }
       if (payloadByteUpto != null) {
         lastPayloadByteUpto = payloadByteUpto[level];
@@ -192,8 +192,8 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
         payloadByteUpto[level] = skipStream.readVInt();
       }
 
-      if (endOffset != null) {
-        endOffset[level] += skipStream.readVInt();
+      if (startOffset != null) {
+        startOffset[level] += skipStream.readVInt();
       }
 
       if (payPointer != null) {

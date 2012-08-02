@@ -95,11 +95,11 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   private long lastBlockPosFP;
   private long lastBlockPayFP;
   private int lastBlockPosBufferUpto;
-  private int lastBlockEndOffset;
+  private int lastBlockStartOffset;
   private int lastBlockPayloadByteUpto;
   private int lastDocID;
   private int lastPosition;
-  private int lastEndOffset;
+  private int lastStartOffset;
   private int docCount;
 
   final byte[] encoded;
@@ -230,7 +230,7 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
         lastBlockPayFP = payOut.getFilePointer();
       }
       lastBlockPosBufferUpto = posBufferUpto;
-      lastBlockEndOffset = lastEndOffset;
+      lastBlockStartOffset = lastStartOffset;
       lastBlockPayloadByteUpto = payloadByteUpto;
       saveNextPosBlock = false;
       if (DEBUG) {
@@ -269,7 +269,7 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
         if (DEBUG) {
           System.out.println("  bufferSkip at writeBlock: lastDocID=" + lastBlockDocID + " docCount=" + (docCount-blockSize));
         }
-        skipWriter.bufferSkip(lastBlockDocID, docCount-blockSize, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockEndOffset, lastBlockPayloadByteUpto);
+        skipWriter.bufferSkip(lastBlockDocID, docCount-blockSize, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
       }
       lastBlockDocID = docID;
       saveNextPosBlock = true;
@@ -288,7 +288,7 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
     }
 
     lastPosition = 0;
-    lastEndOffset = 0;
+    lastStartOffset = 0;
   }
 
   /** Add a new position & payload */
@@ -313,11 +313,11 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
     }
 
     if (fieldHasOffsets) {
-      assert startOffset >= lastEndOffset;
+      assert startOffset >= lastStartOffset;
       assert endOffset >= startOffset;
-      offsetStartDeltaBuffer[posBufferUpto] = startOffset - lastEndOffset;
+      offsetStartDeltaBuffer[posBufferUpto] = startOffset - lastStartOffset;
       offsetLengthBuffer[posBufferUpto] = endOffset - startOffset;
-      lastEndOffset = endOffset;
+      lastStartOffset = startOffset;
     }
     
     posBufferUpto++;
@@ -388,7 +388,7 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
       if (DEBUG) {
         System.out.println("  bufferSkip at finishTerm: lastDocID=" + lastBlockDocID + " docCount=" + lastDocCount);
       }
-      skipWriter.bufferSkip(lastBlockDocID, lastDocCount, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockEndOffset, lastBlockPayloadByteUpto);
+      skipWriter.bufferSkip(lastBlockDocID, lastDocCount, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
     }
 
     if (DEBUG) {
