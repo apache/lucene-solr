@@ -158,17 +158,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
     this.zkEnabled  = coreDesc.getCoreContainer().isZooKeeperAware();
+    zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+    if (zkEnabled) {
+      numNodes =  zkController.getZkStateReader().getCloudState().getLiveNodes().size();
+    }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
 
-    
-    zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+   
     
     cloudDesc = coreDesc.getCloudDescriptor();
     
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
     }
-    
+
     cmdDistrib = new SolrCmdDistributor(numNodes);
   }
 
