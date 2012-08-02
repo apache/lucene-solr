@@ -48,7 +48,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
   @Override
   int getStreamCount() {
-    if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
+    if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
       return 1;
     else
       return 2;
