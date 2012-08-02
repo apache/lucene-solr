@@ -15,6 +15,9 @@ New features
   underlying PayloadFunction's explanation as the explanation
   for the payload score. (Scott Smerchek via Robert Muir)
   
+* LUCENE-4069: Added BloomFilteringPostingsFormat for use with low-frequency terms
+  such as primary keys (Mark Harwood, Mike McCandless) 
+  
 * LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
   iteration marks. (Robert Muir, Christian Moen)
 
