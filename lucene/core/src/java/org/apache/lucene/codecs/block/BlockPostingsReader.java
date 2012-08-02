@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.block;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
@@ -270,7 +271,10 @@ public final class BlockPostingsReader extends PostingsReaderBase {
                                                DocsAndPositionsEnum reuse, int flags)
     throws IOException {
 
-    if ((flags & DocsAndPositionsEnum.FLAG_OFFSETS) == 0 &&
+    boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    boolean indexHasPayloasd = fieldInfo.hasPayloads();
+
+    if ((!indexHasOffsets || (flags & DocsAndPositionsEnum.FLAG_OFFSETS) == 0) &&
         (!fieldInfo.hasPayloads() || (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) == 0)) {
       BlockDocsAndPositionsEnum docsAndPositionsEnum;
       if (reuse instanceof BlockDocsAndPositionsEnum) {
@@ -361,6 +365,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       skipOffset = termState.skipOffset;
 
       doc = -1;
+      if (!indexHasFreq) {
+        Arrays.fill(freqBuffer, 1);
+      }
       accum = 0;
       docUpto = 0;
       docBufferUpto = blockSize;
