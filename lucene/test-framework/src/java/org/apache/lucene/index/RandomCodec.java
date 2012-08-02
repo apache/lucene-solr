@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
+import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene40Postings;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.codecs.lucene40ords.Lucene40WithOrds;
@@ -96,6 +97,10 @@ public class RandomCodec extends Lucene40Codec {
         new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
         // add pulsing again with (usually) different parameters
         new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
+        //TODO as a PostingsFormat which wraps others, we should allow TestBloomFilteredLucene40Postings to be constructed 
+        //with a choice of concrete PostingsFormats. Maybe useful to have a generic means of marking and dealing 
+        //with such "wrapper" classes?
+        new TestBloomFilteredLucene40Postings(),        
         new MockSepPostingsFormat(),
         new MockFixedIntBlockPostingsFormat(_TestUtil.nextInt(random, 1, 2000)),
         new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)),

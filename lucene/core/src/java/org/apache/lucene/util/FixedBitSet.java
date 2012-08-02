@@ -54,6 +54,12 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     bits = new long[bits2words(numBits)];
   }
 
+  public FixedBitSet(long[]storedBits,int numBits) {
+    this.numBits = numBits;
+    this.bits = storedBits;
+  }  
+  
+  
   /** Makes full copy. */
   public FixedBitSet(FixedBitSet other) {
     bits = new long[other.bits.length];
