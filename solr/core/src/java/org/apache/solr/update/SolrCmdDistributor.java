@@ -221,7 +221,7 @@ public class SolrCmdDistributor {
  
     for (Node node : nodes) {
       List<AddRequest> alist = adds.get(node);
-      if (alist == null || alist.size() < limit) return false;
+      if (alist == null || alist.size() < limit) continue;
   
       UpdateRequestExt ureq = new UpdateRequestExt();
       
