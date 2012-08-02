@@ -173,6 +173,9 @@ Bug Fixes
 * SOLR-3677: Fixed missleading error message in web ui to distinguish between 
   no SolrCores loaded vs. no /admin/ handler available.
   (hossman, steffkes)
+  
+* SOLR-3428: SolrCmdDistributor flushAdds/flushDeletes can cause repeated 
+  adds/deletes to be sent (Mark Miller, Per Steffensen)
 
 Other Changes
 ----------------------
