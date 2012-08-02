@@ -1241,6 +1241,78 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
   }
 
+  /** Expert: attempts to delete by document ID, as long as
+   *  the provided reader is a near-real-time reader (from {@link
+   *  DirectoryReader#open(IndexWriter,boolean)}).  If the
+   *  provided reader is an NRT reader obtained from this
+   *  writer, and its segment has not been merged away, then
+   *  the delete succeeds and this method returns true; else, it
+   *  returns false the caller must then separately delete by
+   *  Term or Query.
+   *
+   *  <b>NOTE</b>: this method can only delete documents
+   *  visible to the currently open NRT reader.  If you need
+   *  to delete documents indexed after opening the NRT
+   *  reader you must use the other deleteDocument methods
+   *  (e.g., {@link #deleteDocuments(Term)}). */
+  public synchronized boolean tryDeleteDocument(IndexReader readerIn, int docID) throws IOException {
+
+    final AtomicReader reader;
+    if (readerIn instanceof AtomicReader) {
+      // Reader is already atomic: use the incoming docID:
+      reader = (AtomicReader) readerIn;
+    } else {
+      // Composite reader: lookup sub-reader and re-base docID:
+      List<AtomicReaderContext> leaves = readerIn.getTopReaderContext().leaves();
+      int subIndex = ReaderUtil.subIndex(docID, leaves);
+      reader = leaves.get(subIndex).reader();
+      docID -= leaves.get(subIndex).docBase;
+      assert docID >= 0;
+      assert docID < reader.maxDoc();
+    }
+
+    if (!(reader instanceof SegmentReader)) {
+      throw new IllegalArgumentException("the reader must be a SegmentReader or composite reader containing only SegmentReaders");
+    }
+      
+    final SegmentInfoPerCommit info = ((SegmentReader) reader).getSegmentInfo();
+
+    // TODO: this is a slow linear search, but, number of
+    // segments should be contained unless something is
+    // seriously wrong w/ the index, so it should be a minor
+    // cost:
+
+    if (segmentInfos.indexOf(info) != -1) {
+      ReadersAndLiveDocs rld = readerPool.get(info, false);
+      if (rld != null) {
+        synchronized(bufferedDeletesStream) {
+          rld.initWritableLiveDocs();
+          if (rld.delete(docID)) {
+            final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
+            if (fullDelCount == rld.info.info.getDocCount()) {
+              // If a merge has already registered for this
+              // segment, we leave it in the readerPool; the
+              // merge will skip merging it and will then drop
+              // it once it's done:
+              if (!mergingSegments.contains(rld.info)) {
+                segmentInfos.remove(rld.info);
+                readerPool.drop(rld.info);
+                checkpoint();
+              }
+            }
+          }
+          //System.out.println("  yes " + info.info.name + " " + docID);
+          return true;
+        }
+      } else {
+        //System.out.println("  no rld " + info.info.name + " " + docID);
+      }
+    } else {
+      //System.out.println("  no seg " + info.info.name + " " + docID);
+    }
+    return false;
+  }
+
   /**
    * Deletes the document(s) containing any of the
    * terms. All given deletes are applied and flushed atomically

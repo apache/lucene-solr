@@ -1,7 +1,5 @@
 package org.apache.lucene.index;
 
-import java.util.List;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +16,8 @@ import java.util.List;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.List;
 
 /**
  * A struct like class that represents a hierarchical relationship between
