@@ -96,7 +96,7 @@ public class FuzzySet {
    * than deciding how much memory to throw at the problem.
    * @param maxNumberOfValuesExpected
    * @param desiredSaturation A number between 0 and 1 expressing the % of bits set once all values have been recorded
-   * @return
+   * @return The size of the set nearest to the required size
    */
   public static int getNearestSetSize(int maxNumberOfValuesExpected,
       float desiredSaturation) {
@@ -213,7 +213,7 @@ public class FuzzySet {
   /**
    * Records a value in the set. The referenced bytes are hashed and then modulo n'd where n is the
    * chosen size of the internal bitset.
-   * @param bytes
+   * @param value the key value to be hashed
    * @throws IOException
    */
   public void addValue(BytesRef value) throws IOException {    
@@ -229,7 +229,7 @@ public class FuzzySet {
   
   /**
    * 
-   * @param targetSaturation A number between 0 and 1 describing the % of bits that would ideally be set in the 
+   * @param targetMaxSaturation A number between 0 and 1 describing the % of bits that would ideally be set in the 
    * result. Lower values have better qccuracy but require more space.
    * @return a smaller FuzzySet or null if the current set is already over-saturated
    */

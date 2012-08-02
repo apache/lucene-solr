@@ -54,9 +54,9 @@ public abstract class BloomFilterFactory {
 
   /**
    * Used to determine if the given filter has reached saturation and should be retired i.e. not saved any more
-   * @param bloomFilter
-   * @param fieldInfo
-   * @return
+   * @param bloomFilter The bloomFilter being tested
+   * @param fieldInfo The field with which this filter is associated
+   * @return true if the set has reached saturation and should be retired
    */
   public abstract boolean isSaturated(FuzzySet bloomFilter, FieldInfo fieldInfo);
   
