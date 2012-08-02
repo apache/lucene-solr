@@ -1096,13 +1096,6 @@ public class TestFSTs extends LuceneTestCase {
   // file, up until a time limit
   public void testRealTerms() throws Exception {
 
-    // TODO: is this necessary? we use the annotation...
-    final String defaultFormat = _TestUtil.getPostingsFormat("abracadabra");
-    if (defaultFormat.equals("SimpleText") || defaultFormat.equals("Memory")) {
-      // no
-      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
-    }
-
     final LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
     final int RUN_TIME_MSEC = atLeast(500);
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
