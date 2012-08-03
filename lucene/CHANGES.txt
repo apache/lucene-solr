@@ -95,6 +95,10 @@ API Changes
   instead of the previous boolean needsFlags; consistent with the changes
   for DocsAndPositionsEnum in LUCENE-4230. Currently othe only flag
   is DocsEnum.FLAG_FREQS. (Robert Muir, Mike McCandless)
+  
+* LUCENE-3616: TextField(String, Reader, Store) was reduced to TextField(String, Reader),
+  as the Store parameter didn't make sense: if you supplied Store.YES, you would only 
+  receive an exception anyway. (Robert Muir)
 
 Optimizations
 
@@ -164,6 +168,9 @@ Changes in Runtime Behavior
 
 * LUCENE-4109: Enable position increments in the flexible queryparser by default.
   (Karsten Rauch via Robert Muir)
+  
+* LUCENE-3616: Field throws exception if you try to set a boost on an 
+  unindexed field or one that omits norms. (Robert Muir)
 
 Build
 
