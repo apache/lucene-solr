@@ -546,7 +546,7 @@ public final class ZkController {
       if (tries == 60) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "There is conflicting information about the leader of shard: "
-                + cloudDesc.getShardId());
+                + cloudDesc.getShardId() + " our state says:" + leaderUrl + " but zookeeper says:" + cloudStateLeader);
       }
       Thread.sleep(1000);
       tries++;
