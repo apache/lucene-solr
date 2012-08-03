@@ -157,6 +157,9 @@ Bug Fixes
   instance are already checked out and queued up but not yet flushed. 
   (Simon Willnauer)
 
+* LUCENE-4282: Automaton FuzzyQuery didnt always deliver all results.
+  (Johannes Christen, Uwe Schindler, Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-4109: Enable position increments in the flexible queryparser by default.
