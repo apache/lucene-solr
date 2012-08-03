@@ -443,6 +443,8 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
   else:
     extras = ()
 
+  # TODO: if solr, verify lucene/licenses, solr/licenses are present
+
   for e in extras:
     if e not in l:
       raise RuntimeError('%s: %s missing from artifact %s' % (project, e, artifact))
@@ -545,12 +547,12 @@ def readSolrOutput(p, startupEvent, logFile):
   try:
     while True:
       line = p.readline()
-      if line == '':
+      if len(line) == 0:
         break
       f.write(line)
       f.flush()
       # print 'SOLR: %s' % line.strip()
-      if line.find('Started SocketConnector@0.0.0.0:8983') != -1:
+      if line.decode('UTF-8').find('Started SocketConnector@0.0.0.0:8983') != -1:
         startupEvent.set()
   finally:
     f.close()
@@ -781,7 +783,8 @@ def verifyMavenDigests(artifacts):
       inputFile = open(artifactFile, 'rb')
       while True:
         bytes = inputFile.read(65536)
-        if bytes == '': break
+        if len(bytes) == 0:
+          break
         md5.update(bytes)
         sha1.update(bytes)
       inputFile.close()
@@ -1082,5 +1085,9 @@ def smokeTest(baseURL, version, tmpDir, isSigned):
   checkMaven(baseURL, tmpDir, version, isSigned)
 
 if __name__ == '__main__':
-  main()
+  try:
+    main()
+  except:
+    import traceback
+    traceback.print_exc()
   
