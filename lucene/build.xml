@@ -572,7 +572,7 @@
     </sequential>
   </target>
 
-  <target name="jar-checksums" depends="resolve">
+  <target name="jar-checksums" depends="clean-jars,resolve">
     <jar-checksum-macro srcdir="${common.dir}" dstdir="${common.dir}/licenses"/>
   </target>
 
