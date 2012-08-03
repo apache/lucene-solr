@@ -210,6 +210,14 @@ Other Changes
 
 * SOLR-3682: Fail to parse schema.xml if uniqueKeyField is multivalued (hossman)
 
+* SOLR-2115: DIH no longer requires the "config" parameter to be specified in solrconfig.xml.
+  Instead, the configuration is loaded and parsed with every import.  This allows the use of
+  a different configuration with each import, and makes correcting configuration errors simpler.
+  Also, the configuration itself can be passed using the "dataConfig" parameter rather than
+  using a file (this previously worked in debug mode only).  When configuration errors are 
+  encountered, the error message is returned in XML format.  (James Dyer)
+  
+
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:

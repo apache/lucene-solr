@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.solr.handler.dataimport.DataImporter;
 import org.w3c.dom.Element;
@@ -49,8 +48,8 @@ public class DIHConfiguration {
   private final String onImportEnd;
   private final List<Map<String, String>> functions;
   private final Script script;
-  private final Map<String, Properties> dataSources;
-  public DIHConfiguration(Element element, DataImporter di, List<Map<String, String>> functions, Script script, Map<String, Properties> dataSources) {
+  private final Map<String, Map<String,String>> dataSources;
+  public DIHConfiguration(Element element, DataImporter di, List<Map<String, String>> functions, Script script, Map<String, Map<String,String>> dataSources) {
     this.deleteQuery = ConfigParseUtil.getStringAttribute(element, "deleteQuery", null);
     this.onImportStart = ConfigParseUtil.getStringAttribute(element, "onImportStart", null);
     this.onImportEnd = ConfigParseUtil.getStringAttribute(element, "onImportEnd", null);
@@ -90,7 +89,7 @@ public class DIHConfiguration {
   public List<Map<String,String>> getFunctions() {
     return functions;
   }
-  public Map<String,Properties> getDataSources() {
+  public Map<String,Map<String,String>> getDataSources() {
     return dataSources;
   }
   public Script getScript() {
