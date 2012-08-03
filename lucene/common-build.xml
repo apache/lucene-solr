@@ -1567,6 +1567,43 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </macrodef>
 
+  <macrodef name="jar-checksum-macro">
+      <attribute name="srcdir"/>
+      <attribute name="dstdir"/>
+    <sequential>
+      <delete>
+        <fileset dir="@{dstdir}">
+          <include name="**/*.jar.sha1"/>
+        </fileset>
+      </delete>
+
+      <!-- checksum task does not have a flatten=true -->
+      <tempfile property="jar-checksum.temp.dir"/>
+      <mkdir dir="${jar-checksum.temp.dir}"/>
+      <copy todir="${jar-checksum.temp.dir}" flatten="true">
+        <fileset dir="@{srcdir}">
+          <include name="**/*.jar"/>
+          <!-- todo make this something passed into the macro and not some hardcoded set -->
+          <exclude name="build/**"/>
+          <exclude name="dist/**"/>
+          <exclude name="package/**"/>
+          <exclude name="example/exampledocs/**"/>
+        </fileset>
+      </copy>
+
+      <checksum algorithm="SHA1" fileext=".sha1" todir="@{dstdir}">
+        <fileset dir="${jar-checksum.temp.dir}"/>
+      </checksum>
+
+      <delete dir="${jar-checksum.temp.dir}"/>
+
+      <fixcrlf 
+        srcdir="@{dstdir}"
+        includes="**/*.jar.sha1"
+        eol="lf" fixlast="true" encoding="US-ASCII" />
+    </sequential>
+  </macrodef>
+
   <macrodef name="sign-artifacts-macro">
     <attribute name="artifacts.dir"/>
     <sequential>
