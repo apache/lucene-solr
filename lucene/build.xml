@@ -35,8 +35,7 @@
                         MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
                         CHANGES.txt,
                         **/lib/*.jar,
-                        **/lib/*LICENSE*.txt,
-                        **/lib/*NOTICE*.txt,
+                        licenses/**,
                         */docs/,**/README*"
               excludes="build/**,site/**,tools/**"
   />
