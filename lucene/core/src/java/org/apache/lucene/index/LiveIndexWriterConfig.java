@@ -462,7 +462,7 @@ public class LiveIndexWriterConfig {
   /**
    * @see IndexWriterConfig#setFlushPolicy(FlushPolicy)
    */
-  public FlushPolicy getFlushPolicy() {
+  FlushPolicy getFlushPolicy() {
     return flushPolicy;
   }
   
@@ -497,7 +497,6 @@ public class LiveIndexWriterConfig {
     sb.append("mergePolicy=").append(getMergePolicy()).append("\n");
     sb.append("indexerThreadPool=").append(getIndexerThreadPool()).append("\n");
     sb.append("readerPooling=").append(getReaderPooling()).append("\n");
-    sb.append("flushPolicy=").append(getFlushPolicy()).append("\n");
     sb.append("perThreadHardLimitMB=").append(getRAMPerThreadHardLimitMB()).append("\n");
     return sb.toString();
   }
