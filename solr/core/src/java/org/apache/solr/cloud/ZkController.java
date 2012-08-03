@@ -121,6 +121,8 @@ public final class ZkController {
   // may accept defaults or use mocks rather than pulling things from a CoreContainer
   private CoreContainer cc;
 
+  protected volatile Overseer overseer;
+
   /**
    * @param cc if null, recovery will not be enabled
    * @param zkServerAddress
@@ -170,10 +172,8 @@ public final class ZkController {
                 shardHandler = cc.getShardHandlerFactory().getShardHandler();
                 adminPath = cc.getAdminPath();
               }
-              
-              ElectionContext context = new OverseerElectionContext(
-                  shardHandler, adminPath,
-                  getNodeName(), zkStateReader);
+              ZkController.this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
+              ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
               overseerElector.joinElection(context);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
@@ -242,6 +242,11 @@ public final class ZkController {
    * Closes the underlying ZooKeeper client.
    */
   public void close() {
+    try {
+      overseer.close();
+    } catch(Throwable t) {
+      log.error("Error closing overseer", t);
+    }
     try {
       zkClient.close();
     } catch (InterruptedException e) {
@@ -366,8 +371,8 @@ public final class ZkController {
       }
       
       overseerElector = new LeaderElector(zkClient);
-      ElectionContext context = new OverseerElectionContext(shardHandler,
-          adminPath, getNodeName(), zkStateReader);
+      this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
+      ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
       overseerElector.setup(context);
       overseerElector.joinElection(context);
       zkStateReader.createClusterStateWatchersAndUpdate();

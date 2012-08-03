@@ -47,7 +47,7 @@ public class Overseer {
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
-  private static class CloudStateUpdater implements Runnable {
+  private class CloudStateUpdater implements Runnable {
     
     private static final String DELETECORE = "deletecore";
     private final ZkStateReader reader;
@@ -70,7 +70,7 @@ public class Overseer {
     @Override
     public void run() {
         
-      if(amILeader()) {
+      if(amILeader() && !Overseer.this.isClosed) {
         // see if there's something left from the previous Overseer and re
         // process all events that were not persisted into cloud state
           synchronized (reader.getUpdateLock()) { //XXX this only protects against edits inside single node
@@ -110,7 +110,7 @@ public class Overseer {
         }
       
       log.info("Starting to work on the main queue");
-      while (amILeader()) {
+      while (amILeader() && !isClosed) {
         synchronized (reader.getUpdateLock()) {
           try {
             byte[] head = stateUpdateQueue.peek();
@@ -401,20 +401,44 @@ public class Overseer {
      }
     
   }
+
+  private Thread ccThread;
+
+  private Thread updaterThread;
+
+  private volatile boolean isClosed;
+
+  private ZkStateReader reader;
+
+  private ShardHandler shardHandler;
+
+  private String adminPath;
   
-  public Overseer(ShardHandler shardHandler, String adminPath, final ZkStateReader reader, final String id) throws KeeperException, InterruptedException {
+  public Overseer(ShardHandler shardHandler, String adminPath, final ZkStateReader reader) throws KeeperException, InterruptedException {
+    this.reader = reader;
+    this.shardHandler = shardHandler;
+    this.adminPath = adminPath;
+  }
+  
+  public void start(String id) {
     log.info("Overseer (id=" + id + ") starting");
     createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
-    Thread updaterThread = new Thread(tg, new CloudStateUpdater(reader, id));
+    updaterThread = new Thread(tg, new CloudStateUpdater(reader, id));
     updaterThread.setDaemon(true);
-    updaterThread.start();
-    
+
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
-    Thread ccThread = new Thread(ccTg, new OverseerCollectionProcessor(reader, id, shardHandler, adminPath));
+    ccThread = new Thread(ccTg, new OverseerCollectionProcessor(reader, id, shardHandler, adminPath), 
+        "Overseer-" + id);
     ccThread.setDaemon(true);
+    
+    updaterThread.start();
     ccThread.start();
+  }
+  
+  public void close() {
+    isClosed = true;
   }
 
   /**
