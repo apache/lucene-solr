@@ -540,18 +540,18 @@ public final class ZkController {
     String leaderUrl = getLeaderProps(collection, cloudDesc.getShardId()).getCoreUrl();
     
     // now wait until our currently cloud state contains the latest leader
-    String cloudStateLeader = zkStateReader.getLeaderUrl(collection, cloudDesc.getShardId(), 30000);
+    String cloudStateLeader = zkStateReader.getLeaderUrl(collection, shardId, 30000);
     int tries = 0;
     while (!leaderUrl.equals(cloudStateLeader)) {
       if (tries == 60) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "There is conflicting information about the leader of shard: "
-                + cloudDesc.getShardId() + " our state says:" + leaderUrl + " but zookeeper says:" + cloudStateLeader);
+                + cloudDesc.getShardId() + " our state says:" + cloudStateLeader + " but zookeeper says:" + leaderUrl);
       }
       Thread.sleep(1000);
       tries++;
-      cloudStateLeader = zkStateReader.getLeaderUrl(collection,
-          cloudDesc.getShardId(), 30000);
+      cloudStateLeader = zkStateReader.getLeaderUrl(collection, shardId, 30000);
+      leaderUrl = getLeaderProps(collection, cloudDesc.getShardId()).getCoreUrl();
     }
     
     String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
@@ -617,10 +617,10 @@ public final class ZkController {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  private ZkCoreNodeProps getLeaderProps(final String collection, final String slice)
-      throws KeeperException, InterruptedException {
+  private ZkCoreNodeProps getLeaderProps(final String collection,
+      final String slice) throws KeeperException, InterruptedException {
     int iterCount = 60;
-    while (iterCount-- > 0)
+    while (iterCount-- > 0) {
       try {
         byte[] data = zkClient.getData(
             ZkStateReader.getShardLeadersPath(collection, slice), null, null,
@@ -631,6 +631,7 @@ public final class ZkController {
       } catch (NoNodeException e) {
         Thread.sleep(500);
       }
+    }
     throw new RuntimeException("Could not get leader props");
   }
 

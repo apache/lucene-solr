@@ -32,12 +32,16 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.HashPartitioner.Range;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
  * {@link ZkStateReader#getCloudState()}.
  */
 public class CloudState implements JSONWriter.Writable {
+  private static Logger log = LoggerFactory.getLogger(CloudState.class);
+  
 	private final Map<String, Map<String,Slice>> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
 	private final Set<String> liveNodes;
   
@@ -71,10 +75,10 @@ public class CloudState implements JSONWriter.Writable {
             Map<String,ZkNodeProps> leadersForCollection = leaders.get(collection.getKey());
             if (leadersForCollection == null) {
               leadersForCollection = new HashMap<String,ZkNodeProps>();
-        
               leaders.put(collection.getKey(), leadersForCollection);
             }
             leadersForCollection.put(sliceEntry.getKey(), props);
+            break; // we found the leader for this shard
           }
         }
       }
