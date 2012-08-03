@@ -112,7 +112,7 @@ def getHREFs(urlString):
       break
 
   links = []
-  for subUrl, text in reHREF.findall(urllib.request.urlopen(urlString).read()):
+  for subUrl, text in reHREF.findall(urllib.request.urlopen(urlString).read().decode('UTF-8')):
     fullURL = urllib.parse.urljoin(urlString, subUrl)
     links.append((text, fullURL))
   return links
@@ -144,7 +144,7 @@ def download(name, urlString, tmpDir, quiet=False):
     print('    %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
     
 def load(urlString):
-  return urllib.request.urlopen(urlString).read()
+  return urllib.request.urlopen(urlString).read().decode('utf-8')
   
 def checkSigs(project, urlString, version, tmpDir, isSigned):
 
@@ -246,7 +246,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
       run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
       # Forward any GPG warnings, except the expected one (since its a clean world)
-      f = open(logFile, 'rb')
+      f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
         and line.find('WARNING: This key is not certified with a trusted signature') == -1:
@@ -260,7 +260,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
       run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
       # Forward any GPG warnings:
-      f = open(logFile, 'rb')
+      f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1:
           print('      GPG: %s' % line.strip())
@@ -287,7 +287,7 @@ def testChangesText(dir, version, project):
     if 'CHANGES.txt' in files:
       fullPath = '%s/CHANGES.txt' % root
       #print 'CHECK %s' % fullPath
-      checkChangesContent(open(fullPath).read(), version, fullPath, project, False)
+      checkChangesContent(open(fullPath, encoding='UTF-8').read(), version, fullPath, project, False)
       
 def checkChangesContent(s, version, name, project, isHTML):
 
@@ -347,10 +347,10 @@ def verifyDigests(artifact, urlString, tmpDir):
   
   m = hashlib.md5()
   s = hashlib.sha1()
-  f = open('%s/%s' % (tmpDir, artifact))
+  f = open('%s/%s' % (tmpDir, artifact), 'rb')
   while True:
     x = f.read(65536)
-    if x == '':
+    if len(x) == 0:
       break
     m.update(x)
     s.update(x)
@@ -526,8 +526,8 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     checkJavadocpath('%s/docs' % unpackPath)
 
 def testNotice(unpackPath):
-  solrNotice = open('%s/NOTICE.txt' % unpackPath).read()
-  luceneNotice = open('%s/lucene/NOTICE.txt' % unpackPath).read()
+  solrNotice = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
+  luceneNotice = open('%s/lucene/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
 
   expected = """
 =========================================================================
@@ -580,7 +580,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     print('      index example docs...')
     run('sh ./exampledocs/post.sh ./exampledocs/*.xml', 'post-example-docs.log')
     print('      run query...')
-    s = urllib.request.urlopen('http://localhost:8983/solr/select/?q=video').read()
+    s = urllib.request.urlopen('http://localhost:8983/solr/select/?q=video').read().decode('UTF-8')
     if s.find('<result name="response" numFound="3" start="0">') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
@@ -632,7 +632,7 @@ def testDemo(isSrc, version):
   run('%s; java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (javaExe('1.6'), cp, docsDir), 'index.log')
   run('%s; java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % (javaExe('1.6'), cp), 'search.log')
   reMatchingDocs = re.compile('(\d+) total matching documents')
-  m = reMatchingDocs.search(open('search.log', 'rb').read())
+  m = reMatchingDocs.search(open('search.log', encoding='UTF-8').read())
   if m is None:
     raise RuntimeError('lucene demo\'s SearchFiles found no results')
   else:
@@ -772,13 +772,13 @@ def verifyMavenDigests(artifacts):
         raise RuntimeError('missing: MD5 digest for %s' % artifactFile)
       if artifactFile + '.sha1' not in artifacts[project]:
         raise RuntimeError('missing: SHA1 digest for %s' % artifactFile)
-      with open(artifactFile + '.md5', 'r') as md5File:
+      with open(artifactFile + '.md5', encoding='UTF-8') as md5File:
         md5Expected = md5File.read().strip()
-      with open(artifactFile + '.sha1', 'r') as sha1File:
+      with open(artifactFile + '.sha1', encoding='UTF-8') as sha1File:
         sha1Expected = sha1File.read().strip()
       md5 = hashlib.md5()
       sha1 = hashlib.sha1()
-      inputFile = open(artifactFile)
+      inputFile = open(artifactFile, 'rb')
       while True:
         bytes = inputFile.read(65536)
         if bytes == '': break
@@ -846,7 +846,7 @@ def checkNonMavenizedDeps(nonMavenizedDependencies, POMtemplates, artifacts,
                 if releaseBranchSvnURL is None:
                   pomPath = '%s/%s/%s' % (workingCopy, pomDir, pomFile)
                   if os.path.exists(pomPath):
-                    doc2 = ET.XML(open(pomPath).read())
+                    doc2 = ET.XML(open(pomPath, encoding='UTF-8').read())
                     break
                 else:
                   entries = getDirEntries('%s/%s' % (releaseBranchSvnURL, pomDir))
@@ -904,7 +904,7 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts):
       run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
       # Forward any GPG warnings, except the expected one (since its a clean world)
-      f = open(logFile, 'rb')
+      f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
            and line.find('WARNING: This key is not certified with a trusted signature') == -1 \
@@ -918,7 +918,7 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts):
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
       run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
       # Forward any GPG warnings:
-      f = open(logFile, 'rb')
+      f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
            and line.find('WARNING: This key is not certified with a trusted signature') == -1 \
