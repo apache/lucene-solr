@@ -61,7 +61,7 @@ final public class AdjustableSemaphore {
     this.semaphore.acquire();
   }
   
-  public int getMaxPermits() {
+  public synchronized int getMaxPermits() {
     return maxPermits;
   }
   
