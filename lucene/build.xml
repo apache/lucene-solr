@@ -38,7 +38,7 @@
                         **/lib/*LICENSE*.txt,
                         **/lib/*NOTICE*.txt,
                         */docs/,**/README*"
-              excludes="build/**,site/**"
+              excludes="build/**,site/**,tools/**"
   />
 
 
