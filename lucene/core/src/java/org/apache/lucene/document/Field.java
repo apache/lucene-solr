@@ -377,6 +377,11 @@ public class Field implements IndexableField {
    * @see org.apache.lucene.search.similarities.DefaultSimilarity#encodeNormValue(float)
    */
   public void setBoost(float boost) {
+    if (boost != 1.0f) {
+      if (type.indexed() == false || type.omitNorms()) {
+        throw new IllegalArgumentException("You cannot set an index-time boost on an unindexed field, or one that omits norms");
+      }
+    }
     this.boost = boost;
   }
 

@@ -74,18 +74,18 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
       }
       //latitude
       SchemaField lat = subField(field, i);
-      f[i] = lat.createField(String.valueOf(latLon[LAT]), lat.omitNorms() ? 1F : boost);
+      f[i] = lat.createField(String.valueOf(latLon[LAT]), lat.indexed() && !lat.omitNorms() ? boost : 1f);
       i++;
       //longitude
       SchemaField lon = subField(field, i);
-      f[i] = lon.createField(String.valueOf(latLon[LON]), lon.omitNorms() ? 1F : boost);
+      f[i] = lon.createField(String.valueOf(latLon[LON]), lon.indexed() && !lon.omitNorms() ? boost : 1f);
 
     }
 
     if (field.stored()) {
       FieldType customType = new FieldType();
       customType.setStored(true);
-      f[f.length - 1] = createField(field.getName(), externalVal, customType, boost);
+      f[f.length - 1] = createField(field.getName(), externalVal, customType, 1f);
     }
     return f;
   }

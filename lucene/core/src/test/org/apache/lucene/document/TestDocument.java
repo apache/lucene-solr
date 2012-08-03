@@ -359,33 +359,4 @@ public class TestDocument extends LuceneTestCase {
     r.close();
     dir.close();
   }
-  
-  public void testBoost() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iw = new IndexWriter(dir, iwc);
-    Document doc = new Document();
-    doc.add(new StringField("field1", "sometext", Field.Store.YES));
-    doc.add(new TextField("field2", "sometext", Field.Store.NO));
-    doc.add(new StringField("foo", "bar", Field.Store.NO));
-    iw.addDocument(doc); // add an 'ok' document
-    try {
-      doc = new Document();
-      // try to boost with norms omitted
-      StringField field = new StringField("foo", "baz", Field.Store.NO);
-      field.setBoost(5.0f);
-      doc.add(field);
-      iw.addDocument(doc);
-      fail("didn't get any exception, boost silently discarded");
-    } catch (UnsupportedOperationException expected) {
-      // expected
-    }
-    DirectoryReader ir = DirectoryReader.open(iw, false);
-    assertEquals(1, ir.numDocs());
-    assertEquals("sometext", ir.document(0).get("field1"));
-    ir.close();
-    iw.close();
-    dir.close();
-  }
 }

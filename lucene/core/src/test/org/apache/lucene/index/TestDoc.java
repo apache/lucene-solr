@@ -186,7 +186,7 @@ public class TestDoc extends LuceneTestCase {
       File file = new File(workDir, fileName);
       Document doc = new Document();
       InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
-      doc.add(new TextField("contents", is, Field.Store.NO));
+      doc.add(new TextField("contents", is));
       writer.addDocument(doc);
       writer.commit();
       is.close();
