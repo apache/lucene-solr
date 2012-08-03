@@ -905,11 +905,15 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
 
   private SolrZkClient electNewOverseer(String address) throws InterruptedException,
-      TimeoutException, IOException, KeeperException, ParserConfigurationException, SAXException {
-    SolrZkClient zkClient  = new SolrZkClient(address, TIMEOUT);
+ TimeoutException, IOException,
+      KeeperException, ParserConfigurationException, SAXException {
+    SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
-    ElectionContext ec = new OverseerElectionContext(new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", address.replaceAll("/", "_"), reader);
+    // TODO: close Overseer
+    Overseer overseer = new Overseer(
+        new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", reader);
+    ElectionContext ec = new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
     overseerElector.setup(ec);
     overseerElector.joinElection(ec);
     return zkClient;
