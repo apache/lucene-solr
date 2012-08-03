@@ -249,7 +249,7 @@ public class SolrCmdDistributor {
     Set<Node> nodes = deletes.keySet();
     for (Node node : nodes) {
       List<DeleteRequest> dlist = deletes.get(node);
-      if (dlist == null || dlist.size() < limit) return false;
+      if (dlist == null || dlist.size() < limit) continue;
       UpdateRequestExt ureq = new UpdateRequestExt();
       
       ModifiableSolrParams combinedParams = new ModifiableSolrParams();
