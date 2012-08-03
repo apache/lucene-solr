@@ -185,7 +185,7 @@ public class ZkStateReader {
           if (EventType.None.equals(event.getType())) {
             return;
           }
-          log.info("A cluster state change has occurred");
+          log.info("A cluster state change has occurred - updating...");
           try {
             
             // delayed approach
@@ -411,9 +411,8 @@ public class ZkStateReader {
   public ZkNodeProps getLeaderProps(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.currentTimeMillis() + timeout;
     while (System.currentTimeMillis() < timeoutAt) {
-      if (cloudState != null) {
-        final CloudState currentState = cloudState;      
-        final ZkNodeProps nodeProps = currentState.getLeader(collection, shard);
+      if (cloudState != null) {    
+        final ZkNodeProps nodeProps = cloudState.getLeader(collection, shard);
         if (nodeProps != null) {
           return nodeProps;
         }
