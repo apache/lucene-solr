@@ -134,7 +134,7 @@ Bug Fixes
 * SOLR-1781: Replication index directories not always cleaned up. 
   (Markus Jelsma, Terje Sten Bjerkseth, Mark Miller)
 
-* SOLR-3639: Update ZooKeeper to 3.3.5 for a variety of bug fixes. (Mark Miller)
+* SOLR-3639: Update ZooKeeper to 3.3.6 for a variety of bug fixes. (Mark Miller)
 
 * SOLR-3629: Typo in solr.xml persistence when overriding the solrconfig.xml 
   file name using the "config" attribute prevented the override file from being
