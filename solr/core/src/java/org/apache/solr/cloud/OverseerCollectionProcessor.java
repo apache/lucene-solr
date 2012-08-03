@@ -64,6 +64,8 @@ public class OverseerCollectionProcessor implements Runnable {
   private String adminPath;
 
   private ZkStateReader zkStateReader;
+
+  private boolean isClosed;
   
   public OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId, ShardHandler shardHandler, String adminPath) {
     this.zkStateReader = zkStateReader;
@@ -76,7 +78,7 @@ public class OverseerCollectionProcessor implements Runnable {
   @Override
   public void run() {
     log.info("Process current queue of collection creations");
-    while (amILeader()) {
+    while (amILeader() && !isClosed) {
       try {
         byte[] head = workQueue.peek(true);
         
@@ -106,6 +108,10 @@ public class OverseerCollectionProcessor implements Runnable {
         return;
       }
     }
+  }
+  
+  public void close() {
+    isClosed = true;
   }
   
   private boolean amILeader() {
