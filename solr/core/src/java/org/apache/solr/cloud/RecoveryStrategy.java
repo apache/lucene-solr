@@ -282,6 +282,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         // last operation at the time of startup had the GAP flag set...
         // this means we were previously doing a full index replication
         // that probably didn't complete and buffering updates in the meantime.
+        log.info("Looks like a previous replication recovery did not complete - skipping peer sync");
         firstTime = false;    // skip peersync
       }
     }
@@ -350,7 +351,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           log.info("Sync Recovery was not successful - trying replication");
         }
         //System.out.println("Sync Recovery was not successful - trying replication");
-
+        log.info("Starting replication recovery");
         log.info("Begin buffering updates");
         ulog.bufferUpdates();
         replayed = false;
