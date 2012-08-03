@@ -393,7 +393,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    * @see #setMaxBufferedDocs(int)
    * @see #setRAMBufferSizeMB(double)
    */
-  public IndexWriterConfig setFlushPolicy(FlushPolicy flushPolicy) {
+  IndexWriterConfig setFlushPolicy(FlushPolicy flushPolicy) {
     this.flushPolicy = flushPolicy;
     return this;
   }
@@ -423,7 +423,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   }
   
   @Override
-  public FlushPolicy getFlushPolicy() {
+  FlushPolicy getFlushPolicy() {
     return flushPolicy;
   }
   
