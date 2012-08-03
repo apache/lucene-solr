@@ -120,7 +120,7 @@
 	<classpathentry kind="lib" path="solr/lib/slf4j-api-1.6.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.6.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
-	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.5.jar"/>
+	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.6.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/jetty-continuation-8.1.2.v20120308.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/jetty-deploy-8.1.2.v20120308.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/jetty-http-8.1.2.v20120308.jar"/>
