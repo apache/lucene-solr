@@ -22,6 +22,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.handler.dataimport.config.ConfigParseUtil;
@@ -41,9 +43,12 @@ import org.apache.commons.io.IOUtils;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import java.io.IOException;
 import java.io.StringReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -67,14 +72,14 @@ public class DataImporter {
   private DIHConfiguration config;
   private Date indexStartTime;
   private Properties store = new Properties();
-  private Map<String, Properties> dataSourceProps = new HashMap<String, Properties>();
+  private Map<String, Map<String,String>> requestLevelDataSourceProps = new HashMap<String, Map<String,String>>();
   private IndexSchema schema;
   public DocBuilder docBuilder;
   public DocBuilder.Statistics cumulativeStatistics = new DocBuilder.Statistics();
   private SolrCore core;  
+  private Map<String, Object> coreScopeSession = new ConcurrentHashMap<String,Object>();
   private DIHPropertiesWriter propWriter;
   private ReentrantLock importLock = new ReentrantLock();
-  private final Map<String , Object> coreScopeSession;
   private boolean isDeltaImportSupported = false;  
   private final String handlerName;  
   private Map<String, SchemaField> lowerNameVsSchemaField = new HashMap<String, SchemaField>();
@@ -83,12 +88,19 @@ public class DataImporter {
    * Only for testing purposes
    */
   DataImporter() {
-    coreScopeSession = new HashMap<String, Object>();
     createPropertyWriter();
     propWriter.init(this);
     this.handlerName = "dataimport" ;
   }
-
+  
+  DataImporter(SolrCore core, String handlerName) {
+    this.handlerName = handlerName;
+    this.core = core;
+    this.schema = core.getSchema();
+    loadSchemaFieldMap();
+    createPropertyWriter();    
+  }
+  
   private void createPropertyWriter() {
     if (this.core == null
         || !this.core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
@@ -99,27 +111,58 @@ public class DataImporter {
     propWriter.init(this);
   }
 
-  DataImporter(InputSource dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session, String handlerName) {
-    this.handlerName = handlerName;
-    if (dataConfig == null) {
-      throw new DataImportHandlerException(SEVERE, "Configuration not found");
-    }
-    this.core = core;
-    this.schema = core.getSchema();
-    loadSchemaFieldMap();
-    createPropertyWriter();
-    
-    dataSourceProps = ds;
-    if (session == null)
-      session = new HashMap<String, Object>();
-    coreScopeSession = session;
-    loadDataConfig(dataConfig);
-   
-    for (Entity e : config.getEntities()) {
-      if (e.getAllAttributes().containsKey(SqlEntityProcessor.DELTA_QUERY)) {
-        isDeltaImportSupported = true;
-        break;
+  
+  boolean maybeReloadConfiguration(RequestInfo params,
+      NamedList<?> defaultParams) throws IOException {
+  if (importLock.tryLock()) {
+      boolean success = false;
+      try {        
+        String dataConfigText = params.getDataConfig();
+        String dataconfigFile = (String) params.getConfigFile();        
+        InputSource is = null;
+        if(dataConfigText!=null && dataConfigText.length()>0) {
+          is = new InputSource(new StringReader(dataConfigText));
+        } else if(dataconfigFile!=null) {
+          is = new InputSource(core.getResourceLoader().openResource(dataconfigFile));
+          is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(dataconfigFile));
+          LOG.info("Loading DIH Configuration: " + dataconfigFile);
+        }
+        if(is!=null) {          
+          loadDataConfig(is);
+          success = true;
+        }      
+        
+        Map<String,Map<String,String>> dsProps = new HashMap<String,Map<String,String>>();
+        if(defaultParams!=null) {
+          int position = 0;
+          while (position < defaultParams.size()) {
+            if (defaultParams.getName(position) == null) {
+              break;
+            }
+            String name = defaultParams.getName(position);            
+            if (name.equals("datasource")) {
+              success = true;
+              NamedList dsConfig = (NamedList) defaultParams.getVal(position);
+              LOG.info("Getting configuration for Global Datasource...");              
+              Map<String,String> props = new HashMap<String,String>();
+              for (int i = 0; i < dsConfig.size(); i++) {
+                props.put(dsConfig.getName(i), dsConfig.getVal(i).toString());
+              }
+              LOG.info("Adding properties to datasource: " + props);
+              dsProps.put((String) dsConfig.get("name"), props);
+            }
+            position++;
+          }
+        }
+        requestLevelDataSourceProps = Collections.unmodifiableMap(dsProps);
+      } catch(IOException ioe) {
+        throw ioe;
+      } finally {
+        importLock.unlock();
       }
+      return success;
+    } else {
+      return false;
     }
   }
   
@@ -188,7 +231,13 @@ public class DataImporter {
       LOG.info("Data Configuration loaded successfully");
     } catch (Exception e) {
       throw new DataImportHandlerException(SEVERE,
-              "Exception occurred while initializing context", e);
+              "Data Config problem: " + e.getMessage(), e);
+    }
+    for (Entity e : config.getEntities()) {
+      if (e.getAllAttributes().containsKey(SqlEntityProcessor.DELTA_QUERY)) {
+        isDeltaImportSupported = true;
+        break;
+      }
     }
   }
   
@@ -196,7 +245,7 @@ public class DataImporter {
     DIHConfiguration config;
     List<Map<String, String >> functions = new ArrayList<Map<String ,String>>();
     Script script = null;
-    Map<String, Properties> dataSources = new HashMap<String, Properties>();
+    Map<String, Map<String,String>> dataSources = new HashMap<String, Map<String,String>>();
     
     NodeList dataConfigTags = xmlDocument.getElementsByTagName("dataConfig");
     if(dataConfigTags == null || dataConfigTags.getLength() == 0) {
@@ -232,16 +281,16 @@ public class DataImporter {
     List<Element> dataSourceTags = ConfigParseUtil.getChildNodes(e, DATA_SRC);
     if (!dataSourceTags.isEmpty()) {
       for (Element element : dataSourceTags) {
-        Properties p = new Properties();
+        Map<String,String> p = new HashMap<String,String>();
         HashMap<String, String> attrs = ConfigParseUtil.getAllAttributes(element);
         for (Map.Entry<String, String> entry : attrs.entrySet()) {
-          p.setProperty(entry.getKey(), entry.getValue());
+          p.put(entry.getKey(), entry.getValue());
         }
-        dataSources.put(p.getProperty("name"), p);
+        dataSources.put(p.get("name"), p);
       }
     }
     if(dataSources.get(null) == null){
-      for (Properties properties : dataSources.values()) {
+      for (Map<String,String> properties : dataSources.values()) {
         dataSources.put(null,properties);
         break;        
       } 
@@ -270,17 +319,17 @@ public class DataImporter {
   }
 
   DataSource getDataSourceInstance(Entity key, String name, Context ctx) {
-    Properties p = dataSourceProps.get(name);
+    Map<String,String> p = requestLevelDataSourceProps.get(name);
     if (p == null)
       p = config.getDataSources().get(name);
     if (p == null)
-      p = dataSourceProps.get(null);// for default data source
+      p = requestLevelDataSourceProps.get(null);// for default data source
     if (p == null)
       p = config.getDataSources().get(null);
     if (p == null)  
       throw new DataImportHandlerException(SEVERE,
               "No dataSource :" + name + " available for entity :" + key.getName());
-    String type = p.getProperty(TYPE);
+    String type = p.get(TYPE);
     DataSource dataSrc = null;
     if (type == null) {
       dataSrc = new JdbcDataSource();
@@ -458,6 +507,8 @@ public class DataImporter {
     public static final String DEBUG_NOT_ENABLED = "Debug not enabled. Add a tag <str name=\"enableDebug\">true</str> in solrconfig.xml";
 
     public static final String CONFIG_RELOADED = "Configuration Re-loaded sucessfully";
+    
+    public static final String CONFIG_NOT_RELOADED = "Configuration NOT Re-loaded...Data Importer is busy.";
 
     public static final String TOTAL_DOC_PROCESSED = "Total Documents Processed";
 
@@ -476,12 +527,15 @@ public class DataImporter {
     return schema;
   }
 
-  Map<String, Object> getCoreScopeSession() {
-    return coreScopeSession;
-  }
-
   SolrCore getCore() {
     return core;
+  }
+  
+  void putToCoreScopeSession(String key, Object val) {
+    coreScopeSession.put(key, val);
+  }
+  Object getFromCoreScopeSession(String key) {
+    return coreScopeSession.get(key);
   }
 
   public static final String COLUMN = "column";

@@ -31,7 +31,8 @@ public class TestDIHEndToEnd extends AbstractDIHJdbcTestCase {
   }
   @Test
   public void testEndToEnd() throws Exception {
-    LocalSolrQueryRequest request = lrf.makeRequest("command", "full-import",
+    LocalSolrQueryRequest request = lrf.makeRequest(
+        "command", "full-import", "config", "data-config-end-to-end.xml",
         "clean", "true", "commit", "true", "synchronous", "true", "indent", "true");
     h.query("/dataimport-end-to-end", request);
     assertQ(req("*:*"), "//*[@numFound='20']");
