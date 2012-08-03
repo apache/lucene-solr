@@ -172,10 +172,11 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     assertEquals(results.toString(), 2, numFound);
     
     // debug stuff
-//    for (SolrServer c : clients) {
-//      c.optimize();
-//      System.out.println(clients.get(0).request(new LukeRequest()));
-//    }
+    for (SolrServer c : clients) {
+      c.optimize();
+      // distrib optimize is not working right yet, so call it on each client
+      //System.out.println(clients.get(0).request(new LukeRequest()));
+    }
     
     int id = 5;
     
