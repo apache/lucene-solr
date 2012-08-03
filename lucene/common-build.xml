@@ -1583,6 +1583,11 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       <copy todir="${jar-checksum.temp.dir}" flatten="true">
         <fileset dir="@{srcdir}">
           <include name="**/*.jar"/>
+          <!-- todo make this something passed into the macro and not some hardcoded set -->
+          <exclude name="build/**"/>
+          <exclude name="dist/**"/>
+          <exclude name="package/**"/>
+          <exclude name="example/exampledocs/**"/>
         </fileset>
       </copy>
 
