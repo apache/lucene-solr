@@ -763,4 +763,8 @@
      </delete>
   </target>
 
+  <target name="jar-checksums" depends="resolve">
+    <jar-checksum-macro srcdir="${common-solr.dir}" dstdir="${common-solr.dir}/licenses"/>
+  </target>
+
 </project>
