@@ -232,7 +232,7 @@ public class ChaosMonkey {
   }
 
   private String getRandomSlice() {
-    Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(collection);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(collection);
     
     List<String> sliceKeyList = new ArrayList<String>(slices.size());
     sliceKeyList.addAll(slices.keySet());
@@ -259,9 +259,9 @@ public class ChaosMonkey {
       boolean running = true;
       
       // get latest cloud state
-      zkStateReader.updateCloudState(true);
+      zkStateReader.updateClusterState(true);
       
-      Slice theShards = zkStateReader.getCloudState().getSlices(collection)
+      Slice theShards = zkStateReader.getClusterState().getSlices(collection)
           .get(slice);
       
       ZkNodeProps props = theShards.getShards().get(cloudJetty.coreNodeName);
@@ -275,19 +275,19 @@ public class ChaosMonkey {
       
       if (!cloudJetty.jetty.isRunning()
           || !state.equals(ZkStateReader.ACTIVE)
-          || !zkStateReader.getCloudState().liveNodesContain(nodeName)) {
+          || !zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         running = false;
       }
       
       if (cloudJetty.jetty.isRunning()
           && state.equals(ZkStateReader.RECOVERING)
-          && zkStateReader.getCloudState().liveNodesContain(nodeName)) {
+          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         numRecovering++;
       }
       
       if (cloudJetty.jetty.isRunning()
           && state.equals(ZkStateReader.ACTIVE)
-          && zkStateReader.getCloudState().liveNodesContain(nodeName)) {
+          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         numActive++;
       }
       
@@ -336,7 +336,7 @@ public class ChaosMonkey {
   
   public SolrServer getRandomClient(String slice) throws KeeperException, InterruptedException {
     // get latest cloud state
-    zkStateReader.updateCloudState(true);
+    zkStateReader.updateClusterState(true);
 
     // get random shard
     List<SolrServer> clients = shardToClient.get(slice);

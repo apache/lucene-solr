@@ -35,7 +35,7 @@ import org.apache.solr.cloud.SyncStrategy;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -768,16 +768,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
           // to accept updates
           CloudDescriptor cloudDescriptor = core.getCoreDescriptor()
               .getCloudDescriptor();
-          CloudState cloudState = coreContainer.getZkController()
-              .getCloudState();
+          ClusterState clusterState = coreContainer.getZkController()
+              .getClusterState();
           String collection = cloudDescriptor.getCollectionName();
-          Slice slice = cloudState.getSlice(collection,
+          Slice slice = clusterState.getSlice(collection,
               cloudDescriptor.getShardId());
           if (slice != null) {
             ZkNodeProps nodeProps = slice.getShards().get(coreNodeName);
             if (nodeProps != null) {
               state = nodeProps.get(ZkStateReader.STATE_PROP);
-              live = cloudState.liveNodesContain(nodeName);
+              live = clusterState.liveNodesContain(nodeName);
               if (nodeProps != null && state.equals(waitForState)) {
                 if (checkLive == null) {
                   break;

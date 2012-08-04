@@ -157,7 +157,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     // we are careful to make sure the downed node is no longer in the state,
     // because on some systems (especially freebsd w/ blackhole enabled), trying
     // to talk to a downed node causes grief
-    waitToSeeDownInCloudState(leaderJetty, jetties);
+    waitToSeeDownInClusterState(leaderJetty, jetties);
 
     waitForThingsToLevelOut();
     
@@ -217,7 +217,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     // kill the current leader
     chaosMonkey.killJetty(leaderJetty);
     
-    waitToSeeDownInCloudState(leaderJetty, jetties);
+    waitToSeeDownInClusterState(leaderJetty, jetties);
     
     Thread.sleep(4000);
     
@@ -248,7 +248,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     return skipServers;
   }
 
-  private void waitToSeeDownInCloudState(CloudJettyRunner leaderJetty,
+  private void waitToSeeDownInClusterState(CloudJettyRunner leaderJetty,
       Set<CloudJettyRunner> jetties) throws InterruptedException {
 
     for (CloudJettyRunner cjetty : jetties) {

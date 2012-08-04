@@ -41,7 +41,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -255,7 +255,7 @@ public class HttpShardHandler extends ShardHandler {
     if (rb.isDistrib) {
       // since the cost of grabbing cloud state is still up in the air, we grab it only
       // if we need it.
-      CloudState cloudState = null;
+      ClusterState clusterState = null;
       Map<String,Slice> slices = null;
       CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
       CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
@@ -280,7 +280,7 @@ public class HttpShardHandler extends ShardHandler {
       } else if (zkController != null) {
         // we weren't provided with a list of slices to query, so find the list that will cover the complete index
 
-        cloudState =  zkController.getCloudState();
+        clusterState =  zkController.getClusterState();
 
         // This can be more efficient... we only record the name, even though we
         // have the shard info we need in the next step of mapping slice->shards
@@ -301,12 +301,12 @@ public class HttpShardHandler extends ShardHandler {
           // cloud state and add them to the Map 'slices'.
           for (int i = 0; i < collectionList.size(); i++) {
             String collection = collectionList.get(i);
-            ClientUtils.appendMap(collection, slices, cloudState.getSlices(collection));
+            ClientUtils.appendMap(collection, slices, clusterState.getSlices(collection));
           }
         } else {
           // If no collections were specified, default to the collection for
           // this core.
-          slices = cloudState.getSlices(cloudDescriptor.getCollectionName());
+          slices = clusterState.getSlices(cloudDescriptor.getCollectionName());
           if (slices == null) {
             throw new SolrException(ErrorCode.BAD_REQUEST,
                 "Could not find collection:"
@@ -334,9 +334,9 @@ public class HttpShardHandler extends ShardHandler {
       if (zkController != null) {
         for (int i=0; i<rb.shards.length; i++) {
           if (rb.shards[i] == null) {
-            if (cloudState == null) {
-              cloudState =  zkController.getCloudState();
-              slices = cloudState.getSlices(cloudDescriptor.getCollectionName());
+            if (clusterState == null) {
+              clusterState =  zkController.getClusterState();
+              slices = clusterState.getSlices(cloudDescriptor.getCollectionName());
             }
             String sliceName = rb.slices[i];
 
@@ -353,7 +353,7 @@ public class HttpShardHandler extends ShardHandler {
             Map<String, ZkNodeProps> sliceShards = slice.getShards();
 
             // For now, recreate the | delimited list of equivalent servers
-            Set<String> liveNodes = cloudState.getLiveNodes();
+            Set<String> liveNodes = clusterState.getLiveNodes();
             StringBuilder sliceShardsStr = new StringBuilder();
             boolean first = true;
             for (ZkNodeProps nodeProps : sliceShards.values()) {

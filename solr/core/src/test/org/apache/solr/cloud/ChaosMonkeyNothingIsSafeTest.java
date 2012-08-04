@@ -148,8 +148,8 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
       
       // TODO: assert we didnt kill everyone
       
-      zkStateReader.updateCloudState(true);
-      assertTrue(zkStateReader.getCloudState().getLiveNodes().size() > 0);
+      zkStateReader.updateClusterState(true);
+      assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);
       
       checkShardConsistency(false, true);
       

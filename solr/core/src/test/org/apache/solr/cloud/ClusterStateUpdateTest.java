@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -41,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-public class CloudStateUpdateTest extends SolrTestCaseJ4  {
+public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
 
@@ -111,20 +111,20 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solr.solr.home", TEST_HOME());
     System.setProperty("hostPort", "1661");
     CoreContainer.Initializer init1 = new CoreContainer.Initializer();
-    System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir1.getAbsolutePath());
+    System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir1.getAbsolutePath());
     container1 = init1.initialize();
     System.clearProperty("hostPort");
     
     System.setProperty("hostPort", "1662");
     init2 = new CoreContainer.Initializer();
-    System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir2.getAbsolutePath());
+    System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir2.getAbsolutePath());
     container2 = init2.initialize();
     System.clearProperty("hostPort");
     
     System.setProperty("hostPort", "1663");
     CoreContainer.Initializer init3 = new CoreContainer.Initializer();
    
-    System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir3.getAbsolutePath());
+    System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir3.getAbsolutePath());
     container3 = init3.initialize();
     System.clearProperty("hostPort");
     System.clearProperty("solr.solr.home");
@@ -166,11 +166,11 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     
     // slight pause - TODO: takes an oddly long amount of time to schedule tasks
     // with almost no delay ...
-    CloudState cloudState2 = null;
+    ClusterState clusterState2 = null;
     Map<String,Slice> slices = null;
     for (int i = 75; i > 0; i--) {
-      cloudState2 = zkController2.getCloudState();
-      slices = cloudState2.getSlices("testcore");
+      clusterState2 = zkController2.getClusterState();
+      slices = clusterState2.getSlices("testcore");
       
       if (slices != null && slices.containsKey("shard1")
           && slices.get("shard1").getShards().size() > 0) {
@@ -197,7 +197,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
 
     assertEquals("http://" + host + ":1661/solr", zkProps.get(ZkStateReader.BASE_URL_PROP));
 
-    Set<String> liveNodes = cloudState2.getLiveNodes();
+    Set<String> liveNodes = clusterState2.getLiveNodes();
     assertNotNull(liveNodes);
     assertEquals(3, liveNodes.size());
 
@@ -205,13 +205,13 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
 
     // slight pause (15s timeout) for watch to trigger
     for(int i = 0; i < (5 * 15); i++) {
-      if(zkController2.getCloudState().getLiveNodes().size() == 2) {
+      if(zkController2.getClusterState().getLiveNodes().size() == 2) {
         break;
       }
       Thread.sleep(200);
     }
 
-    assertEquals(2, zkController2.getCloudState().getLiveNodes().size());
+    assertEquals(2, zkController2.getClusterState().getLiveNodes().size());
 
     // quickly kill / start client
 
@@ -223,17 +223,17 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     
     // pause for watch to trigger
     for(int i = 0; i < 200; i++) {
-      if (container1.getZkController().getCloudState().liveNodesContain(
+      if (container1.getZkController().getClusterState().liveNodesContain(
           container2.getZkController().getNodeName())) {
         break;
       }
       Thread.sleep(100);
     }
 
-    assertTrue(container1.getZkController().getCloudState().liveNodesContain(
+    assertTrue(container1.getZkController().getClusterState().liveNodesContain(
         container2.getZkController().getNodeName()));
 
-    // core.close();  // this core is managed by container1 now
+    // core.close();  // don't close - this core is managed by container1 now
   }
 
   @Override
