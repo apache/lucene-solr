@@ -52,4 +52,16 @@ public class TestCJKBigramFilterFactory extends BaseTokenStreamTestCase {
     assertTokenStreamContents(stream,
         new String[] { "多", "く", "の",  "学生", "が",  "試験", "に",  "落", "ち", "た" });
   }
+  
+  public void testHanOnlyUnigrams() throws Exception {
+    Reader reader = new StringReader("多くの学生が試験に落ちた。");
+    CJKBigramFilterFactory factory = new CJKBigramFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("hiragana", "false");
+    args.put("outputUnigrams", "true");
+    factory.init(args);
+    TokenStream stream = factory.create(new StandardTokenizer(TEST_VERSION_CURRENT, reader));
+    assertTokenStreamContents(stream,
+        new String[] { "多", "く", "の",  "学", "学生", "生", "が",  "試", "試験", "験", "に",  "落", "ち", "た" });
+  }
 }
