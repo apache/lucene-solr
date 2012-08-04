@@ -42,6 +42,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -193,10 +194,11 @@ public class ZkStateReader {
             synchronized (ZkStateReader.this.getUpdateLock()) {
               // remake watch
               final Watcher thisWatch = this;
-              byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, null,
+              Stat stat = new Stat();
+              byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, stat ,
                   true);
               
-              ClusterState clusterState = ClusterState.load(data,
+              ClusterState clusterState = ClusterState.load(stat.getVersion(), data,
                   ZkStateReader.this.clusterState.getLiveNodes());
               // update volatile
               ZkStateReader.this.clusterState = clusterState;
@@ -242,8 +244,10 @@ public class ZkStateReader {
                       LIVE_NODES_ZKNODE, this, true);
                   Set<String> liveNodesSet = new HashSet<String>();
                   liveNodesSet.addAll(liveNodes);
-                  ClusterState clusterState = new ClusterState(liveNodesSet,
-                      ZkStateReader.this.clusterState.getCollectionStates());
+                  ClusterState clusterState = new ClusterState(
+                      ZkStateReader.this.clusterState.getZkClusterStateVersion(),
+                      liveNodesSet, ZkStateReader.this.clusterState
+                          .getCollectionStates());
                   ZkStateReader.this.clusterState = clusterState;
                 }
               } catch (KeeperException e) {
@@ -293,7 +297,8 @@ public class ZkStateReader {
           clusterState = ClusterState.load(zkClient, liveNodesSet);
         } else {
           log.info("Updating live nodes from ZooKeeper... ");
-          clusterState = new ClusterState(liveNodesSet,
+          clusterState = new ClusterState(
+              ZkStateReader.this.clusterState.getZkClusterStateVersion(), liveNodesSet,
               ZkStateReader.this.clusterState.getCollectionStates());
         }
       }
@@ -325,7 +330,7 @@ public class ZkStateReader {
                 clusterState = ClusterState.load(zkClient, liveNodesSet);
               } else {
                 log.info("Updating live nodes from ZooKeeper... ");
-                clusterState = new ClusterState(liveNodesSet, ZkStateReader.this.clusterState.getCollectionStates());
+                clusterState = new ClusterState(ZkStateReader.this.clusterState .getZkClusterStateVersion(), liveNodesSet, ZkStateReader.this.clusterState.getCollectionStates());
               }
               
               ZkStateReader.this.clusterState = clusterState;

@@ -61,6 +61,10 @@ public class CloudSolrServer extends SolrServer {
   private LBHttpSolrServer lbServer;
   private HttpClient myClient;
   Random rand = new Random();
+  
+  // since the state shouldn't change often, should be very cheap reads
+  private volatile List<String> urlList;
+  private volatile int lastClusterStateHashCode;
   /**
    * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
    * in the form HOST:PORT.
@@ -168,22 +172,26 @@ public class CloudSolrServer extends SolrServer {
     // or shardAddressVersion (which only changes when the shards change)
     // to allow caching.
 
-    // build a map of unique nodes
-    // TODO: allow filtering by group, role, etc
-    Map<String,ZkNodeProps> nodes = new HashMap<String,ZkNodeProps>();
-    List<String> urlList = new ArrayList<String>();
-    for (Slice slice : slices.values()) {
-      for (ZkNodeProps nodeProps : slice.getShards().values()) {
-        ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-        String node = coreNodeProps.getNodeName();
-        if (!liveNodes.contains(coreNodeProps.getNodeName())
-            || !coreNodeProps.getState().equals(
-                ZkStateReader.ACTIVE)) continue;
-        if (nodes.put(node, nodeProps) == null) {
-          String url = coreNodeProps.getCoreUrl();
-          urlList.add(url);
+    if (clusterState.hashCode() != this.lastClusterStateHashCode) {
+    
+      // build a map of unique nodes
+      // TODO: allow filtering by group, role, etc
+      Map<String,ZkNodeProps> nodes = new HashMap<String,ZkNodeProps>();
+      List<String> urlList = new ArrayList<String>();
+      for (Slice slice : slices.values()) {
+        for (ZkNodeProps nodeProps : slice.getShards().values()) {
+          ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
+          String node = coreNodeProps.getNodeName();
+          if (!liveNodes.contains(coreNodeProps.getNodeName())
+              || !coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) continue;
+          if (nodes.put(node, nodeProps) == null) {
+            String url = coreNodeProps.getCoreUrl();
+            urlList.add(url);
+          }
         }
       }
+      this.urlList = urlList;
+      this.lastClusterStateHashCode = clusterState.hashCode();
     }
 
     Collections.shuffle(urlList, rand);
