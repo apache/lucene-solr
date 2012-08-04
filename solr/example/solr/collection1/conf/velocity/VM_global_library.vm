@@ -133,10 +133,14 @@
 
 #macro(field $f)
   #if($response.response.highlighting.get($docId).get($f).get(0))
-    $!response.response.highlighting.get($docId).get($f).get(0)
+    #set($pad = "")
+    #foreach($v in $response.response.highlighting.get($docId).get($f))
+$pad$v##
+      #set($pad = " ... ")
+    #end
   #else
     #foreach($v in $doc.getFieldValues($f))
-      $v
+$v##
     #end
   #end
 #end  

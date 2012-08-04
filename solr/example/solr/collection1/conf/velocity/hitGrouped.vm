@@ -6,7 +6,13 @@
     <div class="group-doclist" #annTitle("Contains the top scoring documents in the group")>
       #foreach ($doc in $group.doclist)
         #set($docId = $doc.getFieldValue('id'))
-        #parse("doc.vm")
+        #if($doc.getFieldValue('name'))
+          #parse("product-doc.vm")
+        #elseif($doc.getFieldValue('compName_s'))
+          #parse("join-doc.vm")
+        #else
+          #parse("richtext-doc.vm")
+        #end
       #end
     </div>
     #end</div>
