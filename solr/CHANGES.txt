@@ -117,6 +117,9 @@ Optimizations
 
 * SOLR-3709: Cache the url list created from the ClusterState in CloudSolrServer on each 
   request. (Mark Miller, yonik)
+  
+* SOLR-3710: Change CloudSolrServer so that update requests are only sent to leaders by 
+  default. (Mark Miller)
 
 Bug Fixes
 ----------------------
