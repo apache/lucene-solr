@@ -28,7 +28,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -132,8 +132,8 @@ public class SyncStrategy {
   
   private boolean areAnyOtherReplicasActive(ZkController zkController,
       ZkNodeProps leaderProps, String collection, String shardId) {
-    CloudState cloudState = zkController.getZkStateReader().getCloudState();
-    Map<String,Slice> slices = cloudState.getSlices(collection);
+    ClusterState clusterState = zkController.getZkStateReader().getClusterState();
+    Map<String,Slice> slices = clusterState.getSlices(collection);
     Slice slice = slices.get(shardId);
     Map<String,ZkNodeProps> shards = slice.getShards();
     for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
@@ -142,10 +142,10 @@ public class SyncStrategy {
 //          + state
 //          + shard.getValue().get(ZkStateReader.NODE_NAME_PROP)
 //          + " live: "
-//          + cloudState.liveNodesContain(shard.getValue().get(
+//          + clusterState.liveNodesContain(shard.getValue().get(
 //              ZkStateReader.NODE_NAME_PROP)));
       if ((state.equals(ZkStateReader.ACTIVE))
-          && cloudState.liveNodesContain(shard.getValue().get(
+          && clusterState.liveNodesContain(shard.getValue().get(
               ZkStateReader.NODE_NAME_PROP))
           && !new ZkCoreNodeProps(shard.getValue()).getCoreUrl().equals(
               new ZkCoreNodeProps(leaderProps).getCoreUrl())) {

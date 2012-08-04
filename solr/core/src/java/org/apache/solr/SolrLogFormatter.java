@@ -250,10 +250,10 @@ sb.append("(group_name=").append(tg.getName()).append(")");
 
     /*** Isn't core specific... prob better logged from zkController
     if (info != null) {
-      CloudState cloudState = zkController.getCloudState();
-      if (info.cloudState != cloudState) {
+      ClusterState clusterState = zkController.getClusterState();
+      if (info.clusterState != clusterState) {
         // something has changed in the matrix...
-        sb.append(zkController.getBaseUrl() + " sees new CloudState:");
+        sb.append(zkController.getBaseUrl() + " sees new ClusterState:");
       }
     }
     ***/
@@ -263,7 +263,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
 
   private Map<String,String> getCoreProps(ZkController zkController, SolrCore core) {
     final String collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-    ZkNodeProps props = zkController.getCloudState().getShardProps(collection,  ZkStateReader.getCoreNodeName(zkController.getNodeName(), core.getName()));
+    ZkNodeProps props = zkController.getClusterState().getShardProps(collection,  ZkStateReader.getCoreNodeName(zkController.getNodeName(), core.getName()));
     if(props!=null) {
       return props.getProperties(); 
     }
