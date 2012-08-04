@@ -204,7 +204,7 @@ Other Changes
 
 * SOLR-3215: Clone SolrInputDocument when distrib indexing so that update processors after
   the distrib update process do not process the document twice. (Mark Miller)
-  
+
 * SOLR-3683: Improved error handling if an <analyzer> contains both an 
   explicit class attribute, as well as nested factories. (hossman)
 
@@ -217,6 +217,10 @@ Other Changes
   using a file (this previously worked in debug mode only).  When configuration errors are 
   encountered, the error message is returned in XML format.  (James Dyer)
   
+* SOLR-3439: Make SolrCell easier to use out of the box. Also improves "/browse" to display
+  rich-text documents correctly, along with facets for author and content_type.  
+  With the new "content" field, highlighting of body is supported. See also SOLR-3672 for
+  easier posting of a whole directory structure. (Jack Krupansky, janhoy)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 

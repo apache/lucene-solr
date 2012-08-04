@@ -1,0 +1,52 @@
+#if($doc.getFieldValue('title'))
+  #set($title = $esc.html($doc.getFirstValue('title')))
+#else
+  #set($title = "["+$doc.getFieldValue('id')+"]")
+#end
+#if($doc.getFieldValue('url'))
+  #set($url = $doc.getFieldValue('url'))
+#elseif($doc.getFieldValue('resourcename'))
+  #set($url = "file:///$doc.getFieldValue('resourcename')")
+#else
+  #set($url = "$doc.getFieldValue('id')")
+#end
+#set($supportedtypes = "7z;ai;aiff;asc;audio;bin;bz2;c;cfc;cfm;chm;class;conf;cpp;cs;css;csv;deb;divx;doc;dot;eml;enc;file;gif;gz;hlp;htm;html;image;iso;jar;java;jpeg;jpg;js;lua;m;mm;mov;mp3;mpg;odc;odf;odg;odi;odp;ods;odt;ogg;pdf;pgp;php;pl;png;ppt;ps;py;ram;rar;rb;rm;rpm;rtf;sig;sql;swf;sxc;sxd;sxi;sxw;tar;tex;tgz;txt;vcf;video;vsd;wav;wma;wmv;xls;xml;xpi;xvid;zip")
+#set($ct = $list.get($doc.getFirstValue('content_type').split(";"),0))
+#set($filename = $doc.getFieldValue('resourcename'))
+#set($filetype = $mimeToExt.get($ct))
+#if(!$filetype)#set($filetype = $filename.substring($filename.lastIndexOf(".")).substring(1))#end
+#if(!$filetype)#set($filetype = "file")#end
+#if(!$supportedtypes.contains($filetype))#set($filetype = "file")#end
+<div class="result-title">
+## Small file type icons from http://www.splitbrain.org/projects/file_icons (public domain)
+<img src="#{url_root}/img/filetypes/${filetype}.png" align="center">
+<a href="${url}" target="_blank"><b>$title</b></a><span class="mlt">   #if($params.getBool('mlt', false) == false)<a href="#lensNoQ&q=id:%22$docId%22&mlt=true">More Like This</a>#end</span></div>
+<div>Id: #field('id')</div>
+<div>
+#if($doc.getFieldValue('resourcename'))Resource name: $filename 
+#elseif($url)URL: $url
+#end
+#if($ct) ($ct)#end
+</div>
+#if($doc.getFieldValue('author'))<div>Author: #field('author')</div>#end
+#if($doc.getFieldValue('last_modified'))<div>Last-modified: #field('last_modified')</div>#end
+<div class="result-body">#field('content')</div>
+<div class="mlt">
+  #set($mlt = $mltResults.get($docId))
+  #set($mltOn = $params.getBool('mlt'))
+  #if($mltOn == true)<div class="field-name">Similar Items</div>#end
+  #if ($mltOn && $mlt && $mlt.size() > 0)
+  <ul>
+    #foreach($mltHit in $mlt)
+      #set($mltId = $mltHit.getFieldValue('id'))
+      <li><div><a href="#url_for_home?q=id:$mltId">$mltId</a></div><div><span class="field-name">Title:</span> $mltHit.getFieldValue('title')</div>
+        <div><span class="field-name">Author:</span> $mltHit.getFieldValue('author') <span class="field-name">Description:</span> $mltHit.getFieldValue('description')</div>
+
+      </li>
+    #end
+  </ul>
+  #elseif($mltOn && $mlt.size() == 0)
+    <div>No Similar Items Found</div>
+  #end
+</div>
+#parse('debug.vm')

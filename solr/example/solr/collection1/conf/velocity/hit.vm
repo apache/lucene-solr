@@ -1,5 +1,11 @@
 #set($docId = $doc.getFieldValue('id'))
 
 <div class="result-document">
-  #parse("doc.vm")
+#if($doc.getFieldValue('name'))
+  #parse("product-doc.vm")
+#elseif($doc.getFieldValue('compName_s'))
+  #parse("join-doc.vm")
+#else
+  #parse("richtext-doc.vm")
+#end
 </div>

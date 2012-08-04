@@ -109,7 +109,10 @@
    <!-- Common metadata fields, named specifically to match up with
      SolrCell metadata when parsing rich documents such as Word, PDF.
      Some fields are multiValued only because Tika currently may return
-     multiple values for them.
+     multiple values for them. Some metadata is parsed from the documents,
+     but there are some which come from the client context:
+       "content_type": From the HTTP headers of incoming stream
+       "resourcename": From SolrCell request param resource.name
    -->
    <field name="title" type="text_general" indexed="true" stored="true" multiValued="true"/>
    <field name="subject" type="text_general" indexed="true" stored="true"/>
@@ -118,10 +121,18 @@
    <field name="author" type="text_general" indexed="true" stored="true"/>
    <field name="keywords" type="text_general" indexed="true" stored="true"/>
    <field name="category" type="text_general" indexed="true" stored="true"/>
+   <field name="resourcename" type="text_general" indexed="true" stored="true"/>
+   <field name="url" type="text_general" indexed="true" stored="true"/>
    <field name="content_type" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="last_modified" type="date" indexed="true" stored="true"/>
    <field name="links" type="string" indexed="true" stored="true" multiValued="true"/>
 
+   <!-- Main body of document extracted by SolrCell.
+        NOTE: This field is not indexed by default, since it is also copied to "text"
+        using copyField below. This is to save space. Use this field for returning and
+        highlighting document content. Use the "text" field to search the content. -->
+   <field name="content" type="text_general" indexed="false" stored="true" multiValued="true"/>
+   
 
    <!-- catchall field, containing all other searchable text fields (implemented
         via copyField further on in this schema  -->
@@ -232,6 +243,19 @@
 
    <!-- Copy the price into a currency enabled field (default USD) -->
    <copyField source="price" dest="price_c"/>
+
+   <!-- Text fields from SolrCell to search by default in our catch-all field -->
+   <copyField source="title" dest="text"/>
+   <copyField source="author" dest="text"/>
+   <copyField source="description" dest="text"/>
+   <copyField source="keywords" dest="text"/>
+   <copyField source="content" dest="text"/>
+   <copyField source="content_type" dest="text"/>
+   <copyField source="resourcename" dest="text"/>
+   <copyField source="url" dest="text"/>
+
+   <!-- Create a string version of author for faceting -->
+   <copyField source="author" dest="author_s"/>
 	
    <!-- Above, multiple source fields are copied to the [text] field. 
 	  Another way to map multiple source fields to the same 
