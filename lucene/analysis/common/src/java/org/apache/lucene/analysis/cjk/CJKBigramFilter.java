@@ -24,6 +24,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -34,6 +36,12 @@ import org.apache.lucene.util.ArrayUtil;
  * CJK types are set by these tokenizers, but you can also use 
  * {@link #CJKBigramFilter(TokenStream, int)} to explicitly control which
  * of the CJK scripts are turned into bigrams.
+ * <p>
+ * By default, when a CJK character has no adjacent characters to form
+ * a bigram, it is output in unigram form. If you want to always output
+ * both unigrams and bigrams, set the <code>outputUnigrams</code>
+ * flag in {@link CJKBigramFilter#CJKBigramFilter(TokenStream, int, boolean)}.
+ * This can be used for a combined unigram+bigram approach.
  * <p>
  * In all cases, all non-CJK input is passed thru unmodified.
  */
@@ -67,10 +75,16 @@ public final class CJKBigramFilter extends TokenFilter {
   private final Object doHiragana;
   private final Object doKatakana;
   private final Object doHangul;
+  
+  // true if we should output unigram tokens always
+  private final boolean outputUnigrams;
+  private boolean ngramState; // false = output unigram, true = output bigram
     
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLengthAtt = addAttribute(PositionLengthAttribute.class);
   
   // buffers containing codepoint and offsets in parallel
   int buffer[] = new int[8];
@@ -88,23 +102,36 @@ public final class CJKBigramFilter extends TokenFilter {
   
   /** 
    * Calls {@link CJKBigramFilter#CJKBigramFilter(TokenStream, int)
-   *       CJKBigramFilter(HAN | HIRAGANA | KATAKANA | HANGUL)}
+   *       CJKBigramFilter(in, HAN | HIRAGANA | KATAKANA | HANGUL)}
    */
   public CJKBigramFilter(TokenStream in) {
     this(in, HAN | HIRAGANA | KATAKANA | HANGUL);
   }
   
   /** 
-   * Create a new CJKBigramFilter, specifying which writing systems should be bigrammed.
-   * @param flags OR'ed set from {@link CJKBigramFilter#HAN}, {@link CJKBigramFilter#HIRAGANA}, 
-   *        {@link CJKBigramFilter#KATAKANA}, {@link CJKBigramFilter#HANGUL}
+   * Calls {@link CJKBigramFilter#CJKBigramFilter(TokenStream, int, boolean)
+   *       CJKBigramFilter(in, flags, false)}
    */
   public CJKBigramFilter(TokenStream in, int flags) {
+    this(in, flags, false);
+  }
+  
+  /**
+   * Create a new CJKBigramFilter, specifying which writing systems should be bigrammed,
+   * and whether or not unigrams should also be output.
+   * @param flags OR'ed set from {@link CJKBigramFilter#HAN}, {@link CJKBigramFilter#HIRAGANA}, 
+   *        {@link CJKBigramFilter#KATAKANA}, {@link CJKBigramFilter#HANGUL}
+   * @param outputUnigrams true if unigrams for the selected writing systems should also be output.
+   *        when this is false, this is only done when there are no adjacent characters to form
+   *        a bigram.
+   */
+  public CJKBigramFilter(TokenStream in, int flags, boolean outputUnigrams) {
     super(in);
     doHan =      (flags & HAN) == 0      ? NO : HAN_TYPE;
     doHiragana = (flags & HIRAGANA) == 0 ? NO : HIRAGANA_TYPE;
     doKatakana = (flags & KATAKANA) == 0 ? NO : KATAKANA_TYPE;
     doHangul =   (flags & HANGUL) == 0   ? NO : HANGUL_TYPE;
+    this.outputUnigrams = outputUnigrams;
   }
   
   /*
@@ -120,7 +147,24 @@ public final class CJKBigramFilter extends TokenFilter {
         // case 1: we have multiple remaining codepoints buffered,
         // so we can emit a bigram here.
         
-        flushBigram();
+        if (outputUnigrams) {
+
+          // when also outputting unigrams, we output the unigram first,
+          // then rewind back to revisit the bigram.
+          // so an input of ABC is A + (rewind)AB + B + (rewind)BC + C
+          // the logic in hasBufferedUnigram ensures we output the C, 
+          // even though it did actually have adjacent CJK characters.
+
+          if (ngramState) {
+            flushBigram();
+          } else {
+            flushUnigram();
+            index--;
+          }
+          ngramState = !ngramState;
+        } else {
+          flushBigram();
+        }
         return true;
       } else if (doNext()) {
         
@@ -260,6 +304,11 @@ public final class CJKBigramFilter extends TokenFilter {
     termAtt.setLength(len2);
     offsetAtt.setOffset(startOffset[index], endOffset[index+1]);
     typeAtt.setType(DOUBLE_TYPE);
+    // when outputting unigrams, all bigrams are synonyms that span two unigrams
+    if (outputUnigrams) {
+      posIncAtt.setPositionIncrement(0);
+      posLengthAtt.setPositionLength(2);
+    }
     index++;
   }
   
@@ -292,7 +341,13 @@ public final class CJKBigramFilter extends TokenFilter {
    * inputs.
    */
   private boolean hasBufferedUnigram() {
-    return bufferLen == 1 && index == 0;
+    if (outputUnigrams) {
+      // when outputting unigrams always
+      return bufferLen - index == 1;
+    } else {
+      // otherwise its only when we have a lone CJK character
+      return bufferLen == 1 && index == 0;
+    }
   }
 
   @Override
@@ -303,5 +358,6 @@ public final class CJKBigramFilter extends TokenFilter {
     lastEndOffset = 0;
     loneState = null;
     exhausted = false;
+    ngramState = false;
   }
 }

@@ -47,6 +47,11 @@ New features
   int docID), to attempt deletion by docID as long as the provided
   reader is an NRT reader, and the segment has not yet been merged
   away (Mike McCandless).
+  
+* LUCENE-4286: Added option to CJKBigramFilter to always also output
+  unigrams. This can be used for a unigram+bigram approach, or at 
+  index-time only for better support of short queries.
+  (Tom Burton-West, Robert Muir)
 
 API Changes
 

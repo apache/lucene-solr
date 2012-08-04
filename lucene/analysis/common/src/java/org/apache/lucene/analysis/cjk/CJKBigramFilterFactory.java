@@ -33,12 +33,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
  *     &lt;filter class="solr.CJKBigramFilterFactory" 
  *       han="true" hiragana="true" 
- *       katakana="true" hangul="true" /&gt;
+ *       katakana="true" hangul="true" outputUnigrams="false" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
 public class CJKBigramFilterFactory extends TokenFilterFactory {
   int flags;
+  boolean outputUnigrams;
 
   @Override
   public void init(Map<String,String> args) {
@@ -56,10 +57,11 @@ public class CJKBigramFilterFactory extends TokenFilterFactory {
     if (getBoolean("hangul", true)) {
       flags |= CJKBigramFilter.HANGUL;
     }
+    outputUnigrams = getBoolean("outputUnigrams", false);
   }
   
   @Override
   public TokenStream create(TokenStream input) {
-    return new CJKBigramFilter(input, flags);
+    return new CJKBigramFilter(input, flags, outputUnigrams);
   }
 }
