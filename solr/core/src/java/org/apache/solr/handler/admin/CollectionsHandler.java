@@ -26,7 +26,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerCollectionProcessor;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -141,9 +141,9 @@ public class CollectionsHandler extends RequestHandlerBase {
     String collection = req.getParams().required().get("collection");
     String shard = req.getParams().required().get("shard");
     
-    CloudState cloudState = coreContainer.getZkController().getCloudState();
+    ClusterState clusterState = coreContainer.getZkController().getClusterState();
     
-    ZkNodeProps leaderProps = cloudState.getLeader(collection, shard);
+    ZkNodeProps leaderProps = clusterState.getLeader(collection, shard);
     ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
     
     HttpSolrServer server = new HttpSolrServer(nodeProps.getBaseUrl());

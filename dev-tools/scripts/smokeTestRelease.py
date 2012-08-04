@@ -20,12 +20,12 @@ import subprocess
 import signal
 import shutil
 import hashlib
-import httplib
+import http.client
 import re
-import urllib2
-import urlparse
+import urllib.request, urllib.error, urllib.parse
+import urllib.parse
 import sys
-import HTMLParser
+import html.parser
 from collections import defaultdict
 import xml.etree.ElementTree as ET
 import filecmp
@@ -38,9 +38,9 @@ import checkJavadocLinks
 # tested on Linux and on Cygwin under Windows 7.
 
 def unshortenURL(url):
-  parsed = urlparse.urlparse(url)
+  parsed = urllib.parse.urlparse(url)
   if parsed[0] in ('http', 'https'):
-    h = httplib.HTTPConnection(parsed.netloc)
+    h = http.client.HTTPConnection(parsed.netloc)
     h.request('HEAD', parsed.path)
     response = h.getresponse()
     if response.status/100 == 3 and response.getheader('Location'):
@@ -101,8 +101,8 @@ def getHREFs(urlString):
 
   # Deref any redirects
   while True:
-    url = urlparse.urlparse(urlString)
-    h = httplib.HTTPConnection(url.netloc)
+    url = urllib.parse.urlparse(urlString)
+    h = http.client.HTTPConnection(url.netloc)
     h.request('GET', url.path)
     r = h.getresponse()
     newLoc = r.getheader('location')
@@ -112,8 +112,8 @@ def getHREFs(urlString):
       break
 
   links = []
-  for subUrl, text in reHREF.findall(urllib2.urlopen(urlString).read()):
-    fullURL = urlparse.urljoin(urlString, subUrl)
+  for subUrl, text in reHREF.findall(urllib.request.urlopen(urlString).read().decode('UTF-8')):
+    fullURL = urllib.parse.urljoin(urlString, subUrl)
     links.append((text, fullURL))
   return links
 
@@ -121,15 +121,15 @@ def download(name, urlString, tmpDir, quiet=False):
   fileName = '%s/%s' % (tmpDir, name)
   if DEBUG and os.path.exists(fileName):
     if not quiet and fileName.find('.asc') == -1:
-      print '    already done: %.1f MB' % (os.path.getsize(fileName)/1024./1024.)
+      print('    already done: %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
     return
-  fIn = urllib2.urlopen(urlString)
+  fIn = urllib.request.urlopen(urlString)
   fOut = open(fileName, 'wb')
   success = False
   try:
     while True:
       s = fIn.read(65536)
-      if s == '':
+      if s == b'':
         break
       fOut.write(s)
     fOut.close()
@@ -141,14 +141,14 @@ def download(name, urlString, tmpDir, quiet=False):
     if not success:
       os.remove(fileName)
   if not quiet and fileName.find('.asc') == -1:
-    print '    %.1f MB' % (os.path.getsize(fileName)/1024./1024.)
+    print('    %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
     
 def load(urlString):
-  return urllib2.urlopen(urlString).read()
+  return urllib.request.urlopen(urlString).read().decode('utf-8')
   
 def checkSigs(project, urlString, version, tmpDir, isSigned):
 
-  print '  test basics...'
+  print('  test basics...')
   ents = getDirEntries(urlString)
   artifact = None
   keysURL = None
@@ -210,7 +210,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   if keysURL is None:
     raise RuntimeError('%s is missing KEYS' % project)
 
-  print '  get KEYS'
+  print('  get KEYS')
   download('%s.KEYS' % project, keysURL, tmpDir)
 
   keysFile = '%s/%s.KEYS' % (tmpDir, project)
@@ -219,7 +219,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   gpgHomeDir = '%s/%s.gpg' % (tmpDir, project)
   if os.path.exists(gpgHomeDir):
     shutil.rmtree(gpgHomeDir)
-  os.makedirs(gpgHomeDir, 0700)
+  os.makedirs(gpgHomeDir, 0o700)
   run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile),
       '%s/%s.gpg.import.log 2>&1' % (tmpDir, project))
 
@@ -232,12 +232,12 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
     testChanges(project, version, changesURL)
 
   for artifact, urlString in artifacts:
-    print '  download %s...' % artifact
+    print('  download %s...' % artifact)
     download(artifact, urlString, tmpDir)
     verifyDigests(artifact, urlString, tmpDir)
 
     if isSigned:
-      print '    verify sig'
+      print('    verify sig')
       # Test sig (this is done with a clean brand-new GPG world)
       download(artifact + '.asc', urlString + '.asc', tmpDir)
       sigFile = '%s/%s.asc' % (tmpDir, artifact)
@@ -246,28 +246,28 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
       run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
       # Forward any GPG warnings, except the expected one (since its a clean world)
-      f = open(logFile, 'rb')
+      f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
         and line.find('WARNING: This key is not certified with a trusted signature') == -1:
-          print '      GPG: %s' % line.strip()
+          print('      GPG: %s' % line.strip())
       f.close()
 
       # Test trust (this is done with the real users config)
       run('gpg --import %s' % (keysFile),
           '%s/%s.gpg.trust.import.log 2>&1' % (tmpDir, project))
-      print '    verify trust'
+      print('    verify trust')
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
       run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
       # Forward any GPG warnings:
-      f = open(logFile, 'rb')
+      f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1:
-          print '      GPG: %s' % line.strip()
+          print('      GPG: %s' % line.strip())
       f.close()
 
 def testChanges(project, version, changesURLString):
-  print '  check changes HTML...'
+  print('  check changes HTML...')
   changesURL = None
   for text, subURL in getDirEntries(changesURLString):
     if text == 'Changes.html':
@@ -287,7 +287,7 @@ def testChangesText(dir, version, project):
     if 'CHANGES.txt' in files:
       fullPath = '%s/CHANGES.txt' % root
       #print 'CHECK %s' % fullPath
-      checkChangesContent(open(fullPath).read(), version, fullPath, project, False)
+      checkChangesContent(open(fullPath, encoding='UTF-8').read(), version, fullPath, project, False)
       
 def checkChangesContent(s, version, name, project, isHTML):
 
@@ -336,7 +336,7 @@ def run(command, logFile):
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
     
 def verifyDigests(artifact, urlString, tmpDir):
-  print '    verify md5/sha1 digests'
+  print('    verify md5/sha1 digests')
   md5Expected, t = load(urlString + '.md5').strip().split()
   if t != '*'+artifact:
     raise RuntimeError('MD5 %s.md5 lists artifact %s but expected *%s' % (urlString, t, artifact))
@@ -347,10 +347,10 @@ def verifyDigests(artifact, urlString, tmpDir):
   
   m = hashlib.md5()
   s = hashlib.sha1()
-  f = open('%s/%s' % (tmpDir, artifact))
+  f = open('%s/%s' % (tmpDir, artifact), 'rb')
   while True:
     x = f.read(65536)
-    if x == '':
+    if len(x) == 0:
       break
     m.update(x)
     s.update(x)
@@ -388,7 +388,7 @@ def unpack(project, tmpDir, artifact, version):
     shutil.rmtree(destDir)
   os.makedirs(destDir)
   os.chdir(destDir)
-  print '    unpack %s...' % artifact
+  print('    unpack %s...' % artifact)
   unpackLogFile = '%s/%s-unpack-%s.log' % (tmpDir, project, artifact)
   if artifact.endswith('.tar.gz') or artifact.endswith('.tgz'):
     run('tar xzf %s/%s' % (tmpDir, artifact), unpackLogFile)
@@ -437,11 +437,13 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
 
   if project == 'lucene':
     # TODO: clean this up to not be a list of modules that we must maintain
-    extras = ('analysis', 'benchmark', 'core', 'demo', 'docs', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'sandbox', 'spatial', 'suggest', 'test-framework')
+    extras = ('analysis', 'benchmark', 'core', 'demo', 'docs', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
     if isSrc:
       extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'backwards', 'tools', 'site')
   else:
     extras = ()
+
+  # TODO: if solr, verify lucene/licenses, solr/licenses are present
 
   for e in extras:
     if e not in l:
@@ -453,81 +455,81 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       raise RuntimeError('%s: unexpected files/dirs in artifact %s: %s' % (project, artifact, l))
 
   if isSrc:
-    print '    make sure no JARs/WARs in src dist...'
+    print('    make sure no JARs/WARs in src dist...')
     lines = os.popen('find . -name \\*.jar').readlines()
     if len(lines) != 0:
-      print '    FAILED:'
+      print('    FAILED:')
       for line in lines:
-        print '      %s' % line.strip()
+        print('      %s' % line.strip())
       raise RuntimeError('source release has JARs...')
     lines = os.popen('find . -name \\*.war').readlines()
     if len(lines) != 0:
-      print '    FAILED:'
+      print('    FAILED:')
       for line in lines:
-        print '      %s' % line.strip()
+        print('      %s' % line.strip())
       raise RuntimeError('source release has WARs...')
 
-    print '    run "ant validate"'
+    print('    run "ant validate"')
     run('%s; ant validate' % javaExe('1.7'), '%s/validate.log' % unpackPath)
 
     if project == 'lucene':
-      print '    run tests w/ Java 6...'
+      print('    run tests w/ Java 6...')
       run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
       run('%s; ant jar' % javaExe('1.6'), '%s/compile.log' % unpackPath)
       testDemo(isSrc, version)
       # test javadocs
-      print '    generate javadocs w/ Java 6...'
+      print('    generate javadocs w/ Java 6...')
       run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
       checkJavadocpath('%s/build/docs' % unpackPath)
     else:
-      print '    run tests w/ Java 6...'
+      print('    run tests w/ Java 6...')
       run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
 
       # test javadocs
-      print '    generate javadocs w/ Java 6...'
+      print('    generate javadocs w/ Java 6...')
       run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
       checkJavadocpath('%s/build/docs' % unpackPath)
 
-      print '    run tests w/ Java 7...'
+      print('    run tests w/ Java 7...')
       run('%s; ant test' % javaExe('1.7'), '%s/test.log' % unpackPath)
  
       # test javadocs
-      print '    generate javadocs w/ Java 7...'
+      print('    generate javadocs w/ Java 7...')
       run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
       checkJavadocpath('%s/build/docs' % unpackPath)
 
       os.chdir('solr')
-      print '    test solr example w/ Java 6...'
+      print('    test solr example w/ Java 6...')
       run('%s; ant clean example' % javaExe('1.6'), '%s/antexample.log' % unpackPath)
       testSolrExample(unpackPath, JAVA6_HOME, True)
 
-      print '    test solr example w/ Java 7...'
+      print('    test solr example w/ Java 7...')
       run('%s; ant clean example' % javaExe('1.7'), '%s/antexample.log' % unpackPath)
       testSolrExample(unpackPath, JAVA7_HOME, True)
       os.chdir('..')
 
-      print '    check NOTICE'
+      print('    check NOTICE')
       testNotice(unpackPath)
 
   else:
     if project == 'lucene':
       testDemo(isSrc, version)
     else:
-      print '    test solr example w/ Java 6...'
+      print('    test solr example w/ Java 6...')
       testSolrExample(unpackPath, JAVA6_HOME, False)
 
-      print '    test solr example w/ Java 7...'
+      print('    test solr example w/ Java 7...')
       testSolrExample(unpackPath, JAVA7_HOME, False)
 
   testChangesText('.', version, project)
 
   if project == 'lucene' and not isSrc:
-    print '    check Lucene\'s javadoc JAR'
+    print('    check Lucene\'s javadoc JAR')
     checkJavadocpath('%s/docs' % unpackPath)
 
 def testNotice(unpackPath):
-  solrNotice = open('%s/NOTICE.txt' % unpackPath).read()
-  luceneNotice = open('%s/lucene/NOTICE.txt' % unpackPath).read()
+  solrNotice = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
+  luceneNotice = open('%s/lucene/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
 
   expected = """
 =========================================================================
@@ -545,12 +547,12 @@ def readSolrOutput(p, startupEvent, logFile):
   try:
     while True:
       line = p.readline()
-      if line == '':
+      if len(line) == 0:
         break
       f.write(line)
       f.flush()
       # print 'SOLR: %s' % line.strip()
-      if line.find('Started SocketConnector@0.0.0.0:8983') != -1:
+      if line.decode('UTF-8').find('Started SocketConnector@0.0.0.0:8983') != -1:
         startupEvent.set()
   finally:
     f.close()
@@ -558,7 +560,7 @@ def readSolrOutput(p, startupEvent, logFile):
 def testSolrExample(unpackPath, javaPath, isSrc):
   logFile = '%s/solr-example.log' % unpackPath
   os.chdir('example')
-  print '      start Solr instance (log=%s)...' % logFile
+  print('      start Solr instance (log=%s)...' % logFile)
   env = {}
   env.update(os.environ)
   env['JAVA_HOME'] = javaPath
@@ -572,21 +574,21 @@ def testSolrExample(unpackPath, javaPath, isSrc):
 
   # Make sure Solr finishes startup:
   startupEvent.wait()
-  print '      startup done'
+  print('      startup done')
   
   try:
-    print '      test utf8...'
+    print('      test utf8...')
     run('sh ./exampledocs/test_utf8.sh', 'utf8.log')
-    print '      index example docs...'
+    print('      index example docs...')
     run('sh ./exampledocs/post.sh ./exampledocs/*.xml', 'post-example-docs.log')
-    print '      run query...'
-    s = urllib2.urlopen('http://localhost:8983/solr/select/?q=video').read()
+    print('      run query...')
+    s = urllib.request.urlopen('http://localhost:8983/solr/select/?q=video').read().decode('UTF-8')
     if s.find('<result name="response" numFound="3" start="0">') == -1:
-      print 'FAILED: response is:\n%s' % s
+      print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
   finally:
     # Stop server:
-    print '      stop server (SIGINT)...'
+    print('      stop server (SIGINT)...')
     os.kill(server.pid, signal.SIGINT)
 
     # Give it 10 seconds to gracefully shut down
@@ -594,14 +596,14 @@ def testSolrExample(unpackPath, javaPath, isSrc):
 
     if serverThread.isAlive():
       # Kill server:
-      print '***WARNING***: Solr instance didn\'t respond to SIGINT; using SIGKILL now...'
+      print('***WARNING***: Solr instance didn\'t respond to SIGINT; using SIGKILL now...')
       os.kill(server.pid, signal.SIGKILL)
 
       serverThread.join(10.0)
 
       if serverThread.isAlive():
         # Shouldn't happen unless something is seriously wrong...
-        print '***WARNING***: Solr instance didn\'t respond to SIGKILL; ignoring...'
+        print('***WARNING***: Solr instance didn\'t respond to SIGKILL; ignoring...')
 
   os.chdir('..')
     
@@ -615,13 +617,13 @@ def checkJavadocpath(path):
   if checkJavaDocs.checkPackageSummaries(path):
     # disabled: RM cannot fix all this, see LUCENE-3887
     # raise RuntimeError('javadoc problems')
-    print '\n***WARNING***: javadocs want to fail!\n'
+    print('\n***WARNING***: javadocs want to fail!\n')
 
   if checkJavadocLinks.checkAll(path):
     raise RuntimeError('broken javadocs links found!')
 
 def testDemo(isSrc, version):
-  print '    test demo...'
+  print('    test demo...')
   sep = ';' if cygwin else ':'
   if isSrc:
     cp = 'build/core/classes/java{0}build/demo/classes/java{0}build/analysis/common/classes/java{0}build/queryparser/classes/java'.format(sep)
@@ -632,14 +634,14 @@ def testDemo(isSrc, version):
   run('%s; java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (javaExe('1.6'), cp, docsDir), 'index.log')
   run('%s; java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % (javaExe('1.6'), cp), 'search.log')
   reMatchingDocs = re.compile('(\d+) total matching documents')
-  m = reMatchingDocs.search(open('search.log', 'rb').read())
+  m = reMatchingDocs.search(open('search.log', encoding='UTF-8').read())
   if m is None:
     raise RuntimeError('lucene demo\'s SearchFiles found no results')
   else:
     numHits = int(m.group(1))
     if numHits < 100:
       raise RuntimeError('lucene demo\'s SearchFiles found too few results: %s' % numHits)
-    print '      got %d hits for query "lucene"' % numHits
+    print('      got %d hits for query "lucene"' % numHits)
 
 def checkMaven(baseURL, tmpDir, version, isSigned):
   # Locate the release branch in subversion
@@ -652,11 +654,11 @@ def checkMaven(baseURL, tmpDir, version, isSigned):
     if text == releaseBranchText:
       releaseBranchSvnURL = subURL
 
-  print '    get POM templates',
+  print('    get POM templates', end=' ')
   POMtemplates = defaultdict()
   getPOMtemplates(POMtemplates, tmpDir, releaseBranchSvnURL)
-  print
-  print '    download artifacts',
+  print()
+  print('    download artifacts', end=' ')
   artifacts = {'lucene': [], 'solr': []}
   for project in ('lucene', 'solr'):
     artifactsURL = '%s/%s/maven/org/apache/%s' % (baseURL, project, project)
@@ -664,30 +666,30 @@ def checkMaven(baseURL, tmpDir, version, isSigned):
     if not os.path.exists(targetDir):
       os.makedirs(targetDir)
     crawl(artifacts[project], artifactsURL, targetDir)
-  print
-  print '    verify that each binary artifact has a deployed POM...'
+  print()
+  print('    verify that each binary artifact has a deployed POM...')
   verifyPOMperBinaryArtifact(artifacts, version)
-  print '    verify that there is an artifact for each POM template...'
+  print('    verify that there is an artifact for each POM template...')
   verifyArtifactPerPOMtemplate(POMtemplates, artifacts, tmpDir, version)
-  print "    verify Maven artifacts' md5/sha1 digests..."
+  print("    verify Maven artifacts' md5/sha1 digests...")
   verifyMavenDigests(artifacts)
-  print '    verify that all non-Mavenized deps are deployed...'
+  print('    verify that all non-Mavenized deps are deployed...')
   nonMavenizedDeps = dict()
   checkNonMavenizedDeps(nonMavenizedDeps, POMtemplates, artifacts, tmpDir,
                         version, releaseBranchSvnURL)
-  print '    check for javadoc and sources artifacts...'
+  print('    check for javadoc and sources artifacts...')
   checkJavadocAndSourceArtifacts(nonMavenizedDeps, artifacts, version)
-  print "    verify deployed POMs' coordinates..."
+  print("    verify deployed POMs' coordinates...")
   verifyDeployedPOMsCoordinates(artifacts, version)
   if isSigned:
-    print '    verify maven artifact sigs',
+    print('    verify maven artifact sigs', end=' ')
     verifyMavenSigs(baseURL, tmpDir, artifacts)
 
   distributionFiles = getDistributionsForMavenChecks(tmpDir, version, baseURL)
 
-  print '    verify that non-Mavenized deps are same as in the binary distribution...'
+  print('    verify that non-Mavenized deps are same as in the binary distribution...')
   checkIdenticalNonMavenizedDeps(distributionFiles, nonMavenizedDeps)
-  print '    verify that Maven artifacts are same as in the binary distribution...'
+  print('    verify that Maven artifacts are same as in the binary distribution...')
   checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts, version)
 
 def getDistributionsForMavenChecks(tmpDir, version, baseURL):
@@ -697,19 +699,19 @@ def getDistributionsForMavenChecks(tmpDir, version, baseURL):
     if project == 'solr': distribution = 'apache-' + distribution
     if not os.path.exists('%s/%s' % (tmpDir, distribution)):
       distURL = '%s/%s/%s' % (baseURL, project, distribution)
-      print '    download %s...' % distribution,
+      print('    download %s...' % distribution, end=' ')
       download(distribution, distURL, tmpDir)
     destDir = '%s/unpack-%s-maven' % (tmpDir, project)
     if os.path.exists(destDir):
       shutil.rmtree(destDir)
     os.makedirs(destDir)
     os.chdir(destDir)
-    print '    unpack %s...' % distribution
+    print('    unpack %s...' % distribution)
     unpackLogFile = '%s/unpack-%s-maven-checks.log' % (tmpDir, distribution)
     run('tar xzf %s/%s' % (tmpDir, distribution), unpackLogFile)
     if project == 'solr': # unpack the Solr war
       unpackLogFile = '%s/unpack-solr-war-maven-checks.log' % tmpDir
-      print '        unpack Solr war...'
+      print('        unpack Solr war...')
       run('jar xvf */dist/*.war', unpackLogFile)
     distributionFiles[project] = []
     for root, dirs, files in os.walk(destDir):
@@ -719,7 +721,7 @@ def getDistributionsForMavenChecks(tmpDir, version, baseURL):
 def checkJavadocAndSourceArtifacts(nonMavenizedDeps, artifacts, version):
   for project in ('lucene', 'solr'):
     for artifact in artifacts[project]:
-      if artifact.endswith(version + '.jar') and artifact not in nonMavenizedDeps.keys():
+      if artifact.endswith(version + '.jar') and artifact not in list(nonMavenizedDeps.keys()):
         javadocJar = artifact[:-4] + '-javadoc.jar'
         if javadocJar not in artifacts[project]:
           raise RuntimeError('missing: %s' % javadocJar)
@@ -732,7 +734,7 @@ def checkIdenticalNonMavenizedDeps(distributionFiles, nonMavenizedDeps):
     distFilenames = dict()
     for file in distributionFiles[project]:
       distFilenames[os.path.basename(file)] = file
-    for dep in nonMavenizedDeps.keys():
+    for dep in list(nonMavenizedDeps.keys()):
       if ('/%s/' % project) in dep:
         depOrigFilename = os.path.basename(nonMavenizedDeps[dep])
         if not depOrigFilename in distFilenames:
@@ -753,9 +755,9 @@ def checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts,
       distFilenames[baseName] = file
     for artifact in artifacts[project]:
       if reJarWar.search(artifact):
-        if artifact not in nonMavenizedDeps.keys():
+        if artifact not in list(nonMavenizedDeps.keys()):
           artifactFilename = os.path.basename(artifact)
-          if artifactFilename not in distFilenames.keys():
+          if artifactFilename not in list(distFilenames.keys()):
             raise RuntimeError('Maven artifact %s is not present in %s binary distribution'
                               % (artifact, project))
          # TODO: Either fix the build to ensure that maven artifacts *are* identical, or recursively compare contents
@@ -772,16 +774,17 @@ def verifyMavenDigests(artifacts):
         raise RuntimeError('missing: MD5 digest for %s' % artifactFile)
       if artifactFile + '.sha1' not in artifacts[project]:
         raise RuntimeError('missing: SHA1 digest for %s' % artifactFile)
-      with open(artifactFile + '.md5', 'r') as md5File:
+      with open(artifactFile + '.md5', encoding='UTF-8') as md5File:
         md5Expected = md5File.read().strip()
-      with open(artifactFile + '.sha1', 'r') as sha1File:
+      with open(artifactFile + '.sha1', encoding='UTF-8') as sha1File:
         sha1Expected = sha1File.read().strip()
       md5 = hashlib.md5()
       sha1 = hashlib.sha1()
-      inputFile = open(artifactFile)
+      inputFile = open(artifactFile, 'rb')
       while True:
         bytes = inputFile.read(65536)
-        if bytes == '': break
+        if len(bytes) == 0:
+          break
         md5.update(bytes)
         sha1.update(bytes)
       inputFile.close()
@@ -846,7 +849,7 @@ def checkNonMavenizedDeps(nonMavenizedDependencies, POMtemplates, artifacts,
                 if releaseBranchSvnURL is None:
                   pomPath = '%s/%s/%s' % (workingCopy, pomDir, pomFile)
                   if os.path.exists(pomPath):
-                    doc2 = ET.XML(open(pomPath).read())
+                    doc2 = ET.XML(open(pomPath, encoding='UTF-8').read())
                     break
                 else:
                   entries = getDirEntries('%s/%s' % (releaseBranchSvnURL, pomDir))
@@ -891,7 +894,7 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts):
     gpgHomeDir = '%s/%s.gpg' % (tmpDir, project)
     if os.path.exists(gpgHomeDir):
       shutil.rmtree(gpgHomeDir)
-    os.makedirs(gpgHomeDir, 0700)
+    os.makedirs(gpgHomeDir, 0o700)
     run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile),
         '%s/%s.gpg.import.log' % (tmpDir, project))
 
@@ -904,12 +907,12 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts):
       run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
       # Forward any GPG warnings, except the expected one (since its a clean world)
-      f = open(logFile, 'rb')
+      f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
            and line.find('WARNING: This key is not certified with a trusted signature') == -1 \
            and line.find('WARNING: using insecure memory') == -1:
-          print '      GPG: %s' % line.strip()
+          print('      GPG: %s' % line.strip())
       f.close()
 
       # Test trust (this is done with the real users config)
@@ -918,16 +921,16 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts):
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
       run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
       # Forward any GPG warnings:
-      f = open(logFile, 'rb')
+      f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
            and line.find('WARNING: This key is not certified with a trusted signature') == -1 \
            and line.find('WARNING: using insecure memory') == -1:
-          print '      GPG: %s' % line.strip()
+          print('      GPG: %s' % line.strip())
       f.close()
 
       sys.stdout.write('.')
-  print
+  print()
 
 def verifyPOMperBinaryArtifact(artifacts, version):
   """verify that each binary jar and war has a corresponding POM file"""
@@ -1024,9 +1027,9 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
 def main():
 
   if len(sys.argv) != 4:
-    print
-    print 'Usage python -u %s BaseURL version tmpDir' % sys.argv[0]
-    print
+    print()
+    print('Usage python -u %s BaseURL version tmpDir' % sys.argv[0])
+    print()
     sys.exit(1)
 
   baseURL = sys.argv[1]
@@ -1046,11 +1049,11 @@ def smokeTest(baseURL, version, tmpDir, isSigned):
   
   lucenePath = None
   solrPath = None
-  print
-  print 'Load release URL "%s"...' % baseURL
+  print()
+  print('Load release URL "%s"...' % baseURL)
   newBaseURL = unshortenURL(baseURL)
   if newBaseURL != baseURL:
-    print '  unshortened: %s' % newBaseURL
+    print('  unshortened: %s' % newBaseURL)
     baseURL = newBaseURL
     
   for text, subURL in getDirEntries(baseURL):
@@ -1064,23 +1067,27 @@ def smokeTest(baseURL, version, tmpDir, isSigned):
   if solrPath is None:
     raise RuntimeError('could not find solr subdir')
 
-  print
-  print 'Test Lucene...'
+  print()
+  print('Test Lucene...')
   checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
     unpack('lucene', tmpDir, artifact, version)
   unpack('lucene', tmpDir, 'lucene-%s-src.tgz' % version, version)
 
-  print
-  print 'Test Solr...'
+  print()
+  print('Test Solr...')
   checkSigs('solr', solrPath, version, tmpDir, isSigned)
   for artifact in ('apache-solr-%s.tgz' % version, 'apache-solr-%s.zip' % version):
     unpack('solr', tmpDir, artifact, version)
   unpack('solr', tmpDir, 'apache-solr-%s-src.tgz' % version, version)
 
-  print 'Test Maven artifacts for Lucene and Solr...'
+  print('Test Maven artifacts for Lucene and Solr...')
   checkMaven(baseURL, tmpDir, version, isSigned)
 
 if __name__ == '__main__':
-  main()
+  try:
+    main()
+  except:
+    import traceback
+    traceback.print_exc()
   

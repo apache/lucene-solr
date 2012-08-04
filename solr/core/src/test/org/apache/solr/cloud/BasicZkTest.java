@@ -126,8 +126,8 @@ public class BasicZkTest extends AbstractZkTestCase {
     
     // ensure zk still thinks node is up
     assertTrue(
-        zkController.getCloudState().getLiveNodes().toString(),
-        zkController.getCloudState().liveNodesContain(
+        zkController.getClusterState().getLiveNodes().toString(),
+        zkController.getClusterState().liveNodesContain(
             zkController.getNodeName()));
 
     // test maxint

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -125,21 +125,21 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     while (cont) {
       if (verbose) System.out.println("-");
       boolean sawLiveRecovering = false;
-      zkStateReader.updateCloudState(true);
-      CloudState cloudState = zkStateReader.getCloudState();
-      Map<String,Slice> slices = cloudState.getSlices(collection);
+      zkStateReader.updateClusterState(true);
+      ClusterState clusterState = zkStateReader.getClusterState();
+      Map<String,Slice> slices = clusterState.getSlices(collection);
       for (Map.Entry<String,Slice> entry : slices.entrySet()) {
         Map<String,ZkNodeProps> shards = entry.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
           if (verbose) System.out.println("rstate:"
               + shard.getValue().get(ZkStateReader.STATE_PROP)
               + " live:"
-              + cloudState.liveNodesContain(shard.getValue().get(
+              + clusterState.liveNodesContain(shard.getValue().get(
                   ZkStateReader.NODE_NAME_PROP)));
           String state = shard.getValue().get(ZkStateReader.STATE_PROP);
           if ((state.equals(ZkStateReader.RECOVERING) || state
               .equals(ZkStateReader.SYNC) || state.equals(ZkStateReader.DOWN))
-              && cloudState.liveNodesContain(shard.getValue().get(
+              && clusterState.liveNodesContain(shard.getValue().get(
                   ZkStateReader.NODE_NAME_PROP))) {
             sawLiveRecovering = true;
           }
@@ -168,9 +168,9 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
   protected void assertAllActive(String collection,ZkStateReader zkStateReader)
       throws KeeperException, InterruptedException {
 
-      zkStateReader.updateCloudState(true);
-      CloudState cloudState = zkStateReader.getCloudState();
-      Map<String,Slice> slices = cloudState.getSlices(collection);
+      zkStateReader.updateClusterState(true);
+      ClusterState clusterState = zkStateReader.getClusterState();
+      Map<String,Slice> slices = clusterState.getSlices(collection);
       if (slices == null) {
         throw new IllegalArgumentException("Cannot find collection:" + collection);
       }

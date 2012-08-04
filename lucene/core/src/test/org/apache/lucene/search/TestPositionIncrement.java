@@ -206,7 +206,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockPayloadAnalyzer());
     Document doc = new Document();
     doc.add(new TextField("content", new StringReader(
-        "a a b c d e a f g h i j a b k k"), Field.Store.NO));
+        "a a b c d e a f g h i j a b k k")));
     writer.addDocument(doc);
 
     final IndexReader readerFromWriter = writer.getReader();

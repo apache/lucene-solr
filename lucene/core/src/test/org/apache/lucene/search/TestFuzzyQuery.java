@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -184,6 +185,41 @@ public class TestFuzzyQuery extends LuceneTestCase {
     query = new FuzzyQuery(new Term("anotherfield", "ddddX"), FuzzyQuery.defaultMaxEdits, 0);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
+
+    reader.close();
+    directory.close();
+  }
+  
+  public void test2() throws Exception {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    addDoc("LANGE", writer);
+    addDoc("LUETH", writer);
+    addDoc("PIRSING", writer);
+    addDoc("RIEGEL", writer);
+    addDoc("TRZECZIAK", writer);
+    addDoc("WALKER", writer);
+    addDoc("WBR", writer);
+    addDoc("WE", writer);
+    addDoc("WEB", writer);
+    addDoc("WEBE", writer);
+    addDoc("WEBER", writer);
+    addDoc("WEBERE", writer);
+    addDoc("WEBREE", writer);
+    addDoc("WEBEREI", writer);
+    addDoc("WBRE", writer);
+    addDoc("WITTKOPF", writer);
+    addDoc("WOJNAROWSKI", writer);
+    addDoc("WRICKE", writer);
+
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    writer.close();
+
+    FuzzyQuery query = new FuzzyQuery(new Term("field", "WEBER"), 2, 1);
+    //query.setRewriteMethod(FuzzyQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(8, hits.length);
 
     reader.close();
     directory.close();

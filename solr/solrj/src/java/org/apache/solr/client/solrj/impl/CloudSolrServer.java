@@ -34,7 +34,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -139,7 +139,7 @@ public class CloudSolrServer extends SolrServer {
 
     // TODO: if you can hash here, you could favor the shard leader
     
-    CloudState cloudState = zkStateReader.getCloudState();
+    ClusterState clusterState = zkStateReader.getClusterState();
 
     SolrParams reqParams = request.getParams();
     if (reqParams == null) {
@@ -159,12 +159,12 @@ public class CloudSolrServer extends SolrServer {
     Map<String,Slice> slices = new HashMap<String,Slice>();
     for (int i = 0; i < collectionList.size(); i++) {
       String coll= collectionList.get(i);
-      ClientUtils.appendMap(coll, slices, cloudState.getSlices(coll));
+      ClientUtils.appendMap(coll, slices, clusterState.getSlices(coll));
     }
 
-    Set<String> liveNodes = cloudState.getLiveNodes();
+    Set<String> liveNodes = clusterState.getLiveNodes();
 
-    // IDEA: have versions on various things... like a global cloudState version
+    // IDEA: have versions on various things... like a global clusterState version
     // or shardAddressVersion (which only changes when the shards change)
     // to allow caching.
 

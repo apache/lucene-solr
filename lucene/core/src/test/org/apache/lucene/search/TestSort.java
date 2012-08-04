@@ -196,7 +196,7 @@ public class TestSort extends LuceneTestCase {
         if (data[i][11] != null) doc.add (new StringField ("parser",     data[i][11], Field.Store.NO));
 
         for(IndexableField f : doc.getFields()) {
-          if (!f.fieldType().omitNorms()) {
+          if (f.fieldType().indexed() && !f.fieldType().omitNorms()) {
             ((Field) f).setBoost(2.0f);
           }
         }
@@ -239,7 +239,7 @@ public class TestSort extends LuceneTestCase {
       doc.add(new SortedBytesDocValuesField("string2", new BytesRef(num2)));
       doc.add (new Field ("tracer2", num2, onlyStored));
       for(IndexableField f2 : doc.getFields()) {
-        if (!f2.fieldType().omitNorms()) {
+        if (f2.fieldType().indexed() && !f2.fieldType().omitNorms()) {
           ((Field) f2).setBoost(2.0f);
         }
       }
@@ -255,7 +255,7 @@ public class TestSort extends LuceneTestCase {
       doc.add (new Field ("tracer2_fixed", num2Fixed, onlyStored));
 
       for(IndexableField f2 : doc.getFields()) {
-        if (!f2.fieldType().omitNorms()) {
+        if (f2.fieldType().indexed() && !f2.fieldType().omitNorms()) {
           ((Field) f2).setBoost(2.0f);
         }
       }

@@ -39,7 +39,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -315,8 +315,8 @@ public class SolrDispatchFilter implements Filter
     String collection = corename;
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     
-    CloudState cloudState = zkStateReader.getCloudState();
-    Map<String,Slice> slices = cloudState.getSlices(collection);
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Map<String,Slice> slices = clusterState.getSlices(collection);
     if (slices == null) {
       return null;
     }
@@ -326,7 +326,7 @@ public class SolrDispatchFilter implements Filter
     done:
     for (Entry<String,Slice> entry : entries) {
       // first see if we have the leader
-      ZkNodeProps leaderProps = cloudState.getLeader(collection, entry.getKey());
+      ZkNodeProps leaderProps = clusterState.getLeader(collection, entry.getKey());
       if (leaderProps != null) {
         core = checkProps(cores, path, leaderProps);
       }

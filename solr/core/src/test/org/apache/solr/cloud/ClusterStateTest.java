@@ -23,13 +23,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
-public class CloudStateTest extends SolrTestCaseJ4 {
+public class ClusterStateTest extends SolrTestCaseJ4 {
   @Test
   public void testStoreAndRead() throws Exception {
     Map<String,Map<String,Slice>> collectionStates = new HashMap<String,Map<String,Slice>>();
@@ -52,27 +52,27 @@ public class CloudStateTest extends SolrTestCaseJ4 {
     collectionStates.put("collection1", slices);
     collectionStates.put("collection2", slices);
     
-    CloudState cloudState = new CloudState(liveNodes, collectionStates);
-    byte[] bytes = ZkStateReader.toJSON(cloudState);
+    ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
+    byte[] bytes = ZkStateReader.toJSON(clusterState);
     
-    CloudState loadedCloudState = CloudState.load(bytes, liveNodes);
+    ClusterState loadedClusterState = ClusterState.load(bytes, liveNodes);
     
-    assertEquals("Provided liveNodes not used properly", 2, loadedCloudState
+    assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());
-    assertEquals("No collections found", 2, loadedCloudState.getCollections().size());
-    assertEquals("Poperties not copied properly", zkNodeProps.get("prop1"), loadedCloudState.getSlice("collection1", "shard1").getShards().get("node1").get("prop1"));
-    assertEquals("Poperties not copied properly", zkNodeProps.get("prop2"), loadedCloudState.getSlice("collection1", "shard1").getShards().get("node1").get("prop2"));
+    assertEquals("No collections found", 2, loadedClusterState.getCollections().size());
+    assertEquals("Poperties not copied properly", zkNodeProps.get("prop1"), loadedClusterState.getSlice("collection1", "shard1").getShards().get("node1").get("prop1"));
+    assertEquals("Poperties not copied properly", zkNodeProps.get("prop2"), loadedClusterState.getSlice("collection1", "shard1").getShards().get("node1").get("prop2"));
 
-    loadedCloudState = CloudState.load(new byte[0], liveNodes);
+    loadedClusterState = ClusterState.load(new byte[0], liveNodes);
     
-    assertEquals("Provided liveNodes not used properly", 2, loadedCloudState
+    assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedCloudState.getCollections().size());
+    assertEquals("Should not have collections", 0, loadedClusterState.getCollections().size());
 
-    loadedCloudState = CloudState.load((byte[])null, liveNodes);
+    loadedClusterState = ClusterState.load((byte[])null, liveNodes);
     
-    assertEquals("Provided liveNodes not used properly", 2, loadedCloudState
+    assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedCloudState.getCollections().size());
+    assertEquals("Should not have collections", 0, loadedClusterState.getCollections().size());
   }
 }

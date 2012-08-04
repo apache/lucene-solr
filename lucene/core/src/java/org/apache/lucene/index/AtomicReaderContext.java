@@ -1,8 +1,5 @@
 package org.apache.lucene.index;
 
-import java.util.Collections;
-import java.util.List;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +16,9 @@ import java.util.List;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * {@link IndexReaderContext} for {@link AtomicReader} instances
@@ -51,8 +51,9 @@ public final class AtomicReaderContext extends IndexReaderContext {
   
   @Override
   public List<AtomicReaderContext> leaves() {
-    if (!isTopLevel)
+    if (!isTopLevel) {
       throw new UnsupportedOperationException("This is not a top-level context.");
+    }
     assert leaves != null;
     return leaves;
   }

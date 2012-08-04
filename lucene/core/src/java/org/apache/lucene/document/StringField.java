@@ -54,9 +54,4 @@ public final class StringField extends Field {
   public StringField(String name, String value, Store stored) {
     super(name, value, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
   }
-
-  @Override
-  public String stringValue() {
-    return (fieldsData == null) ? null : fieldsData.toString();
-  }
 }

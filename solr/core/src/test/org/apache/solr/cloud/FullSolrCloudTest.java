@@ -44,7 +44,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -214,11 +214,11 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     
     // wait until shards have started registering...
-    while (!zkStateReader.getCloudState().getCollections()
+    while (!zkStateReader.getClusterState().getCollections()
         .contains(DEFAULT_COLLECTION)) {
       Thread.sleep(500);
     }
-    while (zkStateReader.getCloudState().getSlices(DEFAULT_COLLECTION).size() != sliceCount) {
+    while (zkStateReader.getClusterState().getSlices(DEFAULT_COLLECTION).size() != sliceCount) {
       Thread.sleep(500);
     }
     
@@ -331,7 +331,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
 
   private int getNumShards(String defaultCollection) {
-    Map<String,Slice> slices = this.zkStateReader.getCloudState().getSlices(defaultCollection);
+    Map<String,Slice> slices = this.zkStateReader.getClusterState().getSlices(defaultCollection);
     int cnt = 0;
     for (Map.Entry<String,Slice> entry : slices.entrySet()) {
       cnt += entry.getValue().getShards().size();
@@ -354,16 +354,16 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
       List<SolrServer> clients) throws Exception {
-    zkStateReader.updateCloudState(true);
+    zkStateReader.updateClusterState(true);
     cloudJettys.clear();
     shardToJetty.clear();
     
-    CloudState cloudState = zkStateReader.getCloudState();
-    Map<String,Slice> slices = cloudState.getSlices(DEFAULT_COLLECTION);
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Map<String,Slice> slices = clusterState.getSlices(DEFAULT_COLLECTION);
     
     if (slices == null) {
       throw new RuntimeException("No slices found for collection "
-          + DEFAULT_COLLECTION + " in " + cloudState.getCollections());
+          + DEFAULT_COLLECTION + " in " + clusterState.getCollections());
     }
     
     List<CloudSolrServerClient> theClients = new ArrayList<CloudSolrServerClient>();
@@ -1053,7 +1053,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     assertEquals(
         "The client count does not match up with the shard count for slice:"
             + shard,
-        zkStateReader.getCloudState().getSlice(DEFAULT_COLLECTION, shard)
+        zkStateReader.getClusterState().getSlice(DEFAULT_COLLECTION, shard)
             .getShards().size(), solrJetties.size());
 
     SolrServer lastClient = null;
@@ -1078,7 +1078,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       boolean live = false;
       String nodeName = props.get(ZkStateReader.NODE_NAME_PROP);
-      if (zkStateReader.getCloudState().liveNodesContain(nodeName)) {
+      if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         live = true;
       }
       if (verbose) System.err.println(" live:" + live);
@@ -1233,18 +1233,18 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     ZkStateReader zk = new ZkStateReader(zkServer.getZkAddress(), 10000,
         AbstractZkTestCase.TIMEOUT);
     Map<String,Slice> slices = null;
-    CloudState cloudState;
+    ClusterState clusterState;
     try {
       zk.createClusterStateWatchersAndUpdate();
-      cloudState = zk.getCloudState();
-      slices = cloudState.getSlices(DEFAULT_COLLECTION);
+      clusterState = zk.getClusterState();
+      slices = clusterState.getSlices(DEFAULT_COLLECTION);
     } finally {
       zk.close();
     }
     
     if (slices == null) {
       throw new RuntimeException("Could not find collection "
-          + DEFAULT_COLLECTION + " in " + cloudState.getCollections());
+          + DEFAULT_COLLECTION + " in " + clusterState.getCollections());
     }
     
     for (CloudJettyRunner cjetty : cloudJettys) {
@@ -1266,7 +1266,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       String currentState = cjetty.info.get(ZkStateReader.STATE_PROP);
       if (currentState != null
           && currentState.equals(ZkStateReader.ACTIVE)
-          && zkStateReader.getCloudState().liveNodesContain(
+          && zkStateReader.getClusterState().liveNodesContain(
               cjetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
         SolrQuery query = new SolrQuery("*:*");
         query.set("distrib", false);
@@ -1509,7 +1509,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   protected void waitToSeeNotLive(ZkStateReader zkStateReader,
       CloudJettyRunner cjetty) throws InterruptedException {
     int tries = 0;
-    while (zkStateReader.getCloudState()
+    while (zkStateReader.getClusterState()
         .liveNodesContain(cjetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
       if (tries++ == 120) {
         fail("Shard still reported as live in zk");

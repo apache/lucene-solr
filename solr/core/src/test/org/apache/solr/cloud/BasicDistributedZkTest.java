@@ -57,7 +57,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -355,7 +355,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       HttpSolrServer collectionClient = new HttpSolrServer(url);
       
       // poll for a second - it can take a moment before we are ready to serve
-      waitForNon404(collectionClient);
+      waitForNon404or503(collectionClient);
     }
     
     List<String> collectionNameList = new ArrayList<String>();
@@ -451,7 +451,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   private void collectStartTimes(String collectionName,
       Map<String,Long> urlToTime) throws SolrServerException, IOException {
     Map<String,Map<String,Slice>> collections = solrj.getZkStateReader()
-        .getCloudState().getCollectionStates();
+        .getClusterState().getCollectionStates();
     if (collections.containsKey(collectionName)) {
       Map<String,Slice> slices = collections.get(collectionName);
 
@@ -478,8 +478,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   }
 
   private String getUrlFromZk(String collection) {
-    CloudState cloudState = solrj.getZkStateReader().getCloudState();
-    Map<String,Slice> slices = cloudState.getCollectionStates().get(collection);
+    ClusterState clusterState = solrj.getZkStateReader().getClusterState();
+    Map<String,Slice> slices = clusterState.getCollectionStates().get(collection);
     
     if (slices == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection:" + collection);
@@ -491,7 +491,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
       for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
-        if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
+        if (clusterState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
           return new ZkCoreNodeProps(node).getCoreUrl();
         }
       }
@@ -500,20 +500,21 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
-  private void waitForNon404(HttpSolrServer collectionClient)
+  private void waitForNon404or503(HttpSolrServer collectionClient)
       throws Exception {
-    
+    SolrException exp = null;
     long timeoutAt = System.currentTimeMillis() + 30000;
     
     while (System.currentTimeMillis() < timeoutAt) {
       boolean missing = false;
+
       try {
         collectionClient.query(new SolrQuery("*:*"));
       } catch (SolrException e) {
-        // How do I get the response code!?
-        if (!e.getMessage().contains("(404)")) {
+        if (!(e.code() == 403 || e.code() == 503)) {
           throw e;
         }
+        exp = e;
         missing = true;
       }
       if (!missing) {
@@ -522,7 +523,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       Thread.sleep(50);
     }
     printLayout();
-    fail("Could not find the new collection - 404 : " + collectionClient.getBaseURL());
+    fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
   }
 
   private void checkForCollection(String collectionName, int expectedSlices)
@@ -532,9 +533,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     boolean found = false;
     boolean sliceMatch = false;
     while (System.currentTimeMillis() < timeoutAt) {
-      solrj.getZkStateReader().updateCloudState(true);
-      CloudState cloudState = solrj.getZkStateReader().getCloudState();
-      Map<String,Map<String,Slice>> collections = cloudState
+      solrj.getZkStateReader().updateClusterState(true);
+      ClusterState clusterState = solrj.getZkStateReader().getClusterState();
+      Map<String,Map<String,Slice>> collections = clusterState
           .getCollectionStates();
       if (collections.containsKey(collectionName)) {
         Map<String,Slice> slices = collections.get(collectionName);
@@ -580,9 +581,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     long timeoutAt = System.currentTimeMillis() + 15000;
     boolean found = true;
     while (System.currentTimeMillis() < timeoutAt) {
-      solrj.getZkStateReader().updateCloudState(true);
-      CloudState cloudState = solrj.getZkStateReader().getCloudState();
-      Map<String,Map<String,Slice>> collections = cloudState
+      solrj.getZkStateReader().updateClusterState(true);
+      ClusterState clusterState = solrj.getZkStateReader().getClusterState();
+      Map<String,Map<String,Slice>> collections = clusterState
           .getCollectionStates();
       if (!collections.containsKey(collectionName)) {
         found = false;
@@ -772,8 +773,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     
     // we added a role of none on these creates - check for it
     ZkStateReader zkStateReader = solrj.getZkStateReader();
-    zkStateReader.updateCloudState(true);
-    Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(oneInstanceCollection2);
+    zkStateReader.updateClusterState(true);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(oneInstanceCollection2);
     assertNotNull(slices);
     String roles = slices.get("slice1").getShards().values().iterator().next().get(ZkStateReader.ROLES_PROP);
     assertEquals("none", roles);

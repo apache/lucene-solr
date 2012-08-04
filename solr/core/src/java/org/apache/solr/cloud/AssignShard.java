@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 
 public class AssignShard {
@@ -36,7 +36,7 @@ public class AssignShard {
    * @param state
    * @return the assigned shard id
    */
-  public static String assignShard(String collection, CloudState state, Integer numShards) {
+  public static String assignShard(String collection, ClusterState state, Integer numShards) {
     if (numShards == null) {
       numShards = 1;
     }

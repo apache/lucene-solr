@@ -15,6 +15,9 @@ New features
   underlying PayloadFunction's explanation as the explanation
   for the payload score. (Scott Smerchek via Robert Muir)
   
+* LUCENE-4069: Added BloomFilteringPostingsFormat for use with low-frequency terms
+  such as primary keys (Mark Harwood, Mike McCandless) 
+  
 * LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
   iteration marks. (Robert Muir, Christian Moen)
 
@@ -39,6 +42,11 @@ New features
   offsets); turning one or both off may allow some codec
   implementations to optimize the enum implementation.  (Robert Muir,
   Mike McCandless)
+
+* LUCENE-4203: Add IndexWriter.tryDeleteDocument(AtomicReader reader,
+  int docID), to attempt deletion by docID as long as the provided
+  reader is an NRT reader, and the segment has not yet been merged
+  away (Mike McCandless).
 
 API Changes
 
@@ -87,6 +95,10 @@ API Changes
   instead of the previous boolean needsFlags; consistent with the changes
   for DocsAndPositionsEnum in LUCENE-4230. Currently othe only flag
   is DocsEnum.FLAG_FREQS. (Robert Muir, Mike McCandless)
+  
+* LUCENE-3616: TextField(String, Reader, Store) was reduced to TextField(String, Reader),
+  as the Store parameter didn't make sense: if you supplied Store.YES, you would only 
+  receive an exception anyway. (Robert Muir)
 
 Optimizations
 
@@ -98,6 +110,10 @@ Optimizations
 
 * LUCENE-4235: Remove enforcing of Filter rewrite for NRQ queries.
   (Uwe Schindler)
+
+* LUCENE-4279: Regenerated snowball Stemmers from snowball r554,
+  making them substantially more lightweight. Behavior is unchanged. 
+  (Robert Muir)
 
 Bug Fixes
 
@@ -140,11 +156,21 @@ Bug Fixes
   IndexWriter to only delete files matching this pattern from an index
   directory, to reduce risk when the wrong index path is accidentally
   passed to IndexWriter (Robert Muir, Mike McCandless)
+  
+* LUCENE-4277: Fix IndexWriter deadlock during rollback if flushable DWPT
+  instance are already checked out and queued up but not yet flushed. 
+  (Simon Willnauer)
+
+* LUCENE-4282: Automaton FuzzyQuery didnt always deliver all results.
+  (Johannes Christen, Uwe Schindler, Robert Muir)
 
 Changes in Runtime Behavior
 
 * LUCENE-4109: Enable position increments in the flexible queryparser by default.
   (Karsten Rauch via Robert Muir)
+  
+* LUCENE-3616: Field throws exception if you try to set a boost on an 
+  unindexed field or one that omits norms. (Robert Muir)
 
 Build
 

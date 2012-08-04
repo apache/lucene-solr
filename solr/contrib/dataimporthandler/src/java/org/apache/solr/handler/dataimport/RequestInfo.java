@@ -36,6 +36,7 @@ public class RequestInfo {
   private final boolean clean; 
   private final List<String> entitiesToRun;
   private final Map<String,Object> rawParams;
+  private final String configFile;
   private final String dataConfig;  
   
   //TODO:  find a different home for these two...
@@ -98,7 +99,8 @@ public class RequestInfo {
     } else {
       entitiesToRun = null;
     }
-    
+    String configFileParam = (String) requestParams.get("config");
+    configFile = configFileParam;
     String dataConfigParam = (String) requestParams.get("dataConfig");
     if (dataConfigParam != null && dataConfigParam.trim().length() == 0) {
       // Empty data-config param is not valid, change it to null
@@ -160,5 +162,9 @@ public class RequestInfo {
 
   public DebugInfo getDebugInfo() {
     return debugInfo;
+  }
+
+  public String getConfigFile() {
+    return configFile;
   }
 }

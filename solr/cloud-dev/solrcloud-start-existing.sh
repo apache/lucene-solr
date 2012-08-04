@@ -2,9 +2,6 @@
 
 cd ..
 
-rm -r -f dist
-rm -r -f build
-
 cd example
 java -DzkRun -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example.log 2>&1 &
 

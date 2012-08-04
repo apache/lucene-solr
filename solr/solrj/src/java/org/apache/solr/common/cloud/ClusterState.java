@@ -32,12 +32,16 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.HashPartitioner.Range;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
- * {@link ZkStateReader#getCloudState()}.
+ * {@link ZkStateReader#getClusterState()}.
  */
-public class CloudState implements JSONWriter.Writable {
+public class ClusterState implements JSONWriter.Writable {
+  private static Logger log = LoggerFactory.getLogger(ClusterState.class);
+  
 	private final Map<String, Map<String,Slice>> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
 	private final Set<String> liveNodes;
   
@@ -46,7 +50,7 @@ public class CloudState implements JSONWriter.Writable {
   private final Map<String,RangeInfo> rangeInfos = new HashMap<String,RangeInfo>();
   private final Map<String,Map<String,ZkNodeProps>> leaders = new HashMap<String,Map<String,ZkNodeProps>>();
 
-	public CloudState(Set<String> liveNodes,
+	public ClusterState(Set<String> liveNodes,
 			Map<String, Map<String,Slice>> collectionStates) {
 		this.liveNodes = new HashSet<String>(liveNodes.size());
 		this.liveNodes.addAll(liveNodes);
@@ -71,10 +75,10 @@ public class CloudState implements JSONWriter.Writable {
             Map<String,ZkNodeProps> leadersForCollection = leaders.get(collection.getKey());
             if (leadersForCollection == null) {
               leadersForCollection = new HashMap<String,ZkNodeProps>();
-        
               leaders.put(collection.getKey(), leadersForCollection);
             }
             leadersForCollection.put(sliceEntry.getKey(), props);
+            break; // we found the leader for this shard
           }
         }
       }
@@ -232,20 +236,20 @@ public class CloudState implements JSONWriter.Writable {
 	}
 
 	/**
-	 * Create CloudState by reading the current state from zookeeper. 
+	 * Create ClusterState by reading the current state from zookeeper. 
 	 */
-	public static CloudState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException {
+	public static ClusterState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException {
     byte[] state = zkClient.getData(ZkStateReader.CLUSTER_STATE,
         null, null, true);
     return load(state, liveNodes);
 	}
 	
 	/**
-	 * Create CloudState from json string that is typically stored in zookeeper.
+	 * Create ClusterState from json string that is typically stored in zookeeper.
 	 */
-	public static CloudState load(byte[] bytes, Set<String> liveNodes) {
+	public static ClusterState load(byte[] bytes, Set<String> liveNodes) {
     if (bytes == null || bytes.length == 0) {
-      return new CloudState(liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
+      return new ClusterState(liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
     }
     
     LinkedHashMap<String, Object> stateMap = (LinkedHashMap<String, Object>) ZkStateReader.fromJSON(bytes);
@@ -265,7 +269,7 @@ public class CloudState implements JSONWriter.Writable {
       }
       state.put(collectionName, slices);
     }
-    return new CloudState(liveNodes, state);
+    return new ClusterState(liveNodes, state);
 	}
 
   @Override

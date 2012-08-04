@@ -36,7 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -158,17 +158,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
     this.zkEnabled  = coreDesc.getCoreContainer().isZooKeeperAware();
+    zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+    if (zkEnabled) {
+      numNodes =  zkController.getZkStateReader().getClusterState().getLiveNodes().size();
+    }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
 
-    
-    zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+   
     
     cloudDesc = coreDesc.getCloudDescriptor();
     
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
     }
-    
+
     cmdDistrib = new SolrCmdDistributor(numNodes);
   }
 
@@ -178,13 +181,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // if we are in zk mode...
     if (zkEnabled) {
       // set num nodes
-      numNodes = zkController.getCloudState().getLiveNodes().size();
+      numNodes = zkController.getClusterState().getLiveNodes().size();
       
       // the leader is...
       // TODO: if there is no leader, wait and look again
       // TODO: we are reading the leader from zk every time - we should cache
       // this and watch for changes?? Just pull it from ZkController cluster state probably?
-      String shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
+      String shardId = getShard(hash, collection, zkController.getClusterState()); // get the right shard based on the hash...
 
       try {
         // TODO: if we find out we cannot talk to zk anymore, we should probably realize we are not
@@ -249,11 +252,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
 
-  private String getShard(int hash, String collection, CloudState cloudState) {
+  private String getShard(int hash, String collection, ClusterState clusterState) {
     // ranges should be part of the cloud state and eventually gotten from zk
 
     // get the shard names
-    return cloudState.getShard(hash, collection);
+    return clusterState.getShard(hash, collection);
   }
 
   // used for deleteByQuery to get the list of nodes this leader should forward to
@@ -695,11 +698,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (zkEnabled && DistribPhase.NONE == phase) {
       boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
 
-      Map<String,Slice> slices = zkController.getCloudState().getSlices(collection);
+      Map<String,Slice> slices = zkController.getClusterState().getSlices(collection);
       if (slices == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "Cannot find collection:" + collection + " in "
-                + zkController.getCloudState().getCollections());
+                + zkController.getClusterState().getCollections());
       }
 
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
@@ -994,13 +997,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   
   private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, String shardZkNodeName) {
-    CloudState cloudState = req.getCore().getCoreDescriptor()
-        .getCoreContainer().getZkController().getCloudState();
+    ClusterState clusterState = req.getCore().getCoreDescriptor()
+        .getCoreContainer().getZkController().getClusterState();
     List<Node> urls = new ArrayList<Node>();
-    Map<String,Slice> slices = cloudState.getSlices(collection);
+    Map<String,Slice> slices = clusterState.getSlices(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
-          "Could not find collection in zk: " + cloudState);
+          "Could not find collection in zk: " + clusterState);
     }
     for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
       Slice replicas = slices.get(sliceEntry.getKey());
@@ -1009,7 +1012,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       
       for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
-        if (cloudState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(shardZkNodeName)) {
+        if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(shardZkNodeName)) {
           urls.add(new StdNode(nodeProps));
         }
       }

@@ -46,9 +46,9 @@ public final class TextField extends Field {
 
   // TODO: add sugar for term vectors...?
 
-  /** Creates a new TextField with Reader value. */
-  public TextField(String name, Reader reader, Store store) {
-    super(name, reader, store == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
+  /** Creates a new un-stored TextField with Reader value. */
+  public TextField(String name, Reader reader) {
+    super(name, reader, TYPE_NOT_STORED);
   }
 
   /** Creates a new TextField with String value. */

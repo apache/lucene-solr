@@ -122,7 +122,7 @@ public class FuzzyTermsEnum extends TermsEnum {
     this.realPrefixLength = prefixLength > termLength ? termLength : prefixLength;
     // if minSimilarity >= 1, we treat it as number of edits
     if (minSimilarity >= 1f) {
-      this.minSimilarity = 1 - (minSimilarity+1) / this.termLength;
+      this.minSimilarity = 0; // just driven by number of edits
       maxEdits = (int) minSimilarity;
       raw = true;
     } else {
