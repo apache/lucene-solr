@@ -355,7 +355,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       HttpSolrServer collectionClient = new HttpSolrServer(url);
       
       // poll for a second - it can take a moment before we are ready to serve
-      waitForNon404(collectionClient);
+      waitForNon404or503(collectionClient);
     }
     
     List<String> collectionNameList = new ArrayList<String>();
@@ -500,20 +500,21 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
-  private void waitForNon404(HttpSolrServer collectionClient)
+  private void waitForNon404or503(HttpSolrServer collectionClient)
       throws Exception {
-    
+    SolrException exp = null;
     long timeoutAt = System.currentTimeMillis() + 30000;
     
     while (System.currentTimeMillis() < timeoutAt) {
       boolean missing = false;
+
       try {
         collectionClient.query(new SolrQuery("*:*"));
       } catch (SolrException e) {
-        // How do I get the response code!?
-        if (!e.getMessage().contains("(404)")) {
+        if (!(e.code() == 403 || e.code() == 503)) {
           throw e;
         }
+        exp = e;
         missing = true;
       }
       if (!missing) {
@@ -522,7 +523,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       Thread.sleep(50);
     }
     printLayout();
-    fail("Could not find the new collection - 404 : " + collectionClient.getBaseURL());
+    fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
   }
 
   private void checkForCollection(String collectionName, int expectedSlices)
