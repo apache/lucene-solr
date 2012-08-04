@@ -109,6 +109,15 @@ New Features
 * SOLR-3672: SimplePostTool: Improvements for posting files
   Support for auto mode, recursive and wildcards (janhoy)
 
+Optimizations
+----------------------
+
+* SOLR-3708: Add hashCode to ClusterState so that structures built based on the 
+  ClusterState can be easily cached. (Mark Miller)
+
+* SOLR-3709: Cache the url list created from the ClusterState in CloudSolrServer on each 
+  request. (Mark Miller, yonik)
+
 Bug Fixes
 ----------------------
 
