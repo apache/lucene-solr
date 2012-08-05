@@ -295,10 +295,10 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     throws IOException {
 
     boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-    boolean indexHasPayloasd = fieldInfo.hasPayloads();
+    boolean indexHasPayloads = fieldInfo.hasPayloads();
 
     if ((!indexHasOffsets || (flags & DocsAndPositionsEnum.FLAG_OFFSETS) == 0) &&
-        (!fieldInfo.hasPayloads() || (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) == 0)) {
+        (!indexHasPayloads || (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) == 0)) {
       BlockDocsAndPositionsEnum docsAndPositionsEnum;
       if (reuse instanceof BlockDocsAndPositionsEnum) {
         docsAndPositionsEnum = (BlockDocsAndPositionsEnum) reuse;
@@ -521,19 +521,43 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         }
       }
 
-      // Now scan:
-      while (nextDoc() != NO_MORE_DOCS) {
-        if (doc >= target) {
-          if (DEBUG) {
-            System.out.println("  advance return doc=" + doc);
-          }
-          return doc;
+      // Now scan... this is an inlined/pared down version
+      // of nextDoc():
+      while (true) {
+        if (DEBUG) {
+          System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
         }
+        if (docUpto == docFreq) {
+          return doc = NO_MORE_DOCS;
+        }
+        if (docBufferUpto == blockSize) {
+          // nocommit hmm skip freq?  but: we don't ever
+          // scan over more than one block?
+          refillDocs();
+        }
+        accum += docDeltaBuffer[docBufferUpto];
+        docUpto++;
+
+        if (accum >= target) {
+          break;
+        }
+        docBufferUpto++;
       }
-      if (DEBUG) {
-        System.out.println("  advance return doc=END");
+
+      if (liveDocs == null || liveDocs.get(accum)) {
+        if (DEBUG) {
+          System.out.println("  return doc=" + accum);
+        }
+        freq = freqBuffer[docBufferUpto];
+        docBufferUpto++;
+        return doc = accum;
+      } else {
+        if (DEBUG) {
+          System.out.println("  now do nextDoc()");
+        }
+        docBufferUpto++;
+        return nextDoc();
       }
-      return NO_MORE_DOCS;
     }
   }
 
@@ -808,6 +832,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           posPendingCount = skipper.getPosBufferUpto();
         }
       }
+
+      // nocommit inline nextDoc here
 
       // Now scan:
       while (nextDoc() != NO_MORE_DOCS) {
@@ -1280,6 +1306,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           payloadByteUpto = skipper.getPayloadByteUpto();
         }
       }
+
+      // nocommit inline nextDoc here
 
       // Now scan:
       while (nextDoc() != NO_MORE_DOCS) {
