@@ -37,8 +37,15 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-// nocommit javadocs
-
+/**
+ * Concrete class that writes docId(maybe frq,pos,offset,payloads) list
+ * with postings format.
+ *
+ * Postings list for each term will be stored separately. 
+ *
+ * @see BlockSkipWriter for details about skipping setting and postings layout.
+ *
+ */
 public final class BlockPostingsWriter extends PostingsWriterBase {
 
   private boolean DEBUG = BlockPostingsReader.DEBUG;
@@ -60,9 +67,7 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   final IndexOutput posOut;
   final IndexOutput payOut;
 
-  static final int DEFAULT_BLOCK_SIZE = 128;
-
-  final int blockSize;
+  final static int blockSize = BlockPostingsFormat.BLOCK_SIZE;
 
   private IndexOutput termsOut;
 
@@ -91,12 +96,12 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   private int payloadByteUpto;
 
   private int lastBlockDocID;
-  private boolean saveNextPosBlock;
   private long lastBlockPosFP;
   private long lastBlockPayFP;
   private int lastBlockPosBufferUpto;
   private int lastBlockStartOffset;
   private int lastBlockPayloadByteUpto;
+
   private int lastDocID;
   private int lastPosition;
   private int lastStartOffset;
@@ -107,9 +112,8 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
 
   private final BlockSkipWriter skipWriter;
   
-  public BlockPostingsWriter(SegmentWriteState state, int blockSize) throws IOException {
+  public BlockPostingsWriter(SegmentWriteState state) throws IOException {
     super();
-    this.blockSize = blockSize;
 
     docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPostingsFormat.DOC_EXTENSION),
                                           state.context);
@@ -164,14 +168,14 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
     docDeltaBuffer = new int[blockSize];
     freqBuffer = new int[blockSize];
 
-    skipWriter = new BlockSkipWriter(blockSize,
-                                     maxSkipLevels, 
+    skipWriter = new BlockSkipWriter(maxSkipLevels, 
+                                     blockSize,
                                      state.segmentInfo.getDocCount(),
                                      docOut,
                                      posOut,
                                      payOut);
 
-    encoded = new byte[blockSize*4 + 4];
+    encoded = new byte[blockSize*4];
     encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
   }
 
@@ -201,8 +205,8 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
         payTermStartFP = payOut.getFilePointer();
       }
     }
-    lastBlockDocID = -1;
     lastDocID = 0;
+    lastBlockDocID = -1;
     if (DEBUG) {
       System.out.println("FPW.startTerm startFP=" + docTermStartFP);
     }
@@ -211,7 +215,6 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
 
   private void writeBlock(int[] buffer, IndexOutput out) throws IOException {
     final int header = ForUtil.compress(buffer, encodedBuffer);
-    //System.out.println("    block has " + numBytes + " bytes");
     out.writeVInt(header);
     out.writeBytes(encoded, ForUtil.getEncodedSize(header));
   }
@@ -219,61 +222,25 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
     if (DEBUG) {
-      System.out.println("FPW.startDoc docID=" + docID);
+      System.out.println("FPW.startDoc docID["+docBufferUpto+"]=" + docID);
     }
-
-    // nocommit do this in finishDoc... but does it fail...?
-    // is it not always called...?
-    if (posOut != null && saveNextPosBlock) {
-      lastBlockPosFP = posOut.getFilePointer();
-      if (payOut != null) {
-        lastBlockPayFP = payOut.getFilePointer();
-      }
-      lastBlockPosBufferUpto = posBufferUpto;
-      lastBlockStartOffset = lastStartOffset;
-      lastBlockPayloadByteUpto = payloadByteUpto;
-      saveNextPosBlock = false;
-      if (DEBUG) {
-        System.out.println("  now save lastBlockPosFP=" + lastBlockPosFP + " lastBlockPosBufferUpto=" + lastBlockPosBufferUpto + " lastBlockPayloadByteUpto=" + lastBlockPayloadByteUpto);
-      }
-    }
-
     final int docDelta = docID - lastDocID;
+
     if (docID < 0 || (docCount > 0 && docDelta <= 0)) {
       throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " ) (docOut: " + docOut + ")");
     }
-    lastDocID = docID;
 
     docDeltaBuffer[docBufferUpto] = docDelta;
-    if (DEBUG) {
-      System.out.println("  docDeltaBuffer[" + docBufferUpto + "]=" + docDelta);
-    }
+//    if (DEBUG) {
+//      System.out.println("  docDeltaBuffer[" + docBufferUpto + "]=" + docDelta);
+//    }
     if (fieldHasFreqs) {
       freqBuffer[docBufferUpto] = termDocFreq;
     }
-
     docBufferUpto++;
     docCount++;
 
     if (docBufferUpto == blockSize) {
-      // nocommit maybe instead of buffering skip before
-      // writing a block based on last block's end data
-      // ... we could buffer after writing the block?  only
-      // iffiness with that approach is it could be a
-      // pointlness skip?  like we may stop adding docs
-      // right after that, then we have skip point AFTER
-      // last doc.  the thing is, in finishTerm we are
-      // already sometimes adding a skip point AFTER the
-      // last doc?
-      if (lastBlockDocID != -1) {
-        if (DEBUG) {
-          System.out.println("  bufferSkip at writeBlock: lastDocID=" + lastBlockDocID + " docCount=" + (docCount-blockSize));
-        }
-        skipWriter.bufferSkip(lastBlockDocID, docCount-blockSize, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
-      }
-      lastBlockDocID = docID;
-      saveNextPosBlock = true;
-
       if (DEBUG) {
         System.out.println("  write docDelta block @ fp=" + docOut.getFilePointer());
       }
@@ -284,9 +251,11 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
         }
         writeBlock(freqBuffer, docOut);
       }
-      docBufferUpto = 0;
+      // NOTE: don't set docBufferUpto back to 0 here;
+      // finishDoc will do so (because it needs to see that
+      // the block was filled so it can save skip data)
     }
-
+    lastDocID = docID;
     lastPosition = 0;
     lastStartOffset = 0;
   }
@@ -294,9 +263,9 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   /** Add a new position & payload */
   @Override
   public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
-    if (DEBUG) {
-      System.out.println("FPW.addPosition pos=" + position + " posBufferUpto=" + posBufferUpto + (fieldHasPayloads ? " payloadByteUpto=" + payloadByteUpto: ""));
-    }
+//    if (DEBUG) {
+//      System.out.println("FPW.addPosition pos=" + position + " posBufferUpto=" + posBufferUpto + (fieldHasPayloads ? " payloadByteUpto=" + payloadByteUpto: ""));
+//    }
     posDeltaBuffer[posBufferUpto] = position - lastPosition;
     if (fieldHasPayloads) {
       if (payload == null || payload.length == 0) {
@@ -343,7 +312,39 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   }
 
   @Override
-  public void finishDoc() {
+  public void finishDoc() throws IOException {
+    // Have collected a block of docs, and get a new doc. 
+    // Should write skip data as well as postings list for
+    // current block
+
+    if (lastBlockDocID != -1 && docBufferUpto == 1) {
+      // nocomit move to startDoc?  ie we can write skip
+      // data as soon as the next doc starts...
+      if (DEBUG) {
+        System.out.println("  bufferSkip at writeBlock: lastDocID=" + lastBlockDocID + " docCount=" + (docCount-1));
+      }
+      skipWriter.bufferSkip(lastBlockDocID, docCount-1, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
+    }
+
+    // Since we don't know df for current term, we had to buffer
+    // those skip data for each block, and when a new doc comes, 
+    // write them to skip file.
+    if (docBufferUpto == blockSize) {
+      lastBlockDocID = lastDocID;
+      if (posOut != null) {
+        if (payOut != null) {
+          lastBlockPayFP = payOut.getFilePointer();
+        }
+        lastBlockPosFP = posOut.getFilePointer();
+        lastBlockPosBufferUpto = posBufferUpto;
+        lastBlockStartOffset = lastStartOffset;
+        lastBlockPayloadByteUpto = payloadByteUpto;
+      }
+      if (DEBUG) {
+        System.out.println("  docBufferUpto="+docBufferUpto+" now get lastBlockDocID="+lastBlockDocID+" lastBlockPosFP=" + lastBlockPosFP + " lastBlockPosBufferUpto=" + lastBlockPosBufferUpto + " lastBlockPayloadByteUpto=" + lastBlockPayloadByteUpto);
+      }
+      docBufferUpto = 0;
+    }
   }
 
   private static class PendingTerm {
@@ -367,7 +368,6 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   /** Called when we are done adding docs to this term */
   @Override
   public void finishTerm(TermStats stats) throws IOException {
-
     assert stats.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
@@ -376,19 +376,6 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
 
     if (DEBUG) {
       System.out.println("FPW.finishTerm docFreq=" + stats.docFreq);
-    }
-
-    // nocommit silly that skipper must write skip when we no
-    // postings come after it, but if we don't do this, skip
-    // reader incorrectly thinks it can read another level 0
-    // skip entry here!:
-    //if (docCount > blockSize && docBufferUpto > 0) {
-    if (docCount > blockSize) {
-      final int lastDocCount = blockSize*(docCount/blockSize);
-      if (DEBUG) {
-        System.out.println("  bufferSkip at finishTerm: lastDocID=" + lastBlockDocID + " docCount=" + lastDocCount);
-      }
-      skipWriter.bufferSkip(lastBlockDocID, lastDocCount, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
     }
 
     if (DEBUG) {

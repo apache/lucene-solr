@@ -43,7 +43,14 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-// nocommit javadocs
+
+/**
+ * Concrete class that reads docId(maybe frq,pos,offset,payloads) list
+ * with postings format.
+ *
+ * @see BlockSkipReader for details
+ *
+ */
 public final class BlockPostingsReader extends PostingsReaderBase {
 
   private final IndexInput docIn;
@@ -56,9 +63,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
   final String segment;
 
   // NOTE: not private to avoid access$NNN methods:
-  final int blockSize;
+  final static int blockSize = BlockPostingsFormat.BLOCK_SIZE;
 
-  public BlockPostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix, int blockSize) throws IOException {
+  public BlockPostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
     boolean success = false;
     segment = segmentInfo.name;
     IndexInput docIn = null;
@@ -99,8 +106,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         IOUtils.closeWhileHandlingException(docIn, posIn, payIn);
       }
     }
-
-    this.blockSize = blockSize;
   }
 
   @Override
@@ -113,6 +118,24 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     final int indexBlockSize = termsIn.readVInt();
     if (indexBlockSize != blockSize) {
       throw new IllegalStateException("index-time blockSize (" + indexBlockSize + ") != read-time blockSize (" + blockSize + ")");
+    }
+  }
+
+  static void readVIntBlock(IndexInput docIn, int[] docBuffer, int[] freqBuffer, int num, boolean indexHasFreq) throws IOException {
+    if (indexHasFreq) {
+      for(int i=0;i<num;i++) {
+        final int code = docIn.readVInt();
+        docBuffer[i] = code >>> 1;
+        if ((code & 1) != 0) {
+          freqBuffer[i] = 1;
+        } else {
+          freqBuffer[i] = docIn.readVInt();
+        }
+      }
+    } else {
+      for(int i=0;i<num;i++) {
+        docBuffer[i] = docIn.readVInt();
+      }
     }
   }
 
@@ -343,7 +366,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
-      encoded = new byte[blockSize*4 + 4];
+      encoded = new byte[blockSize*4];
       encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();      
     }
 
@@ -386,6 +409,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     }
     
     private void refillDocs() throws IOException {
+      //System.out.println("["+docFreq+"]"+" refillDoc");
       final int left = docFreq - docUpto;
       assert left > 0;
 
@@ -394,7 +418,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
         readBlock(docIn, encoded, encodedBuffer, docDeltaBuffer);
-
         if (indexHasFreq) {
           if (DEBUG) {
             System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
@@ -402,50 +425,33 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           readBlock(docIn, encoded, encodedBuffer, freqBuffer);
         }
       } else {
-        // Read vInts:
         if (DEBUG) {
           System.out.println("    fill last vInt block from fp=" + docIn.getFilePointer());
         }
-        for(int i=0;i<left;i++) {
-          final int code = docIn.readVInt();
-          if (indexHasFreq) {
-            docDeltaBuffer[i] = code >>> 1;
-            if ((code & 1) != 0) {
-              freqBuffer[i] = 1;
-            } else {
-              freqBuffer[i] = docIn.readVInt();
-            }
-          } else {
-            docDeltaBuffer[i] = code;
-          }
-        }
+        readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, indexHasFreq);
       }
       docBufferUpto = 0;
     }
 
     @Override
     public int nextDoc() throws IOException {
-
       if (DEBUG) {
         System.out.println("\nFPR.nextDoc");
       }
-
       while (true) {
         if (DEBUG) {
           System.out.println("  docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
         }
-
         if (docUpto == docFreq) {
           if (DEBUG) {
             System.out.println("  return doc=END");
           }
           return doc = NO_MORE_DOCS;
         }
-
+        //System.out.println("["+docFreq+"]"+" nextDoc");
         if (docBufferUpto == blockSize) {
           refillDocs();
         }
-
         if (DEBUG) {
           System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
         }
@@ -461,23 +467,19 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           }
           return doc;
         }
-
         if (DEBUG) {
           System.out.println("  doc=" + accum + " is deleted; try next doc");
         }
-
         docBufferUpto++;
       }
     }
-    
+
     @Override
     public int advance(int target) throws IOException {
       // nocommit make frq block load lazy/skippable
 
-      // nocommit 2 is heuristic guess!!
-      // nocommit put cheating back!  does it help?
       // nocommit use skipper!!!  it has next last doc id!!
-      //if (docFreq > blockSize && target - (blockSize - docBufferUpto) - 2*blockSize > accum) {
+
       if (docFreq > blockSize && target - accum > blockSize) {
 
         if (DEBUG) {
@@ -506,18 +508,16 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
         if (newDocUpto > docUpto) {
           // Skipper moved
-
           if (DEBUG) {
             System.out.println("skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer());
           }
-
           assert newDocUpto % blockSize == (blockSize-1): "got " + newDocUpto;
           docUpto = newDocUpto+1;
 
-          // Force block read next:
+          // Force to read next block
           docBufferUpto = blockSize;
-          accum = skipper.getDoc();
-          docIn.seek(skipper.getDocPointer());
+          accum = skipper.getDoc();               // actually, this is just lastSkipEntry
+          docIn.seek(skipper.getDocPointer());    // now point to the block we want to search
         }
       }
 
@@ -530,11 +530,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           return doc;
         }
       }
-
       if (DEBUG) {
         System.out.println("  advance return doc=END");
       }
-
       return NO_MORE_DOCS;
     }
   }
@@ -604,7 +602,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       this.startDocIn = BlockPostingsReader.this.docIn;
       this.docIn = (IndexInput) startDocIn.clone();
       this.posIn = (IndexInput) BlockPostingsReader.this.posIn.clone();
-      encoded = new byte[blockSize*4 + 4];
+      encoded = new byte[blockSize*4];
       encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
@@ -656,35 +654,23 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     }
 
     private void refillDocs() throws IOException {
+      //System.out.println("["+docFreq+"]"+" refillDoc");
       final int left = docFreq - docUpto;
       assert left > 0;
-
       if (left >= blockSize) {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
-
         readBlock(docIn, encoded, encodedBuffer, docDeltaBuffer);
-
         if (DEBUG) {
           System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
         }
-
         readBlock(docIn, encoded, encodedBuffer, freqBuffer);
       } else {
-        // Read vInts:
         if (DEBUG) {
           System.out.println("    fill last vInt doc block from fp=" + docIn.getFilePointer());
         }
-        for(int i=0;i<left;i++) {
-          final int code = docIn.readVInt();
-          docDeltaBuffer[i] = code >>> 1;
-          if ((code & 1) != 0) {
-            freqBuffer[i] = 1;
-          } else {
-            freqBuffer[i] = docIn.readVInt();
-          }
-        }
+        readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, true);
       }
       docBufferUpto = 0;
     }
@@ -712,7 +698,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           } else {
             posDeltaBuffer[i] = code;
           }
-
           if (indexHasOffsets) {
             posIn.readVInt();
             posIn.readVInt();
@@ -728,24 +713,20 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-
       if (DEBUG) {
         System.out.println("  FPR.nextDoc");
       }
-
       while (true) {
         if (DEBUG) {
           System.out.println("    docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
         }
-
         if (docUpto == docFreq) {
           return doc = NO_MORE_DOCS;
         }
-
+        //System.out.println("["+docFreq+"]"+" nextDoc");
         if (docBufferUpto == blockSize) {
           refillDocs();
         }
-
         if (DEBUG) {
           System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
         }
@@ -757,13 +738,12 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
         if (liveDocs == null || liveDocs.get(accum)) {
           doc = accum;
+          position = 0;
           if (DEBUG) {
             System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
           }
-          position = 0;
           return doc;
         }
-
         if (DEBUG) {
           System.out.println("    doc=" + accum + " is deleted; try next doc");
         }
@@ -782,11 +762,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       // nocommit use skipper!!!  it has next last doc id!!
       //if (docFreq > blockSize && target - (blockSize - docBufferUpto) - 2*blockSize > accum) {
       if (docFreq > blockSize && target - accum > blockSize) {
-
         if (DEBUG) {
           System.out.println("    try skipper");
         }
-
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
           if (DEBUG) {
@@ -815,7 +793,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
         if (newDocUpto > docUpto) {
           // Skipper moved
-
           if (DEBUG) {
             System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto());
           }
@@ -823,7 +800,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           assert newDocUpto % blockSize == (blockSize-1): "got " + newDocUpto;
           docUpto = newDocUpto+1;
 
-          // Force block read next:
+          // Force to read next block
           docBufferUpto = blockSize;
           accum = skipper.getDoc();
           docIn.seek(skipper.getDocPointer());
@@ -1024,7 +1001,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       this.docIn = (IndexInput) startDocIn.clone();
       this.posIn = (IndexInput) BlockPostingsReader.this.posIn.clone();
       this.payIn = (IndexInput) BlockPostingsReader.this.payIn.clone();
-      encoded = new byte[blockSize*4 + 4];
+      encoded = new byte[blockSize*4];
       encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (indexHasOffsets) {
@@ -1096,6 +1073,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     }
 
     private void refillDocs() throws IOException {
+      //System.out.println("["+docFreq+"]"+" refillDoc");
       final int left = docFreq - docUpto;
       assert left > 0;
 
@@ -1103,28 +1081,16 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
-
         readBlock(docIn, encoded, encodedBuffer, docDeltaBuffer);
-
         if (DEBUG) {
           System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
         }
-
         readBlock(docIn, encoded, encodedBuffer, freqBuffer);
       } else {
-        // Read vInts:
         if (DEBUG) {
           System.out.println("    fill last vInt doc block from fp=" + docIn.getFilePointer());
         }
-        for(int i=0;i<left;i++) {
-          final int code = docIn.readVInt();
-          docDeltaBuffer[i] = code >>> 1;
-          if ((code & 1) != 0) {
-            freqBuffer[i] = 1;
-          } else {
-            freqBuffer[i] = docIn.readVInt();
-          }
-        }
+        readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, true);
       }
       docBufferUpto = 0;
     }
@@ -1209,29 +1175,24 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-
       if (DEBUG) {
         System.out.println("  FPR.nextDoc");
       }
-
       if (indexHasPayloads) {
         payloadByteUpto += payloadLength;
         payloadLength = 0;
       }
-
       while (true) {
         if (DEBUG) {
           System.out.println("    docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
         }
-
         if (docUpto == docFreq) {
           return doc = NO_MORE_DOCS;
         }
-
+        //System.out.println("["+docFreq+"]"+" nextDoc");
         if (docBufferUpto == blockSize) {
           refillDocs();
         }
-
         if (DEBUG) {
           System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
         }
@@ -1251,7 +1212,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           lastStartOffset = 0;
           return doc;
         }
-
         if (DEBUG) {
           System.out.println("    doc=" + accum + " is deleted; try next doc");
         }
@@ -1303,15 +1263,13 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
         if (newDocUpto > docUpto) {
           // Skipper moved
-
           if (DEBUG) {
             System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto() + " pay.fp=" + skipper.getPayPointer() + " lastStartOffset=" + lastStartOffset);
           }
-
           assert newDocUpto % blockSize == (blockSize-1): "got " + newDocUpto;
           docUpto = newDocUpto+1;
 
-          // Force block read next:
+          // Force to read next block
           docBufferUpto = blockSize;
           accum = skipper.getDoc();
           docIn.seek(skipper.getDocPointer());

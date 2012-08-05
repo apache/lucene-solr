@@ -22,7 +22,7 @@ import java.nio.IntBuffer;
  * Encode all values in normal area with fixed bit width, 
  * which is determined by the max value in this block.
  */
-public class ForUtil {
+public final class ForUtil {
   protected static final int[] MASK = {   0x00000000,
     0x00000001, 0x00000003, 0x00000007, 0x0000000f, 0x0000001f, 0x0000003f,
     0x0000007f, 0x000000ff, 0x000001ff, 0x000003ff, 0x000007ff, 0x00000fff,
@@ -31,24 +31,24 @@ public class ForUtil {
     0x01ffffff, 0x03ffffff, 0x07ffffff, 0x0fffffff, 0x1fffffff, 0x3fffffff,
     0x7fffffff, 0xffffffff};
 
+  final static int blockSize = BlockPostingsFormat.BLOCK_SIZE;
+
   /** Compress given int[] into Integer buffer, with For format
    *
    * @param data        uncompressed data
-   * @param size        num of ints to compress
    * @param intBuffer   integer buffer to hold compressed data
-   * @return encoded block byte size
+   * @return the header for current block 
    */
   public static int compress(final int[] data, IntBuffer intBuffer) {
-    int numBits=getNumBits(data);
+    int numBits = getNumBits(data);
     if (numBits == 0) {
-      return compressDuplicateBlock(data,intBuffer);
+      return compressDuplicateBlock(data, intBuffer);
     }
  
-    int size=data.length;
-    int encodedSize = (size*numBits+31)/32;
+    int encodedSize = (blockSize*numBits+31)/32;
 
-    for (int i=0; i<size; ++i) {
-      encodeNormalValue(intBuffer,i,data[i], numBits);
+    for (int i=0; i<blockSize; ++i) {
+      encodeNormalValue(intBuffer, i, data[i], numBits);
     }
 
     return getHeader(encodedSize, numBits);
@@ -58,7 +58,7 @@ public class ForUtil {
    * Save only one int when the whole block equals to 1
    */
   static int compressDuplicateBlock(final int[] data, IntBuffer intBuffer) {
-    intBuffer.put(0,data[0]);
+    intBuffer.put(0, data[0]);
     return getHeader(1, 0);
   }
 
@@ -66,6 +66,7 @@ public class ForUtil {
    *
    * @param intBuffer   integer buffer to hold compressed data
    * @param data        int array to hold uncompressed data
+   * @param header      header of current block, which contains numFrameBits
    */
   public static void decompress(IntBuffer intBuffer, int[] data, int header) {
     // since this buffer is reused at upper level, rewind first
@@ -73,22 +74,12 @@ public class ForUtil {
 
     // nocommit assert header isn't "malformed", ie besides
     // numBytes / bit-width there is nothing else!
-
     int numBits = ((header >> 8) & MASK[6]);
 
     decompressCore(intBuffer, data, numBits);
   }
 
-  /**
-   * IntBuffer will not be rewinded in this method, therefore
-   * caller should ensure that the position is set to the first
-   * encoded int before decoding.
-   */
   static void decompressCore(IntBuffer intBuffer, int[] data, int numBits) {
-    assert numBits<=32;
-    assert numBits>=0;
-
-    // TODO: PackedIntsDecompress is hardewired to size==128 only
     switch(numBits) {
       case 0: PackedIntsDecompress.decode0(intBuffer, data); break;
       case 1: PackedIntsDecompress.decode1(intBuffer, data); break;
@@ -163,6 +154,7 @@ public class ForUtil {
     return optBits;
   }
 
+  // nocommit: we must have a util function for this, hmm?
   protected static boolean isAllEqual(final int[] data) {
     int len = data.length;
     int v = data[0];
@@ -177,23 +169,21 @@ public class ForUtil {
   /** 
    * Generate the 4 byte header, which contains (from lsb to msb):
    *
-   * 8 bits for encoded block int size (excluded header, this limits DEFAULT_BLOCK_SIZE <= 2^8)
    * 6 bits for num of frame bits (when 0, values in this block are all the same)
-   * other bits unused
+   * other bits for encoded block int size (excluded header), so we can use crazy block size
    *
    */
   static int getHeader(int encodedSize, int numBits) {
-    return  (encodedSize)
-          | ((numBits) << 8);
+    return numBits | (encodedSize << 6);
   }
 
   /** 
    * Expert: get metadata from header. 
    */
-  public static int getEncodedSize(int header) {
-    return ((header & MASK[8]))*4;
+  static int getNumBits(int header) {
+    return ((header & MASK[6]));
   }
-  public static int getNumBits(int header) {
-    return ((header >> 8) & MASK[6]);
+  static int getEncodedSize(int header) {
+    return ((header >>> 6))*4;
   }
 }
