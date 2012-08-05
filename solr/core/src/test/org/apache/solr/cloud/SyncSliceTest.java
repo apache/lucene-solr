@@ -38,12 +38,14 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Test sync phase that occurs when Leader goes down and a new Leader is
  * elected.
  */
 @Slow
+@Ignore("ignore while i look into")
 public class SyncSliceTest extends FullSolrCloudTest {
   
   @BeforeClass
