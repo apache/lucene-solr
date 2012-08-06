@@ -65,24 +65,31 @@ public abstract class MultiLevelSkipListReader {
   private long lastChildPointer;      // childPointer of last read skip entry with docId <= target
   
   private boolean inputIsBuffered;
-  
-  public MultiLevelSkipListReader(IndexInput skipStream, int maxSkipLevels, int skipInterval) {
+  private final int skipMultiplier;
+
+  // nocommit made protected from public
+  protected MultiLevelSkipListReader(IndexInput skipStream, int maxSkipLevels, int skipInterval, int skipMultiplier) {
     this.skipStream = new IndexInput[maxSkipLevels];
     this.skipPointer = new long[maxSkipLevels];
     this.childPointer = new long[maxSkipLevels];
     this.numSkipped = new int[maxSkipLevels];
     this.maxNumberOfSkipLevels = maxSkipLevels;
     this.skipInterval = new int[maxSkipLevels];
+    this.skipMultiplier = skipMultiplier;
     this.skipStream [0]= skipStream;
     this.inputIsBuffered = (skipStream instanceof BufferedIndexInput);
     this.skipInterval[0] = skipInterval;
     for (int i = 1; i < maxSkipLevels; i++) {
       // cache skip intervals
-      this.skipInterval[i] = this.skipInterval[i - 1] * skipInterval;
+      this.skipInterval[i] = this.skipInterval[i - 1] * skipMultiplier;
     }
     skipDoc = new int[maxSkipLevels];
   }
 
+  // skipMultiplier and skipInterval are the same:
+  protected MultiLevelSkipListReader(IndexInput skipStream, int maxSkipLevels, int skipInterval) {
+    this(skipStream, maxSkipLevels, skipInterval, skipInterval);
+  }
   
   /** Returns the id of the doc to which the last call of {@link #skipTo(int)}
    *  has skipped.  */
@@ -157,7 +164,7 @@ public abstract class MultiLevelSkipListReader {
     numSkipped[level] = numSkipped[level + 1] - skipInterval[level + 1];
     skipDoc[level] = lastDoc;
     if (level > 0) {
-        childPointer[level] = skipStream[level].readVLong() + skipPointer[level - 1];
+      childPointer[level] = skipStream[level].readVLong() + skipPointer[level - 1];
     }
   }
 
@@ -187,7 +194,12 @@ public abstract class MultiLevelSkipListReader {
   
   /** Loads the skip levels  */
   private void loadSkipLevels() throws IOException {
-    numberOfSkipLevels = MathUtil.log(docCount, skipInterval[0]);
+    if (docCount <= skipInterval[0]) {
+      numberOfSkipLevels = 1;
+    } else {
+      numberOfSkipLevels = 1+MathUtil.log(docCount/skipInterval[0], skipMultiplier);
+    }
+
     if (numberOfSkipLevels > maxNumberOfSkipLevels) {
       numberOfSkipLevels = maxNumberOfSkipLevels;
     }
