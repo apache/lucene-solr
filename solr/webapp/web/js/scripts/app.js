@@ -258,7 +258,7 @@ var solr_admin = function( app_config )
           {
             show_global_error
             (
-              '<div class="message">There are no SolrCores running — for the currenct functionality ' +
+              '<div class="message">There are no SolrCores running — for the current functionality ' +
               'we require at least one SolrCore, sorry :)</div>'
             );
             return;
