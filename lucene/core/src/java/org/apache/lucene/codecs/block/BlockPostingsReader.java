@@ -833,23 +833,43 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         }
       }
 
-      // nocommit inline nextDoc here
+      // Now scan... this is an inlined/pared down version
+      // of nextDoc():
+      while (true) {
+        if (DEBUG) {
+          System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
+        }
+        if (docUpto == docFreq) {
+          return doc = NO_MORE_DOCS;
+        }
+        if (docBufferUpto == blockSize) {
+          // nocommit hmm skip freq?  but: we don't ever
+          // scan over more than one block?
+          refillDocs();
+        }
+        accum += docDeltaBuffer[docBufferUpto];
+        freq = freqBuffer[docBufferUpto];
+        posPendingCount += freq;
+        docBufferUpto++;
+        docUpto++;
 
-      // Now scan:
-      while (nextDoc() != NO_MORE_DOCS) {
-        if (doc >= target) {
-          if (DEBUG) {
-            System.out.println("  advance return doc=" + doc);
-          }
-          return doc;
+        if (accum >= target) {
+          break;
         }
       }
 
-      if (DEBUG) {
-        System.out.println("  advance return doc=END");
+      if (liveDocs == null || liveDocs.get(accum)) {
+        if (DEBUG) {
+          System.out.println("  return doc=" + accum);
+        }
+        position = 0;
+        return doc = accum;
+      } else {
+        if (DEBUG) {
+          System.out.println("  now do nextDoc()");
+        }
+        return nextDoc();
       }
-
-      return NO_MORE_DOCS;
     }
 
     // nocommit in theory we could avoid loading frq block
