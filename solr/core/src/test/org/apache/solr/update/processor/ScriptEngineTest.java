@@ -25,6 +25,9 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.StringReader;
 
+import org.junit.Assume;
+import org.junit.BeforeClass;
+
 /**
  * Sanity tests basic functionality of {@link ScriptEngineManager} and 
  * {@link ScriptEngine} w/o excercising any Lucene specific code.
@@ -32,6 +35,12 @@ import java.io.StringReader;
 public class ScriptEngineTest extends LuceneTestCase {
 
   private ScriptEngineManager manager;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("JavaScript"));
+  }
 
   @Override
   public void setUp() throws Exception {
@@ -83,13 +92,17 @@ public class ScriptEngineTest extends LuceneTestCase {
     assertEquals(3, result.intValue());
   }
 
-//  public void testJRuby() throws ScriptException, NoSuchMethodException {  // Simply adding jruby.jar to Solr's lib/ directory gets this test passing
-//    ScriptEngine engine = manager.getEngineByName("jruby");
-//    assertNotNull(engine);
-//    engine.eval("def add(a,b); a + b; end");
-//    Long result = (Long) ((Invocable)engine).invokeFunction("add", 1, 2);
-//    assertNotNull(result);
-//    assertEquals(3, result.intValue());
-//  }
+ public void testJRuby() throws ScriptException, NoSuchMethodException {  
+   // Simply adding jruby.jar to Solr's lib/ directory gets this test passing
+   ScriptEngine engine = manager.getEngineByName("jruby");
+
+   Assume.assumeNotNull(engine);
+
+   assertNotNull(engine);
+   engine.eval("def add(a,b); a + b; end");
+   Long result = (Long) ((Invocable)engine).invokeFunction("add", 1, 2);
+   assertNotNull(result);
+   assertEquals(3, result.intValue());
+ }
 
 }
