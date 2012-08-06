@@ -36,8 +36,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %implements StandardTokenizerInterface
 %function getNextToken
 %char
+%buffer 4096
 
-%include src/java/org/apache/lucene/analysis/standard/std34/SUPPLEMENTARY.jflex-macro
+%include SUPPLEMENTARY.jflex-macro
 ALetter = ([\p{WB:ALetter}] | {ALetterSupp})
 Format =  ([\p{WB:Format}] | {FormatSupp})
 Numeric = ([\p{WB:Numeric}] | {NumericSupp})
