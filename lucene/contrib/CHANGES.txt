@@ -12,6 +12,9 @@ Bug Fixes
 
 * LUCENE-4269: Deprecate BalancedSegmentMergePolicy (Mike McCandless)
 
+* LUCENE-4289: Fix minor idf inconsistencies/inefficiencies in highlighter.
+  (Robert Muir)
+
 ======================= Lucene 3.6.1 ================
 
 Bug Fixes
