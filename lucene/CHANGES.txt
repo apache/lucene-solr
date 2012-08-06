@@ -120,6 +120,10 @@ Optimizations
   making them substantially more lightweight. Behavior is unchanged. 
   (Robert Muir)
 
+* LUCENE-4291: Reduced internal buffer size for Jflex-based tokenizers 
+  such as StandardTokenizer from 32kb to 8kb.  
+  (Raintung Li, Steven Rowe, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4109: BooleanQueries are not parsed correctly with the 
