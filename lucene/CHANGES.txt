@@ -169,6 +169,9 @@ Bug Fixes
 * LUCENE-4282: Automaton FuzzyQuery didnt always deliver all results.
   (Johannes Christen, Uwe Schindler, Robert Muir)
 
+* LUCENE-4289: Fix minor idf inconsistencies/inefficiencies in highlighter.
+  (Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-4109: Enable position increments in the flexible queryparser by default.

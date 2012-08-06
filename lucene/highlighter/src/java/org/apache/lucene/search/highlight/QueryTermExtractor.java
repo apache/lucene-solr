@@ -60,18 +60,14 @@ public final class QueryTermExtractor
 	public static final WeightedTerm[] getIdfWeightedTerms(Query query, IndexReader reader, String fieldName) 
 	{
 	    WeightedTerm[] terms=getTerms(query,false, fieldName);
-	    int totalNumDocs=reader.numDocs();
+	    int totalNumDocs=reader.maxDoc();
 	    for (int i = 0; i < terms.length; i++)
         {
 	        try
             {
                 int docFreq=reader.docFreq(new Term(fieldName,terms[i].term));
-                // docFreq counts deletes
-                if(totalNumDocs < docFreq) {
-                  docFreq = totalNumDocs;
-                }
                 //IDF algorithm taken from DefaultSimilarity class
-                float idf=(float)(Math.log((float)totalNumDocs/(double)(docFreq+1)) + 1.0);
+                float idf=(float)(Math.log(totalNumDocs/(double)(docFreq+1)) + 1.0);
                 terms[i].weight*=idf;
             } 
 	        catch (IOException e)
