@@ -199,9 +199,9 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
             if (sortValue instanceof BytesRef) {
               UnicodeUtil.UTF8toUTF16((BytesRef)sortValue, spare);
               String indexedValue = spare.toString();
-              sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable(indexedValue), 0.0f));
+              sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable(indexedValue), 1.0f));
             } else if (sortValue instanceof String) {
-              sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable((String) sortValue), 0.0f));
+              sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable((String) sortValue), 1.0f));
             }
           }
           convertedSortValues[j] = sortValue;
@@ -252,9 +252,9 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
           if (sortValue instanceof BytesRef) {
             UnicodeUtil.UTF8toUTF16((BytesRef)sortValue, spare);
             String indexedValue = spare.toString();
-            sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable(indexedValue), 0.0f));
+            sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable(indexedValue), 1.0f));
           } else if (sortValue instanceof String) {
-            sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable((String) sortValue), 0.0f));
+            sortValue = fieldType.toObject(field.createField(fieldType.indexedToReadable((String) sortValue), 1.0f));
           }
         }
         convertedSortValues[j] = sortValue;
