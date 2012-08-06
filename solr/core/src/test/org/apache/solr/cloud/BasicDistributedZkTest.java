@@ -281,7 +281,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     }
 
     // test debugging
-    handle.put("explain", UNORDERED);
+    handle.put("explain", SKIPVAL);
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
     query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
