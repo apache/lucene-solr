@@ -1028,4 +1028,21 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.close();
     d.close();
   }
+  
+  public void testFixedLengthNotReallyFixed() throws IOException {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new DerefBytesDocValuesField("foo", new BytesRef("bar"), true));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(new DerefBytesDocValuesField("foo", new BytesRef("bazz"), true));
+    try {
+      w.addDocument(doc);
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+    w.close();
+    d.close();
+  }
 }
