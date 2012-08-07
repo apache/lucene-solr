@@ -24,6 +24,10 @@ $Id$
 
 (No changes)
 
+==================  4.0.0 ==================
+
+(No changes)
+
 ==================  4.0.0-BETA ===================
 
 Versions of Major Components
