@@ -16,115 +16,127 @@ package org.apache.lucene.codecs.blockpacked;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.nio.LongBuffer;
-import java.nio.IntBuffer;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
 
+import java.io.IOException;
+
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.packed.PackedInts;
-import org.apache.lucene.util.packed.PackedInts.Reader;
-import org.apache.lucene.util.packed.PackedInts.Writer;
-import org.apache.lucene.util.packed.PackedInts.Mutable;
-import org.apache.lucene.util.packed.PackedInts.Encoder;
-import org.apache.lucene.util.packed.PackedInts.Decoder;
 
 /**
  * Encode all values in normal area with fixed bit width, 
  * which is determined by the max value in this block.
  */
 public class ForUtil {
-  protected static final int[] MASK = {   0x00000000,
-    0x00000001, 0x00000003, 0x00000007, 0x0000000f, 0x0000001f, 0x0000003f,
-    0x0000007f, 0x000000ff, 0x000001ff, 0x000003ff, 0x000007ff, 0x00000fff,
-    0x00001fff, 0x00003fff, 0x00007fff, 0x0000ffff, 0x0001ffff, 0x0003ffff,
-    0x0007ffff, 0x000fffff, 0x001fffff, 0x003fffff, 0x007fffff, 0x00ffffff,
-    0x01ffffff, 0x03ffffff, 0x07ffffff, 0x0fffffff, 0x1fffffff, 0x3fffffff,
-    0x7fffffff, 0xffffffff};
-
-  /** Compress given int[] into output stream, with For format
-   */
-  public static int compress(final LongBuffer data, LongBuffer packed) throws IOException {
-    int numBits=getNumBits(data.array());
-
-    if (numBits == 0) { // when block is equal, save the value once
-      packed.put(0, data.get(0)<<32); // java uses big endian for LongBuffer impl 
-      return (getHeader(1,numBits));
+  
+  static final int PACKED_INTS_VERSION = 0; // nocommit: encode in the stream?
+  static final PackedInts.Encoder[] ENCODERS = new PackedInts.Encoder[33];
+  static final PackedInts.Decoder[] DECODERS = new PackedInts.Decoder[33];
+  static final int[] ITERATIONS = new int[33];
+  static {
+    for (int i = 1; i <= 32; ++i) {
+      ENCODERS[i] = PackedInts.getEncoder(
+          PackedInts.Format.PACKED, PACKED_INTS_VERSION, i);
+      DECODERS[i] = PackedInts.getDecoder(
+          PackedInts.Format.PACKED, PACKED_INTS_VERSION, i);
+      ITERATIONS[i] = BLOCK_SIZE / DECODERS[i].valueCount();
     }
-
-    PackedInts.Format format = PackedInts.fastestFormatAndBits(128, numBits, PackedInts.FASTEST).format;
-    PackedInts.Encoder encoder = PackedInts.getEncoder(format, PackedInts.VERSION_CURRENT, numBits);
-    int perIter = encoder.values();
-    int iters = 128/perIter;
-    int nblocks = encoder.blocks()*iters;
-    assert 128 % perIter == 0;
-
-    packed.rewind();
-    data.rewind();
-
-    encoder.encode(data, packed, iters);
-
-    int encodedSize = nblocks*2;
-    return getHeader(encodedSize,numBits);
   }
 
-  /** Decompress given ouput stream into int array.
+  /**
+   * Write a block of data (<code>For</code> format).
+   *
+   * @param data     the data to write
+   * @param encoded  a buffer to use to encode data
+   * @param out      the destination output
+   * @throws IOException
    */
-  public static void decompress(LongBuffer data, LongBuffer packed, int header) throws IOException {
-    // nocommit assert header isn't "malformed", ie besides
-    // numBytes / bit-width there is nothing else!
-    
-    packed.rewind();
-    data.rewind();
-    int numBits = ((header >> 8) & MASK[6]);
+  static void writeBlock(long[] data, byte[] encoded, IndexOutput out) throws IOException {
+    final int numBits = bitsRequired(data);
+    assert numBits > 0 && numBits <= 32 : numBits;
+    final PackedInts.Encoder encoder = ENCODERS[numBits];
+    final int iters = ITERATIONS[numBits];
+    assert iters * encoder.valueCount() == BlockPackedPostingsFormat.BLOCK_SIZE;
+    final int encodedSize = encoder.blockCount() * iters; // number of 64-bits blocks
+    assert encodedSize > 0 && encodedSize <= BLOCK_SIZE / 2 : encodedSize;
 
-    if (numBits == 0) {
-      Arrays.fill(data.array(), (int)(packed.get(0)>>>32));
-      return;
-    }
+    out.writeByte((byte) numBits);
+    out.writeByte((byte) encodedSize);
 
-    PackedInts.Format format = PackedInts.fastestFormatAndBits(128, numBits, PackedInts.FASTEST).format;
-    PackedInts.Decoder decoder = PackedInts.getDecoder(format, PackedInts.VERSION_CURRENT, numBits);
-    int perIter = decoder.values();
-    int iters = 128/perIter;
-    int nblocks = decoder.blocks()*iters;
-    assert 128 % perIter == 0;
-
-    decoder.decode(packed, data, iters);
+    encoder.encode(data, 0, encoded, 0, iters);
+    out.writeBytes(encoded, encodedSize << 3);
   }
 
-  static int getNumBits(final long[] data) {
-    if (isAllEqual(data)) {
-      return 0;
-    }
-    int size=data.length;
-    int optBits=1;
-    for (int i=0; i<size; ++i) {
-      while ((data[i] & ~MASK[optBits]) != 0) {
-        optBits++;
+  /**
+   * Read the next block of data (<code>For</code> format).
+   *
+   * @param in        the input to use to read data
+   * @param encoded   a buffer that can be used to store encoded data
+   * @param decoded   where to write decoded data
+   * @throws IOException
+   */
+  static void readBlock(IndexInput in, byte[] encoded, long[] decoded) throws IOException {
+    final int numBits = in.readByte(); // no mask because should be <= 32
+    final int encodedSize = in.readByte(); // no mask because should be <= 64
+    assert numBits > 0 && numBits <= 32 : numBits;
+    assert encodedSize > 0 && encodedSize <= BLOCK_SIZE / 2 : encodedSize; // because blocks are 64-bits and decoded values are 32-bits at most
+
+    in.readBytes(encoded, 0, encodedSize << 3);
+
+    final PackedInts.Decoder decoder = DECODERS[numBits];
+    final int iters = ITERATIONS[numBits];
+    assert iters * decoder.valueCount() == BLOCK_SIZE;
+    assert iters * decoder.blockCount() == encodedSize;
+
+    decoder.decode(encoded, 0, decoded, 0, iters);
+  }
+
+  /**
+   * Skip the next block of data.
+   *
+   * @param in      the input where to read data
+   * @throws IOException
+   */
+  static void skipBlock(IndexInput in) throws IOException {
+    // see readBlock for comments
+    final int numBits = in.readByte();
+    final int encodedSize = in.readByte();
+    assert numBits > 0 && numBits <= 32 : numBits;
+    assert encodedSize > 0 && encodedSize <= BLOCK_SIZE / 2 : encodedSize;
+    in.seek(in.getFilePointer() + (encodedSize << 3));
+  }
+
+  /**
+   * Read values that have been written using variable-length encoding instead of bit-packing.
+   */
+  static void readVIntBlock(IndexInput docIn, long[] docBuffer, long[] freqBuffer, int num, boolean indexHasFreq) throws IOException {
+    if (indexHasFreq) {
+      for(int i=0;i<num;i++) {
+        final int code = docIn.readVInt();
+        docBuffer[i] = code >>> 1;
+        if ((code & 1) != 0) {
+          freqBuffer[i] = 1;
+        } else {
+          freqBuffer[i] = docIn.readVInt();
+        }
+      }
+    } else {
+      for(int i=0;i<num;i++) {
+        docBuffer[i] = docIn.readVInt();
       }
     }
-    return optBits;
   }
 
-  protected static boolean isAllEqual(final long[] data) {
-    int len = data.length;
-    long v = data[0];
-    for (int i=1; i<len; i++) {
-      if (data[i] != v) {
-        return false;
-      }
+  /**
+   * Compute the number of bits required to serialize any of the longs in <code>data</code>.
+   */
+  private static int bitsRequired(final long[] data) {
+    long or = 0;
+    for (int i = 0; i < data.length; ++i) {
+      or |= data[i];
     }
-    return true;
+    return PackedInts.bitsRequired(or);
   }
-  static int getHeader(int encodedSize, int numBits) {
-    return  (encodedSize)
-          | ((numBits) << 8);
-  }
-  public static int getEncodedSize(int header) {
-    return ((header & MASK[8]))*4;
-  }
-  public static int getNumBits(int header) {
-    return ((header >> 8) & MASK[6]);
-  }
+
 }

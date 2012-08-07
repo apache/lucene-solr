@@ -23,10 +23,26 @@ import java.util.Arrays;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 
-// nocommit do we need more frequent skips at level > 0?
-// 128*128 is immense?  may need to decouple
-// baseSkipInterval & theRestSkipInterval?
-
+/**
+* Write skip lists with multiple levels, and support skip within block ints.
+*
+* Assume that docFreq = 28, skipInterval = blockSize = 12
+*
+*  |       block#0       | |      block#1        | |vInts|
+*  d d d d d d d d d d d d d d d d d d d d d d d d d d d d (posting list)
+*                          ^                       ^       (level 0 skip point)
+*
+* Note that skipWriter will ignore first document in block#0, since 
+* it is useless as a skip point.  Also, we'll never skip into the vInts
+* block, only record skip data at the start its start point(if it exist).
+*
+* For each skip point, we will record: 
+* 1. lastDocID, 
+* 2. its related file points(position, payload), 
+* 3. related numbers or uptos(position, payload).
+* 4. start offset.
+*
+*/
 final class BlockPackedSkipWriter extends MultiLevelSkipListWriter {
   private boolean DEBUG = BlockPackedPostingsReader.DEBUG;
   
@@ -52,8 +68,10 @@ final class BlockPackedSkipWriter extends MultiLevelSkipListWriter {
   private boolean fieldHasOffsets;
   private boolean fieldHasPayloads;
 
-  public BlockPackedSkipWriter(int skipInterval, int maxSkipLevels, int docCount, IndexOutput docOut, IndexOutput posOut, IndexOutput payOut) {
-    super(skipInterval, maxSkipLevels, docCount);
+  public BlockPackedSkipWriter(int maxSkipLevels, int blockSize, int docCount, IndexOutput docOut, IndexOutput posOut, IndexOutput payOut) {
+    // nocommit figure out what skipMultiplier is best (4 is
+    // total guess):
+    super(blockSize, 8, maxSkipLevels, docCount);
     this.docOut = docOut;
     this.posOut = posOut;
     this.payOut = payOut;

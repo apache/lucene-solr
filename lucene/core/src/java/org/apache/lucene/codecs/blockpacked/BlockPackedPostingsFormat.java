@@ -31,8 +31,8 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Pass ForFactory to a PostingsWriter/ReaderBase, and get 
- * customized postings format plugged.
+ * Encodes/decode postings in packed int blocks for faster
+ * decode.
  */
 public final class BlockPackedPostingsFormat extends PostingsFormat {
   public static final String DOC_EXTENSION = "doc";
@@ -41,7 +41,7 @@ public final class BlockPackedPostingsFormat extends PostingsFormat {
 
   private final int minTermBlockSize;
   private final int maxTermBlockSize;
-  public final static int DEFAULT_BLOCK_SIZE = 128;
+  public final static int BLOCK_SIZE = 128;
 
   public BlockPackedPostingsFormat() {
     this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
@@ -57,13 +57,12 @@ public final class BlockPackedPostingsFormat extends PostingsFormat {
 
   @Override
   public String toString() {
-    return getName() + "(blocksize=" + DEFAULT_BLOCK_SIZE + ")";
+    return getName() + "(blocksize=" + BLOCK_SIZE + ")";
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    // TODO: implement a new PostingsWriterBase to improve skip-settings
-    PostingsWriterBase postingsWriter = new BlockPackedPostingsWriter(state, 128);
+    PostingsWriterBase postingsWriter = new BlockPackedPostingsWriter(state);
 
     boolean success = false;
     try {
@@ -86,8 +85,7 @@ public final class BlockPackedPostingsFormat extends PostingsFormat {
                                                                       state.fieldInfos,
                                                                       state.segmentInfo,
                                                                       state.context,
-                                                                      state.segmentSuffix,
-                                                                      128);
+                                                                      state.segmentSuffix);
     boolean success = false;
     try {
       FieldsProducer ret = new BlockTreeTermsReader(state.dir,

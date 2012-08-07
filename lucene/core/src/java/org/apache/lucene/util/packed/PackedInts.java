@@ -18,16 +18,13 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.Closeable;
+import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongsRef;
-
-import java.io.IOException;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
 
 /**
  * Simplistic compression for array of unsigned long values.
@@ -251,37 +248,39 @@ public class PackedInts {
     /**
      * The minimum number of long blocks to decode in a single call.
      */
-    int blocks();
+    int blockCount();
 
     /**
-     * The number of values that can be stored in <code>blocks()</code> long
+     * The number of values that can be stored in <code>blockCount()</code> long
      * blocks.
      */
-    int values();
+    int valueCount();
 
     /**
-     * Read <code>iterations * blocks()</code> blocks from <code>blocks</code>,
-     * decode them and write <code>iterations * values()</code> values into
+     * Read <code>iterations * blockCount()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * valueCount()</code> values into
      * <code>values</code>.
      *
      * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start reading blocks
      * @param values       the values buffer
+     * @param valuesOffset the offset where to start writing values
      * @param iterations   controls how much data to decode
      */
-    void decode(LongBuffer blocks, LongBuffer values, int iterations);
+    void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations);
 
     /**
-     * Read <code>iterations * blocks()</code> blocks from <code>blocks</code>,
-     * decode them and write <code>iterations * values()</code> values into
-     * <code>values</code>. This method will throw an
-     * {@link UnsupportedOperationException} if the values require more than
-     * 32 bits of storage.
+     * Read <code>8 * iterations * blockCount()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * valueCount()</code> values into
+     * <code>values</code>.
      *
      * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start reading blocks
      * @param values       the values buffer
+     * @param valuesOffset the offset where to start writing values
      * @param iterations   controls how much data to decode
      */
-    void decode(LongBuffer blocks, IntBuffer values, int iterations);
+    void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations);
 
   }
 
@@ -293,35 +292,39 @@ public class PackedInts {
     /**
      * The minimum number of long blocks to encode in a single call.
      */
-    int blocks();
+    int blockCount();
 
     /**
-     * The number of values that can be stored in <code>blocks()</code> long
+     * The number of values that can be stored in <code>blockCount()</code> long
      * blocks.
      */
-    int values();
+    int valueCount();
 
     /**
-     * Read <code>iterations * values()</code> values from <code>values</code>,
-     * encode them and write <code>iterations * blocks()</code> blocks into
+     * Read <code>iterations * valueCount()</code> values from <code>values</code>,
+     * encode them and write <code>iterations * blockCount()</code> blocks into
      * <code>blocks</code>.
      *
      * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start writing blocks
      * @param values       the values buffer
+     * @param valuesOffset the offset where to start reading values
      * @param iterations   controls how much data to encode
      */
-    void encode(LongBuffer values, LongBuffer blocks, int iterations);
+    void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations);
 
     /**
-     * Read <code>iterations * values()</code> values from <code>values</code>,
-     * encode them and write <code>iterations * blocks()</code> blocks into
+     * Read <code>iterations * valueCount()</code> values from <code>values</code>,
+     * encode them and write <code>8 * iterations * blockCount()</code> blocks into
      * <code>blocks</code>.
      *
      * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start writing blocks
      * @param values       the values buffer
+     * @param valuesOffset the offset where to start reading values
      * @param iterations   controls how much data to encode
      */
-    void encode(IntBuffer values, LongBuffer blocks, int iterations);
+    void encode(long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations);
 
   }
 

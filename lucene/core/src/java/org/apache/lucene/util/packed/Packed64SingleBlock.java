@@ -20,7 +20,6 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.IOException;
-import java.nio.LongBuffer;
 import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
@@ -88,14 +87,11 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     // bulk get
     assert index % valuesPerBlock == 0;
     final PackedInts.Decoder decoder = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
-    assert decoder.blocks() == 1;
-    assert decoder.values() == valuesPerBlock;
+    assert decoder.blockCount() == 1;
+    assert decoder.valueCount() == valuesPerBlock;
     final int blockIndex = index / valuesPerBlock;
     final int nblocks = (index + len) / valuesPerBlock - blockIndex;
-    decoder.decode(
-        LongBuffer.wrap(blocks, blockIndex, blocks.length - blockIndex),
-        LongBuffer.wrap(arr, off, arr.length - off),
-        nblocks);
+    decoder.decode(blocks, blockIndex, arr, off, nblocks);
     final int diff = nblocks * valuesPerBlock;
     index += diff; len -= diff;
 
@@ -135,14 +131,11 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     // bulk set
     assert index % valuesPerBlock == 0;
     final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
-    assert op.blocks() == 1;
-    assert op.values() == valuesPerBlock;
+    assert op.blockCount() == 1;
+    assert op.valueCount() == valuesPerBlock;
     final int blockIndex = index / valuesPerBlock;
     final int nblocks = (index + len) / valuesPerBlock - blockIndex;
-    op.encode(
-        LongBuffer.wrap(arr, off, arr.length - off),
-        LongBuffer.wrap(blocks, blockIndex, blocks.length - blockIndex),
-        nblocks);
+    op.encode(arr, off, blocks, blockIndex, nblocks);
     final int diff = nblocks * valuesPerBlock;
     index += diff; len -= diff;
 

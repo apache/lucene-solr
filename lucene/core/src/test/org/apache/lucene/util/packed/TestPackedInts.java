@@ -18,19 +18,24 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.IOException;
-import java.nio.IntBuffer;
+import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.store.*;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
 @Slow
@@ -630,55 +635,48 @@ public class TestPackedInts extends LuceneTestCase {
         if (!format.isSupported(bpv)) {
           continue;
         }
-        PackedInts.Encoder encoder = PackedInts.getEncoder(format, PackedInts.VERSION_CURRENT, bpv);
-        PackedInts.Decoder decoder = PackedInts.getDecoder(format, PackedInts.VERSION_CURRENT, bpv);
-        final int nblocks = encoder.blocks();
-        final int nvalues = encoder.values();
-        assertEquals(nblocks, decoder.blocks());
-        assertEquals(nvalues, decoder.values());
-        final int iterations = _TestUtil.nextInt(random(), 1, 9);
-        assertEquals(format.nblocks(bpv, nvalues * iterations), nblocks * iterations);
-        final int blocksPosition = random().nextInt(10);
-        final int valuesPosition = random().nextInt(10);
-        final LongBuffer blocks = LongBuffer.allocate(blocksPosition + nblocks * iterations);
-        blocks.position(blocksPosition);
-        final LongBuffer values = LongBuffer.allocate(valuesPosition + nvalues * iterations);
-        values.position(valuesPosition);
+        String msg = format + " " + bpv;
 
-        for (int i = 0; i < iterations * nblocks; ++i) {
-          blocks.put(blocks.position() + i, random().nextLong());
+        final PackedInts.Encoder encoder = PackedInts.getEncoder(format, PackedInts.VERSION_CURRENT, bpv);
+        final PackedInts.Decoder decoder = PackedInts.getDecoder(format, PackedInts.VERSION_CURRENT, bpv);
+        final int blockCount = encoder.blockCount();
+        final int valueCount = encoder.valueCount();
+        assertEquals(blockCount, decoder.blockCount());
+        assertEquals(valueCount, decoder.valueCount());
+
+        final int iterations = random().nextInt(100);
+        final int blocksOffset = random().nextInt(100);
+        final int valuesOffset = random().nextInt(100);
+        final int blocksOffset2 = random().nextInt(100);
+        final int blocksLen = iterations * blockCount;
+
+        // 1. generate random inputs
+        final long[] blocks = new long[blocksOffset + blocksLen];
+        for (int i = 0; i < blocks.length; ++i) {
+          blocks[i] = random().nextLong();
         }
-        decoder.decode(blocks, values, iterations);
 
-        final int restoredBlocksPosition = random().nextInt(10);
-        final LongBuffer restoredBlocks = LongBuffer.allocate(restoredBlocksPosition + nblocks * iterations);
-        values.position(valuesPosition);
-        restoredBlocks.position(restoredBlocksPosition);
-        encoder.encode(values, restoredBlocks, iterations);
+        // 2. decode
+        final long[] values = new long[valuesOffset + iterations * valueCount];
+        decoder.decode(blocks, blocksOffset, values, valuesOffset, iterations);
 
-        blocks.position(blocksPosition);
-        blocks.limit(blocksPosition + nblocks * iterations);
-        restoredBlocks.position(restoredBlocksPosition);
-        restoredBlocks.limit(restoredBlocksPosition + nblocks * iterations);
-        assertEquals(blocks, restoredBlocks);
+        // 3. re-encode
+        final long[] blocks2 = new long[blocksOffset2 + blocksLen];
+        encoder.encode(values, valuesOffset, blocks2, blocksOffset2, iterations);
+        assertArrayEquals(msg, Arrays.copyOfRange(blocks, blocksOffset, blocks.length),
+            Arrays.copyOfRange(blocks2, blocksOffset2, blocks2.length));
 
-        if (bpv <= 32) {
-          final IntBuffer intValues = IntBuffer.allocate(valuesPosition + nvalues * iterations);
-          intValues.position(valuesPosition);
+        // 4. byte[] decoding
+        final byte[] byteBlocks = new byte[8 * blocks.length];
+        ByteBuffer.wrap(byteBlocks).asLongBuffer().put(blocks);
+        final long[] values2 = new long[valuesOffset + iterations * valueCount];
+        decoder.decode(byteBlocks, blocksOffset * 8, values2, valuesOffset, iterations);
+        assertArrayEquals(msg, values, values2);
 
-          blocks.position(blocksPosition);
-          decoder.decode(blocks, intValues, iterations);
-
-          intValues.position(valuesPosition);
-          restoredBlocks.position(restoredBlocksPosition);
-          encoder.encode(intValues, restoredBlocks, iterations);
-
-          blocks.position(blocksPosition);
-          blocks.limit(blocksPosition + nblocks * iterations);
-          restoredBlocks.position(restoredBlocksPosition);
-          restoredBlocks.limit(restoredBlocksPosition + nblocks * iterations);
-          assertEquals(blocks, restoredBlocks);
-        }
+        // 5. byte[] encoding
+        final byte[] blocks3 = new byte[8 * (blocksOffset2 + blocksLen)];
+        encoder.encode(values, valuesOffset, blocks3, 8 * blocksOffset2, iterations);
+        assertEquals(msg, LongBuffer.wrap(blocks2), ByteBuffer.wrap(blocks3).asLongBuffer());
       }
     }
   }

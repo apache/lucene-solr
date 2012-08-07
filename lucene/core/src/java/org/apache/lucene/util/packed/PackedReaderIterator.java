@@ -19,7 +19,6 @@ package org.apache.lucene.util.packed;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.LongBuffer;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.LongsRef;
@@ -28,9 +27,8 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
 
   final PackedInts.Format format;
   final BulkOperation bulkOperation;
-  final LongBuffer nextBlocks;
+  final long[] nextBlocks;
   final LongsRef nextValues;
-  final LongBuffer nextValuesBuffer;
   final int iterations;
   int position;
 
@@ -40,11 +38,10 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
     bulkOperation = BulkOperation.of(format, bitsPerValue);
     iterations = bulkOperation.computeIterations(valueCount, mem);
     assert iterations > 0;
-    nextBlocks = LongBuffer.allocate(iterations * bulkOperation.blocks());
-    nextValues = new LongsRef(new long[iterations * bulkOperation.values()], 0, 0);
-    nextValuesBuffer = LongBuffer.wrap(nextValues.longs);
-    assert iterations * bulkOperation.values() == nextValues.longs.length;
-    assert iterations * bulkOperation.blocks() == nextBlocks.capacity();
+    nextBlocks = new long[iterations * bulkOperation.blockCount()];
+    nextValues = new LongsRef(new long[iterations * bulkOperation.valueCount()], 0, 0);
+    assert iterations * bulkOperation.valueCount() == nextValues.longs.length;
+    assert iterations * bulkOperation.blockCount() == nextBlocks.length;
     nextValues.offset = nextValues.longs.length;
     position = -1;
   }
@@ -54,9 +51,7 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
     assert nextValues.length >= 0;
     assert count > 0;
     assert nextValues.offset + nextValues.length <= nextValues.longs.length;
-
-    final long[] nextBlocks = this.nextBlocks.array();
-
+    
     nextValues.offset += nextValues.length;
 
     final int remaining = valueCount - position - 1;
@@ -75,9 +70,7 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
         nextBlocks[i] = 0L;
       }
 
-      this.nextBlocks.rewind();
-      nextValuesBuffer.clear();
-      bulkOperation.decode(this.nextBlocks, nextValuesBuffer, iterations);
+      bulkOperation.decode(nextBlocks, 0, nextValues.longs, 0, iterations);
       nextValues.offset = 0;
     }
 

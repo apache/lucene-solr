@@ -17,10 +17,9 @@ package org.apache.lucene.codecs.blockpacked;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
+
 import java.io.IOException;
-import java.nio.ByteBuffer;      
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,8 +27,8 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
@@ -38,8 +37,16 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-// nocommit javadocs
 
+/**
+ * Concrete class that writes docId(maybe frq,pos,offset,payloads) list
+ * with postings format.
+ *
+ * Postings list for each term will be stored separately. 
+ *
+ * @see BlockPackedSkipWriter for details about skipping setting and postings layout.
+ *
+ */
 public final class BlockPackedPostingsWriter extends PostingsWriterBase {
 
   private boolean DEBUG = BlockPackedPostingsReader.DEBUG;
@@ -61,10 +68,6 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
   final IndexOutput posOut;
   final IndexOutput payOut;
 
-  static final int DEFAULT_BLOCK_SIZE = 128;
-
-  final int blockSize;
-
   private IndexOutput termsOut;
 
   // How current field indexes postings:
@@ -80,43 +83,35 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
 
   final long[] docDeltaBuffer;
   final long[] freqBuffer;
-  final LongBuffer docDeltaLBuffer;
-  final LongBuffer freqLBuffer;
   private int docBufferUpto;
 
   final long[] posDeltaBuffer;
   final long[] payloadLengthBuffer;
   final long[] offsetStartDeltaBuffer;
   final long[] offsetLengthBuffer;
-  final LongBuffer posDeltaLBuffer;
-  final LongBuffer payloadLengthLBuffer;
-  final LongBuffer offsetStartDeltaLBuffer;
-  final LongBuffer offsetLengthLBuffer;
   private int posBufferUpto;
 
   private byte[] payloadBytes;
   private int payloadByteUpto;
 
   private int lastBlockDocID;
-  private boolean saveNextPosBlock;
   private long lastBlockPosFP;
   private long lastBlockPayFP;
   private int lastBlockPosBufferUpto;
   private int lastBlockStartOffset;
   private int lastBlockPayloadByteUpto;
+
   private int lastDocID;
   private int lastPosition;
   private int lastStartOffset;
   private int docCount;
 
   final byte[] encoded;
-  final LongBuffer encodedBuffer;
 
   private final BlockPackedSkipWriter skipWriter;
   
-  public BlockPackedPostingsWriter(SegmentWriteState state, int blockSize) throws IOException {
+  public BlockPackedPostingsWriter(SegmentWriteState state) throws IOException {
     super();
-    this.blockSize = blockSize;
 
     docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPackedPostingsFormat.DOC_EXTENSION),
                                           state.context);
@@ -126,32 +121,25 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
     try {
       CodecUtil.writeHeader(docOut, DOC_CODEC, VERSION_CURRENT);
       if (state.fieldInfos.hasProx()) {
-        posDeltaBuffer = new long[blockSize];
-        posDeltaLBuffer = LongBuffer.wrap(posDeltaBuffer);
+        posDeltaBuffer = new long[BLOCK_SIZE];
         posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPackedPostingsFormat.POS_EXTENSION),
                                               state.context);
         CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
 
         if (state.fieldInfos.hasPayloads()) {
           payloadBytes = new byte[128];
-          payloadLengthBuffer = new long[blockSize];
-          payloadLengthLBuffer = LongBuffer.wrap(payloadLengthBuffer);
+          payloadLengthBuffer = new long[BLOCK_SIZE];
         } else {
           payloadBytes = null;
           payloadLengthBuffer = null;
-          payloadLengthLBuffer = null;
         }
 
         if (state.fieldInfos.hasOffsets()) {
-          offsetStartDeltaBuffer = new long[blockSize];
-          offsetLengthBuffer = new long[blockSize];
-          offsetStartDeltaLBuffer = LongBuffer.wrap(offsetStartDeltaBuffer);
-          offsetLengthLBuffer = LongBuffer.wrap(offsetLengthBuffer);
+          offsetStartDeltaBuffer = new long[BLOCK_SIZE];
+          offsetLengthBuffer = new long[BLOCK_SIZE];
         } else {
           offsetStartDeltaBuffer = null;
           offsetLengthBuffer = null;
-          offsetStartDeltaLBuffer = null;
-          offsetLengthLBuffer = null;
         }
 
         if (state.fieldInfos.hasPayloads() || state.fieldInfos.hasOffsets()) {
@@ -165,10 +153,6 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
         offsetStartDeltaBuffer = null;
         offsetLengthBuffer = null;
         payloadBytes = null;
-        posDeltaLBuffer = null;
-        payloadLengthLBuffer = null;
-        offsetStartDeltaLBuffer = null;
-        offsetLengthLBuffer = null;
       }
       this.payOut = payOut;
       this.posOut = posOut;
@@ -179,27 +163,24 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       }
     }
 
-    docDeltaBuffer = new long[blockSize];
-    freqBuffer = new long[blockSize];
-    docDeltaLBuffer = LongBuffer.wrap(docDeltaBuffer);
-    freqLBuffer = LongBuffer.wrap(freqBuffer);
+    docDeltaBuffer = new long[BLOCK_SIZE];
+    freqBuffer = new long[BLOCK_SIZE];
 
-    skipWriter = new BlockPackedSkipWriter(blockSize,
-                                     maxSkipLevels, 
+    skipWriter = new BlockPackedSkipWriter(maxSkipLevels,
+                                     BlockPackedPostingsFormat.BLOCK_SIZE, 
                                      state.segmentInfo.getDocCount(),
                                      docOut,
                                      posOut,
                                      payOut);
 
-    encoded = new byte[blockSize*4];
-    encodedBuffer = ByteBuffer.wrap(encoded).asLongBuffer();
+    encoded = new byte[BLOCK_SIZE*4];
   }
 
   @Override
   public void start(IndexOutput termsOut) throws IOException {
     this.termsOut = termsOut;
     CodecUtil.writeHeader(termsOut, TERMS_CODEC, VERSION_CURRENT);
-    termsOut.writeVInt(blockSize);
+    termsOut.writeVInt(BLOCK_SIZE);
   }
 
   @Override
@@ -221,91 +202,53 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
         payTermStartFP = payOut.getFilePointer();
       }
     }
-    lastBlockDocID = -1;
     lastDocID = 0;
+    lastBlockDocID = -1;
     if (DEBUG) {
       System.out.println("FPW.startTerm startFP=" + docTermStartFP);
     }
     skipWriter.resetSkip();
   }
 
-  private void writeBlock(LongBuffer buffer, IndexOutput out) throws IOException {
-    final int header = ForUtil.compress(buffer, encodedBuffer);
-    out.writeVInt(header);
-    out.writeBytes(encoded, ForUtil.getEncodedSize(header));
-  }
-
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
     if (DEBUG) {
-      System.out.println("FPW.startDoc docID=" + docID);
-    }
-
-    // nocommit do this in finishDoc... but does it fail...?
-    // is it not always called...?
-    if (posOut != null && saveNextPosBlock) {
-      lastBlockPosFP = posOut.getFilePointer();
-      if (payOut != null) {
-        lastBlockPayFP = payOut.getFilePointer();
-      }
-      lastBlockPosBufferUpto = posBufferUpto;
-      lastBlockStartOffset = lastStartOffset;
-      lastBlockPayloadByteUpto = payloadByteUpto;
-      saveNextPosBlock = false;
-      if (DEBUG) {
-        System.out.println("  now save lastBlockPosFP=" + lastBlockPosFP + " lastBlockPosBufferUpto=" + lastBlockPosBufferUpto + " lastBlockPayloadByteUpto=" + lastBlockPayloadByteUpto);
-      }
+      System.out.println("FPW.startDoc docID["+docBufferUpto+"]=" + docID);
     }
 
     final int docDelta = docID - lastDocID;
+
     if (docID < 0 || (docCount > 0 && docDelta <= 0)) {
       throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " ) (docOut: " + docOut + ")");
     }
-    lastDocID = docID;
 
     docDeltaBuffer[docBufferUpto] = docDelta;
-    if (DEBUG) {
-      System.out.println("  docDeltaBuffer[" + docBufferUpto + "]=" + docDelta);
-    }
+//    if (DEBUG) {
+//      System.out.println("  docDeltaBuffer[" + docBufferUpto + "]=" + docDelta);
+//    }
     if (fieldHasFreqs) {
       freqBuffer[docBufferUpto] = termDocFreq;
     }
-
     docBufferUpto++;
     docCount++;
 
-    if (docBufferUpto == blockSize) {
-      // nocommit maybe instead of buffering skip before
-      // writing a block based on last block's end data
-      // ... we could buffer after writing the block?  only
-      // iffiness with that approach is it could be a
-      // pointlness skip?  like we may stop adding docs
-      // right after that, then we have skip point AFTER
-      // last doc.  the thing is, in finishTerm we are
-      // already sometimes adding a skip point AFTER the
-      // last doc?
-      if (lastBlockDocID != -1) {
-        if (DEBUG) {
-          System.out.println("  bufferSkip at writeBlock: lastDocID=" + lastBlockDocID + " docCount=" + (docCount-blockSize));
-        }
-        skipWriter.bufferSkip(lastBlockDocID, docCount-blockSize, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
-      }
-      lastBlockDocID = docID;
-      saveNextPosBlock = true;
-
+    if (docBufferUpto == BLOCK_SIZE) {
       if (DEBUG) {
         System.out.println("  write docDelta block @ fp=" + docOut.getFilePointer());
       }
-      writeBlock(docDeltaLBuffer, docOut);
+      ForUtil.writeBlock(docDeltaBuffer, encoded, docOut);
       if (fieldHasFreqs) {
         if (DEBUG) {
           System.out.println("  write freq block @ fp=" + docOut.getFilePointer());
         }
-        writeBlock(freqLBuffer, docOut);
+        ForUtil.writeBlock(freqBuffer, encoded, docOut);
       }
-      docBufferUpto = 0;
+      // NOTE: don't set docBufferUpto back to 0 here;
+      // finishDoc will do so (because it needs to see that
+      // the block was filled so it can save skip data)
     }
 
+    lastDocID = docID;
     lastPosition = 0;
     lastStartOffset = 0;
   }
@@ -313,9 +256,9 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
   /** Add a new position & payload */
   @Override
   public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
-    if (DEBUG) {
-      System.out.println("FPW.addPosition pos=" + position + " posBufferUpto=" + posBufferUpto + (fieldHasPayloads ? " payloadByteUpto=" + payloadByteUpto: ""));
-    }
+//    if (DEBUG) {
+//      System.out.println("FPW.addPosition pos=" + position + " posBufferUpto=" + posBufferUpto + (fieldHasPayloads ? " payloadByteUpto=" + payloadByteUpto: ""));
+//    }
     posDeltaBuffer[posBufferUpto] = position - lastPosition;
     if (fieldHasPayloads) {
       if (payload == null || payload.length == 0) {
@@ -341,28 +284,60 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
     
     posBufferUpto++;
     lastPosition = position;
-    if (posBufferUpto == blockSize) {
+    if (posBufferUpto == BLOCK_SIZE) {
       if (DEBUG) {
         System.out.println("  write pos bulk block @ fp=" + posOut.getFilePointer());
       }
-      writeBlock(posDeltaLBuffer, posOut);
+      ForUtil.writeBlock(posDeltaBuffer, encoded, posOut);
 
       if (fieldHasPayloads) {
-        writeBlock(payloadLengthLBuffer, payOut);
+        ForUtil.writeBlock(payloadLengthBuffer, encoded, payOut);
         payOut.writeVInt(payloadByteUpto);
         payOut.writeBytes(payloadBytes, 0, payloadByteUpto);
         payloadByteUpto = 0;
       }
       if (fieldHasOffsets) {
-        writeBlock(offsetStartDeltaLBuffer, payOut);
-        writeBlock(offsetLengthLBuffer, payOut);
+        ForUtil.writeBlock(offsetStartDeltaBuffer, encoded, payOut);
+        ForUtil.writeBlock(offsetLengthBuffer, encoded, payOut);
       }
       posBufferUpto = 0;
     }
   }
 
   @Override
-  public void finishDoc() {
+  public void finishDoc() throws IOException {
+    // Have collected a block of docs, and get a new doc. 
+    // Should write skip data as well as postings list for
+    // current block
+
+    if (lastBlockDocID != -1 && docBufferUpto == 1) {
+      // nocomit move to startDoc?  ie we can write skip
+      // data as soon as the next doc starts...
+      if (DEBUG) {
+        System.out.println("  bufferSkip at writeBlock: lastDocID=" + lastBlockDocID + " docCount=" + (docCount-1));
+      }
+      skipWriter.bufferSkip(lastBlockDocID, docCount-1, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
+    }
+
+    // Since we don't know df for current term, we had to buffer
+    // those skip data for each block, and when a new doc comes, 
+    // write them to skip file.
+    if (docBufferUpto == BLOCK_SIZE) {
+      lastBlockDocID = lastDocID;
+      if (posOut != null) {
+        if (payOut != null) {
+          lastBlockPayFP = payOut.getFilePointer();
+        }
+        lastBlockPosFP = posOut.getFilePointer();
+        lastBlockPosBufferUpto = posBufferUpto;
+        lastBlockStartOffset = lastStartOffset;
+        lastBlockPayloadByteUpto = payloadByteUpto;
+      }
+      if (DEBUG) {
+        System.out.println("  docBufferUpto="+docBufferUpto+" now get lastBlockDocID="+lastBlockDocID+" lastBlockPosFP=" + lastBlockPosFP + " lastBlockPosBufferUpto=" + lastBlockPosBufferUpto + " lastBlockPayloadByteUpto=" + lastBlockPayloadByteUpto);
+      }
+      docBufferUpto = 0;
+    }
   }
 
   private static class PendingTerm {
@@ -386,7 +361,6 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
   /** Called when we are done adding docs to this term */
   @Override
   public void finishTerm(TermStats stats) throws IOException {
-
     assert stats.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
@@ -397,19 +371,6 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       System.out.println("FPW.finishTerm docFreq=" + stats.docFreq);
     }
 
-    // nocommit silly that skipper must write skip when we no
-    // postings come after it, but if we don't do this, skip
-    // reader incorrectly thinks it can read another level 0
-    // skip entry here!:
-    //if (docCount > blockSize && docBufferUpto > 0) {
-    if (docCount > blockSize) {
-      final int lastDocCount = blockSize*(docCount/blockSize);
-      if (DEBUG) {
-        System.out.println("  bufferSkip at finishTerm: lastDocID=" + lastBlockDocID + " docCount=" + lastDocCount);
-      }
-      skipWriter.bufferSkip(lastBlockDocID, lastDocCount, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
-    }
-
     if (DEBUG) {
       if (docBufferUpto > 0) {
         System.out.println("  write doc/freq vInt block (count=" + docBufferUpto + ") at fp=" + docOut.getFilePointer() + " docTermStartFP=" + docTermStartFP);
@@ -418,8 +379,8 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
 
     // vInt encode the remaining doc deltas and freqs:
     for(int i=0;i<docBufferUpto;i++) {
-      final int docDelta = (int)docDeltaBuffer[i];
-      final int freq = (int)freqBuffer[i];
+      final int docDelta = (int) docDeltaBuffer[i];
+      final int freq = (int) freqBuffer[i];
       if (!fieldHasFreqs) {
         docOut.writeVInt(docDelta);
       } else if (freqBuffer[i] == 1) {
@@ -440,7 +401,7 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       }
 
       assert stats.totalTermFreq != -1;
-      if (stats.totalTermFreq > blockSize) {
+      if (stats.totalTermFreq > BLOCK_SIZE) {
         lastPosBlockOffset = (int) (posOut.getFilePointer() - posTermStartFP);
       } else {
         lastPosBlockOffset = -1;
@@ -457,9 +418,9 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
         int lastPayloadLength = -1;
         int payloadBytesReadUpto = 0;
         for(int i=0;i<posBufferUpto;i++) {
-          final int posDelta = (int)posDeltaBuffer[i];
+          final int posDelta = (int) posDeltaBuffer[i];
           if (fieldHasPayloads) {
-            final int payloadLength = (int)payloadLengthBuffer[i];
+            final int payloadLength = (int) payloadLengthBuffer[i];
             if (payloadLength != lastPayloadLength) {
               lastPayloadLength = payloadLength;
               posOut.writeVInt((posDelta<<1)|1);
@@ -487,8 +448,8 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
             if (DEBUG) {
               System.out.println("          write offset @ pos.fp=" + posOut.getFilePointer());
             }
-            posOut.writeVInt((int)offsetStartDeltaBuffer[i]);
-            posOut.writeVInt((int)offsetLengthBuffer[i]);
+            posOut.writeVInt((int) offsetStartDeltaBuffer[i]);
+            posOut.writeVInt((int) offsetLengthBuffer[i]);
           }
         }
 
@@ -505,7 +466,7 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
     }
 
     int skipOffset;
-    if (docCount > blockSize) {
+    if (docCount > BLOCK_SIZE) {
       skipOffset = (int) (skipWriter.writeSkip(docOut)-docTermStartFP);
       
       if (DEBUG) {
@@ -519,7 +480,7 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
     }
 
     long payStartFP;
-    if (stats.totalTermFreq >= blockSize) {
+    if (stats.totalTermFreq >= BLOCK_SIZE) {
       payStartFP = payTermStartFP;
     } else {
       payStartFP = -1;

@@ -75,7 +75,7 @@ public final class ForUtil {
     decompressCore(intBuffer, data, numBits);
   }
 
-  static void decompressCore(IntBuffer intBuffer, int[] data, int numBits) {
+  public static void decompressCore(IntBuffer intBuffer, int[] data, int numBits) {
     switch(numBits) {
       case 0: PackedIntsDecompress.decode0(intBuffer, data); break;
       case 1: PackedIntsDecompress.decode1(intBuffer, data); break;

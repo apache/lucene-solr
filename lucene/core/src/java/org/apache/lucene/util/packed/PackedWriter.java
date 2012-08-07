@@ -21,7 +21,7 @@ import org.apache.lucene.store.DataOutput;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.LongBuffer;
+import java.util.Arrays;
 
 // Packs high order byte first, to match
 // IndexOutput.writeInt/Long/Short byte order
@@ -30,19 +30,21 @@ final class PackedWriter extends PackedInts.Writer {
 
   boolean finished;
   final PackedInts.Format format;
-  final BulkOperation bulkOperation;
-  final LongBuffer nextBlocks;
-  final LongBuffer nextValues;
+  final BulkOperation encoder;
+  final long[] nextBlocks;
+  final long[] nextValues;
   final int iterations;
+  int off;
   int written;
 
   PackedWriter(PackedInts.Format format, DataOutput out, int valueCount, int bitsPerValue, int mem) {
     super(out, valueCount, bitsPerValue);
     this.format = format;
-    bulkOperation = BulkOperation.of(format, bitsPerValue);
-    iterations = bulkOperation.computeIterations(valueCount, mem);
-    nextBlocks = LongBuffer.allocate(iterations * bulkOperation.blocks());
-    nextValues = LongBuffer.allocate(iterations * bulkOperation.values());
+    encoder = BulkOperation.of(format, bitsPerValue);
+    iterations = encoder.computeIterations(valueCount, mem);
+    nextBlocks = new long[iterations * encoder.blockCount()];
+    nextValues = new long[iterations * encoder.valueCount()];
+    off = 0;
     written = 0;
     finished = false;
   }
@@ -59,8 +61,8 @@ final class PackedWriter extends PackedInts.Writer {
     if (valueCount != -1 && written >= valueCount) {
       throw new EOFException("Writing past end of stream");
     }
-    nextValues.put(v);
-    if (nextValues.remaining() == 0) {
+    nextValues[off++] = v;
+    if (off == nextValues.length) {
       flush();
     }
     ++written;
@@ -79,16 +81,13 @@ final class PackedWriter extends PackedInts.Writer {
   }
 
   private void flush() throws IOException {
-    final int nvalues = nextValues.position();
-    nextValues.rewind();
-    nextBlocks.clear();
-    bulkOperation.encode(nextValues, nextBlocks, iterations);
-    final int blocks = format.nblocks(bitsPerValue, nvalues);
-    nextBlocks.rewind();
+    encoder.encode(nextValues, 0, nextBlocks, 0, iterations);
+    final int blocks = format.nblocks(bitsPerValue, off);
     for (int i = 0; i < blocks; ++i) {
-      out.writeLong(nextBlocks.get());
+      out.writeLong(nextBlocks[i]);
     }
-    nextValues.clear();
+    Arrays.fill(nextValues, 0L);
+    off = 0;
   }
 
   @Override
