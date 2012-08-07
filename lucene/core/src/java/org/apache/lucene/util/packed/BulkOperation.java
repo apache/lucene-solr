@@ -21318,6 +21318,85 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 1;
+        values[valuesOffset++] = (byte0 >>> 1) & 1;
+        values[valuesOffset++] = (byte0 >>> 2) & 1;
+        values[valuesOffset++] = (byte0 >>> 3) & 1;
+        values[valuesOffset++] = (byte0 >>> 4) & 1;
+        values[valuesOffset++] = (byte0 >>> 5) & 1;
+        values[valuesOffset++] = (byte0 >>> 6) & 1;
+        values[valuesOffset++] = byte0 >>> 7;
+        values[valuesOffset++] = byte1 & 1;
+        values[valuesOffset++] = (byte1 >>> 1) & 1;
+        values[valuesOffset++] = (byte1 >>> 2) & 1;
+        values[valuesOffset++] = (byte1 >>> 3) & 1;
+        values[valuesOffset++] = (byte1 >>> 4) & 1;
+        values[valuesOffset++] = (byte1 >>> 5) & 1;
+        values[valuesOffset++] = (byte1 >>> 6) & 1;
+        values[valuesOffset++] = byte1 >>> 7;
+        values[valuesOffset++] = byte2 & 1;
+        values[valuesOffset++] = (byte2 >>> 1) & 1;
+        values[valuesOffset++] = (byte2 >>> 2) & 1;
+        values[valuesOffset++] = (byte2 >>> 3) & 1;
+        values[valuesOffset++] = (byte2 >>> 4) & 1;
+        values[valuesOffset++] = (byte2 >>> 5) & 1;
+        values[valuesOffset++] = (byte2 >>> 6) & 1;
+        values[valuesOffset++] = byte2 >>> 7;
+        values[valuesOffset++] = byte3 & 1;
+        values[valuesOffset++] = (byte3 >>> 1) & 1;
+        values[valuesOffset++] = (byte3 >>> 2) & 1;
+        values[valuesOffset++] = (byte3 >>> 3) & 1;
+        values[valuesOffset++] = (byte3 >>> 4) & 1;
+        values[valuesOffset++] = (byte3 >>> 5) & 1;
+        values[valuesOffset++] = (byte3 >>> 6) & 1;
+        values[valuesOffset++] = byte3 >>> 7;
+        values[valuesOffset++] = byte4 & 1;
+        values[valuesOffset++] = (byte4 >>> 1) & 1;
+        values[valuesOffset++] = (byte4 >>> 2) & 1;
+        values[valuesOffset++] = (byte4 >>> 3) & 1;
+        values[valuesOffset++] = (byte4 >>> 4) & 1;
+        values[valuesOffset++] = (byte4 >>> 5) & 1;
+        values[valuesOffset++] = (byte4 >>> 6) & 1;
+        values[valuesOffset++] = byte4 >>> 7;
+        values[valuesOffset++] = byte5 & 1;
+        values[valuesOffset++] = (byte5 >>> 1) & 1;
+        values[valuesOffset++] = (byte5 >>> 2) & 1;
+        values[valuesOffset++] = (byte5 >>> 3) & 1;
+        values[valuesOffset++] = (byte5 >>> 4) & 1;
+        values[valuesOffset++] = (byte5 >>> 5) & 1;
+        values[valuesOffset++] = (byte5 >>> 6) & 1;
+        values[valuesOffset++] = byte5 >>> 7;
+        values[valuesOffset++] = byte6 & 1;
+        values[valuesOffset++] = (byte6 >>> 1) & 1;
+        values[valuesOffset++] = (byte6 >>> 2) & 1;
+        values[valuesOffset++] = (byte6 >>> 3) & 1;
+        values[valuesOffset++] = (byte6 >>> 4) & 1;
+        values[valuesOffset++] = (byte6 >>> 5) & 1;
+        values[valuesOffset++] = (byte6 >>> 6) & 1;
+        values[valuesOffset++] = byte6 >>> 7;
+        values[valuesOffset++] = byte7 & 1;
+        values[valuesOffset++] = (byte7 >>> 1) & 1;
+        values[valuesOffset++] = (byte7 >>> 2) & 1;
+        values[valuesOffset++] = (byte7 >>> 3) & 1;
+        values[valuesOffset++] = (byte7 >>> 4) & 1;
+        values[valuesOffset++] = (byte7 >>> 5) & 1;
+        values[valuesOffset++] = (byte7 >>> 6) & 1;
+        values[valuesOffset++] = byte7 >>> 7;
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21378,6 +21457,53 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 3;
+        values[valuesOffset++] = (byte0 >>> 2) & 3;
+        values[valuesOffset++] = (byte0 >>> 4) & 3;
+        values[valuesOffset++] = byte0 >>> 6;
+        values[valuesOffset++] = byte1 & 3;
+        values[valuesOffset++] = (byte1 >>> 2) & 3;
+        values[valuesOffset++] = (byte1 >>> 4) & 3;
+        values[valuesOffset++] = byte1 >>> 6;
+        values[valuesOffset++] = byte2 & 3;
+        values[valuesOffset++] = (byte2 >>> 2) & 3;
+        values[valuesOffset++] = (byte2 >>> 4) & 3;
+        values[valuesOffset++] = byte2 >>> 6;
+        values[valuesOffset++] = byte3 & 3;
+        values[valuesOffset++] = (byte3 >>> 2) & 3;
+        values[valuesOffset++] = (byte3 >>> 4) & 3;
+        values[valuesOffset++] = byte3 >>> 6;
+        values[valuesOffset++] = byte4 & 3;
+        values[valuesOffset++] = (byte4 >>> 2) & 3;
+        values[valuesOffset++] = (byte4 >>> 4) & 3;
+        values[valuesOffset++] = byte4 >>> 6;
+        values[valuesOffset++] = byte5 & 3;
+        values[valuesOffset++] = (byte5 >>> 2) & 3;
+        values[valuesOffset++] = (byte5 >>> 4) & 3;
+        values[valuesOffset++] = byte5 >>> 6;
+        values[valuesOffset++] = byte6 & 3;
+        values[valuesOffset++] = (byte6 >>> 2) & 3;
+        values[valuesOffset++] = (byte6 >>> 4) & 3;
+        values[valuesOffset++] = byte6 >>> 6;
+        values[valuesOffset++] = byte7 & 3;
+        values[valuesOffset++] = (byte7 >>> 2) & 3;
+        values[valuesOffset++] = (byte7 >>> 4) & 3;
+        values[valuesOffset++] = byte7 >>> 6;
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21427,6 +21553,42 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 7;
+        values[valuesOffset++] = (byte0 >>> 3) & 7;
+        values[valuesOffset++] = (byte0 >>> 6) | ((byte1 & 1) << 10);
+        values[valuesOffset++] = (byte1 >>> 1) & 7;
+        values[valuesOffset++] = (byte1 >>> 4) & 7;
+        values[valuesOffset++] = (byte1 >>> 7) | ((byte2 & 3) << 9);
+        values[valuesOffset++] = (byte2 >>> 2) & 7;
+        values[valuesOffset++] = byte2 >>> 5;
+        values[valuesOffset++] = byte3 & 7;
+        values[valuesOffset++] = (byte3 >>> 3) & 7;
+        values[valuesOffset++] = (byte3 >>> 6) | ((byte4 & 1) << 10);
+        values[valuesOffset++] = (byte4 >>> 1) & 7;
+        values[valuesOffset++] = (byte4 >>> 4) & 7;
+        values[valuesOffset++] = (byte4 >>> 7) | ((byte5 & 3) << 9);
+        values[valuesOffset++] = (byte5 >>> 2) & 7;
+        values[valuesOffset++] = byte5 >>> 5;
+        values[valuesOffset++] = byte6 & 7;
+        values[valuesOffset++] = (byte6 >>> 3) & 7;
+        values[valuesOffset++] = (byte6 >>> 6) | ((byte7 & 1) << 10);
+        values[valuesOffset++] = (byte7 >>> 1) & 7;
+        values[valuesOffset++] = (byte7 >>> 4) & 7;
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21471,6 +21633,37 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 15;
+        values[valuesOffset++] = byte0 >>> 4;
+        values[valuesOffset++] = byte1 & 15;
+        values[valuesOffset++] = byte1 >>> 4;
+        values[valuesOffset++] = byte2 & 15;
+        values[valuesOffset++] = byte2 >>> 4;
+        values[valuesOffset++] = byte3 & 15;
+        values[valuesOffset++] = byte3 >>> 4;
+        values[valuesOffset++] = byte4 & 15;
+        values[valuesOffset++] = byte4 >>> 4;
+        values[valuesOffset++] = byte5 & 15;
+        values[valuesOffset++] = byte5 >>> 4;
+        values[valuesOffset++] = byte6 & 15;
+        values[valuesOffset++] = byte6 >>> 4;
+        values[valuesOffset++] = byte7 & 15;
+        values[valuesOffset++] = byte7 >>> 4;
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21508,6 +21701,33 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
         values[valuesOffset++] = (block >>> 45) & 31L;
         values[valuesOffset++] = (block >>> 50) & 31L;
         values[valuesOffset++] = block >>> 55;
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 31;
+        values[valuesOffset++] = (byte0 >>> 5) | ((byte1 & 3) << 11);
+        values[valuesOffset++] = (byte1 >>> 2) & 31;
+        values[valuesOffset++] = (byte1 >>> 7) | ((byte2 & 15) << 9);
+        values[valuesOffset++] = (byte2 >>> 4) | ((byte3 & 1) << 12);
+        values[valuesOffset++] = (byte3 >>> 1) & 31;
+        values[valuesOffset++] = (byte3 >>> 6) | ((byte4 & 7) << 10);
+        values[valuesOffset++] = byte4 >>> 3;
+        values[valuesOffset++] = byte5 & 31;
+        values[valuesOffset++] = (byte5 >>> 5) | ((byte6 & 3) << 11);
+        values[valuesOffset++] = (byte6 >>> 2) & 31;
+        values[valuesOffset++] = (byte6 >>> 7) | ((byte7 & 15) << 9);
       }
     }
 
@@ -21549,6 +21769,31 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 63;
+        values[valuesOffset++] = (byte0 >>> 6) | ((byte1 & 15) << 10);
+        values[valuesOffset++] = (byte1 >>> 4) | ((byte2 & 3) << 12);
+        values[valuesOffset++] = byte2 >>> 2;
+        values[valuesOffset++] = byte3 & 63;
+        values[valuesOffset++] = (byte3 >>> 6) | ((byte4 & 15) << 10);
+        values[valuesOffset++] = (byte4 >>> 4) | ((byte5 & 3) << 12);
+        values[valuesOffset++] = byte5 >>> 2;
+        values[valuesOffset++] = byte6 & 63;
+        values[valuesOffset++] = (byte6 >>> 6) | ((byte7 & 15) << 10);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21583,6 +21828,30 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
         values[valuesOffset++] = (block >>> 42) & 127L;
         values[valuesOffset++] = (block >>> 49) & 127L;
         values[valuesOffset++] = block >>> 56;
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 127;
+        values[valuesOffset++] = (byte0 >>> 7) | ((byte1 & 63) << 9);
+        values[valuesOffset++] = (byte1 >>> 6) | ((byte2 & 31) << 10);
+        values[valuesOffset++] = (byte2 >>> 5) | ((byte3 & 15) << 11);
+        values[valuesOffset++] = (byte3 >>> 4) | ((byte4 & 7) << 12);
+        values[valuesOffset++] = (byte4 >>> 3) | ((byte5 & 3) << 13);
+        values[valuesOffset++] = (byte5 >>> 2) | ((byte6 & 1) << 14);
+        values[valuesOffset++] = byte6 >>> 1;
+        values[valuesOffset++] = byte7 & 127;
       }
     }
 
@@ -21622,6 +21891,29 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0;
+        values[valuesOffset++] = byte1;
+        values[valuesOffset++] = byte2;
+        values[valuesOffset++] = byte3;
+        values[valuesOffset++] = byte4;
+        values[valuesOffset++] = byte5;
+        values[valuesOffset++] = byte6;
+        values[valuesOffset++] = byte7;
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21654,6 +21946,28 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
         values[valuesOffset++] = (block >>> 36) & 511L;
         values[valuesOffset++] = (block >>> 45) & 511L;
         values[valuesOffset++] = block >>> 54;
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | ((byte1 & 1) << 16);
+        values[valuesOffset++] = (byte1 >>> 1) | ((byte2 & 3) << 15);
+        values[valuesOffset++] = (byte2 >>> 2) | ((byte3 & 7) << 14);
+        values[valuesOffset++] = (byte3 >>> 3) | ((byte4 & 15) << 13);
+        values[valuesOffset++] = (byte4 >>> 4) | ((byte5 & 31) << 12);
+        values[valuesOffset++] = (byte5 >>> 5) | ((byte6 & 63) << 11);
+        values[valuesOffset++] = (byte6 >>> 6) | ((byte7 & 127) << 10);
       }
     }
 
@@ -21691,6 +22005,27 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | ((byte1 & 3) << 16);
+        values[valuesOffset++] = (byte1 >>> 2) | ((byte2 & 15) << 14);
+        values[valuesOffset++] = (byte2 >>> 4) | ((byte3 & 63) << 12);
+        values[valuesOffset++] = (byte3 >>> 6) | (byte4 << 8);
+        values[valuesOffset++] = byte5 | ((byte6 & 3) << 16);
+        values[valuesOffset++] = (byte6 >>> 2) | ((byte7 & 15) << 14);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21721,6 +22056,26 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
         values[valuesOffset++] = (block >>> 24) & 4095L;
         values[valuesOffset++] = (block >>> 36) & 4095L;
         values[valuesOffset++] = block >>> 48;
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | ((byte1 & 15) << 16);
+        values[valuesOffset++] = (byte1 >>> 4) | (byte2 << 8);
+        values[valuesOffset++] = byte3 | ((byte4 & 15) << 16);
+        values[valuesOffset++] = (byte4 >>> 4) | (byte5 << 8);
+        values[valuesOffset++] = byte6 | ((byte7 & 15) << 16);
       }
     }
 
@@ -21756,6 +22111,25 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | (byte1 << 8);
+        values[valuesOffset++] = byte2 | (byte3 << 8);
+        values[valuesOffset++] = byte4 | (byte5 << 8);
+        values[valuesOffset++] = byte6 | (byte7 << 8);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21787,6 +22161,24 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | (byte1 << 8) | ((byte2 & 31) << 32);
+        values[valuesOffset++] = (byte2 >>> 5) | (byte3 << 8) | (byte4 << 16) | ((byte5 & 3) << 43);
+        values[valuesOffset++] = (byte5 >>> 2) | (byte6 << 8) | ((byte7 & 127) << 30);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21814,6 +22206,23 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
         final long block = blocks[blocksOffset++];
         values[valuesOffset++] = block & 4294967295L;
         values[valuesOffset++] = block >>> 32;
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long byte7 = blocks[blocksOffset++] & 0xFF;
+        final long byte6 = blocks[blocksOffset++] & 0xFF;
+        final long byte5 = blocks[blocksOffset++] & 0xFF;
+        final long byte4 = blocks[blocksOffset++] & 0xFF;
+        final long byte3 = blocks[blocksOffset++] & 0xFF;
+        final long byte2 = blocks[blocksOffset++] & 0xFF;
+        final long byte1 = blocks[blocksOffset++] & 0xFF;
+        final long byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | (byte1 << 8) | (byte2 << 16) | (byte3 << 24);
+        values[valuesOffset++] = byte4 | (byte5 << 8) | (byte6 << 16) | (byte7 << 24);
       }
     }
 

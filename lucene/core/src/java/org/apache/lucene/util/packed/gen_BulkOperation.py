@@ -171,6 +171,52 @@ def p64sb_decode(bpv, bits):
   f.write("      }\n")
   f.write("    }\n\n")
 
+  f.write("    public void decode(byte[] blocks, int blocksOffset, %s[] values, int valuesOffset, int iterations) {\n" %typ)
+  if bits < bpv:
+    f.write("      throw new UnsupportedOperationException();\n")
+    f.write("    }\n\n")
+  f.write("      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;\n")
+  f.write("      assert valuesOffset + iterations * valueCount() <= values.length;\n")
+  f.write("      for (int i = 0; i < iterations; ++i) {\n")
+  if bpv >= 32:
+    for i in xrange(7, -1, -1):
+      f.write("        final long byte%d = blocks[blocksOffset++] & 0xFF;\n" %i)
+  else:
+    for i in xrange(7, -1, -1):
+      f.write("        final int byte%d = blocks[blocksOffset++] & 0xFF;\n" %i)
+  for i in xrange(values):
+    byte_start = (i * bpv) / 8
+    bit_start = (i * bpv) % 8
+    byte_end = ((i + 1) * bpv - 1) / 8
+    bit_end = ((i + 1) * bpv - 1) % 8
+    f.write("        values[valuesOffset++] =")
+    if byte_start == byte_end:
+      # only one byte
+      if bit_start == 0:
+        if bit_end == 7:
+          f.write(" byte%d" %byte_start)
+        else:
+          f.write(" byte%d & %d" %(byte_start, mask))
+      else:
+        if bit_end == 7:
+          f.write(" byte%d >>> %d" %(byte_start, bit_start))
+        else:
+          f.write(" (byte%d >>> %d) & %d" %(byte_start, bit_start, mask))
+    else:
+      if bit_start == 0:
+        f.write(" byte%d" %byte_start)
+      else:
+        f.write(" (byte%d >>> %d)" %(byte_start, bit_start))
+      for b in xrange(byte_start + 1, byte_end):
+        f.write(" | (byte%d << %d)" %(b, 8 * (b - byte_start)))
+      if bit_end == 7:
+        f.write(" | (byte%d << %d)" %(byte_end, 8 * (byte_end - byte_start)))
+      else:
+        f.write(" | ((byte%d & %d) << %d)" %(byte_end, 2 ** (bit_end + 1) - 1, 8 * (byte_end - byte_start) + bpv - bit_end - 1))
+    f.write(";\n")
+  f.write("      }\n")
+  f.write("    }\n\n")
+
 def p64sb_encode(bpv, bits):
   values = 64 / bpv
   typ = get_type(bits)
