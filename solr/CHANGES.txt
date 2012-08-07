@@ -247,6 +247,9 @@ Other Changes
   rich-text documents correctly, along with facets for author and content_type.  
   With the new "content" field, highlighting of body is supported. See also SOLR-3672 for
   easier posting of a whole directory structure. (Jack Krupansky, janhoy)
+  
+* SOLR-3579: SolrCloud view should default to the graph view rather than tree view.
+  (steffkes, Mark Miller)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
