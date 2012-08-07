@@ -168,6 +168,7 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
     docDeltaBuffer = new int[BLOCK_SIZE];
     freqBuffer = new int[BLOCK_SIZE];
 
+    // nocommit should we try skipping every 2/4 blocks...?
     skipWriter = new BlockSkipWriter(maxSkipLevels, 
                                      BLOCK_SIZE,
                                      state.segmentInfo.getDocCount(),

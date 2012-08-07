@@ -46,6 +46,7 @@ public final class ForUtil {
     }
  
     for (int i=0; i<blockSize; ++i) {
+      assert data[i] >= 0;
       encodeNormalValue(intBuffer, i, data[i], numBits);
     }
 
@@ -66,12 +67,13 @@ public final class ForUtil {
    * @param data        int array to hold uncompressed data
    * @param header      header of current block, which contains numFrameBits
    */
-  static void decompress(IntBuffer intBuffer, int[] data, int numBits) {
+  static void decompress(IntBuffer intBuffer, int[] data, int header) {
     // since this buffer is reused at upper level, rewind first
     intBuffer.rewind();
 
-    // nocommit assert header isn't "malformed", ie besides
-    // numBytes / bit-width there is nothing else!
+    // NOTE: header == numBits now, but we may change that
+    final int numBits = header;
+    assert numBits >=0 && numBits < 32;
     decompressCore(intBuffer, data, numBits);
   }
 
@@ -109,7 +111,7 @@ public final class ForUtil {
       case 29: PackedIntsDecompress.decode29(intBuffer, data); break;
       case 30: PackedIntsDecompress.decode30(intBuffer, data); break;
       case 31: PackedIntsDecompress.decode31(intBuffer, data); break;
-      case 32: PackedIntsDecompress.decode32(intBuffer, data); break;
+      // nocommit have default throw exc?  or add assert up above
     }
   }
 
@@ -134,7 +136,7 @@ public final class ForUtil {
   }
 
   /**
-   * Estimate best num of frame bits according to the largest value.
+   * Returns number of bits necessary to represent max value.
    */
   static int getNumBits(final int[] data) {
     if (isAllEqual(data)) {
@@ -147,6 +149,7 @@ public final class ForUtil {
         optBits++;
       }
     }
+    assert optBits < 32;
     return optBits;
   }
 
