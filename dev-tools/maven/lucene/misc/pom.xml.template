@@ -37,15 +37,9 @@
     <module-path>${top-level}/${module-directory}</module-path>
   </properties>
   <scm>
-    <connection>
-      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
-    </connection>
-    <developerConnection>
-      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
-    </developerConnection>
-    <url>
-      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
-    </url>
+    <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
+    <developerConnection>scm:svn:${vc-dev-base-url}/${module-directory}</developerConnection>
+    <url>${vc-browse-base-url}/${module-directory}</url>
   </scm>
   <dependencies>
     <dependency> 
@@ -72,49 +66,5 @@
         </excludes>
       </testResource>
     </testResources>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <configuration>
-          <extraJvmArguments>-Xmx128M</extraJvmArguments>
-          <repositoryLayout>flat</repositoryLayout>
-          <platforms>
-            <platform>windows</platform>
-            <platform>unix</platform>
-          </platforms>
-          <programs>
-            <program>
-              <mainClass>org.apache.lucene.index.FieldNormModifier</mainClass>
-              <name>FieldNormModifier</name>
-            </program>
-            <program>
-              <mainClass>org.apache.lucene.index.IndexSplitter</mainClass>
-              <name>IndexSplitter</name>
-            </program>
-            <program>
-              <mainClass>org.apache.lucene.index.MultiPassIndexSplitter</mainClass>
-              <name>MultiPassIndexSplitter</name>
-            </program>
-            <program>
-              <mainClass>org.apache.lucene.misc.GetTermInfo</mainClass>
-              <name>GetTermInfo</name>
-            </program>
-            <program>
-              <mainClass>org.apache.lucene.misc.HighFreqTerms</mainClass>
-              <name>HighFreqTerms</name>
-            </program>
-            <program>
-              <mainClass>org.apache.lucene.misc.IndexMergeTool</mainClass>
-              <name>IndexMergeTool</name>
-            </program>
-            <program>
-              <mainClass>org.apache.lucene.misc.LengthNormModifier</mainClass>
-              <name>LengthNormModifier</name>
-            </program>
-          </programs>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 </project>

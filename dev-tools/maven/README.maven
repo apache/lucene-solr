@@ -36,27 +36,25 @@ A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
 
 B. How to generate Lucene/Solr Maven artifacts
 
-   Prerequisites: JDK 1.6+ and Ant 1.7.X
+   Prerequisites: JDK 1.6+ and Ant 1.8.2+
 
    Run 'ant generate-maven-artifacts' to create an internal Maven
    repository, including POMs, binary .jars, source .jars, and javadoc
    .jars.
 
-   You can run the above command in four possible places: the top-level
-   directory; under lucene/; under solr/; or under modules/.  From the
-   top-level directory, from lucene/, or from modules/, the internal
-   repository will be located at dist/maven/.  From solr/, the internal
-   repository will be located at package/maven/.
+   You can run the above command in three possible places: the top-level
+   directory; under lucene/; or under solr/.  From the top-level directory
+   or from lucene/, the internal repository will be located at dist/maven/.
+   From solr/, the internal repository will be located at package/maven/.
 
 
 C. How to deploy Maven artifacts to a repository
 
-   Prerequisites: JDK 1.6+ and Ant 1.7.X
+   Prerequisites: JDK 1.6+ and Ant 1.8.2+
 
-   You can deploy targets for all of Lucene/Solr, only Lucene, only Solr,
-   or only modules/, as in B. above.  To deploy to a Maven repository, the
-   command is the same as in B. above, with the addition of two system
-   properties:
+   You can deploy targets for all of Lucene/Solr, only Lucene, or only Solr,
+   as in B. above.  To deploy to a Maven repository, the command is the same
+   as in B. above, with the addition of two system properties:
 
       ant -Dm2.repository.id=my-repo-id \
           -Dm2.repository.url=http://example.org/my/repo \
@@ -101,7 +99,7 @@ D. How to use Maven to build Lucene/Solr
       the default, you can supply an alternate version on the command line
       with the above command, e.g.:
 
-         ant -Dversion=4.0-my-special-version get-maven-poms
+         ant -Dversion=my-special-version get-maven-poms
 
       Note: if you change the version in the POMs, there is one test method
       that will fail under maven-surefire-plugin:
