@@ -23,9 +23,6 @@ import java.util.Arrays;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 
-// nocommit may need to decouple
-// baseSkipInterval & theRestSkipInterval?
-
 /**
  * Write skip lists with multiple levels, and support skip within block ints.
  *
