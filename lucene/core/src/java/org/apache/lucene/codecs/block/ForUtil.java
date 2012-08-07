@@ -37,21 +37,19 @@ public final class ForUtil {
    *
    * @param data        uncompressed data
    * @param intBuffer   integer buffer to hold compressed data
-   * @return the header for current block 
+   * @return the number of frame bits for current block 
    */
-  public static int compress(final int[] data, IntBuffer intBuffer) {
+  static int compress(final int[] data, IntBuffer intBuffer) {
     int numBits = getNumBits(data);
     if (numBits == 0) {
       return compressDuplicateBlock(data, intBuffer);
     }
  
-    int encodedSize = (blockSize*numBits+31)/32;
-
     for (int i=0; i<blockSize; ++i) {
       encodeNormalValue(intBuffer, i, data[i], numBits);
     }
 
-    return getHeader(encodedSize, numBits);
+    return numBits;
   }
 
   /**
@@ -59,7 +57,7 @@ public final class ForUtil {
    */
   static int compressDuplicateBlock(final int[] data, IntBuffer intBuffer) {
     intBuffer.put(0, data[0]);
-    return getHeader(1, 0);
+    return 0;
   }
 
   /** Decompress given Integer buffer into int array.
@@ -68,13 +66,13 @@ public final class ForUtil {
    * @param data        int array to hold uncompressed data
    * @param header      header of current block, which contains numFrameBits
    */
-  public static void decompress(IntBuffer intBuffer, int[] data, int header) {
+  static void decompress(IntBuffer intBuffer, int[] data, int numBits) {
     // since this buffer is reused at upper level, rewind first
     intBuffer.rewind();
 
     // nocommit assert header isn't "malformed", ie besides
     // numBytes / bit-width there is nothing else!
-    decompressCore(intBuffer, data, getNumBits(header));
+    decompressCore(intBuffer, data, numBits);
   }
 
   static void decompressCore(IntBuffer intBuffer, int[] data, int numBits) {
@@ -165,23 +163,9 @@ public final class ForUtil {
   }
 
   /** 
-   * Generate the 4 byte header, which contains (from lsb to msb):
-   *
-   * 6 bits for num of frame bits (when 0, values in this block are all the same)
-   * other bits for encoded block int size (excluded header), so we can use crazy block size
-   *
+   * Expert: get compressed block size(in byte)  
    */
-  static int getHeader(int encodedSize, int numBits) {
-    return numBits | (encodedSize << 6);
-  }
-
-  /** 
-   * Expert: get metadata from header. 
-   */
-  static int getNumBits(int header) {
-    return ((header & MASK[6]));
-  }
-  static int getEncodedSize(int header) {
-    return ((header >>> 6))*4;
+  static int getEncodedSize(int numBits) {
+    return numBits == 0 ? 4 : numBits*blockSize/8;
   }
 }
