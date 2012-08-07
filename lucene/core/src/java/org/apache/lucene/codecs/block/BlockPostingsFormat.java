@@ -42,7 +42,6 @@ public final class BlockPostingsFormat extends PostingsFormat {
   private final int minTermBlockSize;
   private final int maxTermBlockSize;
 
-  // nocommit do other block sizes perform better?
   public final static int BLOCK_SIZE = 128;
 
   public BlockPostingsFormat() {
