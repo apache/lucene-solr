@@ -530,9 +530,13 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         if (docUpto == docFreq) {
           return doc = NO_MORE_DOCS;
         }
+
+        // nocommit: in theory we should not hit this?  ie
+        // skipper should already have moved us to the block
+        // containing the doc?  yet assert false trips ... i
+        // think because if you advance w/o having done a
+        // nextDoc yet()... can we assert/remove this?
         if (docBufferUpto == blockSize) {
-          // nocommit hmm skip freq?  but: we don't ever
-          // scan over more than one block?
           refillDocs();
         }
         accum += docDeltaBuffer[docBufferUpto];
@@ -842,6 +846,11 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         if (docUpto == docFreq) {
           return doc = NO_MORE_DOCS;
         }
+        // nocommit: in theory we should not hit this?  ie
+        // skipper should already have moved us to the block
+        // containing the doc?  yet assert false trips ... i
+        // think because if you advance w/o having done a
+        // nextDoc yet()... can we assert/remove this?
         if (docBufferUpto == blockSize) {
           // nocommit hmm skip freq?  but: we don't ever
           // scan over more than one block?
