@@ -188,6 +188,9 @@ Bug Fixes
   
 * SOLR-3428: SolrCmdDistributor flushAdds/flushDeletes can cause repeated 
   adds/deletes to be sent (Mark Miller, Per Steffensen)
+  
+* SOLR-3647: DistributedQueue should use our Solr zk client rather than the std zk 
+  client. ZooKeeper expiration can be permanent otherwise. (Mark Miller)
 
 Other Changes
 ----------------------
