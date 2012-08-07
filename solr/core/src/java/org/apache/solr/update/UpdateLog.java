@@ -1048,6 +1048,7 @@ public class UpdateLog implements PluginInfoInitialized {
     try {
       cancelApplyBufferUpdate = false;
       if (state != State.BUFFERING) return null;
+      operationFlags &= ~FLAG_GAP;
 
       // handle case when no log was even created because no updates
       // were received.
@@ -1057,7 +1058,6 @@ public class UpdateLog implements PluginInfoInitialized {
       }
       tlog.incref();
       state = State.APPLYING_BUFFERED;
-      operationFlags &= ~FLAG_GAP;
     } finally {
       versionInfo.unblockUpdates();
     }

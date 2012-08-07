@@ -107,6 +107,25 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new LiteralValueSource(fp.parseArg());
       }
     });
+    addParser("threadid", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        return new LongConstValueSource(Thread.currentThread().getId());
+      }
+    });
+    addParser("sleep", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        int ms = fp.parseInt();
+        ValueSource source = fp.parseValueSource();
+        try {
+          Thread.sleep(ms);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        return source;
+      }
+    });
     addParser("rord", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
