@@ -363,6 +363,10 @@ def verifyDigests(artifact, urlString, tmpDir):
     raise RuntimeError('SHA1 digest mismatch for %s: expected %s but got %s' % (artifact, sha1Expected, sha1Actual))
 
 def getDirEntries(urlString):
+  if urlString.startswith('file:/') and not urlString.startswith('file://'):
+    # stupid bogus ant URI
+    urlString = "file:///" + urlString[6:]
+
   if urlString.startswith('file://'):
     path = urlString[7:]
     if path.endswith('/'):
@@ -1026,7 +1030,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
 
 def main():
 
-  if len(sys.argv) != 4:
+  if len(sys.argv) < 4:
     print()
     print('Usage python -u %s BaseURL version tmpDir' % sys.argv[0])
     print()
@@ -1035,8 +1039,11 @@ def main():
   baseURL = sys.argv[1]
   version = sys.argv[2]
   tmpDir = os.path.abspath(sys.argv[3])
+  isSigned = True 
+  if len(sys.argv) == 5:
+    isSigned = (sys.argv[4] == "True")
 
-  smokeTest(baseURL, version, tmpDir, True)
+  smokeTest(baseURL, version, tmpDir, isSigned)
 
 def smokeTest(baseURL, version, tmpDir, isSigned):
 
@@ -1090,4 +1097,5 @@ if __name__ == '__main__':
   except:
     import traceback
     traceback.print_exc()
-  
+    sys.exit(1)
+  sys.exit(0)
