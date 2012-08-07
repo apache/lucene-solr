@@ -43,6 +43,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
+import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
 
 /**
  * Concrete class that reads docId(maybe frq,pos,offset,payloads) list
@@ -61,9 +62,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
   // nocommit
   final String segment;
-
-  // NOTE: not private to avoid access$NNN methods:
-  final static int blockSize = BlockPostingsFormat.BLOCK_SIZE;
 
   public BlockPostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
     boolean success = false;
@@ -116,8 +114,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
                           BlockPostingsWriter.VERSION_START,
                           BlockPostingsWriter.VERSION_START);
     final int indexBlockSize = termsIn.readVInt();
-    if (indexBlockSize != blockSize) {
-      throw new IllegalStateException("index-time blockSize (" + indexBlockSize + ") != read-time blockSize (" + blockSize + ")");
+    if (indexBlockSize != BLOCK_SIZE) {
+      throw new IllegalStateException("index-time BLOCK_SIZE (" + indexBlockSize + ") != read-time BLOCK_SIZE (" + BLOCK_SIZE + ")");
     }
   }
 
@@ -235,12 +233,12 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       termState.docStartFP = in.readVLong();
       if (fieldHasPositions) {
         termState.posStartFP = in.readVLong();
-        if (termState.totalTermFreq > blockSize) {
+        if (termState.totalTermFreq > BLOCK_SIZE) {
           termState.lastPosBlockOffset = in.readVInt();
         } else {
           termState.lastPosBlockOffset = -1;
         }
-        if ((fieldHasPayloads || fieldHasOffsets) && termState.totalTermFreq >= blockSize) {
+        if ((fieldHasPayloads || fieldHasOffsets) && termState.totalTermFreq >= BLOCK_SIZE) {
           termState.payStartFP = in.readVLong();
         } else {
           termState.payStartFP = -1;
@@ -250,12 +248,12 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       termState.docStartFP += in.readVLong();
       if (fieldHasPositions) {
         termState.posStartFP += in.readVLong();
-        if (termState.totalTermFreq > blockSize) {
+        if (termState.totalTermFreq > BLOCK_SIZE) {
           termState.lastPosBlockOffset = in.readVInt();
         } else {
           termState.lastPosBlockOffset = -1;
         }
-        if ((fieldHasPayloads || fieldHasOffsets) && termState.totalTermFreq >= blockSize) {
+        if ((fieldHasPayloads || fieldHasOffsets) && termState.totalTermFreq >= BLOCK_SIZE) {
           long delta = in.readVLong();
           if (termState.payStartFP == -1) {
             termState.payStartFP = delta;
@@ -266,7 +264,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
     }
 
-    if (termState.docFreq > blockSize) {
+    if (termState.docFreq > BLOCK_SIZE) {
       termState.skipOffset = in.readVInt();
     } else {
       termState.skipOffset = -1;
@@ -327,8 +325,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     private final byte[] encoded;
     private final IntBuffer encodedBuffer;
     
-    private final int[] docDeltaBuffer = new int[blockSize];
-    private final int[] freqBuffer = new int[blockSize];
+    private final int[] docDeltaBuffer = new int[BLOCK_SIZE];
+    private final int[] freqBuffer = new int[BLOCK_SIZE];
 
     private int docBufferUpto;
 
@@ -366,7 +364,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
-      encoded = new byte[blockSize*4];
+      encoded = new byte[BLOCK_SIZE*4];
       encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();      
     }
 
@@ -393,7 +391,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
       accum = 0;
       docUpto = 0;
-      docBufferUpto = blockSize;
+      docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
     }
@@ -413,7 +411,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       final int left = docFreq - docUpto;
       assert left > 0;
 
-      if (left >= blockSize) {
+      if (left >= BLOCK_SIZE) {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
@@ -449,7 +447,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           return doc = NO_MORE_DOCS;
         }
         //System.out.println("["+docFreq+"]"+" nextDoc");
-        if (docBufferUpto == blockSize) {
+        if (docBufferUpto == BLOCK_SIZE) {
           refillDocs();
         }
         if (DEBUG) {
@@ -480,7 +478,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
       // nocommit use skipper!!!  it has next last doc id!!
 
-      if (docFreq > blockSize && target - accum > blockSize) {
+      if (docFreq > BLOCK_SIZE && target - accum > BLOCK_SIZE) {
 
         if (DEBUG) {
           System.out.println("load skipper");
@@ -490,7 +488,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           // Lazy init: first time this enum has ever been used for skipping
           skipper = new BlockSkipReader((IndexInput) docIn.clone(),
                                         BlockPostingsWriter.maxSkipLevels,
-                                        blockSize,
+                                        BLOCK_SIZE,
                                         indexHasPos,
                                         indexHasOffsets,
                                         indexHasPayloads);
@@ -511,11 +509,11 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           if (DEBUG) {
             System.out.println("skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer());
           }
-          assert newDocUpto % blockSize == (blockSize-1): "got " + newDocUpto;
+          assert newDocUpto % BLOCK_SIZE == (BLOCK_SIZE-1): "got " + newDocUpto;
           docUpto = newDocUpto+1;
 
           // Force to read next block
-          docBufferUpto = blockSize;
+          docBufferUpto = BLOCK_SIZE;
           accum = skipper.getDoc();               // actually, this is just lastSkipEntry
           docIn.seek(skipper.getDocPointer());    // now point to the block we want to search
         }
@@ -536,7 +534,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         // containing the doc?  yet assert false trips ... i
         // think because if you advance w/o having done a
         // nextDoc yet()... can we assert/remove this?
-        if (docBufferUpto == blockSize) {
+        if (docBufferUpto == BLOCK_SIZE) {
           refillDocs();
         }
         accum += docDeltaBuffer[docBufferUpto];
@@ -571,9 +569,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     private final byte[] encoded;
     private final IntBuffer encodedBuffer;
 
-    private final int[] docDeltaBuffer = new int[blockSize];
-    private final int[] freqBuffer = new int[blockSize];
-    private final int[] posDeltaBuffer = new int[blockSize];
+    private final int[] docDeltaBuffer = new int[BLOCK_SIZE];
+    private final int[] freqBuffer = new int[BLOCK_SIZE];
+    private final int[] posDeltaBuffer = new int[BLOCK_SIZE];
 
     private int docBufferUpto;
     private int posBufferUpto;
@@ -630,7 +628,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       this.startDocIn = BlockPostingsReader.this.docIn;
       this.docIn = (IndexInput) startDocIn.clone();
       this.posIn = (IndexInput) BlockPostingsReader.this.posIn.clone();
-      encoded = new byte[blockSize*4];
+      encoded = new byte[BLOCK_SIZE*4];
       encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
@@ -655,9 +653,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       skipOffset = termState.skipOffset;
       posPendingFP = posTermStartFP;
       posPendingCount = 0;
-      if (termState.totalTermFreq < blockSize) {
+      if (termState.totalTermFreq < BLOCK_SIZE) {
         lastPosBlockFP = posTermStartFP;
-      } else if (termState.totalTermFreq == blockSize) {
+      } else if (termState.totalTermFreq == BLOCK_SIZE) {
         lastPosBlockFP = -1;
       } else {
         lastPosBlockFP = posTermStartFP + termState.lastPosBlockOffset;
@@ -666,7 +664,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       doc = -1;
       accum = 0;
       docUpto = 0;
-      docBufferUpto = blockSize;
+      docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
     }
@@ -685,7 +683,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       //System.out.println("["+docFreq+"]"+" refillDoc");
       final int left = docFreq - docUpto;
       assert left > 0;
-      if (left >= blockSize) {
+      if (left >= BLOCK_SIZE) {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
@@ -752,7 +750,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           return doc = NO_MORE_DOCS;
         }
         //System.out.println("["+docFreq+"]"+" nextDoc");
-        if (docBufferUpto == blockSize) {
+        if (docBufferUpto == BLOCK_SIZE) {
           refillDocs();
         }
         if (DEBUG) {
@@ -788,8 +786,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       // nocommit 2 is heuristic guess!!
       // nocommit put cheating back!  does it help?
       // nocommit use skipper!!!  it has next last doc id!!
-      //if (docFreq > blockSize && target - (blockSize - docBufferUpto) - 2*blockSize > accum) {
-      if (docFreq > blockSize && target - accum > blockSize) {
+      //if (docFreq > BLOCK_SIZE && target - (BLOCK_SIZE - docBufferUpto) - 2*BLOCK_SIZE > accum) {
+      if (docFreq > BLOCK_SIZE && target - accum > BLOCK_SIZE) {
         if (DEBUG) {
           System.out.println("    try skipper");
         }
@@ -800,7 +798,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           }
           skipper = new BlockSkipReader((IndexInput) docIn.clone(),
                                         BlockPostingsWriter.maxSkipLevels,
-                                        blockSize,
+                                        BLOCK_SIZE,
                                         true,
                                         indexHasOffsets,
                                         indexHasPayloads);
@@ -825,11 +823,11 @@ public final class BlockPostingsReader extends PostingsReaderBase {
             System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto());
           }
 
-          assert newDocUpto % blockSize == (blockSize-1): "got " + newDocUpto;
+          assert newDocUpto % BLOCK_SIZE == (BLOCK_SIZE-1): "got " + newDocUpto;
           docUpto = newDocUpto+1;
 
           // Force to read next block
-          docBufferUpto = blockSize;
+          docBufferUpto = BLOCK_SIZE;
           accum = skipper.getDoc();
           docIn.seek(skipper.getDocPointer());
           posPendingFP = skipper.getPosPointer();
@@ -851,7 +849,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         // containing the doc?  yet assert false trips ... i
         // think because if you advance w/o having done a
         // nextDoc yet()... can we assert/remove this?
-        if (docBufferUpto == blockSize) {
+        if (docBufferUpto == BLOCK_SIZE) {
           // nocommit hmm skip freq?  but: we don't ever
           // scan over more than one block?
           refillDocs();
@@ -892,7 +890,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         System.out.println("      FPR.skipPositions: toSkip=" + toSkip);
       }
 
-      final int leftInBlock = blockSize - posBufferUpto;
+      final int leftInBlock = BLOCK_SIZE - posBufferUpto;
       if (toSkip < leftInBlock) {
         posBufferUpto += toSkip;
         if (DEBUG) {
@@ -900,13 +898,13 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         }
       } else {
         toSkip -= leftInBlock;
-        while(toSkip >= blockSize) {
+        while(toSkip >= BLOCK_SIZE) {
           if (DEBUG) {
             System.out.println("        skip whole block @ fp=" + posIn.getFilePointer());
           }
           assert posIn.getFilePointer() != lastPosBlockFP;
           skipBlock(posIn);
-          toSkip -= blockSize;
+          toSkip -= BLOCK_SIZE;
         }
         refillPositions();
         posBufferUpto = toSkip;
@@ -931,7 +929,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         posPendingFP = -1;
 
         // Force buffer refill:
-        posBufferUpto = blockSize;
+        posBufferUpto = BLOCK_SIZE;
       }
 
       if (posPendingCount > freq) {
@@ -939,7 +937,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         posPendingCount = freq;
       }
 
-      if (posBufferUpto == blockSize) {
+      if (posBufferUpto == BLOCK_SIZE) {
         refillPositions();
         posBufferUpto = 0;
       }
@@ -978,9 +976,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     private final byte[] encoded;
     private final IntBuffer encodedBuffer;
 
-    private final int[] docDeltaBuffer = new int[blockSize];
-    private final int[] freqBuffer = new int[blockSize];
-    private final int[] posDeltaBuffer = new int[blockSize];
+    private final int[] docDeltaBuffer = new int[BLOCK_SIZE];
+    private final int[] freqBuffer = new int[BLOCK_SIZE];
+    private final int[] posDeltaBuffer = new int[BLOCK_SIZE];
 
     private final int[] payloadLengthBuffer;
     private final int[] offsetStartDeltaBuffer;
@@ -1056,12 +1054,12 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       this.docIn = (IndexInput) startDocIn.clone();
       this.posIn = (IndexInput) BlockPostingsReader.this.posIn.clone();
       this.payIn = (IndexInput) BlockPostingsReader.this.payIn.clone();
-      encoded = new byte[blockSize*4];
+      encoded = new byte[BLOCK_SIZE*4];
       encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (indexHasOffsets) {
-        offsetStartDeltaBuffer = new int[blockSize];
-        offsetLengthBuffer = new int[blockSize];
+        offsetStartDeltaBuffer = new int[BLOCK_SIZE];
+        offsetLengthBuffer = new int[BLOCK_SIZE];
       } else {
         offsetStartDeltaBuffer = null;
         offsetLengthBuffer = null;
@@ -1071,7 +1069,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
       indexHasPayloads = fieldInfo.hasPayloads();
       if (indexHasPayloads) {
-        payloadLengthBuffer = new int[blockSize];
+        payloadLengthBuffer = new int[BLOCK_SIZE];
         payloadBytes = new byte[128];
         payload = new BytesRef();
       } else {
@@ -1101,9 +1099,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       posPendingFP = posTermStartFP;
       payPendingFP = payTermStartFP;
       posPendingCount = 0;
-      if (termState.totalTermFreq < blockSize) {
+      if (termState.totalTermFreq < BLOCK_SIZE) {
         lastPosBlockFP = posTermStartFP;
-      } else if (termState.totalTermFreq == blockSize) {
+      } else if (termState.totalTermFreq == BLOCK_SIZE) {
         lastPosBlockFP = -1;
       } else {
         lastPosBlockFP = posTermStartFP + termState.lastPosBlockOffset;
@@ -1112,7 +1110,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       doc = -1;
       accum = 0;
       docUpto = 0;
-      docBufferUpto = blockSize;
+      docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
     }
@@ -1132,7 +1130,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       final int left = docFreq - docUpto;
       assert left > 0;
 
-      if (left >= blockSize) {
+      if (left >= BLOCK_SIZE) {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
@@ -1245,7 +1243,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           return doc = NO_MORE_DOCS;
         }
         //System.out.println("["+docFreq+"]"+" nextDoc");
-        if (docBufferUpto == blockSize) {
+        if (docBufferUpto == BLOCK_SIZE) {
           refillDocs();
         }
         if (DEBUG) {
@@ -1283,8 +1281,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       // nocommit 2 is heuristic guess!!
       // nocommit put cheating back!  does it help?
       // nocommit use skipper!!!  it has next last doc id!!
-      //if (docFreq > blockSize && target - (blockSize - docBufferUpto) - 2*blockSize > accum) {
-      if (docFreq > blockSize && target - accum > blockSize) {
+      //if (docFreq > BLOCK_SIZE && target - (BLOCK_SIZE - docBufferUpto) - 2*BLOCK_SIZE > accum) {
+      if (docFreq > BLOCK_SIZE && target - accum > BLOCK_SIZE) {
 
         if (DEBUG) {
           System.out.println("    try skipper");
@@ -1297,7 +1295,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           }
           skipper = new BlockSkipReader((IndexInput) docIn.clone(),
                                         BlockPostingsWriter.maxSkipLevels,
-                                        blockSize,
+                                        BLOCK_SIZE,
                                         true,
                                         indexHasOffsets,
                                         indexHasPayloads);
@@ -1321,11 +1319,11 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           if (DEBUG) {
             System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto() + " pay.fp=" + skipper.getPayPointer() + " lastStartOffset=" + lastStartOffset);
           }
-          assert newDocUpto % blockSize == (blockSize-1): "got " + newDocUpto;
+          assert newDocUpto % BLOCK_SIZE == (BLOCK_SIZE-1): "got " + newDocUpto;
           docUpto = newDocUpto+1;
 
           // Force to read next block
-          docBufferUpto = blockSize;
+          docBufferUpto = BLOCK_SIZE;
           accum = skipper.getDoc();
           docIn.seek(skipper.getDocPointer());
           posPendingFP = skipper.getPosPointer();
@@ -1366,7 +1364,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         System.out.println("      FPR.skipPositions: toSkip=" + toSkip);
       }
 
-      final int leftInBlock = blockSize - posBufferUpto;
+      final int leftInBlock = BLOCK_SIZE - posBufferUpto;
       if (toSkip < leftInBlock) {
         int end = posBufferUpto + toSkip;
         while(posBufferUpto < end) {
@@ -1383,7 +1381,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         }
       } else {
         toSkip -= leftInBlock;
-        while(toSkip >= blockSize) {
+        while(toSkip >= BLOCK_SIZE) {
           if (DEBUG) {
             System.out.println("        skip whole block @ fp=" + posIn.getFilePointer());
           }
@@ -1404,11 +1402,11 @@ public final class BlockPostingsReader extends PostingsReaderBase {
             // up into lastStartOffset:
             readBlock(payIn, encoded, encodedBuffer, offsetStartDeltaBuffer);
             readBlock(payIn, encoded, encodedBuffer, offsetLengthBuffer);
-            for(int i=0;i<blockSize;i++) {
+            for(int i=0;i<BLOCK_SIZE;i++) {
               lastStartOffset += offsetStartDeltaBuffer[i] + offsetLengthBuffer[i];
             }
           }
-          toSkip -= blockSize;
+          toSkip -= BLOCK_SIZE;
         }
         refillPositions();
         payloadByteUpto = 0;
@@ -1455,7 +1453,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         }
 
         // Force buffer refill:
-        posBufferUpto = blockSize;
+        posBufferUpto = BLOCK_SIZE;
       }
 
       if (indexHasPayloads) {
@@ -1473,7 +1471,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         posPendingCount = freq;
       }
 
-      if (posBufferUpto == blockSize) {
+      if (posBufferUpto == BLOCK_SIZE) {
         refillPositions();
         posBufferUpto = 0;
       }

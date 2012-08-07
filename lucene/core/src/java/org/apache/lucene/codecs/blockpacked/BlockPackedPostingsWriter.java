@@ -411,7 +411,7 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
         
         // nocommit should we send offsets/payloads to
         // .pay...?  seems wasteful (have to store extra
-        // vLong for low (< blockSize) DF terms = vast vast
+        // vLong for low (< BLOCK_SIZE) DF terms = vast vast
         // majority)
 
         // vInt encode the remaining positions/payloads/offsets:
