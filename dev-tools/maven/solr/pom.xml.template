@@ -43,26 +43,14 @@
     <module-directory>solr</module-directory>
   </properties>
   <scm>
-    <connection>
-      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
-    </connection>
-    <developerConnection>
-      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
-    </developerConnection>
-    <url>
-      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
-    </url>
+    <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
+    <developerConnection>scm:svn:${vc-dev-base-url}/${module-directory}</developerConnection>
+    <url>${vc-browse-base-url}/${module-directory}</url>
   </scm>
   <issueManagement>
     <system>JIRA</system>
-    <url>http://issues.apache.org/jira/browse/SOLR</url>
+    <url>https://issues.apache.org/jira/browse/SOLR</url>
   </issueManagement>
-  <ciManagement>
-    <system>Hudson</system>
-    <url>
-      http://lucene.zones.apache.org:8080/hudson/job/Solr-Nightly/
-    </url>
-  </ciManagement>
   <mailingLists>
     <mailingList>
       <name>Solr User List</name>

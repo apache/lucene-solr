@@ -31,15 +31,18 @@
   <version>@version@</version>
   <packaging>pom</packaging>
   <name>Grandparent POM for Apache Lucene Core and Apache Solr</name>
-  <description>Parent POM for Apache Lucene Core and Apache Solr</description>
-  <url>http://lucene.apache.org/java</url>
+  <description>Grandparent POM for Apache Lucene Core and Apache Solr</description>
+  <url>http://lucene.apache.org</url>
   <modules>
     <module>lucene</module>
     <module>solr</module>
   </modules>
   <properties>
     <top-level>..</top-level>
-    <base.specification.version>4.0.0</base.specification.version>
+    <vc-anonymous-base-url>http://svn.apache.org/repos/asf/lucene/dev/trunk</vc-anonymous-base-url>
+    <vc-dev-base-url>https://svn.apache.org/repos/asf/lucene/dev/trunk</vc-dev-base-url>
+    <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/trunk</vc-browse-base-url>
+    <base.specification.version>5.0.0</base.specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.6</java.compat.version>
     <jetty.version>8.1.2.v20120308</jetty.version>
@@ -69,11 +72,11 @@
   </properties>
   <issueManagement>
     <system>JIRA</system>
-    <url>http://issues.apache.org/jira/browse/LUCENE</url>
+    <url>https://issues.apache.org/jira/browse/LUCENE</url>
   </issueManagement>
   <ciManagement>
-    <system>Hudson</system>
-    <url>http://lucene.zones.apache.org:8080/hudson/job/Lucene-Nightly/</url>
+    <system>Jenkins</system>
+    <url>https://builds.apache.org/computer/lucene/</url>
   </ciManagement>
   <mailingLists>
     <mailingList>
@@ -109,15 +112,9 @@
   </mailingLists>
   <inceptionYear>2000</inceptionYear>
   <scm>
-    <connection>
-      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk
-    </connection>
-    <developerConnection>
-      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk
-    </developerConnection>
-    <url>
-      http://svn.apache.org/viewvc/lucene/dev/trunk
-    </url>
+    <connection>scm:svn:${vc-anonymous-base-url}</connection>
+    <developerConnection>scm:svn:${vc-dev-base-url}</developerConnection>
+    <url>${vc-browse-base-url}</url>
   </scm>
   <licenses>
     <license>
@@ -548,11 +545,6 @@
               </manifestEntries>
             </archive>
           </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>appassembler-maven-plugin</artifactId>
-          <version>1.2.1</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
