@@ -845,7 +845,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   private void testDebugQueries() throws Exception {
-    handle.put("explain", UNORDERED);
+    handle.put("explain", SKIPVAL);
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
     query("q", "now their fox sat had put", "fl", "*,score",
