@@ -26,9 +26,16 @@ $Id$
 
 ==================  4.0.0 ==================
 
-(No changes)
+Bug Fixes
+----------------------
+
+* SOLR-3685: Solr Cloud sometimes skipped peersync attempt and replicated instead due
+  to tlog flags not being cleared when no updates were buffered during a previous
+  replication.  (Markus Jelsma, Mark Miller, yonik)
+
 
 ==================  4.0.0-BETA ===================
+
 
 Versions of Major Components
 ---------------------
