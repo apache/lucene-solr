@@ -74,9 +74,7 @@ public final class ForUtil {
 
     // nocommit assert header isn't "malformed", ie besides
     // numBytes / bit-width there is nothing else!
-    int numBits = ((header >> 8) & MASK[6]);
-
-    decompressCore(intBuffer, data, numBits);
+    decompressCore(intBuffer, data, getNumBits(header));
   }
 
   static void decompressCore(IntBuffer intBuffer, int[] data, int numBits) {
