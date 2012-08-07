@@ -37,7 +37,7 @@ public final class ForUtil {
    *
    * @param data        uncompressed data
    * @param intBuffer   integer buffer to hold compressed data
-   * @return the number of frame bits for current block 
+   * @return the header for the current block 
    */
   static int compress(final int[] data, IntBuffer intBuffer) {
     int numBits = getNumBits(data);
@@ -54,7 +54,8 @@ public final class ForUtil {
   }
 
   /**
-   * Save only one int when the whole block equals to 1
+   * Save only one int when the whole block equals to a
+   * single value.
    */
   static int compressDuplicateBlock(final int[] data, IntBuffer intBuffer) {
     intBuffer.put(0, data[0]);

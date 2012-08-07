@@ -152,6 +152,10 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
     return lastPayloadByteUpto;
   }
 
+  public int getNextSkipDoc() {
+    return skipDoc[0];
+  }
+
   @Override
   protected void seekChild(int level) throws IOException {
     super.seekChild(level);

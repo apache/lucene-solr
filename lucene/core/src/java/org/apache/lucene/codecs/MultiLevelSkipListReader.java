@@ -59,7 +59,7 @@ public abstract class MultiLevelSkipListReader {
   private int skipInterval[];         // skipInterval of each level
   private int[] numSkipped;           // number of docs skipped per level
     
-  private int[] skipDoc;              // doc id of current skip entry per level 
+  protected int[] skipDoc;            // doc id of current skip entry per level 
   private int lastDoc;                // doc id of last read skip entry with docId <= target
   private long[] childPointer;        // child pointer of current skip entry per level
   private long lastChildPointer;      // childPointer of last read skip entry with docId <= target

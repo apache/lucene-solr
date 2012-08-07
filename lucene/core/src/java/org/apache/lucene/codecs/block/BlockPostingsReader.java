@@ -355,6 +355,10 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     // no skip data for this term):
     private int skipOffset;
 
+    // docID for next skip point, we won't use skipper if 
+    // target docID is not larger than this
+    private int nextSkipDoc;
+
     private Bits liveDocs;
 
     public BlockDocsEnum(FieldInfo fieldInfo) throws IOException {
@@ -391,6 +395,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
       accum = 0;
       docUpto = 0;
+      nextSkipDoc = BLOCK_SIZE - 1; // we won't skip if target is found in first block
       docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
@@ -475,10 +480,13 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     @Override
     public int advance(int target) throws IOException {
       // nocommit make frq block load lazy/skippable
+      if (DEBUG) {
+        System.out.println("  FPR.advance target=" + target);
+      }
 
-      // nocommit use skipper!!!  it has next last doc id!!
-
-      if (docFreq > BLOCK_SIZE && target - accum > BLOCK_SIZE) {
+      // current skip docID < docIDs generated from current buffer <= next skip docID
+      // we don't need to skip if target is buffered already
+      if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
 
         if (DEBUG) {
           System.out.println("load skipper");
@@ -517,6 +525,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           accum = skipper.getDoc();               // actually, this is just lastSkipEntry
           docIn.seek(skipper.getDocPointer());    // now point to the block we want to search
         }
+        nextSkipDoc = skipper.getNextSkipDoc();
       }
 
       // Now scan... this is an inlined/pared down version
@@ -622,6 +631,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     // no skip data for this term):
     private int skipOffset;
 
+    private int nextSkipDoc;
+
     private Bits liveDocs;
     
     public BlockDocsAndPositionsEnum(FieldInfo fieldInfo) throws IOException {
@@ -664,6 +675,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       doc = -1;
       accum = 0;
       docUpto = 0;
+      nextSkipDoc = BLOCK_SIZE - 1;
       docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
@@ -783,11 +795,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         System.out.println("  FPR.advance target=" + target);
       }
 
-      // nocommit 2 is heuristic guess!!
-      // nocommit put cheating back!  does it help?
-      // nocommit use skipper!!!  it has next last doc id!!
-      //if (docFreq > BLOCK_SIZE && target - (BLOCK_SIZE - docBufferUpto) - 2*BLOCK_SIZE > accum) {
-      if (docFreq > BLOCK_SIZE && target - accum > BLOCK_SIZE) {
+      if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
         if (DEBUG) {
           System.out.println("    try skipper");
         }
@@ -833,6 +841,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           posPendingFP = skipper.getPosPointer();
           posPendingCount = skipper.getPosBufferUpto();
         }
+        nextSkipDoc = skipper.getNextSkipDoc();
       }
 
       // Now scan... this is an inlined/pared down version
@@ -1047,6 +1056,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     // no skip data for this term):
     private int skipOffset;
 
+    private int nextSkipDoc;
+
     private Bits liveDocs;
     
     public EverythingEnum(FieldInfo fieldInfo) throws IOException {
@@ -1110,6 +1121,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       doc = -1;
       accum = 0;
       docUpto = 0;
+      nextSkipDoc = BLOCK_SIZE - 1;
       docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
@@ -1278,11 +1290,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         System.out.println("  FPR.advance target=" + target);
       }
 
-      // nocommit 2 is heuristic guess!!
-      // nocommit put cheating back!  does it help?
-      // nocommit use skipper!!!  it has next last doc id!!
-      //if (docFreq > BLOCK_SIZE && target - (BLOCK_SIZE - docBufferUpto) - 2*BLOCK_SIZE > accum) {
-      if (docFreq > BLOCK_SIZE && target - accum > BLOCK_SIZE) {
+      if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
 
         if (DEBUG) {
           System.out.println("    try skipper");
@@ -1332,6 +1340,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           lastStartOffset = skipper.getStartOffset();
           payloadByteUpto = skipper.getPayloadByteUpto();
         }
+        nextSkipDoc = skipper.getNextSkipDoc();
       }
 
       // nocommit inline nextDoc here
