@@ -6,6 +6,10 @@ http://s.apache.org/luceneversions
 For "contrib" changes prior to 4.0, please see:
 http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
 
+======================= Lucene 4.0.0 =======================
+
+(No Changes)
+
 ======================= Lucene 4.0.0-BETA =======================
 
 New features

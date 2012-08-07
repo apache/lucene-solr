@@ -20,6 +20,10 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
+==================  4.0.0 ==================
+
+(No changes)
+
 ==================  4.0.0-BETA ===================
 
 Versions of Major Components
