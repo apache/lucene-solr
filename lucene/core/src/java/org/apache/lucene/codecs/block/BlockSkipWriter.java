@@ -71,7 +71,7 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
   public BlockSkipWriter(int maxSkipLevels, int blockSize, int docCount, IndexOutput docOut, IndexOutput posOut, IndexOutput payOut) {
     // nocommit figure out what skipMultiplier is best (4 is
     // total guess):
-    super(blockSize, 4, maxSkipLevels, docCount);
+    super(blockSize, 8, maxSkipLevels, docCount);
     this.docOut = docOut;
     this.posOut = posOut;
     this.payOut = payOut;

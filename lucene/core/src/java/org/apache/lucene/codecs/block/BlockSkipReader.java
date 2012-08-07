@@ -69,7 +69,7 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
   private int lastPosBufferUpto;
 
   public BlockSkipReader(IndexInput skipStream, int maxSkipLevels, int blockSize, boolean hasPos, boolean hasOffsets, boolean hasPayloads) {
-    super(skipStream, maxSkipLevels, blockSize, 4);
+    super(skipStream, maxSkipLevels, blockSize, 8);
     this.blockSize = blockSize;
     docPointer = new long[maxSkipLevels];
     if (hasPos) {
