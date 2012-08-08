@@ -28,7 +28,7 @@
      $Name:  $
   -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.5">
   <types>
 
     <!-- field type definitions... note that the "name" attribute is
@@ -110,9 +110,6 @@
     </fieldtype>
 
 
-    <!-- HighlitText optimizes storage for (long) columns which will be highlit -->
-    <fieldtype name="highlittext" class="solr.TextField" compressThreshold="345" />
-
     <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
@@ -147,7 +144,6 @@
        <analyzer>
         <tokenizer class="solr.LowerCaseTokenizerFactory"/>
         <filter class="solr.StandardFilterFactory"/>
-        <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
       </analyzer>
     </fieldtype>
 
@@ -200,7 +196,6 @@
     <fieldtype name="lowerpunctfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter name="syn" class="solr.SynonymFilterFactory" synonyms="synonyms.txt" expand="true"/>
         <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="1" splitOnCaseChange="1"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
@@ -242,7 +237,6 @@
     <fieldtype name="custengporterfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
         <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
     </fieldtype>
@@ -255,7 +249,6 @@
     <fieldtype name="custstopfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
       </analyzer>
     </fieldtype>
     <fieldtype name="lengthfilt" class="solr.TextField">
@@ -267,7 +260,6 @@
     <fieldType name="charfilthtmlmap" class="solr.TextField">
       <analyzer>
         <charFilter class="solr.HTMLStripCharFilterFactory"/>
-        <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
         <tokenizer class="solr.MockTokenizerFactory"/>
       </analyzer>
     </fieldType>
@@ -293,14 +285,14 @@
       <analyzer type="index">
           <tokenizer class="solr.MockTokenizerFactory"/>
           <filter class="solr.LowerCaseFilterFactory"/>
-          <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="0" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
+          <filter class="solr.WordDelimiterFilterFactory" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="0" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
           <filter class="solr.StopFilterFactory"/>
           <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
       <analyzer type="query">
           <tokenizer class="solr.MockTokenizerFactory"/>
           <filter class="solr.LowerCaseFilterFactory"/>
-          <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+          <filter class="solr.WordDelimiterFilterFactory" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
           <filter class="solr.StopFilterFactory"/>
           <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
@@ -310,7 +302,7 @@
       <analyzer type="index">
           <tokenizer class="solr.MockTokenizerFactory"/>
           <filter class="solr.LowerCaseFilterFactory"/>
-          <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
+          <filter class="solr.WordDelimiterFilterFactory"  splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
       </analyzer>
       <analyzer type="query">
           <tokenizer class="solr.MockTokenizerFactory"/>
@@ -351,22 +343,9 @@
     <fieldtype name="syn" class="solr.TextField">
       <analyzer>
           <tokenizer class="solr.MockTokenizerFactory"/>
-          <filter name="syn" class="solr.SynonymFilterFactory" synonyms="old_synonyms.txt"/>
       </analyzer>
     </fieldtype>
 
-    <!-- Demonstrates How RemoveDuplicatesTokenFilter makes stemmed
-         synonyms "better"
-      -->
-    <fieldtype name="dedup" class="solr.TextField">
-      <analyzer>
-          <tokenizer class="solr.MockTokenizerFactory"/>
-          <filter class="solr.SynonymFilterFactory"
-                  synonyms="old_synonyms.txt" expand="true" />
-          <filter class="solr.PorterStemFilterFactory"/>
-          <filter class="solr.RemoveDuplicatesTokenFilterFactory" />
-      </analyzer>
-    </fieldtype>
 
     <fieldtype  name="unstored" class="solr.StrField" indexed="true" stored="false"/>
 
@@ -394,29 +373,33 @@
   <!--  some per-field similarity examples -->
   
   <!--  specify a Similarity classname directly -->
+  <!--
   <fieldType name="sim1" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
     <similarity class="org.apache.lucene.misc.SweetSpotSimilarity"/>
   </fieldType>
-
+  -->
   <!--  specify a Similarity factory -->  
+  <!--
   <fieldType name="sim2" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
-    <similarity class="org.apache.solr.schema.CustomSimilarityFactory">
+    <similarity class="org.apache.solr.search.similarities.CustomSimilarityFactory">
       <str name="echo">is there an echo?</str>
     </similarity>
   </fieldType>
-  
+  -->
   <!-- don't specify any sim at all: get the default  -->
+  <!--
   <fieldType name="sim3" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
   </fieldType>
+  -->
  </types>
 
 
@@ -474,10 +457,6 @@
    <field name="test_posofftv" type="text" termVectors="true"
      termPositions="true" termOffsets="true"/>
 
-   <!-- test highlit field settings -->
-   <field name="test_hlt" type="highlittext" indexed="true" compressed="true"/>
-   <field name="test_hlt_off" type="highlittext" indexed="true" compressed="false"/>
-
    <!-- fields to test individual tokenizers and tokenfilters -->
    <field name="teststop" type="teststop" indexed="true" stored="true"/>
    <field name="lowertok" type="lowertok" indexed="true" stored="true"/>
@@ -500,7 +479,6 @@
    <field name="stopfilt" type="stopfilt" indexed="true" stored="true"/>
    <field name="custstopfilt" type="custstopfilt" indexed="true" stored="true"/>
    <field name="lengthfilt" type="lengthfilt" indexed="true" stored="true"/>
-   <field name="dedup" type="dedup" indexed="true" stored="true"/>
    <field name="wdf_nocase" type="wdf_nocase" indexed="true" stored="true"/>
    <field name="wdf_preserve" type="wdf_preserve" indexed="true" stored="true"/>
 
@@ -522,11 +500,15 @@
    <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
    <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
 
+   <!--
    <field name="sim1text" type="sim1" indexed="true" stored="true"/>
    <field name="sim2text" type="sim2" indexed="true" stored="true"/>
    <field name="sim3text" type="sim3" indexed="true" stored="true"/>
-
+   -->
+   
    <field name="tlong" type="tlong" indexed="true" stored="true" />
+   
+   <field name="_version_" type="long" indexed="true" stored="true"/>
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
@@ -604,9 +586,11 @@
    <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true" />
 
    <!-- make sure custom sims work with dynamic fields -->
+   <!--
    <dynamicField name="*_sim1" type="sim1" indexed="true" stored="true"/>
    <dynamicField name="*_sim2" type="sim2" indexed="true" stored="true"/>
    <dynamicField name="*_sim3" type="sim3" indexed="true" stored="true"/>
+   -->
  </fields>
 
  <defaultSearchField>text</defaultSearchField>
@@ -640,8 +624,4 @@
    <!-- dynamic destination -->
    <copyField source="*_dynamic" dest="dynamic_*"/>
 
- <!-- example of a custom similarity -->
- <similarity class="org.apache.solr.schema.CustomSimilarityFactory">
-   <str name="echo">I am your default sim</str>
- </similarity>
 </schema>

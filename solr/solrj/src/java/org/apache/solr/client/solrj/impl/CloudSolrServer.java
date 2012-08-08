@@ -65,10 +65,14 @@ public class CloudSolrServer extends SolrServer {
   
   // since the state shouldn't change often, should be very cheap reads
   private volatile List<String> urlList;
+  
   private volatile List<String> leaderUrlList;
+  private volatile List<String> replicasList;
+  
   private volatile int lastClusterStateHashCode;
   
   private final boolean updatesToLeaders;
+
   
   /**
    * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
@@ -164,9 +168,11 @@ public class CloudSolrServer extends SolrServer {
     
     ClusterState clusterState = zkStateReader.getClusterState();
     boolean sendToLeaders = false;
+    List<String> replicas = null;
     
     if (request instanceof IsUpdateRequest && updatesToLeaders) {
       sendToLeaders = true;
+      replicas = new ArrayList<String>();
     }
 
     SolrParams reqParams = request.getParams();
@@ -211,17 +217,22 @@ public class CloudSolrServer extends SolrServer {
             if (!sendToLeaders || (sendToLeaders && coreNodeProps.isLeader())) {
               String url = coreNodeProps.getCoreUrl();
               urlList.add(url);
+            } else if (sendToLeaders) {
+              String url = coreNodeProps.getCoreUrl();
+              replicas.add(url);
             }
           }
         }
       }
       if (sendToLeaders) {
         this.leaderUrlList = urlList; 
+        this.replicasList = replicas;
       } else {
         this.urlList = urlList;
       }
       this.lastClusterStateHashCode = clusterState.hashCode();
     }
+    
     List<String> theUrlList;
     if (sendToLeaders) {
       theUrlList = new ArrayList<String>(leaderUrlList.size());
@@ -231,7 +242,14 @@ public class CloudSolrServer extends SolrServer {
       theUrlList.addAll(urlList);
     }
     Collections.shuffle(theUrlList, rand);
-    //System.out.println("########################## MAKING REQUEST TO " + urlList);
+    if (replicas != null) {
+      ArrayList<String> theReplicas = new ArrayList<String>(replicasList.size());
+      theReplicas.addAll(replicasList);
+      Collections.shuffle(theReplicas, rand);
+
+      theUrlList.addAll(theReplicas);
+    }
+    //System.out.println("########################## MAKING REQUEST TO " + theUrlList);
  
     LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, theUrlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);
@@ -254,5 +272,17 @@ public class CloudSolrServer extends SolrServer {
 
   public LBHttpSolrServer getLbServer() {
     return lbServer;
+  }
+
+  List<String> getUrlList() {
+    return urlList;
+  }
+
+  List<String> getLeaderUrlList() {
+    return leaderUrlList;
+  }
+
+  List<String> getReplicasList() {
+    return replicasList;
   }
 }
