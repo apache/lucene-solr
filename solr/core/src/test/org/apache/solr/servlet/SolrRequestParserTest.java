@@ -21,6 +21,8 @@ import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 
+import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -114,10 +116,13 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     String url = "http://www.apache.org/dist/lucene/solr/";
     byte[] bytes = null;
     try {
-      URLConnection connection = new URL(url).openConnection();
+      URL u = new URL(url);
+      HttpURLConnection connection = (HttpURLConnection)u.openConnection();
       connection.setConnectTimeout(5000);
       connection.setReadTimeout(5000);
       connection.connect();
+      int code = connection.getResponseCode();
+      assumeTrue("wrong response code from server: " + code, 200 == code);
       bytes = IOUtils.toByteArray( connection.getInputStream());
     }
     catch( Exception ex ) {
@@ -134,8 +139,13 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     List<ContentStream> streams = new ArrayList<ContentStream>();
     SolrQueryRequest req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     assertEquals( 1, streams.size() );
-    assertArrayEquals( bytes, IOUtils.toByteArray( streams.get(0).getStream() ) );
-    req.close();
+    try {
+      assertArrayEquals( bytes, IOUtils.toByteArray( streams.get(0).getStream() ) );
+    } catch (SocketTimeoutException ex) {
+      assumeNoException("Problems retrieving from " + url + " to run the test.", ex);
+    } finally {
+      req.close();
+    }
   }
   
   @Test
