@@ -39,7 +39,7 @@ public class TestForUtil extends LuceneTestCase {
   public void testEncodeDecode() throws IOException {
     final int iterations = RandomInts.randomIntBetween(random(), 1, 1000);
     final float acceptableOverheadRatio = random().nextFloat();
-    final long[] values = new long[iterations * BLOCK_SIZE + ForUtil.MIN_DATA_SIZE];
+    final int[] values = new int[iterations * BLOCK_SIZE + ForUtil.MIN_DATA_SIZE];
     for (int i = 0; i < iterations; ++i) {
       final int bpv = random().nextInt(32);
       if (bpv == 0) {
@@ -81,7 +81,7 @@ public class TestForUtil extends LuceneTestCase {
           forUtil.skipBlock(in);
           continue;
         }
-        final long[] restored = new long[MIN_DATA_SIZE];
+        final int[] restored = new int[MIN_DATA_SIZE];
         forUtil.readBlock(in, new byte[MIN_ENCODED_SIZE], restored);
         assertArrayEquals(Arrays.copyOfRange(values, iterations * BLOCK_SIZE, (iterations + 1) * BLOCK_SIZE),
             Arrays.copyOf(restored, BLOCK_SIZE));

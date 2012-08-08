@@ -298,8 +298,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
   final class BlockDocsEnum extends DocsEnum {
     private final byte[] encoded;
     
-    private final long[] docDeltaBuffer = new long[MIN_DATA_SIZE];
-    private final long[] freqBuffer = new long[MIN_DATA_SIZE];
+    private final int[] docDeltaBuffer = new int[MIN_DATA_SIZE];
+    private final int[] freqBuffer = new int[MIN_DATA_SIZE];
 
     private int docBufferUpto;
 
@@ -544,9 +544,9 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     
     private final byte[] encoded;
 
-    private final long[] docDeltaBuffer = new long[MIN_DATA_SIZE];
-    private final long[] freqBuffer = new long[MIN_DATA_SIZE];
-    private final long[] posDeltaBuffer = new long[MIN_DATA_SIZE];
+    private final int[] docDeltaBuffer = new int[MIN_DATA_SIZE];
+    private final int[] freqBuffer = new int[MIN_DATA_SIZE];
+    private final int[] posDeltaBuffer = new int[MIN_DATA_SIZE];
 
     private int docBufferUpto;
     private int posBufferUpto;
@@ -949,13 +949,13 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     
     private final byte[] encoded;
 
-    private final long[] docDeltaBuffer = new long[MIN_DATA_SIZE];
-    private final long[] freqBuffer = new long[MIN_DATA_SIZE];
-    private final long[] posDeltaBuffer = new long[MIN_DATA_SIZE];
+    private final int[] docDeltaBuffer = new int[MIN_DATA_SIZE];
+    private final int[] freqBuffer = new int[MIN_DATA_SIZE];
+    private final int[] posDeltaBuffer = new int[MIN_DATA_SIZE];
 
-    private final long[] payloadLengthBuffer;
-    private final long[] offsetStartDeltaBuffer;
-    private final long[] offsetLengthBuffer;
+    private final int[] payloadLengthBuffer;
+    private final int[] offsetStartDeltaBuffer;
+    private final int[] offsetLengthBuffer;
 
     private byte[] payloadBytes;
     private int payloadByteUpto;
@@ -1030,8 +1030,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       encoded = new byte[MIN_ENCODED_SIZE];
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (indexHasOffsets) {
-        offsetStartDeltaBuffer = new long[MIN_DATA_SIZE];
-        offsetLengthBuffer = new long[MIN_DATA_SIZE];
+        offsetStartDeltaBuffer = new int[MIN_DATA_SIZE];
+        offsetLengthBuffer = new int[MIN_DATA_SIZE];
       } else {
         offsetStartDeltaBuffer = null;
         offsetLengthBuffer = null;
@@ -1041,7 +1041,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
 
       indexHasPayloads = fieldInfo.hasPayloads();
       if (indexHasPayloads) {
-        payloadLengthBuffer = new long[MIN_DATA_SIZE];
+        payloadLengthBuffer = new int[MIN_DATA_SIZE];
         payloadBytes = new byte[128];
         payload = new BytesRef();
       } else {

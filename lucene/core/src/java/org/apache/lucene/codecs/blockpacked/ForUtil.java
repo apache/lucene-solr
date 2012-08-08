@@ -144,7 +144,7 @@ final class ForUtil {
    * @param out      the destination output
    * @throws IOException
    */
-  void writeBlock(long[] data, byte[] encoded, IndexOutput out) throws IOException {
+  void writeBlock(int[] data, byte[] encoded, IndexOutput out) throws IOException {
     if (isAllEqual(data)) {
       out.writeVInt(ALL_VALUES_EQUAL);
       out.writeInt((int) data[0]);
@@ -173,7 +173,7 @@ final class ForUtil {
    * @param decoded   where to write decoded data
    * @throws IOException
    */
-  void readBlock(IndexInput in, byte[] encoded, long[] decoded) throws IOException {
+  void readBlock(IndexInput in, byte[] encoded, int[] decoded) throws IOException {
     final int numBits = in.readVInt();
     assert numBits <= 32 : numBits;
 
@@ -213,8 +213,8 @@ final class ForUtil {
   /**
    * Read values that have been written using variable-length encoding instead of bit-packing.
    */
-  static void readVIntBlock(IndexInput docIn, long[] docBuffer,
-      long[] freqBuffer, int num, boolean indexHasFreq) throws IOException {
+  static void readVIntBlock(IndexInput docIn, int[] docBuffer,
+      int[] freqBuffer, int num, boolean indexHasFreq) throws IOException {
     if (indexHasFreq) {
       for(int i=0;i<num;i++) {
         final int code = docIn.readVInt();
@@ -233,7 +233,7 @@ final class ForUtil {
   }
 
   // nocommit: we must have a util function for this, hmm?
-  private static boolean isAllEqual(final long[] data) {
+  private static boolean isAllEqual(final int[] data) {
     final long v = data[0];
     for (int i = 1; i < BLOCK_SIZE; ++i) {
       if (data[i] != v) {
@@ -247,7 +247,7 @@ final class ForUtil {
    * Compute the number of bits required to serialize any of the longs in
    * <code>data</code>.
    */
-  private static int bitsRequired(final long[] data) {
+  private static int bitsRequired(final int[] data) {
     long or = 0;
     for (int i = 0; i < BLOCK_SIZE; ++i) {
       or |= data[i];

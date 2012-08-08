@@ -83,14 +83,14 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
   private long posTermStartFP;
   private long payTermStartFP;
 
-  final long[] docDeltaBuffer;
-  final long[] freqBuffer;
+  final int[] docDeltaBuffer;
+  final int[] freqBuffer;
   private int docBufferUpto;
 
-  final long[] posDeltaBuffer;
-  final long[] payloadLengthBuffer;
-  final long[] offsetStartDeltaBuffer;
-  final long[] offsetLengthBuffer;
+  final int[] posDeltaBuffer;
+  final int[] payloadLengthBuffer;
+  final int[] offsetStartDeltaBuffer;
+  final int[] offsetLengthBuffer;
   private int posBufferUpto;
 
   private byte[] payloadBytes;
@@ -125,22 +125,22 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       CodecUtil.writeHeader(docOut, DOC_CODEC, VERSION_CURRENT);
       forUtil = new ForUtil(acceptableOverheadRatio, docOut);
       if (state.fieldInfos.hasProx()) {
-        posDeltaBuffer = new long[MIN_DATA_SIZE];
+        posDeltaBuffer = new int[MIN_DATA_SIZE];
         posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPackedPostingsFormat.POS_EXTENSION),
                                               state.context);
         CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
 
         if (state.fieldInfos.hasPayloads()) {
           payloadBytes = new byte[128];
-          payloadLengthBuffer = new long[MIN_DATA_SIZE];
+          payloadLengthBuffer = new int[MIN_DATA_SIZE];
         } else {
           payloadBytes = null;
           payloadLengthBuffer = null;
         }
 
         if (state.fieldInfos.hasOffsets()) {
-          offsetStartDeltaBuffer = new long[MIN_DATA_SIZE];
-          offsetLengthBuffer = new long[MIN_DATA_SIZE];
+          offsetStartDeltaBuffer = new int[MIN_DATA_SIZE];
+          offsetLengthBuffer = new int[MIN_DATA_SIZE];
         } else {
           offsetStartDeltaBuffer = null;
           offsetLengthBuffer = null;
@@ -167,8 +167,8 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       }
     }
 
-    docDeltaBuffer = new long[MIN_DATA_SIZE];
-    freqBuffer = new long[MIN_DATA_SIZE];
+    docDeltaBuffer = new int[MIN_DATA_SIZE];
+    freqBuffer = new int[MIN_DATA_SIZE];
 
     skipWriter = new BlockPackedSkipWriter(maxSkipLevels,
                                      BlockPackedPostingsFormat.BLOCK_SIZE, 
