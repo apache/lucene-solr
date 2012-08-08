@@ -38,15 +38,13 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * Test sync phase that occurs when Leader goes down and a new Leader is
  * elected.
  */
 @Slow
-@Ignore("ignore while i look into")
-public class SyncSliceTest extends FullSolrCloudTest {
+public class SyncSliceTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass
   public static void beforeSuperClass() {
@@ -88,7 +86,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    waitForThingsToLevelOut();
+    waitForThingsToLevelOut(15);
 
     del("*:*");
     List<String> skipServers = new ArrayList<String>();
@@ -131,7 +129,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
     baseServer.request(request);
     
-    waitForThingsToLevelOut();
+    waitForThingsToLevelOut(15);
     
     checkShardConsistency(false, true);
     
@@ -161,7 +159,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     // to talk to a downed node causes grief
     waitToSeeDownInClusterState(leaderJetty, jetties);
 
-    waitForThingsToLevelOut();
+    waitForThingsToLevelOut(15);
     
     checkShardConsistency(false, true);
     
@@ -182,7 +180,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     // give a moment to be sure it has started recovering
     Thread.sleep(2000);
     
-    waitForThingsToLevelOut();
+    waitForThingsToLevelOut(15);
     waitForRecoveriesToFinish(false);
     
     skipServers = getRandomOtherJetty(leaderJetty, null);
@@ -226,6 +224,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     waitForRecoveriesToFinish(false);
 
     checkShardConsistency(true, true);
+    
   }
 
   private List<String> getRandomJetty() {
@@ -259,34 +258,6 @@ public class SyncSliceTest extends FullSolrCloudTest {
           leaderJetty);
     }
     waitToSeeNotLive(cloudClient.getZkStateReader(), leaderJetty);
-  }
-
-  private void waitForThingsToLevelOut() throws Exception {
-    int cnt = 0;
-    boolean retry = false;
-    do {
-      waitForRecoveriesToFinish(false);
-      
-      commit();
-      
-      updateMappingsFromZk(jettys, clients);
-      
-      Set<String> theShards = shardToJetty.keySet();
-      String failMessage = null;
-      for (String shard : theShards) {
-        failMessage = checkShardConsistency(shard, false);
-      }
-      
-      if (failMessage != null) {
-        retry = true;
-      } else {
-        retry = false;
-      }
-      
-      cnt++;
-      if (cnt > 10) break;
-      Thread.sleep(2000);
-    } while (retry);
   }
   
   protected void indexDoc(List<String> skipServers, Object... fields) throws IOException,

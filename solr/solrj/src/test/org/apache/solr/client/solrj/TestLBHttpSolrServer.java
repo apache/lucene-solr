@@ -237,7 +237,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     }
 
     public String getSchemaFile() {
-      return "solrj/solr/conf/schema-replication1.xml";
+      return "solrj/solr/collection1/conf/schema-replication1.xml";
     }
 
     public String getConfDir() {
@@ -249,7 +249,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     }
 
     public String getSolrConfigFile() {
-      return "solrj/solr/conf/solrconfig-slave1.xml";
+      return "solrj/solr/collection1/conf/solrconfig-slave1.xml";
     }
 
     public void setUp() throws Exception {

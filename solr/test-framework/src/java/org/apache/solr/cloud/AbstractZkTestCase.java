@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -44,6 +43,18 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
 
+  
+  public static File SOLRHOME;
+  static {
+    try {
+      SOLRHOME = new File(TEST_HOME());
+    } catch (RuntimeException e) {
+      log.warn("TEST_HOME() does not exist - solrj test?");
+      // solrj tests not working with TEST_HOME()
+      // must override getSolrHome
+    }
+  }
+  
   protected static ZkTestServer zkServer;
 
   protected static String zkDir;
@@ -51,6 +62,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void azt_beforeClass() throws Exception {
+    System.out.println("azt beforeclass");
     createTempDir();
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
@@ -61,14 +73,19 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("jetty.port", "0000");
     
-    buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(),
+    buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), SOLRHOME,
         "solrconfig.xml", "schema.xml");
     
     initCore("solrconfig.xml", "schema.xml");
   }
 
-  // static to share with distrib test
   static void buildZooKeeper(String zkHost, String zkAddress, String config,
+      String schema) throws Exception {
+    buildZooKeeper(zkHost, zkAddress, SOLRHOME, config, schema);
+  }
+  
+  // static to share with distrib test
+  static void buildZooKeeper(String zkHost, String zkAddress, File solrhome, String config,
       String schema) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
     zkClient.makePath("/solr", false, true);
@@ -85,24 +102,32 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.makePath("/collections/control_collection", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, true);
     zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT, true);
 
-    putConfig(zkClient, config);
-    putConfig(zkClient, schema);
-    putConfig(zkClient, "solrconfig.xml");
-    putConfig(zkClient, "stopwords.txt");
-    putConfig(zkClient, "protwords.txt");
-    putConfig(zkClient, "currency.xml");
-    putConfig(zkClient, "open-exchange-rates.json");
-    putConfig(zkClient, "mapping-ISOLatin1Accent.txt");
-    putConfig(zkClient, "old_synonyms.txt");
-    putConfig(zkClient, "synonyms.txt");
+    putConfig(zkClient, solrhome, config);
+    putConfig(zkClient, solrhome, schema);
+    putConfig(zkClient, solrhome, "solrconfig.xml");
+    putConfig(zkClient, solrhome, "stopwords.txt");
+    putConfig(zkClient, solrhome, "protwords.txt");
+    putConfig(zkClient, solrhome, "currency.xml");
+    putConfig(zkClient, solrhome, "open-exchange-rates.json");
+    putConfig(zkClient, solrhome, "mapping-ISOLatin1Accent.txt");
+    putConfig(zkClient, solrhome, "old_synonyms.txt");
+    putConfig(zkClient, solrhome, "synonyms.txt");
     
     zkClient.close();
   }
 
-  private static void putConfig(SolrZkClient zkClient, final String name)
+  private static void putConfig(SolrZkClient zkClient, File solrhome, final String name)
       throws Exception {
-    zkClient.makePath("/configs/conf1/" + name, getFile("solr" + File.separator + "collection1"
-        + File.separator + "conf" + File.separator + name), false, true);  
+    String path = "/configs/conf1/" + name;
+    File file = new File(solrhome, "collection1"
+        + File.separator + "conf" + File.separator + name);
+    if (!file.exists()) {
+      log.info("skipping " + file.getAbsolutePath() + " because it doesn't exist");
+      return;
+    }
+    
+    log.info("put " + file.getAbsolutePath() + " to " + path);
+    zkClient.makePath(path, file, false, true);  
   }
 
   @Override

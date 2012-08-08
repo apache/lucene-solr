@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -35,7 +36,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearchTestCase {
+public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTestCase {
   
   protected static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
