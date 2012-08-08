@@ -2312,9 +2312,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
         SegmentInfos sis = new SegmentInfos(); // read infos from dir
         sis.read(dir);
-        final Set<String> dsFilesCopied = new HashSet<String>();
-        final Map<String, String> dsNames = new HashMap<String, String>();
-        final Set<String> copiedFiles = new HashSet<String>();
+
         for (SegmentInfoPerCommit info : sis) {
           assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
 
@@ -2327,7 +2325,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
           IOContext context = new IOContext(new MergeInfo(info.info.getDocCount(), info.info.sizeInBytes(), true, -1));
           
-          infos.add(copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied, context, copiedFiles));
+          infos.add(copySegmentAsIs(info, newSegName, context));
         }
       }
 
@@ -2463,25 +2461,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
-  // TODO: this can be substantially simplified now that 3.x support/shared docstores is removed!
-  private SegmentInfoPerCommit copySegmentAsIs(SegmentInfoPerCommit info, String segName,
-                                               Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context,
-                                               Set<String> copiedFiles)
+  private SegmentInfoPerCommit copySegmentAsIs(SegmentInfoPerCommit info, String segName, IOContext context)
       throws IOException {
-    // Determine if the doc store of this segment needs to be copied. It's
-    // only relevant for segments that share doc store with others,
-    // because the DS might have been copied already, in which case we
-    // just want to update the DS name of this SegmentInfo.
-    final String dsName = info.info.name;
-    assert dsName != null;
-    final String newDsName;
-    if (dsNames.containsKey(dsName)) {
-      newDsName = dsNames.get(dsName);
-    } else {
-      dsNames.put(dsName, segName);
-      newDsName = segName;
-    }
-
+    
     // note: we don't really need this fis (its copied), but we load it up
     // so we don't pass a null value to the si writer
     FieldInfos fis = getFieldInfos(info.info);
@@ -2496,7 +2478,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
-    // Same SI as before but we change directory, name and docStoreSegment:
+    // Same SI as before but we change directory and name
     SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(),
                                           info.info.getUseCompoundFile(),
                                           info.info.getCodec(), info.info.getDiagnostics(), attributes);
@@ -2513,16 +2495,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
     newInfo.setFiles(segFiles);
 
-    // We must rewrite the SI file because it references
-    // segment name (its own name, if its 3.x, and doc
-    // store segment name):
+    // We must rewrite the SI file because it references segment name in its list of files, etc
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
-    try {
-      newInfo.getCodec().segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, newInfo, fis, context);
-    } catch (UnsupportedOperationException uoe) {
-      // OK: 3x codec cannot write a new SI file;
-      // SegmentInfos will write this on commit
-    }
+
+    newInfo.getCodec().segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, newInfo, fis, context);
 
     final Collection<String> siFiles = trackingDir.getCreatedFiles();
 
@@ -2537,8 +2513,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists; siFiles=" + siFiles;
-      assert !copiedFiles.contains(file): "file \"" + file + "\" is being copied more than once";
-      copiedFiles.add(file);
+
       info.info.dir.copy(directory, file, newFileName, context);
     }
     
