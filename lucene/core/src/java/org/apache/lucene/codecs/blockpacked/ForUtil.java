@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.blockpacked;
 import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -29,7 +30,12 @@ import org.apache.lucene.util.packed.PackedInts;
  * which is determined by the max value in this block.
  */
 public class ForUtil {
-  
+
+  /**
+   * Special number of bits per value used whenever all values to encode are equal.
+   */
+  private static final int ALL_VALUES_EQUAL = 0;
+
   static final int PACKED_INTS_VERSION = 0; // nocommit: encode in the stream?
   static final PackedInts.Encoder[] ENCODERS = new PackedInts.Encoder[33];
   static final PackedInts.Decoder[] DECODERS = new PackedInts.Decoder[33];
@@ -53,19 +59,23 @@ public class ForUtil {
    * @throws IOException
    */
   static void writeBlock(long[] data, byte[] encoded, IndexOutput out) throws IOException {
+    if (isAllEqual(data)) {
+      out.writeVInt(ALL_VALUES_EQUAL);
+      out.writeInt((int) data[0]);
+      return;
+    }
+
     final int numBits = bitsRequired(data);
     assert numBits > 0 && numBits <= 32 : numBits;
     final PackedInts.Encoder encoder = ENCODERS[numBits];
     final int iters = ITERATIONS[numBits];
     assert iters * encoder.valueCount() == BlockPackedPostingsFormat.BLOCK_SIZE;
-    final int encodedSize = encoder.blockCount() * iters; // number of 64-bits blocks
-    assert encodedSize > 0 && encodedSize <= BLOCK_SIZE / 2 : encodedSize;
+    final int encodedSize = encodedSize(numBits);
 
-    out.writeByte((byte) numBits);
-    out.writeByte((byte) encodedSize);
+    out.writeVInt(numBits);
 
     encoder.encode(data, 0, encoded, 0, iters);
-    out.writeBytes(encoded, encodedSize << 3);
+    out.writeBytes(encoded, encodedSize);
   }
 
   /**
@@ -77,17 +87,22 @@ public class ForUtil {
    * @throws IOException
    */
   static void readBlock(IndexInput in, byte[] encoded, long[] decoded) throws IOException {
-    final int numBits = in.readByte(); // no mask because should be <= 32
-    final int encodedSize = in.readByte(); // no mask because should be <= 64
-    assert numBits > 0 && numBits <= 32 : numBits;
-    assert encodedSize > 0 && encodedSize <= BLOCK_SIZE / 2 : encodedSize; // because blocks are 64-bits and decoded values are 32-bits at most
+    final int numBits = in.readVInt();
+    assert numBits <= 32 : numBits;
 
-    in.readBytes(encoded, 0, encodedSize << 3);
+    if (numBits == ALL_VALUES_EQUAL) {
+      final int value = in.readInt();
+      Arrays.fill(decoded, value);
+      return;
+    }
+
+    final int encodedSize = encodedSize(numBits);
+    in.readBytes(encoded, 0, encodedSize);
 
     final PackedInts.Decoder decoder = DECODERS[numBits];
     final int iters = ITERATIONS[numBits];
     assert iters * decoder.valueCount() == BLOCK_SIZE;
-    assert iters * decoder.blockCount() == encodedSize;
+    assert 8 * iters * decoder.blockCount() == encodedSize;
 
     decoder.decode(encoded, 0, decoded, 0, iters);
   }
@@ -99,18 +114,17 @@ public class ForUtil {
    * @throws IOException
    */
   static void skipBlock(IndexInput in) throws IOException {
-    // see readBlock for comments
-    final int numBits = in.readByte();
-    final int encodedSize = in.readByte();
+    final int numBits = in.readVInt();
     assert numBits > 0 && numBits <= 32 : numBits;
-    assert encodedSize > 0 && encodedSize <= BLOCK_SIZE / 2 : encodedSize;
-    in.seek(in.getFilePointer() + (encodedSize << 3));
+    final int encodedSize = encodedSize(numBits);
+    in.seek(in.getFilePointer() + encodedSize);
   }
 
   /**
    * Read values that have been written using variable-length encoding instead of bit-packing.
    */
-  static void readVIntBlock(IndexInput docIn, long[] docBuffer, long[] freqBuffer, int num, boolean indexHasFreq) throws IOException {
+  static void readVIntBlock(IndexInput docIn, long[] docBuffer,
+      long[] freqBuffer, int num, boolean indexHasFreq) throws IOException {
     if (indexHasFreq) {
       for(int i=0;i<num;i++) {
         final int code = docIn.readVInt();
@@ -128,8 +142,20 @@ public class ForUtil {
     }
   }
 
+  // nocommit: we must have a util function for this, hmm?
+  private static boolean isAllEqual(final long[] data) {
+    final long v = data[0];
+    for (int i = 1; i < data.length; ++i) {
+      if (data[i] != v) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
-   * Compute the number of bits required to serialize any of the longs in <code>data</code>.
+   * Compute the number of bits required to serialize any of the longs in
+   * <code>data</code>.
    */
   private static int bitsRequired(final long[] data) {
     long or = 0;
@@ -137,6 +163,14 @@ public class ForUtil {
       or |= data[i];
     }
     return PackedInts.bitsRequired(or);
+  }
+
+  /**
+   * Compute the number of bytes required to encode a block of values that require
+   * <code>bitsPerValue</code> bits per value.
+   */
+  private static int encodedSize(int bitsPerValue) {
+    return (BLOCK_SIZE * bitsPerValue) >>> 3;
   }
 
 }
