@@ -81,7 +81,7 @@ def genDecompress():
     w('    Arrays.fill(output, compressedBuffer.get());\n')
     w('  }\n')
 
-    for numFrameBits in xrange(1, 33):
+    for numFrameBits in xrange(1, 32):
       w('  public static void decode%d(final IntBuffer compressedBuffer, final int[] output) {\n' % numFrameBits)
       w('    final int numFrameBits = %d;\n' % numFrameBits)
       w('    final int mask = (int) ((1L<<numFrameBits) - 1);\n')
