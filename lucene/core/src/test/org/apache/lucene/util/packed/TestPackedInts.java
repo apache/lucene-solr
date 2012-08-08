@@ -667,12 +667,27 @@ public class TestPackedInts extends LuceneTestCase {
         for (long value : values) {
           assertTrue(value <= PackedInts.maxValue(bpv));
         }
+        // test decoding to int[]
+        final int[] intValues;
+        if (bpv <= 32) {
+          intValues = new int[values.length];
+          decoder.decode(blocks, blocksOffset, intValues, valuesOffset, iterations);
+          assertTrue(equals(intValues, values));
+        } else {
+          intValues = null;
+        }
 
         // 3. re-encode
         final long[] blocks2 = new long[blocksOffset2 + blocksLen];
         encoder.encode(values, valuesOffset, blocks2, blocksOffset2, iterations);
         assertArrayEquals(msg, Arrays.copyOfRange(blocks, blocksOffset, blocks.length),
             Arrays.copyOfRange(blocks2, blocksOffset2, blocks2.length));
+        // test encoding from int[]
+        if (bpv <= 32) {
+          final long[] blocks3 = new long[blocks2.length];
+          encoder.encode(intValues, valuesOffset, blocks3, blocksOffset2, iterations);
+          assertArrayEquals(msg, blocks2, blocks3);
+        }
 
         // 4. byte[] decoding
         final byte[] byteBlocks = new byte[8 * blocks.length];
@@ -683,13 +698,37 @@ public class TestPackedInts extends LuceneTestCase {
           assertTrue(msg, value <= PackedInts.maxValue(bpv));
         }
         assertArrayEquals(msg, values, values2);
+        // test decoding to int[]
+        if (bpv <= 32) {
+          final int[] intValues2 = new int[values2.length];
+          decoder.decode(byteBlocks, blocksOffset * 8, intValues2, valuesOffset, iterations);
+          assertTrue(msg, equals(intValues2, values2));
+        }
 
         // 5. byte[] encoding
         final byte[] blocks3 = new byte[8 * (blocksOffset2 + blocksLen)];
         encoder.encode(values, valuesOffset, blocks3, 8 * blocksOffset2, iterations);
         assertEquals(msg, LongBuffer.wrap(blocks2), ByteBuffer.wrap(blocks3).asLongBuffer());
+        // test encoding from int[]
+        if (bpv <= 32) {
+          final byte[] blocks4 = new byte[blocks3.length];
+          encoder.encode(intValues, valuesOffset, blocks4, 8 * blocksOffset2, iterations);
+          assertArrayEquals(msg, blocks3, blocks4);
+        }
       }
     }
+  }
+
+  private static boolean equals(int[] ints, long[] longs) {
+    if (ints.length != longs.length) {
+      return false;
+    }
+    for (int i = 0; i < ints.length; ++i) {
+      if ((ints[i] & 0xFFFFFFFFL) != longs[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
 }

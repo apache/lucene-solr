@@ -282,6 +282,32 @@ public class PackedInts {
      */
     void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations);
 
+    /**
+     * Read <code>iterations * blockCount()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * valueCount()</code> values into
+     * <code>values</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start reading blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start writing values
+     * @param iterations   controls how much data to decode
+     */
+    void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations);
+
+    /**
+     * Read <code>8 * iterations * blockCount()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * valueCount()</code> values into
+     * <code>values</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start reading blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start writing values
+     * @param iterations   controls how much data to decode
+     */
+    void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations);
+
   }
 
   /**
@@ -325,6 +351,32 @@ public class PackedInts {
      * @param iterations   controls how much data to encode
      */
     void encode(long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations);
+
+    /**
+     * Read <code>iterations * valueCount()</code> values from <code>values</code>,
+     * encode them and write <code>iterations * blockCount()</code> blocks into
+     * <code>blocks</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start writing blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start reading values
+     * @param iterations   controls how much data to encode
+     */
+    void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations);
+
+    /**
+     * Read <code>iterations * valueCount()</code> values from <code>values</code>,
+     * encode them and write <code>8 * iterations * blockCount()</code> blocks into
+     * <code>blocks</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start writing blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start reading values
+     * @param iterations   controls how much data to encode
+     */
+    void encode(int[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations);
 
   }
 

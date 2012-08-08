@@ -53,20 +53,38 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
 FOOTER="""
 
-  private static long[] toLongArray(byte[] bytes, int offset, int length) {
-    final int longsLen = length >>> 3;
-    LongBuffer longs = LongBuffer.allocate(longsLen);
-    longs.put(ByteBuffer.wrap(bytes, offset, length).asLongBuffer());
-    return longs.array();
+  private static long[] toLongArray(int[] ints, int offset, int length) {
+    long[] arr = new long[length];
+    for (int i = 0; i < length; ++i) {
+      arr[i] = ints[offset + i];
+    }
+    return arr;
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
-    decode(toLongArray(blocks, blocksOffset, 8 * iterations * blockCount()), 0, values, valuesOffset, iterations);
+  public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+    encode(toLongArray(values, valuesOffset, iterations * valueCount()), 0, blocks, blocksOffset, iterations);
   }
 
   @Override
   public void encode(long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
+    final long[] longBLocks = new long[blockCount() * iterations];
+    encode(values, valuesOffset, longBLocks, 0, iterations);
+    ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer().put(longBLocks);
+  }
+
+  @Override
+  public void encode(int[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
     final long[] longBLocks = new long[blockCount() * iterations];
     encode(values, valuesOffset, longBLocks, 0, iterations);
     ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer().put(longBLocks);
@@ -139,9 +157,9 @@ def packed64singleblock(bpv, f):
   f.write("    public int valueCount() {\n")
   f.write("      return %d;\n" %values)
   f.write("    }\n\n")
-  #p64sb_decode(bpv, 32)
+  p64sb_decode(bpv, 32)
   p64sb_decode(bpv, 64)
-  #p64sb_encode(bpv, 32)
+  p64sb_encode(bpv, 32)
   p64sb_encode(bpv, 64)
   f.write("  }")
 
@@ -178,7 +196,7 @@ def p64sb_decode(bpv, bits):
   f.write("      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;\n")
   f.write("      assert valuesOffset + iterations * valueCount() <= values.length;\n")
   f.write("      for (int i = 0; i < iterations; ++i) {\n")
-  if bpv >= 32:
+  if bpv >= 32 and bits > 32:
     for i in xrange(7, -1, -1):
       f.write("        final long byte%d = blocks[blocksOffset++] & 0xFF;\n" %i)
   else:
@@ -222,6 +240,10 @@ def p64sb_encode(bpv, bits):
   typ = get_type(bits)
   mask_start, mask_end = masks(bits)
   f.write("    public void encode(%s[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {\n" %typ)
+  if bits < bpv:
+    f.write("      throw new UnsupportedOperationException();\n")
+    f.write("    }\n\n")
+    return
   f.write("      assert blocksOffset + iterations * blockCount() <= blocks.length;\n")
   f.write("      assert valuesOffset + iterations * valueCount() <= values.length;\n")
   f.write("      for (int i = 0; i < iterations; ++i) {\n")
@@ -258,6 +280,10 @@ def packed64(bpv, f):
       System.arraycopy(blocks, blocksOffset, values, valuesOffset, valueCount() * iterations);
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      LongBuffer.wrap(values, valuesOffset, iterations * valueCount()).put(ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer());
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       System.arraycopy(values, valuesOffset, blocks, blocksOffset, valueCount() * iterations);
     }
@@ -265,9 +291,9 @@ def packed64(bpv, f):
   }
 """)
   else:
-    #p64_decode(bpv, 32, values)
+    p64_decode(bpv, 32, values)
     p64_decode(bpv, 64, values)
-    #p64_encode(bpv, 32, values)
+    p64_encode(bpv, 32, values)
     p64_encode(bpv, 64, values)
     f.write("  }\n")
 

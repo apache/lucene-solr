@@ -36,6 +36,157 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       return 64;
     }
 
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 63);
+        values[valuesOffset++] = (int) ((block0 >>> 62) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 61) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 60) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 59) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 58) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 57) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 56) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 55) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 54) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 53) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 52) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 51) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 50) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 49) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 48) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 47) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 46) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 45) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 44) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 43) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 42) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 41) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 40) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 39) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 38) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 37) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 36) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 35) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 34) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 33) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 32) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 31) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 30) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 29) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 28) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 27) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 26) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 25) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 24) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 23) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 22) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 21) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 20) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 19) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 18) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 17) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 16) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 15) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 14) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 13) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 12) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 11) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 10) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 9) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 8) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 7) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 6) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 5) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 3) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 2) & 1L);
+        values[valuesOffset++] = (int) ((block0 >>> 1) & 1L);
+        values[valuesOffset++] = (int) (block0 & 1L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 >>> 7;
+        values[valuesOffset++] = (byte0 >>> 6) & 1;
+        values[valuesOffset++] = (byte0 >>> 5) & 1;
+        values[valuesOffset++] = (byte0 >>> 4) & 1;
+        values[valuesOffset++] = (byte0 >>> 3) & 1;
+        values[valuesOffset++] = (byte0 >>> 2) & 1;
+        values[valuesOffset++] = (byte0 >>> 1) & 1;
+        values[valuesOffset++] = byte0 & 1;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte1 >>> 7;
+        values[valuesOffset++] = (byte1 >>> 6) & 1;
+        values[valuesOffset++] = (byte1 >>> 5) & 1;
+        values[valuesOffset++] = (byte1 >>> 4) & 1;
+        values[valuesOffset++] = (byte1 >>> 3) & 1;
+        values[valuesOffset++] = (byte1 >>> 2) & 1;
+        values[valuesOffset++] = (byte1 >>> 1) & 1;
+        values[valuesOffset++] = byte1 & 1;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte2 >>> 7;
+        values[valuesOffset++] = (byte2 >>> 6) & 1;
+        values[valuesOffset++] = (byte2 >>> 5) & 1;
+        values[valuesOffset++] = (byte2 >>> 4) & 1;
+        values[valuesOffset++] = (byte2 >>> 3) & 1;
+        values[valuesOffset++] = (byte2 >>> 2) & 1;
+        values[valuesOffset++] = (byte2 >>> 1) & 1;
+        values[valuesOffset++] = byte2 & 1;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte3 >>> 7;
+        values[valuesOffset++] = (byte3 >>> 6) & 1;
+        values[valuesOffset++] = (byte3 >>> 5) & 1;
+        values[valuesOffset++] = (byte3 >>> 4) & 1;
+        values[valuesOffset++] = (byte3 >>> 3) & 1;
+        values[valuesOffset++] = (byte3 >>> 2) & 1;
+        values[valuesOffset++] = (byte3 >>> 1) & 1;
+        values[valuesOffset++] = byte3 & 1;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte4 >>> 7;
+        values[valuesOffset++] = (byte4 >>> 6) & 1;
+        values[valuesOffset++] = (byte4 >>> 5) & 1;
+        values[valuesOffset++] = (byte4 >>> 4) & 1;
+        values[valuesOffset++] = (byte4 >>> 3) & 1;
+        values[valuesOffset++] = (byte4 >>> 2) & 1;
+        values[valuesOffset++] = (byte4 >>> 1) & 1;
+        values[valuesOffset++] = byte4 & 1;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte5 >>> 7;
+        values[valuesOffset++] = (byte5 >>> 6) & 1;
+        values[valuesOffset++] = (byte5 >>> 5) & 1;
+        values[valuesOffset++] = (byte5 >>> 4) & 1;
+        values[valuesOffset++] = (byte5 >>> 3) & 1;
+        values[valuesOffset++] = (byte5 >>> 2) & 1;
+        values[valuesOffset++] = (byte5 >>> 1) & 1;
+        values[valuesOffset++] = byte5 & 1;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte6 >>> 7;
+        values[valuesOffset++] = (byte6 >>> 6) & 1;
+        values[valuesOffset++] = (byte6 >>> 5) & 1;
+        values[valuesOffset++] = (byte6 >>> 4) & 1;
+        values[valuesOffset++] = (byte6 >>> 3) & 1;
+        values[valuesOffset++] = (byte6 >>> 2) & 1;
+        values[valuesOffset++] = (byte6 >>> 1) & 1;
+        values[valuesOffset++] = byte6 & 1;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte7 >>> 7;
+        values[valuesOffset++] = (byte7 >>> 6) & 1;
+        values[valuesOffset++] = (byte7 >>> 5) & 1;
+        values[valuesOffset++] = (byte7 >>> 4) & 1;
+        values[valuesOffset++] = (byte7 >>> 3) & 1;
+        values[valuesOffset++] = (byte7 >>> 2) & 1;
+        values[valuesOffset++] = (byte7 >>> 1) & 1;
+        values[valuesOffset++] = byte7 & 1;
+      }
+    }
+
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -187,6 +338,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset++] & 0xffffffffL) << 1) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -205,6 +364,93 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 62);
+        values[valuesOffset++] = (int) ((block0 >>> 60) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 58) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 56) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 54) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 52) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 50) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 48) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 46) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 44) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 42) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 40) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 38) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 36) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 34) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 32) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 30) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 28) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 26) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 24) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 22) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 20) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 18) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 16) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 14) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 12) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 10) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 8) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 6) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 3L);
+        values[valuesOffset++] = (int) ((block0 >>> 2) & 3L);
+        values[valuesOffset++] = (int) (block0 & 3L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 >>> 6;
+        values[valuesOffset++] = (byte0 >>> 4) & 3;
+        values[valuesOffset++] = (byte0 >>> 2) & 3;
+        values[valuesOffset++] = byte0 & 3;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte1 >>> 6;
+        values[valuesOffset++] = (byte1 >>> 4) & 3;
+        values[valuesOffset++] = (byte1 >>> 2) & 3;
+        values[valuesOffset++] = byte1 & 3;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte2 >>> 6;
+        values[valuesOffset++] = (byte2 >>> 4) & 3;
+        values[valuesOffset++] = (byte2 >>> 2) & 3;
+        values[valuesOffset++] = byte2 & 3;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte3 >>> 6;
+        values[valuesOffset++] = (byte3 >>> 4) & 3;
+        values[valuesOffset++] = (byte3 >>> 2) & 3;
+        values[valuesOffset++] = byte3 & 3;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte4 >>> 6;
+        values[valuesOffset++] = (byte4 >>> 4) & 3;
+        values[valuesOffset++] = (byte4 >>> 2) & 3;
+        values[valuesOffset++] = byte4 & 3;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte5 >>> 6;
+        values[valuesOffset++] = (byte5 >>> 4) & 3;
+        values[valuesOffset++] = (byte5 >>> 2) & 3;
+        values[valuesOffset++] = byte5 & 3;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte6 >>> 6;
+        values[valuesOffset++] = (byte6 >>> 4) & 3;
+        values[valuesOffset++] = (byte6 >>> 2) & 3;
+        values[valuesOffset++] = byte6 & 3;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte7 >>> 6;
+        values[valuesOffset++] = (byte7 >>> 4) & 3;
+        values[valuesOffset++] = (byte7 >>> 2) & 3;
+        values[valuesOffset++] = byte7 & 3;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -294,6 +540,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset++] & 0xffffffffL) << 2) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -312,6 +566,175 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 61);
+        values[valuesOffset++] = (int) ((block0 >>> 58) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 55) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 52) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 49) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 46) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 43) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 40) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 37) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 34) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 31) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 28) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 25) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 22) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 19) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 16) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 13) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 10) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 7) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 7L);
+        values[valuesOffset++] = (int) ((block0 >>> 1) & 7L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 1L) << 2) | (block1 >>> 62));
+        values[valuesOffset++] = (int) ((block1 >>> 59) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 56) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 53) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 50) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 47) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 44) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 41) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 38) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 35) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 32) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 29) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 26) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 23) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 20) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 17) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 14) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 11) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 8) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 5) & 7L);
+        values[valuesOffset++] = (int) ((block1 >>> 2) & 7L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 3L) << 1) | (block2 >>> 63));
+        values[valuesOffset++] = (int) ((block2 >>> 60) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 57) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 54) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 51) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 48) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 45) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 42) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 39) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 36) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 33) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 30) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 27) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 24) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 21) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 18) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 15) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 9) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 6) & 7L);
+        values[valuesOffset++] = (int) ((block2 >>> 3) & 7L);
+        values[valuesOffset++] = (int) (block2 & 7L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 >>> 5;
+        values[valuesOffset++] = (byte0 >>> 2) & 7;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte0 & 3) << 1) | (byte1 >>> 7);
+        values[valuesOffset++] = (byte1 >>> 4) & 7;
+        values[valuesOffset++] = (byte1 >>> 1) & 7;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 1) << 2) | (byte2 >>> 6);
+        values[valuesOffset++] = (byte2 >>> 3) & 7;
+        values[valuesOffset++] = byte2 & 7;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte3 >>> 5;
+        values[valuesOffset++] = (byte3 >>> 2) & 7;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 3) << 1) | (byte4 >>> 7);
+        values[valuesOffset++] = (byte4 >>> 4) & 7;
+        values[valuesOffset++] = (byte4 >>> 1) & 7;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 1) << 2) | (byte5 >>> 6);
+        values[valuesOffset++] = (byte5 >>> 3) & 7;
+        values[valuesOffset++] = byte5 & 7;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte6 >>> 5;
+        values[valuesOffset++] = (byte6 >>> 2) & 7;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 3) << 1) | (byte7 >>> 7);
+        values[valuesOffset++] = (byte7 >>> 4) & 7;
+        values[valuesOffset++] = (byte7 >>> 1) & 7;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 1) << 2) | (byte8 >>> 6);
+        values[valuesOffset++] = (byte8 >>> 3) & 7;
+        values[valuesOffset++] = byte8 & 7;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte9 >>> 5;
+        values[valuesOffset++] = (byte9 >>> 2) & 7;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte9 & 3) << 1) | (byte10 >>> 7);
+        values[valuesOffset++] = (byte10 >>> 4) & 7;
+        values[valuesOffset++] = (byte10 >>> 1) & 7;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 1) << 2) | (byte11 >>> 6);
+        values[valuesOffset++] = (byte11 >>> 3) & 7;
+        values[valuesOffset++] = byte11 & 7;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte12 >>> 5;
+        values[valuesOffset++] = (byte12 >>> 2) & 7;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 3) << 1) | (byte13 >>> 7);
+        values[valuesOffset++] = (byte13 >>> 4) & 7;
+        values[valuesOffset++] = (byte13 >>> 1) & 7;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 1) << 2) | (byte14 >>> 6);
+        values[valuesOffset++] = (byte14 >>> 3) & 7;
+        values[valuesOffset++] = byte14 & 7;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte15 >>> 5;
+        values[valuesOffset++] = (byte15 >>> 2) & 7;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 3) << 1) | (byte16 >>> 7);
+        values[valuesOffset++] = (byte16 >>> 4) & 7;
+        values[valuesOffset++] = (byte16 >>> 1) & 7;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 1) << 2) | (byte17 >>> 6);
+        values[valuesOffset++] = (byte17 >>> 3) & 7;
+        values[valuesOffset++] = byte17 & 7;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte18 >>> 5;
+        values[valuesOffset++] = (byte18 >>> 2) & 7;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 3) << 1) | (byte19 >>> 7);
+        values[valuesOffset++] = (byte19 >>> 4) & 7;
+        values[valuesOffset++] = (byte19 >>> 1) & 7;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 1) << 2) | (byte20 >>> 6);
+        values[valuesOffset++] = (byte20 >>> 3) & 7;
+        values[valuesOffset++] = byte20 & 7;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte21 >>> 5;
+        values[valuesOffset++] = (byte21 >>> 2) & 7;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 3) << 1) | (byte22 >>> 7);
+        values[valuesOffset++] = (byte22 >>> 4) & 7;
+        values[valuesOffset++] = (byte22 >>> 1) & 7;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 1) << 2) | (byte23 >>> 6);
+        values[valuesOffset++] = (byte23 >>> 3) & 7;
+        values[valuesOffset++] = byte23 & 7;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -483,6 +906,16 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 3) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -503,6 +936,61 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 16;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 60);
+        values[valuesOffset++] = (int) ((block0 >>> 56) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 52) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 48) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 44) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 40) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 36) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 32) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 28) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 24) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 20) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 16) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 12) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 8) & 15L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 15L);
+        values[valuesOffset++] = (int) (block0 & 15L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 >>> 4;
+        values[valuesOffset++] = byte0 & 15;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte1 >>> 4;
+        values[valuesOffset++] = byte1 & 15;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte2 >>> 4;
+        values[valuesOffset++] = byte2 & 15;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte3 >>> 4;
+        values[valuesOffset++] = byte3 & 15;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte4 >>> 4;
+        values[valuesOffset++] = byte4 & 15;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte5 >>> 4;
+        values[valuesOffset++] = byte5 & 15;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte6 >>> 4;
+        values[valuesOffset++] = byte6 & 15;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte7 >>> 4;
+        values[valuesOffset++] = byte7 & 15;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -560,6 +1048,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 4) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -578,6 +1074,193 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 59);
+        values[valuesOffset++] = (int) ((block0 >>> 54) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 49) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 44) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 39) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 34) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 29) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 24) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 19) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 14) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 9) & 31L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 31L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 15L) << 1) | (block1 >>> 63));
+        values[valuesOffset++] = (int) ((block1 >>> 58) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 53) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 48) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 43) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 38) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 33) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 28) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 23) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 18) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 13) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 8) & 31L);
+        values[valuesOffset++] = (int) ((block1 >>> 3) & 31L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 7L) << 2) | (block2 >>> 62));
+        values[valuesOffset++] = (int) ((block2 >>> 57) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 52) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 47) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 42) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 37) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 32) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 27) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 22) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 17) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 7) & 31L);
+        values[valuesOffset++] = (int) ((block2 >>> 2) & 31L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 3L) << 3) | (block3 >>> 61));
+        values[valuesOffset++] = (int) ((block3 >>> 56) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 51) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 46) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 41) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 36) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 31) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 26) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 21) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 16) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 11) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 6) & 31L);
+        values[valuesOffset++] = (int) ((block3 >>> 1) & 31L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 1L) << 4) | (block4 >>> 60));
+        values[valuesOffset++] = (int) ((block4 >>> 55) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 50) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 45) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 40) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 35) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 30) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 25) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 20) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 15) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 10) & 31L);
+        values[valuesOffset++] = (int) ((block4 >>> 5) & 31L);
+        values[valuesOffset++] = (int) (block4 & 31L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 >>> 3;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte0 & 7) << 2) | (byte1 >>> 6);
+        values[valuesOffset++] = (byte1 >>> 1) & 31;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 1) << 4) | (byte2 >>> 4);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 15) << 1) | (byte3 >>> 7);
+        values[valuesOffset++] = (byte3 >>> 2) & 31;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 3) << 3) | (byte4 >>> 5);
+        values[valuesOffset++] = byte4 & 31;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte5 >>> 3;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte5 & 7) << 2) | (byte6 >>> 6);
+        values[valuesOffset++] = (byte6 >>> 1) & 31;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 1) << 4) | (byte7 >>> 4);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 15) << 1) | (byte8 >>> 7);
+        values[valuesOffset++] = (byte8 >>> 2) & 31;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte8 & 3) << 3) | (byte9 >>> 5);
+        values[valuesOffset++] = byte9 & 31;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte10 >>> 3;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 7) << 2) | (byte11 >>> 6);
+        values[valuesOffset++] = (byte11 >>> 1) & 31;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 1) << 4) | (byte12 >>> 4);
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 15) << 1) | (byte13 >>> 7);
+        values[valuesOffset++] = (byte13 >>> 2) & 31;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 3) << 3) | (byte14 >>> 5);
+        values[valuesOffset++] = byte14 & 31;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte15 >>> 3;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 7) << 2) | (byte16 >>> 6);
+        values[valuesOffset++] = (byte16 >>> 1) & 31;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 1) << 4) | (byte17 >>> 4);
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte17 & 15) << 1) | (byte18 >>> 7);
+        values[valuesOffset++] = (byte18 >>> 2) & 31;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 3) << 3) | (byte19 >>> 5);
+        values[valuesOffset++] = byte19 & 31;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte20 >>> 3;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte20 & 7) << 2) | (byte21 >>> 6);
+        values[valuesOffset++] = (byte21 >>> 1) & 31;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 1) << 4) | (byte22 >>> 4);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 15) << 1) | (byte23 >>> 7);
+        values[valuesOffset++] = (byte23 >>> 2) & 31;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 3) << 3) | (byte24 >>> 5);
+        values[valuesOffset++] = byte24 & 31;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte25 >>> 3;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte25 & 7) << 2) | (byte26 >>> 6);
+        values[valuesOffset++] = (byte26 >>> 1) & 31;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte26 & 1) << 4) | (byte27 >>> 4);
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte27 & 15) << 1) | (byte28 >>> 7);
+        values[valuesOffset++] = (byte28 >>> 2) & 31;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 3) << 3) | (byte29 >>> 5);
+        values[valuesOffset++] = byte29 & 31;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte30 >>> 3;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte30 & 7) << 2) | (byte31 >>> 6);
+        values[valuesOffset++] = (byte31 >>> 1) & 31;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 1) << 4) | (byte32 >>> 4);
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte32 & 15) << 1) | (byte33 >>> 7);
+        values[valuesOffset++] = (byte33 >>> 2) & 31;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 3) << 3) | (byte34 >>> 5);
+        values[valuesOffset++] = byte34 & 31;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte35 >>> 3;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte35 & 7) << 2) | (byte36 >>> 6);
+        values[valuesOffset++] = (byte36 >>> 1) & 31;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte36 & 1) << 4) | (byte37 >>> 4);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 15) << 1) | (byte38 >>> 7);
+        values[valuesOffset++] = (byte38 >>> 2) & 31;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 3) << 3) | (byte39 >>> 5);
+        values[valuesOffset++] = byte39 & 31;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -767,6 +1450,18 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 5) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -789,6 +1484,111 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 58);
+        values[valuesOffset++] = (int) ((block0 >>> 52) & 63L);
+        values[valuesOffset++] = (int) ((block0 >>> 46) & 63L);
+        values[valuesOffset++] = (int) ((block0 >>> 40) & 63L);
+        values[valuesOffset++] = (int) ((block0 >>> 34) & 63L);
+        values[valuesOffset++] = (int) ((block0 >>> 28) & 63L);
+        values[valuesOffset++] = (int) ((block0 >>> 22) & 63L);
+        values[valuesOffset++] = (int) ((block0 >>> 16) & 63L);
+        values[valuesOffset++] = (int) ((block0 >>> 10) & 63L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 63L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 15L) << 2) | (block1 >>> 62));
+        values[valuesOffset++] = (int) ((block1 >>> 56) & 63L);
+        values[valuesOffset++] = (int) ((block1 >>> 50) & 63L);
+        values[valuesOffset++] = (int) ((block1 >>> 44) & 63L);
+        values[valuesOffset++] = (int) ((block1 >>> 38) & 63L);
+        values[valuesOffset++] = (int) ((block1 >>> 32) & 63L);
+        values[valuesOffset++] = (int) ((block1 >>> 26) & 63L);
+        values[valuesOffset++] = (int) ((block1 >>> 20) & 63L);
+        values[valuesOffset++] = (int) ((block1 >>> 14) & 63L);
+        values[valuesOffset++] = (int) ((block1 >>> 8) & 63L);
+        values[valuesOffset++] = (int) ((block1 >>> 2) & 63L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 3L) << 4) | (block2 >>> 60));
+        values[valuesOffset++] = (int) ((block2 >>> 54) & 63L);
+        values[valuesOffset++] = (int) ((block2 >>> 48) & 63L);
+        values[valuesOffset++] = (int) ((block2 >>> 42) & 63L);
+        values[valuesOffset++] = (int) ((block2 >>> 36) & 63L);
+        values[valuesOffset++] = (int) ((block2 >>> 30) & 63L);
+        values[valuesOffset++] = (int) ((block2 >>> 24) & 63L);
+        values[valuesOffset++] = (int) ((block2 >>> 18) & 63L);
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 63L);
+        values[valuesOffset++] = (int) ((block2 >>> 6) & 63L);
+        values[valuesOffset++] = (int) (block2 & 63L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 >>> 2;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte0 & 3) << 4) | (byte1 >>> 4);
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 15) << 2) | (byte2 >>> 6);
+        values[valuesOffset++] = byte2 & 63;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte3 >>> 2;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 3) << 4) | (byte4 >>> 4);
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 15) << 2) | (byte5 >>> 6);
+        values[valuesOffset++] = byte5 & 63;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte6 >>> 2;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 3) << 4) | (byte7 >>> 4);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 15) << 2) | (byte8 >>> 6);
+        values[valuesOffset++] = byte8 & 63;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte9 >>> 2;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte9 & 3) << 4) | (byte10 >>> 4);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 15) << 2) | (byte11 >>> 6);
+        values[valuesOffset++] = byte11 & 63;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte12 >>> 2;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 3) << 4) | (byte13 >>> 4);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 15) << 2) | (byte14 >>> 6);
+        values[valuesOffset++] = byte14 & 63;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte15 >>> 2;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 3) << 4) | (byte16 >>> 4);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 15) << 2) | (byte17 >>> 6);
+        values[valuesOffset++] = byte17 & 63;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte18 >>> 2;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 3) << 4) | (byte19 >>> 4);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 15) << 2) | (byte20 >>> 6);
+        values[valuesOffset++] = byte20 & 63;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte21 >>> 2;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 3) << 4) | (byte22 >>> 4);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 15) << 2) | (byte23 >>> 6);
+        values[valuesOffset++] = byte23 & 63;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -896,6 +1696,16 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 6) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -916,6 +1726,211 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 57);
+        values[valuesOffset++] = (int) ((block0 >>> 50) & 127L);
+        values[valuesOffset++] = (int) ((block0 >>> 43) & 127L);
+        values[valuesOffset++] = (int) ((block0 >>> 36) & 127L);
+        values[valuesOffset++] = (int) ((block0 >>> 29) & 127L);
+        values[valuesOffset++] = (int) ((block0 >>> 22) & 127L);
+        values[valuesOffset++] = (int) ((block0 >>> 15) & 127L);
+        values[valuesOffset++] = (int) ((block0 >>> 8) & 127L);
+        values[valuesOffset++] = (int) ((block0 >>> 1) & 127L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 1L) << 6) | (block1 >>> 58));
+        values[valuesOffset++] = (int) ((block1 >>> 51) & 127L);
+        values[valuesOffset++] = (int) ((block1 >>> 44) & 127L);
+        values[valuesOffset++] = (int) ((block1 >>> 37) & 127L);
+        values[valuesOffset++] = (int) ((block1 >>> 30) & 127L);
+        values[valuesOffset++] = (int) ((block1 >>> 23) & 127L);
+        values[valuesOffset++] = (int) ((block1 >>> 16) & 127L);
+        values[valuesOffset++] = (int) ((block1 >>> 9) & 127L);
+        values[valuesOffset++] = (int) ((block1 >>> 2) & 127L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 3L) << 5) | (block2 >>> 59));
+        values[valuesOffset++] = (int) ((block2 >>> 52) & 127L);
+        values[valuesOffset++] = (int) ((block2 >>> 45) & 127L);
+        values[valuesOffset++] = (int) ((block2 >>> 38) & 127L);
+        values[valuesOffset++] = (int) ((block2 >>> 31) & 127L);
+        values[valuesOffset++] = (int) ((block2 >>> 24) & 127L);
+        values[valuesOffset++] = (int) ((block2 >>> 17) & 127L);
+        values[valuesOffset++] = (int) ((block2 >>> 10) & 127L);
+        values[valuesOffset++] = (int) ((block2 >>> 3) & 127L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 7L) << 4) | (block3 >>> 60));
+        values[valuesOffset++] = (int) ((block3 >>> 53) & 127L);
+        values[valuesOffset++] = (int) ((block3 >>> 46) & 127L);
+        values[valuesOffset++] = (int) ((block3 >>> 39) & 127L);
+        values[valuesOffset++] = (int) ((block3 >>> 32) & 127L);
+        values[valuesOffset++] = (int) ((block3 >>> 25) & 127L);
+        values[valuesOffset++] = (int) ((block3 >>> 18) & 127L);
+        values[valuesOffset++] = (int) ((block3 >>> 11) & 127L);
+        values[valuesOffset++] = (int) ((block3 >>> 4) & 127L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 15L) << 3) | (block4 >>> 61));
+        values[valuesOffset++] = (int) ((block4 >>> 54) & 127L);
+        values[valuesOffset++] = (int) ((block4 >>> 47) & 127L);
+        values[valuesOffset++] = (int) ((block4 >>> 40) & 127L);
+        values[valuesOffset++] = (int) ((block4 >>> 33) & 127L);
+        values[valuesOffset++] = (int) ((block4 >>> 26) & 127L);
+        values[valuesOffset++] = (int) ((block4 >>> 19) & 127L);
+        values[valuesOffset++] = (int) ((block4 >>> 12) & 127L);
+        values[valuesOffset++] = (int) ((block4 >>> 5) & 127L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 31L) << 2) | (block5 >>> 62));
+        values[valuesOffset++] = (int) ((block5 >>> 55) & 127L);
+        values[valuesOffset++] = (int) ((block5 >>> 48) & 127L);
+        values[valuesOffset++] = (int) ((block5 >>> 41) & 127L);
+        values[valuesOffset++] = (int) ((block5 >>> 34) & 127L);
+        values[valuesOffset++] = (int) ((block5 >>> 27) & 127L);
+        values[valuesOffset++] = (int) ((block5 >>> 20) & 127L);
+        values[valuesOffset++] = (int) ((block5 >>> 13) & 127L);
+        values[valuesOffset++] = (int) ((block5 >>> 6) & 127L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 63L) << 1) | (block6 >>> 63));
+        values[valuesOffset++] = (int) ((block6 >>> 56) & 127L);
+        values[valuesOffset++] = (int) ((block6 >>> 49) & 127L);
+        values[valuesOffset++] = (int) ((block6 >>> 42) & 127L);
+        values[valuesOffset++] = (int) ((block6 >>> 35) & 127L);
+        values[valuesOffset++] = (int) ((block6 >>> 28) & 127L);
+        values[valuesOffset++] = (int) ((block6 >>> 21) & 127L);
+        values[valuesOffset++] = (int) ((block6 >>> 14) & 127L);
+        values[valuesOffset++] = (int) ((block6 >>> 7) & 127L);
+        values[valuesOffset++] = (int) (block6 & 127L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 >>> 1;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte0 & 1) << 6) | (byte1 >>> 2);
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 3) << 5) | (byte2 >>> 3);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 7) << 4) | (byte3 >>> 4);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 15) << 3) | (byte4 >>> 5);
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 31) << 2) | (byte5 >>> 6);
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte5 & 63) << 1) | (byte6 >>> 7);
+        values[valuesOffset++] = byte6 & 127;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte7 >>> 1;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 1) << 6) | (byte8 >>> 2);
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte8 & 3) << 5) | (byte9 >>> 3);
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte9 & 7) << 4) | (byte10 >>> 4);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 15) << 3) | (byte11 >>> 5);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 31) << 2) | (byte12 >>> 6);
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 63) << 1) | (byte13 >>> 7);
+        values[valuesOffset++] = byte13 & 127;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte14 >>> 1;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte14 & 1) << 6) | (byte15 >>> 2);
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 3) << 5) | (byte16 >>> 3);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 7) << 4) | (byte17 >>> 4);
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte17 & 15) << 3) | (byte18 >>> 5);
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 31) << 2) | (byte19 >>> 6);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 63) << 1) | (byte20 >>> 7);
+        values[valuesOffset++] = byte20 & 127;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte21 >>> 1;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 1) << 6) | (byte22 >>> 2);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 3) << 5) | (byte23 >>> 3);
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 7) << 4) | (byte24 >>> 4);
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte24 & 15) << 3) | (byte25 >>> 5);
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte25 & 31) << 2) | (byte26 >>> 6);
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte26 & 63) << 1) | (byte27 >>> 7);
+        values[valuesOffset++] = byte27 & 127;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte28 >>> 1;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 1) << 6) | (byte29 >>> 2);
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte29 & 3) << 5) | (byte30 >>> 3);
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte30 & 7) << 4) | (byte31 >>> 4);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 15) << 3) | (byte32 >>> 5);
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte32 & 31) << 2) | (byte33 >>> 6);
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 63) << 1) | (byte34 >>> 7);
+        values[valuesOffset++] = byte34 & 127;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte35 >>> 1;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte35 & 1) << 6) | (byte36 >>> 2);
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte36 & 3) << 5) | (byte37 >>> 3);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 7) << 4) | (byte38 >>> 4);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 15) << 3) | (byte39 >>> 5);
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte39 & 31) << 2) | (byte40 >>> 6);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 63) << 1) | (byte41 >>> 7);
+        values[valuesOffset++] = byte41 & 127;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte42 >>> 1;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte42 & 1) << 6) | (byte43 >>> 2);
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte43 & 3) << 5) | (byte44 >>> 3);
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte44 & 7) << 4) | (byte45 >>> 4);
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte45 & 15) << 3) | (byte46 >>> 5);
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte46 & 31) << 2) | (byte47 >>> 6);
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte47 & 63) << 1) | (byte48 >>> 7);
+        values[valuesOffset++] = byte48 & 127;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte49 >>> 1;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte49 & 1) << 6) | (byte50 >>> 2);
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte50 & 3) << 5) | (byte51 >>> 3);
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte51 & 7) << 4) | (byte52 >>> 4);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 15) << 3) | (byte53 >>> 5);
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte53 & 31) << 2) | (byte54 >>> 6);
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte54 & 63) << 1) | (byte55 >>> 7);
+        values[valuesOffset++] = byte55 & 127;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -1123,6 +2138,20 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 7) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -1147,6 +2176,45 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 8;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 56);
+        values[valuesOffset++] = (int) ((block0 >>> 48) & 255L);
+        values[valuesOffset++] = (int) ((block0 >>> 40) & 255L);
+        values[valuesOffset++] = (int) ((block0 >>> 32) & 255L);
+        values[valuesOffset++] = (int) ((block0 >>> 24) & 255L);
+        values[valuesOffset++] = (int) ((block0 >>> 16) & 255L);
+        values[valuesOffset++] = (int) ((block0 >>> 8) & 255L);
+        values[valuesOffset++] = (int) (block0 & 255L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte1;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte2;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte3;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte4;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte5;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte6;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte7;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -1188,6 +2256,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 8) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -1206,6 +2282,229 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 55);
+        values[valuesOffset++] = (int) ((block0 >>> 46) & 511L);
+        values[valuesOffset++] = (int) ((block0 >>> 37) & 511L);
+        values[valuesOffset++] = (int) ((block0 >>> 28) & 511L);
+        values[valuesOffset++] = (int) ((block0 >>> 19) & 511L);
+        values[valuesOffset++] = (int) ((block0 >>> 10) & 511L);
+        values[valuesOffset++] = (int) ((block0 >>> 1) & 511L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 1L) << 8) | (block1 >>> 56));
+        values[valuesOffset++] = (int) ((block1 >>> 47) & 511L);
+        values[valuesOffset++] = (int) ((block1 >>> 38) & 511L);
+        values[valuesOffset++] = (int) ((block1 >>> 29) & 511L);
+        values[valuesOffset++] = (int) ((block1 >>> 20) & 511L);
+        values[valuesOffset++] = (int) ((block1 >>> 11) & 511L);
+        values[valuesOffset++] = (int) ((block1 >>> 2) & 511L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 3L) << 7) | (block2 >>> 57));
+        values[valuesOffset++] = (int) ((block2 >>> 48) & 511L);
+        values[valuesOffset++] = (int) ((block2 >>> 39) & 511L);
+        values[valuesOffset++] = (int) ((block2 >>> 30) & 511L);
+        values[valuesOffset++] = (int) ((block2 >>> 21) & 511L);
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 511L);
+        values[valuesOffset++] = (int) ((block2 >>> 3) & 511L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 7L) << 6) | (block3 >>> 58));
+        values[valuesOffset++] = (int) ((block3 >>> 49) & 511L);
+        values[valuesOffset++] = (int) ((block3 >>> 40) & 511L);
+        values[valuesOffset++] = (int) ((block3 >>> 31) & 511L);
+        values[valuesOffset++] = (int) ((block3 >>> 22) & 511L);
+        values[valuesOffset++] = (int) ((block3 >>> 13) & 511L);
+        values[valuesOffset++] = (int) ((block3 >>> 4) & 511L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 15L) << 5) | (block4 >>> 59));
+        values[valuesOffset++] = (int) ((block4 >>> 50) & 511L);
+        values[valuesOffset++] = (int) ((block4 >>> 41) & 511L);
+        values[valuesOffset++] = (int) ((block4 >>> 32) & 511L);
+        values[valuesOffset++] = (int) ((block4 >>> 23) & 511L);
+        values[valuesOffset++] = (int) ((block4 >>> 14) & 511L);
+        values[valuesOffset++] = (int) ((block4 >>> 5) & 511L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 31L) << 4) | (block5 >>> 60));
+        values[valuesOffset++] = (int) ((block5 >>> 51) & 511L);
+        values[valuesOffset++] = (int) ((block5 >>> 42) & 511L);
+        values[valuesOffset++] = (int) ((block5 >>> 33) & 511L);
+        values[valuesOffset++] = (int) ((block5 >>> 24) & 511L);
+        values[valuesOffset++] = (int) ((block5 >>> 15) & 511L);
+        values[valuesOffset++] = (int) ((block5 >>> 6) & 511L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 63L) << 3) | (block6 >>> 61));
+        values[valuesOffset++] = (int) ((block6 >>> 52) & 511L);
+        values[valuesOffset++] = (int) ((block6 >>> 43) & 511L);
+        values[valuesOffset++] = (int) ((block6 >>> 34) & 511L);
+        values[valuesOffset++] = (int) ((block6 >>> 25) & 511L);
+        values[valuesOffset++] = (int) ((block6 >>> 16) & 511L);
+        values[valuesOffset++] = (int) ((block6 >>> 7) & 511L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 127L) << 2) | (block7 >>> 62));
+        values[valuesOffset++] = (int) ((block7 >>> 53) & 511L);
+        values[valuesOffset++] = (int) ((block7 >>> 44) & 511L);
+        values[valuesOffset++] = (int) ((block7 >>> 35) & 511L);
+        values[valuesOffset++] = (int) ((block7 >>> 26) & 511L);
+        values[valuesOffset++] = (int) ((block7 >>> 17) & 511L);
+        values[valuesOffset++] = (int) ((block7 >>> 8) & 511L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 255L) << 1) | (block8 >>> 63));
+        values[valuesOffset++] = (int) ((block8 >>> 54) & 511L);
+        values[valuesOffset++] = (int) ((block8 >>> 45) & 511L);
+        values[valuesOffset++] = (int) ((block8 >>> 36) & 511L);
+        values[valuesOffset++] = (int) ((block8 >>> 27) & 511L);
+        values[valuesOffset++] = (int) ((block8 >>> 18) & 511L);
+        values[valuesOffset++] = (int) ((block8 >>> 9) & 511L);
+        values[valuesOffset++] = (int) (block8 & 511L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 1) | (byte1 >>> 7);
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 127) << 2) | (byte2 >>> 6);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 63) << 3) | (byte3 >>> 5);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 31) << 4) | (byte4 >>> 4);
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 15) << 5) | (byte5 >>> 3);
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte5 & 7) << 6) | (byte6 >>> 2);
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 3) << 7) | (byte7 >>> 1);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 1) << 8) | byte8;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte9 << 1) | (byte10 >>> 7);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 127) << 2) | (byte11 >>> 6);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 63) << 3) | (byte12 >>> 5);
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 31) << 4) | (byte13 >>> 4);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 15) << 5) | (byte14 >>> 3);
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte14 & 7) << 6) | (byte15 >>> 2);
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 3) << 7) | (byte16 >>> 1);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 1) << 8) | byte17;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte18 << 1) | (byte19 >>> 7);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 127) << 2) | (byte20 >>> 6);
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte20 & 63) << 3) | (byte21 >>> 5);
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 31) << 4) | (byte22 >>> 4);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 15) << 5) | (byte23 >>> 3);
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 7) << 6) | (byte24 >>> 2);
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte24 & 3) << 7) | (byte25 >>> 1);
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte25 & 1) << 8) | byte26;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte27 << 1) | (byte28 >>> 7);
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 127) << 2) | (byte29 >>> 6);
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte29 & 63) << 3) | (byte30 >>> 5);
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte30 & 31) << 4) | (byte31 >>> 4);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 15) << 5) | (byte32 >>> 3);
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte32 & 7) << 6) | (byte33 >>> 2);
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 3) << 7) | (byte34 >>> 1);
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte34 & 1) << 8) | byte35;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte36 << 1) | (byte37 >>> 7);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 127) << 2) | (byte38 >>> 6);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 63) << 3) | (byte39 >>> 5);
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte39 & 31) << 4) | (byte40 >>> 4);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 15) << 5) | (byte41 >>> 3);
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte41 & 7) << 6) | (byte42 >>> 2);
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte42 & 3) << 7) | (byte43 >>> 1);
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte43 & 1) << 8) | byte44;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte45 << 1) | (byte46 >>> 7);
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte46 & 127) << 2) | (byte47 >>> 6);
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte47 & 63) << 3) | (byte48 >>> 5);
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte48 & 31) << 4) | (byte49 >>> 4);
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte49 & 15) << 5) | (byte50 >>> 3);
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte50 & 7) << 6) | (byte51 >>> 2);
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte51 & 3) << 7) | (byte52 >>> 1);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 1) << 8) | byte53;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte54 << 1) | (byte55 >>> 7);
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte55 & 127) << 2) | (byte56 >>> 6);
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte56 & 63) << 3) | (byte57 >>> 5);
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte57 & 31) << 4) | (byte58 >>> 4);
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte58 & 15) << 5) | (byte59 >>> 3);
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte59 & 7) << 6) | (byte60 >>> 2);
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte60 & 3) << 7) | (byte61 >>> 1);
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte61 & 1) << 8) | byte62;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte63 << 1) | (byte64 >>> 7);
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte64 & 127) << 2) | (byte65 >>> 6);
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte65 & 63) << 3) | (byte66 >>> 5);
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte66 & 31) << 4) | (byte67 >>> 4);
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte67 & 15) << 5) | (byte68 >>> 3);
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte68 & 7) << 6) | (byte69 >>> 2);
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte69 & 3) << 7) | (byte70 >>> 1);
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte70 & 1) << 8) | byte71;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -1431,6 +2730,22 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 9) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -1457,6 +2772,129 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 54);
+        values[valuesOffset++] = (int) ((block0 >>> 44) & 1023L);
+        values[valuesOffset++] = (int) ((block0 >>> 34) & 1023L);
+        values[valuesOffset++] = (int) ((block0 >>> 24) & 1023L);
+        values[valuesOffset++] = (int) ((block0 >>> 14) & 1023L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 1023L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 15L) << 6) | (block1 >>> 58));
+        values[valuesOffset++] = (int) ((block1 >>> 48) & 1023L);
+        values[valuesOffset++] = (int) ((block1 >>> 38) & 1023L);
+        values[valuesOffset++] = (int) ((block1 >>> 28) & 1023L);
+        values[valuesOffset++] = (int) ((block1 >>> 18) & 1023L);
+        values[valuesOffset++] = (int) ((block1 >>> 8) & 1023L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 255L) << 2) | (block2 >>> 62));
+        values[valuesOffset++] = (int) ((block2 >>> 52) & 1023L);
+        values[valuesOffset++] = (int) ((block2 >>> 42) & 1023L);
+        values[valuesOffset++] = (int) ((block2 >>> 32) & 1023L);
+        values[valuesOffset++] = (int) ((block2 >>> 22) & 1023L);
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 1023L);
+        values[valuesOffset++] = (int) ((block2 >>> 2) & 1023L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 3L) << 8) | (block3 >>> 56));
+        values[valuesOffset++] = (int) ((block3 >>> 46) & 1023L);
+        values[valuesOffset++] = (int) ((block3 >>> 36) & 1023L);
+        values[valuesOffset++] = (int) ((block3 >>> 26) & 1023L);
+        values[valuesOffset++] = (int) ((block3 >>> 16) & 1023L);
+        values[valuesOffset++] = (int) ((block3 >>> 6) & 1023L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 63L) << 4) | (block4 >>> 60));
+        values[valuesOffset++] = (int) ((block4 >>> 50) & 1023L);
+        values[valuesOffset++] = (int) ((block4 >>> 40) & 1023L);
+        values[valuesOffset++] = (int) ((block4 >>> 30) & 1023L);
+        values[valuesOffset++] = (int) ((block4 >>> 20) & 1023L);
+        values[valuesOffset++] = (int) ((block4 >>> 10) & 1023L);
+        values[valuesOffset++] = (int) (block4 & 1023L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 2) | (byte1 >>> 6);
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 63) << 4) | (byte2 >>> 4);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 15) << 6) | (byte3 >>> 2);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 3) << 8) | byte4;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte5 << 2) | (byte6 >>> 6);
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 63) << 4) | (byte7 >>> 4);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 15) << 6) | (byte8 >>> 2);
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte8 & 3) << 8) | byte9;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte10 << 2) | (byte11 >>> 6);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 63) << 4) | (byte12 >>> 4);
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 15) << 6) | (byte13 >>> 2);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 3) << 8) | byte14;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte15 << 2) | (byte16 >>> 6);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 63) << 4) | (byte17 >>> 4);
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte17 & 15) << 6) | (byte18 >>> 2);
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 3) << 8) | byte19;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte20 << 2) | (byte21 >>> 6);
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 63) << 4) | (byte22 >>> 4);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 15) << 6) | (byte23 >>> 2);
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 3) << 8) | byte24;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte25 << 2) | (byte26 >>> 6);
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte26 & 63) << 4) | (byte27 >>> 4);
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte27 & 15) << 6) | (byte28 >>> 2);
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 3) << 8) | byte29;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte30 << 2) | (byte31 >>> 6);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 63) << 4) | (byte32 >>> 4);
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte32 & 15) << 6) | (byte33 >>> 2);
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 3) << 8) | byte34;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte35 << 2) | (byte36 >>> 6);
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte36 & 63) << 4) | (byte37 >>> 4);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 15) << 6) | (byte38 >>> 2);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 3) << 8) | byte39;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -1582,6 +3020,18 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 10) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -1604,6 +3054,247 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 53);
+        values[valuesOffset++] = (int) ((block0 >>> 42) & 2047L);
+        values[valuesOffset++] = (int) ((block0 >>> 31) & 2047L);
+        values[valuesOffset++] = (int) ((block0 >>> 20) & 2047L);
+        values[valuesOffset++] = (int) ((block0 >>> 9) & 2047L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 511L) << 2) | (block1 >>> 62));
+        values[valuesOffset++] = (int) ((block1 >>> 51) & 2047L);
+        values[valuesOffset++] = (int) ((block1 >>> 40) & 2047L);
+        values[valuesOffset++] = (int) ((block1 >>> 29) & 2047L);
+        values[valuesOffset++] = (int) ((block1 >>> 18) & 2047L);
+        values[valuesOffset++] = (int) ((block1 >>> 7) & 2047L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 127L) << 4) | (block2 >>> 60));
+        values[valuesOffset++] = (int) ((block2 >>> 49) & 2047L);
+        values[valuesOffset++] = (int) ((block2 >>> 38) & 2047L);
+        values[valuesOffset++] = (int) ((block2 >>> 27) & 2047L);
+        values[valuesOffset++] = (int) ((block2 >>> 16) & 2047L);
+        values[valuesOffset++] = (int) ((block2 >>> 5) & 2047L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 31L) << 6) | (block3 >>> 58));
+        values[valuesOffset++] = (int) ((block3 >>> 47) & 2047L);
+        values[valuesOffset++] = (int) ((block3 >>> 36) & 2047L);
+        values[valuesOffset++] = (int) ((block3 >>> 25) & 2047L);
+        values[valuesOffset++] = (int) ((block3 >>> 14) & 2047L);
+        values[valuesOffset++] = (int) ((block3 >>> 3) & 2047L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 7L) << 8) | (block4 >>> 56));
+        values[valuesOffset++] = (int) ((block4 >>> 45) & 2047L);
+        values[valuesOffset++] = (int) ((block4 >>> 34) & 2047L);
+        values[valuesOffset++] = (int) ((block4 >>> 23) & 2047L);
+        values[valuesOffset++] = (int) ((block4 >>> 12) & 2047L);
+        values[valuesOffset++] = (int) ((block4 >>> 1) & 2047L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 1L) << 10) | (block5 >>> 54));
+        values[valuesOffset++] = (int) ((block5 >>> 43) & 2047L);
+        values[valuesOffset++] = (int) ((block5 >>> 32) & 2047L);
+        values[valuesOffset++] = (int) ((block5 >>> 21) & 2047L);
+        values[valuesOffset++] = (int) ((block5 >>> 10) & 2047L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 1023L) << 1) | (block6 >>> 63));
+        values[valuesOffset++] = (int) ((block6 >>> 52) & 2047L);
+        values[valuesOffset++] = (int) ((block6 >>> 41) & 2047L);
+        values[valuesOffset++] = (int) ((block6 >>> 30) & 2047L);
+        values[valuesOffset++] = (int) ((block6 >>> 19) & 2047L);
+        values[valuesOffset++] = (int) ((block6 >>> 8) & 2047L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 255L) << 3) | (block7 >>> 61));
+        values[valuesOffset++] = (int) ((block7 >>> 50) & 2047L);
+        values[valuesOffset++] = (int) ((block7 >>> 39) & 2047L);
+        values[valuesOffset++] = (int) ((block7 >>> 28) & 2047L);
+        values[valuesOffset++] = (int) ((block7 >>> 17) & 2047L);
+        values[valuesOffset++] = (int) ((block7 >>> 6) & 2047L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 63L) << 5) | (block8 >>> 59));
+        values[valuesOffset++] = (int) ((block8 >>> 48) & 2047L);
+        values[valuesOffset++] = (int) ((block8 >>> 37) & 2047L);
+        values[valuesOffset++] = (int) ((block8 >>> 26) & 2047L);
+        values[valuesOffset++] = (int) ((block8 >>> 15) & 2047L);
+        values[valuesOffset++] = (int) ((block8 >>> 4) & 2047L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 15L) << 7) | (block9 >>> 57));
+        values[valuesOffset++] = (int) ((block9 >>> 46) & 2047L);
+        values[valuesOffset++] = (int) ((block9 >>> 35) & 2047L);
+        values[valuesOffset++] = (int) ((block9 >>> 24) & 2047L);
+        values[valuesOffset++] = (int) ((block9 >>> 13) & 2047L);
+        values[valuesOffset++] = (int) ((block9 >>> 2) & 2047L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 3L) << 9) | (block10 >>> 55));
+        values[valuesOffset++] = (int) ((block10 >>> 44) & 2047L);
+        values[valuesOffset++] = (int) ((block10 >>> 33) & 2047L);
+        values[valuesOffset++] = (int) ((block10 >>> 22) & 2047L);
+        values[valuesOffset++] = (int) ((block10 >>> 11) & 2047L);
+        values[valuesOffset++] = (int) (block10 & 2047L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 3) | (byte1 >>> 5);
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 31) << 6) | (byte2 >>> 2);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 3) << 9) | (byte3 << 1) | (byte4 >>> 7);
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 127) << 4) | (byte5 >>> 4);
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte5 & 15) << 7) | (byte6 >>> 1);
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 1) << 10) | (byte7 << 2) | (byte8 >>> 6);
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte8 & 63) << 5) | (byte9 >>> 3);
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte9 & 7) << 8) | byte10;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte11 << 3) | (byte12 >>> 5);
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 31) << 6) | (byte13 >>> 2);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 3) << 9) | (byte14 << 1) | (byte15 >>> 7);
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 127) << 4) | (byte16 >>> 4);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 15) << 7) | (byte17 >>> 1);
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte17 & 1) << 10) | (byte18 << 2) | (byte19 >>> 6);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 63) << 5) | (byte20 >>> 3);
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte20 & 7) << 8) | byte21;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte22 << 3) | (byte23 >>> 5);
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 31) << 6) | (byte24 >>> 2);
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte24 & 3) << 9) | (byte25 << 1) | (byte26 >>> 7);
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte26 & 127) << 4) | (byte27 >>> 4);
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte27 & 15) << 7) | (byte28 >>> 1);
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 1) << 10) | (byte29 << 2) | (byte30 >>> 6);
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte30 & 63) << 5) | (byte31 >>> 3);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 7) << 8) | byte32;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte33 << 3) | (byte34 >>> 5);
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte34 & 31) << 6) | (byte35 >>> 2);
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte35 & 3) << 9) | (byte36 << 1) | (byte37 >>> 7);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 127) << 4) | (byte38 >>> 4);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 15) << 7) | (byte39 >>> 1);
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte39 & 1) << 10) | (byte40 << 2) | (byte41 >>> 6);
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte41 & 63) << 5) | (byte42 >>> 3);
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte42 & 7) << 8) | byte43;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte44 << 3) | (byte45 >>> 5);
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte45 & 31) << 6) | (byte46 >>> 2);
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte46 & 3) << 9) | (byte47 << 1) | (byte48 >>> 7);
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte48 & 127) << 4) | (byte49 >>> 4);
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte49 & 15) << 7) | (byte50 >>> 1);
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte50 & 1) << 10) | (byte51 << 2) | (byte52 >>> 6);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 63) << 5) | (byte53 >>> 3);
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte53 & 7) << 8) | byte54;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte55 << 3) | (byte56 >>> 5);
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte56 & 31) << 6) | (byte57 >>> 2);
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte57 & 3) << 9) | (byte58 << 1) | (byte59 >>> 7);
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte59 & 127) << 4) | (byte60 >>> 4);
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte60 & 15) << 7) | (byte61 >>> 1);
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte61 & 1) << 10) | (byte62 << 2) | (byte63 >>> 6);
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte63 & 63) << 5) | (byte64 >>> 3);
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte64 & 7) << 8) | byte65;
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte66 << 3) | (byte67 >>> 5);
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte67 & 31) << 6) | (byte68 >>> 2);
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte68 & 3) << 9) | (byte69 << 1) | (byte70 >>> 7);
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte70 & 127) << 4) | (byte71 >>> 4);
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte71 & 15) << 7) | (byte72 >>> 1);
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte72 & 1) << 10) | (byte73 << 2) | (byte74 >>> 6);
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte74 & 63) << 5) | (byte75 >>> 3);
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte75 & 7) << 8) | byte76;
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte77 << 3) | (byte78 >>> 5);
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte78 & 31) << 6) | (byte79 >>> 2);
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte79 & 3) << 9) | (byte80 << 1) | (byte81 >>> 7);
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte81 & 127) << 4) | (byte82 >>> 4);
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte82 & 15) << 7) | (byte83 >>> 1);
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte83 & 1) << 10) | (byte84 << 2) | (byte85 >>> 6);
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte85 & 63) << 5) | (byte86 >>> 3);
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte86 & 7) << 8) | byte87;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -1847,6 +3538,24 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 11) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -1875,6 +3584,79 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 16;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 52);
+        values[valuesOffset++] = (int) ((block0 >>> 40) & 4095L);
+        values[valuesOffset++] = (int) ((block0 >>> 28) & 4095L);
+        values[valuesOffset++] = (int) ((block0 >>> 16) & 4095L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 4095L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 15L) << 8) | (block1 >>> 56));
+        values[valuesOffset++] = (int) ((block1 >>> 44) & 4095L);
+        values[valuesOffset++] = (int) ((block1 >>> 32) & 4095L);
+        values[valuesOffset++] = (int) ((block1 >>> 20) & 4095L);
+        values[valuesOffset++] = (int) ((block1 >>> 8) & 4095L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 255L) << 4) | (block2 >>> 60));
+        values[valuesOffset++] = (int) ((block2 >>> 48) & 4095L);
+        values[valuesOffset++] = (int) ((block2 >>> 36) & 4095L);
+        values[valuesOffset++] = (int) ((block2 >>> 24) & 4095L);
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 4095L);
+        values[valuesOffset++] = (int) (block2 & 4095L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 4) | (byte1 >>> 4);
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 15) << 8) | byte2;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte3 << 4) | (byte4 >>> 4);
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 15) << 8) | byte5;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte6 << 4) | (byte7 >>> 4);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 15) << 8) | byte8;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte9 << 4) | (byte10 >>> 4);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 15) << 8) | byte11;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte12 << 4) | (byte13 >>> 4);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 15) << 8) | byte14;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte15 << 4) | (byte16 >>> 4);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 15) << 8) | byte17;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte18 << 4) | (byte19 >>> 4);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 15) << 8) | byte20;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte21 << 4) | (byte22 >>> 4);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 15) << 8) | byte23;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -1950,6 +3732,16 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 12) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -1970,6 +3762,265 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 51);
+        values[valuesOffset++] = (int) ((block0 >>> 38) & 8191L);
+        values[valuesOffset++] = (int) ((block0 >>> 25) & 8191L);
+        values[valuesOffset++] = (int) ((block0 >>> 12) & 8191L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 4095L) << 1) | (block1 >>> 63));
+        values[valuesOffset++] = (int) ((block1 >>> 50) & 8191L);
+        values[valuesOffset++] = (int) ((block1 >>> 37) & 8191L);
+        values[valuesOffset++] = (int) ((block1 >>> 24) & 8191L);
+        values[valuesOffset++] = (int) ((block1 >>> 11) & 8191L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 2047L) << 2) | (block2 >>> 62));
+        values[valuesOffset++] = (int) ((block2 >>> 49) & 8191L);
+        values[valuesOffset++] = (int) ((block2 >>> 36) & 8191L);
+        values[valuesOffset++] = (int) ((block2 >>> 23) & 8191L);
+        values[valuesOffset++] = (int) ((block2 >>> 10) & 8191L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 1023L) << 3) | (block3 >>> 61));
+        values[valuesOffset++] = (int) ((block3 >>> 48) & 8191L);
+        values[valuesOffset++] = (int) ((block3 >>> 35) & 8191L);
+        values[valuesOffset++] = (int) ((block3 >>> 22) & 8191L);
+        values[valuesOffset++] = (int) ((block3 >>> 9) & 8191L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 511L) << 4) | (block4 >>> 60));
+        values[valuesOffset++] = (int) ((block4 >>> 47) & 8191L);
+        values[valuesOffset++] = (int) ((block4 >>> 34) & 8191L);
+        values[valuesOffset++] = (int) ((block4 >>> 21) & 8191L);
+        values[valuesOffset++] = (int) ((block4 >>> 8) & 8191L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 255L) << 5) | (block5 >>> 59));
+        values[valuesOffset++] = (int) ((block5 >>> 46) & 8191L);
+        values[valuesOffset++] = (int) ((block5 >>> 33) & 8191L);
+        values[valuesOffset++] = (int) ((block5 >>> 20) & 8191L);
+        values[valuesOffset++] = (int) ((block5 >>> 7) & 8191L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 127L) << 6) | (block6 >>> 58));
+        values[valuesOffset++] = (int) ((block6 >>> 45) & 8191L);
+        values[valuesOffset++] = (int) ((block6 >>> 32) & 8191L);
+        values[valuesOffset++] = (int) ((block6 >>> 19) & 8191L);
+        values[valuesOffset++] = (int) ((block6 >>> 6) & 8191L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 63L) << 7) | (block7 >>> 57));
+        values[valuesOffset++] = (int) ((block7 >>> 44) & 8191L);
+        values[valuesOffset++] = (int) ((block7 >>> 31) & 8191L);
+        values[valuesOffset++] = (int) ((block7 >>> 18) & 8191L);
+        values[valuesOffset++] = (int) ((block7 >>> 5) & 8191L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 31L) << 8) | (block8 >>> 56));
+        values[valuesOffset++] = (int) ((block8 >>> 43) & 8191L);
+        values[valuesOffset++] = (int) ((block8 >>> 30) & 8191L);
+        values[valuesOffset++] = (int) ((block8 >>> 17) & 8191L);
+        values[valuesOffset++] = (int) ((block8 >>> 4) & 8191L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 15L) << 9) | (block9 >>> 55));
+        values[valuesOffset++] = (int) ((block9 >>> 42) & 8191L);
+        values[valuesOffset++] = (int) ((block9 >>> 29) & 8191L);
+        values[valuesOffset++] = (int) ((block9 >>> 16) & 8191L);
+        values[valuesOffset++] = (int) ((block9 >>> 3) & 8191L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 7L) << 10) | (block10 >>> 54));
+        values[valuesOffset++] = (int) ((block10 >>> 41) & 8191L);
+        values[valuesOffset++] = (int) ((block10 >>> 28) & 8191L);
+        values[valuesOffset++] = (int) ((block10 >>> 15) & 8191L);
+        values[valuesOffset++] = (int) ((block10 >>> 2) & 8191L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 3L) << 11) | (block11 >>> 53));
+        values[valuesOffset++] = (int) ((block11 >>> 40) & 8191L);
+        values[valuesOffset++] = (int) ((block11 >>> 27) & 8191L);
+        values[valuesOffset++] = (int) ((block11 >>> 14) & 8191L);
+        values[valuesOffset++] = (int) ((block11 >>> 1) & 8191L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 1L) << 12) | (block12 >>> 52));
+        values[valuesOffset++] = (int) ((block12 >>> 39) & 8191L);
+        values[valuesOffset++] = (int) ((block12 >>> 26) & 8191L);
+        values[valuesOffset++] = (int) ((block12 >>> 13) & 8191L);
+        values[valuesOffset++] = (int) (block12 & 8191L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 5) | (byte1 >>> 3);
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 7) << 10) | (byte2 << 2) | (byte3 >>> 6);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 63) << 7) | (byte4 >>> 1);
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 1) << 12) | (byte5 << 4) | (byte6 >>> 4);
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 15) << 9) | (byte7 << 1) | (byte8 >>> 7);
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte8 & 127) << 6) | (byte9 >>> 2);
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte9 & 3) << 11) | (byte10 << 3) | (byte11 >>> 5);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 31) << 8) | byte12;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte13 << 5) | (byte14 >>> 3);
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte14 & 7) << 10) | (byte15 << 2) | (byte16 >>> 6);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 63) << 7) | (byte17 >>> 1);
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte17 & 1) << 12) | (byte18 << 4) | (byte19 >>> 4);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 15) << 9) | (byte20 << 1) | (byte21 >>> 7);
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 127) << 6) | (byte22 >>> 2);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 3) << 11) | (byte23 << 3) | (byte24 >>> 5);
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte24 & 31) << 8) | byte25;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte26 << 5) | (byte27 >>> 3);
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte27 & 7) << 10) | (byte28 << 2) | (byte29 >>> 6);
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte29 & 63) << 7) | (byte30 >>> 1);
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte30 & 1) << 12) | (byte31 << 4) | (byte32 >>> 4);
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte32 & 15) << 9) | (byte33 << 1) | (byte34 >>> 7);
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte34 & 127) << 6) | (byte35 >>> 2);
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte35 & 3) << 11) | (byte36 << 3) | (byte37 >>> 5);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 31) << 8) | byte38;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte39 << 5) | (byte40 >>> 3);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 7) << 10) | (byte41 << 2) | (byte42 >>> 6);
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte42 & 63) << 7) | (byte43 >>> 1);
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte43 & 1) << 12) | (byte44 << 4) | (byte45 >>> 4);
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte45 & 15) << 9) | (byte46 << 1) | (byte47 >>> 7);
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte47 & 127) << 6) | (byte48 >>> 2);
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte48 & 3) << 11) | (byte49 << 3) | (byte50 >>> 5);
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte50 & 31) << 8) | byte51;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte52 << 5) | (byte53 >>> 3);
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte53 & 7) << 10) | (byte54 << 2) | (byte55 >>> 6);
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte55 & 63) << 7) | (byte56 >>> 1);
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte56 & 1) << 12) | (byte57 << 4) | (byte58 >>> 4);
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte58 & 15) << 9) | (byte59 << 1) | (byte60 >>> 7);
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte60 & 127) << 6) | (byte61 >>> 2);
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte61 & 3) << 11) | (byte62 << 3) | (byte63 >>> 5);
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte63 & 31) << 8) | byte64;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte65 << 5) | (byte66 >>> 3);
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte66 & 7) << 10) | (byte67 << 2) | (byte68 >>> 6);
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte68 & 63) << 7) | (byte69 >>> 1);
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte69 & 1) << 12) | (byte70 << 4) | (byte71 >>> 4);
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte71 & 15) << 9) | (byte72 << 1) | (byte73 >>> 7);
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte73 & 127) << 6) | (byte74 >>> 2);
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte74 & 3) << 11) | (byte75 << 3) | (byte76 >>> 5);
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte76 & 31) << 8) | byte77;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte78 << 5) | (byte79 >>> 3);
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte79 & 7) << 10) | (byte80 << 2) | (byte81 >>> 6);
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte81 & 63) << 7) | (byte82 >>> 1);
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte82 & 1) << 12) | (byte83 << 4) | (byte84 >>> 4);
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte84 & 15) << 9) | (byte85 << 1) | (byte86 >>> 7);
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte86 & 127) << 6) | (byte87 >>> 2);
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte87 & 3) << 11) | (byte88 << 3) | (byte89 >>> 5);
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte89 & 31) << 8) | byte90;
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte91 << 5) | (byte92 >>> 3);
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte92 & 7) << 10) | (byte93 << 2) | (byte94 >>> 6);
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte94 & 63) << 7) | (byte95 >>> 1);
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte95 & 1) << 12) | (byte96 << 4) | (byte97 >>> 4);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 15) << 9) | (byte98 << 1) | (byte99 >>> 7);
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte99 & 127) << 6) | (byte100 >>> 2);
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte100 & 3) << 11) | (byte101 << 3) | (byte102 >>> 5);
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte102 & 31) << 8) | byte103;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -2231,6 +4282,26 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 13) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -2261,6 +4332,147 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 50);
+        values[valuesOffset++] = (int) ((block0 >>> 36) & 16383L);
+        values[valuesOffset++] = (int) ((block0 >>> 22) & 16383L);
+        values[valuesOffset++] = (int) ((block0 >>> 8) & 16383L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 255L) << 6) | (block1 >>> 58));
+        values[valuesOffset++] = (int) ((block1 >>> 44) & 16383L);
+        values[valuesOffset++] = (int) ((block1 >>> 30) & 16383L);
+        values[valuesOffset++] = (int) ((block1 >>> 16) & 16383L);
+        values[valuesOffset++] = (int) ((block1 >>> 2) & 16383L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 3L) << 12) | (block2 >>> 52));
+        values[valuesOffset++] = (int) ((block2 >>> 38) & 16383L);
+        values[valuesOffset++] = (int) ((block2 >>> 24) & 16383L);
+        values[valuesOffset++] = (int) ((block2 >>> 10) & 16383L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 1023L) << 4) | (block3 >>> 60));
+        values[valuesOffset++] = (int) ((block3 >>> 46) & 16383L);
+        values[valuesOffset++] = (int) ((block3 >>> 32) & 16383L);
+        values[valuesOffset++] = (int) ((block3 >>> 18) & 16383L);
+        values[valuesOffset++] = (int) ((block3 >>> 4) & 16383L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 15L) << 10) | (block4 >>> 54));
+        values[valuesOffset++] = (int) ((block4 >>> 40) & 16383L);
+        values[valuesOffset++] = (int) ((block4 >>> 26) & 16383L);
+        values[valuesOffset++] = (int) ((block4 >>> 12) & 16383L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 4095L) << 2) | (block5 >>> 62));
+        values[valuesOffset++] = (int) ((block5 >>> 48) & 16383L);
+        values[valuesOffset++] = (int) ((block5 >>> 34) & 16383L);
+        values[valuesOffset++] = (int) ((block5 >>> 20) & 16383L);
+        values[valuesOffset++] = (int) ((block5 >>> 6) & 16383L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 63L) << 8) | (block6 >>> 56));
+        values[valuesOffset++] = (int) ((block6 >>> 42) & 16383L);
+        values[valuesOffset++] = (int) ((block6 >>> 28) & 16383L);
+        values[valuesOffset++] = (int) ((block6 >>> 14) & 16383L);
+        values[valuesOffset++] = (int) (block6 & 16383L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 6) | (byte1 >>> 2);
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 3) << 12) | (byte2 << 4) | (byte3 >>> 4);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 15) << 10) | (byte4 << 2) | (byte5 >>> 6);
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte5 & 63) << 8) | byte6;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte7 << 6) | (byte8 >>> 2);
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte8 & 3) << 12) | (byte9 << 4) | (byte10 >>> 4);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 15) << 10) | (byte11 << 2) | (byte12 >>> 6);
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 63) << 8) | byte13;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte14 << 6) | (byte15 >>> 2);
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 3) << 12) | (byte16 << 4) | (byte17 >>> 4);
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte17 & 15) << 10) | (byte18 << 2) | (byte19 >>> 6);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 63) << 8) | byte20;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte21 << 6) | (byte22 >>> 2);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 3) << 12) | (byte23 << 4) | (byte24 >>> 4);
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte24 & 15) << 10) | (byte25 << 2) | (byte26 >>> 6);
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte26 & 63) << 8) | byte27;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte28 << 6) | (byte29 >>> 2);
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte29 & 3) << 12) | (byte30 << 4) | (byte31 >>> 4);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 15) << 10) | (byte32 << 2) | (byte33 >>> 6);
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 63) << 8) | byte34;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte35 << 6) | (byte36 >>> 2);
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte36 & 3) << 12) | (byte37 << 4) | (byte38 >>> 4);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 15) << 10) | (byte39 << 2) | (byte40 >>> 6);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 63) << 8) | byte41;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte42 << 6) | (byte43 >>> 2);
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte43 & 3) << 12) | (byte44 << 4) | (byte45 >>> 4);
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte45 & 15) << 10) | (byte46 << 2) | (byte47 >>> 6);
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte47 & 63) << 8) | byte48;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte49 << 6) | (byte50 >>> 2);
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte50 & 3) << 12) | (byte51 << 4) | (byte52 >>> 4);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 15) << 10) | (byte53 << 2) | (byte54 >>> 6);
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte54 & 63) << 8) | byte55;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -2404,6 +4616,20 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 14) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -2428,6 +4654,283 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 49);
+        values[valuesOffset++] = (int) ((block0 >>> 34) & 32767L);
+        values[valuesOffset++] = (int) ((block0 >>> 19) & 32767L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 32767L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 15L) << 11) | (block1 >>> 53));
+        values[valuesOffset++] = (int) ((block1 >>> 38) & 32767L);
+        values[valuesOffset++] = (int) ((block1 >>> 23) & 32767L);
+        values[valuesOffset++] = (int) ((block1 >>> 8) & 32767L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 255L) << 7) | (block2 >>> 57));
+        values[valuesOffset++] = (int) ((block2 >>> 42) & 32767L);
+        values[valuesOffset++] = (int) ((block2 >>> 27) & 32767L);
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 32767L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 4095L) << 3) | (block3 >>> 61));
+        values[valuesOffset++] = (int) ((block3 >>> 46) & 32767L);
+        values[valuesOffset++] = (int) ((block3 >>> 31) & 32767L);
+        values[valuesOffset++] = (int) ((block3 >>> 16) & 32767L);
+        values[valuesOffset++] = (int) ((block3 >>> 1) & 32767L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 1L) << 14) | (block4 >>> 50));
+        values[valuesOffset++] = (int) ((block4 >>> 35) & 32767L);
+        values[valuesOffset++] = (int) ((block4 >>> 20) & 32767L);
+        values[valuesOffset++] = (int) ((block4 >>> 5) & 32767L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 31L) << 10) | (block5 >>> 54));
+        values[valuesOffset++] = (int) ((block5 >>> 39) & 32767L);
+        values[valuesOffset++] = (int) ((block5 >>> 24) & 32767L);
+        values[valuesOffset++] = (int) ((block5 >>> 9) & 32767L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 511L) << 6) | (block6 >>> 58));
+        values[valuesOffset++] = (int) ((block6 >>> 43) & 32767L);
+        values[valuesOffset++] = (int) ((block6 >>> 28) & 32767L);
+        values[valuesOffset++] = (int) ((block6 >>> 13) & 32767L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 8191L) << 2) | (block7 >>> 62));
+        values[valuesOffset++] = (int) ((block7 >>> 47) & 32767L);
+        values[valuesOffset++] = (int) ((block7 >>> 32) & 32767L);
+        values[valuesOffset++] = (int) ((block7 >>> 17) & 32767L);
+        values[valuesOffset++] = (int) ((block7 >>> 2) & 32767L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 3L) << 13) | (block8 >>> 51));
+        values[valuesOffset++] = (int) ((block8 >>> 36) & 32767L);
+        values[valuesOffset++] = (int) ((block8 >>> 21) & 32767L);
+        values[valuesOffset++] = (int) ((block8 >>> 6) & 32767L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 63L) << 9) | (block9 >>> 55));
+        values[valuesOffset++] = (int) ((block9 >>> 40) & 32767L);
+        values[valuesOffset++] = (int) ((block9 >>> 25) & 32767L);
+        values[valuesOffset++] = (int) ((block9 >>> 10) & 32767L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 1023L) << 5) | (block10 >>> 59));
+        values[valuesOffset++] = (int) ((block10 >>> 44) & 32767L);
+        values[valuesOffset++] = (int) ((block10 >>> 29) & 32767L);
+        values[valuesOffset++] = (int) ((block10 >>> 14) & 32767L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 16383L) << 1) | (block11 >>> 63));
+        values[valuesOffset++] = (int) ((block11 >>> 48) & 32767L);
+        values[valuesOffset++] = (int) ((block11 >>> 33) & 32767L);
+        values[valuesOffset++] = (int) ((block11 >>> 18) & 32767L);
+        values[valuesOffset++] = (int) ((block11 >>> 3) & 32767L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 7L) << 12) | (block12 >>> 52));
+        values[valuesOffset++] = (int) ((block12 >>> 37) & 32767L);
+        values[valuesOffset++] = (int) ((block12 >>> 22) & 32767L);
+        values[valuesOffset++] = (int) ((block12 >>> 7) & 32767L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 127L) << 8) | (block13 >>> 56));
+        values[valuesOffset++] = (int) ((block13 >>> 41) & 32767L);
+        values[valuesOffset++] = (int) ((block13 >>> 26) & 32767L);
+        values[valuesOffset++] = (int) ((block13 >>> 11) & 32767L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 2047L) << 4) | (block14 >>> 60));
+        values[valuesOffset++] = (int) ((block14 >>> 45) & 32767L);
+        values[valuesOffset++] = (int) ((block14 >>> 30) & 32767L);
+        values[valuesOffset++] = (int) ((block14 >>> 15) & 32767L);
+        values[valuesOffset++] = (int) (block14 & 32767L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 7) | (byte1 >>> 1);
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte1 & 1) << 14) | (byte2 << 6) | (byte3 >>> 2);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 3) << 13) | (byte4 << 5) | (byte5 >>> 3);
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte5 & 7) << 12) | (byte6 << 4) | (byte7 >>> 4);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 15) << 11) | (byte8 << 3) | (byte9 >>> 5);
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte9 & 31) << 10) | (byte10 << 2) | (byte11 >>> 6);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 63) << 9) | (byte12 << 1) | (byte13 >>> 7);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 127) << 8) | byte14;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte15 << 7) | (byte16 >>> 1);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 1) << 14) | (byte17 << 6) | (byte18 >>> 2);
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 3) << 13) | (byte19 << 5) | (byte20 >>> 3);
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte20 & 7) << 12) | (byte21 << 4) | (byte22 >>> 4);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 15) << 11) | (byte23 << 3) | (byte24 >>> 5);
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte24 & 31) << 10) | (byte25 << 2) | (byte26 >>> 6);
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte26 & 63) << 9) | (byte27 << 1) | (byte28 >>> 7);
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 127) << 8) | byte29;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte30 << 7) | (byte31 >>> 1);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 1) << 14) | (byte32 << 6) | (byte33 >>> 2);
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 3) << 13) | (byte34 << 5) | (byte35 >>> 3);
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte35 & 7) << 12) | (byte36 << 4) | (byte37 >>> 4);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 15) << 11) | (byte38 << 3) | (byte39 >>> 5);
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte39 & 31) << 10) | (byte40 << 2) | (byte41 >>> 6);
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte41 & 63) << 9) | (byte42 << 1) | (byte43 >>> 7);
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte43 & 127) << 8) | byte44;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte45 << 7) | (byte46 >>> 1);
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte46 & 1) << 14) | (byte47 << 6) | (byte48 >>> 2);
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte48 & 3) << 13) | (byte49 << 5) | (byte50 >>> 3);
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte50 & 7) << 12) | (byte51 << 4) | (byte52 >>> 4);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 15) << 11) | (byte53 << 3) | (byte54 >>> 5);
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte54 & 31) << 10) | (byte55 << 2) | (byte56 >>> 6);
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte56 & 63) << 9) | (byte57 << 1) | (byte58 >>> 7);
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte58 & 127) << 8) | byte59;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte60 << 7) | (byte61 >>> 1);
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte61 & 1) << 14) | (byte62 << 6) | (byte63 >>> 2);
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte63 & 3) << 13) | (byte64 << 5) | (byte65 >>> 3);
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte65 & 7) << 12) | (byte66 << 4) | (byte67 >>> 4);
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte67 & 15) << 11) | (byte68 << 3) | (byte69 >>> 5);
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte69 & 31) << 10) | (byte70 << 2) | (byte71 >>> 6);
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte71 & 63) << 9) | (byte72 << 1) | (byte73 >>> 7);
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte73 & 127) << 8) | byte74;
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte75 << 7) | (byte76 >>> 1);
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte76 & 1) << 14) | (byte77 << 6) | (byte78 >>> 2);
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte78 & 3) << 13) | (byte79 << 5) | (byte80 >>> 3);
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte80 & 7) << 12) | (byte81 << 4) | (byte82 >>> 4);
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte82 & 15) << 11) | (byte83 << 3) | (byte84 >>> 5);
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte84 & 31) << 10) | (byte85 << 2) | (byte86 >>> 6);
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte86 & 63) << 9) | (byte87 << 1) | (byte88 >>> 7);
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte88 & 127) << 8) | byte89;
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte90 << 7) | (byte91 >>> 1);
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte91 & 1) << 14) | (byte92 << 6) | (byte93 >>> 2);
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte93 & 3) << 13) | (byte94 << 5) | (byte95 >>> 3);
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte95 & 7) << 12) | (byte96 << 4) | (byte97 >>> 4);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 15) << 11) | (byte98 << 3) | (byte99 >>> 5);
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte99 & 31) << 10) | (byte100 << 2) | (byte101 >>> 6);
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte101 & 63) << 9) | (byte102 << 1) | (byte103 >>> 7);
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte103 & 127) << 8) | byte104;
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte105 << 7) | (byte106 >>> 1);
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte106 & 1) << 14) | (byte107 << 6) | (byte108 >>> 2);
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte108 & 3) << 13) | (byte109 << 5) | (byte110 >>> 3);
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte110 & 7) << 12) | (byte111 << 4) | (byte112 >>> 4);
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte112 & 15) << 11) | (byte113 << 3) | (byte114 >>> 5);
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte114 & 31) << 10) | (byte115 << 2) | (byte116 >>> 6);
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte116 & 63) << 9) | (byte117 << 1) | (byte118 >>> 7);
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte118 & 127) << 8) | byte119;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -2707,6 +5210,28 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 15) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -2741,6 +5266,37 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       return 4;
     }
 
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 48);
+        values[valuesOffset++] = (int) ((block0 >>> 32) & 65535L);
+        values[valuesOffset++] = (int) ((block0 >>> 16) & 65535L);
+        values[valuesOffset++] = (int) (block0 & 65535L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 8) | byte1;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte2 << 8) | byte3;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte4 << 8) | byte5;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte6 << 8) | byte7;
+      }
+    }
+
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -2772,6 +5328,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 16) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -2790,6 +5354,301 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 47);
+        values[valuesOffset++] = (int) ((block0 >>> 30) & 131071L);
+        values[valuesOffset++] = (int) ((block0 >>> 13) & 131071L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 8191L) << 4) | (block1 >>> 60));
+        values[valuesOffset++] = (int) ((block1 >>> 43) & 131071L);
+        values[valuesOffset++] = (int) ((block1 >>> 26) & 131071L);
+        values[valuesOffset++] = (int) ((block1 >>> 9) & 131071L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 511L) << 8) | (block2 >>> 56));
+        values[valuesOffset++] = (int) ((block2 >>> 39) & 131071L);
+        values[valuesOffset++] = (int) ((block2 >>> 22) & 131071L);
+        values[valuesOffset++] = (int) ((block2 >>> 5) & 131071L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 31L) << 12) | (block3 >>> 52));
+        values[valuesOffset++] = (int) ((block3 >>> 35) & 131071L);
+        values[valuesOffset++] = (int) ((block3 >>> 18) & 131071L);
+        values[valuesOffset++] = (int) ((block3 >>> 1) & 131071L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 1L) << 16) | (block4 >>> 48));
+        values[valuesOffset++] = (int) ((block4 >>> 31) & 131071L);
+        values[valuesOffset++] = (int) ((block4 >>> 14) & 131071L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 16383L) << 3) | (block5 >>> 61));
+        values[valuesOffset++] = (int) ((block5 >>> 44) & 131071L);
+        values[valuesOffset++] = (int) ((block5 >>> 27) & 131071L);
+        values[valuesOffset++] = (int) ((block5 >>> 10) & 131071L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 1023L) << 7) | (block6 >>> 57));
+        values[valuesOffset++] = (int) ((block6 >>> 40) & 131071L);
+        values[valuesOffset++] = (int) ((block6 >>> 23) & 131071L);
+        values[valuesOffset++] = (int) ((block6 >>> 6) & 131071L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 63L) << 11) | (block7 >>> 53));
+        values[valuesOffset++] = (int) ((block7 >>> 36) & 131071L);
+        values[valuesOffset++] = (int) ((block7 >>> 19) & 131071L);
+        values[valuesOffset++] = (int) ((block7 >>> 2) & 131071L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 3L) << 15) | (block8 >>> 49));
+        values[valuesOffset++] = (int) ((block8 >>> 32) & 131071L);
+        values[valuesOffset++] = (int) ((block8 >>> 15) & 131071L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 32767L) << 2) | (block9 >>> 62));
+        values[valuesOffset++] = (int) ((block9 >>> 45) & 131071L);
+        values[valuesOffset++] = (int) ((block9 >>> 28) & 131071L);
+        values[valuesOffset++] = (int) ((block9 >>> 11) & 131071L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 2047L) << 6) | (block10 >>> 58));
+        values[valuesOffset++] = (int) ((block10 >>> 41) & 131071L);
+        values[valuesOffset++] = (int) ((block10 >>> 24) & 131071L);
+        values[valuesOffset++] = (int) ((block10 >>> 7) & 131071L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 127L) << 10) | (block11 >>> 54));
+        values[valuesOffset++] = (int) ((block11 >>> 37) & 131071L);
+        values[valuesOffset++] = (int) ((block11 >>> 20) & 131071L);
+        values[valuesOffset++] = (int) ((block11 >>> 3) & 131071L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 7L) << 14) | (block12 >>> 50));
+        values[valuesOffset++] = (int) ((block12 >>> 33) & 131071L);
+        values[valuesOffset++] = (int) ((block12 >>> 16) & 131071L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 65535L) << 1) | (block13 >>> 63));
+        values[valuesOffset++] = (int) ((block13 >>> 46) & 131071L);
+        values[valuesOffset++] = (int) ((block13 >>> 29) & 131071L);
+        values[valuesOffset++] = (int) ((block13 >>> 12) & 131071L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 4095L) << 5) | (block14 >>> 59));
+        values[valuesOffset++] = (int) ((block14 >>> 42) & 131071L);
+        values[valuesOffset++] = (int) ((block14 >>> 25) & 131071L);
+        values[valuesOffset++] = (int) ((block14 >>> 8) & 131071L);
+        final long block15 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block14 & 255L) << 9) | (block15 >>> 55));
+        values[valuesOffset++] = (int) ((block15 >>> 38) & 131071L);
+        values[valuesOffset++] = (int) ((block15 >>> 21) & 131071L);
+        values[valuesOffset++] = (int) ((block15 >>> 4) & 131071L);
+        final long block16 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block15 & 15L) << 13) | (block16 >>> 51));
+        values[valuesOffset++] = (int) ((block16 >>> 34) & 131071L);
+        values[valuesOffset++] = (int) ((block16 >>> 17) & 131071L);
+        values[valuesOffset++] = (int) (block16 & 131071L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 9) | (byte1 << 1) | (byte2 >>> 7);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 127) << 10) | (byte3 << 2) | (byte4 >>> 6);
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 63) << 11) | (byte5 << 3) | (byte6 >>> 5);
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 31) << 12) | (byte7 << 4) | (byte8 >>> 4);
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte8 & 15) << 13) | (byte9 << 5) | (byte10 >>> 3);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 7) << 14) | (byte11 << 6) | (byte12 >>> 2);
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 3) << 15) | (byte13 << 7) | (byte14 >>> 1);
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte14 & 1) << 16) | (byte15 << 8) | byte16;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte17 << 9) | (byte18 << 1) | (byte19 >>> 7);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 127) << 10) | (byte20 << 2) | (byte21 >>> 6);
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 63) << 11) | (byte22 << 3) | (byte23 >>> 5);
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 31) << 12) | (byte24 << 4) | (byte25 >>> 4);
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte25 & 15) << 13) | (byte26 << 5) | (byte27 >>> 3);
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte27 & 7) << 14) | (byte28 << 6) | (byte29 >>> 2);
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte29 & 3) << 15) | (byte30 << 7) | (byte31 >>> 1);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 1) << 16) | (byte32 << 8) | byte33;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte34 << 9) | (byte35 << 1) | (byte36 >>> 7);
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte36 & 127) << 10) | (byte37 << 2) | (byte38 >>> 6);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 63) << 11) | (byte39 << 3) | (byte40 >>> 5);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 31) << 12) | (byte41 << 4) | (byte42 >>> 4);
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte42 & 15) << 13) | (byte43 << 5) | (byte44 >>> 3);
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte44 & 7) << 14) | (byte45 << 6) | (byte46 >>> 2);
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte46 & 3) << 15) | (byte47 << 7) | (byte48 >>> 1);
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte48 & 1) << 16) | (byte49 << 8) | byte50;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte51 << 9) | (byte52 << 1) | (byte53 >>> 7);
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte53 & 127) << 10) | (byte54 << 2) | (byte55 >>> 6);
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte55 & 63) << 11) | (byte56 << 3) | (byte57 >>> 5);
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte57 & 31) << 12) | (byte58 << 4) | (byte59 >>> 4);
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte59 & 15) << 13) | (byte60 << 5) | (byte61 >>> 3);
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte61 & 7) << 14) | (byte62 << 6) | (byte63 >>> 2);
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte63 & 3) << 15) | (byte64 << 7) | (byte65 >>> 1);
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte65 & 1) << 16) | (byte66 << 8) | byte67;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte68 << 9) | (byte69 << 1) | (byte70 >>> 7);
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte70 & 127) << 10) | (byte71 << 2) | (byte72 >>> 6);
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte72 & 63) << 11) | (byte73 << 3) | (byte74 >>> 5);
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte74 & 31) << 12) | (byte75 << 4) | (byte76 >>> 4);
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte76 & 15) << 13) | (byte77 << 5) | (byte78 >>> 3);
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte78 & 7) << 14) | (byte79 << 6) | (byte80 >>> 2);
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte80 & 3) << 15) | (byte81 << 7) | (byte82 >>> 1);
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte82 & 1) << 16) | (byte83 << 8) | byte84;
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte85 << 9) | (byte86 << 1) | (byte87 >>> 7);
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte87 & 127) << 10) | (byte88 << 2) | (byte89 >>> 6);
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte89 & 63) << 11) | (byte90 << 3) | (byte91 >>> 5);
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte91 & 31) << 12) | (byte92 << 4) | (byte93 >>> 4);
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte93 & 15) << 13) | (byte94 << 5) | (byte95 >>> 3);
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte95 & 7) << 14) | (byte96 << 6) | (byte97 >>> 2);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 3) << 15) | (byte98 << 7) | (byte99 >>> 1);
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte99 & 1) << 16) | (byte100 << 8) | byte101;
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte102 << 9) | (byte103 << 1) | (byte104 >>> 7);
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte104 & 127) << 10) | (byte105 << 2) | (byte106 >>> 6);
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte106 & 63) << 11) | (byte107 << 3) | (byte108 >>> 5);
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte108 & 31) << 12) | (byte109 << 4) | (byte110 >>> 4);
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte110 & 15) << 13) | (byte111 << 5) | (byte112 >>> 3);
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte112 & 7) << 14) | (byte113 << 6) | (byte114 >>> 2);
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte114 & 3) << 15) | (byte115 << 7) | (byte116 >>> 1);
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte116 & 1) << 16) | (byte117 << 8) | byte118;
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        final int byte120 = blocks[blocksOffset++] & 0xFF;
+        final int byte121 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte119 << 9) | (byte120 << 1) | (byte121 >>> 7);
+        final int byte122 = blocks[blocksOffset++] & 0xFF;
+        final int byte123 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte121 & 127) << 10) | (byte122 << 2) | (byte123 >>> 6);
+        final int byte124 = blocks[blocksOffset++] & 0xFF;
+        final int byte125 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte123 & 63) << 11) | (byte124 << 3) | (byte125 >>> 5);
+        final int byte126 = blocks[blocksOffset++] & 0xFF;
+        final int byte127 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte125 & 31) << 12) | (byte126 << 4) | (byte127 >>> 4);
+        final int byte128 = blocks[blocksOffset++] & 0xFF;
+        final int byte129 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte127 & 15) << 13) | (byte128 << 5) | (byte129 >>> 3);
+        final int byte130 = blocks[blocksOffset++] & 0xFF;
+        final int byte131 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte129 & 7) << 14) | (byte130 << 6) | (byte131 >>> 2);
+        final int byte132 = blocks[blocksOffset++] & 0xFF;
+        final int byte133 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte131 & 3) << 15) | (byte132 << 7) | (byte133 >>> 1);
+        final int byte134 = blocks[blocksOffset++] & 0xFF;
+        final int byte135 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte133 & 1) << 16) | (byte134 << 8) | byte135;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -3087,6 +5946,30 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 17) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -3121,6 +6004,165 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 46);
+        values[valuesOffset++] = (int) ((block0 >>> 28) & 262143L);
+        values[valuesOffset++] = (int) ((block0 >>> 10) & 262143L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 1023L) << 8) | (block1 >>> 56));
+        values[valuesOffset++] = (int) ((block1 >>> 38) & 262143L);
+        values[valuesOffset++] = (int) ((block1 >>> 20) & 262143L);
+        values[valuesOffset++] = (int) ((block1 >>> 2) & 262143L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 3L) << 16) | (block2 >>> 48));
+        values[valuesOffset++] = (int) ((block2 >>> 30) & 262143L);
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 262143L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 4095L) << 6) | (block3 >>> 58));
+        values[valuesOffset++] = (int) ((block3 >>> 40) & 262143L);
+        values[valuesOffset++] = (int) ((block3 >>> 22) & 262143L);
+        values[valuesOffset++] = (int) ((block3 >>> 4) & 262143L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 15L) << 14) | (block4 >>> 50));
+        values[valuesOffset++] = (int) ((block4 >>> 32) & 262143L);
+        values[valuesOffset++] = (int) ((block4 >>> 14) & 262143L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 16383L) << 4) | (block5 >>> 60));
+        values[valuesOffset++] = (int) ((block5 >>> 42) & 262143L);
+        values[valuesOffset++] = (int) ((block5 >>> 24) & 262143L);
+        values[valuesOffset++] = (int) ((block5 >>> 6) & 262143L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 63L) << 12) | (block6 >>> 52));
+        values[valuesOffset++] = (int) ((block6 >>> 34) & 262143L);
+        values[valuesOffset++] = (int) ((block6 >>> 16) & 262143L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 65535L) << 2) | (block7 >>> 62));
+        values[valuesOffset++] = (int) ((block7 >>> 44) & 262143L);
+        values[valuesOffset++] = (int) ((block7 >>> 26) & 262143L);
+        values[valuesOffset++] = (int) ((block7 >>> 8) & 262143L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 255L) << 10) | (block8 >>> 54));
+        values[valuesOffset++] = (int) ((block8 >>> 36) & 262143L);
+        values[valuesOffset++] = (int) ((block8 >>> 18) & 262143L);
+        values[valuesOffset++] = (int) (block8 & 262143L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 10) | (byte1 << 2) | (byte2 >>> 6);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 63) << 12) | (byte3 << 4) | (byte4 >>> 4);
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 15) << 14) | (byte5 << 6) | (byte6 >>> 2);
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 3) << 16) | (byte7 << 8) | byte8;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte9 << 10) | (byte10 << 2) | (byte11 >>> 6);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 63) << 12) | (byte12 << 4) | (byte13 >>> 4);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 15) << 14) | (byte14 << 6) | (byte15 >>> 2);
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 3) << 16) | (byte16 << 8) | byte17;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte18 << 10) | (byte19 << 2) | (byte20 >>> 6);
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte20 & 63) << 12) | (byte21 << 4) | (byte22 >>> 4);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 15) << 14) | (byte23 << 6) | (byte24 >>> 2);
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte24 & 3) << 16) | (byte25 << 8) | byte26;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte27 << 10) | (byte28 << 2) | (byte29 >>> 6);
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte29 & 63) << 12) | (byte30 << 4) | (byte31 >>> 4);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 15) << 14) | (byte32 << 6) | (byte33 >>> 2);
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 3) << 16) | (byte34 << 8) | byte35;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte36 << 10) | (byte37 << 2) | (byte38 >>> 6);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 63) << 12) | (byte39 << 4) | (byte40 >>> 4);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 15) << 14) | (byte41 << 6) | (byte42 >>> 2);
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte42 & 3) << 16) | (byte43 << 8) | byte44;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte45 << 10) | (byte46 << 2) | (byte47 >>> 6);
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte47 & 63) << 12) | (byte48 << 4) | (byte49 >>> 4);
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte49 & 15) << 14) | (byte50 << 6) | (byte51 >>> 2);
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte51 & 3) << 16) | (byte52 << 8) | byte53;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte54 << 10) | (byte55 << 2) | (byte56 >>> 6);
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte56 & 63) << 12) | (byte57 << 4) | (byte58 >>> 4);
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte58 & 15) << 14) | (byte59 << 6) | (byte60 >>> 2);
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte60 & 3) << 16) | (byte61 << 8) | byte62;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte63 << 10) | (byte64 << 2) | (byte65 >>> 6);
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte65 & 63) << 12) | (byte66 << 4) | (byte67 >>> 4);
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte67 & 15) << 14) | (byte68 << 6) | (byte69 >>> 2);
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte69 & 3) << 16) | (byte70 << 8) | byte71;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -3282,6 +6324,22 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 18) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -3308,6 +6366,319 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 45);
+        values[valuesOffset++] = (int) ((block0 >>> 26) & 524287L);
+        values[valuesOffset++] = (int) ((block0 >>> 7) & 524287L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 127L) << 12) | (block1 >>> 52));
+        values[valuesOffset++] = (int) ((block1 >>> 33) & 524287L);
+        values[valuesOffset++] = (int) ((block1 >>> 14) & 524287L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 16383L) << 5) | (block2 >>> 59));
+        values[valuesOffset++] = (int) ((block2 >>> 40) & 524287L);
+        values[valuesOffset++] = (int) ((block2 >>> 21) & 524287L);
+        values[valuesOffset++] = (int) ((block2 >>> 2) & 524287L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 3L) << 17) | (block3 >>> 47));
+        values[valuesOffset++] = (int) ((block3 >>> 28) & 524287L);
+        values[valuesOffset++] = (int) ((block3 >>> 9) & 524287L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 511L) << 10) | (block4 >>> 54));
+        values[valuesOffset++] = (int) ((block4 >>> 35) & 524287L);
+        values[valuesOffset++] = (int) ((block4 >>> 16) & 524287L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 65535L) << 3) | (block5 >>> 61));
+        values[valuesOffset++] = (int) ((block5 >>> 42) & 524287L);
+        values[valuesOffset++] = (int) ((block5 >>> 23) & 524287L);
+        values[valuesOffset++] = (int) ((block5 >>> 4) & 524287L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 15L) << 15) | (block6 >>> 49));
+        values[valuesOffset++] = (int) ((block6 >>> 30) & 524287L);
+        values[valuesOffset++] = (int) ((block6 >>> 11) & 524287L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 2047L) << 8) | (block7 >>> 56));
+        values[valuesOffset++] = (int) ((block7 >>> 37) & 524287L);
+        values[valuesOffset++] = (int) ((block7 >>> 18) & 524287L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 262143L) << 1) | (block8 >>> 63));
+        values[valuesOffset++] = (int) ((block8 >>> 44) & 524287L);
+        values[valuesOffset++] = (int) ((block8 >>> 25) & 524287L);
+        values[valuesOffset++] = (int) ((block8 >>> 6) & 524287L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 63L) << 13) | (block9 >>> 51));
+        values[valuesOffset++] = (int) ((block9 >>> 32) & 524287L);
+        values[valuesOffset++] = (int) ((block9 >>> 13) & 524287L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 8191L) << 6) | (block10 >>> 58));
+        values[valuesOffset++] = (int) ((block10 >>> 39) & 524287L);
+        values[valuesOffset++] = (int) ((block10 >>> 20) & 524287L);
+        values[valuesOffset++] = (int) ((block10 >>> 1) & 524287L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 1L) << 18) | (block11 >>> 46));
+        values[valuesOffset++] = (int) ((block11 >>> 27) & 524287L);
+        values[valuesOffset++] = (int) ((block11 >>> 8) & 524287L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 255L) << 11) | (block12 >>> 53));
+        values[valuesOffset++] = (int) ((block12 >>> 34) & 524287L);
+        values[valuesOffset++] = (int) ((block12 >>> 15) & 524287L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 32767L) << 4) | (block13 >>> 60));
+        values[valuesOffset++] = (int) ((block13 >>> 41) & 524287L);
+        values[valuesOffset++] = (int) ((block13 >>> 22) & 524287L);
+        values[valuesOffset++] = (int) ((block13 >>> 3) & 524287L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 7L) << 16) | (block14 >>> 48));
+        values[valuesOffset++] = (int) ((block14 >>> 29) & 524287L);
+        values[valuesOffset++] = (int) ((block14 >>> 10) & 524287L);
+        final long block15 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block14 & 1023L) << 9) | (block15 >>> 55));
+        values[valuesOffset++] = (int) ((block15 >>> 36) & 524287L);
+        values[valuesOffset++] = (int) ((block15 >>> 17) & 524287L);
+        final long block16 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block15 & 131071L) << 2) | (block16 >>> 62));
+        values[valuesOffset++] = (int) ((block16 >>> 43) & 524287L);
+        values[valuesOffset++] = (int) ((block16 >>> 24) & 524287L);
+        values[valuesOffset++] = (int) ((block16 >>> 5) & 524287L);
+        final long block17 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block16 & 31L) << 14) | (block17 >>> 50));
+        values[valuesOffset++] = (int) ((block17 >>> 31) & 524287L);
+        values[valuesOffset++] = (int) ((block17 >>> 12) & 524287L);
+        final long block18 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block17 & 4095L) << 7) | (block18 >>> 57));
+        values[valuesOffset++] = (int) ((block18 >>> 38) & 524287L);
+        values[valuesOffset++] = (int) ((block18 >>> 19) & 524287L);
+        values[valuesOffset++] = (int) (block18 & 524287L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 11) | (byte1 << 3) | (byte2 >>> 5);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 31) << 14) | (byte3 << 6) | (byte4 >>> 2);
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte4 & 3) << 17) | (byte5 << 9) | (byte6 << 1) | (byte7 >>> 7);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 127) << 12) | (byte8 << 4) | (byte9 >>> 4);
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte9 & 15) << 15) | (byte10 << 7) | (byte11 >>> 1);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 1) << 18) | (byte12 << 10) | (byte13 << 2) | (byte14 >>> 6);
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte14 & 63) << 13) | (byte15 << 5) | (byte16 >>> 3);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 7) << 16) | (byte17 << 8) | byte18;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte19 << 11) | (byte20 << 3) | (byte21 >>> 5);
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 31) << 14) | (byte22 << 6) | (byte23 >>> 2);
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 3) << 17) | (byte24 << 9) | (byte25 << 1) | (byte26 >>> 7);
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte26 & 127) << 12) | (byte27 << 4) | (byte28 >>> 4);
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 15) << 15) | (byte29 << 7) | (byte30 >>> 1);
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte30 & 1) << 18) | (byte31 << 10) | (byte32 << 2) | (byte33 >>> 6);
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 63) << 13) | (byte34 << 5) | (byte35 >>> 3);
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte35 & 7) << 16) | (byte36 << 8) | byte37;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte38 << 11) | (byte39 << 3) | (byte40 >>> 5);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 31) << 14) | (byte41 << 6) | (byte42 >>> 2);
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte42 & 3) << 17) | (byte43 << 9) | (byte44 << 1) | (byte45 >>> 7);
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte45 & 127) << 12) | (byte46 << 4) | (byte47 >>> 4);
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte47 & 15) << 15) | (byte48 << 7) | (byte49 >>> 1);
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte49 & 1) << 18) | (byte50 << 10) | (byte51 << 2) | (byte52 >>> 6);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 63) << 13) | (byte53 << 5) | (byte54 >>> 3);
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte54 & 7) << 16) | (byte55 << 8) | byte56;
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte57 << 11) | (byte58 << 3) | (byte59 >>> 5);
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte59 & 31) << 14) | (byte60 << 6) | (byte61 >>> 2);
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte61 & 3) << 17) | (byte62 << 9) | (byte63 << 1) | (byte64 >>> 7);
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte64 & 127) << 12) | (byte65 << 4) | (byte66 >>> 4);
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte66 & 15) << 15) | (byte67 << 7) | (byte68 >>> 1);
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte68 & 1) << 18) | (byte69 << 10) | (byte70 << 2) | (byte71 >>> 6);
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte71 & 63) << 13) | (byte72 << 5) | (byte73 >>> 3);
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte73 & 7) << 16) | (byte74 << 8) | byte75;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte76 << 11) | (byte77 << 3) | (byte78 >>> 5);
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte78 & 31) << 14) | (byte79 << 6) | (byte80 >>> 2);
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte80 & 3) << 17) | (byte81 << 9) | (byte82 << 1) | (byte83 >>> 7);
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte83 & 127) << 12) | (byte84 << 4) | (byte85 >>> 4);
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte85 & 15) << 15) | (byte86 << 7) | (byte87 >>> 1);
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte87 & 1) << 18) | (byte88 << 10) | (byte89 << 2) | (byte90 >>> 6);
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte90 & 63) << 13) | (byte91 << 5) | (byte92 >>> 3);
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte92 & 7) << 16) | (byte93 << 8) | byte94;
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte95 << 11) | (byte96 << 3) | (byte97 >>> 5);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 31) << 14) | (byte98 << 6) | (byte99 >>> 2);
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte99 & 3) << 17) | (byte100 << 9) | (byte101 << 1) | (byte102 >>> 7);
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte102 & 127) << 12) | (byte103 << 4) | (byte104 >>> 4);
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte104 & 15) << 15) | (byte105 << 7) | (byte106 >>> 1);
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte106 & 1) << 18) | (byte107 << 10) | (byte108 << 2) | (byte109 >>> 6);
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte109 & 63) << 13) | (byte110 << 5) | (byte111 >>> 3);
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte111 & 7) << 16) | (byte112 << 8) | byte113;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte114 << 11) | (byte115 << 3) | (byte116 >>> 5);
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte116 & 31) << 14) | (byte117 << 6) | (byte118 >>> 2);
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        final int byte120 = blocks[blocksOffset++] & 0xFF;
+        final int byte121 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte118 & 3) << 17) | (byte119 << 9) | (byte120 << 1) | (byte121 >>> 7);
+        final int byte122 = blocks[blocksOffset++] & 0xFF;
+        final int byte123 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte121 & 127) << 12) | (byte122 << 4) | (byte123 >>> 4);
+        final int byte124 = blocks[blocksOffset++] & 0xFF;
+        final int byte125 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte123 & 15) << 15) | (byte124 << 7) | (byte125 >>> 1);
+        final int byte126 = blocks[blocksOffset++] & 0xFF;
+        final int byte127 = blocks[blocksOffset++] & 0xFF;
+        final int byte128 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte125 & 1) << 18) | (byte126 << 10) | (byte127 << 2) | (byte128 >>> 6);
+        final int byte129 = blocks[blocksOffset++] & 0xFF;
+        final int byte130 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte128 & 63) << 13) | (byte129 << 5) | (byte130 >>> 3);
+        final int byte131 = blocks[blocksOffset++] & 0xFF;
+        final int byte132 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte130 & 7) << 16) | (byte131 << 8) | byte132;
+        final int byte133 = blocks[blocksOffset++] & 0xFF;
+        final int byte134 = blocks[blocksOffset++] & 0xFF;
+        final int byte135 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte133 << 11) | (byte134 << 3) | (byte135 >>> 5);
+        final int byte136 = blocks[blocksOffset++] & 0xFF;
+        final int byte137 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte135 & 31) << 14) | (byte136 << 6) | (byte137 >>> 2);
+        final int byte138 = blocks[blocksOffset++] & 0xFF;
+        final int byte139 = blocks[blocksOffset++] & 0xFF;
+        final int byte140 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte137 & 3) << 17) | (byte138 << 9) | (byte139 << 1) | (byte140 >>> 7);
+        final int byte141 = blocks[blocksOffset++] & 0xFF;
+        final int byte142 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte140 & 127) << 12) | (byte141 << 4) | (byte142 >>> 4);
+        final int byte143 = blocks[blocksOffset++] & 0xFF;
+        final int byte144 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte142 & 15) << 15) | (byte143 << 7) | (byte144 >>> 1);
+        final int byte145 = blocks[blocksOffset++] & 0xFF;
+        final int byte146 = blocks[blocksOffset++] & 0xFF;
+        final int byte147 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte144 & 1) << 18) | (byte145 << 10) | (byte146 << 2) | (byte147 >>> 6);
+        final int byte148 = blocks[blocksOffset++] & 0xFF;
+        final int byte149 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte147 & 63) << 13) | (byte148 << 5) | (byte149 >>> 3);
+        final int byte150 = blocks[blocksOffset++] & 0xFF;
+        final int byte151 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte149 & 7) << 16) | (byte150 << 8) | byte151;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -3623,6 +6994,32 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 19) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -3659,6 +7056,97 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 16;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 44);
+        values[valuesOffset++] = (int) ((block0 >>> 24) & 1048575L);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 1048575L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 15L) << 16) | (block1 >>> 48));
+        values[valuesOffset++] = (int) ((block1 >>> 28) & 1048575L);
+        values[valuesOffset++] = (int) ((block1 >>> 8) & 1048575L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 255L) << 12) | (block2 >>> 52));
+        values[valuesOffset++] = (int) ((block2 >>> 32) & 1048575L);
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 1048575L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 4095L) << 8) | (block3 >>> 56));
+        values[valuesOffset++] = (int) ((block3 >>> 36) & 1048575L);
+        values[valuesOffset++] = (int) ((block3 >>> 16) & 1048575L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 65535L) << 4) | (block4 >>> 60));
+        values[valuesOffset++] = (int) ((block4 >>> 40) & 1048575L);
+        values[valuesOffset++] = (int) ((block4 >>> 20) & 1048575L);
+        values[valuesOffset++] = (int) (block4 & 1048575L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 12) | (byte1 << 4) | (byte2 >>> 4);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 15) << 16) | (byte3 << 8) | byte4;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte5 << 12) | (byte6 << 4) | (byte7 >>> 4);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 15) << 16) | (byte8 << 8) | byte9;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte10 << 12) | (byte11 << 4) | (byte12 >>> 4);
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 15) << 16) | (byte13 << 8) | byte14;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte15 << 12) | (byte16 << 4) | (byte17 >>> 4);
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte17 & 15) << 16) | (byte18 << 8) | byte19;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte20 << 12) | (byte21 << 4) | (byte22 >>> 4);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 15) << 16) | (byte23 << 8) | byte24;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte25 << 12) | (byte26 << 4) | (byte27 >>> 4);
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte27 & 15) << 16) | (byte28 << 8) | byte29;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte30 << 12) | (byte31 << 4) | (byte32 >>> 4);
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte32 & 15) << 16) | (byte33 << 8) | byte34;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte35 << 12) | (byte36 << 4) | (byte37 >>> 4);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 15) << 16) | (byte38 << 8) | byte39;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -3752,6 +7240,18 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 20) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -3774,6 +7274,337 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 43);
+        values[valuesOffset++] = (int) ((block0 >>> 22) & 2097151L);
+        values[valuesOffset++] = (int) ((block0 >>> 1) & 2097151L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 1L) << 20) | (block1 >>> 44));
+        values[valuesOffset++] = (int) ((block1 >>> 23) & 2097151L);
+        values[valuesOffset++] = (int) ((block1 >>> 2) & 2097151L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 3L) << 19) | (block2 >>> 45));
+        values[valuesOffset++] = (int) ((block2 >>> 24) & 2097151L);
+        values[valuesOffset++] = (int) ((block2 >>> 3) & 2097151L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 7L) << 18) | (block3 >>> 46));
+        values[valuesOffset++] = (int) ((block3 >>> 25) & 2097151L);
+        values[valuesOffset++] = (int) ((block3 >>> 4) & 2097151L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 15L) << 17) | (block4 >>> 47));
+        values[valuesOffset++] = (int) ((block4 >>> 26) & 2097151L);
+        values[valuesOffset++] = (int) ((block4 >>> 5) & 2097151L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 31L) << 16) | (block5 >>> 48));
+        values[valuesOffset++] = (int) ((block5 >>> 27) & 2097151L);
+        values[valuesOffset++] = (int) ((block5 >>> 6) & 2097151L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 63L) << 15) | (block6 >>> 49));
+        values[valuesOffset++] = (int) ((block6 >>> 28) & 2097151L);
+        values[valuesOffset++] = (int) ((block6 >>> 7) & 2097151L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 127L) << 14) | (block7 >>> 50));
+        values[valuesOffset++] = (int) ((block7 >>> 29) & 2097151L);
+        values[valuesOffset++] = (int) ((block7 >>> 8) & 2097151L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 255L) << 13) | (block8 >>> 51));
+        values[valuesOffset++] = (int) ((block8 >>> 30) & 2097151L);
+        values[valuesOffset++] = (int) ((block8 >>> 9) & 2097151L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 511L) << 12) | (block9 >>> 52));
+        values[valuesOffset++] = (int) ((block9 >>> 31) & 2097151L);
+        values[valuesOffset++] = (int) ((block9 >>> 10) & 2097151L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 1023L) << 11) | (block10 >>> 53));
+        values[valuesOffset++] = (int) ((block10 >>> 32) & 2097151L);
+        values[valuesOffset++] = (int) ((block10 >>> 11) & 2097151L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 2047L) << 10) | (block11 >>> 54));
+        values[valuesOffset++] = (int) ((block11 >>> 33) & 2097151L);
+        values[valuesOffset++] = (int) ((block11 >>> 12) & 2097151L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 4095L) << 9) | (block12 >>> 55));
+        values[valuesOffset++] = (int) ((block12 >>> 34) & 2097151L);
+        values[valuesOffset++] = (int) ((block12 >>> 13) & 2097151L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 8191L) << 8) | (block13 >>> 56));
+        values[valuesOffset++] = (int) ((block13 >>> 35) & 2097151L);
+        values[valuesOffset++] = (int) ((block13 >>> 14) & 2097151L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 16383L) << 7) | (block14 >>> 57));
+        values[valuesOffset++] = (int) ((block14 >>> 36) & 2097151L);
+        values[valuesOffset++] = (int) ((block14 >>> 15) & 2097151L);
+        final long block15 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block14 & 32767L) << 6) | (block15 >>> 58));
+        values[valuesOffset++] = (int) ((block15 >>> 37) & 2097151L);
+        values[valuesOffset++] = (int) ((block15 >>> 16) & 2097151L);
+        final long block16 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block15 & 65535L) << 5) | (block16 >>> 59));
+        values[valuesOffset++] = (int) ((block16 >>> 38) & 2097151L);
+        values[valuesOffset++] = (int) ((block16 >>> 17) & 2097151L);
+        final long block17 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block16 & 131071L) << 4) | (block17 >>> 60));
+        values[valuesOffset++] = (int) ((block17 >>> 39) & 2097151L);
+        values[valuesOffset++] = (int) ((block17 >>> 18) & 2097151L);
+        final long block18 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block17 & 262143L) << 3) | (block18 >>> 61));
+        values[valuesOffset++] = (int) ((block18 >>> 40) & 2097151L);
+        values[valuesOffset++] = (int) ((block18 >>> 19) & 2097151L);
+        final long block19 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block18 & 524287L) << 2) | (block19 >>> 62));
+        values[valuesOffset++] = (int) ((block19 >>> 41) & 2097151L);
+        values[valuesOffset++] = (int) ((block19 >>> 20) & 2097151L);
+        final long block20 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block19 & 1048575L) << 1) | (block20 >>> 63));
+        values[valuesOffset++] = (int) ((block20 >>> 42) & 2097151L);
+        values[valuesOffset++] = (int) ((block20 >>> 21) & 2097151L);
+        values[valuesOffset++] = (int) (block20 & 2097151L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 13) | (byte1 << 5) | (byte2 >>> 3);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 7) << 18) | (byte3 << 10) | (byte4 << 2) | (byte5 >>> 6);
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte5 & 63) << 15) | (byte6 << 7) | (byte7 >>> 1);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 1) << 20) | (byte8 << 12) | (byte9 << 4) | (byte10 >>> 4);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 15) << 17) | (byte11 << 9) | (byte12 << 1) | (byte13 >>> 7);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 127) << 14) | (byte14 << 6) | (byte15 >>> 2);
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 3) << 19) | (byte16 << 11) | (byte17 << 3) | (byte18 >>> 5);
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 31) << 16) | (byte19 << 8) | byte20;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte21 << 13) | (byte22 << 5) | (byte23 >>> 3);
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 7) << 18) | (byte24 << 10) | (byte25 << 2) | (byte26 >>> 6);
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte26 & 63) << 15) | (byte27 << 7) | (byte28 >>> 1);
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 1) << 20) | (byte29 << 12) | (byte30 << 4) | (byte31 >>> 4);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 15) << 17) | (byte32 << 9) | (byte33 << 1) | (byte34 >>> 7);
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte34 & 127) << 14) | (byte35 << 6) | (byte36 >>> 2);
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte36 & 3) << 19) | (byte37 << 11) | (byte38 << 3) | (byte39 >>> 5);
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte39 & 31) << 16) | (byte40 << 8) | byte41;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte42 << 13) | (byte43 << 5) | (byte44 >>> 3);
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte44 & 7) << 18) | (byte45 << 10) | (byte46 << 2) | (byte47 >>> 6);
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte47 & 63) << 15) | (byte48 << 7) | (byte49 >>> 1);
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte49 & 1) << 20) | (byte50 << 12) | (byte51 << 4) | (byte52 >>> 4);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 15) << 17) | (byte53 << 9) | (byte54 << 1) | (byte55 >>> 7);
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte55 & 127) << 14) | (byte56 << 6) | (byte57 >>> 2);
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte57 & 3) << 19) | (byte58 << 11) | (byte59 << 3) | (byte60 >>> 5);
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte60 & 31) << 16) | (byte61 << 8) | byte62;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte63 << 13) | (byte64 << 5) | (byte65 >>> 3);
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte65 & 7) << 18) | (byte66 << 10) | (byte67 << 2) | (byte68 >>> 6);
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte68 & 63) << 15) | (byte69 << 7) | (byte70 >>> 1);
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte70 & 1) << 20) | (byte71 << 12) | (byte72 << 4) | (byte73 >>> 4);
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte73 & 15) << 17) | (byte74 << 9) | (byte75 << 1) | (byte76 >>> 7);
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte76 & 127) << 14) | (byte77 << 6) | (byte78 >>> 2);
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte78 & 3) << 19) | (byte79 << 11) | (byte80 << 3) | (byte81 >>> 5);
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte81 & 31) << 16) | (byte82 << 8) | byte83;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte84 << 13) | (byte85 << 5) | (byte86 >>> 3);
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte86 & 7) << 18) | (byte87 << 10) | (byte88 << 2) | (byte89 >>> 6);
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte89 & 63) << 15) | (byte90 << 7) | (byte91 >>> 1);
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte91 & 1) << 20) | (byte92 << 12) | (byte93 << 4) | (byte94 >>> 4);
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte94 & 15) << 17) | (byte95 << 9) | (byte96 << 1) | (byte97 >>> 7);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 127) << 14) | (byte98 << 6) | (byte99 >>> 2);
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte99 & 3) << 19) | (byte100 << 11) | (byte101 << 3) | (byte102 >>> 5);
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte102 & 31) << 16) | (byte103 << 8) | byte104;
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte105 << 13) | (byte106 << 5) | (byte107 >>> 3);
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte107 & 7) << 18) | (byte108 << 10) | (byte109 << 2) | (byte110 >>> 6);
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte110 & 63) << 15) | (byte111 << 7) | (byte112 >>> 1);
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte112 & 1) << 20) | (byte113 << 12) | (byte114 << 4) | (byte115 >>> 4);
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte115 & 15) << 17) | (byte116 << 9) | (byte117 << 1) | (byte118 >>> 7);
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        final int byte120 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte118 & 127) << 14) | (byte119 << 6) | (byte120 >>> 2);
+        final int byte121 = blocks[blocksOffset++] & 0xFF;
+        final int byte122 = blocks[blocksOffset++] & 0xFF;
+        final int byte123 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte120 & 3) << 19) | (byte121 << 11) | (byte122 << 3) | (byte123 >>> 5);
+        final int byte124 = blocks[blocksOffset++] & 0xFF;
+        final int byte125 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte123 & 31) << 16) | (byte124 << 8) | byte125;
+        final int byte126 = blocks[blocksOffset++] & 0xFF;
+        final int byte127 = blocks[blocksOffset++] & 0xFF;
+        final int byte128 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte126 << 13) | (byte127 << 5) | (byte128 >>> 3);
+        final int byte129 = blocks[blocksOffset++] & 0xFF;
+        final int byte130 = blocks[blocksOffset++] & 0xFF;
+        final int byte131 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte128 & 7) << 18) | (byte129 << 10) | (byte130 << 2) | (byte131 >>> 6);
+        final int byte132 = blocks[blocksOffset++] & 0xFF;
+        final int byte133 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte131 & 63) << 15) | (byte132 << 7) | (byte133 >>> 1);
+        final int byte134 = blocks[blocksOffset++] & 0xFF;
+        final int byte135 = blocks[blocksOffset++] & 0xFF;
+        final int byte136 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte133 & 1) << 20) | (byte134 << 12) | (byte135 << 4) | (byte136 >>> 4);
+        final int byte137 = blocks[blocksOffset++] & 0xFF;
+        final int byte138 = blocks[blocksOffset++] & 0xFF;
+        final int byte139 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte136 & 15) << 17) | (byte137 << 9) | (byte138 << 1) | (byte139 >>> 7);
+        final int byte140 = blocks[blocksOffset++] & 0xFF;
+        final int byte141 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte139 & 127) << 14) | (byte140 << 6) | (byte141 >>> 2);
+        final int byte142 = blocks[blocksOffset++] & 0xFF;
+        final int byte143 = blocks[blocksOffset++] & 0xFF;
+        final int byte144 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte141 & 3) << 19) | (byte142 << 11) | (byte143 << 3) | (byte144 >>> 5);
+        final int byte145 = blocks[blocksOffset++] & 0xFF;
+        final int byte146 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte144 & 31) << 16) | (byte145 << 8) | byte146;
+        final int byte147 = blocks[blocksOffset++] & 0xFF;
+        final int byte148 = blocks[blocksOffset++] & 0xFF;
+        final int byte149 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte147 << 13) | (byte148 << 5) | (byte149 >>> 3);
+        final int byte150 = blocks[blocksOffset++] & 0xFF;
+        final int byte151 = blocks[blocksOffset++] & 0xFF;
+        final int byte152 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte149 & 7) << 18) | (byte150 << 10) | (byte151 << 2) | (byte152 >>> 6);
+        final int byte153 = blocks[blocksOffset++] & 0xFF;
+        final int byte154 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte152 & 63) << 15) | (byte153 << 7) | (byte154 >>> 1);
+        final int byte155 = blocks[blocksOffset++] & 0xFF;
+        final int byte156 = blocks[blocksOffset++] & 0xFF;
+        final int byte157 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte154 & 1) << 20) | (byte155 << 12) | (byte156 << 4) | (byte157 >>> 4);
+        final int byte158 = blocks[blocksOffset++] & 0xFF;
+        final int byte159 = blocks[blocksOffset++] & 0xFF;
+        final int byte160 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte157 & 15) << 17) | (byte158 << 9) | (byte159 << 1) | (byte160 >>> 7);
+        final int byte161 = blocks[blocksOffset++] & 0xFF;
+        final int byte162 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte160 & 127) << 14) | (byte161 << 6) | (byte162 >>> 2);
+        final int byte163 = blocks[blocksOffset++] & 0xFF;
+        final int byte164 = blocks[blocksOffset++] & 0xFF;
+        final int byte165 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte162 & 3) << 19) | (byte163 << 11) | (byte164 << 3) | (byte165 >>> 5);
+        final int byte166 = blocks[blocksOffset++] & 0xFF;
+        final int byte167 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte165 & 31) << 16) | (byte166 << 8) | byte167;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -4107,6 +7938,34 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 21) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -4145,6 +8004,183 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 42);
+        values[valuesOffset++] = (int) ((block0 >>> 20) & 4194303L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 1048575L) << 2) | (block1 >>> 62));
+        values[valuesOffset++] = (int) ((block1 >>> 40) & 4194303L);
+        values[valuesOffset++] = (int) ((block1 >>> 18) & 4194303L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 262143L) << 4) | (block2 >>> 60));
+        values[valuesOffset++] = (int) ((block2 >>> 38) & 4194303L);
+        values[valuesOffset++] = (int) ((block2 >>> 16) & 4194303L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 65535L) << 6) | (block3 >>> 58));
+        values[valuesOffset++] = (int) ((block3 >>> 36) & 4194303L);
+        values[valuesOffset++] = (int) ((block3 >>> 14) & 4194303L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 16383L) << 8) | (block4 >>> 56));
+        values[valuesOffset++] = (int) ((block4 >>> 34) & 4194303L);
+        values[valuesOffset++] = (int) ((block4 >>> 12) & 4194303L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 4095L) << 10) | (block5 >>> 54));
+        values[valuesOffset++] = (int) ((block5 >>> 32) & 4194303L);
+        values[valuesOffset++] = (int) ((block5 >>> 10) & 4194303L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 1023L) << 12) | (block6 >>> 52));
+        values[valuesOffset++] = (int) ((block6 >>> 30) & 4194303L);
+        values[valuesOffset++] = (int) ((block6 >>> 8) & 4194303L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 255L) << 14) | (block7 >>> 50));
+        values[valuesOffset++] = (int) ((block7 >>> 28) & 4194303L);
+        values[valuesOffset++] = (int) ((block7 >>> 6) & 4194303L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 63L) << 16) | (block8 >>> 48));
+        values[valuesOffset++] = (int) ((block8 >>> 26) & 4194303L);
+        values[valuesOffset++] = (int) ((block8 >>> 4) & 4194303L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 15L) << 18) | (block9 >>> 46));
+        values[valuesOffset++] = (int) ((block9 >>> 24) & 4194303L);
+        values[valuesOffset++] = (int) ((block9 >>> 2) & 4194303L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 3L) << 20) | (block10 >>> 44));
+        values[valuesOffset++] = (int) ((block10 >>> 22) & 4194303L);
+        values[valuesOffset++] = (int) (block10 & 4194303L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 14) | (byte1 << 6) | (byte2 >>> 2);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 3) << 20) | (byte3 << 12) | (byte4 << 4) | (byte5 >>> 4);
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte5 & 15) << 18) | (byte6 << 10) | (byte7 << 2) | (byte8 >>> 6);
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte8 & 63) << 16) | (byte9 << 8) | byte10;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte11 << 14) | (byte12 << 6) | (byte13 >>> 2);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 3) << 20) | (byte14 << 12) | (byte15 << 4) | (byte16 >>> 4);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 15) << 18) | (byte17 << 10) | (byte18 << 2) | (byte19 >>> 6);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 63) << 16) | (byte20 << 8) | byte21;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte22 << 14) | (byte23 << 6) | (byte24 >>> 2);
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte24 & 3) << 20) | (byte25 << 12) | (byte26 << 4) | (byte27 >>> 4);
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte27 & 15) << 18) | (byte28 << 10) | (byte29 << 2) | (byte30 >>> 6);
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte30 & 63) << 16) | (byte31 << 8) | byte32;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte33 << 14) | (byte34 << 6) | (byte35 >>> 2);
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte35 & 3) << 20) | (byte36 << 12) | (byte37 << 4) | (byte38 >>> 4);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 15) << 18) | (byte39 << 10) | (byte40 << 2) | (byte41 >>> 6);
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte41 & 63) << 16) | (byte42 << 8) | byte43;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte44 << 14) | (byte45 << 6) | (byte46 >>> 2);
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte46 & 3) << 20) | (byte47 << 12) | (byte48 << 4) | (byte49 >>> 4);
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte49 & 15) << 18) | (byte50 << 10) | (byte51 << 2) | (byte52 >>> 6);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 63) << 16) | (byte53 << 8) | byte54;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte55 << 14) | (byte56 << 6) | (byte57 >>> 2);
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte57 & 3) << 20) | (byte58 << 12) | (byte59 << 4) | (byte60 >>> 4);
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte60 & 15) << 18) | (byte61 << 10) | (byte62 << 2) | (byte63 >>> 6);
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte63 & 63) << 16) | (byte64 << 8) | byte65;
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte66 << 14) | (byte67 << 6) | (byte68 >>> 2);
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte68 & 3) << 20) | (byte69 << 12) | (byte70 << 4) | (byte71 >>> 4);
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte71 & 15) << 18) | (byte72 << 10) | (byte73 << 2) | (byte74 >>> 6);
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte74 & 63) << 16) | (byte75 << 8) | byte76;
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte77 << 14) | (byte78 << 6) | (byte79 >>> 2);
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte79 & 3) << 20) | (byte80 << 12) | (byte81 << 4) | (byte82 >>> 4);
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte82 & 15) << 18) | (byte83 << 10) | (byte84 << 2) | (byte85 >>> 6);
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte85 & 63) << 16) | (byte86 << 8) | byte87;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -4324,6 +8360,24 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 22) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -4352,6 +8406,355 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 41);
+        values[valuesOffset++] = (int) ((block0 >>> 18) & 8388607L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 262143L) << 5) | (block1 >>> 59));
+        values[valuesOffset++] = (int) ((block1 >>> 36) & 8388607L);
+        values[valuesOffset++] = (int) ((block1 >>> 13) & 8388607L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 8191L) << 10) | (block2 >>> 54));
+        values[valuesOffset++] = (int) ((block2 >>> 31) & 8388607L);
+        values[valuesOffset++] = (int) ((block2 >>> 8) & 8388607L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 255L) << 15) | (block3 >>> 49));
+        values[valuesOffset++] = (int) ((block3 >>> 26) & 8388607L);
+        values[valuesOffset++] = (int) ((block3 >>> 3) & 8388607L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 7L) << 20) | (block4 >>> 44));
+        values[valuesOffset++] = (int) ((block4 >>> 21) & 8388607L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 2097151L) << 2) | (block5 >>> 62));
+        values[valuesOffset++] = (int) ((block5 >>> 39) & 8388607L);
+        values[valuesOffset++] = (int) ((block5 >>> 16) & 8388607L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 65535L) << 7) | (block6 >>> 57));
+        values[valuesOffset++] = (int) ((block6 >>> 34) & 8388607L);
+        values[valuesOffset++] = (int) ((block6 >>> 11) & 8388607L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 2047L) << 12) | (block7 >>> 52));
+        values[valuesOffset++] = (int) ((block7 >>> 29) & 8388607L);
+        values[valuesOffset++] = (int) ((block7 >>> 6) & 8388607L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 63L) << 17) | (block8 >>> 47));
+        values[valuesOffset++] = (int) ((block8 >>> 24) & 8388607L);
+        values[valuesOffset++] = (int) ((block8 >>> 1) & 8388607L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 1L) << 22) | (block9 >>> 42));
+        values[valuesOffset++] = (int) ((block9 >>> 19) & 8388607L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 524287L) << 4) | (block10 >>> 60));
+        values[valuesOffset++] = (int) ((block10 >>> 37) & 8388607L);
+        values[valuesOffset++] = (int) ((block10 >>> 14) & 8388607L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 16383L) << 9) | (block11 >>> 55));
+        values[valuesOffset++] = (int) ((block11 >>> 32) & 8388607L);
+        values[valuesOffset++] = (int) ((block11 >>> 9) & 8388607L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 511L) << 14) | (block12 >>> 50));
+        values[valuesOffset++] = (int) ((block12 >>> 27) & 8388607L);
+        values[valuesOffset++] = (int) ((block12 >>> 4) & 8388607L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 15L) << 19) | (block13 >>> 45));
+        values[valuesOffset++] = (int) ((block13 >>> 22) & 8388607L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 4194303L) << 1) | (block14 >>> 63));
+        values[valuesOffset++] = (int) ((block14 >>> 40) & 8388607L);
+        values[valuesOffset++] = (int) ((block14 >>> 17) & 8388607L);
+        final long block15 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block14 & 131071L) << 6) | (block15 >>> 58));
+        values[valuesOffset++] = (int) ((block15 >>> 35) & 8388607L);
+        values[valuesOffset++] = (int) ((block15 >>> 12) & 8388607L);
+        final long block16 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block15 & 4095L) << 11) | (block16 >>> 53));
+        values[valuesOffset++] = (int) ((block16 >>> 30) & 8388607L);
+        values[valuesOffset++] = (int) ((block16 >>> 7) & 8388607L);
+        final long block17 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block16 & 127L) << 16) | (block17 >>> 48));
+        values[valuesOffset++] = (int) ((block17 >>> 25) & 8388607L);
+        values[valuesOffset++] = (int) ((block17 >>> 2) & 8388607L);
+        final long block18 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block17 & 3L) << 21) | (block18 >>> 43));
+        values[valuesOffset++] = (int) ((block18 >>> 20) & 8388607L);
+        final long block19 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block18 & 1048575L) << 3) | (block19 >>> 61));
+        values[valuesOffset++] = (int) ((block19 >>> 38) & 8388607L);
+        values[valuesOffset++] = (int) ((block19 >>> 15) & 8388607L);
+        final long block20 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block19 & 32767L) << 8) | (block20 >>> 56));
+        values[valuesOffset++] = (int) ((block20 >>> 33) & 8388607L);
+        values[valuesOffset++] = (int) ((block20 >>> 10) & 8388607L);
+        final long block21 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block20 & 1023L) << 13) | (block21 >>> 51));
+        values[valuesOffset++] = (int) ((block21 >>> 28) & 8388607L);
+        values[valuesOffset++] = (int) ((block21 >>> 5) & 8388607L);
+        final long block22 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block21 & 31L) << 18) | (block22 >>> 46));
+        values[valuesOffset++] = (int) ((block22 >>> 23) & 8388607L);
+        values[valuesOffset++] = (int) (block22 & 8388607L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 15) | (byte1 << 7) | (byte2 >>> 1);
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte2 & 1) << 22) | (byte3 << 14) | (byte4 << 6) | (byte5 >>> 2);
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte5 & 3) << 21) | (byte6 << 13) | (byte7 << 5) | (byte8 >>> 3);
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte8 & 7) << 20) | (byte9 << 12) | (byte10 << 4) | (byte11 >>> 4);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 15) << 19) | (byte12 << 11) | (byte13 << 3) | (byte14 >>> 5);
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte14 & 31) << 18) | (byte15 << 10) | (byte16 << 2) | (byte17 >>> 6);
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte17 & 63) << 17) | (byte18 << 9) | (byte19 << 1) | (byte20 >>> 7);
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte20 & 127) << 16) | (byte21 << 8) | byte22;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte23 << 15) | (byte24 << 7) | (byte25 >>> 1);
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte25 & 1) << 22) | (byte26 << 14) | (byte27 << 6) | (byte28 >>> 2);
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 3) << 21) | (byte29 << 13) | (byte30 << 5) | (byte31 >>> 3);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 7) << 20) | (byte32 << 12) | (byte33 << 4) | (byte34 >>> 4);
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte34 & 15) << 19) | (byte35 << 11) | (byte36 << 3) | (byte37 >>> 5);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 31) << 18) | (byte38 << 10) | (byte39 << 2) | (byte40 >>> 6);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 63) << 17) | (byte41 << 9) | (byte42 << 1) | (byte43 >>> 7);
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte43 & 127) << 16) | (byte44 << 8) | byte45;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte46 << 15) | (byte47 << 7) | (byte48 >>> 1);
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte48 & 1) << 22) | (byte49 << 14) | (byte50 << 6) | (byte51 >>> 2);
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte51 & 3) << 21) | (byte52 << 13) | (byte53 << 5) | (byte54 >>> 3);
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte54 & 7) << 20) | (byte55 << 12) | (byte56 << 4) | (byte57 >>> 4);
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte57 & 15) << 19) | (byte58 << 11) | (byte59 << 3) | (byte60 >>> 5);
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte60 & 31) << 18) | (byte61 << 10) | (byte62 << 2) | (byte63 >>> 6);
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte63 & 63) << 17) | (byte64 << 9) | (byte65 << 1) | (byte66 >>> 7);
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte66 & 127) << 16) | (byte67 << 8) | byte68;
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte69 << 15) | (byte70 << 7) | (byte71 >>> 1);
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte71 & 1) << 22) | (byte72 << 14) | (byte73 << 6) | (byte74 >>> 2);
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte74 & 3) << 21) | (byte75 << 13) | (byte76 << 5) | (byte77 >>> 3);
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte77 & 7) << 20) | (byte78 << 12) | (byte79 << 4) | (byte80 >>> 4);
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte80 & 15) << 19) | (byte81 << 11) | (byte82 << 3) | (byte83 >>> 5);
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte83 & 31) << 18) | (byte84 << 10) | (byte85 << 2) | (byte86 >>> 6);
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte86 & 63) << 17) | (byte87 << 9) | (byte88 << 1) | (byte89 >>> 7);
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte89 & 127) << 16) | (byte90 << 8) | byte91;
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte92 << 15) | (byte93 << 7) | (byte94 >>> 1);
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte94 & 1) << 22) | (byte95 << 14) | (byte96 << 6) | (byte97 >>> 2);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 3) << 21) | (byte98 << 13) | (byte99 << 5) | (byte100 >>> 3);
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte100 & 7) << 20) | (byte101 << 12) | (byte102 << 4) | (byte103 >>> 4);
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte103 & 15) << 19) | (byte104 << 11) | (byte105 << 3) | (byte106 >>> 5);
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte106 & 31) << 18) | (byte107 << 10) | (byte108 << 2) | (byte109 >>> 6);
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte109 & 63) << 17) | (byte110 << 9) | (byte111 << 1) | (byte112 >>> 7);
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte112 & 127) << 16) | (byte113 << 8) | byte114;
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte115 << 15) | (byte116 << 7) | (byte117 >>> 1);
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        final int byte120 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte117 & 1) << 22) | (byte118 << 14) | (byte119 << 6) | (byte120 >>> 2);
+        final int byte121 = blocks[blocksOffset++] & 0xFF;
+        final int byte122 = blocks[blocksOffset++] & 0xFF;
+        final int byte123 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte120 & 3) << 21) | (byte121 << 13) | (byte122 << 5) | (byte123 >>> 3);
+        final int byte124 = blocks[blocksOffset++] & 0xFF;
+        final int byte125 = blocks[blocksOffset++] & 0xFF;
+        final int byte126 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte123 & 7) << 20) | (byte124 << 12) | (byte125 << 4) | (byte126 >>> 4);
+        final int byte127 = blocks[blocksOffset++] & 0xFF;
+        final int byte128 = blocks[blocksOffset++] & 0xFF;
+        final int byte129 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte126 & 15) << 19) | (byte127 << 11) | (byte128 << 3) | (byte129 >>> 5);
+        final int byte130 = blocks[blocksOffset++] & 0xFF;
+        final int byte131 = blocks[blocksOffset++] & 0xFF;
+        final int byte132 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte129 & 31) << 18) | (byte130 << 10) | (byte131 << 2) | (byte132 >>> 6);
+        final int byte133 = blocks[blocksOffset++] & 0xFF;
+        final int byte134 = blocks[blocksOffset++] & 0xFF;
+        final int byte135 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte132 & 63) << 17) | (byte133 << 9) | (byte134 << 1) | (byte135 >>> 7);
+        final int byte136 = blocks[blocksOffset++] & 0xFF;
+        final int byte137 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte135 & 127) << 16) | (byte136 << 8) | byte137;
+        final int byte138 = blocks[blocksOffset++] & 0xFF;
+        final int byte139 = blocks[blocksOffset++] & 0xFF;
+        final int byte140 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte138 << 15) | (byte139 << 7) | (byte140 >>> 1);
+        final int byte141 = blocks[blocksOffset++] & 0xFF;
+        final int byte142 = blocks[blocksOffset++] & 0xFF;
+        final int byte143 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte140 & 1) << 22) | (byte141 << 14) | (byte142 << 6) | (byte143 >>> 2);
+        final int byte144 = blocks[blocksOffset++] & 0xFF;
+        final int byte145 = blocks[blocksOffset++] & 0xFF;
+        final int byte146 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte143 & 3) << 21) | (byte144 << 13) | (byte145 << 5) | (byte146 >>> 3);
+        final int byte147 = blocks[blocksOffset++] & 0xFF;
+        final int byte148 = blocks[blocksOffset++] & 0xFF;
+        final int byte149 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte146 & 7) << 20) | (byte147 << 12) | (byte148 << 4) | (byte149 >>> 4);
+        final int byte150 = blocks[blocksOffset++] & 0xFF;
+        final int byte151 = blocks[blocksOffset++] & 0xFF;
+        final int byte152 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte149 & 15) << 19) | (byte150 << 11) | (byte151 << 3) | (byte152 >>> 5);
+        final int byte153 = blocks[blocksOffset++] & 0xFF;
+        final int byte154 = blocks[blocksOffset++] & 0xFF;
+        final int byte155 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte152 & 31) << 18) | (byte153 << 10) | (byte154 << 2) | (byte155 >>> 6);
+        final int byte156 = blocks[blocksOffset++] & 0xFF;
+        final int byte157 = blocks[blocksOffset++] & 0xFF;
+        final int byte158 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte155 & 63) << 17) | (byte156 << 9) | (byte157 << 1) | (byte158 >>> 7);
+        final int byte159 = blocks[blocksOffset++] & 0xFF;
+        final int byte160 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte158 & 127) << 16) | (byte159 << 8) | byte160;
+        final int byte161 = blocks[blocksOffset++] & 0xFF;
+        final int byte162 = blocks[blocksOffset++] & 0xFF;
+        final int byte163 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte161 << 15) | (byte162 << 7) | (byte163 >>> 1);
+        final int byte164 = blocks[blocksOffset++] & 0xFF;
+        final int byte165 = blocks[blocksOffset++] & 0xFF;
+        final int byte166 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte163 & 1) << 22) | (byte164 << 14) | (byte165 << 6) | (byte166 >>> 2);
+        final int byte167 = blocks[blocksOffset++] & 0xFF;
+        final int byte168 = blocks[blocksOffset++] & 0xFF;
+        final int byte169 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte166 & 3) << 21) | (byte167 << 13) | (byte168 << 5) | (byte169 >>> 3);
+        final int byte170 = blocks[blocksOffset++] & 0xFF;
+        final int byte171 = blocks[blocksOffset++] & 0xFF;
+        final int byte172 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte169 & 7) << 20) | (byte170 << 12) | (byte171 << 4) | (byte172 >>> 4);
+        final int byte173 = blocks[blocksOffset++] & 0xFF;
+        final int byte174 = blocks[blocksOffset++] & 0xFF;
+        final int byte175 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte172 & 15) << 19) | (byte173 << 11) | (byte174 << 3) | (byte175 >>> 5);
+        final int byte176 = blocks[blocksOffset++] & 0xFF;
+        final int byte177 = blocks[blocksOffset++] & 0xFF;
+        final int byte178 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte175 & 31) << 18) | (byte176 << 10) | (byte177 << 2) | (byte178 >>> 6);
+        final int byte179 = blocks[blocksOffset++] & 0xFF;
+        final int byte180 = blocks[blocksOffset++] & 0xFF;
+        final int byte181 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte178 & 63) << 17) | (byte179 << 9) | (byte180 << 1) | (byte181 >>> 7);
+        final int byte182 = blocks[blocksOffset++] & 0xFF;
+        final int byte183 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte181 & 127) << 16) | (byte182 << 8) | byte183;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -4703,6 +9106,36 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 23) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -4743,6 +9176,63 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 8;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 40);
+        values[valuesOffset++] = (int) ((block0 >>> 16) & 16777215L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 65535L) << 8) | (block1 >>> 56));
+        values[valuesOffset++] = (int) ((block1 >>> 32) & 16777215L);
+        values[valuesOffset++] = (int) ((block1 >>> 8) & 16777215L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 255L) << 16) | (block2 >>> 48));
+        values[valuesOffset++] = (int) ((block2 >>> 24) & 16777215L);
+        values[valuesOffset++] = (int) (block2 & 16777215L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 16) | (byte1 << 8) | byte2;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte3 << 16) | (byte4 << 8) | byte5;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte6 << 16) | (byte7 << 8) | byte8;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte9 << 16) | (byte10 << 8) | byte11;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte12 << 16) | (byte13 << 8) | byte14;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte15 << 16) | (byte16 << 8) | byte17;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte18 << 16) | (byte19 << 8) | byte20;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte21 << 16) | (byte22 << 8) | byte23;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -4802,6 +9292,16 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 24) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -4822,6 +9322,373 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 39);
+        values[valuesOffset++] = (int) ((block0 >>> 14) & 33554431L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 16383L) << 11) | (block1 >>> 53));
+        values[valuesOffset++] = (int) ((block1 >>> 28) & 33554431L);
+        values[valuesOffset++] = (int) ((block1 >>> 3) & 33554431L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 7L) << 22) | (block2 >>> 42));
+        values[valuesOffset++] = (int) ((block2 >>> 17) & 33554431L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 131071L) << 8) | (block3 >>> 56));
+        values[valuesOffset++] = (int) ((block3 >>> 31) & 33554431L);
+        values[valuesOffset++] = (int) ((block3 >>> 6) & 33554431L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 63L) << 19) | (block4 >>> 45));
+        values[valuesOffset++] = (int) ((block4 >>> 20) & 33554431L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 1048575L) << 5) | (block5 >>> 59));
+        values[valuesOffset++] = (int) ((block5 >>> 34) & 33554431L);
+        values[valuesOffset++] = (int) ((block5 >>> 9) & 33554431L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 511L) << 16) | (block6 >>> 48));
+        values[valuesOffset++] = (int) ((block6 >>> 23) & 33554431L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 8388607L) << 2) | (block7 >>> 62));
+        values[valuesOffset++] = (int) ((block7 >>> 37) & 33554431L);
+        values[valuesOffset++] = (int) ((block7 >>> 12) & 33554431L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 4095L) << 13) | (block8 >>> 51));
+        values[valuesOffset++] = (int) ((block8 >>> 26) & 33554431L);
+        values[valuesOffset++] = (int) ((block8 >>> 1) & 33554431L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 1L) << 24) | (block9 >>> 40));
+        values[valuesOffset++] = (int) ((block9 >>> 15) & 33554431L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 32767L) << 10) | (block10 >>> 54));
+        values[valuesOffset++] = (int) ((block10 >>> 29) & 33554431L);
+        values[valuesOffset++] = (int) ((block10 >>> 4) & 33554431L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 15L) << 21) | (block11 >>> 43));
+        values[valuesOffset++] = (int) ((block11 >>> 18) & 33554431L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 262143L) << 7) | (block12 >>> 57));
+        values[valuesOffset++] = (int) ((block12 >>> 32) & 33554431L);
+        values[valuesOffset++] = (int) ((block12 >>> 7) & 33554431L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 127L) << 18) | (block13 >>> 46));
+        values[valuesOffset++] = (int) ((block13 >>> 21) & 33554431L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 2097151L) << 4) | (block14 >>> 60));
+        values[valuesOffset++] = (int) ((block14 >>> 35) & 33554431L);
+        values[valuesOffset++] = (int) ((block14 >>> 10) & 33554431L);
+        final long block15 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block14 & 1023L) << 15) | (block15 >>> 49));
+        values[valuesOffset++] = (int) ((block15 >>> 24) & 33554431L);
+        final long block16 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block15 & 16777215L) << 1) | (block16 >>> 63));
+        values[valuesOffset++] = (int) ((block16 >>> 38) & 33554431L);
+        values[valuesOffset++] = (int) ((block16 >>> 13) & 33554431L);
+        final long block17 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block16 & 8191L) << 12) | (block17 >>> 52));
+        values[valuesOffset++] = (int) ((block17 >>> 27) & 33554431L);
+        values[valuesOffset++] = (int) ((block17 >>> 2) & 33554431L);
+        final long block18 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block17 & 3L) << 23) | (block18 >>> 41));
+        values[valuesOffset++] = (int) ((block18 >>> 16) & 33554431L);
+        final long block19 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block18 & 65535L) << 9) | (block19 >>> 55));
+        values[valuesOffset++] = (int) ((block19 >>> 30) & 33554431L);
+        values[valuesOffset++] = (int) ((block19 >>> 5) & 33554431L);
+        final long block20 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block19 & 31L) << 20) | (block20 >>> 44));
+        values[valuesOffset++] = (int) ((block20 >>> 19) & 33554431L);
+        final long block21 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block20 & 524287L) << 6) | (block21 >>> 58));
+        values[valuesOffset++] = (int) ((block21 >>> 33) & 33554431L);
+        values[valuesOffset++] = (int) ((block21 >>> 8) & 33554431L);
+        final long block22 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block21 & 255L) << 17) | (block22 >>> 47));
+        values[valuesOffset++] = (int) ((block22 >>> 22) & 33554431L);
+        final long block23 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block22 & 4194303L) << 3) | (block23 >>> 61));
+        values[valuesOffset++] = (int) ((block23 >>> 36) & 33554431L);
+        values[valuesOffset++] = (int) ((block23 >>> 11) & 33554431L);
+        final long block24 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block23 & 2047L) << 14) | (block24 >>> 50));
+        values[valuesOffset++] = (int) ((block24 >>> 25) & 33554431L);
+        values[valuesOffset++] = (int) (block24 & 33554431L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 17) | (byte1 << 9) | (byte2 << 1) | (byte3 >>> 7);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 127) << 18) | (byte4 << 10) | (byte5 << 2) | (byte6 >>> 6);
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 63) << 19) | (byte7 << 11) | (byte8 << 3) | (byte9 >>> 5);
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte9 & 31) << 20) | (byte10 << 12) | (byte11 << 4) | (byte12 >>> 4);
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte12 & 15) << 21) | (byte13 << 13) | (byte14 << 5) | (byte15 >>> 3);
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 7) << 22) | (byte16 << 14) | (byte17 << 6) | (byte18 >>> 2);
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 3) << 23) | (byte19 << 15) | (byte20 << 7) | (byte21 >>> 1);
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 1) << 24) | (byte22 << 16) | (byte23 << 8) | byte24;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte25 << 17) | (byte26 << 9) | (byte27 << 1) | (byte28 >>> 7);
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte28 & 127) << 18) | (byte29 << 10) | (byte30 << 2) | (byte31 >>> 6);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 63) << 19) | (byte32 << 11) | (byte33 << 3) | (byte34 >>> 5);
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte34 & 31) << 20) | (byte35 << 12) | (byte36 << 4) | (byte37 >>> 4);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 15) << 21) | (byte38 << 13) | (byte39 << 5) | (byte40 >>> 3);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 7) << 22) | (byte41 << 14) | (byte42 << 6) | (byte43 >>> 2);
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte43 & 3) << 23) | (byte44 << 15) | (byte45 << 7) | (byte46 >>> 1);
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte46 & 1) << 24) | (byte47 << 16) | (byte48 << 8) | byte49;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte50 << 17) | (byte51 << 9) | (byte52 << 1) | (byte53 >>> 7);
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte53 & 127) << 18) | (byte54 << 10) | (byte55 << 2) | (byte56 >>> 6);
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte56 & 63) << 19) | (byte57 << 11) | (byte58 << 3) | (byte59 >>> 5);
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte59 & 31) << 20) | (byte60 << 12) | (byte61 << 4) | (byte62 >>> 4);
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte62 & 15) << 21) | (byte63 << 13) | (byte64 << 5) | (byte65 >>> 3);
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte65 & 7) << 22) | (byte66 << 14) | (byte67 << 6) | (byte68 >>> 2);
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte68 & 3) << 23) | (byte69 << 15) | (byte70 << 7) | (byte71 >>> 1);
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte71 & 1) << 24) | (byte72 << 16) | (byte73 << 8) | byte74;
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte75 << 17) | (byte76 << 9) | (byte77 << 1) | (byte78 >>> 7);
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte78 & 127) << 18) | (byte79 << 10) | (byte80 << 2) | (byte81 >>> 6);
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte81 & 63) << 19) | (byte82 << 11) | (byte83 << 3) | (byte84 >>> 5);
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte84 & 31) << 20) | (byte85 << 12) | (byte86 << 4) | (byte87 >>> 4);
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte87 & 15) << 21) | (byte88 << 13) | (byte89 << 5) | (byte90 >>> 3);
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte90 & 7) << 22) | (byte91 << 14) | (byte92 << 6) | (byte93 >>> 2);
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte93 & 3) << 23) | (byte94 << 15) | (byte95 << 7) | (byte96 >>> 1);
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte96 & 1) << 24) | (byte97 << 16) | (byte98 << 8) | byte99;
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte100 << 17) | (byte101 << 9) | (byte102 << 1) | (byte103 >>> 7);
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte103 & 127) << 18) | (byte104 << 10) | (byte105 << 2) | (byte106 >>> 6);
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte106 & 63) << 19) | (byte107 << 11) | (byte108 << 3) | (byte109 >>> 5);
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte109 & 31) << 20) | (byte110 << 12) | (byte111 << 4) | (byte112 >>> 4);
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte112 & 15) << 21) | (byte113 << 13) | (byte114 << 5) | (byte115 >>> 3);
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte115 & 7) << 22) | (byte116 << 14) | (byte117 << 6) | (byte118 >>> 2);
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        final int byte120 = blocks[blocksOffset++] & 0xFF;
+        final int byte121 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte118 & 3) << 23) | (byte119 << 15) | (byte120 << 7) | (byte121 >>> 1);
+        final int byte122 = blocks[blocksOffset++] & 0xFF;
+        final int byte123 = blocks[blocksOffset++] & 0xFF;
+        final int byte124 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte121 & 1) << 24) | (byte122 << 16) | (byte123 << 8) | byte124;
+        final int byte125 = blocks[blocksOffset++] & 0xFF;
+        final int byte126 = blocks[blocksOffset++] & 0xFF;
+        final int byte127 = blocks[blocksOffset++] & 0xFF;
+        final int byte128 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte125 << 17) | (byte126 << 9) | (byte127 << 1) | (byte128 >>> 7);
+        final int byte129 = blocks[blocksOffset++] & 0xFF;
+        final int byte130 = blocks[blocksOffset++] & 0xFF;
+        final int byte131 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte128 & 127) << 18) | (byte129 << 10) | (byte130 << 2) | (byte131 >>> 6);
+        final int byte132 = blocks[blocksOffset++] & 0xFF;
+        final int byte133 = blocks[blocksOffset++] & 0xFF;
+        final int byte134 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte131 & 63) << 19) | (byte132 << 11) | (byte133 << 3) | (byte134 >>> 5);
+        final int byte135 = blocks[blocksOffset++] & 0xFF;
+        final int byte136 = blocks[blocksOffset++] & 0xFF;
+        final int byte137 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte134 & 31) << 20) | (byte135 << 12) | (byte136 << 4) | (byte137 >>> 4);
+        final int byte138 = blocks[blocksOffset++] & 0xFF;
+        final int byte139 = blocks[blocksOffset++] & 0xFF;
+        final int byte140 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte137 & 15) << 21) | (byte138 << 13) | (byte139 << 5) | (byte140 >>> 3);
+        final int byte141 = blocks[blocksOffset++] & 0xFF;
+        final int byte142 = blocks[blocksOffset++] & 0xFF;
+        final int byte143 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte140 & 7) << 22) | (byte141 << 14) | (byte142 << 6) | (byte143 >>> 2);
+        final int byte144 = blocks[blocksOffset++] & 0xFF;
+        final int byte145 = blocks[blocksOffset++] & 0xFF;
+        final int byte146 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte143 & 3) << 23) | (byte144 << 15) | (byte145 << 7) | (byte146 >>> 1);
+        final int byte147 = blocks[blocksOffset++] & 0xFF;
+        final int byte148 = blocks[blocksOffset++] & 0xFF;
+        final int byte149 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte146 & 1) << 24) | (byte147 << 16) | (byte148 << 8) | byte149;
+        final int byte150 = blocks[blocksOffset++] & 0xFF;
+        final int byte151 = blocks[blocksOffset++] & 0xFF;
+        final int byte152 = blocks[blocksOffset++] & 0xFF;
+        final int byte153 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte150 << 17) | (byte151 << 9) | (byte152 << 1) | (byte153 >>> 7);
+        final int byte154 = blocks[blocksOffset++] & 0xFF;
+        final int byte155 = blocks[blocksOffset++] & 0xFF;
+        final int byte156 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte153 & 127) << 18) | (byte154 << 10) | (byte155 << 2) | (byte156 >>> 6);
+        final int byte157 = blocks[blocksOffset++] & 0xFF;
+        final int byte158 = blocks[blocksOffset++] & 0xFF;
+        final int byte159 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte156 & 63) << 19) | (byte157 << 11) | (byte158 << 3) | (byte159 >>> 5);
+        final int byte160 = blocks[blocksOffset++] & 0xFF;
+        final int byte161 = blocks[blocksOffset++] & 0xFF;
+        final int byte162 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte159 & 31) << 20) | (byte160 << 12) | (byte161 << 4) | (byte162 >>> 4);
+        final int byte163 = blocks[blocksOffset++] & 0xFF;
+        final int byte164 = blocks[blocksOffset++] & 0xFF;
+        final int byte165 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte162 & 15) << 21) | (byte163 << 13) | (byte164 << 5) | (byte165 >>> 3);
+        final int byte166 = blocks[blocksOffset++] & 0xFF;
+        final int byte167 = blocks[blocksOffset++] & 0xFF;
+        final int byte168 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte165 & 7) << 22) | (byte166 << 14) | (byte167 << 6) | (byte168 >>> 2);
+        final int byte169 = blocks[blocksOffset++] & 0xFF;
+        final int byte170 = blocks[blocksOffset++] & 0xFF;
+        final int byte171 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte168 & 3) << 23) | (byte169 << 15) | (byte170 << 7) | (byte171 >>> 1);
+        final int byte172 = blocks[blocksOffset++] & 0xFF;
+        final int byte173 = blocks[blocksOffset++] & 0xFF;
+        final int byte174 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte171 & 1) << 24) | (byte172 << 16) | (byte173 << 8) | byte174;
+        final int byte175 = blocks[blocksOffset++] & 0xFF;
+        final int byte176 = blocks[blocksOffset++] & 0xFF;
+        final int byte177 = blocks[blocksOffset++] & 0xFF;
+        final int byte178 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte175 << 17) | (byte176 << 9) | (byte177 << 1) | (byte178 >>> 7);
+        final int byte179 = blocks[blocksOffset++] & 0xFF;
+        final int byte180 = blocks[blocksOffset++] & 0xFF;
+        final int byte181 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte178 & 127) << 18) | (byte179 << 10) | (byte180 << 2) | (byte181 >>> 6);
+        final int byte182 = blocks[blocksOffset++] & 0xFF;
+        final int byte183 = blocks[blocksOffset++] & 0xFF;
+        final int byte184 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte181 & 63) << 19) | (byte182 << 11) | (byte183 << 3) | (byte184 >>> 5);
+        final int byte185 = blocks[blocksOffset++] & 0xFF;
+        final int byte186 = blocks[blocksOffset++] & 0xFF;
+        final int byte187 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte184 & 31) << 20) | (byte185 << 12) | (byte186 << 4) | (byte187 >>> 4);
+        final int byte188 = blocks[blocksOffset++] & 0xFF;
+        final int byte189 = blocks[blocksOffset++] & 0xFF;
+        final int byte190 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte187 & 15) << 21) | (byte188 << 13) | (byte189 << 5) | (byte190 >>> 3);
+        final int byte191 = blocks[blocksOffset++] & 0xFF;
+        final int byte192 = blocks[blocksOffset++] & 0xFF;
+        final int byte193 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte190 & 7) << 22) | (byte191 << 14) | (byte192 << 6) | (byte193 >>> 2);
+        final int byte194 = blocks[blocksOffset++] & 0xFF;
+        final int byte195 = blocks[blocksOffset++] & 0xFF;
+        final int byte196 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte193 & 3) << 23) | (byte194 << 15) | (byte195 << 7) | (byte196 >>> 1);
+        final int byte197 = blocks[blocksOffset++] & 0xFF;
+        final int byte198 = blocks[blocksOffset++] & 0xFF;
+        final int byte199 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte196 & 1) << 24) | (byte197 << 16) | (byte198 << 8) | byte199;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -5191,6 +10058,38 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 25) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -5233,6 +10132,201 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 38);
+        values[valuesOffset++] = (int) ((block0 >>> 12) & 67108863L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 4095L) << 14) | (block1 >>> 50));
+        values[valuesOffset++] = (int) ((block1 >>> 24) & 67108863L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 16777215L) << 2) | (block2 >>> 62));
+        values[valuesOffset++] = (int) ((block2 >>> 36) & 67108863L);
+        values[valuesOffset++] = (int) ((block2 >>> 10) & 67108863L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 1023L) << 16) | (block3 >>> 48));
+        values[valuesOffset++] = (int) ((block3 >>> 22) & 67108863L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 4194303L) << 4) | (block4 >>> 60));
+        values[valuesOffset++] = (int) ((block4 >>> 34) & 67108863L);
+        values[valuesOffset++] = (int) ((block4 >>> 8) & 67108863L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 255L) << 18) | (block5 >>> 46));
+        values[valuesOffset++] = (int) ((block5 >>> 20) & 67108863L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 1048575L) << 6) | (block6 >>> 58));
+        values[valuesOffset++] = (int) ((block6 >>> 32) & 67108863L);
+        values[valuesOffset++] = (int) ((block6 >>> 6) & 67108863L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 63L) << 20) | (block7 >>> 44));
+        values[valuesOffset++] = (int) ((block7 >>> 18) & 67108863L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 262143L) << 8) | (block8 >>> 56));
+        values[valuesOffset++] = (int) ((block8 >>> 30) & 67108863L);
+        values[valuesOffset++] = (int) ((block8 >>> 4) & 67108863L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 15L) << 22) | (block9 >>> 42));
+        values[valuesOffset++] = (int) ((block9 >>> 16) & 67108863L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 65535L) << 10) | (block10 >>> 54));
+        values[valuesOffset++] = (int) ((block10 >>> 28) & 67108863L);
+        values[valuesOffset++] = (int) ((block10 >>> 2) & 67108863L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 3L) << 24) | (block11 >>> 40));
+        values[valuesOffset++] = (int) ((block11 >>> 14) & 67108863L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 16383L) << 12) | (block12 >>> 52));
+        values[valuesOffset++] = (int) ((block12 >>> 26) & 67108863L);
+        values[valuesOffset++] = (int) (block12 & 67108863L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 18) | (byte1 << 10) | (byte2 << 2) | (byte3 >>> 6);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 63) << 20) | (byte4 << 12) | (byte5 << 4) | (byte6 >>> 4);
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 15) << 22) | (byte7 << 14) | (byte8 << 6) | (byte9 >>> 2);
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte9 & 3) << 24) | (byte10 << 16) | (byte11 << 8) | byte12;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte13 << 18) | (byte14 << 10) | (byte15 << 2) | (byte16 >>> 6);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 63) << 20) | (byte17 << 12) | (byte18 << 4) | (byte19 >>> 4);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 15) << 22) | (byte20 << 14) | (byte21 << 6) | (byte22 >>> 2);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 3) << 24) | (byte23 << 16) | (byte24 << 8) | byte25;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte26 << 18) | (byte27 << 10) | (byte28 << 2) | (byte29 >>> 6);
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte29 & 63) << 20) | (byte30 << 12) | (byte31 << 4) | (byte32 >>> 4);
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte32 & 15) << 22) | (byte33 << 14) | (byte34 << 6) | (byte35 >>> 2);
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte35 & 3) << 24) | (byte36 << 16) | (byte37 << 8) | byte38;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte39 << 18) | (byte40 << 10) | (byte41 << 2) | (byte42 >>> 6);
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte42 & 63) << 20) | (byte43 << 12) | (byte44 << 4) | (byte45 >>> 4);
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte45 & 15) << 22) | (byte46 << 14) | (byte47 << 6) | (byte48 >>> 2);
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte48 & 3) << 24) | (byte49 << 16) | (byte50 << 8) | byte51;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte52 << 18) | (byte53 << 10) | (byte54 << 2) | (byte55 >>> 6);
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte55 & 63) << 20) | (byte56 << 12) | (byte57 << 4) | (byte58 >>> 4);
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte58 & 15) << 22) | (byte59 << 14) | (byte60 << 6) | (byte61 >>> 2);
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte61 & 3) << 24) | (byte62 << 16) | (byte63 << 8) | byte64;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte65 << 18) | (byte66 << 10) | (byte67 << 2) | (byte68 >>> 6);
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte68 & 63) << 20) | (byte69 << 12) | (byte70 << 4) | (byte71 >>> 4);
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte71 & 15) << 22) | (byte72 << 14) | (byte73 << 6) | (byte74 >>> 2);
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte74 & 3) << 24) | (byte75 << 16) | (byte76 << 8) | byte77;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte78 << 18) | (byte79 << 10) | (byte80 << 2) | (byte81 >>> 6);
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte81 & 63) << 20) | (byte82 << 12) | (byte83 << 4) | (byte84 >>> 4);
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte84 & 15) << 22) | (byte85 << 14) | (byte86 << 6) | (byte87 >>> 2);
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte87 & 3) << 24) | (byte88 << 16) | (byte89 << 8) | byte90;
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte91 << 18) | (byte92 << 10) | (byte93 << 2) | (byte94 >>> 6);
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte94 & 63) << 20) | (byte95 << 12) | (byte96 << 4) | (byte97 >>> 4);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 15) << 22) | (byte98 << 14) | (byte99 << 6) | (byte100 >>> 2);
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte100 & 3) << 24) | (byte101 << 16) | (byte102 << 8) | byte103;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -5430,6 +10524,26 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 26) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -5460,6 +10574,391 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 37);
+        values[valuesOffset++] = (int) ((block0 >>> 10) & 134217727L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 1023L) << 17) | (block1 >>> 47));
+        values[valuesOffset++] = (int) ((block1 >>> 20) & 134217727L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 1048575L) << 7) | (block2 >>> 57));
+        values[valuesOffset++] = (int) ((block2 >>> 30) & 134217727L);
+        values[valuesOffset++] = (int) ((block2 >>> 3) & 134217727L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 7L) << 24) | (block3 >>> 40));
+        values[valuesOffset++] = (int) ((block3 >>> 13) & 134217727L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 8191L) << 14) | (block4 >>> 50));
+        values[valuesOffset++] = (int) ((block4 >>> 23) & 134217727L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 8388607L) << 4) | (block5 >>> 60));
+        values[valuesOffset++] = (int) ((block5 >>> 33) & 134217727L);
+        values[valuesOffset++] = (int) ((block5 >>> 6) & 134217727L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 63L) << 21) | (block6 >>> 43));
+        values[valuesOffset++] = (int) ((block6 >>> 16) & 134217727L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 65535L) << 11) | (block7 >>> 53));
+        values[valuesOffset++] = (int) ((block7 >>> 26) & 134217727L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 67108863L) << 1) | (block8 >>> 63));
+        values[valuesOffset++] = (int) ((block8 >>> 36) & 134217727L);
+        values[valuesOffset++] = (int) ((block8 >>> 9) & 134217727L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 511L) << 18) | (block9 >>> 46));
+        values[valuesOffset++] = (int) ((block9 >>> 19) & 134217727L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 524287L) << 8) | (block10 >>> 56));
+        values[valuesOffset++] = (int) ((block10 >>> 29) & 134217727L);
+        values[valuesOffset++] = (int) ((block10 >>> 2) & 134217727L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 3L) << 25) | (block11 >>> 39));
+        values[valuesOffset++] = (int) ((block11 >>> 12) & 134217727L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 4095L) << 15) | (block12 >>> 49));
+        values[valuesOffset++] = (int) ((block12 >>> 22) & 134217727L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 4194303L) << 5) | (block13 >>> 59));
+        values[valuesOffset++] = (int) ((block13 >>> 32) & 134217727L);
+        values[valuesOffset++] = (int) ((block13 >>> 5) & 134217727L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 31L) << 22) | (block14 >>> 42));
+        values[valuesOffset++] = (int) ((block14 >>> 15) & 134217727L);
+        final long block15 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block14 & 32767L) << 12) | (block15 >>> 52));
+        values[valuesOffset++] = (int) ((block15 >>> 25) & 134217727L);
+        final long block16 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block15 & 33554431L) << 2) | (block16 >>> 62));
+        values[valuesOffset++] = (int) ((block16 >>> 35) & 134217727L);
+        values[valuesOffset++] = (int) ((block16 >>> 8) & 134217727L);
+        final long block17 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block16 & 255L) << 19) | (block17 >>> 45));
+        values[valuesOffset++] = (int) ((block17 >>> 18) & 134217727L);
+        final long block18 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block17 & 262143L) << 9) | (block18 >>> 55));
+        values[valuesOffset++] = (int) ((block18 >>> 28) & 134217727L);
+        values[valuesOffset++] = (int) ((block18 >>> 1) & 134217727L);
+        final long block19 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block18 & 1L) << 26) | (block19 >>> 38));
+        values[valuesOffset++] = (int) ((block19 >>> 11) & 134217727L);
+        final long block20 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block19 & 2047L) << 16) | (block20 >>> 48));
+        values[valuesOffset++] = (int) ((block20 >>> 21) & 134217727L);
+        final long block21 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block20 & 2097151L) << 6) | (block21 >>> 58));
+        values[valuesOffset++] = (int) ((block21 >>> 31) & 134217727L);
+        values[valuesOffset++] = (int) ((block21 >>> 4) & 134217727L);
+        final long block22 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block21 & 15L) << 23) | (block22 >>> 41));
+        values[valuesOffset++] = (int) ((block22 >>> 14) & 134217727L);
+        final long block23 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block22 & 16383L) << 13) | (block23 >>> 51));
+        values[valuesOffset++] = (int) ((block23 >>> 24) & 134217727L);
+        final long block24 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block23 & 16777215L) << 3) | (block24 >>> 61));
+        values[valuesOffset++] = (int) ((block24 >>> 34) & 134217727L);
+        values[valuesOffset++] = (int) ((block24 >>> 7) & 134217727L);
+        final long block25 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block24 & 127L) << 20) | (block25 >>> 44));
+        values[valuesOffset++] = (int) ((block25 >>> 17) & 134217727L);
+        final long block26 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block25 & 131071L) << 10) | (block26 >>> 54));
+        values[valuesOffset++] = (int) ((block26 >>> 27) & 134217727L);
+        values[valuesOffset++] = (int) (block26 & 134217727L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 19) | (byte1 << 11) | (byte2 << 3) | (byte3 >>> 5);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 31) << 22) | (byte4 << 14) | (byte5 << 6) | (byte6 >>> 2);
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte6 & 3) << 25) | (byte7 << 17) | (byte8 << 9) | (byte9 << 1) | (byte10 >>> 7);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 127) << 20) | (byte11 << 12) | (byte12 << 4) | (byte13 >>> 4);
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte13 & 15) << 23) | (byte14 << 15) | (byte15 << 7) | (byte16 >>> 1);
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte16 & 1) << 26) | (byte17 << 18) | (byte18 << 10) | (byte19 << 2) | (byte20 >>> 6);
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte20 & 63) << 21) | (byte21 << 13) | (byte22 << 5) | (byte23 >>> 3);
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 7) << 24) | (byte24 << 16) | (byte25 << 8) | byte26;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte27 << 19) | (byte28 << 11) | (byte29 << 3) | (byte30 >>> 5);
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte30 & 31) << 22) | (byte31 << 14) | (byte32 << 6) | (byte33 >>> 2);
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 3) << 25) | (byte34 << 17) | (byte35 << 9) | (byte36 << 1) | (byte37 >>> 7);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 127) << 20) | (byte38 << 12) | (byte39 << 4) | (byte40 >>> 4);
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte40 & 15) << 23) | (byte41 << 15) | (byte42 << 7) | (byte43 >>> 1);
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte43 & 1) << 26) | (byte44 << 18) | (byte45 << 10) | (byte46 << 2) | (byte47 >>> 6);
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte47 & 63) << 21) | (byte48 << 13) | (byte49 << 5) | (byte50 >>> 3);
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte50 & 7) << 24) | (byte51 << 16) | (byte52 << 8) | byte53;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte54 << 19) | (byte55 << 11) | (byte56 << 3) | (byte57 >>> 5);
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte57 & 31) << 22) | (byte58 << 14) | (byte59 << 6) | (byte60 >>> 2);
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte60 & 3) << 25) | (byte61 << 17) | (byte62 << 9) | (byte63 << 1) | (byte64 >>> 7);
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte64 & 127) << 20) | (byte65 << 12) | (byte66 << 4) | (byte67 >>> 4);
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte67 & 15) << 23) | (byte68 << 15) | (byte69 << 7) | (byte70 >>> 1);
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte70 & 1) << 26) | (byte71 << 18) | (byte72 << 10) | (byte73 << 2) | (byte74 >>> 6);
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte74 & 63) << 21) | (byte75 << 13) | (byte76 << 5) | (byte77 >>> 3);
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte77 & 7) << 24) | (byte78 << 16) | (byte79 << 8) | byte80;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte81 << 19) | (byte82 << 11) | (byte83 << 3) | (byte84 >>> 5);
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte84 & 31) << 22) | (byte85 << 14) | (byte86 << 6) | (byte87 >>> 2);
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte87 & 3) << 25) | (byte88 << 17) | (byte89 << 9) | (byte90 << 1) | (byte91 >>> 7);
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte91 & 127) << 20) | (byte92 << 12) | (byte93 << 4) | (byte94 >>> 4);
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte94 & 15) << 23) | (byte95 << 15) | (byte96 << 7) | (byte97 >>> 1);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 1) << 26) | (byte98 << 18) | (byte99 << 10) | (byte100 << 2) | (byte101 >>> 6);
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte101 & 63) << 21) | (byte102 << 13) | (byte103 << 5) | (byte104 >>> 3);
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte104 & 7) << 24) | (byte105 << 16) | (byte106 << 8) | byte107;
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte108 << 19) | (byte109 << 11) | (byte110 << 3) | (byte111 >>> 5);
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte111 & 31) << 22) | (byte112 << 14) | (byte113 << 6) | (byte114 >>> 2);
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte114 & 3) << 25) | (byte115 << 17) | (byte116 << 9) | (byte117 << 1) | (byte118 >>> 7);
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        final int byte120 = blocks[blocksOffset++] & 0xFF;
+        final int byte121 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte118 & 127) << 20) | (byte119 << 12) | (byte120 << 4) | (byte121 >>> 4);
+        final int byte122 = blocks[blocksOffset++] & 0xFF;
+        final int byte123 = blocks[blocksOffset++] & 0xFF;
+        final int byte124 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte121 & 15) << 23) | (byte122 << 15) | (byte123 << 7) | (byte124 >>> 1);
+        final int byte125 = blocks[blocksOffset++] & 0xFF;
+        final int byte126 = blocks[blocksOffset++] & 0xFF;
+        final int byte127 = blocks[blocksOffset++] & 0xFF;
+        final int byte128 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte124 & 1) << 26) | (byte125 << 18) | (byte126 << 10) | (byte127 << 2) | (byte128 >>> 6);
+        final int byte129 = blocks[blocksOffset++] & 0xFF;
+        final int byte130 = blocks[blocksOffset++] & 0xFF;
+        final int byte131 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte128 & 63) << 21) | (byte129 << 13) | (byte130 << 5) | (byte131 >>> 3);
+        final int byte132 = blocks[blocksOffset++] & 0xFF;
+        final int byte133 = blocks[blocksOffset++] & 0xFF;
+        final int byte134 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte131 & 7) << 24) | (byte132 << 16) | (byte133 << 8) | byte134;
+        final int byte135 = blocks[blocksOffset++] & 0xFF;
+        final int byte136 = blocks[blocksOffset++] & 0xFF;
+        final int byte137 = blocks[blocksOffset++] & 0xFF;
+        final int byte138 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte135 << 19) | (byte136 << 11) | (byte137 << 3) | (byte138 >>> 5);
+        final int byte139 = blocks[blocksOffset++] & 0xFF;
+        final int byte140 = blocks[blocksOffset++] & 0xFF;
+        final int byte141 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte138 & 31) << 22) | (byte139 << 14) | (byte140 << 6) | (byte141 >>> 2);
+        final int byte142 = blocks[blocksOffset++] & 0xFF;
+        final int byte143 = blocks[blocksOffset++] & 0xFF;
+        final int byte144 = blocks[blocksOffset++] & 0xFF;
+        final int byte145 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte141 & 3) << 25) | (byte142 << 17) | (byte143 << 9) | (byte144 << 1) | (byte145 >>> 7);
+        final int byte146 = blocks[blocksOffset++] & 0xFF;
+        final int byte147 = blocks[blocksOffset++] & 0xFF;
+        final int byte148 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte145 & 127) << 20) | (byte146 << 12) | (byte147 << 4) | (byte148 >>> 4);
+        final int byte149 = blocks[blocksOffset++] & 0xFF;
+        final int byte150 = blocks[blocksOffset++] & 0xFF;
+        final int byte151 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte148 & 15) << 23) | (byte149 << 15) | (byte150 << 7) | (byte151 >>> 1);
+        final int byte152 = blocks[blocksOffset++] & 0xFF;
+        final int byte153 = blocks[blocksOffset++] & 0xFF;
+        final int byte154 = blocks[blocksOffset++] & 0xFF;
+        final int byte155 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte151 & 1) << 26) | (byte152 << 18) | (byte153 << 10) | (byte154 << 2) | (byte155 >>> 6);
+        final int byte156 = blocks[blocksOffset++] & 0xFF;
+        final int byte157 = blocks[blocksOffset++] & 0xFF;
+        final int byte158 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte155 & 63) << 21) | (byte156 << 13) | (byte157 << 5) | (byte158 >>> 3);
+        final int byte159 = blocks[blocksOffset++] & 0xFF;
+        final int byte160 = blocks[blocksOffset++] & 0xFF;
+        final int byte161 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte158 & 7) << 24) | (byte159 << 16) | (byte160 << 8) | byte161;
+        final int byte162 = blocks[blocksOffset++] & 0xFF;
+        final int byte163 = blocks[blocksOffset++] & 0xFF;
+        final int byte164 = blocks[blocksOffset++] & 0xFF;
+        final int byte165 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte162 << 19) | (byte163 << 11) | (byte164 << 3) | (byte165 >>> 5);
+        final int byte166 = blocks[blocksOffset++] & 0xFF;
+        final int byte167 = blocks[blocksOffset++] & 0xFF;
+        final int byte168 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte165 & 31) << 22) | (byte166 << 14) | (byte167 << 6) | (byte168 >>> 2);
+        final int byte169 = blocks[blocksOffset++] & 0xFF;
+        final int byte170 = blocks[blocksOffset++] & 0xFF;
+        final int byte171 = blocks[blocksOffset++] & 0xFF;
+        final int byte172 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte168 & 3) << 25) | (byte169 << 17) | (byte170 << 9) | (byte171 << 1) | (byte172 >>> 7);
+        final int byte173 = blocks[blocksOffset++] & 0xFF;
+        final int byte174 = blocks[blocksOffset++] & 0xFF;
+        final int byte175 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte172 & 127) << 20) | (byte173 << 12) | (byte174 << 4) | (byte175 >>> 4);
+        final int byte176 = blocks[blocksOffset++] & 0xFF;
+        final int byte177 = blocks[blocksOffset++] & 0xFF;
+        final int byte178 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte175 & 15) << 23) | (byte176 << 15) | (byte177 << 7) | (byte178 >>> 1);
+        final int byte179 = blocks[blocksOffset++] & 0xFF;
+        final int byte180 = blocks[blocksOffset++] & 0xFF;
+        final int byte181 = blocks[blocksOffset++] & 0xFF;
+        final int byte182 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte178 & 1) << 26) | (byte179 << 18) | (byte180 << 10) | (byte181 << 2) | (byte182 >>> 6);
+        final int byte183 = blocks[blocksOffset++] & 0xFF;
+        final int byte184 = blocks[blocksOffset++] & 0xFF;
+        final int byte185 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte182 & 63) << 21) | (byte183 << 13) | (byte184 << 5) | (byte185 >>> 3);
+        final int byte186 = blocks[blocksOffset++] & 0xFF;
+        final int byte187 = blocks[blocksOffset++] & 0xFF;
+        final int byte188 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte185 & 7) << 24) | (byte186 << 16) | (byte187 << 8) | byte188;
+        final int byte189 = blocks[blocksOffset++] & 0xFF;
+        final int byte190 = blocks[blocksOffset++] & 0xFF;
+        final int byte191 = blocks[blocksOffset++] & 0xFF;
+        final int byte192 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte189 << 19) | (byte190 << 11) | (byte191 << 3) | (byte192 >>> 5);
+        final int byte193 = blocks[blocksOffset++] & 0xFF;
+        final int byte194 = blocks[blocksOffset++] & 0xFF;
+        final int byte195 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte192 & 31) << 22) | (byte193 << 14) | (byte194 << 6) | (byte195 >>> 2);
+        final int byte196 = blocks[blocksOffset++] & 0xFF;
+        final int byte197 = blocks[blocksOffset++] & 0xFF;
+        final int byte198 = blocks[blocksOffset++] & 0xFF;
+        final int byte199 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte195 & 3) << 25) | (byte196 << 17) | (byte197 << 9) | (byte198 << 1) | (byte199 >>> 7);
+        final int byte200 = blocks[blocksOffset++] & 0xFF;
+        final int byte201 = blocks[blocksOffset++] & 0xFF;
+        final int byte202 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte199 & 127) << 20) | (byte200 << 12) | (byte201 << 4) | (byte202 >>> 4);
+        final int byte203 = blocks[blocksOffset++] & 0xFF;
+        final int byte204 = blocks[blocksOffset++] & 0xFF;
+        final int byte205 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte202 & 15) << 23) | (byte203 << 15) | (byte204 << 7) | (byte205 >>> 1);
+        final int byte206 = blocks[blocksOffset++] & 0xFF;
+        final int byte207 = blocks[blocksOffset++] & 0xFF;
+        final int byte208 = blocks[blocksOffset++] & 0xFF;
+        final int byte209 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte205 & 1) << 26) | (byte206 << 18) | (byte207 << 10) | (byte208 << 2) | (byte209 >>> 6);
+        final int byte210 = blocks[blocksOffset++] & 0xFF;
+        final int byte211 = blocks[blocksOffset++] & 0xFF;
+        final int byte212 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte209 & 63) << 21) | (byte210 << 13) | (byte211 << 5) | (byte212 >>> 3);
+        final int byte213 = blocks[blocksOffset++] & 0xFF;
+        final int byte214 = blocks[blocksOffset++] & 0xFF;
+        final int byte215 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte212 & 7) << 24) | (byte213 << 16) | (byte214 << 8) | byte215;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -5847,6 +11346,40 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 27) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -5891,6 +11424,115 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 16;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 36);
+        values[valuesOffset++] = (int) ((block0 >>> 8) & 268435455L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 255L) << 20) | (block1 >>> 44));
+        values[valuesOffset++] = (int) ((block1 >>> 16) & 268435455L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 65535L) << 12) | (block2 >>> 52));
+        values[valuesOffset++] = (int) ((block2 >>> 24) & 268435455L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 16777215L) << 4) | (block3 >>> 60));
+        values[valuesOffset++] = (int) ((block3 >>> 32) & 268435455L);
+        values[valuesOffset++] = (int) ((block3 >>> 4) & 268435455L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 15L) << 24) | (block4 >>> 40));
+        values[valuesOffset++] = (int) ((block4 >>> 12) & 268435455L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 4095L) << 16) | (block5 >>> 48));
+        values[valuesOffset++] = (int) ((block5 >>> 20) & 268435455L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 1048575L) << 8) | (block6 >>> 56));
+        values[valuesOffset++] = (int) ((block6 >>> 28) & 268435455L);
+        values[valuesOffset++] = (int) (block6 & 268435455L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 20) | (byte1 << 12) | (byte2 << 4) | (byte3 >>> 4);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 15) << 24) | (byte4 << 16) | (byte5 << 8) | byte6;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte7 << 20) | (byte8 << 12) | (byte9 << 4) | (byte10 >>> 4);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 15) << 24) | (byte11 << 16) | (byte12 << 8) | byte13;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte14 << 20) | (byte15 << 12) | (byte16 << 4) | (byte17 >>> 4);
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte17 & 15) << 24) | (byte18 << 16) | (byte19 << 8) | byte20;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte21 << 20) | (byte22 << 12) | (byte23 << 4) | (byte24 >>> 4);
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte24 & 15) << 24) | (byte25 << 16) | (byte26 << 8) | byte27;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte28 << 20) | (byte29 << 12) | (byte30 << 4) | (byte31 >>> 4);
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte31 & 15) << 24) | (byte32 << 16) | (byte33 << 8) | byte34;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte35 << 20) | (byte36 << 12) | (byte37 << 4) | (byte38 >>> 4);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 15) << 24) | (byte39 << 16) | (byte40 << 8) | byte41;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte42 << 20) | (byte43 << 12) | (byte44 << 4) | (byte45 >>> 4);
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte45 & 15) << 24) | (byte46 << 16) | (byte47 << 8) | byte48;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte49 << 20) | (byte50 << 12) | (byte51 << 4) | (byte52 >>> 4);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 15) << 24) | (byte53 << 16) | (byte54 << 8) | byte55;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -6002,6 +11644,20 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 28) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -6026,6 +11682,409 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 35);
+        values[valuesOffset++] = (int) ((block0 >>> 6) & 536870911L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 63L) << 23) | (block1 >>> 41));
+        values[valuesOffset++] = (int) ((block1 >>> 12) & 536870911L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 4095L) << 17) | (block2 >>> 47));
+        values[valuesOffset++] = (int) ((block2 >>> 18) & 536870911L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 262143L) << 11) | (block3 >>> 53));
+        values[valuesOffset++] = (int) ((block3 >>> 24) & 536870911L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 16777215L) << 5) | (block4 >>> 59));
+        values[valuesOffset++] = (int) ((block4 >>> 30) & 536870911L);
+        values[valuesOffset++] = (int) ((block4 >>> 1) & 536870911L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 1L) << 28) | (block5 >>> 36));
+        values[valuesOffset++] = (int) ((block5 >>> 7) & 536870911L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 127L) << 22) | (block6 >>> 42));
+        values[valuesOffset++] = (int) ((block6 >>> 13) & 536870911L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 8191L) << 16) | (block7 >>> 48));
+        values[valuesOffset++] = (int) ((block7 >>> 19) & 536870911L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 524287L) << 10) | (block8 >>> 54));
+        values[valuesOffset++] = (int) ((block8 >>> 25) & 536870911L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 33554431L) << 4) | (block9 >>> 60));
+        values[valuesOffset++] = (int) ((block9 >>> 31) & 536870911L);
+        values[valuesOffset++] = (int) ((block9 >>> 2) & 536870911L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 3L) << 27) | (block10 >>> 37));
+        values[valuesOffset++] = (int) ((block10 >>> 8) & 536870911L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 255L) << 21) | (block11 >>> 43));
+        values[valuesOffset++] = (int) ((block11 >>> 14) & 536870911L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 16383L) << 15) | (block12 >>> 49));
+        values[valuesOffset++] = (int) ((block12 >>> 20) & 536870911L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 1048575L) << 9) | (block13 >>> 55));
+        values[valuesOffset++] = (int) ((block13 >>> 26) & 536870911L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 67108863L) << 3) | (block14 >>> 61));
+        values[valuesOffset++] = (int) ((block14 >>> 32) & 536870911L);
+        values[valuesOffset++] = (int) ((block14 >>> 3) & 536870911L);
+        final long block15 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block14 & 7L) << 26) | (block15 >>> 38));
+        values[valuesOffset++] = (int) ((block15 >>> 9) & 536870911L);
+        final long block16 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block15 & 511L) << 20) | (block16 >>> 44));
+        values[valuesOffset++] = (int) ((block16 >>> 15) & 536870911L);
+        final long block17 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block16 & 32767L) << 14) | (block17 >>> 50));
+        values[valuesOffset++] = (int) ((block17 >>> 21) & 536870911L);
+        final long block18 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block17 & 2097151L) << 8) | (block18 >>> 56));
+        values[valuesOffset++] = (int) ((block18 >>> 27) & 536870911L);
+        final long block19 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block18 & 134217727L) << 2) | (block19 >>> 62));
+        values[valuesOffset++] = (int) ((block19 >>> 33) & 536870911L);
+        values[valuesOffset++] = (int) ((block19 >>> 4) & 536870911L);
+        final long block20 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block19 & 15L) << 25) | (block20 >>> 39));
+        values[valuesOffset++] = (int) ((block20 >>> 10) & 536870911L);
+        final long block21 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block20 & 1023L) << 19) | (block21 >>> 45));
+        values[valuesOffset++] = (int) ((block21 >>> 16) & 536870911L);
+        final long block22 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block21 & 65535L) << 13) | (block22 >>> 51));
+        values[valuesOffset++] = (int) ((block22 >>> 22) & 536870911L);
+        final long block23 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block22 & 4194303L) << 7) | (block23 >>> 57));
+        values[valuesOffset++] = (int) ((block23 >>> 28) & 536870911L);
+        final long block24 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block23 & 268435455L) << 1) | (block24 >>> 63));
+        values[valuesOffset++] = (int) ((block24 >>> 34) & 536870911L);
+        values[valuesOffset++] = (int) ((block24 >>> 5) & 536870911L);
+        final long block25 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block24 & 31L) << 24) | (block25 >>> 40));
+        values[valuesOffset++] = (int) ((block25 >>> 11) & 536870911L);
+        final long block26 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block25 & 2047L) << 18) | (block26 >>> 46));
+        values[valuesOffset++] = (int) ((block26 >>> 17) & 536870911L);
+        final long block27 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block26 & 131071L) << 12) | (block27 >>> 52));
+        values[valuesOffset++] = (int) ((block27 >>> 23) & 536870911L);
+        final long block28 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block27 & 8388607L) << 6) | (block28 >>> 58));
+        values[valuesOffset++] = (int) ((block28 >>> 29) & 536870911L);
+        values[valuesOffset++] = (int) (block28 & 536870911L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 21) | (byte1 << 13) | (byte2 << 5) | (byte3 >>> 3);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 7) << 26) | (byte4 << 18) | (byte5 << 10) | (byte6 << 2) | (byte7 >>> 6);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 63) << 23) | (byte8 << 15) | (byte9 << 7) | (byte10 >>> 1);
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte10 & 1) << 28) | (byte11 << 20) | (byte12 << 12) | (byte13 << 4) | (byte14 >>> 4);
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte14 & 15) << 25) | (byte15 << 17) | (byte16 << 9) | (byte17 << 1) | (byte18 >>> 7);
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 127) << 22) | (byte19 << 14) | (byte20 << 6) | (byte21 >>> 2);
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte21 & 3) << 27) | (byte22 << 19) | (byte23 << 11) | (byte24 << 3) | (byte25 >>> 5);
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte25 & 31) << 24) | (byte26 << 16) | (byte27 << 8) | byte28;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte29 << 21) | (byte30 << 13) | (byte31 << 5) | (byte32 >>> 3);
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte32 & 7) << 26) | (byte33 << 18) | (byte34 << 10) | (byte35 << 2) | (byte36 >>> 6);
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte36 & 63) << 23) | (byte37 << 15) | (byte38 << 7) | (byte39 >>> 1);
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte39 & 1) << 28) | (byte40 << 20) | (byte41 << 12) | (byte42 << 4) | (byte43 >>> 4);
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte43 & 15) << 25) | (byte44 << 17) | (byte45 << 9) | (byte46 << 1) | (byte47 >>> 7);
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte47 & 127) << 22) | (byte48 << 14) | (byte49 << 6) | (byte50 >>> 2);
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte50 & 3) << 27) | (byte51 << 19) | (byte52 << 11) | (byte53 << 3) | (byte54 >>> 5);
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte54 & 31) << 24) | (byte55 << 16) | (byte56 << 8) | byte57;
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte58 << 21) | (byte59 << 13) | (byte60 << 5) | (byte61 >>> 3);
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte61 & 7) << 26) | (byte62 << 18) | (byte63 << 10) | (byte64 << 2) | (byte65 >>> 6);
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte65 & 63) << 23) | (byte66 << 15) | (byte67 << 7) | (byte68 >>> 1);
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte68 & 1) << 28) | (byte69 << 20) | (byte70 << 12) | (byte71 << 4) | (byte72 >>> 4);
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte72 & 15) << 25) | (byte73 << 17) | (byte74 << 9) | (byte75 << 1) | (byte76 >>> 7);
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte76 & 127) << 22) | (byte77 << 14) | (byte78 << 6) | (byte79 >>> 2);
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte79 & 3) << 27) | (byte80 << 19) | (byte81 << 11) | (byte82 << 3) | (byte83 >>> 5);
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte83 & 31) << 24) | (byte84 << 16) | (byte85 << 8) | byte86;
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte87 << 21) | (byte88 << 13) | (byte89 << 5) | (byte90 >>> 3);
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte90 & 7) << 26) | (byte91 << 18) | (byte92 << 10) | (byte93 << 2) | (byte94 >>> 6);
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte94 & 63) << 23) | (byte95 << 15) | (byte96 << 7) | (byte97 >>> 1);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 1) << 28) | (byte98 << 20) | (byte99 << 12) | (byte100 << 4) | (byte101 >>> 4);
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte101 & 15) << 25) | (byte102 << 17) | (byte103 << 9) | (byte104 << 1) | (byte105 >>> 7);
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte105 & 127) << 22) | (byte106 << 14) | (byte107 << 6) | (byte108 >>> 2);
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte108 & 3) << 27) | (byte109 << 19) | (byte110 << 11) | (byte111 << 3) | (byte112 >>> 5);
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte112 & 31) << 24) | (byte113 << 16) | (byte114 << 8) | byte115;
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte116 << 21) | (byte117 << 13) | (byte118 << 5) | (byte119 >>> 3);
+        final int byte120 = blocks[blocksOffset++] & 0xFF;
+        final int byte121 = blocks[blocksOffset++] & 0xFF;
+        final int byte122 = blocks[blocksOffset++] & 0xFF;
+        final int byte123 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte119 & 7) << 26) | (byte120 << 18) | (byte121 << 10) | (byte122 << 2) | (byte123 >>> 6);
+        final int byte124 = blocks[blocksOffset++] & 0xFF;
+        final int byte125 = blocks[blocksOffset++] & 0xFF;
+        final int byte126 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte123 & 63) << 23) | (byte124 << 15) | (byte125 << 7) | (byte126 >>> 1);
+        final int byte127 = blocks[blocksOffset++] & 0xFF;
+        final int byte128 = blocks[blocksOffset++] & 0xFF;
+        final int byte129 = blocks[blocksOffset++] & 0xFF;
+        final int byte130 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte126 & 1) << 28) | (byte127 << 20) | (byte128 << 12) | (byte129 << 4) | (byte130 >>> 4);
+        final int byte131 = blocks[blocksOffset++] & 0xFF;
+        final int byte132 = blocks[blocksOffset++] & 0xFF;
+        final int byte133 = blocks[blocksOffset++] & 0xFF;
+        final int byte134 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte130 & 15) << 25) | (byte131 << 17) | (byte132 << 9) | (byte133 << 1) | (byte134 >>> 7);
+        final int byte135 = blocks[blocksOffset++] & 0xFF;
+        final int byte136 = blocks[blocksOffset++] & 0xFF;
+        final int byte137 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte134 & 127) << 22) | (byte135 << 14) | (byte136 << 6) | (byte137 >>> 2);
+        final int byte138 = blocks[blocksOffset++] & 0xFF;
+        final int byte139 = blocks[blocksOffset++] & 0xFF;
+        final int byte140 = blocks[blocksOffset++] & 0xFF;
+        final int byte141 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte137 & 3) << 27) | (byte138 << 19) | (byte139 << 11) | (byte140 << 3) | (byte141 >>> 5);
+        final int byte142 = blocks[blocksOffset++] & 0xFF;
+        final int byte143 = blocks[blocksOffset++] & 0xFF;
+        final int byte144 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte141 & 31) << 24) | (byte142 << 16) | (byte143 << 8) | byte144;
+        final int byte145 = blocks[blocksOffset++] & 0xFF;
+        final int byte146 = blocks[blocksOffset++] & 0xFF;
+        final int byte147 = blocks[blocksOffset++] & 0xFF;
+        final int byte148 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte145 << 21) | (byte146 << 13) | (byte147 << 5) | (byte148 >>> 3);
+        final int byte149 = blocks[blocksOffset++] & 0xFF;
+        final int byte150 = blocks[blocksOffset++] & 0xFF;
+        final int byte151 = blocks[blocksOffset++] & 0xFF;
+        final int byte152 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte148 & 7) << 26) | (byte149 << 18) | (byte150 << 10) | (byte151 << 2) | (byte152 >>> 6);
+        final int byte153 = blocks[blocksOffset++] & 0xFF;
+        final int byte154 = blocks[blocksOffset++] & 0xFF;
+        final int byte155 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte152 & 63) << 23) | (byte153 << 15) | (byte154 << 7) | (byte155 >>> 1);
+        final int byte156 = blocks[blocksOffset++] & 0xFF;
+        final int byte157 = blocks[blocksOffset++] & 0xFF;
+        final int byte158 = blocks[blocksOffset++] & 0xFF;
+        final int byte159 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte155 & 1) << 28) | (byte156 << 20) | (byte157 << 12) | (byte158 << 4) | (byte159 >>> 4);
+        final int byte160 = blocks[blocksOffset++] & 0xFF;
+        final int byte161 = blocks[blocksOffset++] & 0xFF;
+        final int byte162 = blocks[blocksOffset++] & 0xFF;
+        final int byte163 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte159 & 15) << 25) | (byte160 << 17) | (byte161 << 9) | (byte162 << 1) | (byte163 >>> 7);
+        final int byte164 = blocks[blocksOffset++] & 0xFF;
+        final int byte165 = blocks[blocksOffset++] & 0xFF;
+        final int byte166 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte163 & 127) << 22) | (byte164 << 14) | (byte165 << 6) | (byte166 >>> 2);
+        final int byte167 = blocks[blocksOffset++] & 0xFF;
+        final int byte168 = blocks[blocksOffset++] & 0xFF;
+        final int byte169 = blocks[blocksOffset++] & 0xFF;
+        final int byte170 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte166 & 3) << 27) | (byte167 << 19) | (byte168 << 11) | (byte169 << 3) | (byte170 >>> 5);
+        final int byte171 = blocks[blocksOffset++] & 0xFF;
+        final int byte172 = blocks[blocksOffset++] & 0xFF;
+        final int byte173 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte170 & 31) << 24) | (byte171 << 16) | (byte172 << 8) | byte173;
+        final int byte174 = blocks[blocksOffset++] & 0xFF;
+        final int byte175 = blocks[blocksOffset++] & 0xFF;
+        final int byte176 = blocks[blocksOffset++] & 0xFF;
+        final int byte177 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte174 << 21) | (byte175 << 13) | (byte176 << 5) | (byte177 >>> 3);
+        final int byte178 = blocks[blocksOffset++] & 0xFF;
+        final int byte179 = blocks[blocksOffset++] & 0xFF;
+        final int byte180 = blocks[blocksOffset++] & 0xFF;
+        final int byte181 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte177 & 7) << 26) | (byte178 << 18) | (byte179 << 10) | (byte180 << 2) | (byte181 >>> 6);
+        final int byte182 = blocks[blocksOffset++] & 0xFF;
+        final int byte183 = blocks[blocksOffset++] & 0xFF;
+        final int byte184 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte181 & 63) << 23) | (byte182 << 15) | (byte183 << 7) | (byte184 >>> 1);
+        final int byte185 = blocks[blocksOffset++] & 0xFF;
+        final int byte186 = blocks[blocksOffset++] & 0xFF;
+        final int byte187 = blocks[blocksOffset++] & 0xFF;
+        final int byte188 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte184 & 1) << 28) | (byte185 << 20) | (byte186 << 12) | (byte187 << 4) | (byte188 >>> 4);
+        final int byte189 = blocks[blocksOffset++] & 0xFF;
+        final int byte190 = blocks[blocksOffset++] & 0xFF;
+        final int byte191 = blocks[blocksOffset++] & 0xFF;
+        final int byte192 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte188 & 15) << 25) | (byte189 << 17) | (byte190 << 9) | (byte191 << 1) | (byte192 >>> 7);
+        final int byte193 = blocks[blocksOffset++] & 0xFF;
+        final int byte194 = blocks[blocksOffset++] & 0xFF;
+        final int byte195 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte192 & 127) << 22) | (byte193 << 14) | (byte194 << 6) | (byte195 >>> 2);
+        final int byte196 = blocks[blocksOffset++] & 0xFF;
+        final int byte197 = blocks[blocksOffset++] & 0xFF;
+        final int byte198 = blocks[blocksOffset++] & 0xFF;
+        final int byte199 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte195 & 3) << 27) | (byte196 << 19) | (byte197 << 11) | (byte198 << 3) | (byte199 >>> 5);
+        final int byte200 = blocks[blocksOffset++] & 0xFF;
+        final int byte201 = blocks[blocksOffset++] & 0xFF;
+        final int byte202 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte199 & 31) << 24) | (byte200 << 16) | (byte201 << 8) | byte202;
+        final int byte203 = blocks[blocksOffset++] & 0xFF;
+        final int byte204 = blocks[blocksOffset++] & 0xFF;
+        final int byte205 = blocks[blocksOffset++] & 0xFF;
+        final int byte206 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte203 << 21) | (byte204 << 13) | (byte205 << 5) | (byte206 >>> 3);
+        final int byte207 = blocks[blocksOffset++] & 0xFF;
+        final int byte208 = blocks[blocksOffset++] & 0xFF;
+        final int byte209 = blocks[blocksOffset++] & 0xFF;
+        final int byte210 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte206 & 7) << 26) | (byte207 << 18) | (byte208 << 10) | (byte209 << 2) | (byte210 >>> 6);
+        final int byte211 = blocks[blocksOffset++] & 0xFF;
+        final int byte212 = blocks[blocksOffset++] & 0xFF;
+        final int byte213 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte210 & 63) << 23) | (byte211 << 15) | (byte212 << 7) | (byte213 >>> 1);
+        final int byte214 = blocks[blocksOffset++] & 0xFF;
+        final int byte215 = blocks[blocksOffset++] & 0xFF;
+        final int byte216 = blocks[blocksOffset++] & 0xFF;
+        final int byte217 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte213 & 1) << 28) | (byte214 << 20) | (byte215 << 12) | (byte216 << 4) | (byte217 >>> 4);
+        final int byte218 = blocks[blocksOffset++] & 0xFF;
+        final int byte219 = blocks[blocksOffset++] & 0xFF;
+        final int byte220 = blocks[blocksOffset++] & 0xFF;
+        final int byte221 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte217 & 15) << 25) | (byte218 << 17) | (byte219 << 9) | (byte220 << 1) | (byte221 >>> 7);
+        final int byte222 = blocks[blocksOffset++] & 0xFF;
+        final int byte223 = blocks[blocksOffset++] & 0xFF;
+        final int byte224 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte221 & 127) << 22) | (byte222 << 14) | (byte223 << 6) | (byte224 >>> 2);
+        final int byte225 = blocks[blocksOffset++] & 0xFF;
+        final int byte226 = blocks[blocksOffset++] & 0xFF;
+        final int byte227 = blocks[blocksOffset++] & 0xFF;
+        final int byte228 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte224 & 3) << 27) | (byte225 << 19) | (byte226 << 11) | (byte227 << 3) | (byte228 >>> 5);
+        final int byte229 = blocks[blocksOffset++] & 0xFF;
+        final int byte230 = blocks[blocksOffset++] & 0xFF;
+        final int byte231 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte228 & 31) << 24) | (byte229 << 16) | (byte230 << 8) | byte231;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -6431,6 +12490,42 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 29) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -6477,6 +12572,219 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 34);
+        values[valuesOffset++] = (int) ((block0 >>> 4) & 1073741823L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 15L) << 26) | (block1 >>> 38));
+        values[valuesOffset++] = (int) ((block1 >>> 8) & 1073741823L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 255L) << 22) | (block2 >>> 42));
+        values[valuesOffset++] = (int) ((block2 >>> 12) & 1073741823L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 4095L) << 18) | (block3 >>> 46));
+        values[valuesOffset++] = (int) ((block3 >>> 16) & 1073741823L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 65535L) << 14) | (block4 >>> 50));
+        values[valuesOffset++] = (int) ((block4 >>> 20) & 1073741823L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 1048575L) << 10) | (block5 >>> 54));
+        values[valuesOffset++] = (int) ((block5 >>> 24) & 1073741823L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 16777215L) << 6) | (block6 >>> 58));
+        values[valuesOffset++] = (int) ((block6 >>> 28) & 1073741823L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 268435455L) << 2) | (block7 >>> 62));
+        values[valuesOffset++] = (int) ((block7 >>> 32) & 1073741823L);
+        values[valuesOffset++] = (int) ((block7 >>> 2) & 1073741823L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 3L) << 28) | (block8 >>> 36));
+        values[valuesOffset++] = (int) ((block8 >>> 6) & 1073741823L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 63L) << 24) | (block9 >>> 40));
+        values[valuesOffset++] = (int) ((block9 >>> 10) & 1073741823L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 1023L) << 20) | (block10 >>> 44));
+        values[valuesOffset++] = (int) ((block10 >>> 14) & 1073741823L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 16383L) << 16) | (block11 >>> 48));
+        values[valuesOffset++] = (int) ((block11 >>> 18) & 1073741823L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 262143L) << 12) | (block12 >>> 52));
+        values[valuesOffset++] = (int) ((block12 >>> 22) & 1073741823L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 4194303L) << 8) | (block13 >>> 56));
+        values[valuesOffset++] = (int) ((block13 >>> 26) & 1073741823L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 67108863L) << 4) | (block14 >>> 60));
+        values[valuesOffset++] = (int) ((block14 >>> 30) & 1073741823L);
+        values[valuesOffset++] = (int) (block14 & 1073741823L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 22) | (byte1 << 14) | (byte2 << 6) | (byte3 >>> 2);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 3) << 28) | (byte4 << 20) | (byte5 << 12) | (byte6 << 4) | (byte7 >>> 4);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 15) << 26) | (byte8 << 18) | (byte9 << 10) | (byte10 << 2) | (byte11 >>> 6);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 63) << 24) | (byte12 << 16) | (byte13 << 8) | byte14;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte15 << 22) | (byte16 << 14) | (byte17 << 6) | (byte18 >>> 2);
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte18 & 3) << 28) | (byte19 << 20) | (byte20 << 12) | (byte21 << 4) | (byte22 >>> 4);
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte22 & 15) << 26) | (byte23 << 18) | (byte24 << 10) | (byte25 << 2) | (byte26 >>> 6);
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte26 & 63) << 24) | (byte27 << 16) | (byte28 << 8) | byte29;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte30 << 22) | (byte31 << 14) | (byte32 << 6) | (byte33 >>> 2);
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte33 & 3) << 28) | (byte34 << 20) | (byte35 << 12) | (byte36 << 4) | (byte37 >>> 4);
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte37 & 15) << 26) | (byte38 << 18) | (byte39 << 10) | (byte40 << 2) | (byte41 >>> 6);
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte41 & 63) << 24) | (byte42 << 16) | (byte43 << 8) | byte44;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte45 << 22) | (byte46 << 14) | (byte47 << 6) | (byte48 >>> 2);
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte48 & 3) << 28) | (byte49 << 20) | (byte50 << 12) | (byte51 << 4) | (byte52 >>> 4);
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte52 & 15) << 26) | (byte53 << 18) | (byte54 << 10) | (byte55 << 2) | (byte56 >>> 6);
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte56 & 63) << 24) | (byte57 << 16) | (byte58 << 8) | byte59;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte60 << 22) | (byte61 << 14) | (byte62 << 6) | (byte63 >>> 2);
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte63 & 3) << 28) | (byte64 << 20) | (byte65 << 12) | (byte66 << 4) | (byte67 >>> 4);
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte67 & 15) << 26) | (byte68 << 18) | (byte69 << 10) | (byte70 << 2) | (byte71 >>> 6);
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte71 & 63) << 24) | (byte72 << 16) | (byte73 << 8) | byte74;
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte75 << 22) | (byte76 << 14) | (byte77 << 6) | (byte78 >>> 2);
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte78 & 3) << 28) | (byte79 << 20) | (byte80 << 12) | (byte81 << 4) | (byte82 >>> 4);
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte82 & 15) << 26) | (byte83 << 18) | (byte84 << 10) | (byte85 << 2) | (byte86 >>> 6);
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte86 & 63) << 24) | (byte87 << 16) | (byte88 << 8) | byte89;
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte90 << 22) | (byte91 << 14) | (byte92 << 6) | (byte93 >>> 2);
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte93 & 3) << 28) | (byte94 << 20) | (byte95 << 12) | (byte96 << 4) | (byte97 >>> 4);
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte97 & 15) << 26) | (byte98 << 18) | (byte99 << 10) | (byte100 << 2) | (byte101 >>> 6);
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte101 & 63) << 24) | (byte102 << 16) | (byte103 << 8) | byte104;
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte105 << 22) | (byte106 << 14) | (byte107 << 6) | (byte108 >>> 2);
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte108 & 3) << 28) | (byte109 << 20) | (byte110 << 12) | (byte111 << 4) | (byte112 >>> 4);
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte112 & 15) << 26) | (byte113 << 18) | (byte114 << 10) | (byte115 << 2) | (byte116 >>> 6);
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte116 & 63) << 24) | (byte117 << 16) | (byte118 << 8) | byte119;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -6692,6 +13000,28 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 30) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -6724,6 +13054,427 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 33);
+        values[valuesOffset++] = (int) ((block0 >>> 2) & 2147483647L);
+        final long block1 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block0 & 3L) << 29) | (block1 >>> 35));
+        values[valuesOffset++] = (int) ((block1 >>> 4) & 2147483647L);
+        final long block2 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block1 & 15L) << 27) | (block2 >>> 37));
+        values[valuesOffset++] = (int) ((block2 >>> 6) & 2147483647L);
+        final long block3 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block2 & 63L) << 25) | (block3 >>> 39));
+        values[valuesOffset++] = (int) ((block3 >>> 8) & 2147483647L);
+        final long block4 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block3 & 255L) << 23) | (block4 >>> 41));
+        values[valuesOffset++] = (int) ((block4 >>> 10) & 2147483647L);
+        final long block5 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block4 & 1023L) << 21) | (block5 >>> 43));
+        values[valuesOffset++] = (int) ((block5 >>> 12) & 2147483647L);
+        final long block6 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block5 & 4095L) << 19) | (block6 >>> 45));
+        values[valuesOffset++] = (int) ((block6 >>> 14) & 2147483647L);
+        final long block7 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block6 & 16383L) << 17) | (block7 >>> 47));
+        values[valuesOffset++] = (int) ((block7 >>> 16) & 2147483647L);
+        final long block8 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block7 & 65535L) << 15) | (block8 >>> 49));
+        values[valuesOffset++] = (int) ((block8 >>> 18) & 2147483647L);
+        final long block9 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block8 & 262143L) << 13) | (block9 >>> 51));
+        values[valuesOffset++] = (int) ((block9 >>> 20) & 2147483647L);
+        final long block10 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block9 & 1048575L) << 11) | (block10 >>> 53));
+        values[valuesOffset++] = (int) ((block10 >>> 22) & 2147483647L);
+        final long block11 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block10 & 4194303L) << 9) | (block11 >>> 55));
+        values[valuesOffset++] = (int) ((block11 >>> 24) & 2147483647L);
+        final long block12 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block11 & 16777215L) << 7) | (block12 >>> 57));
+        values[valuesOffset++] = (int) ((block12 >>> 26) & 2147483647L);
+        final long block13 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block12 & 67108863L) << 5) | (block13 >>> 59));
+        values[valuesOffset++] = (int) ((block13 >>> 28) & 2147483647L);
+        final long block14 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block13 & 268435455L) << 3) | (block14 >>> 61));
+        values[valuesOffset++] = (int) ((block14 >>> 30) & 2147483647L);
+        final long block15 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block14 & 1073741823L) << 1) | (block15 >>> 63));
+        values[valuesOffset++] = (int) ((block15 >>> 32) & 2147483647L);
+        values[valuesOffset++] = (int) ((block15 >>> 1) & 2147483647L);
+        final long block16 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block15 & 1L) << 30) | (block16 >>> 34));
+        values[valuesOffset++] = (int) ((block16 >>> 3) & 2147483647L);
+        final long block17 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block16 & 7L) << 28) | (block17 >>> 36));
+        values[valuesOffset++] = (int) ((block17 >>> 5) & 2147483647L);
+        final long block18 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block17 & 31L) << 26) | (block18 >>> 38));
+        values[valuesOffset++] = (int) ((block18 >>> 7) & 2147483647L);
+        final long block19 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block18 & 127L) << 24) | (block19 >>> 40));
+        values[valuesOffset++] = (int) ((block19 >>> 9) & 2147483647L);
+        final long block20 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block19 & 511L) << 22) | (block20 >>> 42));
+        values[valuesOffset++] = (int) ((block20 >>> 11) & 2147483647L);
+        final long block21 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block20 & 2047L) << 20) | (block21 >>> 44));
+        values[valuesOffset++] = (int) ((block21 >>> 13) & 2147483647L);
+        final long block22 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block21 & 8191L) << 18) | (block22 >>> 46));
+        values[valuesOffset++] = (int) ((block22 >>> 15) & 2147483647L);
+        final long block23 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block22 & 32767L) << 16) | (block23 >>> 48));
+        values[valuesOffset++] = (int) ((block23 >>> 17) & 2147483647L);
+        final long block24 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block23 & 131071L) << 14) | (block24 >>> 50));
+        values[valuesOffset++] = (int) ((block24 >>> 19) & 2147483647L);
+        final long block25 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block24 & 524287L) << 12) | (block25 >>> 52));
+        values[valuesOffset++] = (int) ((block25 >>> 21) & 2147483647L);
+        final long block26 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block25 & 2097151L) << 10) | (block26 >>> 54));
+        values[valuesOffset++] = (int) ((block26 >>> 23) & 2147483647L);
+        final long block27 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block26 & 8388607L) << 8) | (block27 >>> 56));
+        values[valuesOffset++] = (int) ((block27 >>> 25) & 2147483647L);
+        final long block28 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block27 & 33554431L) << 6) | (block28 >>> 58));
+        values[valuesOffset++] = (int) ((block28 >>> 27) & 2147483647L);
+        final long block29 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block28 & 134217727L) << 4) | (block29 >>> 60));
+        values[valuesOffset++] = (int) ((block29 >>> 29) & 2147483647L);
+        final long block30 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (((block29 & 536870911L) << 2) | (block30 >>> 62));
+        values[valuesOffset++] = (int) ((block30 >>> 31) & 2147483647L);
+        values[valuesOffset++] = (int) (block30 & 2147483647L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 23) | (byte1 << 15) | (byte2 << 7) | (byte3 >>> 1);
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte3 & 1) << 30) | (byte4 << 22) | (byte5 << 14) | (byte6 << 6) | (byte7 >>> 2);
+        final int byte8 = blocks[blocksOffset++] & 0xFF;
+        final int byte9 = blocks[blocksOffset++] & 0xFF;
+        final int byte10 = blocks[blocksOffset++] & 0xFF;
+        final int byte11 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte7 & 3) << 29) | (byte8 << 21) | (byte9 << 13) | (byte10 << 5) | (byte11 >>> 3);
+        final int byte12 = blocks[blocksOffset++] & 0xFF;
+        final int byte13 = blocks[blocksOffset++] & 0xFF;
+        final int byte14 = blocks[blocksOffset++] & 0xFF;
+        final int byte15 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte11 & 7) << 28) | (byte12 << 20) | (byte13 << 12) | (byte14 << 4) | (byte15 >>> 4);
+        final int byte16 = blocks[blocksOffset++] & 0xFF;
+        final int byte17 = blocks[blocksOffset++] & 0xFF;
+        final int byte18 = blocks[blocksOffset++] & 0xFF;
+        final int byte19 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte15 & 15) << 27) | (byte16 << 19) | (byte17 << 11) | (byte18 << 3) | (byte19 >>> 5);
+        final int byte20 = blocks[blocksOffset++] & 0xFF;
+        final int byte21 = blocks[blocksOffset++] & 0xFF;
+        final int byte22 = blocks[blocksOffset++] & 0xFF;
+        final int byte23 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte19 & 31) << 26) | (byte20 << 18) | (byte21 << 10) | (byte22 << 2) | (byte23 >>> 6);
+        final int byte24 = blocks[blocksOffset++] & 0xFF;
+        final int byte25 = blocks[blocksOffset++] & 0xFF;
+        final int byte26 = blocks[blocksOffset++] & 0xFF;
+        final int byte27 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte23 & 63) << 25) | (byte24 << 17) | (byte25 << 9) | (byte26 << 1) | (byte27 >>> 7);
+        final int byte28 = blocks[blocksOffset++] & 0xFF;
+        final int byte29 = blocks[blocksOffset++] & 0xFF;
+        final int byte30 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte27 & 127) << 24) | (byte28 << 16) | (byte29 << 8) | byte30;
+        final int byte31 = blocks[blocksOffset++] & 0xFF;
+        final int byte32 = blocks[blocksOffset++] & 0xFF;
+        final int byte33 = blocks[blocksOffset++] & 0xFF;
+        final int byte34 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte31 << 23) | (byte32 << 15) | (byte33 << 7) | (byte34 >>> 1);
+        final int byte35 = blocks[blocksOffset++] & 0xFF;
+        final int byte36 = blocks[blocksOffset++] & 0xFF;
+        final int byte37 = blocks[blocksOffset++] & 0xFF;
+        final int byte38 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte34 & 1) << 30) | (byte35 << 22) | (byte36 << 14) | (byte37 << 6) | (byte38 >>> 2);
+        final int byte39 = blocks[blocksOffset++] & 0xFF;
+        final int byte40 = blocks[blocksOffset++] & 0xFF;
+        final int byte41 = blocks[blocksOffset++] & 0xFF;
+        final int byte42 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte38 & 3) << 29) | (byte39 << 21) | (byte40 << 13) | (byte41 << 5) | (byte42 >>> 3);
+        final int byte43 = blocks[blocksOffset++] & 0xFF;
+        final int byte44 = blocks[blocksOffset++] & 0xFF;
+        final int byte45 = blocks[blocksOffset++] & 0xFF;
+        final int byte46 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte42 & 7) << 28) | (byte43 << 20) | (byte44 << 12) | (byte45 << 4) | (byte46 >>> 4);
+        final int byte47 = blocks[blocksOffset++] & 0xFF;
+        final int byte48 = blocks[blocksOffset++] & 0xFF;
+        final int byte49 = blocks[blocksOffset++] & 0xFF;
+        final int byte50 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte46 & 15) << 27) | (byte47 << 19) | (byte48 << 11) | (byte49 << 3) | (byte50 >>> 5);
+        final int byte51 = blocks[blocksOffset++] & 0xFF;
+        final int byte52 = blocks[blocksOffset++] & 0xFF;
+        final int byte53 = blocks[blocksOffset++] & 0xFF;
+        final int byte54 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte50 & 31) << 26) | (byte51 << 18) | (byte52 << 10) | (byte53 << 2) | (byte54 >>> 6);
+        final int byte55 = blocks[blocksOffset++] & 0xFF;
+        final int byte56 = blocks[blocksOffset++] & 0xFF;
+        final int byte57 = blocks[blocksOffset++] & 0xFF;
+        final int byte58 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte54 & 63) << 25) | (byte55 << 17) | (byte56 << 9) | (byte57 << 1) | (byte58 >>> 7);
+        final int byte59 = blocks[blocksOffset++] & 0xFF;
+        final int byte60 = blocks[blocksOffset++] & 0xFF;
+        final int byte61 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte58 & 127) << 24) | (byte59 << 16) | (byte60 << 8) | byte61;
+        final int byte62 = blocks[blocksOffset++] & 0xFF;
+        final int byte63 = blocks[blocksOffset++] & 0xFF;
+        final int byte64 = blocks[blocksOffset++] & 0xFF;
+        final int byte65 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte62 << 23) | (byte63 << 15) | (byte64 << 7) | (byte65 >>> 1);
+        final int byte66 = blocks[blocksOffset++] & 0xFF;
+        final int byte67 = blocks[blocksOffset++] & 0xFF;
+        final int byte68 = blocks[blocksOffset++] & 0xFF;
+        final int byte69 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte65 & 1) << 30) | (byte66 << 22) | (byte67 << 14) | (byte68 << 6) | (byte69 >>> 2);
+        final int byte70 = blocks[blocksOffset++] & 0xFF;
+        final int byte71 = blocks[blocksOffset++] & 0xFF;
+        final int byte72 = blocks[blocksOffset++] & 0xFF;
+        final int byte73 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte69 & 3) << 29) | (byte70 << 21) | (byte71 << 13) | (byte72 << 5) | (byte73 >>> 3);
+        final int byte74 = blocks[blocksOffset++] & 0xFF;
+        final int byte75 = blocks[blocksOffset++] & 0xFF;
+        final int byte76 = blocks[blocksOffset++] & 0xFF;
+        final int byte77 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte73 & 7) << 28) | (byte74 << 20) | (byte75 << 12) | (byte76 << 4) | (byte77 >>> 4);
+        final int byte78 = blocks[blocksOffset++] & 0xFF;
+        final int byte79 = blocks[blocksOffset++] & 0xFF;
+        final int byte80 = blocks[blocksOffset++] & 0xFF;
+        final int byte81 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte77 & 15) << 27) | (byte78 << 19) | (byte79 << 11) | (byte80 << 3) | (byte81 >>> 5);
+        final int byte82 = blocks[blocksOffset++] & 0xFF;
+        final int byte83 = blocks[blocksOffset++] & 0xFF;
+        final int byte84 = blocks[blocksOffset++] & 0xFF;
+        final int byte85 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte81 & 31) << 26) | (byte82 << 18) | (byte83 << 10) | (byte84 << 2) | (byte85 >>> 6);
+        final int byte86 = blocks[blocksOffset++] & 0xFF;
+        final int byte87 = blocks[blocksOffset++] & 0xFF;
+        final int byte88 = blocks[blocksOffset++] & 0xFF;
+        final int byte89 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte85 & 63) << 25) | (byte86 << 17) | (byte87 << 9) | (byte88 << 1) | (byte89 >>> 7);
+        final int byte90 = blocks[blocksOffset++] & 0xFF;
+        final int byte91 = blocks[blocksOffset++] & 0xFF;
+        final int byte92 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte89 & 127) << 24) | (byte90 << 16) | (byte91 << 8) | byte92;
+        final int byte93 = blocks[blocksOffset++] & 0xFF;
+        final int byte94 = blocks[blocksOffset++] & 0xFF;
+        final int byte95 = blocks[blocksOffset++] & 0xFF;
+        final int byte96 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte93 << 23) | (byte94 << 15) | (byte95 << 7) | (byte96 >>> 1);
+        final int byte97 = blocks[blocksOffset++] & 0xFF;
+        final int byte98 = blocks[blocksOffset++] & 0xFF;
+        final int byte99 = blocks[blocksOffset++] & 0xFF;
+        final int byte100 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte96 & 1) << 30) | (byte97 << 22) | (byte98 << 14) | (byte99 << 6) | (byte100 >>> 2);
+        final int byte101 = blocks[blocksOffset++] & 0xFF;
+        final int byte102 = blocks[blocksOffset++] & 0xFF;
+        final int byte103 = blocks[blocksOffset++] & 0xFF;
+        final int byte104 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte100 & 3) << 29) | (byte101 << 21) | (byte102 << 13) | (byte103 << 5) | (byte104 >>> 3);
+        final int byte105 = blocks[blocksOffset++] & 0xFF;
+        final int byte106 = blocks[blocksOffset++] & 0xFF;
+        final int byte107 = blocks[blocksOffset++] & 0xFF;
+        final int byte108 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte104 & 7) << 28) | (byte105 << 20) | (byte106 << 12) | (byte107 << 4) | (byte108 >>> 4);
+        final int byte109 = blocks[blocksOffset++] & 0xFF;
+        final int byte110 = blocks[blocksOffset++] & 0xFF;
+        final int byte111 = blocks[blocksOffset++] & 0xFF;
+        final int byte112 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte108 & 15) << 27) | (byte109 << 19) | (byte110 << 11) | (byte111 << 3) | (byte112 >>> 5);
+        final int byte113 = blocks[blocksOffset++] & 0xFF;
+        final int byte114 = blocks[blocksOffset++] & 0xFF;
+        final int byte115 = blocks[blocksOffset++] & 0xFF;
+        final int byte116 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte112 & 31) << 26) | (byte113 << 18) | (byte114 << 10) | (byte115 << 2) | (byte116 >>> 6);
+        final int byte117 = blocks[blocksOffset++] & 0xFF;
+        final int byte118 = blocks[blocksOffset++] & 0xFF;
+        final int byte119 = blocks[blocksOffset++] & 0xFF;
+        final int byte120 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte116 & 63) << 25) | (byte117 << 17) | (byte118 << 9) | (byte119 << 1) | (byte120 >>> 7);
+        final int byte121 = blocks[blocksOffset++] & 0xFF;
+        final int byte122 = blocks[blocksOffset++] & 0xFF;
+        final int byte123 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte120 & 127) << 24) | (byte121 << 16) | (byte122 << 8) | byte123;
+        final int byte124 = blocks[blocksOffset++] & 0xFF;
+        final int byte125 = blocks[blocksOffset++] & 0xFF;
+        final int byte126 = blocks[blocksOffset++] & 0xFF;
+        final int byte127 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte124 << 23) | (byte125 << 15) | (byte126 << 7) | (byte127 >>> 1);
+        final int byte128 = blocks[blocksOffset++] & 0xFF;
+        final int byte129 = blocks[blocksOffset++] & 0xFF;
+        final int byte130 = blocks[blocksOffset++] & 0xFF;
+        final int byte131 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte127 & 1) << 30) | (byte128 << 22) | (byte129 << 14) | (byte130 << 6) | (byte131 >>> 2);
+        final int byte132 = blocks[blocksOffset++] & 0xFF;
+        final int byte133 = blocks[blocksOffset++] & 0xFF;
+        final int byte134 = blocks[blocksOffset++] & 0xFF;
+        final int byte135 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte131 & 3) << 29) | (byte132 << 21) | (byte133 << 13) | (byte134 << 5) | (byte135 >>> 3);
+        final int byte136 = blocks[blocksOffset++] & 0xFF;
+        final int byte137 = blocks[blocksOffset++] & 0xFF;
+        final int byte138 = blocks[blocksOffset++] & 0xFF;
+        final int byte139 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte135 & 7) << 28) | (byte136 << 20) | (byte137 << 12) | (byte138 << 4) | (byte139 >>> 4);
+        final int byte140 = blocks[blocksOffset++] & 0xFF;
+        final int byte141 = blocks[blocksOffset++] & 0xFF;
+        final int byte142 = blocks[blocksOffset++] & 0xFF;
+        final int byte143 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte139 & 15) << 27) | (byte140 << 19) | (byte141 << 11) | (byte142 << 3) | (byte143 >>> 5);
+        final int byte144 = blocks[blocksOffset++] & 0xFF;
+        final int byte145 = blocks[blocksOffset++] & 0xFF;
+        final int byte146 = blocks[blocksOffset++] & 0xFF;
+        final int byte147 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte143 & 31) << 26) | (byte144 << 18) | (byte145 << 10) | (byte146 << 2) | (byte147 >>> 6);
+        final int byte148 = blocks[blocksOffset++] & 0xFF;
+        final int byte149 = blocks[blocksOffset++] & 0xFF;
+        final int byte150 = blocks[blocksOffset++] & 0xFF;
+        final int byte151 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte147 & 63) << 25) | (byte148 << 17) | (byte149 << 9) | (byte150 << 1) | (byte151 >>> 7);
+        final int byte152 = blocks[blocksOffset++] & 0xFF;
+        final int byte153 = blocks[blocksOffset++] & 0xFF;
+        final int byte154 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte151 & 127) << 24) | (byte152 << 16) | (byte153 << 8) | byte154;
+        final int byte155 = blocks[blocksOffset++] & 0xFF;
+        final int byte156 = blocks[blocksOffset++] & 0xFF;
+        final int byte157 = blocks[blocksOffset++] & 0xFF;
+        final int byte158 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte155 << 23) | (byte156 << 15) | (byte157 << 7) | (byte158 >>> 1);
+        final int byte159 = blocks[blocksOffset++] & 0xFF;
+        final int byte160 = blocks[blocksOffset++] & 0xFF;
+        final int byte161 = blocks[blocksOffset++] & 0xFF;
+        final int byte162 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte158 & 1) << 30) | (byte159 << 22) | (byte160 << 14) | (byte161 << 6) | (byte162 >>> 2);
+        final int byte163 = blocks[blocksOffset++] & 0xFF;
+        final int byte164 = blocks[blocksOffset++] & 0xFF;
+        final int byte165 = blocks[blocksOffset++] & 0xFF;
+        final int byte166 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte162 & 3) << 29) | (byte163 << 21) | (byte164 << 13) | (byte165 << 5) | (byte166 >>> 3);
+        final int byte167 = blocks[blocksOffset++] & 0xFF;
+        final int byte168 = blocks[blocksOffset++] & 0xFF;
+        final int byte169 = blocks[blocksOffset++] & 0xFF;
+        final int byte170 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte166 & 7) << 28) | (byte167 << 20) | (byte168 << 12) | (byte169 << 4) | (byte170 >>> 4);
+        final int byte171 = blocks[blocksOffset++] & 0xFF;
+        final int byte172 = blocks[blocksOffset++] & 0xFF;
+        final int byte173 = blocks[blocksOffset++] & 0xFF;
+        final int byte174 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte170 & 15) << 27) | (byte171 << 19) | (byte172 << 11) | (byte173 << 3) | (byte174 >>> 5);
+        final int byte175 = blocks[blocksOffset++] & 0xFF;
+        final int byte176 = blocks[blocksOffset++] & 0xFF;
+        final int byte177 = blocks[blocksOffset++] & 0xFF;
+        final int byte178 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte174 & 31) << 26) | (byte175 << 18) | (byte176 << 10) | (byte177 << 2) | (byte178 >>> 6);
+        final int byte179 = blocks[blocksOffset++] & 0xFF;
+        final int byte180 = blocks[blocksOffset++] & 0xFF;
+        final int byte181 = blocks[blocksOffset++] & 0xFF;
+        final int byte182 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte178 & 63) << 25) | (byte179 << 17) | (byte180 << 9) | (byte181 << 1) | (byte182 >>> 7);
+        final int byte183 = blocks[blocksOffset++] & 0xFF;
+        final int byte184 = blocks[blocksOffset++] & 0xFF;
+        final int byte185 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte182 & 127) << 24) | (byte183 << 16) | (byte184 << 8) | byte185;
+        final int byte186 = blocks[blocksOffset++] & 0xFF;
+        final int byte187 = blocks[blocksOffset++] & 0xFF;
+        final int byte188 = blocks[blocksOffset++] & 0xFF;
+        final int byte189 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte186 << 23) | (byte187 << 15) | (byte188 << 7) | (byte189 >>> 1);
+        final int byte190 = blocks[blocksOffset++] & 0xFF;
+        final int byte191 = blocks[blocksOffset++] & 0xFF;
+        final int byte192 = blocks[blocksOffset++] & 0xFF;
+        final int byte193 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte189 & 1) << 30) | (byte190 << 22) | (byte191 << 14) | (byte192 << 6) | (byte193 >>> 2);
+        final int byte194 = blocks[blocksOffset++] & 0xFF;
+        final int byte195 = blocks[blocksOffset++] & 0xFF;
+        final int byte196 = blocks[blocksOffset++] & 0xFF;
+        final int byte197 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte193 & 3) << 29) | (byte194 << 21) | (byte195 << 13) | (byte196 << 5) | (byte197 >>> 3);
+        final int byte198 = blocks[blocksOffset++] & 0xFF;
+        final int byte199 = blocks[blocksOffset++] & 0xFF;
+        final int byte200 = blocks[blocksOffset++] & 0xFF;
+        final int byte201 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte197 & 7) << 28) | (byte198 << 20) | (byte199 << 12) | (byte200 << 4) | (byte201 >>> 4);
+        final int byte202 = blocks[blocksOffset++] & 0xFF;
+        final int byte203 = blocks[blocksOffset++] & 0xFF;
+        final int byte204 = blocks[blocksOffset++] & 0xFF;
+        final int byte205 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte201 & 15) << 27) | (byte202 << 19) | (byte203 << 11) | (byte204 << 3) | (byte205 >>> 5);
+        final int byte206 = blocks[blocksOffset++] & 0xFF;
+        final int byte207 = blocks[blocksOffset++] & 0xFF;
+        final int byte208 = blocks[blocksOffset++] & 0xFF;
+        final int byte209 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte205 & 31) << 26) | (byte206 << 18) | (byte207 << 10) | (byte208 << 2) | (byte209 >>> 6);
+        final int byte210 = blocks[blocksOffset++] & 0xFF;
+        final int byte211 = blocks[blocksOffset++] & 0xFF;
+        final int byte212 = blocks[blocksOffset++] & 0xFF;
+        final int byte213 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte209 & 63) << 25) | (byte210 << 17) | (byte211 << 9) | (byte212 << 1) | (byte213 >>> 7);
+        final int byte214 = blocks[blocksOffset++] & 0xFF;
+        final int byte215 = blocks[blocksOffset++] & 0xFF;
+        final int byte216 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte213 & 127) << 24) | (byte214 << 16) | (byte215 << 8) | byte216;
+        final int byte217 = blocks[blocksOffset++] & 0xFF;
+        final int byte218 = blocks[blocksOffset++] & 0xFF;
+        final int byte219 = blocks[blocksOffset++] & 0xFF;
+        final int byte220 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte217 << 23) | (byte218 << 15) | (byte219 << 7) | (byte220 >>> 1);
+        final int byte221 = blocks[blocksOffset++] & 0xFF;
+        final int byte222 = blocks[blocksOffset++] & 0xFF;
+        final int byte223 = blocks[blocksOffset++] & 0xFF;
+        final int byte224 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte220 & 1) << 30) | (byte221 << 22) | (byte222 << 14) | (byte223 << 6) | (byte224 >>> 2);
+        final int byte225 = blocks[blocksOffset++] & 0xFF;
+        final int byte226 = blocks[blocksOffset++] & 0xFF;
+        final int byte227 = blocks[blocksOffset++] & 0xFF;
+        final int byte228 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte224 & 3) << 29) | (byte225 << 21) | (byte226 << 13) | (byte227 << 5) | (byte228 >>> 3);
+        final int byte229 = blocks[blocksOffset++] & 0xFF;
+        final int byte230 = blocks[blocksOffset++] & 0xFF;
+        final int byte231 = blocks[blocksOffset++] & 0xFF;
+        final int byte232 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte228 & 7) << 28) | (byte229 << 20) | (byte230 << 12) | (byte231 << 4) | (byte232 >>> 4);
+        final int byte233 = blocks[blocksOffset++] & 0xFF;
+        final int byte234 = blocks[blocksOffset++] & 0xFF;
+        final int byte235 = blocks[blocksOffset++] & 0xFF;
+        final int byte236 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte232 & 15) << 27) | (byte233 << 19) | (byte234 << 11) | (byte235 << 3) | (byte236 >>> 5);
+        final int byte237 = blocks[blocksOffset++] & 0xFF;
+        final int byte238 = blocks[blocksOffset++] & 0xFF;
+        final int byte239 = blocks[blocksOffset++] & 0xFF;
+        final int byte240 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte236 & 31) << 26) | (byte237 << 18) | (byte238 << 10) | (byte239 << 2) | (byte240 >>> 6);
+        final int byte241 = blocks[blocksOffset++] & 0xFF;
+        final int byte242 = blocks[blocksOffset++] & 0xFF;
+        final int byte243 = blocks[blocksOffset++] & 0xFF;
+        final int byte244 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte240 & 63) << 25) | (byte241 << 17) | (byte242 << 9) | (byte243 << 1) | (byte244 >>> 7);
+        final int byte245 = blocks[blocksOffset++] & 0xFF;
+        final int byte246 = blocks[blocksOffset++] & 0xFF;
+        final int byte247 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = ((byte244 & 127) << 24) | (byte245 << 16) | (byte246 << 8) | byte247;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -7147,6 +13898,44 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 31) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -7197,6 +13986,33 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       return 2;
     }
 
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block0 = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block0 >>> 32);
+        values[valuesOffset++] = (int) (block0 & 4294967295L);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte0 << 24) | (byte1 << 16) | (byte2 << 8) | byte3;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = (byte4 << 24) | (byte5 << 16) | (byte6 << 8) | byte7;
+      }
+    }
+
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -7224,6 +14040,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -7242,6 +14066,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -7683,6 +14511,46 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -7733,6 +14601,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -7966,6 +14838,30 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -8000,6 +14896,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -8459,6 +15359,48 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -8511,6 +15453,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 16;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -8640,6 +15586,22 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -8666,6 +15628,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -9143,6 +16109,50 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -9197,6 +16207,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -9448,6 +16462,32 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -9484,6 +16524,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -9979,6 +17023,52 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -10035,6 +17125,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 8;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -10112,6 +17206,18 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -10134,6 +17240,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -10647,6 +17757,54 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -10705,6 +17863,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -10974,6 +18136,34 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -11012,6 +18202,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -11543,6 +18737,56 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -11603,6 +18847,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 16;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -11750,6 +18998,24 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -11778,6 +19044,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -12327,6 +19597,58 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -12389,6 +19711,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -12676,6 +20002,36 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -12716,6 +20072,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -13283,6 +20643,60 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 45);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -13349,6 +20763,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       return 4;
     }
 
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
+    }
+
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -13398,6 +20816,16 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -13418,6 +20846,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -14003,6 +21435,62 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 47);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 45);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -14069,6 +21557,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -14374,6 +21866,38 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -14416,6 +21940,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -15019,6 +22547,64 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 49);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 47);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 45);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -15087,6 +22673,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 16;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -15252,6 +22842,26 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -15282,6 +22892,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -15903,6 +23517,66 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 51);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 49);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 47);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 45);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -15973,6 +23647,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -16296,6 +23974,40 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -16340,6 +24052,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -16979,6 +24695,68 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 47);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 49);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 51);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 53);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 54);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 45);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -17051,6 +24829,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 8;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -17146,6 +24928,20 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -17170,6 +24966,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -17827,6 +25627,70 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 51);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 45);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 53);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 54);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 47);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 55);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 56);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 49);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -17901,6 +25765,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -18242,6 +26110,42 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 56);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 54);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -18288,6 +26192,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -18963,6 +26871,72 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 54);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 49);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 58);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 53);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 57);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 47);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 56);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 51);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 55);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 45);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -19039,6 +27013,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 16;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -19222,6 +27200,28 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 56);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -19254,6 +27254,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -19947,6 +27951,74 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 58);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 55);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 49);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 59);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 56);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 53);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 47);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 60);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 57);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 54);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 51);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 45);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -20025,6 +28097,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -20384,6 +28460,44 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 60);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 58);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 56);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 54);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -20432,6 +28546,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21143,6 +29261,76 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 62);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 61);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 60);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 59);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 58);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 57);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 56);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 55);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 54);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 53);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 52);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 51);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 50);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 49);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 48);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 47);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 46);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 45);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 44);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 43);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 42);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 41);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset] & 0xffffffffL) >>> 40);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset] & 0xffffffffL) >>> 39);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset] & 0xffffffffL) >>> 38);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset] & 0xffffffffL) >>> 37);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset] & 0xffffffffL) >>> 36);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset] & 0xffffffffL) >>> 35);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset] & 0xffffffffL) >>> 34);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset] & 0xffffffffL) >>> 33);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset] & 0xffffffffL) >>> 32);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset] & 0xffffffffL) >>> 31);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset] & 0xffffffffL) >>> 30);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset] & 0xffffffffL) >>> 29);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset] & 0xffffffffL) >>> 28);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset] & 0xffffffffL) >>> 27);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset] & 0xffffffffL) >>> 26);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset] & 0xffffffffL) >>> 25);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset] & 0xffffffffL) >>> 24);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset] & 0xffffffffL) >>> 23);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
+        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | (values[valuesOffset++] & 0xffffffffL);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21229,6 +29417,10 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       System.arraycopy(blocks, blocksOffset, values, valuesOffset, valueCount() * iterations);
     }
 
+    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+      LongBuffer.wrap(values, valuesOffset, iterations * valueCount()).put(ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer());
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       System.arraycopy(values, valuesOffset, blocks, blocksOffset, valueCount() * iterations);
     }
@@ -21244,6 +29436,157 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 64;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 1L);
+        values[valuesOffset++] = (int) ((block >>> 1) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 2) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 3) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 4) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 5) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 6) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 7) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 8) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 9) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 10) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 11) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 12) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 13) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 14) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 15) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 16) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 17) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 18) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 19) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 20) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 21) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 22) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 23) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 24) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 25) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 26) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 27) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 28) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 29) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 30) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 31) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 32) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 33) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 34) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 35) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 36) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 37) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 38) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 39) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 40) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 41) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 42) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 43) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 44) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 45) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 46) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 47) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 48) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 49) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 50) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 51) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 52) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 53) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 54) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 55) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 56) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 57) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 58) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 59) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 60) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 61) & 1L);
+        values[valuesOffset++] = (int) ((block >>> 62) & 1L);
+        values[valuesOffset++] = (int) (block >>> 63);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 1;
+        values[valuesOffset++] = (byte0 >>> 1) & 1;
+        values[valuesOffset++] = (byte0 >>> 2) & 1;
+        values[valuesOffset++] = (byte0 >>> 3) & 1;
+        values[valuesOffset++] = (byte0 >>> 4) & 1;
+        values[valuesOffset++] = (byte0 >>> 5) & 1;
+        values[valuesOffset++] = (byte0 >>> 6) & 1;
+        values[valuesOffset++] = byte0 >>> 7;
+        values[valuesOffset++] = byte1 & 1;
+        values[valuesOffset++] = (byte1 >>> 1) & 1;
+        values[valuesOffset++] = (byte1 >>> 2) & 1;
+        values[valuesOffset++] = (byte1 >>> 3) & 1;
+        values[valuesOffset++] = (byte1 >>> 4) & 1;
+        values[valuesOffset++] = (byte1 >>> 5) & 1;
+        values[valuesOffset++] = (byte1 >>> 6) & 1;
+        values[valuesOffset++] = byte1 >>> 7;
+        values[valuesOffset++] = byte2 & 1;
+        values[valuesOffset++] = (byte2 >>> 1) & 1;
+        values[valuesOffset++] = (byte2 >>> 2) & 1;
+        values[valuesOffset++] = (byte2 >>> 3) & 1;
+        values[valuesOffset++] = (byte2 >>> 4) & 1;
+        values[valuesOffset++] = (byte2 >>> 5) & 1;
+        values[valuesOffset++] = (byte2 >>> 6) & 1;
+        values[valuesOffset++] = byte2 >>> 7;
+        values[valuesOffset++] = byte3 & 1;
+        values[valuesOffset++] = (byte3 >>> 1) & 1;
+        values[valuesOffset++] = (byte3 >>> 2) & 1;
+        values[valuesOffset++] = (byte3 >>> 3) & 1;
+        values[valuesOffset++] = (byte3 >>> 4) & 1;
+        values[valuesOffset++] = (byte3 >>> 5) & 1;
+        values[valuesOffset++] = (byte3 >>> 6) & 1;
+        values[valuesOffset++] = byte3 >>> 7;
+        values[valuesOffset++] = byte4 & 1;
+        values[valuesOffset++] = (byte4 >>> 1) & 1;
+        values[valuesOffset++] = (byte4 >>> 2) & 1;
+        values[valuesOffset++] = (byte4 >>> 3) & 1;
+        values[valuesOffset++] = (byte4 >>> 4) & 1;
+        values[valuesOffset++] = (byte4 >>> 5) & 1;
+        values[valuesOffset++] = (byte4 >>> 6) & 1;
+        values[valuesOffset++] = byte4 >>> 7;
+        values[valuesOffset++] = byte5 & 1;
+        values[valuesOffset++] = (byte5 >>> 1) & 1;
+        values[valuesOffset++] = (byte5 >>> 2) & 1;
+        values[valuesOffset++] = (byte5 >>> 3) & 1;
+        values[valuesOffset++] = (byte5 >>> 4) & 1;
+        values[valuesOffset++] = (byte5 >>> 5) & 1;
+        values[valuesOffset++] = (byte5 >>> 6) & 1;
+        values[valuesOffset++] = byte5 >>> 7;
+        values[valuesOffset++] = byte6 & 1;
+        values[valuesOffset++] = (byte6 >>> 1) & 1;
+        values[valuesOffset++] = (byte6 >>> 2) & 1;
+        values[valuesOffset++] = (byte6 >>> 3) & 1;
+        values[valuesOffset++] = (byte6 >>> 4) & 1;
+        values[valuesOffset++] = (byte6 >>> 5) & 1;
+        values[valuesOffset++] = (byte6 >>> 6) & 1;
+        values[valuesOffset++] = byte6 >>> 7;
+        values[valuesOffset++] = byte7 & 1;
+        values[valuesOffset++] = (byte7 >>> 1) & 1;
+        values[valuesOffset++] = (byte7 >>> 2) & 1;
+        values[valuesOffset++] = (byte7 >>> 3) & 1;
+        values[valuesOffset++] = (byte7 >>> 4) & 1;
+        values[valuesOffset++] = (byte7 >>> 5) & 1;
+        values[valuesOffset++] = (byte7 >>> 6) & 1;
+        values[valuesOffset++] = byte7 >>> 7;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21397,6 +29740,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 23) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 63);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21415,6 +29766,93 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 32;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 3L);
+        values[valuesOffset++] = (int) ((block >>> 2) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 4) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 6) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 8) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 10) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 12) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 14) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 16) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 18) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 20) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 22) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 24) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 26) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 28) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 30) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 32) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 34) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 36) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 38) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 40) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 42) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 44) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 46) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 48) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 50) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 52) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 54) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 56) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 58) & 3L);
+        values[valuesOffset++] = (int) ((block >>> 60) & 3L);
+        values[valuesOffset++] = (int) (block >>> 62);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 3;
+        values[valuesOffset++] = (byte0 >>> 2) & 3;
+        values[valuesOffset++] = (byte0 >>> 4) & 3;
+        values[valuesOffset++] = byte0 >>> 6;
+        values[valuesOffset++] = byte1 & 3;
+        values[valuesOffset++] = (byte1 >>> 2) & 3;
+        values[valuesOffset++] = (byte1 >>> 4) & 3;
+        values[valuesOffset++] = byte1 >>> 6;
+        values[valuesOffset++] = byte2 & 3;
+        values[valuesOffset++] = (byte2 >>> 2) & 3;
+        values[valuesOffset++] = (byte2 >>> 4) & 3;
+        values[valuesOffset++] = byte2 >>> 6;
+        values[valuesOffset++] = byte3 & 3;
+        values[valuesOffset++] = (byte3 >>> 2) & 3;
+        values[valuesOffset++] = (byte3 >>> 4) & 3;
+        values[valuesOffset++] = byte3 >>> 6;
+        values[valuesOffset++] = byte4 & 3;
+        values[valuesOffset++] = (byte4 >>> 2) & 3;
+        values[valuesOffset++] = (byte4 >>> 4) & 3;
+        values[valuesOffset++] = byte4 >>> 6;
+        values[valuesOffset++] = byte5 & 3;
+        values[valuesOffset++] = (byte5 >>> 2) & 3;
+        values[valuesOffset++] = (byte5 >>> 4) & 3;
+        values[valuesOffset++] = byte5 >>> 6;
+        values[valuesOffset++] = byte6 & 3;
+        values[valuesOffset++] = (byte6 >>> 2) & 3;
+        values[valuesOffset++] = (byte6 >>> 4) & 3;
+        values[valuesOffset++] = byte6 >>> 6;
+        values[valuesOffset++] = byte7 & 3;
+        values[valuesOffset++] = (byte7 >>> 2) & 3;
+        values[valuesOffset++] = (byte7 >>> 4) & 3;
+        values[valuesOffset++] = byte7 >>> 6;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21504,6 +29942,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 62);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21522,6 +29968,71 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 21;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 7L);
+        values[valuesOffset++] = (int) ((block >>> 3) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 6) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 9) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 12) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 15) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 18) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 21) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 24) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 27) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 30) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 33) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 36) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 39) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 42) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 45) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 48) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 51) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 54) & 7L);
+        values[valuesOffset++] = (int) ((block >>> 57) & 7L);
+        values[valuesOffset++] = (int) (block >>> 60);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 7;
+        values[valuesOffset++] = (byte0 >>> 3) & 7;
+        values[valuesOffset++] = (byte0 >>> 6) | ((byte1 & 1) << 2);
+        values[valuesOffset++] = (byte1 >>> 1) & 7;
+        values[valuesOffset++] = (byte1 >>> 4) & 7;
+        values[valuesOffset++] = (byte1 >>> 7) | ((byte2 & 3) << 1);
+        values[valuesOffset++] = (byte2 >>> 2) & 7;
+        values[valuesOffset++] = byte2 >>> 5;
+        values[valuesOffset++] = byte3 & 7;
+        values[valuesOffset++] = (byte3 >>> 3) & 7;
+        values[valuesOffset++] = (byte3 >>> 6) | ((byte4 & 1) << 2);
+        values[valuesOffset++] = (byte4 >>> 1) & 7;
+        values[valuesOffset++] = (byte4 >>> 4) & 7;
+        values[valuesOffset++] = (byte4 >>> 7) | ((byte5 & 3) << 1);
+        values[valuesOffset++] = (byte5 >>> 2) & 7;
+        values[valuesOffset++] = byte5 >>> 5;
+        values[valuesOffset++] = byte6 & 7;
+        values[valuesOffset++] = (byte6 >>> 3) & 7;
+        values[valuesOffset++] = (byte6 >>> 6) | ((byte7 & 1) << 2);
+        values[valuesOffset++] = (byte7 >>> 1) & 7;
+        values[valuesOffset++] = (byte7 >>> 4) & 7;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21589,6 +30100,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 60);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21607,6 +30126,61 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 16;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 15L);
+        values[valuesOffset++] = (int) ((block >>> 4) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 8) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 12) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 16) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 20) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 24) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 28) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 32) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 36) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 40) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 44) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 48) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 52) & 15L);
+        values[valuesOffset++] = (int) ((block >>> 56) & 15L);
+        values[valuesOffset++] = (int) (block >>> 60);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 15;
+        values[valuesOffset++] = byte0 >>> 4;
+        values[valuesOffset++] = byte1 & 15;
+        values[valuesOffset++] = byte1 >>> 4;
+        values[valuesOffset++] = byte2 & 15;
+        values[valuesOffset++] = byte2 >>> 4;
+        values[valuesOffset++] = byte3 & 15;
+        values[valuesOffset++] = byte3 >>> 4;
+        values[valuesOffset++] = byte4 & 15;
+        values[valuesOffset++] = byte4 >>> 4;
+        values[valuesOffset++] = byte5 & 15;
+        values[valuesOffset++] = byte5 >>> 4;
+        values[valuesOffset++] = byte6 & 15;
+        values[valuesOffset++] = byte6 >>> 4;
+        values[valuesOffset++] = byte7 & 15;
+        values[valuesOffset++] = byte7 >>> 4;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21664,6 +30238,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 60);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21682,6 +30264,53 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 12;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 31L);
+        values[valuesOffset++] = (int) ((block >>> 5) & 31L);
+        values[valuesOffset++] = (int) ((block >>> 10) & 31L);
+        values[valuesOffset++] = (int) ((block >>> 15) & 31L);
+        values[valuesOffset++] = (int) ((block >>> 20) & 31L);
+        values[valuesOffset++] = (int) ((block >>> 25) & 31L);
+        values[valuesOffset++] = (int) ((block >>> 30) & 31L);
+        values[valuesOffset++] = (int) ((block >>> 35) & 31L);
+        values[valuesOffset++] = (int) ((block >>> 40) & 31L);
+        values[valuesOffset++] = (int) ((block >>> 45) & 31L);
+        values[valuesOffset++] = (int) ((block >>> 50) & 31L);
+        values[valuesOffset++] = (int) (block >>> 55);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 31;
+        values[valuesOffset++] = (byte0 >>> 5) | ((byte1 & 3) << 3);
+        values[valuesOffset++] = (byte1 >>> 2) & 31;
+        values[valuesOffset++] = (byte1 >>> 7) | ((byte2 & 15) << 1);
+        values[valuesOffset++] = (byte2 >>> 4) | ((byte3 & 1) << 4);
+        values[valuesOffset++] = (byte3 >>> 1) & 31;
+        values[valuesOffset++] = (byte3 >>> 6) | ((byte4 & 7) << 2);
+        values[valuesOffset++] = byte4 >>> 3;
+        values[valuesOffset++] = byte5 & 31;
+        values[valuesOffset++] = (byte5 >>> 5) | ((byte6 & 3) << 3);
+        values[valuesOffset++] = (byte6 >>> 2) & 31;
+        values[valuesOffset++] = (byte6 >>> 7) | ((byte7 & 15) << 1);
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21731,6 +30360,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 55);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21749,6 +30386,49 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 10;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 63L);
+        values[valuesOffset++] = (int) ((block >>> 6) & 63L);
+        values[valuesOffset++] = (int) ((block >>> 12) & 63L);
+        values[valuesOffset++] = (int) ((block >>> 18) & 63L);
+        values[valuesOffset++] = (int) ((block >>> 24) & 63L);
+        values[valuesOffset++] = (int) ((block >>> 30) & 63L);
+        values[valuesOffset++] = (int) ((block >>> 36) & 63L);
+        values[valuesOffset++] = (int) ((block >>> 42) & 63L);
+        values[valuesOffset++] = (int) ((block >>> 48) & 63L);
+        values[valuesOffset++] = (int) (block >>> 54);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 63;
+        values[valuesOffset++] = (byte0 >>> 6) | ((byte1 & 15) << 2);
+        values[valuesOffset++] = (byte1 >>> 4) | ((byte2 & 3) << 4);
+        values[valuesOffset++] = byte2 >>> 2;
+        values[valuesOffset++] = byte3 & 63;
+        values[valuesOffset++] = (byte3 >>> 6) | ((byte4 & 15) << 2);
+        values[valuesOffset++] = (byte4 >>> 4) | ((byte5 & 3) << 4);
+        values[valuesOffset++] = byte5 >>> 2;
+        values[valuesOffset++] = byte6 & 63;
+        values[valuesOffset++] = (byte6 >>> 6) | ((byte7 & 15) << 2);
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21794,6 +30474,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 54);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21812,6 +30500,47 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 9;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 127L);
+        values[valuesOffset++] = (int) ((block >>> 7) & 127L);
+        values[valuesOffset++] = (int) ((block >>> 14) & 127L);
+        values[valuesOffset++] = (int) ((block >>> 21) & 127L);
+        values[valuesOffset++] = (int) ((block >>> 28) & 127L);
+        values[valuesOffset++] = (int) ((block >>> 35) & 127L);
+        values[valuesOffset++] = (int) ((block >>> 42) & 127L);
+        values[valuesOffset++] = (int) ((block >>> 49) & 127L);
+        values[valuesOffset++] = (int) (block >>> 56);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 & 127;
+        values[valuesOffset++] = (byte0 >>> 7) | ((byte1 & 63) << 1);
+        values[valuesOffset++] = (byte1 >>> 6) | ((byte2 & 31) << 2);
+        values[valuesOffset++] = (byte2 >>> 5) | ((byte3 & 15) << 3);
+        values[valuesOffset++] = (byte3 >>> 4) | ((byte4 & 7) << 4);
+        values[valuesOffset++] = (byte4 >>> 3) | ((byte5 & 3) << 5);
+        values[valuesOffset++] = (byte5 >>> 2) | ((byte6 & 1) << 6);
+        values[valuesOffset++] = byte6 >>> 1;
+        values[valuesOffset++] = byte7 & 127;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21855,6 +30584,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 56);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21873,6 +30610,45 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 8;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 255L);
+        values[valuesOffset++] = (int) ((block >>> 8) & 255L);
+        values[valuesOffset++] = (int) ((block >>> 16) & 255L);
+        values[valuesOffset++] = (int) ((block >>> 24) & 255L);
+        values[valuesOffset++] = (int) ((block >>> 32) & 255L);
+        values[valuesOffset++] = (int) ((block >>> 40) & 255L);
+        values[valuesOffset++] = (int) ((block >>> 48) & 255L);
+        values[valuesOffset++] = (int) (block >>> 56);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0;
+        values[valuesOffset++] = byte1;
+        values[valuesOffset++] = byte2;
+        values[valuesOffset++] = byte3;
+        values[valuesOffset++] = byte4;
+        values[valuesOffset++] = byte5;
+        values[valuesOffset++] = byte6;
+        values[valuesOffset++] = byte7;
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21914,6 +30690,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 56);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21932,6 +30716,43 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 7;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 511L);
+        values[valuesOffset++] = (int) ((block >>> 9) & 511L);
+        values[valuesOffset++] = (int) ((block >>> 18) & 511L);
+        values[valuesOffset++] = (int) ((block >>> 27) & 511L);
+        values[valuesOffset++] = (int) ((block >>> 36) & 511L);
+        values[valuesOffset++] = (int) ((block >>> 45) & 511L);
+        values[valuesOffset++] = (int) (block >>> 54);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | ((byte1 & 1) << 8);
+        values[valuesOffset++] = (byte1 >>> 1) | ((byte2 & 3) << 7);
+        values[valuesOffset++] = (byte2 >>> 2) | ((byte3 & 7) << 6);
+        values[valuesOffset++] = (byte3 >>> 3) | ((byte4 & 15) << 5);
+        values[valuesOffset++] = (byte4 >>> 4) | ((byte5 & 31) << 4);
+        values[valuesOffset++] = (byte5 >>> 5) | ((byte6 & 63) << 3);
+        values[valuesOffset++] = (byte6 >>> 6) | ((byte7 & 127) << 2);
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -21971,6 +30792,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 54);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -21989,6 +30818,41 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 6;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 1023L);
+        values[valuesOffset++] = (int) ((block >>> 10) & 1023L);
+        values[valuesOffset++] = (int) ((block >>> 20) & 1023L);
+        values[valuesOffset++] = (int) ((block >>> 30) & 1023L);
+        values[valuesOffset++] = (int) ((block >>> 40) & 1023L);
+        values[valuesOffset++] = (int) (block >>> 50);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | ((byte1 & 3) << 8);
+        values[valuesOffset++] = (byte1 >>> 2) | ((byte2 & 15) << 6);
+        values[valuesOffset++] = (byte2 >>> 4) | ((byte3 & 63) << 4);
+        values[valuesOffset++] = (byte3 >>> 6) | (byte4 << 2);
+        values[valuesOffset++] = byte5 | ((byte6 & 3) << 8);
+        values[valuesOffset++] = (byte6 >>> 2) | ((byte7 & 15) << 6);
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -22026,6 +30890,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 50);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -22044,6 +30916,39 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 5;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 4095L);
+        values[valuesOffset++] = (int) ((block >>> 12) & 4095L);
+        values[valuesOffset++] = (int) ((block >>> 24) & 4095L);
+        values[valuesOffset++] = (int) ((block >>> 36) & 4095L);
+        values[valuesOffset++] = (int) (block >>> 48);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | ((byte1 & 15) << 8);
+        values[valuesOffset++] = (byte1 >>> 4) | (byte2 << 4);
+        values[valuesOffset++] = byte3 | ((byte4 & 15) << 8);
+        values[valuesOffset++] = (byte4 >>> 4) | (byte5 << 4);
+        values[valuesOffset++] = byte6 | ((byte7 & 15) << 8);
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -22079,6 +30984,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 48);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -22097,6 +31010,37 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 4;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 65535L);
+        values[valuesOffset++] = (int) ((block >>> 16) & 65535L);
+        values[valuesOffset++] = (int) ((block >>> 32) & 65535L);
+        values[valuesOffset++] = (int) (block >>> 48);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | (byte1 << 8);
+        values[valuesOffset++] = byte2 | (byte3 << 8);
+        values[valuesOffset++] = byte4 | (byte5 << 8);
+        values[valuesOffset++] = byte6 | (byte7 << 8);
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -22130,6 +31074,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 48);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -22148,6 +31100,35 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 3;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 2097151L);
+        values[valuesOffset++] = (int) ((block >>> 21) & 2097151L);
+        values[valuesOffset++] = (int) (block >>> 42);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | (byte1 << 8) | ((byte2 & 31) << 16);
+        values[valuesOffset++] = (byte2 >>> 5) | (byte3 << 3) | (byte4 << 11) | ((byte5 & 3) << 19);
+        values[valuesOffset++] = (byte5 >>> 2) | (byte6 << 6) | ((byte7 & 127) << 14);
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -22179,6 +31160,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
       }
     }
 
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 42);
+      }
+    }
+
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -22197,6 +31186,33 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
     public int valueCount() {
       return 2;
+    }
+
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final long block = blocks[blocksOffset++];
+        values[valuesOffset++] = (int) (block & 4294967295L);
+        values[valuesOffset++] = (int) (block >>> 32);
+      }
+    }
+
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        final int byte7 = blocks[blocksOffset++] & 0xFF;
+        final int byte6 = blocks[blocksOffset++] & 0xFF;
+        final int byte5 = blocks[blocksOffset++] & 0xFF;
+        final int byte4 = blocks[blocksOffset++] & 0xFF;
+        final int byte3 = blocks[blocksOffset++] & 0xFF;
+        final int byte2 = blocks[blocksOffset++] & 0xFF;
+        final int byte1 = blocks[blocksOffset++] & 0xFF;
+        final int byte0 = blocks[blocksOffset++] & 0xFF;
+        values[valuesOffset++] = byte0 | (byte1 << 8) | (byte2 << 16) | (byte3 << 24);
+        values[valuesOffset++] = byte4 | (byte5 << 8) | (byte6 << 16) | (byte7 << 24);
+      }
     }
 
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
@@ -22223,6 +31239,14 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
         final long byte0 = blocks[blocksOffset++] & 0xFF;
         values[valuesOffset++] = byte0 | (byte1 << 8) | (byte2 << 16) | (byte3 << 24);
         values[valuesOffset++] = byte4 | (byte5 << 8) | (byte6 << 16) | (byte7 << 24);
+      }
+    }
+
+    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+      assert blocksOffset + iterations * blockCount() <= blocks.length;
+      assert valuesOffset + iterations * valueCount() <= values.length;
+      for (int i = 0; i < iterations; ++i) {
+        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 32);
       }
     }
 
@@ -22410,20 +31434,38 @@ enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
   }
 
 
-  private static long[] toLongArray(byte[] bytes, int offset, int length) {
-    final int longsLen = length >>> 3;
-    LongBuffer longs = LongBuffer.allocate(longsLen);
-    longs.put(ByteBuffer.wrap(bytes, offset, length).asLongBuffer());
-    return longs.array();
+  private static long[] toLongArray(int[] ints, int offset, int length) {
+    long[] arr = new long[length];
+    for (int i = 0; i < length; ++i) {
+      arr[i] = ints[offset + i];
+    }
+    return arr;
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
-    decode(toLongArray(blocks, blocksOffset, 8 * iterations * blockCount()), 0, values, valuesOffset, iterations);
+  public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
+    encode(toLongArray(values, valuesOffset, iterations * valueCount()), 0, blocks, blocksOffset, iterations);
   }
 
   @Override
   public void encode(long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
+    final long[] longBLocks = new long[blockCount() * iterations];
+    encode(values, valuesOffset, longBLocks, 0, iterations);
+    ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer().put(longBLocks);
+  }
+
+  @Override
+  public void encode(int[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
     final long[] longBLocks = new long[blockCount() * iterations];
     encode(values, valuesOffset, longBLocks, 0, iterations);
     ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer().put(longBLocks);
