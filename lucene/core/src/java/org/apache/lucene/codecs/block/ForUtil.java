@@ -18,6 +18,8 @@ package org.apache.lucene.codecs.block;
 
 import java.nio.IntBuffer;
 
+import static org.apache.lucene.codecs.block.BlockPostingsFormat.BLOCK_SIZE;
+
 /**
  * Encode all values in normal area with fixed bit width, 
  * which is determined by the max value in this block.
@@ -31,8 +33,6 @@ public final class ForUtil {
     0x01ffffff, 0x03ffffff, 0x07ffffff, 0x0fffffff, 0x1fffffff, 0x3fffffff,
     0x7fffffff, 0xffffffff};
 
-  final static int blockSize = BlockPostingsFormat.BLOCK_SIZE;
-
   /** Compress given int[] into Integer buffer, with For format
    *
    * @param data        uncompressed data
@@ -45,7 +45,7 @@ public final class ForUtil {
       return compressDuplicateBlock(data, intBuffer);
     }
  
-    for (int i=0; i<blockSize; ++i) {
+    for (int i=0; i<BLOCK_SIZE; ++i) {
       assert data[i] >= 0;
       encodeNormalValue(intBuffer, i, data[i], numBits);
     }
@@ -170,6 +170,7 @@ public final class ForUtil {
    * Expert: get compressed block size(in byte)  
    */
   static int getEncodedSize(int numBits) {
-    return numBits == 0 ? 4 : numBits*blockSize/8;
+    // NOTE: works only because BLOCK_SIZE is 0 mod 8:
+    return numBits == 0 ? 4 : numBits*BLOCK_SIZE/8;
   }
 }

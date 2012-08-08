@@ -42,6 +42,8 @@ public final class BlockPostingsFormat extends PostingsFormat {
   private final int minTermBlockSize;
   private final int maxTermBlockSize;
 
+  // nocommit is this right?:
+  // NOTE: must be factor of .... 32?
   public final static int BLOCK_SIZE = 128;
 
   public BlockPostingsFormat() {
