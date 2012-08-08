@@ -65,7 +65,9 @@ public class TestBoolean2 extends LuceneTestCase {
     }
     writer.close();
     littleReader = DirectoryReader.open(directory);
-    searcher = new IndexSearcher(littleReader);
+    searcher = newSearcher(littleReader);
+    // this is intentionally using the baseline sim, because it compares against bigSearcher (which uses a random one)
+    searcher.setSimilarity(new DefaultSimilarity());
 
     // Make big index
     dir2 = new MockDirectoryWrapper(random(), new RAMDirectory(directory, IOContext.DEFAULT));
@@ -261,7 +263,7 @@ public class TestBoolean2 extends LuceneTestCase {
     try {
 
       // increase number of iterations for more complete testing
-      int num = atLeast(10);
+      int num = atLeast(20);
       for (int i=0; i<num; i++) {
         int level = random().nextInt(3);
         q1 = randBoolQuery(new Random(random().nextLong()), random().nextBoolean(), level, field, vals, null);
@@ -270,7 +272,14 @@ public class TestBoolean2 extends LuceneTestCase {
         // match up.
         Sort sort = Sort.INDEXORDER;
 
-        QueryUtils.check(random(), q1,searcher);
+        QueryUtils.check(random(), q1,searcher); // baseline sim
+        try {
+          // a little hackish, QueryUtils.check is too costly to do on bigSearcher in this loop.
+          searcher.setSimilarity(bigSearcher.getSimilarity()); // random sim
+          QueryUtils.check(random(), q1, searcher);
+        } finally {
+          searcher.setSimilarity(new DefaultSimilarity()); // restore
+        }
 
         TopFieldCollector collector = TopFieldCollector.create(sort, 1000,
             false, true, true, true);
@@ -321,6 +330,14 @@ public class TestBoolean2 extends LuceneTestCase {
       Query q;
       if (qType < 3) {
         q = new TermQuery(new Term(field, vals[rnd.nextInt(vals.length)]));
+      } else if (qType < 4) {
+        Term t1 = new Term(field, vals[rnd.nextInt(vals.length)]);
+        Term t2 = new Term(field, vals[rnd.nextInt(vals.length)]);
+        PhraseQuery pq = new PhraseQuery();
+        pq.add(t1);
+        pq.add(t2);
+        pq.setSlop(10); // increase possibility of matching
+        q = pq;
       } else if (qType < 7) {
         q = new WildcardQuery(new Term(field, "w*"));
       } else {

@@ -8,7 +8,13 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.0.0 =======================
 
-(No Changes)
+Bug Fixes
+
+* LUCENE-4297: BooleanScorer2 would multiply the coord() factor
+  twice for conjunctions: for most users this is no problem, but
+  if you had a customized Similarity that returned something other
+  than 1 when overlap == maxOverlap (always the case for conjunctions),
+  then the score would be incorrect.  (Pascal Chollet, Robert Muir)
 
 ======================= Lucene 4.0.0-BETA =======================
 
