@@ -18,6 +18,8 @@ package org.apache.lucene.codecs.blockpacked;
  */
 
 import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_DATA_SIZE;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_ENCODED_SIZE;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -25,7 +27,6 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.blockpacked.BlockPackedSkipReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -57,6 +58,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
   private final IndexInput posIn;
   private final IndexInput payIn;
 
+  private final ForUtil forUtil;
+
   public static boolean DEBUG = false;
 
   // nocommit
@@ -75,6 +78,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
                             BlockPackedPostingsWriter.DOC_CODEC,
                             BlockPackedPostingsWriter.VERSION_START,
                             BlockPackedPostingsWriter.VERSION_START);
+      forUtil = new ForUtil(docIn);
 
       if (fieldInfos.hasProx()) {
         posIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockPackedPostingsFormat.POS_EXTENSION),
@@ -294,8 +298,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
   final class BlockDocsEnum extends DocsEnum {
     private final byte[] encoded;
     
-    private final long[] docDeltaBuffer = new long[BLOCK_SIZE];
-    private final long[] freqBuffer = new long[BLOCK_SIZE];
+    private final long[] docDeltaBuffer = new long[MIN_DATA_SIZE];
+    private final long[] freqBuffer = new long[MIN_DATA_SIZE];
 
     private int docBufferUpto;
 
@@ -333,7 +337,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
-      encoded = new byte[BLOCK_SIZE * 4];    
+      encoded = new byte[MIN_ENCODED_SIZE];    
     }
 
     public boolean canReuse(IndexInput docIn, FieldInfo fieldInfo) {
@@ -383,13 +387,13 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
-        ForUtil.readBlock(docIn, encoded, docDeltaBuffer);
+        forUtil.readBlock(docIn, encoded, docDeltaBuffer);
 
         if (indexHasFreq) {
           if (DEBUG) {
             System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
           }
-          ForUtil.readBlock(docIn, encoded, freqBuffer);
+          forUtil.readBlock(docIn, encoded, freqBuffer);
         }
       } else {
         // Read vInts:
@@ -540,9 +544,9 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     
     private final byte[] encoded;
 
-    private final long[] docDeltaBuffer = new long[BLOCK_SIZE];
-    private final long[] freqBuffer = new long[BLOCK_SIZE];
-    private final long[] posDeltaBuffer = new long[BLOCK_SIZE];
+    private final long[] docDeltaBuffer = new long[MIN_DATA_SIZE];
+    private final long[] freqBuffer = new long[MIN_DATA_SIZE];
+    private final long[] posDeltaBuffer = new long[MIN_DATA_SIZE];
 
     private int docBufferUpto;
     private int posBufferUpto;
@@ -599,7 +603,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       this.startDocIn = BlockPackedPostingsReader.this.docIn;
       this.docIn = (IndexInput) startDocIn.clone();
       this.posIn = (IndexInput) BlockPackedPostingsReader.this.posIn.clone();
-      encoded = new byte[BLOCK_SIZE*4];
+      encoded = new byte[MIN_ENCODED_SIZE];
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
     }
@@ -657,11 +661,11 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
-        ForUtil.readBlock(docIn, encoded, docDeltaBuffer);
+        forUtil.readBlock(docIn, encoded, docDeltaBuffer);
         if (DEBUG) {
           System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
         }
-        ForUtil.readBlock(docIn, encoded, freqBuffer);
+        forUtil.readBlock(docIn, encoded, freqBuffer);
       } else {
         // Read vInts:
         if (DEBUG) {
@@ -704,7 +708,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("        bulk pos block @ fp=" + posIn.getFilePointer());
         }
-        ForUtil.readBlock(posIn, encoded, posDeltaBuffer);
+        forUtil.readBlock(posIn, encoded, posDeltaBuffer);
       }
     }
 
@@ -873,7 +877,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
             System.out.println("        skip whole block @ fp=" + posIn.getFilePointer());
           }
           assert posIn.getFilePointer() != lastPosBlockFP;
-          ForUtil.skipBlock(posIn);
+          forUtil.skipBlock(posIn);
           toSkip -= BLOCK_SIZE;
         }
         refillPositions();
@@ -945,9 +949,9 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     
     private final byte[] encoded;
 
-    private final long[] docDeltaBuffer = new long[BLOCK_SIZE];
-    private final long[] freqBuffer = new long[BLOCK_SIZE];
-    private final long[] posDeltaBuffer = new long[BLOCK_SIZE];
+    private final long[] docDeltaBuffer = new long[MIN_DATA_SIZE];
+    private final long[] freqBuffer = new long[MIN_DATA_SIZE];
+    private final long[] posDeltaBuffer = new long[MIN_DATA_SIZE];
 
     private final long[] payloadLengthBuffer;
     private final long[] offsetStartDeltaBuffer;
@@ -1023,11 +1027,11 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       this.docIn = (IndexInput) startDocIn.clone();
       this.posIn = (IndexInput) BlockPackedPostingsReader.this.posIn.clone();
       this.payIn = (IndexInput) BlockPackedPostingsReader.this.payIn.clone();
-      encoded = new byte[BLOCK_SIZE*4];
+      encoded = new byte[MIN_ENCODED_SIZE];
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (indexHasOffsets) {
-        offsetStartDeltaBuffer = new long[BLOCK_SIZE];
-        offsetLengthBuffer = new long[BLOCK_SIZE];
+        offsetStartDeltaBuffer = new long[MIN_DATA_SIZE];
+        offsetLengthBuffer = new long[MIN_DATA_SIZE];
       } else {
         offsetStartDeltaBuffer = null;
         offsetLengthBuffer = null;
@@ -1037,7 +1041,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
 
       indexHasPayloads = fieldInfo.hasPayloads();
       if (indexHasPayloads) {
-        payloadLengthBuffer = new long[BLOCK_SIZE];
+        payloadLengthBuffer = new long[MIN_DATA_SIZE];
         payloadBytes = new byte[128];
         payload = new BytesRef();
       } else {
@@ -1102,11 +1106,11 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
         }
-        ForUtil.readBlock(docIn, encoded, docDeltaBuffer);
+        forUtil.readBlock(docIn, encoded, docDeltaBuffer);
         if (DEBUG) {
           System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
         }
-        ForUtil.readBlock(docIn, encoded, freqBuffer);
+        forUtil.readBlock(docIn, encoded, freqBuffer);
       } else {
         if (DEBUG) {
           System.out.println("    fill last vInt doc block from fp=" + docIn.getFilePointer());
@@ -1166,13 +1170,13 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("        bulk pos block @ fp=" + posIn.getFilePointer());
         }
-        ForUtil.readBlock(posIn, encoded, posDeltaBuffer);
+        forUtil.readBlock(posIn, encoded, posDeltaBuffer);
 
         if (indexHasPayloads) {
           if (DEBUG) {
             System.out.println("        bulk payload block @ pay.fp=" + payIn.getFilePointer());
           }
-          ForUtil.readBlock(payIn, encoded, payloadLengthBuffer);
+          forUtil.readBlock(payIn, encoded, payloadLengthBuffer);
           int numBytes = payIn.readVInt();
           if (DEBUG) {
             System.out.println("        " + numBytes + " payload bytes @ pay.fp=" + payIn.getFilePointer());
@@ -1188,8 +1192,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           if (DEBUG) {
             System.out.println("        bulk offset block @ pay.fp=" + payIn.getFilePointer());
           }
-          ForUtil.readBlock(payIn, encoded, offsetStartDeltaBuffer);
-          ForUtil.readBlock(payIn, encoded, offsetLengthBuffer);
+          forUtil.readBlock(payIn, encoded, offsetStartDeltaBuffer);
+          forUtil.readBlock(payIn, encoded, offsetLengthBuffer);
         }
       }
     }
@@ -1355,11 +1359,11 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
             System.out.println("        skip whole block @ fp=" + posIn.getFilePointer());
           }
           assert posIn.getFilePointer() != lastPosBlockFP;
-          ForUtil.skipBlock(posIn);
+          forUtil.skipBlock(posIn);
 
           if (indexHasPayloads) {
             // Skip payloadLength block:
-            ForUtil.skipBlock(payIn);
+            forUtil.skipBlock(payIn);
 
             // Skip payloadBytes block:
             int numBytes = payIn.readVInt();
@@ -1369,8 +1373,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           if (indexHasOffsets) {
             // Must load offset blocks merely to sum
             // up into lastStartOffset:
-            ForUtil.readBlock(payIn, encoded, offsetStartDeltaBuffer);
-            ForUtil.readBlock(payIn, encoded, offsetLengthBuffer);
+            forUtil.readBlock(payIn, encoded, offsetStartDeltaBuffer);
+            forUtil.readBlock(payIn, encoded, offsetLengthBuffer);
             for(int i=0;i<BLOCK_SIZE;i++) {
               lastStartOffset += offsetStartDeltaBuffer[i] + offsetLengthBuffer[i];
             }

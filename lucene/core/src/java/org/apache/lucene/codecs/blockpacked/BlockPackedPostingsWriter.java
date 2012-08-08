@@ -18,6 +18,9 @@ package org.apache.lucene.codecs.blockpacked;
  */
 
 import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
+import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsReader.DEBUG;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_DATA_SIZE;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_ENCODED_SIZE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,6 +39,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.packed.PackedInts;
 
 
 /**
@@ -48,8 +52,6 @@ import org.apache.lucene.util.IOUtils;
  *
  */
 public final class BlockPackedPostingsWriter extends PostingsWriterBase {
-
-  private boolean DEBUG = BlockPackedPostingsReader.DEBUG;
 
   // nocommit move these constants to the PF:
 
@@ -108,9 +110,10 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
 
   final byte[] encoded;
 
+  private final ForUtil forUtil;
   private final BlockPackedSkipWriter skipWriter;
   
-  public BlockPackedPostingsWriter(SegmentWriteState state) throws IOException {
+  public BlockPackedPostingsWriter(SegmentWriteState state, float acceptableOverheadRatio) throws IOException {
     super();
 
     docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPackedPostingsFormat.DOC_EXTENSION),
@@ -120,23 +123,24 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
     boolean success = false;
     try {
       CodecUtil.writeHeader(docOut, DOC_CODEC, VERSION_CURRENT);
+      forUtil = new ForUtil(acceptableOverheadRatio, docOut);
       if (state.fieldInfos.hasProx()) {
-        posDeltaBuffer = new long[BLOCK_SIZE];
+        posDeltaBuffer = new long[MIN_DATA_SIZE];
         posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPackedPostingsFormat.POS_EXTENSION),
                                               state.context);
         CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
 
         if (state.fieldInfos.hasPayloads()) {
           payloadBytes = new byte[128];
-          payloadLengthBuffer = new long[BLOCK_SIZE];
+          payloadLengthBuffer = new long[MIN_DATA_SIZE];
         } else {
           payloadBytes = null;
           payloadLengthBuffer = null;
         }
 
         if (state.fieldInfos.hasOffsets()) {
-          offsetStartDeltaBuffer = new long[BLOCK_SIZE];
-          offsetLengthBuffer = new long[BLOCK_SIZE];
+          offsetStartDeltaBuffer = new long[MIN_DATA_SIZE];
+          offsetLengthBuffer = new long[MIN_DATA_SIZE];
         } else {
           offsetStartDeltaBuffer = null;
           offsetLengthBuffer = null;
@@ -163,8 +167,8 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       }
     }
 
-    docDeltaBuffer = new long[BLOCK_SIZE];
-    freqBuffer = new long[BLOCK_SIZE];
+    docDeltaBuffer = new long[MIN_DATA_SIZE];
+    freqBuffer = new long[MIN_DATA_SIZE];
 
     skipWriter = new BlockPackedSkipWriter(maxSkipLevels,
                                      BlockPackedPostingsFormat.BLOCK_SIZE, 
@@ -173,7 +177,11 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
                                      posOut,
                                      payOut);
 
-    encoded = new byte[BLOCK_SIZE*4];
+    encoded = new byte[MIN_ENCODED_SIZE];
+  }
+
+  public BlockPackedPostingsWriter(SegmentWriteState state) throws IOException {
+    this(state, PackedInts.DEFAULT);
   }
 
   @Override
@@ -236,12 +244,12 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       if (DEBUG) {
         System.out.println("  write docDelta block @ fp=" + docOut.getFilePointer());
       }
-      ForUtil.writeBlock(docDeltaBuffer, encoded, docOut);
+      forUtil.writeBlock(docDeltaBuffer, encoded, docOut);
       if (fieldHasFreqs) {
         if (DEBUG) {
           System.out.println("  write freq block @ fp=" + docOut.getFilePointer());
         }
-        ForUtil.writeBlock(freqBuffer, encoded, docOut);
+        forUtil.writeBlock(freqBuffer, encoded, docOut);
       }
       // NOTE: don't set docBufferUpto back to 0 here;
       // finishDoc will do so (because it needs to see that
@@ -288,17 +296,17 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       if (DEBUG) {
         System.out.println("  write pos bulk block @ fp=" + posOut.getFilePointer());
       }
-      ForUtil.writeBlock(posDeltaBuffer, encoded, posOut);
+      forUtil.writeBlock(posDeltaBuffer, encoded, posOut);
 
       if (fieldHasPayloads) {
-        ForUtil.writeBlock(payloadLengthBuffer, encoded, payOut);
+        forUtil.writeBlock(payloadLengthBuffer, encoded, payOut);
         payOut.writeVInt(payloadByteUpto);
         payOut.writeBytes(payloadBytes, 0, payloadByteUpto);
         payloadByteUpto = 0;
       }
       if (fieldHasOffsets) {
-        ForUtil.writeBlock(offsetStartDeltaBuffer, encoded, payOut);
-        ForUtil.writeBlock(offsetLengthBuffer, encoded, payOut);
+        forUtil.writeBlock(offsetStartDeltaBuffer, encoded, payOut);
+        forUtil.writeBlock(offsetLengthBuffer, encoded, payOut);
       }
       posBufferUpto = 0;
     }

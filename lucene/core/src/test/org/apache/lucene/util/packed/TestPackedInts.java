@@ -656,7 +656,7 @@ public class TestPackedInts extends LuceneTestCase {
           blocks[i] = random().nextLong();
           if (format == PackedInts.Format.PACKED_SINGLE_BLOCK && 64 % bpv != 0) {
             // clear highest bits for packed
-            final int toClear = 64 - 64 % bpv;
+            final int toClear = 64 % bpv;
             blocks[i] = (blocks[i] << toClear) >>> toClear;
           }
         }
@@ -664,6 +664,9 @@ public class TestPackedInts extends LuceneTestCase {
         // 2. decode
         final long[] values = new long[valuesOffset + iterations * valueCount];
         decoder.decode(blocks, blocksOffset, values, valuesOffset, iterations);
+        for (long value : values) {
+          assertTrue(value <= PackedInts.maxValue(bpv));
+        }
 
         // 3. re-encode
         final long[] blocks2 = new long[blocksOffset2 + blocksLen];
@@ -676,6 +679,9 @@ public class TestPackedInts extends LuceneTestCase {
         ByteBuffer.wrap(byteBlocks).asLongBuffer().put(blocks);
         final long[] values2 = new long[valuesOffset + iterations * valueCount];
         decoder.decode(byteBlocks, blocksOffset * 8, values2, valuesOffset, iterations);
+        for (long value : values2) {
+          assertTrue(msg, value <= PackedInts.maxValue(bpv));
+        }
         assertArrayEquals(msg, values, values2);
 
         // 5. byte[] encoding

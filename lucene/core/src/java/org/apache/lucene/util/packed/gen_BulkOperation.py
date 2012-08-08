@@ -208,11 +208,11 @@ def p64sb_decode(bpv, bits):
       else:
         f.write(" (byte%d >>> %d)" %(byte_start, bit_start))
       for b in xrange(byte_start + 1, byte_end):
-        f.write(" | (byte%d << %d)" %(b, 8 * (b - byte_start)))
+        f.write(" | (byte%d << %d)" %(b, 8 * (b - byte_start) - bit_start))
       if bit_end == 7:
-        f.write(" | (byte%d << %d)" %(byte_end, 8 * (byte_end - byte_start)))
+        f.write(" | (byte%d << %d)" %(byte_end, 8 * (byte_end - byte_start) - bit_start))
       else:
-        f.write(" | ((byte%d & %d) << %d)" %(byte_end, 2 ** (bit_end + 1) - 1, 8 * (byte_end - byte_start) + bpv - bit_end - 1))
+        f.write(" | ((byte%d & %d) << %d)" %(byte_end, 2 ** (bit_end + 1) - 1, 8 * (byte_end - byte_start) - bit_start))
     f.write(";\n")
   f.write("      }\n")
   f.write("    }\n\n")
