@@ -286,7 +286,6 @@ public class ZkTestServer {
    * @param host the destination host
    * @param port the destination port
    * @param cmd the 4letterword
-   * @return
    * @throws IOException
    */
   public static String send4LetterWord(String host, int port, String cmd)
