@@ -147,7 +147,7 @@ final class ForUtil {
   void writeBlock(int[] data, byte[] encoded, IndexOutput out) throws IOException {
     if (isAllEqual(data)) {
       out.writeVInt(ALL_VALUES_EQUAL);
-      out.writeInt((int) data[0]);
+      out.writeInt(data[0]);
       return;
     }
 

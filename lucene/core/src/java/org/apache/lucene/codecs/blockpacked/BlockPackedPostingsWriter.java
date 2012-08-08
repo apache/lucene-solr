@@ -170,6 +170,7 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
     docDeltaBuffer = new int[MIN_DATA_SIZE];
     freqBuffer = new int[MIN_DATA_SIZE];
 
+    // nocommit should we try skipping every 2/4 blocks...?
     skipWriter = new BlockPackedSkipWriter(maxSkipLevels,
                                      BlockPackedPostingsFormat.BLOCK_SIZE, 
                                      state.segmentInfo.getDocCount(),
@@ -387,8 +388,8 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
 
     // vInt encode the remaining doc deltas and freqs:
     for(int i=0;i<docBufferUpto;i++) {
-      final int docDelta = (int) docDeltaBuffer[i];
-      final int freq = (int) freqBuffer[i];
+      final int docDelta = docDeltaBuffer[i];
+      final int freq = freqBuffer[i];
       if (!fieldHasFreqs) {
         docOut.writeVInt(docDelta);
       } else if (freqBuffer[i] == 1) {
@@ -426,9 +427,9 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
         int lastPayloadLength = -1;
         int payloadBytesReadUpto = 0;
         for(int i=0;i<posBufferUpto;i++) {
-          final int posDelta = (int) posDeltaBuffer[i];
+          final int posDelta = posDeltaBuffer[i];
           if (fieldHasPayloads) {
-            final int payloadLength = (int) payloadLengthBuffer[i];
+            final int payloadLength = payloadLengthBuffer[i];
             if (payloadLength != lastPayloadLength) {
               lastPayloadLength = payloadLength;
               posOut.writeVInt((posDelta<<1)|1);
@@ -456,8 +457,8 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
             if (DEBUG) {
               System.out.println("          write offset @ pos.fp=" + posOut.getFilePointer());
             }
-            posOut.writeVInt((int) offsetStartDeltaBuffer[i]);
-            posOut.writeVInt((int) offsetLengthBuffer[i]);
+            posOut.writeVInt(offsetStartDeltaBuffer[i]);
+            posOut.writeVInt(offsetLengthBuffer[i]);
           }
         }
 
@@ -475,7 +476,7 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
 
     int skipOffset;
     if (docCount > BLOCK_SIZE) {
-      skipOffset = (int) (skipWriter.writeSkip(docOut)-docTermStartFP);
+      skipOffset = (int) (skipWriter.writeSkip(docOut) - docTermStartFP);
       
       if (DEBUG) {
         System.out.println("skip packet " + (docOut.getFilePointer() - (docTermStartFP + skipOffset)) + " bytes");

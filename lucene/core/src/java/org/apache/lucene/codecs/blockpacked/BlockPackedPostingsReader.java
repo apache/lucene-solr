@@ -328,6 +328,10 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     // no skip data for this term):
     private int skipOffset;
 
+    // docID for next skip point, we won't use skipper if 
+    // target docID is not larger than this
+    private int nextSkipDoc;
+
     private Bits liveDocs;
 
     public BlockDocsEnum(FieldInfo fieldInfo) throws IOException {
@@ -363,6 +367,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       }
       accum = 0;
       docUpto = 0;
+      nextSkipDoc = BLOCK_SIZE - 1; // we won't skip if target is found in first block
       docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
@@ -434,7 +439,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
 
         if (liveDocs == null || liveDocs.get(accum)) {
           doc = accum;
-          freq = (int) freqBuffer[docBufferUpto];
+          freq = freqBuffer[docBufferUpto];
           docBufferUpto++;
           if (DEBUG) {
             System.out.println("  return doc=" + doc + " freq=" + freq);
@@ -451,10 +456,13 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     @Override
     public int advance(int target) throws IOException {
       // nocommit make frq block load lazy/skippable
+      if (DEBUG) {
+        System.out.println("  FPR.advance target=" + target);
+      }
 
-      // nocommit use skipper!!!  it has next last doc id!!
-
-      if (docFreq > BLOCK_SIZE && target - accum > BLOCK_SIZE) {
+      // current skip docID < docIDs generated from current buffer <= next skip docID
+      // we don't need to skip if target is buffered already
+      if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
 
         if (DEBUG) {
           System.out.println("load skipper");
@@ -493,6 +501,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           accum = skipper.getDoc();               // actually, this is just lastSkipEntry
           docIn.seek(skipper.getDocPointer());    // now point to the block we want to search
         }
+        nextSkipDoc = skipper.getNextSkipDoc();
       }
 
       // Now scan... this is an inlined/pared down version
@@ -526,7 +535,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("  return doc=" + accum);
         }
-        freq = (int) freqBuffer[docBufferUpto];
+        freq = freqBuffer[docBufferUpto];
         docBufferUpto++;
         return doc = accum;
       } else {
@@ -597,6 +606,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     // no skip data for this term):
     private int skipOffset;
 
+    private int nextSkipDoc;
+
     private Bits liveDocs;
     
     public BlockDocsAndPositionsEnum(FieldInfo fieldInfo) throws IOException {
@@ -638,6 +649,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       doc = -1;
       accum = 0;
       docUpto = 0;
+      nextSkipDoc = BLOCK_SIZE - 1;
       docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
@@ -730,8 +742,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
         }
-        accum += (int) docDeltaBuffer[docBufferUpto];
-        freq = (int) freqBuffer[docBufferUpto];
+        accum += docDeltaBuffer[docBufferUpto];
+        freq = freqBuffer[docBufferUpto];
         posPendingCount += freq;
         docBufferUpto++;
         docUpto++;
@@ -757,11 +769,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         System.out.println("  FPR.advance target=" + target);
       }
 
-      // nocommit 2 is heuristic guess!!
-      // nocommit put cheating back!  does it help?
-      // nocommit use skipper!!!  it has next last doc id!!
-      //if (docFreq > blockSize && target - (blockSize - docBufferUpto) - 2*blockSize > accum) {
-      if (docFreq > BLOCK_SIZE && target - accum > BLOCK_SIZE) {
+      if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
         if (DEBUG) {
           System.out.println("    try skipper");
         }
@@ -807,6 +815,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           posPendingFP = skipper.getPosPointer();
           posPendingCount = skipper.getPosBufferUpto();
         }
+        nextSkipDoc = skipper.getNextSkipDoc();
       }
 
       // Now scan... this is an inlined/pared down version
@@ -829,7 +838,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           refillDocs();
         }
         accum += docDeltaBuffer[docBufferUpto];
-        freq = (int) freqBuffer[docBufferUpto];
+        freq = freqBuffer[docBufferUpto];
         posPendingCount += freq;
         docBufferUpto++;
         docUpto++;
@@ -915,7 +924,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         refillPositions();
         posBufferUpto = 0;
       }
-      position += (int) posDeltaBuffer[posBufferUpto++];
+      position += posDeltaBuffer[posBufferUpto++];
       posPendingCount--;
       if (DEBUG) {
         System.out.println("      return pos=" + position);
@@ -1020,6 +1029,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     // no skip data for this term):
     private int skipOffset;
 
+    private int nextSkipDoc;
+
     private Bits liveDocs;
     
     public EverythingEnum(FieldInfo fieldInfo) throws IOException {
@@ -1082,6 +1093,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       doc = -1;
       accum = 0;
       docUpto = 0;
+      nextSkipDoc = BLOCK_SIZE - 1;
       docBufferUpto = BLOCK_SIZE;
       skipped = false;
       return this;
@@ -1222,7 +1234,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
         }
         accum += docDeltaBuffer[docBufferUpto];
-        freq = (int) freqBuffer[docBufferUpto];
+        freq = freqBuffer[docBufferUpto];
         posPendingCount += freq;
         docBufferUpto++;
         docUpto++;
@@ -1251,11 +1263,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         System.out.println("  FPR.advance target=" + target);
       }
 
-      // nocommit 2 is heuristic guess!!
-      // nocommit put cheating back!  does it help?
-      // nocommit use skipper!!!  it has next last doc id!!
-      //if (docFreq > blockSize && target - (blockSize - docBufferUpto) - 2*blockSize > accum) {
-      if (docFreq > BLOCK_SIZE && target - accum > BLOCK_SIZE) {
+      if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
 
         if (DEBUG) {
           System.out.println("    try skipper");
@@ -1305,6 +1313,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           lastStartOffset = skipper.getStartOffset();
           payloadByteUpto = skipper.getPayloadByteUpto();
         }
+        nextSkipDoc = skipper.getNextSkipDoc();
       }
 
       // nocommit inline nextDoc here
@@ -1451,12 +1460,12 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       position += posDeltaBuffer[posBufferUpto];
 
       if (indexHasPayloads) {
-        payloadLength = (int) payloadLengthBuffer[posBufferUpto];
+        payloadLength = payloadLengthBuffer[posBufferUpto];
       }
 
       if (indexHasOffsets) {
-        startOffset = lastStartOffset + (int) offsetStartDeltaBuffer[posBufferUpto];
-        endOffset = startOffset + (int) offsetLengthBuffer[posBufferUpto];
+        startOffset = lastStartOffset + offsetStartDeltaBuffer[posBufferUpto];
+        endOffset = startOffset + offsetLengthBuffer[posBufferUpto];
         lastStartOffset = startOffset;
       }
 
