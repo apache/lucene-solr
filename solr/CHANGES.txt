@@ -39,6 +39,7 @@ Bug Fixes
   replication.  (Markus Jelsma, Mark Miller, yonik)
 
 * SOLR-3229: Fixed TermVectorComponent to work with distributed search
+  (Hang Xie, hossman)
 
 ==================  4.0.0-BETA ===================
 
