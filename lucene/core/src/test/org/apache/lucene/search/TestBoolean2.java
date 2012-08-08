@@ -226,6 +226,14 @@ public class TestBoolean2 extends LuceneTestCase {
       searcher.setSimilarity(oldSimilarity);
     }
   }
+  
+  // die serialization, die
+  static class FunkySimilarity extends DefaultSimilarity {
+    @Override
+    public float coord(int overlap, int maxOverlap) {
+      return overlap / ((float)maxOverlap + 1);
+    }
+  }
 
   @Test
   public void testRandomQueries() throws Exception {
@@ -247,6 +255,13 @@ public class TestBoolean2 extends LuceneTestCase {
         Sort sort = Sort.INDEXORDER;
 
         QueryUtils.check(random, q1,searcher);
+        final Similarity oldSim = searcher.getSimilarity();
+        try {
+          searcher.setSimilarity(new FunkySimilarity());
+          QueryUtils.check(random, q1,searcher);
+        } finally {
+          searcher.setSimilarity(oldSim);
+        }
 
         TopFieldCollector collector = TopFieldCollector.create(sort, 1000,
             false, true, true, true);
