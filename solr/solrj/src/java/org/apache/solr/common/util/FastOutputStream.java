@@ -23,10 +23,10 @@ import java.io.*;
  *  Internal Solr use only, subject to change.
  */
 public class FastOutputStream extends OutputStream implements DataOutput {
-  private final OutputStream out;
-  private final byte[] buf;
-  private long written;  // how many bytes written to the underlying stream
-  private int pos;
+  protected final OutputStream out;
+  protected byte[] buf;
+  protected long written;  // how many bytes written to the underlying stream
+  protected int pos;
 
   public FastOutputStream(OutputStream w) {
   // use default BUFSIZE of BufferedOutputStream so if we wrap that
@@ -57,7 +57,7 @@ public class FastOutputStream extends OutputStream implements DataOutput {
 
   public void write(byte b) throws IOException {
     if (pos >= buf.length) {
-      out.write(buf);
+      flush(buf, 0, buf.length);
       written += pos;
       pos=0;
     }
@@ -73,18 +73,18 @@ public class FastOutputStream extends OutputStream implements DataOutput {
     } else if (len<buf.length) {
       // if the data to write is small enough, buffer it.
       System.arraycopy(arr, off, buf, pos, space);
-      out.write(buf);
+      flush(buf, 0, buf.length);
       written += buf.length;
       pos = len-space;
       System.arraycopy(arr, off+space, buf, 0, pos);
     } else {
       if (pos>0) {
-        out.write(buf,0,pos);  // flush
+        flush(buf,0,pos);  // flush
         written += pos;
         pos=0;
       }
       // don't buffer, just write to sink
-      out.write(arr, off, len);
+      flush(arr, off, len);
       written += len;            
     }
   }
@@ -168,13 +168,13 @@ public class FastOutputStream extends OutputStream implements DataOutput {
   @Override
   public void flush() throws IOException {
     flushBuffer();
-    out.flush();
+    if (out != null) out.flush();
   }
 
   @Override
   public void close() throws IOException {
     flushBuffer();
-    out.close();
+    if (out != null) out.close();
   }
 
   /** Only flushes the buffer of the FastOutputStream, not that of the
@@ -182,10 +182,15 @@ public class FastOutputStream extends OutputStream implements DataOutput {
    */
   public void flushBuffer() throws IOException {
     if (pos > 0) {
-      out.write(buf, 0, pos);
+      flush(buf, 0, pos);
       written += pos;
       pos=0;
     }
+  }
+
+  /** All writes to the sink will go through this method */
+  public void flush(byte[] buf, int offset, int len) throws IOException {
+    out.write(buf, offset, len);
   }
 
   public long size() {
