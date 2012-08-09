@@ -100,7 +100,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   private void recoveryFailed(final SolrCore core,
       final ZkController zkController, final String baseUrl,
       final String shardZkNodeName, final CoreDescriptor cd) throws KeeperException, InterruptedException {
-    SolrException.log(log, "Recovery failed - I give up. Core:" + coreName);
+    SolrException.log(log, "Recovery failed - I give up. core=" + coreName);
     try {
       zkController.publish(cd, ZkStateReader.RECOVERY_FAILED);
     } finally {
@@ -115,7 +115,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     ZkCoreNodeProps leaderCNodeProps = new ZkCoreNodeProps(leaderprops);
     String leaderUrl = leaderCNodeProps.getCoreUrl();
     
-    log.info("Attempting to replicate from " + leaderUrl + ". Core:" + coreName);
+    log.info("Attempting to replicate from " + leaderUrl + ". core=" + coreName);
     
     // if we are the leader, either we are trying to recover faster
     // then our ephemeral timed out or we are the only node
@@ -205,7 +205,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 
-      log.info("Starting recovery process.  Core:" + coreName + " - recoveringAfterStartup=" + recoveringAfterStartup);
+      log.info("Starting recovery process.  core=" + coreName + " recoveringAfterStartup=" + recoveringAfterStartup);
 
       try {
         doRecovery(core);
@@ -233,7 +233,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     UpdateLog ulog;
     ulog = core.getUpdateHandler().getUpdateLog();
     if (ulog == null) {
-      SolrException.log(log, "No UpdateLog found - cannot recover. Core:" + coreName);
+      SolrException.log(log, "No UpdateLog found - cannot recover. core=" + coreName);
       recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
           core.getCoreDescriptor());
       return;
@@ -246,7 +246,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
       recentUpdates = ulog.getRecentUpdates();
       recentVersions = recentUpdates.getVersions(ulog.numRecordsToKeep);
     } catch (Throwable t) {
-      SolrException.log(log, "Corrupt tlog - ignoring. Core:" + coreName, t);
+      SolrException.log(log, "Corrupt tlog - ignoring. core=" + coreName, t);
       recentVersions = new ArrayList<Long>(0);
     } finally {
       if (recentUpdates != null) {
@@ -285,7 +285,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         // last operation at the time of startup had the GAP flag set...
         // this means we were previously doing a full index replication
         // that probably didn't complete and buffering updates in the meantime.
-        log.info("Looks like a previous replication recovery did not complete - skipping peer sync. Core:" + coreName);
+        log.info("Looks like a previous replication recovery did not complete - skipping peer sync. core=" + coreName);
         firstTime = false;    // skip peersync
       }
     }
@@ -311,7 +311,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         // first thing we just try to sync
         if (firstTime) {
           firstTime = false; // only try sync the first time through the loop
-          log.info("Attempting to PeerSync from " + leaderUrl + " Core:" + coreName + " - recoveringAfterStartup="+recoveringAfterStartup);
+          log.info("Attempting to PeerSync from " + leaderUrl + " core=" + coreName + " - recoveringAfterStartup="+recoveringAfterStartup);
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
           PeerSync peerSync = new PeerSync(core,
@@ -322,7 +322,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-            log.info("PeerSync Recovery was successful - registering as Active. Core:" + coreName);
+            log.info("PeerSync Recovery was successful - registering as Active. core=" + coreName);
             // System.out
             // .println("Sync Recovery was successful - registering as Active "
             // + zkController.getNodeName());
@@ -351,11 +351,11 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             return;
           }
 
-          log.info("PeerSync Recovery was not successful - trying replication. Core:" + coreName);
+          log.info("PeerSync Recovery was not successful - trying replication. core=" + coreName);
         }
         //System.out.println("Sync Recovery was not successful - trying replication");
-        log.info("Starting Replication Recovery. Core:" + coreName);
-        log.info("Begin buffering updates. Core:" + coreName);
+        log.info("Starting Replication Recovery. core=" + coreName);
+        log.info("Begin buffering updates. core=" + coreName);
         ulog.bufferUpdates();
         replayed = false;
 
@@ -367,7 +367,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           replay(ulog);
           replayed = true;
 
-          log.info("Replication Recovery was successful - registering as Active. Core:" + coreName);
+          log.info("Replication Recovery was successful - registering as Active. core=" + coreName);
           // if there are pending recovery requests, don't advert as active
           zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
           close = true;
@@ -390,7 +390,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         }
 
       } catch (Throwable t) {
-        log.error("Error while trying to recover. Core:" + coreName, t);
+        log.error("Error while trying to recover. core=" + coreName, t);
       }
 
       if (!successfulRecovery) {
@@ -399,13 +399,13 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         // Or do a fall off retry...
         try {
 
-          log.error("Recovery failed - trying again... Core:" + coreName);
+          log.error("Recovery failed - trying again... core=" + coreName);
           retries++;
           if (retries >= MAX_RETRIES) {
             if (retries == INTERRUPTED) {
 
             } else {
-              log.error("Recovery failed - max retries exceeded. Core:" + coreName);
+              log.error("Recovery failed - max retries exceeded. core=" + coreName);
               recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
                   core.getCoreDescriptor());
             }
@@ -413,7 +413,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           }
 
         } catch (Exception e) {
-          log.error("Core:" + coreName, e);
+          log.error("core=" + coreName, e);
         }
 
         try {
@@ -425,13 +425,13 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          log.warn("Recovery was interrupted. Core:" + coreName, e);
+          log.warn("Recovery was interrupted. core=" + coreName, e);
           retries = INTERRUPTED;
         }
       }
 
     }
-    log.info("Finished recovery process. Core:" + coreName);
+    log.info("Finished recovery process. core=" + coreName);
 
   }
 
@@ -440,9 +440,9 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     Future<RecoveryInfo> future = ulog.applyBufferedUpdates();
     if (future == null) {
       // no replay needed\
-      log.info("No replay needed. Core:" + coreName);
+      log.info("No replay needed. core=" + coreName);
     } else {
-      log.info("Replaying buffered documents. Core:" + coreName);
+      log.info("Replaying buffered documents. core=" + coreName);
       // wait for replay
       future.get();
     }
