@@ -52,7 +52,7 @@ public class FastWriter extends Writer {
 
   public void write(char c) throws IOException {
     if (pos >= buf.length) {
-      sink.write(buf,0,pos);
+      flush(buf,0,pos);
       pos=0;
     }
     buf[pos++] = c;
@@ -61,7 +61,7 @@ public class FastWriter extends Writer {
   @Override
   public FastWriter append(char c) throws IOException {
     if (pos >= buf.length) {
-      sink.write(buf,0,pos);
+      flush(buf,0,pos);
       pos=0;
     }
     buf[pos++] = c;
@@ -77,14 +77,14 @@ public class FastWriter extends Writer {
     } else if (len<BUFSIZE) {
       // if the data to write is small enough, buffer it.
       System.arraycopy(cbuf, off, buf, pos, space);
-      sink.write(buf, 0, buf.length);
+      flush(buf, 0, buf.length);
       pos = len-space;
       System.arraycopy(cbuf, off+space, buf, 0, pos);
     } else {
-      sink.write(buf,0,pos);  // flush
+      flush(buf,0,pos);  // flush
       pos=0;
       // don't buffer, just write to sink
-      sink.write(cbuf, off, len);
+      flush(cbuf, off, len);
     }
   }
 
@@ -97,32 +97,40 @@ public class FastWriter extends Writer {
     } else if (len<BUFSIZE) {
       // if the data to write is small enough, buffer it.
       str.getChars(off, off+space, buf, pos);
-      sink.write(buf, 0, buf.length);
+      flush(buf, 0, buf.length);
       str.getChars(off+space, off+len, buf, 0);
       pos = len-space;
     } else {
-      sink.write(buf,0,pos);  // flush
+      flush(buf,0,pos);  // flush
       pos=0;
       // don't buffer, just write to sink
-      sink.write(str, off, len);
+      flush(str, off, len);
     }
   }
 
   @Override
   public void flush() throws IOException {
-    sink.write(buf,0,pos);
+    flush(buf, 0, pos);
     pos=0;
-    sink.flush();
+    if (sink != null) sink.flush();
+  }
+
+  public void flush(char[] buf, int offset, int len) throws IOException {
+    sink.write(buf, offset, len);
+  }
+
+  public void flush(String str, int offset, int len) throws IOException {
+    sink.write(str, offset, len);
   }
 
   @Override
   public void close() throws IOException {
     flush();
-    sink.close();
+    if (sink != null) sink.close();
   }
 
   public void flushBuffer() throws IOException {
-    sink.write(buf, 0, pos);
+    flush(buf, 0, pos);
     pos=0;
   }
 }
