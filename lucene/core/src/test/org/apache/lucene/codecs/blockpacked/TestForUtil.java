@@ -18,8 +18,8 @@ package org.apache.lucene.codecs.blockpacked;
  */
 
 import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
-import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_DATA_SIZE;
-import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_ENCODED_SIZE;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MAX_ENCODED_SIZE;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -39,7 +39,7 @@ public class TestForUtil extends LuceneTestCase {
   public void testEncodeDecode() throws IOException {
     final int iterations = RandomInts.randomIntBetween(random(), 1, 1000);
     final float acceptableOverheadRatio = random().nextFloat();
-    final int[] values = new int[(iterations - 1) * BLOCK_SIZE + ForUtil.MIN_DATA_SIZE];
+    final int[] values = new int[(iterations - 1) * BLOCK_SIZE + ForUtil.MAX_DATA_SIZE];
     for (int i = 0; i < iterations; ++i) {
       final int bpv = random().nextInt(32);
       if (bpv == 0) {
@@ -66,7 +66,7 @@ public class TestForUtil extends LuceneTestCase {
       for (int i = 0; i < iterations; ++i) {
         forUtil.writeBlock(
             Arrays.copyOfRange(values, i * BLOCK_SIZE, values.length),
-            new byte[MIN_ENCODED_SIZE], out);
+            new byte[MAX_ENCODED_SIZE], out);
       }
       endPointer = out.getFilePointer();
       out.close();
@@ -81,8 +81,8 @@ public class TestForUtil extends LuceneTestCase {
           forUtil.skipBlock(in);
           continue;
         }
-        final int[] restored = new int[MIN_DATA_SIZE];
-        forUtil.readBlock(in, new byte[MIN_ENCODED_SIZE], restored);
+        final int[] restored = new int[MAX_DATA_SIZE];
+        forUtil.readBlock(in, new byte[MAX_ENCODED_SIZE], restored);
         assertArrayEquals(Arrays.copyOfRange(values, i * BLOCK_SIZE, (i + 1) * BLOCK_SIZE),
             Arrays.copyOf(restored, BLOCK_SIZE));
       }

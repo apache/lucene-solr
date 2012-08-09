@@ -19,8 +19,8 @@ package org.apache.lucene.codecs.blockpacked;
 
 import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
 import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsReader.DEBUG;
-import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_DATA_SIZE;
-import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_ENCODED_SIZE;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MAX_ENCODED_SIZE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -125,22 +125,22 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       CodecUtil.writeHeader(docOut, DOC_CODEC, VERSION_CURRENT);
       forUtil = new ForUtil(acceptableOverheadRatio, docOut);
       if (state.fieldInfos.hasProx()) {
-        posDeltaBuffer = new int[MIN_DATA_SIZE];
+        posDeltaBuffer = new int[MAX_DATA_SIZE];
         posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPackedPostingsFormat.POS_EXTENSION),
                                               state.context);
         CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
 
         if (state.fieldInfos.hasPayloads()) {
           payloadBytes = new byte[128];
-          payloadLengthBuffer = new int[MIN_DATA_SIZE];
+          payloadLengthBuffer = new int[MAX_DATA_SIZE];
         } else {
           payloadBytes = null;
           payloadLengthBuffer = null;
         }
 
         if (state.fieldInfos.hasOffsets()) {
-          offsetStartDeltaBuffer = new int[MIN_DATA_SIZE];
-          offsetLengthBuffer = new int[MIN_DATA_SIZE];
+          offsetStartDeltaBuffer = new int[MAX_DATA_SIZE];
+          offsetLengthBuffer = new int[MAX_DATA_SIZE];
         } else {
           offsetStartDeltaBuffer = null;
           offsetLengthBuffer = null;
@@ -167,8 +167,8 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
       }
     }
 
-    docDeltaBuffer = new int[MIN_DATA_SIZE];
-    freqBuffer = new int[MIN_DATA_SIZE];
+    docDeltaBuffer = new int[MAX_DATA_SIZE];
+    freqBuffer = new int[MAX_DATA_SIZE];
 
     // nocommit should we try skipping every 2/4 blocks...?
     skipWriter = new BlockPackedSkipWriter(maxSkipLevels,
@@ -178,7 +178,7 @@ public final class BlockPackedPostingsWriter extends PostingsWriterBase {
                                      posOut,
                                      payOut);
 
-    encoded = new byte[MIN_ENCODED_SIZE];
+    encoded = new byte[MAX_ENCODED_SIZE];
   }
 
   public BlockPackedPostingsWriter(SegmentWriteState state) throws IOException {

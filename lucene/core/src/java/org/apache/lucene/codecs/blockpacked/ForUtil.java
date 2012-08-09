@@ -26,6 +26,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedInts.Decoder;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
 /**
@@ -41,14 +42,18 @@ final class ForUtil {
   private static final int PACKED_INTS_VERSION = 0; // nocommit: encode in the stream?
 
   /**
-   * Minimum length of the buffer that holds encoded bytes.
+   * Upper limit of the number of bytes that might be required to stored
+   * <code>BLOCK_SIZE</code> encoded values.
    */
-  static final int MIN_ENCODED_SIZE = BLOCK_SIZE * 4;
+  static final int MAX_ENCODED_SIZE = BLOCK_SIZE * 4;
 
   /**
-   * Minimum length of the buffer that holds data.
+   * Upper limit of the number of values that might be decoded in a single call to
+   * {@link #readBlock(IndexInput, byte[], int[])}. Although values after
+   * <code>BLOCK_SIZE</code> are garbage, it is necessary to allocate value buffers
+   * whose size is >= MAX_DATA_SIZE to avoid {@link ArrayIndexOutOfBoundsException}s.
    */
-  static final int MIN_DATA_SIZE;
+  static final int MAX_DATA_SIZE;
   static {
     int minDataSize = 0;
     for (PackedInts.Format format : PackedInts.Format.values()) {
@@ -61,14 +66,26 @@ final class ForUtil {
         minDataSize = Math.max(minDataSize, iterations * decoder.valueCount());
       }
     }
-    MIN_DATA_SIZE = minDataSize;
+    MAX_DATA_SIZE = minDataSize;
   }
 
+  /**
+   * Compute the number of iterations required to decode <code>BLOCK_SIZE</code>
+   * values with the provided {@link Decoder}.
+   */
   private static int computeIterations(PackedInts.Decoder decoder) {
     return (int) Math.ceil((float) BLOCK_SIZE / decoder.valueCount());
   }
 
-  private final PackedInts.FormatAndBits[] formats;
+  /**
+   * Compute the number of bytes required to encode a block of values that require
+   * <code>bitsPerValue</code> bits per value with format <code>format</code>.
+   */
+  private static int encodedSize(PackedInts.Format format, int bitsPerValue) {
+    return format.nblocks(bitsPerValue, BLOCK_SIZE) << 3;
+  }
+
+  private final int[] encodedSizes;
   private final PackedInts.Encoder[] encoders;
   private final PackedInts.Decoder[] decoders;
   private final int[] iterations;
@@ -77,7 +94,7 @@ final class ForUtil {
    * Create a new {@link ForUtil} instance and save state into <code>out</code>.
    */
   ForUtil(float acceptableOverheadRatio, DataOutput out) throws IOException {
-    formats = new PackedInts.FormatAndBits[33];
+    encodedSizes = new int[33];
     encoders = new PackedInts.Encoder[33];
     decoders = new PackedInts.Decoder[33];
     iterations = new int[33];
@@ -87,7 +104,7 @@ final class ForUtil {
           BLOCK_SIZE, bpv, acceptableOverheadRatio);
       assert formatAndBits.format.isSupported(formatAndBits.bitsPerValue);
       assert formatAndBits.bitsPerValue <= 32;
-      formats[bpv] = formatAndBits;
+      encodedSizes[bpv] = encodedSize(formatAndBits.format, formatAndBits.bitsPerValue);
       encoders[bpv] = PackedInts.getEncoder(
           formatAndBits.format, PACKED_INTS_VERSION, formatAndBits.bitsPerValue);
       decoders[bpv] = PackedInts.getDecoder(
@@ -102,7 +119,7 @@ final class ForUtil {
    * Restore a {@link ForUtil} from a {@link DataInput}.
    */
   ForUtil(DataInput in) throws IOException {
-    formats = new PackedInts.FormatAndBits[33];
+    encodedSizes = new int[33];
     encoders = new PackedInts.Encoder[33];
     decoders = new PackedInts.Decoder[33];
     iterations = new int[33];
@@ -114,26 +131,13 @@ final class ForUtil {
 
       final PackedInts.Format format = PackedInts.Format.byId(formatId);
       assert format.isSupported(bitsPerValue);
-      formats[bpv] = new PackedInts.FormatAndBits(format, bitsPerValue);
+      encodedSizes[bpv] = encodedSize(format, bitsPerValue);
       encoders[bpv] = PackedInts.getEncoder(
           format, PACKED_INTS_VERSION, bitsPerValue);
       decoders[bpv] = PackedInts.getDecoder(
           format, PACKED_INTS_VERSION, bitsPerValue);
       iterations[bpv] = computeIterations(decoders[bpv]);
     }
-  }
-
-  /**
-   * Compute the minimum size of the buffer that holds values. This method exists
-   * because {@link Decoder}s cannot decode less than a given amount of blocks
-   * at a time.
-   */
-  int getMinRequiredBufferSize() {
-    int minSize = 0;
-    for (int bpv = 1; bpv <= 32; ++bpv) {
-      minSize = Math.max(minSize, iterations[bpv] * decoders[bpv].valueCount());
-    }
-    return minSize;
   }
 
   /**
@@ -156,7 +160,7 @@ final class ForUtil {
     final PackedInts.Encoder encoder = encoders[numBits];
     final int iters = iterations[numBits];
     assert iters * encoder.valueCount() >= BLOCK_SIZE;
-    final int encodedSize = encodedSize(numBits);
+    final int encodedSize = encodedSizes[numBits];
     assert (iters * encoder.blockCount()) << 3 >= encodedSize;
 
     out.writeVInt(numBits);
@@ -183,7 +187,7 @@ final class ForUtil {
       return;
     }
 
-    final int encodedSize = encodedSize(numBits);
+    final int encodedSize = encodedSizes[numBits];
     in.readBytes(encoded, 0, encodedSize);
 
     final PackedInts.Decoder decoder = decoders[numBits];
@@ -206,30 +210,8 @@ final class ForUtil {
       return;
     }
     assert numBits > 0 && numBits <= 32 : numBits;
-    final int encodedSize = encodedSize(numBits);
+    final int encodedSize = encodedSizes[numBits];
     in.seek(in.getFilePointer() + encodedSize);
-  }
-
-  /**
-   * Read values that have been written using variable-length encoding instead of bit-packing.
-   */
-  static void readVIntBlock(IndexInput docIn, int[] docBuffer,
-      int[] freqBuffer, int num, boolean indexHasFreq) throws IOException {
-    if (indexHasFreq) {
-      for(int i=0;i<num;i++) {
-        final int code = docIn.readVInt();
-        docBuffer[i] = code >>> 1;
-        if ((code & 1) != 0) {
-          freqBuffer[i] = 1;
-        } else {
-          freqBuffer[i] = docIn.readVInt();
-        }
-      }
-    } else {
-      for(int i=0;i<num;i++) {
-        docBuffer[i] = docIn.readVInt();
-      }
-    }
   }
 
   // nocommit: we must have a util function for this, hmm?
@@ -253,15 +235,6 @@ final class ForUtil {
       or |= data[i];
     }
     return PackedInts.bitsRequired(or);
-  }
-
-  /**
-   * Compute the number of bytes required to encode a block of values that require
-   * <code>bitsPerValue</code> bits per value.
-   */
-  private int encodedSize(int bitsPerValue) {
-    final FormatAndBits formatAndBits = formats[bitsPerValue];
-    return formatAndBits.format.nblocks(formatAndBits.bitsPerValue, BLOCK_SIZE) << 3;
   }
 
 }

@@ -18,8 +18,8 @@ package org.apache.lucene.codecs.blockpacked;
  */
 
 import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
-import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_DATA_SIZE;
-import static org.apache.lucene.codecs.blockpacked.ForUtil.MIN_ENCODED_SIZE;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.blockpacked.ForUtil.MAX_ENCODED_SIZE;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -119,6 +119,28 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     final int indexBlockSize = termsIn.readVInt();
     if (indexBlockSize != BLOCK_SIZE) {
       throw new IllegalStateException("index-time blockSize (" + indexBlockSize + ") != read-time blockSize (" + BLOCK_SIZE + ")");
+    }
+  }
+
+  /**
+   * Read values that have been written using variable-length encoding instead of bit-packing.
+   */
+  private static void readVIntBlock(IndexInput docIn, int[] docBuffer,
+      int[] freqBuffer, int num, boolean indexHasFreq) throws IOException {
+    if (indexHasFreq) {
+      for(int i=0;i<num;i++) {
+        final int code = docIn.readVInt();
+        docBuffer[i] = code >>> 1;
+        if ((code & 1) != 0) {
+          freqBuffer[i] = 1;
+        } else {
+          freqBuffer[i] = docIn.readVInt();
+        }
+      }
+    } else {
+      for(int i=0;i<num;i++) {
+        docBuffer[i] = docIn.readVInt();
+      }
     }
   }
 
@@ -298,8 +320,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
   final class BlockDocsEnum extends DocsEnum {
     private final byte[] encoded;
     
-    private final int[] docDeltaBuffer = new int[MIN_DATA_SIZE];
-    private final int[] freqBuffer = new int[MIN_DATA_SIZE];
+    private final int[] docDeltaBuffer = new int[MAX_DATA_SIZE];
+    private final int[] freqBuffer = new int[MAX_DATA_SIZE];
 
     private int docBufferUpto;
 
@@ -341,7 +363,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
-      encoded = new byte[MIN_ENCODED_SIZE];    
+      encoded = new byte[MAX_ENCODED_SIZE];    
     }
 
     public boolean canReuse(IndexInput docIn, FieldInfo fieldInfo) {
@@ -404,7 +426,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("    fill last vInt block from fp=" + docIn.getFilePointer());
         }
-        ForUtil.readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, indexHasFreq);
+        readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, indexHasFreq);
       }
       docBufferUpto = 0;
     }
@@ -548,9 +570,9 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     
     private final byte[] encoded;
 
-    private final int[] docDeltaBuffer = new int[MIN_DATA_SIZE];
-    private final int[] freqBuffer = new int[MIN_DATA_SIZE];
-    private final int[] posDeltaBuffer = new int[MIN_DATA_SIZE];
+    private final int[] docDeltaBuffer = new int[MAX_DATA_SIZE];
+    private final int[] freqBuffer = new int[MAX_DATA_SIZE];
+    private final int[] posDeltaBuffer = new int[MAX_DATA_SIZE];
 
     private int docBufferUpto;
     private int posBufferUpto;
@@ -609,7 +631,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       this.startDocIn = BlockPackedPostingsReader.this.docIn;
       this.docIn = (IndexInput) startDocIn.clone();
       this.posIn = (IndexInput) BlockPackedPostingsReader.this.posIn.clone();
-      encoded = new byte[MIN_ENCODED_SIZE];
+      encoded = new byte[MAX_ENCODED_SIZE];
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
     }
@@ -678,7 +700,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("    fill last vInt doc block from fp=" + docIn.getFilePointer());
         }
-        ForUtil.readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, true);
+        readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, true);
       }
       docBufferUpto = 0;
     }
@@ -952,9 +974,9 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     
     private final byte[] encoded;
 
-    private final int[] docDeltaBuffer = new int[MIN_DATA_SIZE];
-    private final int[] freqBuffer = new int[MIN_DATA_SIZE];
-    private final int[] posDeltaBuffer = new int[MIN_DATA_SIZE];
+    private final int[] docDeltaBuffer = new int[MAX_DATA_SIZE];
+    private final int[] freqBuffer = new int[MAX_DATA_SIZE];
+    private final int[] posDeltaBuffer = new int[MAX_DATA_SIZE];
 
     private final int[] payloadLengthBuffer;
     private final int[] offsetStartDeltaBuffer;
@@ -1032,11 +1054,11 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
       this.docIn = (IndexInput) startDocIn.clone();
       this.posIn = (IndexInput) BlockPackedPostingsReader.this.posIn.clone();
       this.payIn = (IndexInput) BlockPackedPostingsReader.this.payIn.clone();
-      encoded = new byte[MIN_ENCODED_SIZE];
+      encoded = new byte[MAX_ENCODED_SIZE];
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (indexHasOffsets) {
-        offsetStartDeltaBuffer = new int[MIN_DATA_SIZE];
-        offsetLengthBuffer = new int[MIN_DATA_SIZE];
+        offsetStartDeltaBuffer = new int[MAX_DATA_SIZE];
+        offsetLengthBuffer = new int[MAX_DATA_SIZE];
       } else {
         offsetStartDeltaBuffer = null;
         offsetLengthBuffer = null;
@@ -1046,7 +1068,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
 
       indexHasPayloads = fieldInfo.hasPayloads();
       if (indexHasPayloads) {
-        payloadLengthBuffer = new int[MIN_DATA_SIZE];
+        payloadLengthBuffer = new int[MAX_DATA_SIZE];
         payloadBytes = new byte[128];
         payload = new BytesRef();
       } else {
@@ -1120,7 +1142,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("    fill last vInt doc block from fp=" + docIn.getFilePointer());
         }
-        ForUtil.readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, true);
+        readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, true);
       }
       docBufferUpto = 0;
     }
