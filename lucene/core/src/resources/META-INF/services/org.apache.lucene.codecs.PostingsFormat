@@ -21,4 +21,3 @@ org.apache.lucene.codecs.bulkvint.BulkVIntPostingsFormat
 org.apache.lucene.codecs.bloom.BloomFilteringPostingsFormat
 org.apache.lucene.codecs.memory.DirectPostingsFormat
 org.apache.lucene.codecs.block.BlockPostingsFormat
-org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat

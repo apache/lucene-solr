@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.blockpacked;
+package org.apache.lucene.codecs.block;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,9 +17,9 @@ package org.apache.lucene.codecs.blockpacked;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
-import static org.apache.lucene.codecs.blockpacked.ForUtil.MAX_DATA_SIZE;
-import static org.apache.lucene.codecs.blockpacked.ForUtil.MAX_ENCODED_SIZE;
+import static org.apache.lucene.codecs.block.BlockPostingsFormat.BLOCK_SIZE;
+import static org.apache.lucene.codecs.block.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.block.ForUtil.MAX_ENCODED_SIZE;
 
 import java.io.IOException;
 import java.util.Arrays;

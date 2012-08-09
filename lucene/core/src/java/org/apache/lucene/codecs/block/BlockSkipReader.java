@@ -52,7 +52,7 @@ import org.apache.lucene.store.IndexInput;
  */
 final class BlockSkipReader extends MultiLevelSkipListReader {
   private boolean DEBUG = BlockPostingsReader.DEBUG;
-  private int blockSize;
+  private final int blockSize;
 
   private long docPointer[];
   private long posPointer[];
@@ -94,7 +94,6 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
       posPointer = null;
     }
   }
-
 
   /**
    * Trim original docFreq to tell skipReader read proper number of skip points.

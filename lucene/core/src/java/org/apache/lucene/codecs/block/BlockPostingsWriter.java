@@ -17,9 +17,12 @@ package org.apache.lucene.codecs.block;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.block.BlockPostingsFormat.BLOCK_SIZE;
+import static org.apache.lucene.codecs.block.BlockPostingsReader.DEBUG;
+import static org.apache.lucene.codecs.block.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.block.ForUtil.MAX_ENCODED_SIZE;
+
 import java.io.IOException;
-import java.nio.ByteBuffer;      
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,8 +30,8 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
@@ -36,8 +39,8 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLOCK_SIZE;
 
 /**
  * Concrete class that writes docId(maybe frq,pos,offset,payloads) list
@@ -49,8 +52,6 @@ import static org.apache.lucene.codecs.blockpacked.BlockPackedPostingsFormat.BLO
  *
  */
 public final class BlockPostingsWriter extends PostingsWriterBase {
-
-  private boolean DEBUG = BlockPostingsReader.DEBUG;
 
   // nocommit move these constants to the PF:
 
@@ -108,11 +109,11 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
   private int docCount;
 
   final byte[] encoded;
-  final IntBuffer encodedBuffer;
 
+  private final ForUtil forUtil;
   private final BlockSkipWriter skipWriter;
   
-  public BlockPostingsWriter(SegmentWriteState state) throws IOException {
+  public BlockPostingsWriter(SegmentWriteState state, float acceptableOverheadRatio) throws IOException {
     super();
 
     docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPostingsFormat.DOC_EXTENSION),
@@ -122,23 +123,24 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
     boolean success = false;
     try {
       CodecUtil.writeHeader(docOut, DOC_CODEC, VERSION_CURRENT);
+      forUtil = new ForUtil(acceptableOverheadRatio, docOut);
       if (state.fieldInfos.hasProx()) {
-        posDeltaBuffer = new int[BLOCK_SIZE];
+        posDeltaBuffer = new int[MAX_DATA_SIZE];
         posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPostingsFormat.POS_EXTENSION),
                                               state.context);
         CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
 
         if (state.fieldInfos.hasPayloads()) {
           payloadBytes = new byte[128];
-          payloadLengthBuffer = new int[BLOCK_SIZE];
+          payloadLengthBuffer = new int[MAX_DATA_SIZE];
         } else {
           payloadBytes = null;
           payloadLengthBuffer = null;
         }
 
         if (state.fieldInfos.hasOffsets()) {
-          offsetStartDeltaBuffer = new int[BLOCK_SIZE];
-          offsetLengthBuffer = new int[BLOCK_SIZE];
+          offsetStartDeltaBuffer = new int[MAX_DATA_SIZE];
+          offsetLengthBuffer = new int[MAX_DATA_SIZE];
         } else {
           offsetStartDeltaBuffer = null;
           offsetLengthBuffer = null;
@@ -165,19 +167,22 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
       }
     }
 
-    docDeltaBuffer = new int[BLOCK_SIZE];
-    freqBuffer = new int[BLOCK_SIZE];
+    docDeltaBuffer = new int[MAX_DATA_SIZE];
+    freqBuffer = new int[MAX_DATA_SIZE];
 
     // nocommit should we try skipping every 2/4 blocks...?
-    skipWriter = new BlockSkipWriter(maxSkipLevels, 
-                                     BLOCK_SIZE,
+    skipWriter = new BlockSkipWriter(maxSkipLevels,
+                                     BLOCK_SIZE, 
                                      state.segmentInfo.getDocCount(),
                                      docOut,
                                      posOut,
                                      payOut);
 
-    encoded = new byte[BLOCK_SIZE*4];
-    encodedBuffer = ByteBuffer.wrap(encoded).asIntBuffer();
+    encoded = new byte[MAX_ENCODED_SIZE];
+  }
+
+  public BlockPostingsWriter(SegmentWriteState state) throws IOException {
+    this(state, PackedInts.DEFAULT);
   }
 
   @Override
@@ -214,17 +219,12 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
     skipWriter.resetSkip();
   }
 
-  private void writeBlock(int[] buffer, IndexOutput out) throws IOException {
-    final int header = ForUtil.compress(buffer, encodedBuffer);
-    out.writeVInt(header);
-    out.writeBytes(encoded, ForUtil.getEncodedSize(header));
-  }
-
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
     if (DEBUG) {
       System.out.println("FPW.startDoc docID["+docBufferUpto+"]=" + docID);
     }
+
     final int docDelta = docID - lastDocID;
 
     if (docID < 0 || (docCount > 0 && docDelta <= 0)) {
@@ -245,17 +245,18 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
       if (DEBUG) {
         System.out.println("  write docDelta block @ fp=" + docOut.getFilePointer());
       }
-      writeBlock(docDeltaBuffer, docOut);
+      forUtil.writeBlock(docDeltaBuffer, encoded, docOut);
       if (fieldHasFreqs) {
         if (DEBUG) {
           System.out.println("  write freq block @ fp=" + docOut.getFilePointer());
         }
-        writeBlock(freqBuffer, docOut);
+        forUtil.writeBlock(freqBuffer, encoded, docOut);
       }
       // NOTE: don't set docBufferUpto back to 0 here;
       // finishDoc will do so (because it needs to see that
       // the block was filled so it can save skip data)
     }
+
     lastDocID = docID;
     lastPosition = 0;
     lastStartOffset = 0;
@@ -296,17 +297,17 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
       if (DEBUG) {
         System.out.println("  write pos bulk block @ fp=" + posOut.getFilePointer());
       }
-      writeBlock(posDeltaBuffer, posOut);
+      forUtil.writeBlock(posDeltaBuffer, encoded, posOut);
 
       if (fieldHasPayloads) {
-        writeBlock(payloadLengthBuffer, payOut);
+        forUtil.writeBlock(payloadLengthBuffer, encoded, payOut);
         payOut.writeVInt(payloadByteUpto);
         payOut.writeBytes(payloadBytes, 0, payloadByteUpto);
         payloadByteUpto = 0;
       }
       if (fieldHasOffsets) {
-        writeBlock(offsetStartDeltaBuffer, payOut);
-        writeBlock(offsetLengthBuffer, payOut);
+        forUtil.writeBlock(offsetStartDeltaBuffer, encoded, payOut);
+        forUtil.writeBlock(offsetLengthBuffer, encoded, payOut);
       }
       posBufferUpto = 0;
     }
@@ -475,7 +476,7 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
 
     int skipOffset;
     if (docCount > BLOCK_SIZE) {
-      skipOffset = (int) (skipWriter.writeSkip(docOut)-docTermStartFP);
+      skipOffset = (int) (skipWriter.writeSkip(docOut) - docTermStartFP);
       
       if (DEBUG) {
         System.out.println("skip packet " + (docOut.getFilePointer() - (docTermStartFP + skipOffset)) + " bytes");

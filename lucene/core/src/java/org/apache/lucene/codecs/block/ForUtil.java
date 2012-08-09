@@ -16,149 +16,208 @@ package org.apache.lucene.codecs.block;
  * limitations under the License.
  */
 
-import java.nio.IntBuffer;
-
 import static org.apache.lucene.codecs.block.BlockPostingsFormat.BLOCK_SIZE;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedInts.Decoder;
+import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
 /**
  * Encode all values in normal area with fixed bit width, 
  * which is determined by the max value in this block.
  */
-public final class ForUtil {
-  protected static final int[] MASK = {   0x00000000,
-    0x00000001, 0x00000003, 0x00000007, 0x0000000f, 0x0000001f, 0x0000003f,
-    0x0000007f, 0x000000ff, 0x000001ff, 0x000003ff, 0x000007ff, 0x00000fff,
-    0x00001fff, 0x00003fff, 0x00007fff, 0x0000ffff, 0x0001ffff, 0x0003ffff,
-    0x0007ffff, 0x000fffff, 0x001fffff, 0x003fffff, 0x007fffff, 0x00ffffff,
-    0x01ffffff, 0x03ffffff, 0x07ffffff, 0x0fffffff, 0x1fffffff, 0x3fffffff,
-    0x7fffffff, 0xffffffff};
-
-  /** Compress given int[] into Integer buffer, with For format
-   *
-   * @param data        uncompressed data
-   * @param intBuffer   integer buffer to hold compressed data
-   * @return the header for the current block 
-   */
-  static int compress(final int[] data, IntBuffer intBuffer) {
-    int numBits = getNumBits(data);
-    if (numBits == 0) {
-      return compressDuplicateBlock(data, intBuffer);
-    }
- 
-    for (int i=0; i<BLOCK_SIZE; ++i) {
-      assert data[i] >= 0;
-      encodeNormalValue(intBuffer, i, data[i], numBits);
-    }
-
-    return numBits;
-  }
+final class ForUtil {
 
   /**
-   * Save only one int when the whole block equals to a
-   * single value.
+   * Special number of bits per value used whenever all values to encode are equal.
    */
-  static int compressDuplicateBlock(final int[] data, IntBuffer intBuffer) {
-    intBuffer.put(0, data[0]);
-    return 0;
-  }
-
-  /** Decompress given Integer buffer into int array.
-   *
-   * @param intBuffer   integer buffer to hold compressed data
-   * @param data        int array to hold uncompressed data
-   * @param header      header of current block, which contains numFrameBits
-   */
-  static void decompress(IntBuffer intBuffer, int[] data, int header) {
-    // since this buffer is reused at upper level, rewind first
-    intBuffer.rewind();
-
-    // NOTE: header == numBits now, but we may change that
-    final int numBits = header;
-    assert numBits >=0 && numBits < 32;
-    decompressCore(intBuffer, data, numBits);
-  }
-
-  public static void decompressCore(IntBuffer intBuffer, int[] data, int numBits) {
-    switch(numBits) {
-      case 0: PackedIntsDecompress.decode0(intBuffer, data); break;
-      case 1: PackedIntsDecompress.decode1(intBuffer, data); break;
-      case 2: PackedIntsDecompress.decode2(intBuffer, data); break;
-      case 3: PackedIntsDecompress.decode3(intBuffer, data); break;
-      case 4: PackedIntsDecompress.decode4(intBuffer, data); break;
-      case 5: PackedIntsDecompress.decode5(intBuffer, data); break;
-      case 6: PackedIntsDecompress.decode6(intBuffer, data); break;
-      case 7: PackedIntsDecompress.decode7(intBuffer, data); break;
-      case 8: PackedIntsDecompress.decode8(intBuffer, data); break;
-      case 9: PackedIntsDecompress.decode9(intBuffer, data); break;
-      case 10: PackedIntsDecompress.decode10(intBuffer, data); break;
-      case 11: PackedIntsDecompress.decode11(intBuffer, data); break;
-      case 12: PackedIntsDecompress.decode12(intBuffer, data); break;
-      case 13: PackedIntsDecompress.decode13(intBuffer, data); break;
-      case 14: PackedIntsDecompress.decode14(intBuffer, data); break;
-      case 15: PackedIntsDecompress.decode15(intBuffer, data); break;
-      case 16: PackedIntsDecompress.decode16(intBuffer, data); break;
-      case 17: PackedIntsDecompress.decode17(intBuffer, data); break;
-      case 18: PackedIntsDecompress.decode18(intBuffer, data); break;
-      case 19: PackedIntsDecompress.decode19(intBuffer, data); break;
-      case 20: PackedIntsDecompress.decode20(intBuffer, data); break;
-      case 21: PackedIntsDecompress.decode21(intBuffer, data); break;
-      case 22: PackedIntsDecompress.decode22(intBuffer, data); break;
-      case 23: PackedIntsDecompress.decode23(intBuffer, data); break;
-      case 24: PackedIntsDecompress.decode24(intBuffer, data); break;
-      case 25: PackedIntsDecompress.decode25(intBuffer, data); break;
-      case 26: PackedIntsDecompress.decode26(intBuffer, data); break;
-      case 27: PackedIntsDecompress.decode27(intBuffer, data); break;
-      case 28: PackedIntsDecompress.decode28(intBuffer, data); break;
-      case 29: PackedIntsDecompress.decode29(intBuffer, data); break;
-      case 30: PackedIntsDecompress.decode30(intBuffer, data); break;
-      case 31: PackedIntsDecompress.decode31(intBuffer, data); break;
-      // nocommit have default throw exc?  or add assert up above
-    }
-  }
-
-  static void encodeNormalValue(IntBuffer intBuffer, int pos, int value, int numBits) {
-    final int globalBitPos = numBits*pos;           // position in bit stream
-    final int localBitPos = globalBitPos & 31;      // position inside an int
-    int intPos = globalBitPos/32; // which integer to locate 
-    setBufferIntBits(intBuffer, intPos, localBitPos, numBits, value);
-    if ((localBitPos + numBits) > 32) { // value does not fit in this int, fill tail
-      setBufferIntBits(intBuffer, intPos+1, 0, 
-                       (localBitPos+numBits-32), 
-                       (value >>> (32-localBitPos)));
-    }
-  }
-
-  static void setBufferIntBits(IntBuffer intBuffer, int intPos, int firstBitPos, int numBits, int value) {
-    assert (value & ~MASK[numBits]) == 0;
-    // safely discards those msb parts when firstBitPos+numBits>32
-    intBuffer.put(intPos,
-          (intBuffer.get(intPos) & ~(MASK[numBits] << firstBitPos)) 
-          | (value << firstBitPos));
-  }
+  private static final int ALL_VALUES_EQUAL = 0;
+  private static final int PACKED_INTS_VERSION = 0; // nocommit: encode in the stream?
 
   /**
-   * Returns number of bits necessary to represent max value.
+   * Upper limit of the number of bytes that might be required to stored
+   * <code>BLOCK_SIZE</code> encoded values.
    */
-  static int getNumBits(final int[] data) {
-    if (isAllEqual(data)) {
-      return 0;
-    }
-    int size=data.length;
-    int optBits=1;
-    for (int i=0; i<size; ++i) {
-      while ((data[i] & ~MASK[optBits]) != 0) {
-        optBits++;
+  static final int MAX_ENCODED_SIZE = BLOCK_SIZE * 4;
+
+  /**
+   * Upper limit of the number of values that might be decoded in a single call to
+   * {@link #readBlock(IndexInput, byte[], int[])}. Although values after
+   * <code>BLOCK_SIZE</code> are garbage, it is necessary to allocate value buffers
+   * whose size is >= MAX_DATA_SIZE to avoid {@link ArrayIndexOutOfBoundsException}s.
+   */
+  static final int MAX_DATA_SIZE;
+  static {
+    int minDataSize = 0;
+    for (PackedInts.Format format : PackedInts.Format.values()) {
+      for (int bpv = 1; bpv <= 32; ++bpv) {
+        if (!format.isSupported(bpv)) {
+          continue;
+        }
+        final PackedInts.Decoder decoder = PackedInts.getDecoder(format, PACKED_INTS_VERSION, bpv);
+        final int iterations = (int) Math.ceil((float) BLOCK_SIZE / decoder.valueCount());
+        minDataSize = Math.max(minDataSize, iterations * decoder.valueCount());
       }
     }
-    assert optBits < 32;
-    return optBits;
+    MAX_DATA_SIZE = minDataSize;
+  }
+
+  /**
+   * Compute the number of iterations required to decode <code>BLOCK_SIZE</code>
+   * values with the provided {@link Decoder}.
+   */
+  private static int computeIterations(PackedInts.Decoder decoder) {
+    return (int) Math.ceil((float) BLOCK_SIZE / decoder.valueCount());
+  }
+
+  /**
+   * Compute the number of bytes required to encode a block of values that require
+   * <code>bitsPerValue</code> bits per value with format <code>format</code>.
+   */
+  private static int encodedSize(PackedInts.Format format, int bitsPerValue) {
+    return format.nblocks(bitsPerValue, BLOCK_SIZE) << 3;
+  }
+
+  private final int[] encodedSizes;
+  private final PackedInts.Encoder[] encoders;
+  private final PackedInts.Decoder[] decoders;
+  private final int[] iterations;
+
+  /**
+   * Create a new {@link ForUtil} instance and save state into <code>out</code>.
+   */
+  ForUtil(float acceptableOverheadRatio, DataOutput out) throws IOException {
+    encodedSizes = new int[33];
+    encoders = new PackedInts.Encoder[33];
+    decoders = new PackedInts.Decoder[33];
+    iterations = new int[33];
+
+    for (int bpv = 1; bpv <= 32; ++bpv) {
+      final FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(
+          BLOCK_SIZE, bpv, acceptableOverheadRatio);
+      assert formatAndBits.format.isSupported(formatAndBits.bitsPerValue);
+      assert formatAndBits.bitsPerValue <= 32;
+      encodedSizes[bpv] = encodedSize(formatAndBits.format, formatAndBits.bitsPerValue);
+      encoders[bpv] = PackedInts.getEncoder(
+          formatAndBits.format, PACKED_INTS_VERSION, formatAndBits.bitsPerValue);
+      decoders[bpv] = PackedInts.getDecoder(
+          formatAndBits.format, PACKED_INTS_VERSION, formatAndBits.bitsPerValue);
+      iterations[bpv] = computeIterations(decoders[bpv]);
+
+      out.writeVInt(formatAndBits.format.getId() << 5 | (formatAndBits.bitsPerValue - 1));
+    }
+  }
+
+  /**
+   * Restore a {@link ForUtil} from a {@link DataInput}.
+   */
+  ForUtil(DataInput in) throws IOException {
+    encodedSizes = new int[33];
+    encoders = new PackedInts.Encoder[33];
+    decoders = new PackedInts.Decoder[33];
+    iterations = new int[33];
+
+    for (int bpv = 1; bpv <= 32; ++bpv) {
+      final int code = in.readVInt();
+      final int formatId = code >>> 5;
+      final int bitsPerValue = (code & 31) + 1;
+
+      final PackedInts.Format format = PackedInts.Format.byId(formatId);
+      assert format.isSupported(bitsPerValue);
+      encodedSizes[bpv] = encodedSize(format, bitsPerValue);
+      encoders[bpv] = PackedInts.getEncoder(
+          format, PACKED_INTS_VERSION, bitsPerValue);
+      decoders[bpv] = PackedInts.getDecoder(
+          format, PACKED_INTS_VERSION, bitsPerValue);
+      iterations[bpv] = computeIterations(decoders[bpv]);
+    }
+  }
+
+  /**
+   * Write a block of data (<code>For</code> format).
+   *
+   * @param data     the data to write
+   * @param encoded  a buffer to use to encode data
+   * @param out      the destination output
+   * @throws IOException
+   */
+  void writeBlock(int[] data, byte[] encoded, IndexOutput out) throws IOException {
+    if (isAllEqual(data)) {
+      out.writeVInt(ALL_VALUES_EQUAL);
+      out.writeInt(data[0]);
+      return;
+    }
+
+    final int numBits = bitsRequired(data);
+    assert numBits > 0 && numBits <= 32 : numBits;
+    final PackedInts.Encoder encoder = encoders[numBits];
+    final int iters = iterations[numBits];
+    assert iters * encoder.valueCount() >= BLOCK_SIZE;
+    final int encodedSize = encodedSizes[numBits];
+    assert (iters * encoder.blockCount()) << 3 >= encodedSize;
+
+    out.writeVInt(numBits);
+
+    encoder.encode(data, 0, encoded, 0, iters);
+    out.writeBytes(encoded, encodedSize);
+  }
+
+  /**
+   * Read the next block of data (<code>For</code> format).
+   *
+   * @param in        the input to use to read data
+   * @param encoded   a buffer that can be used to store encoded data
+   * @param decoded   where to write decoded data
+   * @throws IOException
+   */
+  void readBlock(IndexInput in, byte[] encoded, int[] decoded) throws IOException {
+    final int numBits = in.readVInt();
+    assert numBits <= 32 : numBits;
+
+    if (numBits == ALL_VALUES_EQUAL) {
+      final int value = in.readInt();
+      Arrays.fill(decoded, 0, BLOCK_SIZE, value);
+      return;
+    }
+
+    final int encodedSize = encodedSizes[numBits];
+    in.readBytes(encoded, 0, encodedSize);
+
+    final PackedInts.Decoder decoder = decoders[numBits];
+    final int iters = iterations[numBits];
+    assert iters * decoder.valueCount() >= BLOCK_SIZE;
+
+    decoder.decode(encoded, 0, decoded, 0, iters);
+  }
+
+  /**
+   * Skip the next block of data.
+   *
+   * @param in      the input where to read data
+   * @throws IOException
+   */
+  void skipBlock(IndexInput in) throws IOException {
+    final int numBits = in.readVInt();
+    if (numBits == ALL_VALUES_EQUAL) {
+      in.seek(in.getFilePointer() + 4);
+      return;
+    }
+    assert numBits > 0 && numBits <= 32 : numBits;
+    final int encodedSize = encodedSizes[numBits];
+    in.seek(in.getFilePointer() + encodedSize);
   }
 
   // nocommit: we must have a util function for this, hmm?
-  protected static boolean isAllEqual(final int[] data) {
-    int len = data.length;
-    int v = data[0];
-    for (int i=1; i<len; i++) {
+  private static boolean isAllEqual(final int[] data) {
+    final long v = data[0];
+    for (int i = 1; i < BLOCK_SIZE; ++i) {
       if (data[i] != v) {
         return false;
       }
@@ -166,11 +225,16 @@ public final class ForUtil {
     return true;
   }
 
-  /** 
-   * Expert: get compressed block size(in byte)  
+  /**
+   * Compute the number of bits required to serialize any of the longs in
+   * <code>data</code>.
    */
-  static int getEncodedSize(int numBits) {
-    // NOTE: works only because BLOCK_SIZE is 0 mod 8:
-    return numBits == 0 ? 4 : numBits*BLOCK_SIZE/8;
+  private static int bitsRequired(final int[] data) {
+    long or = 0;
+    for (int i = 0; i < BLOCK_SIZE; ++i) {
+      or |= data[i];
+    }
+    return PackedInts.bitsRequired(or);
   }
+
 }

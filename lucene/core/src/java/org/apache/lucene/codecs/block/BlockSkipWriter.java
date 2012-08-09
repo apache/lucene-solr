@@ -37,7 +37,7 @@ import org.apache.lucene.codecs.MultiLevelSkipListWriter;
  * block, only record skip data at the start its start point(if it exist).
  *
  * For each skip point, we will record: 
- * 1. docID in former position, i.e. for position 12, record docID[11], etc. 
+ * 1. docID in former position, i.e. for position 12, record docID[11], etc.
  * 2. its related file points(position, payload), 
  * 3. related numbers or uptos(position, payload).
  * 4. start offset.
