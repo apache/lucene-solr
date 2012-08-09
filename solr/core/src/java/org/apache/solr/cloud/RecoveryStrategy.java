@@ -319,7 +319,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-            log.info("Sync Recovery was successful - registering as Active");
+            log.info("PeerSync Recovery was successful - registering as Active");
             // System.out
             // .println("Sync Recovery was successful - registering as Active "
             // + zkController.getNodeName());
@@ -348,10 +348,10 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             return;
           }
 
-          log.info("Sync Recovery was not successful - trying replication");
+          log.info("PeerSync Recovery was not successful - trying replication");
         }
         //System.out.println("Sync Recovery was not successful - trying replication");
-        log.info("Starting replication recovery");
+        log.info("Starting Replication Recovery");
         log.info("Begin buffering updates");
         ulog.bufferUpdates();
         replayed = false;
@@ -364,7 +364,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           replay(ulog);
           replayed = true;
 
-          log.info("Recovery was successful - registering as Active");
+          log.info("Replication Recovery was successful - registering as Active");
           // if there are pending recovery requests, don't advert as active
           zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
           close = true;
