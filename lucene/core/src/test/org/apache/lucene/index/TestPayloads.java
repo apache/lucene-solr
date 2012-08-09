@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -591,4 +592,73 @@ public class TestPayloads extends LuceneTestCase {
 
     dir.close();
   }
+  
+  /** some docs have payload att, some not */
+  public void testMixupDocs() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field field = new TextField("field", "", Field.Store.NO);
+    TokenStream ts = new MockTokenizer(new StringReader("here we go"), MockTokenizer.WHITESPACE, true);
+    assertFalse(ts.hasAttribute(PayloadAttribute.class));
+    field.setTokenStream(ts);
+    doc.add(field);
+    writer.addDocument(doc);
+    Token withPayload = new Token("withPayload", 0, 11);
+    withPayload.setPayload(new BytesRef("test"));
+    ts = new CannedTokenStream(withPayload);
+    assertTrue(ts.hasAttribute(PayloadAttribute.class));
+    field.setTokenStream(ts);
+    writer.addDocument(doc);
+    ts = new MockTokenizer(new StringReader("another"), MockTokenizer.WHITESPACE, true);
+    assertFalse(ts.hasAttribute(PayloadAttribute.class));
+    field.setTokenStream(ts);
+    writer.addDocument(doc);
+    DirectoryReader reader = writer.getReader();
+    SegmentReader sr = getOnlySegmentReader(reader);
+    DocsAndPositionsEnum de = sr.termPositionsEnum(null, "field", new BytesRef("withPayload"));
+    de.nextDoc();
+    de.nextPosition();
+    assertTrue(de.hasPayload());
+    assertEquals(new BytesRef("test"), de.getPayload());
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+  
+  /** some field instances have payload att, some not */
+  public void testMixupMultiValued() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field field = new TextField("field", "", Field.Store.NO);
+    TokenStream ts = new MockTokenizer(new StringReader("here we go"), MockTokenizer.WHITESPACE, true);
+    assertFalse(ts.hasAttribute(PayloadAttribute.class));
+    field.setTokenStream(ts);
+    doc.add(field);
+    Field field2 = new TextField("field", "", Field.Store.NO);
+    Token withPayload = new Token("withPayload", 0, 11);
+    withPayload.setPayload(new BytesRef("test"));
+    ts = new CannedTokenStream(withPayload);
+    assertTrue(ts.hasAttribute(PayloadAttribute.class));
+    field2.setTokenStream(ts);
+    doc.add(field2);
+    Field field3 = new TextField("field", "", Field.Store.NO);
+    ts = new MockTokenizer(new StringReader("nopayload"), MockTokenizer.WHITESPACE, true);
+    assertFalse(ts.hasAttribute(PayloadAttribute.class));
+    field3.setTokenStream(ts);
+    doc.add(field3);
+    writer.addDocument(doc);
+    DirectoryReader reader = writer.getReader();
+    SegmentReader sr = getOnlySegmentReader(reader);
+    DocsAndPositionsEnum de = sr.termPositionsEnum(null, "field", new BytesRef("withPayload"));
+    de.nextDoc();
+    de.nextPosition();
+    assertTrue(de.hasPayload());
+    assertEquals(new BytesRef("test"), de.getPayload());
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+  
 }
