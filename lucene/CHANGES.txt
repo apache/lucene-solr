@@ -16,6 +16,10 @@ Bug Fixes
   than 1 when overlap == maxOverlap (always the case for conjunctions),
   then the score would be incorrect.  (Pascal Chollet, Robert Muir)
 
+* LUCENE-4298: MultiFields.getTermDocsEnum(IndexReader, Bits, String, BytesRef)
+  did not work at all, it would infinitely recurse.
+  (Alberto Paro via Robert Muir)
+
 ======================= Lucene 4.0.0-BETA =======================
 
 New features

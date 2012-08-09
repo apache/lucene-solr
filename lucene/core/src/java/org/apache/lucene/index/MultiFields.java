@@ -125,7 +125,7 @@ public final class MultiFields extends Fields {
    *  term.  This will return null if the field or term does
    *  not exist. */
   public static DocsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
-    return getTermDocsEnum(r, liveDocs, field, term);
+    return getTermDocsEnum(r, liveDocs, field, term, DocsEnum.FLAG_FREQS);
   }
   
   /** Returns {@link DocsEnum} for the specified field &

@@ -169,4 +169,22 @@ public class TestMultiFields extends LuceneTestCase {
     r.close();
     dir.close();
   }
+  
+  public void testTermDocsEnum() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newStringField("f", "j", Field.Store.NO));
+    w.addDocument(d);
+    w.commit();
+    w.addDocument(d);
+    IndexReader r = w.getReader();
+    w.close();
+    DocsEnum de = MultiFields.getTermDocsEnum(r, null, "f", new BytesRef("j"));
+    assertEquals(0, de.nextDoc());
+    assertEquals(1, de.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());
+    r.close();
+    dir.close();
+  }
 }
