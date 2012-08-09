@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import java.io.File;
 import java.util.*;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;

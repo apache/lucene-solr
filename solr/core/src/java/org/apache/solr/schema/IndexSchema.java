@@ -501,7 +501,10 @@ public final class IndexSchema {
         log.error("uniqueKey is not stored - distributed search will not work");
       }
       if (uniqueKeyField.multiValued()) {
-        log.error("uniqueKey should not be multivalued");
+        String msg = "uniqueKey field ("+uniqueKeyFieldName+
+          ") can not be configured to be multivalued";
+        log.error(msg);
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
       }
       uniqueKeyFieldName=uniqueKeyField.getName();
       uniqueKeyFieldType=uniqueKeyField.getType();

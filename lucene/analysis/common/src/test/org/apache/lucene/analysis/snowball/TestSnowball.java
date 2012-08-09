@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -115,5 +116,22 @@ public class TestSnowball extends BaseTokenStreamTestCase {
       };
       checkOneTermReuse(a, "", "");
     }
+  }
+  
+  public void testRandomStrings() throws IOException {
+    for (String lang : SNOWBALL_LANGS) {
+      checkRandomStrings(lang);
+    }
+  }
+  
+  public void checkRandomStrings(final String snowballLanguage) throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer t = new MockTokenizer(reader);
+        return new TokenStreamComponents(t, new SnowballFilter(t, snowballLanguage));
+      }  
+    };
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
   }
 }

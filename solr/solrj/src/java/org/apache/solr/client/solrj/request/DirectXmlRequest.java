@@ -34,7 +34,7 @@ import org.apache.solr.common.util.ContentStream;
  *
  * @since solr 1.3
  */
-public class DirectXmlRequest extends SolrRequest
+public class DirectXmlRequest extends SolrRequest implements IsUpdateRequest
 {
   final String xml;
   private SolrParams params;

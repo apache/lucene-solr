@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %function getNextToken
 %pack
 %char
+%buffer 4096
 
 %{
 

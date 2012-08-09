@@ -256,7 +256,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
     Document doc = new Document();
-    doc.add(new TextField("content", new StringReader("a b c d e f g h i j a k"), Field.Store.NO));
+    doc.add(new TextField("content", new StringReader("a b c d e f g h i j a k")));
     writer.addDocument(doc);
 
     IndexReader reader = writer.getReader();
@@ -293,7 +293,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
     Document doc = new Document();
-    doc.add(new TextField("content", new StringReader("a b a d k f a h i k a k"), Field.Store.NO));
+    doc.add(new TextField("content", new StringReader("a b a d k f a h i k a k")));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
@@ -328,7 +328,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
     Document doc = new Document();
-    doc.add(new TextField("content", new StringReader("j k a l f k k p a t a k l k t a"), Field.Store.NO));
+    doc.add(new TextField("content", new StringReader("j k a l f k k p a t a k l k t a")));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);

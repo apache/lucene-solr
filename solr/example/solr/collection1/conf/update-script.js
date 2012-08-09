@@ -10,7 +10,7 @@
 function processAdd(cmd) {
 
   doc = cmd.solrDoc;  // org.apache.solr.common.SolrInputDocument
-  id =doc.getFieldValue("id");
+  id = doc.getFieldValue("id");
   logger.info("update-script#processAdd: id=" + id);
 
 // Set a field value:
@@ -27,7 +27,7 @@ function processAdd(cmd) {
 //  field_names = doc.getFieldNames().toArray();
 //  for(i=0; i < field_names.length; i++) {
 //    field_name = field_names[i];
-//    if (/attr_.*/.test(field_name)) { doc.addField("field_name_ss", field_names[i]); }
+//    if (/attr_.*/.test(field_name)) { doc.addField("attribute_ss", field_names[i]); }
 //  }
 
 }

@@ -32,9 +32,10 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -61,6 +62,18 @@ public class CloudSolrServer extends SolrServer {
   private LBHttpSolrServer lbServer;
   private HttpClient myClient;
   Random rand = new Random();
+  
+  // since the state shouldn't change often, should be very cheap reads
+  private volatile List<String> urlList;
+  
+  private volatile List<String> leaderUrlList;
+  private volatile List<String> replicasList;
+  
+  private volatile int lastClusterStateHashCode;
+  
+  private final boolean updatesToLeaders;
+
+  
   /**
    * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
    * in the form HOST:PORT.
@@ -69,6 +82,7 @@ public class CloudSolrServer extends SolrServer {
       this.zkHost = zkHost;
       this.myClient = HttpClientUtil.createClient(null);
       this.lbServer = new LBHttpSolrServer(myClient);
+      this.updatesToLeaders = true;
   }
 
   /**
@@ -79,6 +93,19 @@ public class CloudSolrServer extends SolrServer {
   public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer) {
     this.zkHost = zkHost;
     this.lbServer = lbServer;
+    this.updatesToLeaders = true;
+  }
+  
+  /**
+   * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
+   * in the form HOST:PORT.
+   * @param lbServer LBHttpSolrServer instance for requests. 
+   * @param updatesToLeaders sends updates only to leaders - defaults to true
+   */
+  public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer, boolean updatesToLeaders) {
+    this.zkHost = zkHost;
+    this.lbServer = lbServer;
+    this.updatesToLeaders = updatesToLeaders;
   }
 
   public ZkStateReader getZkStateReader() {
@@ -139,7 +166,14 @@ public class CloudSolrServer extends SolrServer {
 
     // TODO: if you can hash here, you could favor the shard leader
     
-    CloudState cloudState = zkStateReader.getCloudState();
+    ClusterState clusterState = zkStateReader.getClusterState();
+    boolean sendToLeaders = false;
+    List<String> replicas = null;
+    
+    if (request instanceof IsUpdateRequest && updatesToLeaders) {
+      sendToLeaders = true;
+      replicas = new ArrayList<String>();
+    }
 
     SolrParams reqParams = request.getParams();
     if (reqParams == null) {
@@ -154,42 +188,70 @@ public class CloudSolrServer extends SolrServer {
     // Extract each comma separated collection name and store in a List.
     List<String> collectionList = StrUtils.splitSmart(collection, ",", true);
     
+    // TODO: not a big deal because of the caching, but we could avoid looking at every shard
+    // when getting leaders if we tweaked some things
+    
     // Retrieve slices from the cloud state and, for each collection specified,
     // add it to the Map of slices.
     Map<String,Slice> slices = new HashMap<String,Slice>();
     for (int i = 0; i < collectionList.size(); i++) {
       String coll= collectionList.get(i);
-      ClientUtils.appendMap(coll, slices, cloudState.getSlices(coll));
+      ClientUtils.appendMap(coll, slices, clusterState.getSlices(coll));
     }
 
-    Set<String> liveNodes = cloudState.getLiveNodes();
+    Set<String> liveNodes = clusterState.getLiveNodes();
 
-    // IDEA: have versions on various things... like a global cloudState version
-    // or shardAddressVersion (which only changes when the shards change)
-    // to allow caching.
-
-    // build a map of unique nodes
-    // TODO: allow filtering by group, role, etc
-    Map<String,ZkNodeProps> nodes = new HashMap<String,ZkNodeProps>();
-    List<String> urlList = new ArrayList<String>();
-    for (Slice slice : slices.values()) {
-      for (ZkNodeProps nodeProps : slice.getShards().values()) {
-        ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-        String node = coreNodeProps.getNodeName();
-        if (!liveNodes.contains(coreNodeProps.getNodeName())
-            || !coreNodeProps.getState().equals(
-                ZkStateReader.ACTIVE)) continue;
-        if (nodes.put(node, nodeProps) == null) {
-          String url = coreNodeProps.getCoreUrl();
-          urlList.add(url);
+    if (sendToLeaders && leaderUrlList == null || !sendToLeaders && urlList == null || clusterState.hashCode() != this.lastClusterStateHashCode) {
+    
+      // build a map of unique nodes
+      // TODO: allow filtering by group, role, etc
+      Map<String,ZkNodeProps> nodes = new HashMap<String,ZkNodeProps>();
+      List<String> urlList = new ArrayList<String>();
+      for (Slice slice : slices.values()) {
+        for (ZkNodeProps nodeProps : slice.getShards().values()) {
+          ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
+          String node = coreNodeProps.getNodeName();
+          if (!liveNodes.contains(coreNodeProps.getNodeName())
+              || !coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) continue;
+          if (nodes.put(node, nodeProps) == null) {
+            if (!sendToLeaders || (sendToLeaders && coreNodeProps.isLeader())) {
+              String url = coreNodeProps.getCoreUrl();
+              urlList.add(url);
+            } else if (sendToLeaders) {
+              String url = coreNodeProps.getCoreUrl();
+              replicas.add(url);
+            }
+          }
         }
       }
+      if (sendToLeaders) {
+        this.leaderUrlList = urlList; 
+        this.replicasList = replicas;
+      } else {
+        this.urlList = urlList;
+      }
+      this.lastClusterStateHashCode = clusterState.hashCode();
     }
+    
+    List<String> theUrlList;
+    if (sendToLeaders) {
+      theUrlList = new ArrayList<String>(leaderUrlList.size());
+      theUrlList.addAll(leaderUrlList);
+    } else {
+      theUrlList = new ArrayList<String>(urlList.size());
+      theUrlList.addAll(urlList);
+    }
+    Collections.shuffle(theUrlList, rand);
+    if (replicas != null) {
+      ArrayList<String> theReplicas = new ArrayList<String>(replicasList.size());
+      theReplicas.addAll(replicasList);
+      Collections.shuffle(theReplicas, rand);
 
-    Collections.shuffle(urlList, rand);
-    //System.out.println("########################## MAKING REQUEST TO " + urlList);
+      theUrlList.addAll(theReplicas);
+    }
+    //System.out.println("########################## MAKING REQUEST TO " + theUrlList);
  
-    LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, urlList);
+    LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, theUrlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);
     return rsp.getResponse();
   }
@@ -210,5 +272,17 @@ public class CloudSolrServer extends SolrServer {
 
   public LBHttpSolrServer getLbServer() {
     return lbServer;
+  }
+
+  List<String> getUrlList() {
+    return urlList;
+  }
+
+  List<String> getLeaderUrlList() {
+    return leaderUrlList;
+  }
+
+  List<String> getReplicasList() {
+    return replicasList;
   }
 }

@@ -567,19 +567,34 @@ final class DocumentsWriterFlushControl  {
   }
 
   synchronized void abortFullFlushes() {
+   try {
+     abortPendingFlushes();
+   } finally {
+     fullFlush = false;
+   }
+  }
+  
+  synchronized void abortPendingFlushes() {
     try {
       for (DocumentsWriterPerThread dwpt : flushQueue) {
-        doAfterFlush(dwpt);
-        dwpt.abort();
+        try {
+          dwpt.abort();
+          doAfterFlush(dwpt);
+        } catch (Throwable ex) {
+          // ignore - keep on aborting the flush queue
+        }
       }
       for (BlockedFlush blockedFlush : blockedFlushes) {
-        flushingWriters
-            .put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
-        doAfterFlush(blockedFlush.dwpt);
-        blockedFlush.dwpt.abort();
+        try {
+          flushingWriters
+              .put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
+          blockedFlush.dwpt.abort();
+          doAfterFlush(blockedFlush.dwpt);
+        } catch (Throwable ex) {
+          // ignore - keep on aborting the blocked queue
+        }
       }
     } finally {
-      fullFlush = false;
       flushQueue.clear();
       blockedFlushes.clear();
       updateStallState();

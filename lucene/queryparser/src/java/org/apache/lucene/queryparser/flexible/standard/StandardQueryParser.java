@@ -110,7 +110,7 @@ import org.apache.lucene.search.Query;
  * @see StandardQueryNodeProcessorPipeline
  * @see StandardQueryTreeBuilder
  */
-public class StandardQueryParser extends QueryParserHelper {
+public class StandardQueryParser extends QueryParserHelper implements CommonQueryParserConfiguration {
   
   /**
    * Constructs a {@link StandardQueryParser} object.
@@ -119,6 +119,7 @@ public class StandardQueryParser extends QueryParserHelper {
     super(new StandardQueryConfigHandler(), new StandardSyntaxParser(),
         new StandardQueryNodeProcessorPipeline(null),
         new StandardQueryTreeBuilder());
+    setEnablePositionIncrements(true);
   }
   
   /**

@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 @Slow
 @Ignore("ignore while investigating jenkins fails")
-public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
+public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
   
   private static final int BASE_RUN_LENGTH = 180000;
@@ -148,8 +148,8 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
       
       // TODO: assert we didnt kill everyone
       
-      zkStateReader.updateCloudState(true);
-      assertTrue(zkStateReader.getCloudState().getLiveNodes().size() > 0);
+      zkStateReader.updateClusterState(true);
+      assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);
       
       checkShardConsistency(false, true);
       

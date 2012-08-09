@@ -168,7 +168,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       postings.lastDocCodes[termID] = docState.docID;
     } else {
       postings.lastDocCodes[termID] = docState.docID << 1;
-      postings.docFreqs[termID] = 1;
+      postings.termFreqs[termID] = 1;
       if (hasProx) {
         writeProx(termID, fieldState.position);
         if (hasOffsets) {
@@ -189,10 +189,10 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
 
-    assert !hasFreq || postings.docFreqs[termID] > 0;
+    assert !hasFreq || postings.termFreqs[termID] > 0;
 
     if (!hasFreq) {
-      assert postings.docFreqs == null;
+      assert postings.termFreqs == null;
       if (docState.docID != postings.lastDocIDs[termID]) {
         assert docState.docID > postings.lastDocIDs[termID];
         termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]);
@@ -207,13 +207,13 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
       // Now that we know doc freq for previous doc,
       // write it & lastDocCode
-      if (1 == postings.docFreqs[termID]) {
+      if (1 == postings.termFreqs[termID]) {
         termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]|1);
       } else {
         termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]);
-        termsHashPerField.writeVInt(0, postings.docFreqs[termID]);
+        termsHashPerField.writeVInt(0, postings.termFreqs[termID]);
       }
-      postings.docFreqs[termID] = 1;
+      postings.termFreqs[termID] = 1;
       fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
       postings.lastDocCodes[termID] = (docState.docID - postings.lastDocIDs[termID]) << 1;
       postings.lastDocIDs[termID] = docState.docID;
@@ -228,7 +228,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       }
       fieldState.uniqueTermCount++;
     } else {
-      fieldState.maxTermFrequency = Math.max(fieldState.maxTermFrequency, ++postings.docFreqs[termID]);
+      fieldState.maxTermFrequency = Math.max(fieldState.maxTermFrequency, ++postings.termFreqs[termID]);
       if (hasProx) {
         writeProx(termID, fieldState.position-postings.lastPositions[termID]);
       }
@@ -247,7 +247,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     public FreqProxPostingsArray(int size, boolean writeFreqs, boolean writeProx, boolean writeOffsets) {
       super(size);
       if (writeFreqs) {
-        docFreqs = new int[size];
+        termFreqs = new int[size];
       }
       lastDocIDs = new int[size];
       lastDocCodes = new int[size];
@@ -262,7 +262,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       //System.out.println("PA init freqs=" + writeFreqs + " pos=" + writeProx + " offs=" + writeOffsets);
     }
 
-    int docFreqs[];                                    // # times this term occurs in the current doc
+    int termFreqs[];                                   // # times this term occurs in the current doc
     int lastDocIDs[];                                  // Last docID where this term occurred
     int lastDocCodes[];                                // Code for prior doc
     int lastPositions[];                               // Last position where this term occurred
@@ -270,7 +270,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     @Override
     ParallelPostingsArray newInstance(int size) {
-      return new FreqProxPostingsArray(size, docFreqs != null, lastPositions != null, lastOffsets != null);
+      return new FreqProxPostingsArray(size, termFreqs != null, lastPositions != null, lastOffsets != null);
     }
 
     @Override
@@ -290,9 +290,9 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         assert to.lastOffsets != null;
         System.arraycopy(lastOffsets, 0, to.lastOffsets, 0, numToCopy);
       }
-      if (docFreqs != null) {
-        assert to.docFreqs != null;
-        System.arraycopy(docFreqs, 0, to.docFreqs, 0, numToCopy);
+      if (termFreqs != null) {
+        assert to.termFreqs != null;
+        System.arraycopy(termFreqs, 0, to.termFreqs, 0, numToCopy);
       }
     }
 
@@ -305,7 +305,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       if (lastOffsets != null) {
         bytes += RamUsageEstimator.NUM_BYTES_INT;
       }
-      if (docFreqs != null) {
+      if (termFreqs != null) {
         bytes += RamUsageEstimator.NUM_BYTES_INT;
       }
 
@@ -411,21 +411,21 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       // Now termStates has numToMerge FieldMergeStates
       // which all share the same term.  Now we must
       // interleave the docID streams.
-      int numDocs = 0;
+      int docFreq = 0;
       long totTF = 0;
       int docID = 0;
 
       while(true) {
         //System.out.println("  cycle");
-        final int termDocFreq;
+        final int termFreq;
         if (freq.eof()) {
           if (postings.lastDocCodes[termID] != -1) {
             // Return last doc
             docID = postings.lastDocIDs[termID];
             if (readTermFreq) {
-              termDocFreq = postings.docFreqs[termID];
+              termFreq = postings.termFreqs[termID];
             } else {
-              termDocFreq = -1;
+              termFreq = -1;
             }
             postings.lastDocCodes[termID] = -1;
           } else {
@@ -436,20 +436,20 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           final int code = freq.readVInt();
           if (!readTermFreq) {
             docID += code;
-            termDocFreq = -1;
+            termFreq = -1;
           } else {
             docID += code >>> 1;
             if ((code & 1) != 0) {
-              termDocFreq = 1;
+              termFreq = 1;
             } else {
-              termDocFreq = freq.readVInt();
+              termFreq = freq.readVInt();
             }
           }
 
           assert docID != postings.lastDocIDs[termID];
         }
 
-        numDocs++;
+        docFreq++;
         assert docID < state.segmentInfo.getDocCount(): "doc=" + docID + " maxDoc=" + state.segmentInfo.getDocCount();
 
         // NOTE: we could check here if the docID was
@@ -464,7 +464,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         // 2nd sweep does the real flush, but I suspect
         // that'd add too much time to flush.
         visitedDocs.set(docID);
-        postingsConsumer.startDoc(docID, writeTermFreq ? termDocFreq : -1);
+        postingsConsumer.startDoc(docID, writeTermFreq ? termFreq : -1);
         if (docID < delDocLimit) {
           // Mark it deleted.  TODO: we could also skip
           // writing its postings; this would be
@@ -480,7 +480,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           }
         }
 
-        totTF += termDocFreq;
+        totTF += termFreq;
         
         // Carefully copy over the prox + payload info,
         // changing the format to match Lucene's segment
@@ -490,7 +490,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           // we did record positions (& maybe payload) and/or offsets
           int position = 0;
           int offset = 0;
-          for(int j=0;j<termDocFreq;j++) {
+          for(int j=0;j<termFreq;j++) {
             final BytesRef thisPayload;
 
             if (readPositions) {
@@ -537,9 +537,9 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         }
         postingsConsumer.finishDoc();
       }
-      termsConsumer.finishTerm(text, new TermStats(numDocs, writeTermFreq ? totTF : -1));
+      termsConsumer.finishTerm(text, new TermStats(docFreq, writeTermFreq ? totTF : -1));
       sumTotalTermFreq += totTF;
-      sumDocFreq += numDocs;
+      sumDocFreq += docFreq;
     }
 
     termsConsumer.finish(writeTermFreq ? sumTotalTermFreq : -1, sumDocFreq, visitedDocs.cardinality());

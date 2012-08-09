@@ -11,7 +11,7 @@ rm -r -f example6
 rm -r -f dist
 rm -r -f build
 rm -r -f example/solr/zoo_data
-rm -r -f example/solr/data
+rm -r -f example/solr/collection1/data
 rm -f example/example.log
 
 ant example dist

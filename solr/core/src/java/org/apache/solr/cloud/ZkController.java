@@ -38,7 +38,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -121,6 +121,8 @@ public final class ZkController {
   // may accept defaults or use mocks rather than pulling things from a CoreContainer
   private CoreContainer cc;
 
+  protected volatile Overseer overseer;
+
   /**
    * @param cc if null, recovery will not be enabled
    * @param zkServerAddress
@@ -170,10 +172,8 @@ public final class ZkController {
                 shardHandler = cc.getShardHandlerFactory().getShardHandler();
                 adminPath = cc.getAdminPath();
               }
-              
-              ElectionContext context = new OverseerElectionContext(
-                  shardHandler, adminPath,
-                  getNodeName(), zkStateReader);
+              ZkController.this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
+              ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
               overseerElector.joinElection(context);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
@@ -243,6 +243,11 @@ public final class ZkController {
    */
   public void close() {
     try {
+      overseer.close();
+    } catch(Throwable t) {
+      log.error("Error closing overseer", t);
+    }
+    try {
       zkClient.close();
     } catch (InterruptedException e) {
       // Restore the interrupted status
@@ -269,8 +274,8 @@ public final class ZkController {
   /**
    * @return information about the cluster from ZooKeeper
    */
-  public CloudState getCloudState() {
-    return zkStateReader.getCloudState();
+  public ClusterState getClusterState() {
+    return zkStateReader.getClusterState();
   }
 
   /**
@@ -366,8 +371,8 @@ public final class ZkController {
       }
       
       overseerElector = new LeaderElector(zkClient);
-      ElectionContext context = new OverseerElectionContext(shardHandler,
-          adminPath, getNodeName(), zkStateReader);
+      this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
+      ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
       overseerElector.setup(context);
       overseerElector.joinElection(context);
       zkStateReader.createClusterStateWatchersAndUpdate();
@@ -540,18 +545,18 @@ public final class ZkController {
     String leaderUrl = getLeaderProps(collection, cloudDesc.getShardId()).getCoreUrl();
     
     // now wait until our currently cloud state contains the latest leader
-    String cloudStateLeader = zkStateReader.getLeaderUrl(collection, cloudDesc.getShardId(), 30000);
+    String clusterStateLeader = zkStateReader.getLeaderUrl(collection, shardId, 30000);
     int tries = 0;
-    while (!leaderUrl.equals(cloudStateLeader)) {
+    while (!leaderUrl.equals(clusterStateLeader)) {
       if (tries == 60) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "There is conflicting information about the leader of shard: "
-                + cloudDesc.getShardId());
+                + cloudDesc.getShardId() + " our state says:" + clusterStateLeader + " but zookeeper says:" + leaderUrl);
       }
       Thread.sleep(1000);
       tries++;
-      cloudStateLeader = zkStateReader.getLeaderUrl(collection,
-          cloudDesc.getShardId(), 30000);
+      clusterStateLeader = zkStateReader.getLeaderUrl(collection, shardId, 30000);
+      leaderUrl = getLeaderProps(collection, cloudDesc.getShardId()).getCoreUrl();
     }
     
     String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
@@ -603,7 +608,7 @@ public final class ZkController {
     }
     
     // make sure we have an update cluster state right away
-    zkStateReader.updateCloudState(true);
+    zkStateReader.updateClusterState(true);
 
     return shardId;
   }
@@ -617,10 +622,10 @@ public final class ZkController {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  private ZkCoreNodeProps getLeaderProps(final String collection, final String slice)
-      throws KeeperException, InterruptedException {
+  private ZkCoreNodeProps getLeaderProps(final String collection,
+      final String slice) throws KeeperException, InterruptedException {
     int iterCount = 60;
-    while (iterCount-- > 0)
+    while (iterCount-- > 0) {
       try {
         byte[] data = zkClient.getData(
             ZkStateReader.getShardLeadersPath(collection, slice), null, null,
@@ -631,6 +636,7 @@ public final class ZkController {
       } catch (NoNodeException e) {
         Thread.sleep(500);
       }
+    }
     throw new RuntimeException("Could not get leader props");
   }
 
@@ -735,7 +741,7 @@ public final class ZkController {
   }
 
   private boolean needsToBeAssignedShardId(final CoreDescriptor desc,
-      final CloudState state, final String shardZkNodeName) {
+      final ClusterState state, final String shardZkNodeName) {
 
     final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     
@@ -935,7 +941,7 @@ public final class ZkController {
     final String shardZkNodeName = getNodeName() + "_" + coreName;
     int retryCount = 120;
     while (retryCount-- > 0) {
-      final String shardId = zkStateReader.getCloudState().getShardId(
+      final String shardId = zkStateReader.getClusterState().getShardId(
           shardZkNodeName);
       if (shardId != null) {
         return shardId;
@@ -1003,7 +1009,7 @@ public final class ZkController {
     // this also gets us our assigned shard id if it was not specified
     publish(cd, ZkStateReader.DOWN); 
     String shardZkNodeName = getCoreNodeName(cd);
-    if (cd.getCloudDescriptor().getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getCloudState(), shardZkNodeName)) {
+    if (cd.getCloudDescriptor().getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getClusterState(), shardZkNodeName)) {
       String shardId;
       shardId = doGetShardIdProcess(cd.getName(), cd.getCloudDescriptor());
       cd.getCloudDescriptor().setShardId(shardId);

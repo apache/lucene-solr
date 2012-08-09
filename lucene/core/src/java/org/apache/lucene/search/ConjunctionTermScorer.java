@@ -121,10 +121,6 @@ class ConjunctionTermScorer extends Scorer {
       this(termScorer, termScorer.getDocsEnum(), termScorer.getDocFreq());
     }
     
-    DocsAndFreqs(MatchOnlyTermScorer termScorer) {
-      this(termScorer, termScorer.getDocsEnum(), termScorer.getDocFreq());
-    }
-    
     DocsAndFreqs(Scorer scorer, DocsEnum docs, int docFreq) {
       this.docs = docs;
       this.docFreq = docFreq;

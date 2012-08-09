@@ -156,7 +156,12 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     CountingSearchTestTask.numSearches = 0;
     execBenchmark(algLines);
-    assertTrue(CountingSearchTestTask.numSearches > 0);
+
+    // NOTE: cannot assert this, because on a super-slow
+    // system, it could be after waiting 0.5 seconds that
+    // the search threads hadn't yet succeeded in starting
+    // up and then they start up and do no searching:
+    //assertTrue(CountingSearchTestTask.numSearches > 0);
   }
 
   public void testHighlighting() throws Exception {
@@ -500,7 +505,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       TermsEnum termsEnum = terms.iterator(null);
       DocsEnum docs = null;
       while(termsEnum.next() != null) {
-        docs = _TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(reader), docs, true);
+        docs = _TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(reader), docs, DocsEnum.FLAG_FREQS);
         while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           totalTokenCount2 += docs.freq();
         }

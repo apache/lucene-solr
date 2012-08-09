@@ -24,13 +24,16 @@ import java.util.List;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Node;
 import org.apache.solr.update.SolrCmdDistributor.Response;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
@@ -40,7 +43,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   public SolrCmdDistributorTest() {
     fixShardCount = true;
-    shardCount = 1;
+    shardCount = 4;
     stress = 0;
   }
   
@@ -80,7 +83,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   @Override
   public void doTest() throws Exception {
-    //del("*:*");
+    del("*:*");
     
     SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(8);
     
@@ -159,6 +162,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     assertEquals(response.errors.toString(), 0, response.errors.size());
     
+    
     results = controlClient.query(new SolrQuery("*:*")).getResults();
     numFound = results.getNumFound();
     assertEquals(results.toString(), 2, numFound);
@@ -166,5 +170,48 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     numFound = client.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     assertEquals(results.toString(), 2, numFound);
+    
+    // debug stuff
+    for (SolrServer c : clients) {
+      c.optimize();
+      // distrib optimize is not working right yet, so call it on each client
+      //System.out.println(clients.get(0).request(new LukeRequest()));
+    }
+    
+    int id = 5;
+    
+    cmdDistrib = new SolrCmdDistributor(8);
+    
+    nodes.clear();
+    int cnt = atLeast(200);
+    for (int i = 0; i < cnt; i++) {
+      nodes.clear();
+      for (SolrServer c : clients) {
+        if (random().nextBoolean()) {
+          continue;
+        }
+        HttpSolrServer httpClient = (HttpSolrServer) c;
+        nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
+            httpClient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+        nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
+
+      }
+      
+      cmd.solrDoc = sdoc("id", id++);
+      cmdDistrib.distribAdd(cmd, nodes, params);
+    }
+
+    cmdDistrib.finish();
+    
+    cmdDistrib.distribCommit(ccmd, nodes, params);
+    
+    for (SolrServer c : clients) {
+      NamedList<Object> resp = c.request(new LukeRequest());
+      System.out.println(resp);
+      assertEquals("SOLR-3428: We only did adds - there should be no deletes",
+          ((NamedList<Object>) resp.get("index")).get("numDocs"),
+          ((NamedList<Object>) resp.get("index")).get("maxDoc"));
+    }
+
   }
 }

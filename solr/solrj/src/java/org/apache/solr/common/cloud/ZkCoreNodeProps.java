@@ -74,5 +74,9 @@ public class ZkCoreNodeProps {
     return nodeProps;
   }
 
+  public boolean isLeader() {
+    return nodeProps.containsKey(ZkStateReader.LEADER_PROP);
+  }
+
 
 }

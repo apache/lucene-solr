@@ -44,7 +44,7 @@ import org.junit.BeforeClass;
  * elected.
  */
 @Slow
-public class SyncSliceTest extends FullSolrCloudTest {
+public class SyncSliceTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass
   public static void beforeSuperClass() {
@@ -76,7 +76,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
   public SyncSliceTest() {
     super();
     sliceCount = 1;
-    shardCount = TEST_NIGHTLY ? 7 : 3;
+    shardCount = TEST_NIGHTLY ? 7 : 4;
   }
   
   @Override
@@ -86,7 +86,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    waitForThingsToLevelOut();
+    waitForThingsToLevelOut(15);
 
     del("*:*");
     List<String> skipServers = new ArrayList<String>();
@@ -129,7 +129,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
     baseServer.request(request);
     
-    waitForThingsToLevelOut();
+    waitForThingsToLevelOut(15);
     
     checkShardConsistency(false, true);
     
@@ -157,9 +157,9 @@ public class SyncSliceTest extends FullSolrCloudTest {
     // we are careful to make sure the downed node is no longer in the state,
     // because on some systems (especially freebsd w/ blackhole enabled), trying
     // to talk to a downed node causes grief
-    waitToSeeDownInCloudState(leaderJetty, jetties);
+    waitToSeeDownInClusterState(leaderJetty, jetties);
 
-    waitForThingsToLevelOut();
+    waitForThingsToLevelOut(15);
     
     checkShardConsistency(false, true);
     
@@ -180,18 +180,18 @@ public class SyncSliceTest extends FullSolrCloudTest {
     // give a moment to be sure it has started recovering
     Thread.sleep(2000);
     
-    waitForThingsToLevelOut();
+    waitForThingsToLevelOut(15);
     waitForRecoveriesToFinish(false);
     
     skipServers = getRandomOtherJetty(leaderJetty, null);
-    
+    skipServers.addAll( getRandomOtherJetty(leaderJetty, null));
     // skip list should be 
     
     //System.out.println("leader:" + leaderJetty.url);
     //System.out.println("skip list:" + skipServers);
     
-    // we are skipping the leader and one node
-    assertEquals(1, skipServers.size());
+    // we are skipping  one nodes
+    assertEquals(2, skipServers.size());
     
     // more docs than can peer sync
     for (int i = 0; i < 300; i++) {
@@ -217,19 +217,13 @@ public class SyncSliceTest extends FullSolrCloudTest {
     // kill the current leader
     chaosMonkey.killJetty(leaderJetty);
     
-    waitToSeeDownInCloudState(leaderJetty, jetties);
+    waitToSeeDownInClusterState(leaderJetty, jetties);
     
     Thread.sleep(4000);
     
     waitForRecoveriesToFinish(false);
-    
-    
-    // TODO: for now, we just check consistency -
-    // there will be 305 or 5 docs depending on who
-    // becomes the leader - eventually we want that to
-    // always be the 305
-    //checkShardConsistency(true, true);
-    checkShardConsistency(false, true);
+
+    checkShardConsistency(true, true);
     
   }
 
@@ -255,7 +249,7 @@ public class SyncSliceTest extends FullSolrCloudTest {
     return skipServers;
   }
 
-  private void waitToSeeDownInCloudState(CloudJettyRunner leaderJetty,
+  private void waitToSeeDownInClusterState(CloudJettyRunner leaderJetty,
       Set<CloudJettyRunner> jetties) throws InterruptedException {
 
     for (CloudJettyRunner cjetty : jetties) {
@@ -264,34 +258,6 @@ public class SyncSliceTest extends FullSolrCloudTest {
           leaderJetty);
     }
     waitToSeeNotLive(cloudClient.getZkStateReader(), leaderJetty);
-  }
-
-  private void waitForThingsToLevelOut() throws Exception {
-    int cnt = 0;
-    boolean retry = false;
-    do {
-      waitForRecoveriesToFinish(false);
-      
-      commit();
-      
-      updateMappingsFromZk(jettys, clients);
-      
-      Set<String> theShards = shardToJetty.keySet();
-      String failMessage = null;
-      for (String shard : theShards) {
-        failMessage = checkShardConsistency(shard, false);
-      }
-      
-      if (failMessage != null) {
-        retry = true;
-      } else {
-        retry = false;
-      }
-      
-      cnt++;
-      if (cnt > 10) break;
-      Thread.sleep(2000);
-    } while (retry);
   }
   
   protected void indexDoc(List<String> skipServers, Object... fields) throws IOException,

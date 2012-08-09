@@ -183,15 +183,15 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
 
     String[] queries2 = { "+one", "+two" };
     q = QueryParserUtil.parse(queries2, fields, new MockAnalyzer(random()));
-    assertEquals("(+b:one) (+t:two)", q.toString());
+    assertEquals("b:one t:two", q.toString());
 
     String[] queries3 = { "one", "+two" };
     q = QueryParserUtil.parse(queries3, fields, new MockAnalyzer(random()));
-    assertEquals("b:one (+t:two)", q.toString());
+    assertEquals("b:one t:two", q.toString());
 
     String[] queries4 = { "one +more", "+two" };
     q = QueryParserUtil.parse(queries4, fields, new MockAnalyzer(random()));
-    assertEquals("(b:one +b:more) (+t:two)", q.toString());
+    assertEquals("(b:one +b:more) t:two", q.toString());
 
     String[] queries5 = { "blah" };
     try {

@@ -40,7 +40,6 @@ org.apache.lucene.analysis.en.PorterStemFilterFactory
 org.apache.lucene.analysis.es.SpanishLightStemFilterFactory
 org.apache.lucene.analysis.fa.PersianNormalizationFilterFactory
 org.apache.lucene.analysis.fi.FinnishLightStemFilterFactory
-org.apache.lucene.analysis.fr.ElisionFilterFactory
 org.apache.lucene.analysis.fr.FrenchLightStemFilterFactory
 org.apache.lucene.analysis.fr.FrenchMinimalStemFilterFactory
 org.apache.lucene.analysis.ga.IrishLowerCaseFilterFactory
@@ -88,3 +87,4 @@ org.apache.lucene.analysis.sv.SwedishLightStemFilterFactory
 org.apache.lucene.analysis.synonym.SynonymFilterFactory
 org.apache.lucene.analysis.th.ThaiWordFilterFactory
 org.apache.lucene.analysis.tr.TurkishLowerCaseFilterFactory
+org.apache.lucene.analysis.util.ElisionFilterFactory

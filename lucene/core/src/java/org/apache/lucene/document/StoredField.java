@@ -61,6 +61,7 @@ public class StoredField extends Field {
     super(name, value, type);
   }
 
+  // TODO: not great but maybe not a big problem?
   public StoredField(String name, int value) {
     super(name, TYPE);
     fieldsData = value;

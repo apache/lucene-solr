@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat; // javadocs
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -145,6 +146,29 @@ public class LiveIndexWriterConfig {
    * <p>
    * Takes effect immediately, but only applies to newly flushed/merged
    * segments.
+   * 
+   * <p>
+   * <b>NOTE:</b> This parameter does not apply to all PostingsFormat implementations,
+   * including the default one in this release. It only makes sense for term indexes
+   * that are implemented as a fixed gap between terms. For example, 
+   * {@link Lucene40PostingsFormat} implements the term index instead based upon how
+   * terms share prefixes. To configure its parameters (the minimum and maximum size
+   * for a block), you would instead use  {@link Lucene40PostingsFormat#Lucene40PostingsFormat(int, int)}.
+   * which can also be configured on a per-field basis:
+   * <pre class="prettyprint">
+   * //customize Lucene40PostingsFormat, passing minBlockSize=50, maxBlockSize=100
+   * final PostingsFormat tweakedPostings = new Lucene40PostingsFormat(50, 100);
+   * iwc.setCodec(new Lucene40Codec() {
+   *   &#64;Override
+   *   public PostingsFormat getPostingsFormatForField(String field) {
+   *     if (field.equals("fieldWithTonsOfTerms"))
+   *       return tweakedPostings;
+   *     else
+   *       return super.getPostingsFormatForField(field);
+   *   }
+   * });
+   * </pre>
+   * Note that other implementations may have their own parameters, or no parameters at all.
    * 
    * @see IndexWriterConfig#DEFAULT_TERM_INDEX_INTERVAL
    */
@@ -335,6 +359,10 @@ public class LiveIndexWriterConfig {
    * <p>
    * Takes effect immediately, but only applies to readers opened after this
    * call
+   * <p>
+   * <b>NOTE:</b> divisor settings &gt; 1 do not apply to all PostingsFormat
+   * implementations, including the default one in this release. It only makes
+   * sense for terms indexes that can efficiently re-sample terms at load time.
    */
   public LiveIndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
     if (divisor <= 0 && divisor != -1) {
@@ -462,7 +490,7 @@ public class LiveIndexWriterConfig {
   /**
    * @see IndexWriterConfig#setFlushPolicy(FlushPolicy)
    */
-  public FlushPolicy getFlushPolicy() {
+  FlushPolicy getFlushPolicy() {
     return flushPolicy;
   }
   
@@ -497,7 +525,6 @@ public class LiveIndexWriterConfig {
     sb.append("mergePolicy=").append(getMergePolicy()).append("\n");
     sb.append("indexerThreadPool=").append(getIndexerThreadPool()).append("\n");
     sb.append("readerPooling=").append(getReaderPooling()).append("\n");
-    sb.append("flushPolicy=").append(getFlushPolicy()).append("\n");
     sb.append("perThreadHardLimitMB=").append(getRAMPerThreadHardLimitMB()).append("\n");
     return sb.toString();
   }

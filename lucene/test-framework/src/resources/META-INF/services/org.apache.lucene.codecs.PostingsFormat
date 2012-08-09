@@ -20,5 +20,6 @@ org.apache.lucene.codecs.mocksep.MockSepPostingsFormat
 org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat
 org.apache.lucene.codecs.ramonly.RAMOnlyPostingsFormat
 org.apache.lucene.codecs.lucene40ords.Lucene40WithOrds
+org.apache.lucene.codecs.bloom.TestBloomFilteredLucene40Postings
 org.apache.lucene.codecs.asserting.AssertingPostingsFormat
 

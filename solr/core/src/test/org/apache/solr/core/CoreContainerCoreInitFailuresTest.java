@@ -123,6 +123,11 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   }
   
   public void testFlowBadFromStart() throws Exception {
+    // TODO: even if we close all solr cores in the container, there is still a leaked dir?
+    // maybe from one that didnt load right?
+    
+    // TODO: make SolrCore closeable since its has close()
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.SimpleFSDirectoryFactory");
     
     // reused state
     Map<String,Exception> failures = null;

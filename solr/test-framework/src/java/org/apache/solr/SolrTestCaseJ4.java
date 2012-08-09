@@ -1388,11 +1388,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       return file;
     } catch (Exception e) {
       /* more friendly than NPE */
-      throw new RuntimeException("Cannot find resource: " + name);
+      throw new RuntimeException("Cannot find resource: " + new File(name).getAbsolutePath());
     }
   }
   
-  // TODO: use solr rather than solr/collection1
   public static String TEST_HOME() {
     return getFile("solr/collection1").getParent();
   }

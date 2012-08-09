@@ -20,6 +20,7 @@ package org.apache.solr.response;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.velocity.Template;
@@ -29,6 +30,8 @@ import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.tools.generic.*;
 
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class VelocityResponseWriter implements QueryResponseWriter {
@@ -80,6 +83,64 @@ public class VelocityResponseWriter implements QueryResponseWriter {
 
     context.put("engine", engine);  // for $engine.resourceExists(...)
 
+    // Mimetype to extension map for detecting file type and show icon
+    // List of types match the icons in /solr/img/filetypes
+    Map<String, String> mimeToExt = new HashMap<String, String>() {{
+      put("application/x-7z-compressed", "7z");
+      put("application/postscript", "ai");
+      put("application/pgp-signature", "asc");
+      put("application/octet-stream", "bin");
+      put("application/x-bzip2", "bz2");
+      put("text/x-c", "c");
+      put("application/vnd.ms-htmlhelp", "chm");
+      put("application/java-vm", "class");
+      put("text/css", "css");
+      put("text/csv", "csv");
+      put("application/x-debian-package", "deb");
+      put("application/msword", "doc");
+      put("message/rfc822", "eml");
+      put("image/gif", "gif");
+      put("application/winhlp", "hlp");
+      put("text/html", "html");
+      put("application/java-archive", "jar");
+      put("text/x-java-source", "java");
+      put("image/jpeg", "jpeg");
+      put("application/javascript", "js");
+      put("application/vnd.oasis.opendocument.chart", "odc");
+      put("application/vnd.oasis.opendocument.formula", "odf");
+      put("application/vnd.oasis.opendocument.graphics", "odg");
+      put("application/vnd.oasis.opendocument.image", "odi");
+      put("application/vnd.oasis.opendocument.presentation", "odp");
+      put("application/vnd.oasis.opendocument.spreadsheet", "ods");
+      put("application/vnd.oasis.opendocument.text", "odt");
+      put("application/pdf", "pdf");
+      put("application/pgp-encrypted", "pgp");
+      put("image/png", "png");
+      put("application/vnd.ms-powerpoint", "ppt");
+      put("audio/x-pn-realaudio", "ram");
+      put("application/x-rar-compressed", "rar");
+      put("application/vnd.rn-realmedia", "rm");
+      put("application/rtf", "rtf");
+      put("application/x-shockwave-flash", "swf");
+      put("application/vnd.sun.xml.calc", "sxc");
+      put("application/vnd.sun.xml.draw", "sxd");
+      put("application/vnd.sun.xml.impress", "sxi");
+      put("application/vnd.sun.xml.writer", "sxw");
+      put("application/x-tar", "tar");
+      put("application/x-tex", "tex");
+      put("text/plain", "txt");
+      put("text/x-vcard", "vcf");
+      put("application/vnd.visio", "vsd");
+      put("audio/x-wav", "wav");
+      put("audio/x-ms-wma", "wma");
+      put("video/x-ms-wmv", "wmv");
+      put("application/vnd.ms-excel", "xls");
+      put("application/xml", "xml");
+      put("application/x-xpinstall", "xpi");
+      put("application/zip", "zip");
+    }};
+    context.put("mimeToExt", mimeToExt);
+    
     String layout_template = request.getParams().get("v.layout");
     String json_wrapper = request.getParams().get("v.json");
     boolean wrap_response = (layout_template != null) || (json_wrapper != null);
@@ -113,19 +174,32 @@ public class VelocityResponseWriter implements QueryResponseWriter {
 
   private VelocityEngine getEngine(SolrQueryRequest request) {
     VelocityEngine engine = new VelocityEngine();
-    String template_root = request.getParams().get("v.base_dir");
-    File baseDir = new File(request.getCore().getResourceLoader().getConfigDir(), "velocity");
-    if (template_root != null) {
-      baseDir = new File(template_root);
-    }
-    engine.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, baseDir.getAbsolutePath());
+
     engine.setProperty("params.resource.loader.instance", new SolrParamResourceLoader(request));
     SolrVelocityResourceLoader resourceLoader =
         new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader());
     engine.setProperty("solr.resource.loader.instance", resourceLoader);
 
+    File fileResourceLoaderBaseDir = null;
+    try {
+      String template_root = request.getParams().get("v.base_dir");
+      fileResourceLoaderBaseDir = new File(request.getCore().getResourceLoader().getConfigDir(), "velocity");
+      if (template_root != null) {
+        fileResourceLoaderBaseDir = new File(template_root);
+      }
+    } catch (SolrException e) {
+      // no worries... probably in ZooKeeper mode and getConfigDir() isn't available, so we'll just ignore omit
+      // the file system resource loader
+    }
+
+    if (fileResourceLoaderBaseDir != null) {
+      engine.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, fileResourceLoaderBaseDir.getAbsolutePath());
+      engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,file,solr");
+    } else {
+      engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,solr");
+    }
+
     // TODO: Externalize Velocity properties
-    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,file,solr");
     String propFile = request.getParams().get("v.properties");
     try {
       if (propFile == null)

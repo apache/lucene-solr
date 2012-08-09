@@ -648,6 +648,11 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                      "foo_i");
   }
 
+  public void testTestFuncs() throws Exception {
+    assertFuncEquals("sleep(1,5)", "sleep(1,5)");
+    assertFuncEquals("threadid()", "threadid()");
+  }
+
   /**
    * this test does not assert anything itself, it simply toggles a static 
    * boolean informing an @AfterClass method to assert that every default 

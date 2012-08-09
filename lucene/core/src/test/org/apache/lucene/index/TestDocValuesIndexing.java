@@ -881,7 +881,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public int docId(AtomicReader reader, Term term) throws IOException {
     int docFreq = reader.docFreq(term);
     assertEquals(1, docFreq);
-    DocsEnum termDocsEnum = reader.termDocsEnum(null, term.field, term.bytes, false);
+    DocsEnum termDocsEnum = reader.termDocsEnum(null, term.field, term.bytes, 0);
     int nextDoc = termDocsEnum.nextDoc();
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, termDocsEnum.nextDoc());
     return nextDoc;
@@ -1022,6 +1022,23 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     bytes[0] = 1;
     assertEquals(b, bytes1);
     r.close();
+    w.close();
+    d.close();
+  }
+  
+  public void testFixedLengthNotReallyFixed() throws IOException {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new DerefBytesDocValuesField("foo", new BytesRef("bar"), true));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(new DerefBytesDocValuesField("foo", new BytesRef("bazz"), true));
+    try {
+      w.addDocument(doc);
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
     w.close();
     d.close();
   }

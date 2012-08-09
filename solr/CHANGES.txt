@@ -24,7 +24,25 @@ $Id$
 
 (No changes)
 
+==================  4.0.0 ==================
+
+Upgrading from Solr 4.0.0-BETA
+----------------------
+
+In order to better support distributed search mode, the TermVectorComponent's response format has been changed so that if the schema defines a uniqueKeyField, then that field value is used as the "key" for each document in it's response section, instead of the internal lucene doc id.  Users w/o a uniqueKeyField will continue to see the same response format.  See SOLR-3229 for more details.
+
+Bug Fixes
+----------------------
+
+* SOLR-3685: Solr Cloud sometimes skipped peersync attempt and replicated instead due
+  to tlog flags not being cleared when no updates were buffered during a previous
+  replication.  (Markus Jelsma, Mark Miller, yonik)
+
+* SOLR-3229: Fixed TermVectorComponent to work with distributed search
+  (Hang Xie, hossman)
+
 ==================  4.0.0-BETA ===================
+
 
 Versions of Major Components
 ---------------------
@@ -32,7 +50,16 @@ Apache Tika 1.1
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
-Apache ZooKeeper 3.3.5
+Apache ZooKeeper 3.3.6
+
+Upgrading from Solr 4.0.0-ALPHA
+----------------------
+
+Solr is now much more strict about requiring that the uniqueKeyField feature 
+(if used) must refer to a field which is not multiValued.  If you upgrade from 
+an earlier version of Solr and see an error that your uniqueKeyField "can not 
+be configured to be multivalued" please add 'multiValued="false"' to the 
+<field /> declaration for your uniqueKeyField.  See SOLR-3682 for more details.
 
 Detailed Change List
 ----------------------
@@ -88,13 +115,29 @@ New Features
   lib folder. The factories are automatically made available with SPI.
   (Chris Male, Robert Muir, Uwe Schindler)
 
-* SOLR-3634: CoreContainer and CoreAdminHandler will now remember and report 
-  back information about failures to initialize SolrCores.  These failures will 
-  be accessible from the STATUS command until they are "reset" by 
-  creating/renaming a SolrCore with the same name.  (hossman)
+* SOLR-3634, SOLR-3635: CoreContainer and CoreAdminHandler will now remember 
+  and report back information about failures to initialize SolrCores.  These 
+  failures will be accessible from the web UI and CoreAdminHandler STATUS 
+  command until they are "reset" by creating/renaming a SolrCore with the 
+  same name.  (hossman, steffkes)
 
 * SOLR-1280: Added commented-out example of the new script update processor
   to the example configuration.  See http://wiki.apache.org/solr/ScriptUpdateProcessor (ehatcher)
+
+* SOLR-3672: SimplePostTool: Improvements for posting files
+  Support for auto mode, recursive and wildcards (janhoy)
+
+Optimizations
+----------------------
+
+* SOLR-3708: Add hashCode to ClusterState so that structures built based on the 
+  ClusterState can be easily cached. (Mark Miller)
+
+* SOLR-3709: Cache the url list created from the ClusterState in CloudSolrServer on each 
+  request. (Mark Miller, yonik)
+  
+* SOLR-3710: Change CloudSolrServer so that update requests are only sent to leaders by 
+  default. (Mark Miller)
 
 Bug Fixes
 ----------------------
@@ -121,7 +164,7 @@ Bug Fixes
 * SOLR-1781: Replication index directories not always cleaned up. 
   (Markus Jelsma, Terje Sten Bjerkseth, Mark Miller)
 
-* SOLR-3639: Update ZooKeeper to 3.3.5 for a variety of bug fixes. (Mark Miller)
+* SOLR-3639: Update ZooKeeper to 3.3.6 for a variety of bug fixes. (Mark Miller)
 
 * SOLR-3629: Typo in solr.xml persistence when overriding the solrconfig.xml 
   file name using the "config" attribute prevented the override file from being
@@ -153,6 +196,20 @@ Bug Fixes
   when 'gap' is zero -- or effectively zero due to floating point arithmetic 
   underflow. (hossman)
 
+* SOLR-3648: Fixed VelocityResponseWriter template loading in SolrCloud mode.
+  For the example configuration, this means /browse now works with SolrCloud.
+  (janhoy, ehatcher)
+
+* SOLR-3677: Fixed missleading error message in web ui to distinguish between 
+  no SolrCores loaded vs. no /admin/ handler available.
+  (hossman, steffkes)
+  
+* SOLR-3428: SolrCmdDistributor flushAdds/flushDeletes can cause repeated 
+  adds/deletes to be sent (Mark Miller, Per Steffensen)
+  
+* SOLR-3647: DistributedQueue should use our Solr zk client rather than the std zk 
+  client. ZooKeeper expiration can be permanent otherwise. (Mark Miller)
+
 Other Changes
 ----------------------
 
@@ -180,7 +237,26 @@ Other Changes
 
 * SOLR-3215: Clone SolrInputDocument when distrib indexing so that update processors after
   the distrib update process do not process the document twice. (Mark Miller)
+
+* SOLR-3683: Improved error handling if an <analyzer> contains both an 
+  explicit class attribute, as well as nested factories. (hossman)
+
+* SOLR-3682: Fail to parse schema.xml if uniqueKeyField is multivalued (hossman)
+
+* SOLR-2115: DIH no longer requires the "config" parameter to be specified in solrconfig.xml.
+  Instead, the configuration is loaded and parsed with every import.  This allows the use of
+  a different configuration with each import, and makes correcting configuration errors simpler.
+  Also, the configuration itself can be passed using the "dataConfig" parameter rather than
+  using a file (this previously worked in debug mode only).  When configuration errors are 
+  encountered, the error message is returned in XML format.  (James Dyer)
   
+* SOLR-3439: Make SolrCell easier to use out of the box. Also improves "/browse" to display
+  rich-text documents correctly, along with facets for author and content_type.  
+  With the new "content" field, highlighting of body is supported. See also SOLR-3672 for
+  easier posting of a whole directory structure. (Jack Krupansky, janhoy)
+  
+* SOLR-3579: SolrCloud view should default to the graph view rather than tree view.
+  (steffkes, Mark Miller)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 
@@ -529,6 +605,11 @@ New Features
 * SOLR-3542: Add WeightedFragListBuilder for FVH and set it to default fragListBuilder
   in example solrconfig.xml. (Sebastian Lutze, koji)
 
+* SOLR-2396: Add ICUCollationField to contrib/analysis-extras, which is much 
+  more efficient than the Solr 3.x ICUCollationKeyFilterFactory, and also 
+  supports Locale-sensitive range queries.  (rmuir)
+
+
 Optimizations
 ----------------------
 
@@ -675,6 +756,17 @@ Bug Fixes
   parser or the strdist() function, as well as some minor improvements to 
   the hashCode implementation of {!bbox} and {!geofilt} queries.
   (hossman)
+
+* SOLR-3470: contrib/clustering: custom Carrot2 tokenizer and stemmer factories
+  are respected now (Stanislaw Osinski, Dawid Weiss)
+
+* SOLR-3430: Added a new DIH test against a real SQL database.  Fixed problems 
+  revealed by this new test related to  the expanded cache support added to 
+  3.6/SOLR-2382 (James Dyer)
+             
+* SOLR-1958: When using the MailEntityProcessor, import would fail if 
+  fetchMailsSince was not specified. (Max Lynch via James Dyer) 
+
 
 Other Changes
 ----------------------
@@ -828,7 +920,13 @@ Other Changes
 * SOLR-3534: The Dismax and eDismax query parsers will fall back on the 'df' parameter
   when 'qf' is absent.  And if neither is present nor the schema default search field
   then an exception will be thrown now. (dsmiley)
-  
+
+* SOLR-3262: The "threads" feature of DIH is removed (deprecated in Solr 3.6) 
+  (James Dyer)
+
+* SOLR-3422: Refactored DIH internal data classes.  All entities in 
+  data-config.xml must have a name (James Dyer)
+ 
 Documentation
 ----------------------
 
@@ -860,6 +958,20 @@ Bug Fixes:
 * SOLR-3489: Config file replication less error prone (Jochen Just via janhoy)
 
 * SOLR-3477: SOLR does not start up when no cores are defined (Tomás Fernández Löbbe via tommaso)
+
+* SOLR-3470: contrib/clustering: custom Carrot2 tokenizer and stemmer factories
+  are respected now (Stanislaw Osinski, Dawid Weiss)
+
+* SOLR-3360: More DIH bug fixes for the deprecated "threads" parameter.  
+  (Mikhail Khludnev, Claudio R, via James Dyer)
+
+* SOLR-3430: Added a new DIH test against a real SQL database.  Fixed problems 
+  revealed by this new test related to the expanded cache support added to 
+  3.6/SOLR-2382 (James Dyer)
+
+* SOLR-3336: SolrEntityProcessor substitutes most variables at query time.
+  (Michael Kroh, Lance Norskog, via Martijn van Groningen)
+
 
 ==================  3.6.0  ==================
 More information about this release, including any errata related to the 
@@ -1002,6 +1114,37 @@ New Features
   no documents if the query parser returns null.  This also prevents an
   exception from being thrown by the default parser if "q" is missing. (yonik)
   SOLR-435: if q is "" then it's also acceptable. (dsmiley, hoss)
+
+* SOLR-2919: Added parametric tailoring options to ICUCollationKeyFilterFactory.
+  These can be used to customize range query/sort behavior, for example to
+  support numeric collation, ignore punctuation/whitespace, ignore accents but
+  not case, control whether upper/lowercase values are sorted first, etc.  (rmuir)
+
+* SOLR-2346: Add a chance to set content encoding explicitly via content type 
+  of stream for extracting request handler.  This is convenient when Tika's 
+  auto detector cannot detect encoding, especially the text file is too short 
+  to detect encoding. (koji)
+
+* SOLR-1499: Added SolrEntityProcessor that imports data from another Solr core
+  or instance based on a specified query.
+  (Lance Norskog, Erik Hatcher, Pulkit Singhal, Ahmet Arslan, Luca Cavanna, 
+  Martijn van Groningen)
+
+* SOLR-3190: Minor improvements to SolrEntityProcessor. Add more consistency 
+  between solr parameters and parameters used in SolrEntityProcessor and 
+  ability to specify a custom HttpClient instance.
+  (Luca Cavanna via Martijn van Groningen)
+
+* SOLR-2382: Added pluggable cache support to DIH so that any Entity can be 
+  made cache-able by adding the "cacheImpl" parameter.  Include 
+  "SortedMapBackedCache" to provide in-memory caching (as previously this was 
+  the only option when using CachedSqlEntityProcessor).  Users can provide 
+  their own implementations of DIHCache for other caching strategies.  
+  Deprecate CachedSqlEntityProcessor in favor of specifing "cacheImpl" with
+  SqlEntityProcessor.  Make SolrWriter implement DIHWriter and allow the 
+  possibility of pluggable Writers (DIH writing to something other than Solr). 
+  (James Dyer, Noble Paul)
+
 
 Optimizations
 ----------------------
@@ -1164,6 +1307,35 @@ Bug Fixes
 * SOLR-3316: Distributed grouping failed when rows parameter was set to 0 and 
   sometimes returned a wrong hit count as matches. (Cody Young, Martijn van Groningen)
 
+* SOLR-3107: contrib/langid: When using the LangDetect implementation of 
+  langid, set the random seed to 0, so that the same document is detected as 
+  the same language with the same probability every time.  
+  (Christian Moen via rmuir)
+
+* SOLR-2937: Configuring the number of contextual snippets used for 
+  search results clustering. The hl.snippets parameter is now respected
+  by the clustering plugin, can be overridden by carrot.summarySnippets
+  if needed (Stanislaw Osinski).
+
+* SOLR-2938: Clustering on multiple fields. The carrot.title and 
+  carrot.snippet can now take comma- or space-separated lists of
+  field names to cluster (Stanislaw Osinski).
+
+* SOLR-2939: Clustering of multilingual search results. The document's
+  language field be passed in the carrot.lang parameter, the carrot.lcmap
+  parameter enables mapping of language codes to ISO 639 (Stanislaw Osinski).
+
+* SOLR-2940: Passing values for custom Carrot2 fields to Clustering component. 
+  The custom field mapping are defined using the carrot.custom parameter 
+  (Stanislaw Osinski).
+
+* SOLR-2941: NullPointerException on clustering component initialization 
+  when schema does not have a unique key field (Stanislaw Osinski).
+
+* SOLR-2942: ClassCastException when passing non-textual fields to  
+  clustering component (Stanislaw Osinski).
+
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
@@ -1214,6 +1386,16 @@ Other Changes
   1.5-compatible carrot2-core-3.5.0.1.jar (hosted on the Maven Central
   repository).  Also updated dependencies jackson-core-asl and
   jackson-mapper-asl (both v1.5.2 -> v1.7.4).  (Dawid Weiss, Steve Rowe)
+
+* SOLR-3295: netcdf jar is excluded from the binary release (and disabled in 
+  ivy.xml) because it requires java 6. If you want to parse this content with 
+  extracting request handler and are willing to use java 6, just add the jar. 
+  (rmuir)
+
+* SOLR-3142: DIH Imports no longer default optimize to true, instead false. 
+  If you want to force all segments to be merged into one, you can specify 
+  this parameter yourself. NOTE: this can be very expensive operation and 
+  usually does not make sense for delta-imports.  (Robert Muir)
 
 Build
 ----------------------
@@ -1269,6 +1451,9 @@ New Features
   request param that can be used to delete all but the most recent N backups.
   (James Dyer via hossman)
 
+* SOLR-2839: Add alternative implementation to contrib/langid supporting 53 
+  languages, based on http://code.google.com/p/language-detection/ (rmuir)
+
 Optimizations
 ----------------------
 
@@ -1308,6 +1493,9 @@ Bug Fixes
   a wrong number of collation results in the response.
   (Bastiaan Verhoef, James Dyer via Simon Willnauer)
 
+* SOLR-2875: Fix the incorrect url in DIH example tika-data-config.xml 
+  (Shinichiro Abe via koji)
+
  Other Changes
 ----------------------
 
@@ -1344,6 +1532,9 @@ Bug Fixes
 * SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
 
 * SOLR-2591: Remove commitLockTimeout option from solrconfig.xml (Luca Cavanna via Martijn van Groningen)
+
+* SOLR-2746: Upgraded UIMA dependencies from *-2.3.1-SNAPSHOT.jar to *-2.3.1.jar.
+
 
 ==================  3.4.0  ==================
 
@@ -1491,11 +1682,38 @@ Bug Fixes
   failed due to sort by function changes introduced in SOLR-1297
   (Mitsu Hadeishi, hossman)
 
+* SOLR-2706: contrib/clustering: The carrot.lexicalResourcesDir parameter 
+  now works with absolute directories (Stanislaw Osinski)
+  
+* SOLR-2692: contrib/clustering: Typo in param name fixed: "carrot.fragzise" 
+  changed to "carrot.fragSize" (Stanislaw Osinski).
+
+* SOLR-2644: When using DIH with threads=2 the default logging is set too high
+  (Bill Bell via shalin)
+
+* SOLR-2492: DIH does not commit if only deletes are processed 
+  (James Dyer via shalin)
+
+* SOLR-2186: DataImportHandler's multi-threaded option throws NPE 
+  (Lance Norskog, Frank Wesemann, shalin)
+
+* SOLR-2655: DIH multi threaded mode does not resolve attributes correctly 
+  (Frank Wesemann, shalin)
+
+* SOLR-2695: DIH: Documents are collected in unsynchronized list in 
+  multi-threaded debug mode (Michael McCandless, shalin)
+
+* SOLR-2668: DIH multithreaded mode does not rollback on errors from 
+  EntityProcessor (Frank Wesemann, shalin)
+
  Other Changes
 ----------------------
 
 * SOLR-2629: Eliminate deprecation warnings in some JSPs.
   (Bernd Fehling, hossman)
+
+* SOLR-2743: Remove commons logging from contrib/extraction. (koji)
+
 
 Build
 ----------------------
@@ -1568,6 +1786,13 @@ New Features
 
 * SOLR-2610 -- Add an option to delete index through CoreAdmin UNLOAD action (shalin)
 
+* SOLR-2480: Add ignoreTikaException flag to the extraction request handler so 
+  that users can ignore TikaException but index meta data. 
+  (Shinichiro Abe, koji)
+
+* SOLR-2582: Use uniqueKey for error log in UIMAUpdateRequestProcessor.
+  (Tommaso Teofili via koji)
+
 Optimizations
 ----------------------
 
@@ -1586,6 +1811,15 @@ Bug Fixes
   Separately, an additional spellcheck.maxCollationEvaluations (default=10000)
   parameter is added to avoid excessive CPU time in extreme cases (e.g. long
   queries with many misspelled words).  (James Dyer via rmuir)
+
+* SOLR-2579: UIMAUpdateRequestProcessor ignore error fails if text.length() < 100.
+  (Elmer Garduno via koji)
+
+* SOLR-2581: UIMAToSolrMapper wrongly instantiates Type with reflection.
+  (Tommaso Teofili via koji)
+
+* SOLR-2551: Check dataimport.properties for write access (if delta-import is 
+  supported in DIH configuration) before starting an import (C S, shalin)
 
 Other Changes
 ----------------------
@@ -1626,6 +1860,10 @@ Upgrading from Solr 3.1
   with update.chain rather than update.processor. The latter still works,
   but has been deprecated.
 
+* <uimaConfig/> just beneath <config> ... </config> is no longer supported.
+  It should move to UIMAUpdateRequestProcessorFactory setting.
+  See contrib/uima/README.txt for more details. (SOLR-2436)
+
 Detailed Change List
 ----------------------
 
@@ -1645,6 +1883,18 @@ New Features
 * SOLR-1915: DebugComponent now supports using a NamedList to model
   Explanation objects in it's responses instead of
   Explanation.toString  (hossman)
+
+* SOLR-2448: Search results clustering updates: bisecting k-means
+  clustering algorithm added, loading of Carrot2 stop words from
+  <solr.home>/conf/carrot2 (SOLR-2449), using Solr's stopwords.txt
+  for clustering (SOLR-2450), output of cluster scores (SOLR-2505)
+  (Stanislaw Osinski, Dawid Weiss).
+
+* SOLR-2503: extend UIMAUpdateRequestProcessorFactory mapping function to 
+  map feature value to dynamicField. (koji)
+
+* SOLR-2512: add ignoreErrors flag to UIMAUpdateRequestProcessorFactory so 
+  that users can ignore exceptions in AE. (Tommaso Teofili, koji)
 
 Optimizations
 ----------------------
@@ -1731,6 +1981,12 @@ Other Changes
 
 * SOLR-2528: Remove default="true" from HtmlEncoder in example solrconfig.xml,
   because html encoding confuses non-ascii users. (koji)
+
+* SOLR-2387: add mock annotators for improved testing in contrib/uima,
+  (Tommaso Teofili via rmuir)
+
+* SOLR-2436: move uimaConfig to under the uima's update processor in 
+  solrconfig.xml.  (Tommaso Teofili, koji)
 
 Build
 ----------------------
@@ -1989,6 +2245,50 @@ New Features
 
 * SOLR-1057: Add PathHierarchyTokenizerFactory. (ryan, koji)
 
+* SOLR-1804: Re-enabled clustering component on trunk, updated to latest 
+  version of Carrot2.  No more LGPL run-time dependencies.  This release of 
+  C2 also does not have a specific Lucene dependency.  
+  (Stanislaw Osinski, gsingers)
+
+* SOLR-2282: Add distributed search support for search result clustering.
+  (Brad Giaccio, Dawid Weiss, Stanislaw Osinski, rmuir, koji)
+
+* SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
+  tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-2211,LUCENE-2763: Added UAX29URLEmailTokenizerFactory, which implements
+  UAX#29, a unicode algorithm with good results for most languages, as well as
+  URL and E-mail tokenization according to the relevant RFCs.
+  (Tom Burton-West via rmuir)
+
+* SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
+
+* SOLR-1525: allow DIH to refer to core properties (noble)
+
+* SOLR-1547: DIH TemplateTransformer copy objects more intelligently when the 
+  template is a single variable (noble)
+
+* SOLR-1627: DIH VariableResolver should be fetched just in time (noble)
+
+* SOLR-1583: DIH Create DataSources that return InputStream (noble)
+
+* SOLR-1358: Integration of Tika and DataImportHandler (Akshay Ukey, noble)
+
+* SOLR-1654: TikaEntityProcessor example added DIHExample 
+  (Akshay Ukey via noble)
+
+* SOLR-1678: Move onError handling to DIH framework (noble)
+
+* SOLR-1352: Multi-threaded implementation of DIH (noble)
+
+* SOLR-1721: Add explicit option to run DataImportHandler in synchronous mode 
+  (Alexey Serba via noble)
+
+* SOLR-1737: Added FieldStreamDataSource (noble)
+
+
 Optimizations
 ----------------------
 
@@ -2009,6 +2309,13 @@ Optimizations
   yield speedups over 3x. (yonik)
 
 * SOLR-2046: add common functions to scripts-util. (koji)
+
+* SOLR-1684: Switch clustering component to use the 
+  SolrIndexSearcher.doc(int, Set<String>) method b/c it can use the document 
+  cache (gsingers)
+
+* SOLR-2200: Improve the performance of DataImportHandler for large 
+  delta-import updates. (Mark Waddle via rmuir)
 
 Bug Fixes
 ----------------------
@@ -2264,6 +2571,70 @@ Bug Fixes
 * SOLR-2192: StreamingUpdateSolrServer.blockUntilFinished was not
   thread safe and could throw an exception. (yonik)
 
+* SOLR-1692: Fix bug in clustering component relating to carrot.produceSummary 
+  option (gsingers)
+
+* SOLR-1756: The date.format setting for extraction request handler causes 
+  ClassCastException when enabled and the config code that parses this setting 
+  does not properly use the same iterator instance. 
+  (Christoph Brill, Mark Miller)
+
+* SOLR-1638: Fixed NullPointerException during DIH import if uniqueKey is not 
+  specified in schema (Akshay Ukey via shalin)
+
+* SOLR-1639: Fixed misleading error message when dataimport.properties is not 
+  writable (shalin)
+
+* SOLR-1598: DIH: Reader used in PlainTextEntityProcessor is not explicitly 
+  closed (Sascha Szott via noble)
+
+* SOLR-1759: DIH: $skipDoc was not working correctly 
+  (Gian Marco Tagliani via noble)
+
+* SOLR-1762: DIH: DateFormatTransformer does not work correctly with 
+  non-default locale dates (tommy chheng via noble)
+
+* SOLR-1757: DIH multithreading sometimes throws NPE (noble)
+
+* SOLR-1766: DIH with threads enabled doesn't respond to the abort command 
+  (Michael Henson via noble)
+
+* SOLR-1767: dataimporter.functions.escapeSql() does not escape backslash 
+  character (Sean Timm via noble)
+
+* SOLR-1811: formatDate should use the current NOW value always 
+  (Sean Timm via noble)
+
+* SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
+  defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
+
+* SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
+  (Drew Farris via koji)
+
+* SOLR-1973: Empty fields in XML update messages confuse DataImportHandler. 
+  (koji)
+
+* SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
+  true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for 
+  sub-options (debug, verbose, synchronous, commit, clean, optimize) for 
+  full/delta-import commands. (koji)
+
+* SOLR-2310: DIH: getTimeElapsedSince() returns incorrect hour value when 
+  the elapse is over 60 hours (tom liu via koji)
+
+* SOLR-2252: DIH: When a child entity in nested entities is rootEntity="true", 
+  delta-import doesn't work. (koji)
+
+* SOLR-2330: solrconfig.xml files in example-DIH are broken. (Matt Parker, koji)
+
+* SOLR-1191: resolve DataImportHandler deltaQuery column against pk when pk
+  has a prefix (e.g. pk="book.id" deltaQuery="select id from ..."). More
+  useful error reporting when no match found (previously failed with a
+  NullPointerException in log and no clear user feedback). (gthb via yonik)
+
+* SOLR-2116: Fix TikaConfig classloader bug in TikaEntityProcessor
+  (Martijn van Groningen via hossman)
+
 Other Changes
 ----------------------
 
@@ -2391,6 +2762,16 @@ Other Changes
 * SOLR-141: Errors and Exceptions are formated by ResponseWriter.
   (Mike Sokolov, Rich Cariens, Daniel Naber, ryan)
 
+* SOLR-1902: Upgraded to Tika 0.8 and changed deprecated parse call
+
+* SOLR-1813: Add ICU4j to contrib/extraction libs and add tests for Arabic 
+  extraction (Robert Muir via gsingers)
+
+* SOLR-1821: Fix TimeZone-dependent test failure in TestEvaluatorBag.
+  (Chris Male via rmuir)
+
+* SOLR-2367: Reduced noise in test output by ensuring the properties file 
+  can be written. (Gunnlaugur Thor Briem via rmuir)
 
 Build
 ----------------------
@@ -2475,6 +2856,33 @@ error.  See SOLR-1410 for more information.
  * RussianStemFilterFactory
  * RussianLowerCaseFilterFactory
  * RussianLetterTokenizerFactory
+
+DIH: Evaluator API has been changed in a non back-compatible way. Users who 
+have developed custom Evaluators will need to change their code according to 
+the new API for it to work. See SOLR-996 for details.
+
+DIH: The formatDate evaluator's syntax has been changed. The new syntax is 
+formatDate(<variable>, '<format_string>'). For example, 
+formatDate(x.date, 'yyyy-MM-dd'). In the old syntax, the date string was 
+written without a single-quotes. The old syntax has been deprecated and will 
+be removed in 1.5, until then, using the old syntax will log a warning.
+
+DIH: The Context API has been changed in a non back-compatible way. In 
+particular, the Context.currentProcess() method now returns a String 
+describing the type of the current import process instead of an int. 
+Similarily, the public constants in Context viz. FULL_DUMP, DELTA_DUMP and 
+FIND_DELTA are changed to a String type. See SOLR-969 for details.
+
+DIH: The EntityProcessor API has been simplified by moving logic for applying 
+transformers and handling multi-row outputs from Transformers into an 
+EntityProcessorWrapper class. The EntityProcessor#destroy is now called once 
+per parent-row at the end of row (end of data). A new method 
+EntityProcessor#close is added which is called at the end of import.
+
+DIH: In Solr 1.3, if the last_index_time was not available (first import) and 
+a delta-import was requested, a full-import was run instead. This is no longer 
+the case. In Solr 1.4 delta import is run with last_index_time as the epoch 
+date (January 1, 1970, 00:00:00 GMT) if last_index_time is not available.
 
 Versions of Major Components
 ----------------------------
@@ -2761,6 +3169,146 @@ New Features
 84. SOLR-1449: Add <lib> elements to solrconfig.xml to specifying additional
     classpath directories and regular expressions. (hossman via yonik)
 
+85. SOLR-1128: Added metadata output to extraction request handler "extract 
+    only" option.  (gsingers)
+
+86. SOLR-1274: Added text serialization output for extractOnly 
+    (Peter Wolanin, gsingers)  
+
+87. SOLR-768: DIH: Set last_index_time variable in full-import command.
+    (Wojtek Piaseczny, Noble Paul via shalin)
+
+88. SOLR-811: Allow a "deltaImportQuery" attribute in SqlEntityProcessor 
+    which is used for delta imports instead of DataImportHandler manipulating 
+    the SQL itself. (Noble Paul via shalin)
+
+89. SOLR-842:  Better error handling in DataImportHandler with options to 
+    abort, skip and continue imports. (Noble Paul, shalin)
+
+90. SOLR-833: DIH: A DataSource to read data from a field as a reader. This 
+    can be used, for example, to read XMLs residing as CLOBs or BLOBs in 
+    databases. (Noble Paul via shalin)
+
+91. SOLR-887: A DIH Transformer to strip HTML tags. (Ahmed Hammad via shalin)
+
+92. SOLR-886: DataImportHandler should rollback when an import fails or it is 
+    aborted (shalin)
+
+93. SOLR-891: A DIH Transformer to read strings from Clob type. 
+    (Noble Paul via shalin)
+
+94. SOLR-812: Configurable JDBC settings in JdbcDataSource including optimized 
+    defaults for read only mode. (David Smiley, Glen Newton, shalin)
+
+95. SOLR-910: Add a few utility commands to the DIH admin page such as full 
+    import, delta import, status, reload config. (Ahmed Hammad via shalin)
+
+96. SOLR-938: Add event listener API for DIH import start and end.
+    (Kay Kay, Noble Paul via shalin)
+
+97. SOLR-801: DIH: Add support for configurable pre-import and post-import 
+    delete query per root-entity. (Noble Paul via shalin)
+
+98. SOLR-988: Add a new scope for session data stored in Context to store 
+    objects across imports. (Noble Paul via shalin)
+
+99. SOLR-980: A PlainTextEntityProcessor which can read from any 
+    DataSource<Reader> and output a String. 
+    (Nathan Adams, Noble Paul via shalin)
+
+100.SOLR-1003: XPathEntityprocessor must allow slurping all text from a given 
+    xml node and its children. (Noble Paul via shalin)
+
+101.SOLR-1001: Allow variables in various attributes of RegexTransformer, 
+    HTMLStripTransformer and NumberFormatTransformer.
+    (Fergus McMenemie, Noble Paul, shalin)
+
+102.SOLR-989: DIH: Expose running statistics from the Context API.
+    (Noble Paul, shalin)
+
+103.SOLR-996: DIH: Expose Context to Evaluators. (Noble Paul, shalin)
+
+104.SOLR-783: DIH: Enhance delta-imports by maintaining separate 
+    last_index_time for each entity. (Jon Baer, Noble Paul via shalin)
+
+105.SOLR-1033: Current entity's namespace is made available to all DIH 
+    Transformers. This allows one to use an output field of TemplateTransformer
+    in other transformers, among other things.
+    (Fergus McMenemie, Noble Paul via shalin)
+
+106.SOLR-1066: New methods in DIH Context to expose Script details. 
+    ScriptTransformer changed to read scripts through the new API methods.
+    (Noble Paul via shalin)
+
+107.SOLR-1062: A DIH LogTransformer which can log data in a given template 
+    format. (Jon Baer, Noble Paul via shalin)
+
+108.SOLR-1065: A DIH ContentStreamDataSource which can accept HTTP POST data 
+    in a content stream. This can be used to push data to Solr instead of 
+    just pulling it from DB/Files/URLs. (Noble Paul via shalin)
+
+109.SOLR-1061: Improve DIH RegexTransformer to create multiple columns from 
+    regex groups. (Noble Paul via shalin)
+
+110.SOLR-1059: Special DIH flags introduced for deleting documents by query or 
+    id, skipping rows and stopping further transforms. Use $deleteDocById, 
+    $deleteDocByQuery for deleting by id and query respectively.  Use $skipRow 
+    to skip the current row but continue with the document. Use $stopTransform 
+    to stop further transformers. New methods are introduced in Context for 
+    deleting by id and query. (Noble Paul, Fergus McMenemie, shalin)
+
+111.SOLR-1076: JdbcDataSource should resolve DIH variables in all its 
+    configuration parameters. (shalin)
+
+112.SOLR-1055: Make DIH JdbcDataSource easily extensible by making the 
+    createConnectionFactory method protected and return a 
+    Callable<Connection> object. (Noble Paul, shalin)
+
+113.SOLR-1058: DIH: JdbcDataSource can lookup javax.sql.DataSource using JNDI. 
+    Use a jndiName attribute to specify the location of the data source.
+    (Jason Shepherd, Noble Paul via shalin)
+
+114.SOLR-1083: A DIH Evaluator for escaping query characters. 
+    (Noble Paul, shalin)
+
+115.SOLR-934: A MailEntityProcessor to enable indexing mails from 
+    POP/IMAP sources into a solr index. (Preetam Rao, shalin)
+
+116.SOLR-1060: A DIH LineEntityProcessor which can stream lines of text from a 
+    given file to be indexed directly or for processing with transformers and
+    child entities.
+    (Fergus McMenemie, Noble Paul, shalin)
+
+117.SOLR-1127: Add support for DIH field name to be templatized.
+    (Noble Paul, shalin)
+
+118.SOLR-1092: Added a new DIH command named 'import' which does not 
+    automatically clean the index. This is useful and more appropriate when one
+    needs to import only some of the entities.
+    (Noble Paul via shalin)
+              
+119.SOLR-1153: DIH 'deltaImportQuery' is honored on child entities as well 
+    (noble) 
+
+120.SOLR-1230: Enhanced dataimport.jsp to work with all DataImportHandler 
+    request handler configurations, rather than just a hardcoded /dataimport 
+    handler. (ehatcher)
+              
+121.SOLR-1235: disallow period (.) in DIH entity names (noble)
+
+122.SOLR-1234: Multiple DIH does not work because all of them write to 
+    dataimport.properties. Use the handler name as the properties file name 
+    (noble)
+
+123.SOLR-1348: Support binary field type in convertType logic in DIH 
+    JdbcDataSource (shalin)
+
+124.SOLR-1406: DIH: Make FileDataSource and FileListEntityProcessor to be more 
+    extensible (Luke Forehand, shalin)
+
+125.SOLR-1437: DIH: XPathEntityProcessor can deal with xpath syntaxes such as 
+    //tagname , /root//tagname (Fergus McMenemie via noble)
+
 
 Optimizations
 ----------------------
@@ -2818,6 +3366,21 @@ Optimizations
 
 17. SOLR-1296: Enables setting IndexReader's termInfosIndexDivisor via a new attribute to StandardIndexReaderFactory.  Enables
     setting termIndexInterval to IndexWriter via SolrIndexConfig. (Jason Rutherglen, hossman, gsingers)
+
+18. SOLR-846: DIH: Reduce memory consumption during delta import by removing 
+    keys when used (Ricky Leung, Noble Paul via shalin)
+
+19. SOLR-974: DataImportHandler skips commit if no data has been updated.
+    (Wojtek Piaseczny, shalin)
+
+20. SOLR-1004: DIH: Check for abort more frequently during delta-imports.
+    (Marc Sturlese, shalin)
+
+21. SOLR-1098: DIH DateFormatTransformer can cache the format objects.
+    (Noble Paul via shalin)
+
+22. SOLR-1465: Replaced string concatenations with StringBuilder append 
+    calls in DIH XPathRecordReader. (Mark Miller, shalin)
 
 Bug Fixes
 ----------------------
@@ -3036,6 +3599,103 @@ Bug Fixes
     caused an error to be returned, although the deletes were
     still executed.  (asmodean via yonik)
 
+76. SOLR-800: Deep copy collections to avoid ConcurrentModificationException 
+    in XPathEntityprocessor while streaming
+    (Kyle Morrison, Noble Paul via shalin)
+
+77. SOLR-823: Request parameter variables ${dataimporter.request.xxx} are not 
+    resolved in DIH (Mck SembWever, Noble Paul, shalin)
+
+78. SOLR-728: Add synchronization to avoid race condition of multiple DIH 
+    imports working concurrently (Walter Ferrara, shalin)
+
+79. SOLR-742: Add ability to create dynamic fields with custom 
+    DataImportHandler transformers (Wojtek Piaseczny, Noble Paul, shalin)
+
+80. SOLR-832: Rows parameter is not honored in DIH non-debug mode and can 
+    abort a running import in debug mode. (Akshay Ukey, shalin)
+
+81. SOLR-838: The DIH VariableResolver obtained from a DataSource's context 
+    does not have current data. (Noble Paul via shalin)
+
+82. SOLR-864: DataImportHandler does not catch and log Errors (shalin)
+
+83. SOLR-873: Fix case-sensitive field names and columns (Jon Baer, shalin)
+
+84. SOLR-893: Unable to delete documents via SQL and deletedPkQuery with 
+    deltaimport (Dan Rosher via shalin)
+
+85. SOLR-888: DIH DateFormatTransformer cannot convert non-string type
+    (Amit Nithian via shalin)
+
+86. SOLR-841: DataImportHandler should throw exception if a field does not 
+    have column attribute (Michael Henson, shalin)
+
+87. SOLR-884: CachedSqlEntityProcessor should check if the cache key is 
+    present in the query results (Noble Paul via shalin)
+
+88. SOLR-985: Fix thread-safety issue with DIH TemplateString for concurrent 
+    imports with multiple cores. (Ryuuichi Kumai via shalin)
+
+89. SOLR-999: DIH XPathRecordReader fails on XMLs with nodes mixed with 
+    CDATA content. (Fergus McMenemie, Noble Paul via shalin)
+
+90. SOLR-1000: DIH FileListEntityProcessor should not apply fileName filter to 
+    directory names. (Fergus McMenemie via shalin)
+
+91. SOLR-1009: Repeated column names result in duplicate values. 
+    (Fergus McMenemie, Noble Paul via shalin)
+
+92. SOLR-1017: Fix DIH thread-safety issue with last_index_time for concurrent 
+    imports in multiple cores due to unsafe usage of SimpleDateFormat by 
+    multiple threads. (Ryuuichi Kumai via shalin)
+
+93. SOLR-1024: Calling abort on DataImportHandler import commits data instead 
+    of calling rollback. (shalin)
+
+94. SOLR-1037: DIH should not add null values in a row returned by 
+    EntityProcessor to documents. (shalin)
+
+95. SOLR-1040: DIH XPathEntityProcessor fails with an xpath like 
+    /feed/entry/link[@type='text/html']/@href (Noble Paul via shalin)
+
+96. SOLR-1042: Fix memory leak in DIH by making TemplateString non-static 
+    member in VariableResolverImpl (Ryuuichi Kumai via shalin)
+
+97. SOLR-1053: IndexOutOfBoundsException in DIH SolrWriter.getResourceAsString 
+    when size of data-config.xml is a multiple of 1024 bytes.
+    (Herb Jiang via shalin)
+
+98. SOLR-1077: IndexOutOfBoundsException with useSolrAddSchema in DIH 
+    XPathEntityProcessor. (Sam Keen, Noble Paul via shalin)
+
+99. SOLR-1080: DIH RegexTransformer should not replace if regex is not matched.
+    (Noble Paul, Fergus McMenemie via shalin)
+
+100.SOLR-1090: DataImportHandler should load the data-config.xml using UTF-8 
+    encoding. (Rui Pereira, shalin)
+
+101.SOLR-1146: ConcurrentModificationException in DataImporter.getStatusMessages
+    (Walter Ferrara, Noble Paul via shalin)
+
+102.SOLR-1229: Fixes for DIH deletedPkQuery, particularly when using 
+    transformed Solr unique id's
+    (Lance Norskog, Noble Paul via ehatcher)
+              
+103.SOLR-1286: Fix the IH commit parameter always defaulting to "true" even 
+    if "false" is explicitly passed in. (Jay Hill, Noble Paul via ehatcher)
+            
+104.SOLR-1323: Reset XPathEntityProcessor's $hasMore/$nextUrl when fetching 
+    next URL (noble, ehatcher)
+
+105.SOLR-1450: DIH: Jdbc connection properties such as batchSize are not 
+    applied if the driver jar is placed in solr_home/lib.
+    (Steve Sun via shalin)
+
+106.SOLR-1474: DIH Delta-import should run even if last_index_time is not set.
+    (shalin)
+
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
@@ -3175,6 +3835,63 @@ Other Changes
 
 50. SOLR-1357 SolrInputDocument cannot process dynamic fields (Lars Grote via noble)
 
+51. SOLR-1075: Upgrade to Tika 0.3.  See http://www.apache.org/dist/lucene/tika/CHANGES-0.3.txt (gsingers)
+
+52. SOLR-1310: Upgrade to Tika 0.4. Note there are some differences in 
+    detecting Languages now in extracting request handler.
+    See http://www.lucidimagination.com/search/document/d6f1899a85b2a45c/vote_apache_tika_0_4_release_candidate_2#d6f1899a85b2a45c
+    for discussion on language detection.
+    See http://www.apache.org/dist/lucene/tika/CHANGES-0.4.txt. (gsingers)
+
+53. SOLR-782: DIH: Refactored SolrWriter to make it a concrete class and 
+    removed wrappers over SolrInputDocument.  Refactored to load Evaluators 
+    lazily. Removed multiple document nodes in the configuration xml. Removed 
+    support for 'default' variables, they are automatically available as 
+    request parameters. (Noble Paul via shalin)
+
+54. SOLR-964: DIH: XPathEntityProcessor now ignores DTD validations
+    (Fergus McMenemie, Noble Paul via shalin)
+
+55. SOLR-1029: DIH: Standardize Evaluator parameter parsing and added helper 
+    functions for parsing all evaluator parameters in a standard way.
+    (Noble Paul, shalin)
+
+56. SOLR-1081: Change DIH EventListener to be an interface so that components 
+    such as an EntityProcessor or a Transformer can act as an event listener.
+    (Noble Paul, shalin)
+
+57. SOLR-1027: DIH: Alias the 'dataimporter' namespace to a shorter name 'dih'.
+    (Noble Paul via shalin)
+
+58. SOLR-1084: Better error reporting when DIH entity name is a reserved word 
+    and data-config.xml root node is not <dataConfig>.
+    (Noble Paul via shalin)
+
+59. SOLR-1087: Deprecate 'where' attribute in CachedSqlEntityProcessor in 
+    favor of cacheKey and cacheLookup. (Noble Paul via shalin)
+
+60. SOLR-969: Change the FULL_DUMP, DELTA_DUMP, FIND_DELTA constants in DIH 
+    Context to String.  Change Context.currentProcess() to return a string 
+    instead of an integer.  (Kay Kay, Noble Paul, shalin)
+
+61. SOLR-1120: Simplified DIH EntityProcessor API by moving logic for applying 
+    transformers and handling multi-row outputs from Transformers into an 
+    EntityProcessorWrapper class. The behavior of the method 
+    EntityProcessor#destroy has been modified to be called once per parent-row 
+    at the end of row. A new method EntityProcessor#close is added which is 
+    called at the end of import. A new method 
+    Context#getResolvedEntityAttribute is added which returns the resolved 
+    value of an entity's attribute. Introduced a DocWrapper which takes care 
+    of maintaining document level session variables.
+    (Noble Paul, shalin)
+
+62. SOLR-1265: Add DIH variable resolving for URLDataSource properties like 
+    baseUrl.  (Chris Eldredge via ehatcher)
+
+63. SOLR-1269: Better error messages from DIH JdbcDataSource when JDBC Driver 
+    name or SQL is incorrect. (ehatcher, shalin)
+
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
@@ -3199,6 +3916,10 @@ Documentation
     (Kay Kay via hossman)
 
  3. SOLR-1409: Added Solr Powered By Logos    
+
+ 4. SOLR-1369: Add HSQLDB Jar to example-DIH, unzip database and update 
+    instructions.
+
 
 ================== Release 1.3.0 ==================
 
@@ -3545,7 +4266,10 @@ New Features
 71. SOLR-1129 : Support binding dynamic fields to beans in SolrJ (Avlesh Singh , noble)
 
 72. SOLR-920 : Cache and reuse IndexSchema . A new attribute added in solr.xml called 'shareSchema' (noble)
-    
+
+73. SOLR-700: DIH: Allow configurable locales through a locale attribute in 
+    fields for NumberFormatTransformer. (Stefan Oestreicher, shalin)
+
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This
     removes the maxBufferedDeletes parameter added by SOLR-310 as Lucene
@@ -3759,6 +4483,18 @@ Bug Fixes
 49. SOLR-589: Improved handling of badly formated query strings (Sean Timm via Otis Gospodnetic)
 
 50. SOLR-749: Allow QParser and ValueSourceParsers to be extended with same name (hossman, gsingers)
+
+51. SOLR-704: DIH NumberFormatTransformer can silently ignore part of the 
+    string while parsing. Now it tries to use the complete string for parsing. 
+    Failure to do so will result in an exception.
+    (Stefan Oestreicher via shalin)
+
+52. SOLR-729: DIH Context.getDataSource(String) gives current entity's 
+    DataSource instance regardless of argument. (Noble Paul, shalin)
+
+53. SOLR-726: DIH: Jdbc Drivers and DataSources fail to load if placed in 
+    multicore sharedLib or core's lib directory.
+    (Walter Ferrara, Noble Paul, shalin)
 
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

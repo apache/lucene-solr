@@ -128,6 +128,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         // check if the number of calls of seek() does not exceed the number of hits
         assertTrue(this.seeksCounter > 0);
         assertTrue("seeksCounter=" + this.seeksCounter + " numHits=" + numHits, this.seeksCounter <= numHits + 1);
+        searcher.getIndexReader().close();
     }
  
     public void testLazySkipping() throws IOException {
@@ -157,8 +158,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
                                                                    MultiFields.getLiveDocs(reader),
                                                                    this.field,
-                                                                   new BytesRef("b"),
-                                                                   false);
+                                                                   new BytesRef("b"));
 
         for (int i = 0; i < 10; i++) {
             tp.nextDoc();
@@ -169,8 +169,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         tp = MultiFields.getTermPositionsEnum(reader,
                                               MultiFields.getLiveDocs(reader),
                                               this.field,
-                                              new BytesRef("a"),
-                                              false);
+                                              new BytesRef("a"));
 
         for (int i = 0; i < 10; i++) {
             tp.nextDoc();

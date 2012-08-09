@@ -57,30 +57,6 @@ enumeration APIs.  Here are the major changes:
           ...
         }
 
-    The bulk read API has also changed.  Instead of this:
-
-        int[] docs = new int[256];
-        int[] freqs = new int[256];
-
-        while(true) {
-          int count = td.read(docs, freqs)
-          if (count == 0) {
-            break;
-          }
-          // use docs[i], freqs[i]
-        }
-
-    do this:
-
-        DocsEnum.BulkReadResult bulk = td.getBulkResult();
-        while(true) {
-          int count = td.read();
-          if (count == 0) {
-            break;
-          }
-          // use bulk.docs.ints[i] and bulk.freqs.ints[i]
-        }
-
   * TermPositions is renamed to DocsAndPositionsEnum, and no longer
     extends the docs only enumerator (DocsEnum).
 
@@ -170,7 +146,7 @@ enumeration APIs.  Here are the major changes:
         Bits liveDocs = reader.getLiveDocs();
         DocsEnum docsEnum = null;
 
-        docsEnum = termsEnum.docs(liveDocs, docsEnum);
+        docsEnum = termsEnum.docs(liveDocs, docsEnum, needsFreqs);
 
     You can pass in a prior DocsEnum and it will be reused if possible.
 
@@ -187,7 +163,7 @@ enumeration APIs.  Here are the major changes:
 
         String field;
         BytesRef text;
-        DocsEnum docsEnum = reader.termDocsEnum(reader.getLiveDocs(), field, text);
+        DocsEnum docsEnum = reader.termDocsEnum(reader.getLiveDocs(), field, text, needsFreqs);
 
     Likewise for DocsAndPositionsEnum.
 
@@ -340,11 +316,12 @@ an AtomicReader. Note: using "atomicity emulators" can cause serious
 slowdowns due to the need to merge terms, postings, DocValues, and 
 FieldCache, use them with care! 
 
-## LUCENE-2413: Analyzer package changes
+## LUCENE-2413,LUCENE-3396: Analyzer package changes
 
 Lucene's core and contrib analyzers, along with Solr's analyzers,
 were consolidated into lucene/analysis. During the refactoring some
-package names have changed:
+package names have changed, and ReusableAnalyzerBase was renamed to
+Analyzer:
 
   - o.a.l.analysis.KeywordAnalyzer -> o.a.l.analysis.core.KeywordAnalyzer
   - o.a.l.analysis.KeywordTokenizer -> o.a.l.analysis.core.KeywordTokenizer
@@ -369,7 +346,7 @@ package names have changed:
   - o.a.l.analysis.NormalizeCharMap -> o.a.l.analysis.charfilter.NormalizeCharMap
   - o.a.l.analysis.CharArraySet -> o.a.l.analysis.util.CharArraySet
   - o.a.l.analysis.CharArrayMap -> o.a.l.analysis.util.CharArrayMap
-  - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
+  - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.Analyzer
   - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
   - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
   - o.a.l.analysis.CharTokenizer -> o.a.l.analysis.util.CharTokenizer

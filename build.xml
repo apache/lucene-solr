@@ -176,22 +176,57 @@
     </subant>
   </target>
 
-  <target name="jar-checksums" depends="resolve" description="Recompute SHA1 checksums for all JAR files.">
-    <delete>
-      <fileset dir="${basedir}">
-        <include name="**/*.jar.sha1"/>
-      </fileset>
-    </delete>
+  <target name="jar-checksums" description="Recompute SHA1 checksums for all JAR files.">
+    <sequential>
+      <subant target="jar-checksums" inheritall="false" failonerror="true">
+        <fileset dir="lucene" includes="build.xml" />
+        <fileset dir="solr" includes="build.xml" />
+      </subant>
+    </sequential>
+  </target>
 
-    <checksum algorithm="SHA1" fileext=".sha1">
-      <fileset dir="${basedir}">
-        <include name="**/*.jar"/>
-      </fileset>
-    </checksum>
+  <property name="python32.exe" value="python3.2" />
+  <property name="JAVA6_HOME" value="/usr/local/jdk1.6.0_27"/>
+  <property name="JAVA7_HOME" value="/usr/local/jdk1.7.0_01"/>
+  <property name="fakeRelease" value="lucene/build/fakeRelease"/>
+  <property name="fakeReleaseTmp" value="lucene/build/fakeReleaseTmp"/>
+  <property name="fakeReleaseVersion" value="5.0"/> <!-- *not* -SNAPSHOT, the real version -->
 
-    <fixcrlf 
-      srcdir="${basedir}"
-      includes="**/*.jar.sha1"
-      eol="lf" fixlast="true" encoding="US-ASCII" />
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it." depends="clean">
+   <sequential>
+     <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
+       <fileset dir="lucene" includes="build.xml" />
+       <fileset dir="solr" includes="build.xml" />
+       <property name="version" value="${fakeReleaseVersion}" />
+     </subant>
+     <delete dir="${fakeRelease}"/>
+     <delete dir="${fakeReleaseTmp}"/>
+     <mkdir dir="${fakeRelease}"/>
+     <copy todir="${fakeRelease}/lucene">
+       <fileset dir="lucene/dist"/>
+     </copy>
+     <copy todir="${fakeRelease}/lucene/changes">
+       <fileset dir="lucene/build/docs/changes"/>
+     </copy>
+     <get src="http://people.apache.org/keys/group/lucene.asc" 
+          dest="${fakeRelease}/lucene/KEYS"/>
+     <copy todir="${fakeRelease}/solr">
+       <fileset dir="solr/package"/>
+     </copy>
+     <copy file="${fakeRelease}/lucene/KEYS" todir="${fakeRelease}/solr"/>
+     <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
+     <exec executable="${python32.exe}" failonerror="true">
+       <arg value="-u"/>
+       <arg value="dev-tools/scripts/smokeTestRelease.py"/>
+       <arg value="${fakeRelease.uri}"/>
+       <arg value="${fakeReleaseVersion}"/>
+       <arg value="${fakeReleaseTmp}"/>
+       <arg value="false"/>
+       <env key="JAVA6_HOME" value="${JAVA6_HOME}"/>
+       <env key="JAVA7_HOME" value="${JAVA7_HOME}"/>
+     </exec>
+     <delete dir="${fakeRelease}"/>
+     <delete dir="${fakeReleaseTmp}"/>
+   </sequential>
   </target>
 </project>

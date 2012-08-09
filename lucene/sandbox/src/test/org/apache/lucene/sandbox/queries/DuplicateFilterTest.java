@@ -140,7 +140,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
                                    new BytesRef(url),
                                    MultiFields.getLiveDocs(reader),
                                    null,
-                                   false);
+                                   0);
 
       int lastDoc = 0;
       while (td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -164,7 +164,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
                                    new BytesRef(url),
                                    MultiFields.getLiveDocs(reader),
                                    null,
-                                   false);
+                                   0);
 
       int lastDoc = 0;
       td.nextDoc();

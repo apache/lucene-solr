@@ -103,8 +103,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     DocsAndPositionsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
                                                                 MultiFields.getLiveDocs(searcher.getIndexReader()),
                                                                 "field",
-                                                                new BytesRef("1"),
-                                                                false);
+                                                                new BytesRef("1"));
     pos.nextDoc();
     // first token should be at position 0
     assertEquals(0, pos.nextPosition());
@@ -112,8 +111,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
                                            MultiFields.getLiveDocs(searcher.getIndexReader()),
                                            "field",
-                                           new BytesRef("2"),
-                                           false);
+                                           new BytesRef("2"));
     pos.nextDoc();
     // second token should be at position 2
     assertEquals(2, pos.nextPosition());
@@ -208,7 +206,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockPayloadAnalyzer());
     Document doc = new Document();
     doc.add(new TextField("content", new StringReader(
-        "a a b c d e a f g h i j a b k k"), Field.Store.NO));
+        "a a b c d e a f g h i j a b k k")));
     writer.addDocument(doc);
 
     final IndexReader readerFromWriter = writer.getReader();
@@ -216,8 +214,7 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     DocsAndPositionsEnum tp = r.termPositionsEnum(r.getLiveDocs(),
                                                   "content",
-                                                  new BytesRef("a"),
-                                                  false);
+                                                  new BytesRef("a"));
     
     int count = 0;
     assertTrue(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

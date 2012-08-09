@@ -141,9 +141,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
                  [vV][aA][rR]                     )
 
 
-%include src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex
+%include HTMLCharacterEntities.jflex
 
-%include src/java/org/apache/lucene/analysis/charfilter/HTMLStripCharFilter.SUPPLEMENTARY.jflex-macro
+%include HTMLStripCharFilter.SUPPLEMENTARY.jflex-macro
 
 %{
   private static final int INITIAL_INPUT_SEGMENT_SIZE = 1024;

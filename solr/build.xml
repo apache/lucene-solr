@@ -402,11 +402,11 @@
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt example/**
                              client/README.txt client/ruby/solr-ruby/** contrib/**/lib/**
-                             contrib/**/README.txt contrib/**/CHANGES.txt"
+                             contrib/**/README.txt licenses/**"
                   excludes="lib/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
-                            **/*pom.xml.template **/*.sha1" />
+                            **/*pom.xml.template" />
       <tarfileset dir="${dest}/contrib-lucene-libs-to-package"
                   prefix="${fullnamever}"
                   includes="**" />
@@ -761,6 +761,10 @@
      <delete>
        <fileset dir="." includes="**/*.jar"/>
      </delete>
+  </target>
+
+  <target name="jar-checksums" depends="clean-jars,resolve">
+    <jar-checksum-macro srcdir="${common-solr.dir}" dstdir="${common-solr.dir}/licenses"/>
   </target>
 
 </project>

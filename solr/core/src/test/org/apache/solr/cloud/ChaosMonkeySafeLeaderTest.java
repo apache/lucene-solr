@@ -22,6 +22,9 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -29,13 +32,13 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 @Ignore("SOLR-3126")
-public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
+public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final int BASE_RUN_LENGTH = 120000;
 
   @BeforeClass
   public static void beforeSuperClass() {
-    
+
   }
   
   @AfterClass
@@ -77,9 +80,10 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    // we cannot do delete by query
-    // as it's not supported for recovery
-    //del("*:*");
+    // randomly turn on 5 seconds 'soft' commit
+    randomlyEnableAutoSoftCommit();
+
+    del("*:*");
     
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
     int threadCount = 2;
@@ -115,6 +119,24 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
     checkShardConsistency(true, true);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
+  }
+
+  private void randomlyEnableAutoSoftCommit() {
+    if (r.nextBoolean()) {
+      log.info("Turning on auto soft commit");
+      for (CloudJettyRunner jetty : shardToJetty.get("shard1")) {
+        SolrCore core = ((SolrDispatchFilter) jetty.jetty.getDispatchFilter()
+            .getFilter()).getCores().getCore("collection1");
+        try {
+          ((DirectUpdateHandler2) core.getUpdateHandler()).getCommitTracker()
+              .setTimeUpperBound(5000);
+        } finally {
+          core.close();
+        }
+      }
+    } else {
+      log.info("Not turning on auto soft commit");
+    }
   }
   
   // skip the randoms - they can deadlock...

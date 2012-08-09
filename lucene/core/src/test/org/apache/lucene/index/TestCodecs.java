@@ -275,7 +275,7 @@ public class TestCodecs extends LuceneTestCase {
       // make sure it properly fully resets (rewinds) its
       // internal state:
       for(int iter=0;iter<2;iter++) {
-        docsEnum = _TestUtil.docs(random(), termsEnum, null,  docsEnum, false);
+        docsEnum = _TestUtil.docs(random(), termsEnum, null,  docsEnum, 0);
         assertEquals(terms[i].docs[0], docsEnum.nextDoc());
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
       }
@@ -472,9 +472,9 @@ public class TestCodecs extends LuceneTestCase {
         assertEquals(status, TermsEnum.SeekStatus.FOUND);
         assertEquals(term.docs.length, termsEnum.docFreq());
         if (field.omitTF) {
-          this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random(), termsEnum, null, null, false), false);
+          this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random(), termsEnum, null, null, 0), false);
         } else {
-          this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null, false), true);
+          this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
         }
 
         // Test random seek by ord:
@@ -492,9 +492,9 @@ public class TestCodecs extends LuceneTestCase {
           assertTrue(termsEnum.term().bytesEquals(new BytesRef(term.text2)));
           assertEquals(term.docs.length, termsEnum.docFreq());
           if (field.omitTF) {
-            this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random(), termsEnum, null, null, false), false);
+            this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random(), termsEnum, null, null, 0), false);
           } else {
-            this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null, false), true);
+            this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
           }
         }
 
@@ -546,16 +546,16 @@ public class TestCodecs extends LuceneTestCase {
             final DocsEnum docsAndFreqs;
             final DocsAndPositionsEnum postings;
             if (!field.omitTF) {
-              postings = termsEnum.docsAndPositions(null, null, false);
+              postings = termsEnum.docsAndPositions(null, null);
               if (postings != null) {
                 docs = docsAndFreqs = postings;
               } else {
-                docs = docsAndFreqs = _TestUtil.docs(random(), termsEnum, null, null, true);
+                docs = docsAndFreqs = _TestUtil.docs(random(), termsEnum, null, null, DocsEnum.FLAG_FREQS);
               }
             } else {
               postings = null;
               docsAndFreqs = null;
-              docs = _TestUtil.docs(random(), termsEnum, null, null, false);
+              docs = _TestUtil.docs(random(), termsEnum, null, null, 0);
             }
             assertNotNull(docs);
             int upto2 = -1;

@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.ResourceAsStreamResourceLoader;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 
 import java.util.Map;
@@ -32,7 +32,7 @@ import java.util.HashMap;
 public class TestStopFilterFactory extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
-    ResourceLoader loader = new ResourceAsStreamResourceLoader(getClass());
+    ResourceLoader loader = new ClasspathResourceLoader(getClass());
     assertTrue("loader is null and it shouldn't be", loader != null);
     StopFilterFactory factory = new StopFilterFactory();
     Map<String, String> args = new HashMap<String, String>();

@@ -115,7 +115,7 @@ public class TestPostingsFormat extends LuceneTestCase {
     int endOffset;
   }
 
-  private static class Posting implements Comparable<Posting>{
+  private static class Posting implements Comparable<Posting> {
     int docID;
     List<Position> positions;
 
@@ -179,24 +179,26 @@ public class TestPostingsFormat extends LuceneTestCase {
         seenTerms.add(term);
 
         int numDocs;
-        if (random().nextInt(10) == 3 && numBigTerms < 3) {
+        if (random().nextInt(10) == 3 && numBigTerms < 2) {
           // 10% of the time make a highish freq term:
-          numDocs = _TestUtil.nextInt(random(), 50000, 70000);
+          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 50000, 70000);
           numBigTerms++;
           term = "big_" + term;
-        } else if (random().nextInt(10) == 3 && numMediumTerms < 10) {
+        } else if (random().nextInt(10) == 3 && numMediumTerms < 5) {
           // 10% of the time make a medium freq term:
           // TODO not high enough to test level 1 skipping:
-          numDocs = atLeast(3000);
+          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 3000, 6000);
           numMediumTerms++;
           term = "medium_" + term;
-        } else {
+        } else if (random().nextBoolean()) {
           // Low freq term:
-          numDocs = _TestUtil.nextInt(random(), 1, 40);
+          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 1, 40);
           term = "low_" + term;
+        } else {
+          // Very low freq term (don't multiply by RANDOM_MULTIPLIER):
+          numDocs = _TestUtil.nextInt(random(), 1, 3);
+          term = "verylow_" + term;
         }
-
-        numDocs *= RANDOM_MULTIPLIER;
 
         List<Posting> termPostings = new ArrayList<Posting>();
         postings.put(new BytesRef(term), termPostings);
@@ -518,7 +520,7 @@ public class TestPostingsFormat extends LuceneTestCase {
       maxIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     boolean doCheckOffsets = allowOffsets && random().nextInt(3) <= 2;
 
-    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads();
+    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && random().nextInt(3) <= 2;
 
     DocsEnum prevDocsEnum = null;
 
@@ -528,15 +530,24 @@ public class TestPostingsFormat extends LuceneTestCase {
     if (!doCheckPositions) {
       if (allowPositions && random().nextInt(10) == 7) {
         // 10% of the time, even though we will not check positions, pull a DocsAndPositions enum
-        if (VERBOSE) {
-          System.out.println("  get DocsAndPositionsEnum (but we won't check positions)");
-        }
         
         if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
           prevDocsEnum = threadState.reuseDocsAndPositionsEnum;
         }
 
-        threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, false);
+        int flags = 0;
+        if (random().nextBoolean()) {
+          flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
+        }
+        if (random().nextBoolean()) {
+          flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
+        }
+
+        if (VERBOSE) {
+          System.out.println("  get DocsAndPositionsEnum (but we won't check positions) flags=" + flags);
+        }
+
+        threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, flags);
         docsEnum = threadState.reuseDocsAndPositionsEnum;
         docsAndPositionsEnum = threadState.reuseDocsAndPositionsEnum;
       } else {
@@ -546,18 +557,28 @@ public class TestPostingsFormat extends LuceneTestCase {
         if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
           prevDocsEnum = threadState.reuseDocsEnum;
         }
-        threadState.reuseDocsEnum = termsEnum.docs(liveDocs, prevDocsEnum, doCheckFreqs);
+        threadState.reuseDocsEnum = termsEnum.docs(liveDocs, prevDocsEnum, doCheckFreqs ? DocsEnum.FLAG_FREQS : 0);
         docsEnum = threadState.reuseDocsEnum;
         docsAndPositionsEnum = null;
       }
     } else {
-      if (VERBOSE) {
-        System.out.println("  get DocsAndPositionsEnum");
-      }
       if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
         prevDocsEnum = threadState.reuseDocsAndPositionsEnum;
       }
-      threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, doCheckOffsets);
+
+      int flags = 0;
+      if (doCheckOffsets || random().nextInt(3) == 1) {
+        flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
+      }
+      if (doCheckPayloads|| random().nextInt(3) == 1) {
+        flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
+      }
+
+      if (VERBOSE) {
+        System.out.println("  get DocsAndPositionsEnum flags=" + flags);
+      }
+
+      threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, flags);
       docsEnum = threadState.reuseDocsAndPositionsEnum;
       docsAndPositionsEnum = threadState.reuseDocsAndPositionsEnum;
     }

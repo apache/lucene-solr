@@ -152,7 +152,7 @@ public class ContextImpl extends Context {
       }
     } else if (SCOPE_SOLR_CORE.equals(scope)){
       if(dataImporter != null) {
-        dataImporter.getCoreScopeSession().put(name, val);
+        dataImporter.putToCoreScopeSession(name, val);
       }
     }
   }
@@ -171,7 +171,7 @@ public class ContextImpl extends Context {
       DocBuilder.DocWrapper doc = getDocument();      
       return doc == null ? null: doc.getSessionAttribute(name);
     } else if (SCOPE_SOLR_CORE.equals(scope)){
-       return dataImporter == null ? null : dataImporter.getCoreScopeSession().get(name);
+       return dataImporter == null ? null : dataImporter.getFromCoreScopeSession(name);
     }
     return null;
   }

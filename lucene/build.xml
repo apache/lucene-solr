@@ -35,10 +35,9 @@
                         MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
                         CHANGES.txt,
                         **/lib/*.jar,
-                        **/lib/*LICENSE*.txt,
-                        **/lib/*NOTICE*.txt,
+                        licenses/**,
                         */docs/,**/README*"
-              excludes="build/**,site/**"
+              excludes="build/**,site/**,tools/**"
   />
 
 
@@ -570,6 +569,10 @@
            dest="enwiki.random.lines.txt.bz2"/>
       <bunzip2 src="enwiki.random.lines.txt.bz2" dest="enwiki.random.lines.txt"/>
     </sequential>
+  </target>
+
+  <target name="jar-checksums" depends="clean-jars,resolve">
+    <jar-checksum-macro srcdir="${common.dir}" dstdir="${common.dir}/licenses"/>
   </target>
 
 </project>

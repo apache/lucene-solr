@@ -77,8 +77,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
       System.out.println("TEST: numNodes=" + numNodes + " runTimeSec=" + runTimeSec + " maxSearcherAgeSeconds=" + maxSearcherAgeSeconds);
     }
 
-    start(_TestUtil.getTempDir("TestShardSearching").toString(),
-          numNodes,
+    start(numNodes,
           runTimeSec,
           maxSearcherAgeSeconds
           );

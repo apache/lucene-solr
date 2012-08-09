@@ -25,7 +25,7 @@ import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -64,6 +64,8 @@ public class OverseerCollectionProcessor implements Runnable {
   private String adminPath;
 
   private ZkStateReader zkStateReader;
+
+  private boolean isClosed;
   
   public OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId, ShardHandler shardHandler, String adminPath) {
     this.zkStateReader = zkStateReader;
@@ -76,7 +78,7 @@ public class OverseerCollectionProcessor implements Runnable {
   @Override
   public void run() {
     log.info("Process current queue of collection creations");
-    while (amILeader()) {
+    while (amILeader() && !isClosed) {
       try {
         byte[] head = workQueue.peek(true);
         
@@ -108,6 +110,10 @@ public class OverseerCollectionProcessor implements Runnable {
     }
   }
   
+  public void close() {
+    isClosed = true;
+  }
+  
   private boolean amILeader() {
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
@@ -126,22 +132,22 @@ public class OverseerCollectionProcessor implements Runnable {
   
   private boolean processMessage(ZkNodeProps message, String operation) {
     if (CREATECOLLECTION.equals(operation)) {
-      return createCollection(zkStateReader.getCloudState(), message);
+      return createCollection(zkStateReader.getClusterState(), message);
     } else if (DELETECOLLECTION.equals(operation)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
       params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
-      return collectionCmd(zkStateReader.getCloudState(), message, params);
+      return collectionCmd(zkStateReader.getClusterState(), message, params);
     } else if (RELOADCOLLECTION.equals(operation)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
-      return collectionCmd(zkStateReader.getCloudState(), message, params);
+      return collectionCmd(zkStateReader.getClusterState(), message, params);
     }
     // unknown command, toss it from our queue
     return true;
   }
 
-  private boolean createCollection(CloudState cloudState, ZkNodeProps message) {
+  private boolean createCollection(ClusterState clusterState, ZkNodeProps message) {
     
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
@@ -176,7 +182,7 @@ public class OverseerCollectionProcessor implements Runnable {
     
     // TODO: add smarter options that look at the current number of cores per node?
     // for now we just go random
-    Set<String> nodes = cloudState.getLiveNodes();
+    Set<String> nodes = clusterState.getLiveNodes();
     List<String> nodeList = new ArrayList<String>(nodes.size());
     nodeList.addAll(nodes);
     Collections.shuffle(nodeList);
@@ -229,11 +235,11 @@ public class OverseerCollectionProcessor implements Runnable {
     return true;
   }
   
-  private boolean collectionCmd(CloudState cloudState, ZkNodeProps message, ModifiableSolrParams params) {
+  private boolean collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params) {
     log.info("Executing Collection Cmd : " + params);
     String name = message.get("name");
     
-    Map<String,Slice> slices = cloudState.getCollectionStates().get(name);
+    Map<String,Slice> slices = clusterState.getCollectionStates().get(name);
     
     if (slices == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection:" + name);
@@ -245,7 +251,7 @@ public class OverseerCollectionProcessor implements Runnable {
       Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
       for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
-        if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
+        if (clusterState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
           params.set(CoreAdminParams.CORE, node.get(ZkStateReader.CORE_NAME_PROP));
 
           String replica = node.get(ZkStateReader.BASE_URL_PROP);

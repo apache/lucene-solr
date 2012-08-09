@@ -39,4 +39,6 @@
     </updateLog>
   </updateHandler>
 
+  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
+
 </config>

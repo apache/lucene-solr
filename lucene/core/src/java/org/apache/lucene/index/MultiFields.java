@@ -122,32 +122,54 @@ public final class MultiFields extends Fields {
   }
   
   /** Returns {@link DocsEnum} for the specified field &
-   *  term.  This may return null if the term does not
-   *  exist. */
-  public static DocsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term, boolean needsFreqs) throws IOException {
+   *  term.  This will return null if the field or term does
+   *  not exist. */
+  public static DocsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
+    return getTermDocsEnum(r, liveDocs, field, term);
+  }
+  
+  /** Returns {@link DocsEnum} for the specified field &
+   *  term, with control over whether freqs are required.
+   *  Some codecs may be able to optimize their
+   *  implementation when freqs are not required.  This will
+   *  return null if the field or term does not exist.  See {@link
+   *  TermsEnum#docs(Bits,DocsEnum,int)}.*/
+  public static DocsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term, int flags) throws IOException {
     assert field != null;
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
       if (termsEnum.seekExact(term, true)) {
-        return termsEnum.docs(liveDocs, null, needsFreqs);
+        return termsEnum.docs(liveDocs, null, flags);
       }
     }
     return null;
   }
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
-   *  field & term.  This may return null if the term does
-   *  not exist or positions were not indexed. */
-  public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term, boolean needsOffsets) throws IOException {
+   *  field & term.  This will return null if the field or
+   *  term does not exist or positions were not indexed. 
+   *  @see #getTermPositionsEnum(IndexReader, Bits, String, BytesRef, int) */
+  public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
+    return getTermPositionsEnum(r, liveDocs, field, term, DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS);
+  }
+
+  /** Returns {@link DocsAndPositionsEnum} for the specified
+   *  field & term, with control over whether offsets and payloads are
+   *  required.  Some codecs may be able to optimize
+   *  their implementation when offsets and/or payloads are not
+   *  required. This will return null if the field or term does not
+   *  exist or positions were not indexed. See {@link
+   *  TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)}. */
+  public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term, int flags) throws IOException {
     assert field != null;
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
       if (termsEnum.seekExact(term, true)) {
-        return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
+        return termsEnum.docsAndPositions(liveDocs, null, flags);
       }
     }
     return null;

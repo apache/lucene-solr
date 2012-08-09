@@ -95,8 +95,7 @@ public class FieldTermStack {
     DocsAndPositionsEnum dpEnum = null;
     BytesRef text;
     
-    int numDocs = reader.numDocs() - reader.numDeletedDocs();
-    float weight = 0;
+    int numDocs = reader.maxDoc();
     
     while ((text = termsEnum.next()) != null) {
       UnicodeUtil.UTF8toUTF16(text, spare);
@@ -104,20 +103,24 @@ public class FieldTermStack {
       if (!termSet.contains(term)) {
         continue;
       }
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       if (dpEnum == null) {
         // null snippet
         return;
       }
 
       dpEnum.nextDoc();
+      
+      // For weight look here: http://lucene.apache.org/core/3_6_0/api/core/org/apache/lucene/search/DefaultSimilarity.html
+      final float weight = ( float ) ( Math.log( numDocs / ( double ) ( reader.docFreq( fieldName, text ) + 1 ) ) + 1.0 );
 
       final int freq = dpEnum.freq();
       
       for(int i = 0;i < freq;i++) {
         int pos = dpEnum.nextPosition();
-        // For weight look here: http://lucene.apache.org/core/3_6_0/api/core/org/apache/lucene/search/DefaultSimilarity.html
-        weight = ( float ) ( Math.log( numDocs / ( double ) ( reader.docFreq( fieldName, text ) + 1 ) ) + 1.0 );
+        if (dpEnum.startOffset() < 0) {
+          return; // no offsets, null snippet
+        }
         termList.add( new TermInfo( term, dpEnum.startOffset(), dpEnum.endOffset(), pos, weight ) );
       }
     }

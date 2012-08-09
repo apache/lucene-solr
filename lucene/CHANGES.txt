@@ -6,6 +6,15 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
 
+======================= Lucene 4.0.0 =======================
+
+Bug Fixes
+
+* LUCENE-4297: BooleanScorer2 would multiply the coord() factor
+  twice for conjunctions: for most users this is no problem, but
+  if you had a customized Similarity that returned something other
+  than 1 when overlap == maxOverlap (always the case for conjunctions),
+  then the score would be incorrect.  (Pascal Chollet, Robert Muir)
 
 ======================= Lucene 4.0.0-BETA =======================
 
@@ -14,6 +23,9 @@ New features
 * LUCENE-4249: Changed the explanation of the PayloadTermWeight to use the
   underlying PayloadFunction's explanation as the explanation
   for the payload score. (Scott Smerchek via Robert Muir)
+  
+* LUCENE-4069: Added BloomFilteringPostingsFormat for use with low-frequency terms
+  such as primary keys (Mark Harwood, Mike McCandless) 
   
 * LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
   iteration marks. (Robert Muir, Christian Moen)
@@ -33,6 +45,22 @@ New features
 * LUCENE-2510, LUCENE-4044: Migrated Solr's Tokenizer-, TokenFilter-, and
   CharFilterFactories to the lucene-analysis module. The API is still
   experimental.  (Chris Male, Robert Muir, Uwe Schindler)
+
+* LUCENE-4230: When pulling a DocsAndPositionsEnum you can now
+  specify whether or not you require payloads (in addition to
+  offsets); turning one or both off may allow some codec
+  implementations to optimize the enum implementation.  (Robert Muir,
+  Mike McCandless)
+
+* LUCENE-4203: Add IndexWriter.tryDeleteDocument(AtomicReader reader,
+  int docID), to attempt deletion by docID as long as the provided
+  reader is an NRT reader, and the segment has not yet been merged
+  away (Mike McCandless).
+  
+* LUCENE-4286: Added option to CJKBigramFilter to always also output
+  unigrams. This can be used for a unigram+bigram approach, or at 
+  index-time only for better support of short queries.
+  (Tom Burton-West, Robert Muir)
 
 API Changes
 
@@ -69,6 +97,23 @@ API Changes
 
 * LUCENE-3747: Support Unicode 6.1.0. (Steve Rowe)
 
+* LUCENE-3884: Moved ElisionFilter out of org.apache.lucene.analysis.fr
+  package into org.apache.lucene.analysis.util.  (Robert Muir)
+
+* LUCENE-4230: When pulling a DocsAndPositionsEnum you now pass an int
+  flags instead of the previous boolean needOffsets.  Currently
+  recognized flags are DocsAndPositionsEnum.FLAG_PAYLOADS and
+  DocsAndPositionsEnum.FLAG_OFFSETS (Robert Muir, Mike McCandless)
+
+* LUCENE-4273: When pulling a DocsEnum, you can pass an int flags
+  instead of the previous boolean needsFlags; consistent with the changes
+  for DocsAndPositionsEnum in LUCENE-4230. Currently othe only flag
+  is DocsEnum.FLAG_FREQS. (Robert Muir, Mike McCandless)
+  
+* LUCENE-3616: TextField(String, Reader, Store) was reduced to TextField(String, Reader),
+  as the Store parameter didn't make sense: if you supplied Store.YES, you would only 
+  receive an exception anyway. (Robert Muir)
+
 Optimizations
 
 * LUCENE-4171: Performance improvements to Packed64.
@@ -80,7 +125,18 @@ Optimizations
 * LUCENE-4235: Remove enforcing of Filter rewrite for NRQ queries.
   (Uwe Schindler)
 
+* LUCENE-4279: Regenerated snowball Stemmers from snowball r554,
+  making them substantially more lightweight. Behavior is unchanged. 
+  (Robert Muir)
+
+* LUCENE-4291: Reduced internal buffer size for Jflex-based tokenizers 
+  such as StandardTokenizer from 32kb to 8kb.  
+  (Raintung Li, Steven Rowe, Robert Muir)
+
 Bug Fixes
+
+* LUCENE-4109: BooleanQueries are not parsed correctly with the 
+  flexible query parser. (Karsten Rauch via Robert Muir)
 
 * LUCENE-4176: Fix AnalyzingQueryParser to analyze range endpoints as bytes,
   so that it works correctly with Analyzers that produce binary non-UTF-8 terms
@@ -112,6 +168,30 @@ Bug Fixes
 
 * LUCENE-4245: Make IndexWriter#close() and MergeScheduler#close()
   non-interruptible.  (Mark Miller, Uwe Schindler)
+
+* LUCENE-4190: restrict allowed filenames that a codec may create to
+  the patterns recognized by IndexFileNames.  This also fixes
+  IndexWriter to only delete files matching this pattern from an index
+  directory, to reduce risk when the wrong index path is accidentally
+  passed to IndexWriter (Robert Muir, Mike McCandless)
+  
+* LUCENE-4277: Fix IndexWriter deadlock during rollback if flushable DWPT
+  instance are already checked out and queued up but not yet flushed. 
+  (Simon Willnauer)
+
+* LUCENE-4282: Automaton FuzzyQuery didnt always deliver all results.
+  (Johannes Christen, Uwe Schindler, Robert Muir)
+
+* LUCENE-4289: Fix minor idf inconsistencies/inefficiencies in highlighter.
+  (Robert Muir)
+
+Changes in Runtime Behavior
+
+* LUCENE-4109: Enable position increments in the flexible queryparser by default.
+  (Karsten Rauch via Robert Muir)
+  
+* LUCENE-3616: Field throws exception if you try to set a boost on an 
+  unindexed field or one that omits norms. (Robert Muir)
 
 Build
 
