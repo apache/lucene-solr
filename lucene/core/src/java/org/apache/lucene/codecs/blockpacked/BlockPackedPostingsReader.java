@@ -384,7 +384,6 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     }
     
     private void refillDocs() throws IOException {
-      //System.out.println("["+docFreq+"]"+" refillDoc");
       final int left = docFreq - docUpto;
       assert left > 0;
 
@@ -426,7 +425,6 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           }
           return doc = NO_MORE_DOCS;
         }
-        //System.out.println("["+docFreq+"]"+" nextDoc");
         if (docBufferUpto == BLOCK_SIZE) {
           refillDocs();
         }
@@ -486,15 +484,15 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           skipped = true;
         }
 
-        final int newDocUpto = skipper.skipTo(target); 
+        final int newDocUpto = skipper.skipTo(target) + 1; 
 
         if (newDocUpto > docUpto) {
           // Skipper moved
           if (DEBUG) {
             System.out.println("skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer());
           }
-          assert newDocUpto % BLOCK_SIZE == (BLOCK_SIZE - 1): "got " + newDocUpto;
-          docUpto = newDocUpto+1;
+          assert newDocUpto % BLOCK_SIZE == 0 : "got " + newDocUpto;
+          docUpto = newDocUpto;
 
           // Force to read next block
           docBufferUpto = BLOCK_SIZE;
@@ -503,24 +501,18 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         }
         nextSkipDoc = skipper.getNextSkipDoc();
       }
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
+      }
+      if (docBufferUpto == BLOCK_SIZE) {
+        refillDocs();
+      }
 
       // Now scan... this is an inlined/pared down version
       // of nextDoc():
       while (true) {
         if (DEBUG) {
           System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
-        }
-        if (docUpto == docFreq) {
-          return doc = NO_MORE_DOCS;
-        }
-
-        // nocommit: in theory we should not hit this?  ie
-        // skipper should already have moved us to the block
-        // containing the doc?  yet assert false trips ... i
-        // think because if you advance w/o having done a
-        // nextDoc yet()... can we assert/remove this?
-        if (docBufferUpto == BLOCK_SIZE) {
-          refillDocs();
         }
         accum += docDeltaBuffer[docBufferUpto];
         docUpto++;
@@ -529,6 +521,9 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           break;
         }
         docBufferUpto++;
+        if (docUpto == docFreq) {
+          return doc = NO_MORE_DOCS;
+        }
       }
 
       if (liveDocs == null || liveDocs.get(accum)) {
@@ -666,9 +661,9 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     }
 
     private void refillDocs() throws IOException {
-    //System.out.println("["+docFreq+"]"+" refillDoc");
       final int left = docFreq - docUpto;
       assert left > 0;
+
       if (left >= BLOCK_SIZE) {
         if (DEBUG) {
           System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
@@ -797,7 +792,7 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           skipped = true;
         }
 
-        final int newDocUpto = skipper.skipTo(target); 
+        final int newDocUpto = skipper.skipTo(target) + 1; 
 
         if (newDocUpto > docUpto) {
           // Skipper moved
@@ -805,8 +800,8 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
             System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto());
           }
 
-          assert newDocUpto % BLOCK_SIZE == (BLOCK_SIZE - 1): "got " + newDocUpto;
-          docUpto = newDocUpto+1;
+          assert newDocUpto % BLOCK_SIZE == 0 : "got " + newDocUpto;
+          docUpto = newDocUpto;
 
           // Force to read next block
           docBufferUpto = BLOCK_SIZE;
@@ -816,6 +811,12 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           posPendingCount = skipper.getPosBufferUpto();
         }
         nextSkipDoc = skipper.getNextSkipDoc();
+      }
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
+      }
+      if (docBufferUpto == BLOCK_SIZE) {
+        refillDocs();
       }
 
       // Now scan... this is an inlined/pared down version
@@ -827,16 +828,6 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (docUpto == docFreq) {
           return doc = NO_MORE_DOCS;
         }
-        // nocommit: in theory we should not hit this?  ie
-        // skipper should already have moved us to the block
-        // containing the doc?  yet assert false trips ... i
-        // think because if you advance w/o having done a
-        // nextDoc yet()... can we assert/remove this?
-        if (docBufferUpto == BLOCK_SIZE) {
-          // nocommit hmm skip freq?  but: we don't ever
-          // scan over more than one block?
-          refillDocs();
-        }
         accum += docDeltaBuffer[docBufferUpto];
         freq = freqBuffer[docBufferUpto];
         posPendingCount += freq;
@@ -845,6 +836,9 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
 
         if (accum >= target) {
           break;
+        }
+        if (docUpto == docFreq) {
+          return doc = NO_MORE_DOCS;
         }
       }
 
@@ -1110,7 +1104,6 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
     }
 
     private void refillDocs() throws IOException {
-      //System.out.println("["+docFreq+"]"+" refillDoc");
       final int left = docFreq - docUpto;
       assert left > 0;
 
@@ -1226,7 +1219,6 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         if (docUpto == docFreq) {
           return doc = NO_MORE_DOCS;
         }
-        //System.out.println("["+docFreq+"]"+" nextDoc");
         if (docBufferUpto == BLOCK_SIZE) {
           refillDocs();
         }
@@ -1293,15 +1285,15 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
           skipped = true;
         }
 
-        final int newDocUpto = skipper.skipTo(target); 
+        final int newDocUpto = skipper.skipTo(target) + 1; 
 
         if (newDocUpto > docUpto) {
           // Skipper moved
           if (DEBUG) {
             System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto() + " pay.fp=" + skipper.getPayPointer() + " lastStartOffset=" + lastStartOffset);
           }
-          assert newDocUpto % BLOCK_SIZE == (BLOCK_SIZE - 1): "got " + newDocUpto;
-          docUpto = newDocUpto+1;
+          assert newDocUpto % BLOCK_SIZE == 0 : "got " + newDocUpto;
+          docUpto = newDocUpto;
 
           // Force to read next block
           docBufferUpto = BLOCK_SIZE;
@@ -1315,24 +1307,51 @@ public final class BlockPackedPostingsReader extends PostingsReaderBase {
         }
         nextSkipDoc = skipper.getNextSkipDoc();
       }
-
-      // nocommit inline nextDoc here
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
+      }
+      if (docBufferUpto == BLOCK_SIZE) {
+        refillDocs();
+      }
 
       // Now scan:
-      while (nextDoc() != NO_MORE_DOCS) {
-        if (doc >= target) {
-          if (DEBUG) {
-            System.out.println("  advance return doc=" + doc);
-          }
-          return doc;
+      // Now scan:
+      while (true) {
+        if (DEBUG) {
+          System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
+        }
+        accum += docDeltaBuffer[docBufferUpto];
+        freq = freqBuffer[docBufferUpto];
+        posPendingCount += freq;
+        docBufferUpto++;
+        docUpto++;
+
+        if (accum >= target) {
+          break;
+        }
+        if (docUpto == docFreq) {
+          return doc = NO_MORE_DOCS;
         }
       }
 
-      if (DEBUG) {
-        System.out.println("  advance return doc=END");
+      if (liveDocs == null || liveDocs.get(accum)) {
+        if (DEBUG) {
+          System.out.println("  return doc=" + accum);
+        }
+        if (indexHasPayloads) {
+          payloadByteUpto += payloadLength;
+          payloadLength = 0;
+        }
+        position = 0;
+        payloadLength = 0;
+        lastStartOffset = 0;
+        return doc = accum;
+      } else {
+        if (DEBUG) {
+          System.out.println("  now do nextDoc()");
+        }
+        return nextDoc();
       }
-
-      return NO_MORE_DOCS;
     }
 
     // nocommit in theory we could avoid loading frq block
