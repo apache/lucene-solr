@@ -130,7 +130,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
   }
 
   public static void indexDocs(int base, int count, int maxSleep) throws IOException, SolrServerException {
-    Random r = new Random();
+    Random r = new Random(0);
 
     for (int i=base; i<count+base; i++) {
       if ((i & 0xfffff) == 0) {
