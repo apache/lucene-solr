@@ -198,8 +198,9 @@ public final class DefaultSolrCoreState extends SolrCoreState {
       return;
     }
     
-    cancelRecovery();
     synchronized (recoveryLock) {
+      cancelRecovery();
+      
       while (recoveryRunning) {
         try {
           recoveryLock.wait(1000);
