@@ -445,10 +445,6 @@ public class DateField extends PrimitiveFieldType {
             minInclusive, maxInclusive);
   }
 
-  public String storedToIndexed(GeneralField f) {
-    return null;
-  }
-
 }
 
 

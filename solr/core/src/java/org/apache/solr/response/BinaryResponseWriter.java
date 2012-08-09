@@ -89,7 +89,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         writeResults(ctx, codec);
         return null; // null means we completely handled it
       }
-      if( o instanceof IndexableField ) {
+      if( o instanceof StorableField ) {
         if(schema == null) schema = solrQueryRequest.getSchema(); 
         
         StorableField f = (StorableField)o;
