@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
@@ -203,7 +204,7 @@ final class BooleanScorer extends Scorer {
   // Any time a prohibited clause matches we set bit 0:
   private static final int PROHIBITED_MASK = 1;
   
-  BooleanScorer(Weight weight, boolean disableCoord, Similarity similarity, int minNrShouldMatch,
+  BooleanScorer(BooleanWeight weight, boolean disableCoord, Similarity similarity, int minNrShouldMatch,
       List<Scorer> optionalScorers, List<Scorer> prohibitedScorers, int maxCoord) throws IOException {
     super(weight);
     this.minNrShouldMatch = minNrShouldMatch;
@@ -226,7 +227,7 @@ final class BooleanScorer extends Scorer {
 
     coordFactors = new float[optionalScorers.size() + 1];
     for (int i = 0; i < coordFactors.length; i++) {
-      coordFactors[i] = disableCoord ? 1.0f : similarity.coord(i, maxCoord); 
+      coordFactors[i] = disableCoord ? 1.0f : weight.coord(i, maxCoord); 
     }
   }
 

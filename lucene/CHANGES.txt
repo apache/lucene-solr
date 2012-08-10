@@ -23,6 +23,10 @@ Bug Fixes:
   than 1 when overlap == maxOverlap (always the case for conjunctions),
   then the score would be incorrect.  (Pascal Chollet, Robert Muir)
 
+* LUCENE-4300: BooleanQuery's rewrite was not always safe: if you
+  had a custom Similarity where coord(1,1) != 1F, then the rewritten
+  query would be scored differently.  (Robert Muir)
+
 ======================= Lucene 3.6.1 =======================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:

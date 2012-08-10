@@ -200,6 +200,13 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       return sum ;
     }
 
+    float coord(int overlap, int maxOverlap) {
+      // LUCENE-4300: in most cases of maxOverlap=1, BQ rewrites itself away,
+      // so coord() is not applied. But when BQ cannot optimize itself away
+      // for a single clause (minNrShouldMatch, prohibited clauses, etc), its
+      // important not to apply coord(1,1) for consistency, it might not be 1.0F
+      return maxOverlap == 1 ? 1F : similarity.coord(overlap, maxOverlap);
+    }
 
     @Override
     public void normalize(float norm) {
@@ -272,7 +279,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       sumExpl.setMatch(0 < coord ? Boolean.TRUE : Boolean.FALSE);
       sumExpl.setValue(sum);
       
-      final float coordFactor = disableCoord ? 1.0f : similarity.coord(coord, maxCoord);
+      final float coordFactor = disableCoord ? 1.0f : coord(coord, maxCoord);
       if (coordFactor == 1.0f) {
         return sumExpl;                             // eliminate wrapper
       } else {

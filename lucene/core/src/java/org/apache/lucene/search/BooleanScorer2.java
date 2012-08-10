@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 
 /* See the description in BooleanScorer.java, comparing
  * BooleanScorer & BooleanScorer2 */
@@ -42,10 +43,10 @@ class BooleanScorer2 extends Scorer {
     int maxCoord = 0; // to be increased for each non prohibited scorer
     int nrMatchers; // to be increased by score() of match counting scorers.
     
-    void init(Similarity sim, boolean disableCoord) { // use after all scorers have been added.
+    void init(BooleanWeight weight, boolean disableCoord) { // use after all scorers have been added.
       coordFactors = new float[optionalScorers.size() + requiredScorers.size() + 1];
       for (int i = 0; i < coordFactors.length; i++) {
-        coordFactors[i] = disableCoord ? 1.0f : sim.coord(i, maxCoord);
+        coordFactors[i] = disableCoord ? 1.0f : weight.coord(i, maxCoord);
       }
     }
   }
@@ -83,7 +84,7 @@ class BooleanScorer2 extends Scorer {
    * @param optional
    *          the list of optional scorers.
    */
-  public BooleanScorer2(Weight weight, boolean disableCoord, Similarity similarity, int minNrShouldMatch,
+  public BooleanScorer2(BooleanWeight weight, boolean disableCoord, Similarity similarity, int minNrShouldMatch,
       List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional, int maxCoord) throws IOException {
     super(weight);
     if (minNrShouldMatch < 0) {
@@ -97,7 +98,7 @@ class BooleanScorer2 extends Scorer {
     requiredScorers = required;    
     prohibitedScorers = prohibited;
     
-    coordinator.init(similarity, disableCoord);
+    coordinator.init(weight, disableCoord);
     countingSumScorer = makeCountingSumScorer(disableCoord, similarity);
   }
   
