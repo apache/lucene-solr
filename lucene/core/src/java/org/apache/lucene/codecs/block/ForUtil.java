@@ -231,6 +231,7 @@ final class ForUtil {
   private static int bitsRequired(final int[] data) {
     long or = 0;
     for (int i = 0; i < BLOCK_SIZE; ++i) {
+      assert data[i] >= 0;
       or |= data[i];
     }
     return PackedInts.bitsRequired(or);
