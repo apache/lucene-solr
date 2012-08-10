@@ -257,6 +257,7 @@
 
   <!-- Jenkins tasks -->
   <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,-svn-status"/>
+  <target name="jenkins-clover" depends="clean,test,generate-clover-reports"/>
   
   <!-- we need this extra condition, as we want to match only on "true", not solely if property is set: -->
   <property name="disable.javadocs-lint" value="false" />
