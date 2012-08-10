@@ -122,6 +122,16 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         public long size() {
           return -1;
         }
+
+        @Override
+        public boolean hasOffsets() {
+          return false;
+        }
+
+        @Override
+        public boolean hasPositions() {
+          return false;
+        }
       });
       
       assert termsEnum != null;

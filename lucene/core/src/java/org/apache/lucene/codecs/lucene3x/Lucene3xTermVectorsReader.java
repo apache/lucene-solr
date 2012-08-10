@@ -281,11 +281,16 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
   private class TVTerms extends Terms {
     private final int numTerms;
     private final long tvfFPStart;
+    private final boolean storePositions;
+    private final boolean storeOffsets;
     private final boolean unicodeSortOrder;
 
     public TVTerms(long tvfFP) throws IOException {
       tvf.seek(tvfFP);
       numTerms = tvf.readVInt();
+      final byte bits = tvf.readByte();
+      storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
+      storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
       tvfFPStart = tvf.getFilePointer();
       unicodeSortOrder = sortTermsByUnicode();
     }
@@ -301,7 +306,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
       } else {
         termsEnum = new TVTermsEnum();
       }
-      termsEnum.reset(numTerms, tvfFPStart, unicodeSortOrder);
+      termsEnum.reset(numTerms, tvfFPStart, storePositions, storeOffsets, unicodeSortOrder);
       return termsEnum;
     }
 
@@ -334,6 +339,16 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
         return BytesRef.getUTF8SortedAsUTF16Comparator();
       }
     }
+
+    @Override
+    public boolean hasOffsets() {
+      return storeOffsets;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return storePositions;
+    }
   }
 
   static class TermAndPostings {
@@ -365,13 +380,12 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
       return tvf == origTVF;
     }
 
-    public void reset(int numTerms, long tvfFPStart, boolean unicodeSortOrder) throws IOException {
+    public void reset(int numTerms, long tvfFPStart, boolean storePositions, boolean storeOffsets, boolean unicodeSortOrder) throws IOException {
       this.numTerms = numTerms;
+      this.storePositions = storePositions;
+      this.storeOffsets = storeOffsets;
       currentTerm = -1;
       tvf.seek(tvfFPStart);
-      final byte bits = tvf.readByte();
-      storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
-      storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
       this.unicodeSortOrder = unicodeSortOrder;
       readVectors();
       if (unicodeSortOrder) {

@@ -127,9 +127,11 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     long sumTotalTermFreq;
     long sumDocFreq;
     int docCount;
+    final FieldInfo.IndexOptions options;
 
-    RAMField(String field) {
+    RAMField(String field, FieldInfo.IndexOptions options) {
       this.field = field;
+      this.options = options;
     }
 
     @Override
@@ -160,6 +162,16 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public Comparator<BytesRef> getComparator() {
       return reverseUnicodeComparator;
+    }
+
+    @Override
+    public boolean hasOffsets() {
+      return options.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return options.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     }
   }
 
@@ -198,7 +210,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
       if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
         throw new UnsupportedOperationException("this codec cannot index offsets");
       }
-      RAMField ramField = new RAMField(field.name);
+      RAMField ramField = new RAMField(field.name, field.getIndexOptions());
       postings.fieldToTerms.put(field.name, ramField);
       termsConsumer.reset(ramField);
       return termsConsumer;

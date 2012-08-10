@@ -104,6 +104,12 @@ public abstract class Terms {
    *  measures, this measure does not take deleted documents
    *  into account. */
   public abstract int getDocCount() throws IOException;
+  
+  /** Returns true if documents in this field store offsets. */
+  public abstract boolean hasOffsets();
+  
+  /** Returns true if documents in this field store positions. */
+  public abstract boolean hasPositions();
 
   public final static Terms[] EMPTY_ARRAY = new Terms[0];
 }

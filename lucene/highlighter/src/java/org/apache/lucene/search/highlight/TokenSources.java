@@ -125,20 +125,7 @@ public class TokenSources {
   }
 
   private static boolean hasPositions(Terms vector) throws IOException {
-    final TermsEnum termsEnum = vector.iterator(null);
-    if (termsEnum.next() != null) {
-      DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_PAYLOADS);
-      if (dpEnum != null) {
-        int doc = dpEnum.nextDoc();
-        assert doc >= 0 && doc != DocIdSetIterator.NO_MORE_DOCS;
-        int pos = dpEnum.nextPosition();
-        if (pos >= 0) {
-          return true;
-        }
-      }
-    }
-
-    return false;
+    return vector.hasPositions();
   }
 
   /**

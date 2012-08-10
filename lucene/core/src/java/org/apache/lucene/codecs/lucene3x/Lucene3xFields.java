@@ -246,6 +246,18 @@ class Lucene3xFields extends FieldsProducer {
     public int getDocCount() throws IOException {
       return -1;
     }
+
+    @Override
+    public boolean hasOffsets() {
+      // preflex doesn't support this
+      assert fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0;
+      return false;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    }
   }
 
   private class PreTermsEnum extends TermsEnum {

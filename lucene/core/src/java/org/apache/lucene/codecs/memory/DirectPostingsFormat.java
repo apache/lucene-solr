@@ -635,6 +635,16 @@ public class DirectPostingsFormat extends PostingsFormat {
       return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
+    @Override
+    public boolean hasOffsets() {
+      return hasOffsets;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return hasPos;
+    }
+
     private final class DirectTermsEnum extends TermsEnum {
 
       private final BytesRef scratch = new BytesRef();

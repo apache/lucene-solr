@@ -130,7 +130,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       assert StringHelper.startsWith(scratch, FIELDTERMCOUNT);
       int termCount = parseIntAt(FIELDTERMCOUNT.length);
       
-      SimpleTVTerms terms = new SimpleTVTerms();
+      SimpleTVTerms terms = new SimpleTVTerms(offsets, positions);
       fields.put(fieldName, terms);
       
       for (int j = 0; j < termCount; j++) {
@@ -257,8 +257,12 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   
   private static class SimpleTVTerms extends Terms {
     final SortedMap<BytesRef,SimpleTVPostings> terms;
+    final boolean hasOffsets;
+    final boolean hasPositions;
     
-    SimpleTVTerms() {
+    SimpleTVTerms(boolean hasOffsets, boolean hasPositions) {
+      this.hasOffsets = hasOffsets;
+      this.hasPositions = hasPositions;
       terms = new TreeMap<BytesRef,SimpleTVPostings>();
     }
     
@@ -291,6 +295,16 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     @Override
     public int getDocCount() throws IOException {
       return 1;
+    }
+
+    @Override
+    public boolean hasOffsets() {
+      return hasOffsets;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return hasPositions;
     }
   }
   
