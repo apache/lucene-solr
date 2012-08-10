@@ -361,12 +361,17 @@
               value="${common-solr.dir}/build/${fullnamever}-src.tgz"/>
     <delete file="${source.package.file}" failonerror="false" />
 
+    <!-- includes/excludes requires a relative path -->
+    <property name="dist.rel" location="${dist}" relative="yes"/>
+    <property name="package.dir.rel" location="${package.dir}" relative="yes"/>
+
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir=".." prefix="${fullnamever}" includes="*.txt *.xml dev-tools/" />
       <tarfileset dir="." prefix="${fullnamever}" includes="LICENSE.txt NOTICE.txt"/>
       <tarfileset dir="." prefix="${fullnamever}/solr"
-                  excludes="build ${package.dir}/** ${dist}/**
-                            example/webapps/*.war example/exampledocs/post.jar
+                  excludes="build/** ${package.dir.rel}/** ${dist.rel}/**
+                            example/webapps/*.war example/lib/**
+                            **/*.jar 
                             lib/README.committers.txt **/data/ **/logs/*
                             **/*.sh **/bin/ scripts/ 
                             .idea/ **/*.iml **/pom.xml" />

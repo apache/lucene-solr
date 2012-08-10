@@ -48,6 +48,9 @@ Bug Fixes
 * SOLR-3229: Fixed TermVectorComponent to work with distributed search
   (Hang Xie, hossman)
 
+* SOLR-3725: Fixed package-local-src-tgz target to not bring in unnecessary jars
+  and binary contents.  (Michael Dodsworth via rmuir)
+
 ==================  4.0.0-BETA ===================
 
 
