@@ -20,6 +20,10 @@ Bug Fixes
   did not work at all, it would infinitely recurse.
   (Alberto Paro via Robert Muir)
 
+* LUCENE-4300: BooleanQuery's rewrite was not always safe: if you
+  had a custom Similarity where coord(1,1) != 1F, then the rewritten
+  query would be scored differently.  (Robert Muir)
+
 ======================= Lucene 4.0.0-BETA =======================
 
 New features
