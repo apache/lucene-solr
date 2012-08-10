@@ -42,9 +42,7 @@ public final class BlockPostingsFormat extends PostingsFormat {
   private final int minTermBlockSize;
   private final int maxTermBlockSize;
 
-  // nocommit is this right?:
-  // NOTE: should be at least 64 because of PackedInts long-aligned encoding/decoding
-  // NOTE: must be factor of ... 64?
+  // NOTE: must be factor of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
 
   public BlockPostingsFormat() {

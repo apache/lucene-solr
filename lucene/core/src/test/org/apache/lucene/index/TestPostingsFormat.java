@@ -908,8 +908,8 @@ public class TestPostingsFormat extends LuceneTestCase {
 
     // NOTE: you can also test "weaker" index options than
     // you indexed with:
-    //testTerms(fieldsProducer, EnumSet.allOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    testTerms(fieldsProducer, EnumSet.complementOf(EnumSet.of(Option.THREADS)), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    testTerms(fieldsProducer, EnumSet.allOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    //testTerms(fieldsProducer, EnumSet.complementOf(EnumSet.of(Option.THREADS)), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
 
     fieldsProducer.close();
     dir.close();

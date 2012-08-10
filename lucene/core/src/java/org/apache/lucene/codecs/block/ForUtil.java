@@ -214,7 +214,6 @@ final class ForUtil {
     in.seek(in.getFilePointer() + encodedSize);
   }
 
-  // nocommit: we must have a util function for this, hmm?
   private static boolean isAllEqual(final int[] data) {
     final long v = data[0];
     for (int i = 1; i < BLOCK_SIZE; ++i) {

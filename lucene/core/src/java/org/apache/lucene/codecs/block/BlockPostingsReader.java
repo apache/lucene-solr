@@ -62,12 +62,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
   public static boolean DEBUG = false;
 
-  // nocommit
-  final String segment;
-
   public BlockPostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
     boolean success = false;
-    segment = segmentInfo.name;
     IndexInput docIn = null;
     IndexInput posIn = null;
     IndexInput payIn = null;
@@ -376,7 +372,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     public DocsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
       this.liveDocs = liveDocs;
       if (DEBUG) {
-        System.out.println("  FPR.reset: seg=" + segment + " termState=" + termState);
+        System.out.println("  FPR.reset: termState=" + termState);
       }
       docFreq = termState.docFreq;
       docTermStartFP = termState.docStartFP;
@@ -475,7 +471,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
     @Override
     public int advance(int target) throws IOException {
-      // nocommit make frq block load lazy/skippable
+      // TODO: make frq block load lazy/skippable
       if (DEBUG) {
         System.out.println("  FPR.advance target=" + target);
       }
@@ -781,7 +777,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     
     @Override
     public int advance(int target) throws IOException {
-      // nocommit make frq block load lazy/skippable
+      // TODO: make frq block load lazy/skippable
       if (DEBUG) {
         System.out.println("  FPR.advance target=" + target);
       }
@@ -878,7 +874,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
     }
 
-    // nocommit in theory we could avoid loading frq block
+    // TODO: in theory we could avoid loading frq block
     // when not needed, ie, use skip data to load how far to
     // seek the pos pointe ... instead of having to load frq
     // blocks only to sum up how many positions to skip
@@ -1272,7 +1268,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     
     @Override
     public int advance(int target) throws IOException {
-      // nocommit make frq block load lazy/skippable
+      // TODO: make frq block load lazy/skippable
       if (DEBUG) {
         System.out.println("  FPR.advance target=" + target);
       }
@@ -1375,7 +1371,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
     }
 
-    // nocommit in theory we could avoid loading frq block
+    // TODO: in theory we could avoid loading frq block
     // when not needed, ie, use skip data to load how far to
     // seek the pos pointe ... instead of having to load frq
     // blocks only to sum up how many positions to skip
@@ -1392,9 +1388,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         while(posBufferUpto < end) {
           if (indexHasPayloads) {
             payloadByteUpto += payloadLengthBuffer[posBufferUpto];
-          }
-          if (indexHasOffsets) {
-            lastStartOffset += offsetStartDeltaBuffer[posBufferUpto] + offsetLengthBuffer[posBufferUpto];
           }
           posBufferUpto++;
         }
@@ -1420,13 +1413,8 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           }
 
           if (indexHasOffsets) {
-            // Must load offset blocks merely to sum
-            // up into lastStartOffset:
-            forUtil.readBlock(payIn, encoded, offsetStartDeltaBuffer);
-            forUtil.readBlock(payIn, encoded, offsetLengthBuffer);
-            for(int i=0;i<BLOCK_SIZE;i++) {
-              lastStartOffset += offsetStartDeltaBuffer[i] + offsetLengthBuffer[i];
-            }
+            forUtil.skipBlock(payIn);
+            forUtil.skipBlock(payIn);
           }
           toSkip -= BLOCK_SIZE;
         }
@@ -1437,9 +1425,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           if (indexHasPayloads) {
             payloadByteUpto += payloadLengthBuffer[posBufferUpto];
           }
-          if (indexHasOffsets) {
-            lastStartOffset += offsetStartDeltaBuffer[posBufferUpto] + offsetLengthBuffer[posBufferUpto];
-          }
           posBufferUpto++;
         }
         if (DEBUG) {
@@ -1449,8 +1434,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
       position = 0;
       payloadLength = 0;
-      // nocommit why carefully sum up lastStartOffset above
-      // only to set it to 0 now?
       lastStartOffset = 0;
     }
 

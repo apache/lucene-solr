@@ -53,8 +53,6 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class BlockPostingsWriter extends PostingsWriterBase {
 
-  // nocommit move these constants to the PF:
-
   static final int maxSkipLevels = 10;
 
   final static String TERMS_CODEC = "BlockPostingsWriterTerms";
@@ -170,7 +168,7 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
     docDeltaBuffer = new int[MAX_DATA_SIZE];
     freqBuffer = new int[MAX_DATA_SIZE];
 
-    // nocommit should we try skipping every 2/4 blocks...?
+    // TODO: should we try skipping every 2/4 blocks...?
     skipWriter = new BlockSkipWriter(maxSkipLevels,
                                      BLOCK_SIZE, 
                                      state.segmentInfo.getDocCount(),
@@ -418,7 +416,7 @@ public final class BlockPostingsWriter extends PostingsWriterBase {
       if (posBufferUpto > 0) {
         posOut.writeVInt(posBufferUpto);
         
-        // nocommit should we send offsets/payloads to
+        // TODO: should we send offsets/payloads to
         // .pay...?  seems wasteful (have to store extra
         // vLong for low (< BLOCK_SIZE) DF terms = vast vast
         // majority)
