@@ -52,10 +52,25 @@
   </target>
 
   <target name="validate" description="Validate dependencies, licenses, etc.">
-    <sequential><subant target="validate" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant></sequential>
+    <!-- check that there are no nocommits or @author javadoc tags: -->
+    <property name="validate.currDir" location="."/>
+    <pathconvert pathsep="${line.separator}" dirsep="/" property="validate.patternsFound" setonempty="false">
+      <fileset dir="${validate.currDir}">
+        <include name="**/*.java"/>
+        <exclude name="**/backwards/**"/>
+        <or>
+          <containsregexp expression="@author\b" casesensitive="yes"/>
+          <containsregexp expression="\bno(n|)commit\b" casesensitive="no"/>
+        </or>
+      </fileset>
+      <map from="${validate.currDir}${file.separator}" to="* "/>
+    </pathconvert>
+    <fail if="validate.patternsFound">The following files contain @author tags or nocommits:${line.separator}${validate.patternsFound}</fail>
+    <!-- run validate for both lucene and solr: -->
+    <subant target="validate" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
   </target>
 
   <target name="rat-sources" description="Runs rat across all sources and tests">
@@ -185,15 +200,16 @@
     </sequential>
   </target>
 
+  <!-- define here, as common-build is not included! -->
   <property name="python32.exe" value="python3.2" />
-  <property name="JAVA6_HOME" value="/usr/local/jdk1.6.0_27"/>
-  <property name="JAVA7_HOME" value="/usr/local/jdk1.7.0_01"/>
   <property name="fakeRelease" value="lucene/build/fakeRelease"/>
   <property name="fakeReleaseTmp" value="lucene/build/fakeReleaseTmp"/>
   <property name="fakeReleaseVersion" value="5.0"/> <!-- *not* -SNAPSHOT, the real version -->
 
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it." depends="clean">
    <sequential>
+     <fail unless="JAVA6_HOME">JAVA6_HOME property is not defined.</fail>
+     <fail unless="JAVA7_HOME">JAVA7_HOME property is not defined.</fail>
      <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
        <fileset dir="lucene" includes="build.xml" />
        <fileset dir="solr" includes="build.xml" />
@@ -228,5 +244,35 @@
      <delete dir="${fakeRelease}"/>
      <delete dir="${fakeReleaseTmp}"/>
    </sequential>
+  </target>
+  
+  <!-- Jenkins tasks -->
+  <target name="jenkins-hourly" depends="clean,test,validate,javadocs-lint,-svn-status"/>
+  
+  <!-- define here, as common-build is not included! -->
+  <property name="svn.exe" value="svn" />
+  
+  <target name="-svn-status">
+    <exec executable="${svn.exe}" dir="." failonerror="true">
+      <arg value="status"/>
+      <redirector outputproperty="svn.status.output">
+        <outputfilterchain>
+          <linecontainsregexp>
+            <regexp pattern="^\?" />
+          </linecontainsregexp>
+          <tokenfilter>
+            <replaceregex pattern="^........" replace="* " />
+            <replacestring from="${file.separator}" to="/" />
+          </tokenfilter>
+        </outputfilterchain>
+      </redirector>
+    </exec>
+    <fail message="Source checkout is dirty after running tests!!! Offending files:${line.separator}${svn.status.output}">
+      <condition>
+        <not>
+          <equals arg1="${svn.status.output}" arg2=""/>
+        </not>
+      </condition>
+    </fail>
   </target>
 </project>
