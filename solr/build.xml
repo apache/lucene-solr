@@ -258,27 +258,6 @@
     </delete>
   </target>
 
-  <!--
-   Run after Junit tests.
-   -->
-  <target name="generate-clover-reports" depends="clover">
-    <fail unless="run.clover">Clover not enabled!</fail>
-    <mkdir dir="${clover.report.dir}"/>
-    <fileset dir="build" id="clover.test.result.files">
-      <include name="**/test/TEST-*.xml"/>
-    </fileset>
-    <clover-report>
-      <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
-        <format type="html" filter="assert"/>
-        <testresults refid="clover.test.result.files"/>
-      </current>
-      <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
-        <format type="xml" filter="assert"/>
-        <testresults refid="clover.test.result.files"/>
-      </current>
-    </clover-report>
-  </target>
-  
   <!-- ========================================================================= -->
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
   <!-- ========================================================================= -->
