@@ -23,6 +23,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -297,8 +299,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     }
 
     public void testRandomQueries() throws Exception {
-      String field="data";
-      String[] vals = {"1","2","3","4","5","6","A","Z","B","Y","Z","X","foo"};
+      final String field="data";
+      final String[] vals = {"1","2","3","4","5","6","A","Z","B","Y","Z","X","foo"};
       int maxLev=4;
 
       // callback object to set a random setMinimumNumberShouldMatch
@@ -310,13 +312,18 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
             if (c[i].getOccur() == BooleanClause.Occur.SHOULD) opt++;
           }
           q.setMinimumNumberShouldMatch(random().nextInt(opt+2));
+          if (random().nextBoolean()) {
+            // also add a random negation
+            Term randomTerm = new Term(field, vals[random().nextInt(vals.length)]);
+            q.add(new TermQuery(randomTerm), BooleanClause.Occur.MUST_NOT);
+          }
         }
       };
 
 
 
       // increase number of iterations for more complete testing      
-      int num = atLeast(10);
+      int num = atLeast(20);
       for (int i=0; i<num; i++) {
         int lev = random().nextInt(maxLev);
         final long seed = random().nextLong();
@@ -336,44 +343,90 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
           QueryUtils.check(random(), q1,s);
           QueryUtils.check(random(), q2,s);
         }
-        // The constrained query
-        // should be a superset to the unconstrained query.
-        if (top2.totalHits > top1.totalHits) {
-          fail("Constrained results not a subset:\n"
-                        + CheckHits.topdocsString(top1,0,0)
-                        + CheckHits.topdocsString(top2,0,0)
-                        + "for query:" + q2.toString());
-        }
-
-        for (int hit=0; hit<top2.totalHits; hit++) {
-          int id = top2.scoreDocs[hit].doc;
-          float score = top2.scoreDocs[hit].score;
-          boolean found=false;
-          // find this doc in other hits
-          for (int other=0; other<top1.totalHits; other++) {
-            if (top1.scoreDocs[other].doc == id) {
-              found=true;
-              float otherScore = top1.scoreDocs[other].score;
-              // check if scores match
-              assertEquals("Doc " + id + " scores don't match\n"
-                  + CheckHits.topdocsString(top1,0,0)
-                  + CheckHits.topdocsString(top2,0,0)
-                  + "for query:" + q2.toString(),
-                  score, otherScore, CheckHits.explainToleranceDelta(score, otherScore));
-            }
-          }
-
-          // check if subset
-          if (!found) fail("Doc " + id + " not found\n"
-                + CheckHits.topdocsString(top1,0,0)
-                + CheckHits.topdocsString(top2,0,0)
-                + "for query:" + q2.toString());
-        }
+        assertSubsetOfSameScores(q2, top1, top2);
       }
       // System.out.println("Total hits:"+tot);
     }
+    
+    private void assertSubsetOfSameScores(Query q, TopDocs top1, TopDocs top2) {
+      // The constrained query
+      // should be a subset to the unconstrained query.
+      if (top2.totalHits > top1.totalHits) {
+        fail("Constrained results not a subset:\n"
+                      + CheckHits.topdocsString(top1,0,0)
+                      + CheckHits.topdocsString(top2,0,0)
+                      + "for query:" + q.toString());
+      }
 
+      for (int hit=0; hit<top2.totalHits; hit++) {
+        int id = top2.scoreDocs[hit].doc;
+        float score = top2.scoreDocs[hit].score;
+        boolean found=false;
+        // find this doc in other hits
+        for (int other=0; other<top1.totalHits; other++) {
+          if (top1.scoreDocs[other].doc == id) {
+            found=true;
+            float otherScore = top1.scoreDocs[other].score;
+            // check if scores match
+            assertEquals("Doc " + id + " scores don't match\n"
+                + CheckHits.topdocsString(top1,0,0)
+                + CheckHits.topdocsString(top2,0,0)
+                + "for query:" + q.toString(),
+                score, otherScore, CheckHits.explainToleranceDelta(score, otherScore));
+          }
+        }
 
+        // check if subset
+        if (!found) fail("Doc " + id + " not found\n"
+              + CheckHits.topdocsString(top1,0,0)
+              + CheckHits.topdocsString(top2,0,0)
+              + "for query:" + q.toString());
+      }
+    }
+
+    public void testRewriteCoord1() throws Exception {
+      final Similarity oldSimilarity = s.getSimilarity();
+      try {
+        s.setSimilarity(new DefaultSimilarity() {
+          @Override
+          public float coord(int overlap, int maxOverlap) {
+            return overlap / ((float)maxOverlap + 1);
+          }
+        });
+        BooleanQuery q1 = new BooleanQuery();
+        q1.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
+        BooleanQuery q2 = new BooleanQuery();
+        q2.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
+        q2.setMinimumNumberShouldMatch(1);
+        TopDocs top1 = s.search(q1,null,100);
+        TopDocs top2 = s.search(q2,null,100);
+        assertSubsetOfSameScores(q2, top1, top2);
+      } finally {
+        s.setSimilarity(oldSimilarity);
+      }
+    }
+    
+    public void testRewriteNegate() throws Exception {
+      final Similarity oldSimilarity = s.getSimilarity();
+      try {
+        s.setSimilarity(new DefaultSimilarity() {
+          @Override
+          public float coord(int overlap, int maxOverlap) {
+            return overlap / ((float)maxOverlap + 1);
+          }
+        });
+        BooleanQuery q1 = new BooleanQuery();
+        q1.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
+        BooleanQuery q2 = new BooleanQuery();
+        q2.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
+        q2.add(new TermQuery(new Term("data", "Z")), BooleanClause.Occur.MUST_NOT);
+        TopDocs top1 = s.search(q1,null,100);
+        TopDocs top2 = s.search(q2,null,100);
+        assertSubsetOfSameScores(q2, top1, top2);
+      } finally {
+        s.setSimilarity(oldSimilarity);
+      }
+    }
 
     protected void printHits(String test, ScoreDoc[] h, IndexSearcher searcher) throws Exception {
 
