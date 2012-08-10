@@ -248,6 +248,13 @@
    </sequential>
   </target>
   
+  <!-- Calls only generate-clover-reports on Lucene, as Solr's is just a clone with other target; the database itsself is fixed -->
+  <target name="generate-clover-reports">
+    <subant target="generate-clover-reports" inheritall="false" failonerror="true">
+      <fileset dir="." includes="build-clover.xml" />
+    </subant>
+  </target>
+
   <!-- Jenkins tasks -->
   <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,-svn-status"/>
   
