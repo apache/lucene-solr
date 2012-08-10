@@ -834,6 +834,16 @@ public class MemoryPostingsFormat extends PostingsFormat {
     public Comparator<BytesRef> getComparator() {
       return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
+
+    @Override
+    public boolean hasOffsets() {
+      return field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    }
   }
 
   @Override

@@ -296,10 +296,16 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
   private class TVTerms extends Terms {
     private final int numTerms;
     private final long tvfFPStart;
+    private final boolean storePositions;
+    private final boolean storeOffsets;
+
 
     public TVTerms(long tvfFP) throws IOException {
       tvf.seek(tvfFP);
       numTerms = tvf.readVInt();
+      final byte bits = tvf.readByte();
+      storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
+      storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
       tvfFPStart = tvf.getFilePointer();
     }
 
@@ -314,7 +320,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       } else {
         termsEnum = new TVTermsEnum();
       }
-      termsEnum.reset(numTerms, tvfFPStart);
+      termsEnum.reset(numTerms, tvfFPStart, storePositions, storeOffsets);
       return termsEnum;
     }
 
@@ -345,6 +351,16 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       // this...?  I guess codec could buffer and re-sort...
       return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
+
+    @Override
+    public boolean hasOffsets() {
+      return storeOffsets;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return storePositions;
+    }
   }
 
   private class TVTermsEnum extends TermsEnum {
@@ -373,13 +389,12 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       return tvf == origTVF;
     }
 
-    public void reset(int numTerms, long tvfFPStart) throws IOException {
+    public void reset(int numTerms, long tvfFPStart, boolean storePositions, boolean storeOffsets) throws IOException {
       this.numTerms = numTerms;
+      this.storePositions = storePositions;
+      this.storeOffsets = storeOffsets;
       nextTerm = 0;
       tvf.seek(tvfFPStart);
-      final byte bits = tvf.readByte();
-      storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
-      storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
       tvfFP = 1+tvfFPStart;
       positions = null;
       startOffsets = null;

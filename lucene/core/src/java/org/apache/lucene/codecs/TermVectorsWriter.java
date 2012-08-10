@@ -184,6 +184,9 @@ public abstract class TermVectorsWriter implements Closeable {
     final FieldsEnum fieldsEnum = vectors.iterator();
     String fieldName;
     String lastFieldName = null;
+    
+    TermsEnum termsEnum = null;
+    DocsAndPositionsEnum docsAndPositionsEnum = null;
 
     while((fieldName = fieldsEnum.next()) != null) {
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
@@ -196,39 +199,30 @@ public abstract class TermVectorsWriter implements Closeable {
         // FieldsEnum shouldn't lie...
         continue;
       }
+      
+      final boolean hasPositions = terms.hasPositions();
+      final boolean hasOffsets = terms.hasOffsets();
+      
       final int numTerms = (int) terms.size();
       if (numTerms == -1) {
         throw new IllegalStateException("terms.size() must be implemented (it returned -1)");
       }
-      final TermsEnum termsEnum = terms.iterator(null);
-
-      DocsAndPositionsEnum docsAndPositionsEnum = null;
-
-      boolean startedField = false;
-
-      // NOTE: this is tricky, because TermVectors allow
-      // indexing offsets but NOT positions.  So we must
-      // lazily init the field by checking whether first
-      // position we see is -1 or not.
+      
+      startField(fieldInfo, numTerms, hasPositions, hasOffsets);
+      termsEnum = terms.iterator(termsEnum);
 
       int termCount = 0;
       while(termsEnum.next() != null) {
         termCount++;
 
         final int freq = (int) termsEnum.totalTermFreq();
+        
+        startTerm(termsEnum.term(), freq);
 
-        if (startedField) {
-          startTerm(termsEnum.term(), freq);
-        }
-
-        // TODO: we need a "query" API where we can ask (via
-        // flex API) what this term was indexed with...
-        // Both positions & offsets:
-        docsAndPositionsEnum = termsEnum.docsAndPositions(null, null);
-        boolean hasOffsets = false;
-        boolean hasPositions = false;
-
-        if (docsAndPositionsEnum != null) {
+        if (hasPositions || hasOffsets) {
+          docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
+          assert docsAndPositionsEnum != null;
+          
           final int docID = docsAndPositionsEnum.nextDoc();
           assert docID != DocIdSetIterator.NO_MORE_DOCS;
           assert docsAndPositionsEnum.freq() == freq;
@@ -237,27 +231,9 @@ public abstract class TermVectorsWriter implements Closeable {
             final int pos = docsAndPositionsEnum.nextPosition();
             final int startOffset = docsAndPositionsEnum.startOffset();
             final int endOffset = docsAndPositionsEnum.endOffset();
-            if (!startedField) {
-              assert numTerms > 0;
-              hasPositions = pos != -1;
-              hasOffsets = startOffset != -1;
-              startField(fieldInfo, numTerms, hasPositions, hasOffsets);
-              startTerm(termsEnum.term(), freq);
-              startedField = true;
-            }
-            if (hasOffsets) {
-              assert startOffset != -1;
-              assert endOffset != -1;
-            }
+
             assert !hasPositions || pos >= 0;
             addPosition(pos, startOffset, endOffset);
-          }
-        } else {
-          if (!startedField) {
-            assert numTerms > 0;
-            startField(fieldInfo, numTerms, hasPositions, hasOffsets);
-            startTerm(termsEnum.term(), freq);
-            startedField = true;
           }
         }
       }

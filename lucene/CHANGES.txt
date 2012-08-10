@@ -8,6 +8,13 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.0.0 =======================
 
+API Changes
+
+* LUCENE-4299: Added Terms.hasPositions() and Terms.hasOffsets().
+  Previously you had no real way to know that a term vector field
+  had positions or offsets, since this can be configured on a 
+  per-field-per-document basis. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor

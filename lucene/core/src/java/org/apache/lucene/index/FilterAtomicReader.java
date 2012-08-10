@@ -109,6 +109,16 @@ public class FilterAtomicReader extends AtomicReader {
     public TermsEnum intersect(CompiledAutomaton automaton, BytesRef bytes) throws java.io.IOException {
       return in.intersect(automaton, bytes);
     }
+
+    @Override
+    public boolean hasOffsets() {
+      return in.hasOffsets();
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return in.hasPositions();
+    }
   }
 
   /** Base class for filtering {@link TermsEnum} implementations. */

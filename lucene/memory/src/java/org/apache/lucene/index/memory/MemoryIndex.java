@@ -778,8 +778,16 @@ public class MemoryIndex {
             public int getDocCount() {
               return info.sortedTerms.length > 0 ? 1 : 0;
             }
-              
-              
+
+            @Override
+            public boolean hasOffsets() {
+              return stride == 3;
+            }
+
+            @Override
+            public boolean hasPositions() {
+              return true;
+            }  
           };
         }
       }

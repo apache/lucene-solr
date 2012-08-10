@@ -314,6 +314,16 @@ public class BloomFilteringPostingsFormat extends PostingsFormat {
       public int getDocCount() throws IOException {
         return delegateTerms.getDocCount();
       }
+
+      @Override
+      public boolean hasOffsets() {
+        return delegateTerms.hasOffsets();
+      }
+
+      @Override
+      public boolean hasPositions() {
+        return delegateTerms.hasPositions();
+      }
     }
     
     class BloomFilteredTermsEnum extends TermsEnum {

@@ -718,6 +718,11 @@ public class CheckIndex {
         continue;
       }
       
+      final boolean hasPositions = terms.hasPositions();
+      final boolean hasOffsets = terms.hasOffsets();
+      // term vectors cannot omit TF
+      final boolean hasFreqs = isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+
       final TermsEnum termsEnum = terms.iterator(null);
       
       boolean hasOrd = true;
@@ -777,17 +782,10 @@ public class CheckIndex {
         status.termCount++;
         
         final DocsEnum docs2;
-        final boolean hasPositions;
-        // if we are checking vectors, we have freqs implicitly
-        final boolean hasFreqs = isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-        // if we are checking vectors, offsets are a free-for-all anyway
-        final boolean hasOffsets = isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
         if (postings != null) {
           docs2 = postings;
-          hasPositions = true;
         } else {
           docs2 = docs;
-          hasPositions = false;
         }
         
         int lastDoc = -1;
@@ -827,10 +825,7 @@ public class CheckIndex {
               // NOTE: pos=-1 is allowed because of ancient bug
               // (LUCENE-1542) whereby IndexWriter could
               // write pos=-1 when first token's posInc is 0
-              // (separately: analyzers should not give
-              // posInc=0 to first token); also, term
-              // vectors are allowed to return pos=-1 if
-              // they indexed offset but not positions:
+
               if (pos < -1) {
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
               }
@@ -1439,19 +1434,18 @@ public class CheckIndex {
               }
               postingsTermsEnum = postingsTerms.iterator(postingsTermsEnum);
               
+              final boolean hasProx = terms.hasOffsets() || terms.hasPositions();
               BytesRef term = null;
               while ((term = termsEnum.next()) != null) {
-                
-                final boolean hasProx;
 
-                // Try positions:
-                postings = termsEnum.docsAndPositions(null, postings);
-                if (postings == null) {
-                  hasProx = false;
-                  // Try docIDs & freqs:
-                  docs = termsEnum.docs(null, docs);
+                if (hasProx) {
+                  postings = termsEnum.docsAndPositions(null, postings);
+                  assert postings != null;
+                  docs = null;
                 } else {
-                  hasProx = true;
+                  docs = termsEnum.docs(null, docs);
+                  assert docs != null;
+                  postings = null;
                 }
 
                 final DocsEnum docs2;
