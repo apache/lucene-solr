@@ -122,7 +122,7 @@ public final class Constants {
   /**
    * This is the internal Lucene version, recorded into each segment.
    */
-  public static final String LUCENE_MAIN_VERSION = ident("4.0.0.1");
+  public static final String LUCENE_MAIN_VERSION = ident("4.0.0.2");
 
   /**
    * This is the Lucene version for display purposes.
