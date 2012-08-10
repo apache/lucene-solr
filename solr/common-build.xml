@@ -49,8 +49,6 @@
   <property name="tests.loggingfile" value="${common-solr.dir}/testlogging.properties"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
-  <property name="clover.report.dir" location="${dest}/clover/reports"/>
-
   <import file="${common-solr.dir}/../lucene/module-build.xml"/>
 
   <path id="additional.dependencies">
