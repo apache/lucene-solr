@@ -956,9 +956,18 @@ public class _TestUtil {
     while (true) {
       try {
         Pattern p = Pattern.compile(_TestUtil.randomRegexpishString(random));
+        String replacement = null;
+        // ignore bugs in Sun's regex impl
+        try {
+          replacement = p.matcher(nonBmpString).replaceAll("_");
+        } catch (StringIndexOutOfBoundsException jdkBug) {
+          System.out.println("WARNING: your jdk is buggy!");
+          System.out.println("Pattern.compile(\"" + p.pattern() + 
+              "\").matcher(\"AB\\uD840\\uDC00C\").replaceAll(\"_\"); should not throw IndexOutOfBounds!");
+        }
         // Make sure the result of applying the pattern to a string with extended
         // unicode characters is a valid utf16 string. See LUCENE-4078 for discussion.
-        if (UnicodeUtil.validUTF16String(p.matcher(nonBmpString).replaceAll("_"))) {
+        if (replacement != null && UnicodeUtil.validUTF16String(replacement)) {
           return p;
         }
       } catch (PatternSyntaxException ignored) {
