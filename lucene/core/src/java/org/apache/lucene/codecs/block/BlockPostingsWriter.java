@@ -51,7 +51,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @see BlockSkipWriter for details about skipping setting and postings layout.
  *
  */
-public final class BlockPostingsWriter extends PostingsWriterBase {
+final class BlockPostingsWriter extends PostingsWriterBase {
 
   static final int maxSkipLevels = 10;
 
