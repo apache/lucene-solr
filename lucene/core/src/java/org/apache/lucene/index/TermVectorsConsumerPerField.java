@@ -67,15 +67,40 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
 
     for(int i=0;i<count;i++) {
       IndexableField field = fields[i];
-      if (field.fieldType().indexed() && field.fieldType().storeTermVectors()) {
-        doVectors = true;
-        doVectorPositions |= field.fieldType().storeTermVectorPositions();
-        doVectorOffsets |= field.fieldType().storeTermVectorOffsets();
-        if (doVectorPositions) {
-          doVectorPayloads |= field.fieldType().storeTermVectorPayloads();
-        } else if (field.fieldType().storeTermVectorPayloads()) {
-          // TODO: move this check somewhere else, and impl the other missing ones
-          throw new IllegalArgumentException("cannot index term vector payloads for field: " + field + " without term vector positions");
+      if (field.fieldType().indexed()) {
+        if (field.fieldType().storeTermVectors()) {
+          doVectors = true;
+          doVectorPositions |= field.fieldType().storeTermVectorPositions();
+          doVectorOffsets |= field.fieldType().storeTermVectorOffsets();
+          if (doVectorPositions) {
+            doVectorPayloads |= field.fieldType().storeTermVectorPayloads();
+          } else if (field.fieldType().storeTermVectorPayloads()) {
+            // TODO: move this check somewhere else, and impl the other missing ones
+            throw new IllegalArgumentException("cannot index term vector payloads for field: " + field + " without term vector positions");
+          }
+        } else {
+          if (field.fieldType().storeTermVectorOffsets()) {
+            throw new IllegalArgumentException("cannot index term vector offsets when term vectors are not indexed (field=\"" + field.name());
+          }
+          if (field.fieldType().storeTermVectorPositions()) {
+            throw new IllegalArgumentException("cannot index term vector positions when term vectors are not indexed (field=\"" + field.name());
+          }
+          if (field.fieldType().storeTermVectorPayloads()) {
+            throw new IllegalArgumentException("cannot index term vector payloads when term vectors are not indexed (field=\"" + field.name());
+          }
+        }
+      } else {
+        if (field.fieldType().storeTermVectors()) {
+          throw new IllegalArgumentException("cannot index term vectors when field is not indexed (field=\"" + field.name());
+        }
+        if (field.fieldType().storeTermVectorOffsets()) {
+          throw new IllegalArgumentException("cannot index term vector offsets when field is not indexed (field=\"" + field.name());
+        }
+        if (field.fieldType().storeTermVectorPositions()) {
+          throw new IllegalArgumentException("cannot index term vector positions when field is not indexed (field=\"" + field.name());
+        }
+        if (field.fieldType().storeTermVectorPayloads()) {
+          throw new IllegalArgumentException("cannot index term vector payloads when field is not indexed (field=\"" + field.name());
         }
       }
     }

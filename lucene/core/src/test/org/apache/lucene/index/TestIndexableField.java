@@ -60,17 +60,17 @@ public class TestIndexableField extends LuceneTestCase {
 
       @Override
       public boolean storeTermVectors() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return indexed() && counter % 2 == 1 && counter % 10 != 9;
       }
 
       @Override
       public boolean storeTermVectorOffsets() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return storeTermVectors() && counter % 10 != 9;
       }
 
       @Override
       public boolean storeTermVectorPositions() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return storeTermVectors() && counter % 10 != 9;
       }
       
       @Override
@@ -78,7 +78,7 @@ public class TestIndexableField extends LuceneTestCase {
         if (PREFLEX_IMPERSONATION_IS_ACTIVE) {
           return false; // 3.x doesnt support
         } else {
-          return counter % 2 == 1 && counter % 10 != 9;
+          return storeTermVectors() && counter % 10 != 9;
         }
       }
 
