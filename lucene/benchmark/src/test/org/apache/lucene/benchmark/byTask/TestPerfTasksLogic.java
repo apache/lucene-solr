@@ -206,6 +206,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "doc.stored=true",//doc storage is required in order to have text to highlight
+        "doc.term.vector=true",
         "doc.term.vector.offsets=true",
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
         "docs.file=" + getReuters20LinesFile(),

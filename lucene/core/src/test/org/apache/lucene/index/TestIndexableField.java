@@ -60,22 +60,22 @@ public class TestIndexableField extends LuceneTestCase {
 
       @Override
       public boolean storeTermVectors() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return indexed() && counter % 2 == 1 && counter % 10 != 9;
       }
 
       @Override
       public boolean storeTermVectorOffsets() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return storeTermVectors() && counter % 10 != 9;
       }
 
       @Override
       public boolean storeTermVectorPositions() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return storeTermVectors() && counter % 10 != 9;
       }
       
       @Override
       public boolean storeTermVectorPayloads() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return storeTermVectors() && counter % 10 != 9;
       }
 
       @Override
