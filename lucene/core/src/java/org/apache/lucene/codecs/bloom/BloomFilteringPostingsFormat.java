@@ -324,6 +324,11 @@ public class BloomFilteringPostingsFormat extends PostingsFormat {
       public boolean hasPositions() {
         return delegateTerms.hasPositions();
       }
+      
+      @Override
+      public boolean hasPayloads() {
+        return delegateTerms.hasPayloads();
+      }
     }
     
     class BloomFilteredTermsEnum extends TermsEnum {

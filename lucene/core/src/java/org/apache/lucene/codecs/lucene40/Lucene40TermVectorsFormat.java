@@ -67,33 +67,46 @@ import org.apache.lucene.store.IOContext;
  * <li><a name="tvf" id="tvf"></a>
  * <p>The Field or .tvf file.</p>
  * <p>This file contains, for each field that has a term vector stored, a list of
- * the terms, their frequencies and, optionally, position and offset
+ * the terms, their frequencies and, optionally, position, offset, and payload
  * information.</p>
- * <p>Field (.tvf) --&gt; Header,&lt;NumTerms, Position/Offset, TermFreqs&gt;
+ * <p>Field (.tvf) --&gt; Header,&lt;NumTerms, Flags, TermFreqs&gt;
  * <sup>NumFields</sup></p>
  * <ul>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>NumTerms --&gt; {@link DataOutput#writeVInt VInt}</li>
- *   <li>Position/Offset --&gt; {@link DataOutput#writeByte Byte}</li>
- *   <li>TermFreqs --&gt; &lt;TermText, TermFreq, Positions?, Offsets?&gt;
+ *   <li>Flags --&gt; {@link DataOutput#writeByte Byte}</li>
+ *   <li>TermFreqs --&gt; &lt;TermText, TermFreq, Positions?, PayloadData?, Offsets?&gt;
  *       <sup>NumTerms</sup></li>
  *   <li>TermText --&gt; &lt;PrefixLength, Suffix&gt;</li>
  *   <li>PrefixLength --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>Suffix --&gt; {@link DataOutput#writeString String}</li>
  *   <li>TermFreq --&gt; {@link DataOutput#writeVInt VInt}</li>
- *   <li>Positions --&gt; &lt;{@link DataOutput#writeVInt VInt}&gt;<sup>TermFreq</sup></li>
+ *   <li>Positions --&gt; &lt;PositionDelta PayloadLength?&gt;<sup>TermFreq</sup></li>
+ *   <li>PositionDelta --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *   <li>PayloadLength --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *   <li>PayloadData --&gt; {@link DataOutput#writeByte Byte}<sup>NumPayloadBytes</sup></li>
  *   <li>Offsets --&gt; &lt;{@link DataOutput#writeVInt VInt}, {@link DataOutput#writeVInt VInt}&gt;<sup>TermFreq</sup></li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
- * <li>Position/Offset byte stores whether this term vector has position or offset
+ * <li>Flags byte stores whether this term vector has position, offset, payload.
  * information stored.</li>
  * <li>Term byte prefixes are shared. The PrefixLength is the number of initial
  * bytes from the previous term which must be pre-pended to a term's suffix
  * in order to form the term's bytes. Thus, if the previous term's text was "bone"
  * and the term is "boy", the PrefixLength is two and the suffix is "y".</li>
- * <li>Positions are stored as delta encoded VInts. This means we only store the
- * difference of the current position from the last position</li>
+ * <li>PositionDelta is, if payloads are disabled for the term's field, the
+ * difference between the position of the current occurrence in the document and
+ * the previous occurrence (or zero, if this is the first occurrence in this
+ * document). If payloads are enabled for the term's field, then PositionDelta/2
+ * is the difference between the current and the previous position. If payloads
+ * are enabled and PositionDelta is odd, then PayloadLength is stored, indicating
+ * the length of the payload at the current term position.</li>
+ * <li>PayloadData is metadata associated with a term position. If
+ * PayloadLength is stored at the current position, then it indicates the length
+ * of this payload. If PayloadLength is not stored, then this payload has the same
+ * length as the payload at the previous position. PayloadData encodes the 
+ * concatenated bytes for all of a terms occurrences.</li>
  * <li>Offsets are stored as delta encoded VInts. The first VInt is the
  * startOffset, the second is the endOffset.</li>
  * </ul>

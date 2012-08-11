@@ -132,6 +132,11 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         public boolean hasPositions() {
           return false;
         }
+        
+        @Override
+        public boolean hasPayloads() {
+          return false;
+        }
       });
       
       assert termsEnum != null;

@@ -55,6 +55,8 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
   static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
   
+  static final byte STORE_PAYLOAD_WITH_TERMVECTOR = 0x4;
+  
   /** Extension of vectors fields file */
   static final String VECTORS_FIELDS_EXTENSION = "tvf";
 
@@ -68,8 +70,10 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
   static final String CODEC_NAME_DOCS = "Lucene40TermVectorsDocs";
   static final String CODEC_NAME_INDEX = "Lucene40TermVectorsIndex";
 
-  static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_NO_PAYLOADS = 0;
+  static final int VERSION_PAYLOADS = 1;
+  static final int VERSION_START = VERSION_NO_PAYLOADS;
+  static final int VERSION_CURRENT = VERSION_PAYLOADS;
   
   static final long HEADER_LENGTH_FIELDS = CodecUtil.headerLength(CODEC_NAME_FIELDS);
   static final long HEADER_LENGTH_DOCS = CodecUtil.headerLength(CODEC_NAME_DOCS);
@@ -298,7 +302,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     private final long tvfFPStart;
     private final boolean storePositions;
     private final boolean storeOffsets;
-
+    private final boolean storePayloads;
 
     public TVTerms(long tvfFP) throws IOException {
       tvf.seek(tvfFP);
@@ -306,6 +310,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       final byte bits = tvf.readByte();
       storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
       storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
+      storePayloads = (bits & STORE_PAYLOAD_WITH_TERMVECTOR) != 0;
       tvfFPStart = tvf.getFilePointer();
     }
 
@@ -320,7 +325,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       } else {
         termsEnum = new TVTermsEnum();
       }
-      termsEnum.reset(numTerms, tvfFPStart, storePositions, storeOffsets);
+      termsEnum.reset(numTerms, tvfFPStart, storePositions, storeOffsets, storePayloads);
       return termsEnum;
     }
 
@@ -361,6 +366,11 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     public boolean hasPositions() {
       return storePositions;
     }
+    
+    @Override
+    public boolean hasPayloads() {
+      return storePayloads;
+    }
   }
 
   private class TVTermsEnum extends TermsEnum {
@@ -373,11 +383,17 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     private BytesRef term = new BytesRef();
     private boolean storePositions;
     private boolean storeOffsets;
+    private boolean storePayloads;
     private long tvfFP;
 
     private int[] positions;
     private int[] startOffsets;
     private int[] endOffsets;
+    
+    // one shared byte[] for any term's payloads
+    private int[] payloadOffsets;
+    private int lastPayloadLength;
+    private byte[] payloadData;
 
     // NOTE: tvf is pre-positioned by caller
     public TVTermsEnum() {
@@ -389,16 +405,20 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       return tvf == origTVF;
     }
 
-    public void reset(int numTerms, long tvfFPStart, boolean storePositions, boolean storeOffsets) throws IOException {
+    public void reset(int numTerms, long tvfFPStart, boolean storePositions, boolean storeOffsets, boolean storePayloads) throws IOException {
       this.numTerms = numTerms;
       this.storePositions = storePositions;
       this.storeOffsets = storeOffsets;
+      this.storePayloads = storePayloads;
       nextTerm = 0;
       tvf.seek(tvfFPStart);
       tvfFP = 1+tvfFPStart;
       positions = null;
       startOffsets = null;
       endOffsets = null;
+      payloadOffsets = null;
+      payloadData = null;
+      lastPayloadLength = -1;
     }
 
     // NOTE: slow!  (linear scan)
@@ -445,7 +465,26 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       tvf.readBytes(term.bytes, start, deltaLen);
       freq = tvf.readVInt();
 
-      if (storePositions) {
+      if (storePayloads) {
+        positions = new int[freq];
+        payloadOffsets = new int[freq];
+        int totalPayloadLength = 0;
+        int pos = 0;
+        for(int posUpto=0;posUpto<freq;posUpto++) {
+          int code = tvf.readVInt();
+          pos += code >>> 1;
+          positions[posUpto] = pos;
+          if ((code & 1) != 0) {
+            // length change
+            lastPayloadLength = tvf.readVInt();
+          }
+          payloadOffsets[posUpto] = totalPayloadLength;
+          totalPayloadLength += lastPayloadLength;
+          assert totalPayloadLength >= 0;
+        }
+        payloadData = new byte[totalPayloadLength];
+        tvf.readBytes(payloadData, 0, payloadData.length);
+      } else if (storePositions /* no payloads */) {
         // TODO: we could maybe reuse last array, if we can
         // somehow be careful about consumer never using two
         // D&PEnums at once...
@@ -517,14 +556,12 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       } else {
         docsAndPositionsEnum = new TVDocsAndPositionsEnum();
       }
-      docsAndPositionsEnum.reset(liveDocs, positions, startOffsets, endOffsets);
+      docsAndPositionsEnum.reset(liveDocs, positions, startOffsets, endOffsets, payloadOffsets, payloadData);
       return docsAndPositionsEnum;
     }
 
     @Override
     public Comparator<BytesRef> getComparator() {
-      // TODO: really indexer hardwires
-      // this...?  I guess codec could buffer and re-sort...
       return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
   }
@@ -582,6 +619,9 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     private int[] positions;
     private int[] startOffsets;
     private int[] endOffsets;
+    private int[] payloadOffsets;
+    private BytesRef payload = new BytesRef();
+    private byte[] payloadBytes;
 
     @Override
     public int freq() throws IOException {
@@ -617,11 +657,13 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       }
     }
 
-    public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets) {
+    public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets, int[] payloadLengths, byte[] payloadBytes) {
       this.liveDocs = liveDocs;
       this.positions = positions;
       this.startOffsets = startOffsets;
       this.endOffsets = endOffsets;
+      this.payloadOffsets = payloadLengths;
+      this.payloadBytes = payloadBytes;
       this.doc = -1;
       didNext = false;
       nextPos = 0;
@@ -629,12 +671,31 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
     @Override
     public BytesRef getPayload() {
-      return null;
+      // TODO: dumb that we have to duplicate hasPayload
+      if (payloadOffsets == null) {
+        return null;
+      } else {
+        int off = payloadOffsets[nextPos-1];
+        int end = nextPos == payloadOffsets.length ? payloadBytes.length : payloadOffsets[nextPos];
+        if (end - off == 0) {
+          return null;
+        }
+        payload.bytes = payloadBytes;
+        payload.offset = off;
+        payload.length = end - off;
+        return payload;
+      }
     }
 
     @Override
     public boolean hasPayload() {
-      return false;
+      if (payloadOffsets == null) {
+        return false;
+      } else {
+        int off = payloadOffsets[nextPos-1];
+        int end = nextPos == payloadOffsets.length ? payloadBytes.length : payloadOffsets[nextPos];
+        return end - off > 0;
+      }
     }
 
     @Override

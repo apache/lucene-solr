@@ -72,6 +72,11 @@ public class TestIndexableField extends LuceneTestCase {
       public boolean storeTermVectorPositions() {
         return counter % 2 == 1 && counter % 10 != 9;
       }
+      
+      @Override
+      public boolean storeTermVectorPayloads() {
+        return counter % 2 == 1 && counter % 10 != 9;
+      }
 
       @Override
       public boolean omitNorms() {

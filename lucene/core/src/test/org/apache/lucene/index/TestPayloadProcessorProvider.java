@@ -145,8 +145,18 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newField("id", "doc" + i, customType));
       doc.add(newTextField("content", "doc content " + i, Field.Store.NO));
-      doc.add(new TextField("p", payloadTS1));
-      doc.add(new TextField("p", payloadTS2));
+      if (random.nextBoolean()) {
+        doc.add(new TextField("p", payloadTS1));
+        doc.add(new TextField("p", payloadTS2));
+      } else {
+        FieldType type = new FieldType(TextField.TYPE_NOT_STORED);
+        type.setStoreTermVectors(true);
+        type.setStoreTermVectorPositions(true);
+        type.setStoreTermVectorPayloads(true);
+        type.setStoreTermVectorOffsets(random.nextBoolean());
+        doc.add(new Field("p", payloadTS1, type));
+        doc.add(new Field("p", payloadTS2, type));
+      }
       writer.addDocument(doc);
       if (multipleCommits && (i % 4 == 0)) {
         writer.commit();

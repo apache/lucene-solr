@@ -119,6 +119,11 @@ public class FilterAtomicReader extends AtomicReader {
     public boolean hasPositions() {
       return in.hasPositions();
     }
+    
+    @Override
+    public boolean hasPayloads() {
+      return in.hasPayloads();
+    }
   }
 
   /** Base class for filtering {@link TermsEnum} implementations. */

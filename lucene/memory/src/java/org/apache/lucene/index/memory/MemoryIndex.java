@@ -787,7 +787,12 @@ public class MemoryIndex {
             @Override
             public boolean hasPositions() {
               return true;
-            }  
+            }
+            
+            @Override
+            public boolean hasPayloads() {
+              return false;
+            }
           };
         }
       }

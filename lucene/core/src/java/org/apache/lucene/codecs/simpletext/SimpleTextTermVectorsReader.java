@@ -127,10 +127,14 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       boolean offsets = Boolean.parseBoolean(readString(FIELDOFFSETS.length, scratch));
       
       readLine();
+      assert StringHelper.startsWith(scratch, FIELDPAYLOADS);
+      boolean payloads = Boolean.parseBoolean(readString(FIELDPAYLOADS.length, scratch));
+      
+      readLine();
       assert StringHelper.startsWith(scratch, FIELDTERMCOUNT);
       int termCount = parseIntAt(FIELDTERMCOUNT.length);
       
-      SimpleTVTerms terms = new SimpleTVTerms(offsets, positions);
+      SimpleTVTerms terms = new SimpleTVTerms(offsets, positions, payloads);
       fields.put(fieldName, terms);
       
       for (int j = 0; j < termCount; j++) {
@@ -152,6 +156,9 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         if (positions || offsets) {
           if (positions) {
             postings.positions = new int[postings.freq];
+            if (payloads) {
+              postings.payloads = new BytesRef[postings.freq];
+            }
           }
         
           if (offsets) {
@@ -164,6 +171,17 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
               readLine();
               assert StringHelper.startsWith(scratch, POSITION);
               postings.positions[k] = parseIntAt(POSITION.length);
+              if (payloads) {
+                readLine();
+                assert StringHelper.startsWith(scratch, PAYLOAD);
+                if (scratch.length - PAYLOAD.length == 0) {
+                  postings.payloads[k] = null;
+                } else {
+                  byte payloadBytes[] = new byte[scratch.length - PAYLOAD.length];
+                  System.arraycopy(scratch.bytes, scratch.offset+PAYLOAD.length, payloadBytes, 0, payloadBytes.length);
+                  postings.payloads[k] = new BytesRef(payloadBytes);
+                }
+              }
             }
             
             if (offsets) {
@@ -259,10 +277,12 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     final SortedMap<BytesRef,SimpleTVPostings> terms;
     final boolean hasOffsets;
     final boolean hasPositions;
+    final boolean hasPayloads;
     
-    SimpleTVTerms(boolean hasOffsets, boolean hasPositions) {
+    SimpleTVTerms(boolean hasOffsets, boolean hasPositions, boolean hasPayloads) {
       this.hasOffsets = hasOffsets;
       this.hasPositions = hasPositions;
+      this.hasPayloads = hasPayloads;
       terms = new TreeMap<BytesRef,SimpleTVPostings>();
     }
     
@@ -306,6 +326,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     public boolean hasPositions() {
       return hasPositions;
     }
+    
+    @Override
+    public boolean hasPayloads() {
+      return hasPayloads;
+    }
   }
   
   private static class SimpleTVPostings {
@@ -313,6 +338,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private int positions[];
     private int startOffsets[];
     private int endOffsets[];
+    private BytesRef payloads[];
   }
   
   private static class SimpleTVTermsEnum extends TermsEnum {
@@ -386,7 +412,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       }
       // TODO: reuse
       SimpleTVDocsAndPositionsEnum e = new SimpleTVDocsAndPositionsEnum();
-      e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets);
+      e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
       return e;
     }
 
@@ -447,6 +473,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private int nextPos;
     private Bits liveDocs;
     private int[] positions;
+    private BytesRef[] payloads;
     private int[] startOffsets;
     private int[] endOffsets;
 
@@ -484,11 +511,12 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       }
     }
 
-    public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets) {
+    public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets, BytesRef payloads[]) {
       this.liveDocs = liveDocs;
       this.positions = positions;
       this.startOffsets = startOffsets;
       this.endOffsets = endOffsets;
+      this.payloads = payloads;
       this.doc = -1;
       didNext = false;
       nextPos = 0;
@@ -496,12 +524,13 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public BytesRef getPayload() {
-      return null;
+      // assert hasPayload(); // you should have called this
+      return payloads == null ? null : payloads[nextPos-1];
     }
 
     @Override
     public boolean hasPayload() {
-      return false;
+      return payloads != null && payloads[nextPos-1] != null;
     }
 
     @Override
