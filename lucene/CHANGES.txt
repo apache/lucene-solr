@@ -31,6 +31,11 @@ Bug Fixes
   had a custom Similarity where coord(1,1) != 1F, then the rewritten
   query would be scored differently.  (Robert Muir)
 
+* Don't allow negatives in the positions file. If you have an index
+  from 2.4.0 or earlier with such negative positions, and you already 
+  upgraded to 3.x, then to Lucene 4.0-ALPHA or -BETA, you should run 
+  CheckIndex. If it fails, then you need to upgrade again to 4.0  (Robert Muir)
+
 ======================= Lucene 4.0.0-BETA =======================
 
 New features

@@ -822,11 +822,8 @@ public class CheckIndex {
           if (hasPositions) {
             for(int j=0;j<freq;j++) {
               final int pos = postings.nextPosition();
-              // NOTE: pos=-1 is allowed because of ancient bug
-              // (LUCENE-1542) whereby IndexWriter could
-              // write pos=-1 when first token's posInc is 0
 
-              if (pos < -1) {
+              if (pos < 0) {
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
               }
               if (pos < lastPos) {
@@ -919,14 +916,8 @@ public class CheckIndex {
               int lastOffset = 0;
               for(int posUpto=0;posUpto<freq;posUpto++) {
                 final int pos = postings.nextPosition();
-                // NOTE: pos=-1 is allowed because of ancient bug
-                // (LUCENE-1542) whereby IndexWriter could
-                // write pos=-1 when first token's posInc is 0
-                // (separately: analyzers should not give
-                // posInc=0 to first token); also, term
-                // vectors are allowed to return pos=-1 if
-                // they indexed offset but not positions:
-                if (pos < -1) {
+
+                if (pos < 0) {
                   throw new RuntimeException("position " + pos + " is out of bounds");
                 }
                 if (pos < lastPosition) {
@@ -1498,7 +1489,7 @@ public class CheckIndex {
                       int pos = postings.nextPosition();
                       if (postingsPostings != null) {
                         int postingsPos = postingsPostings.nextPosition();
-                        if (pos != -1 && postingsPos != -1 && pos != postingsPos) {
+                        if (terms.hasPositions() && pos != postingsPos) {
                           throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": pos=" + pos + " differs from postings pos=" + postingsPos);
                         }
                       }
