@@ -99,6 +99,8 @@ extends SegmentTermDocs  {
       } 
       delta >>>= 1;
       needToLoadPayload = true;
+    } else if (delta == -1) {
+      delta = 0; // LUCENE-1542 correction
     }
     return delta;
   }

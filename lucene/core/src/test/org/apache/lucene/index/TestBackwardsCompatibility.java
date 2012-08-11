@@ -53,8 +53,10 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -876,5 +878,73 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     _TestUtil.checkIndex(dir);
     dir.close();
   }
+  
+  /* 
+   * Index with negative positions (LUCENE-1542)
+   * Created with this code, using a 2.4.0 jar, then upgraded with 3.6 upgrader:
+   *
+   * public class CreateBogusIndexes {
+   *   public static void main(String args[]) throws Exception {
+   *     Directory d = FSDirectory.getDirectory("/tmp/bogus24");
+   *     IndexWriter iw = new IndexWriter(d, new StandardAnalyzer());
+   *     Document doc = new Document();
+   *     Token brokenToken = new Token("broken", 0, 3);
+   *     brokenToken.setPositionIncrement(0);
+   *     Token okToken = new Token("ok", 0, 2);
+   *     doc.add(new Field("field1", new CannedTokenStream(brokenToken), Field.TermVector.NO));
+   *     doc.add(new Field("field2", new CannedTokenStream(brokenToken), Field.TermVector.WITH_POSITIONS));
+   *     doc.add(new Field("field3", new CannedTokenStream(brokenToken, okToken), Field.TermVector.NO));
+   *     doc.add(new Field("field4", new CannedTokenStream(brokenToken, okToken), Field.TermVector.WITH_POSITIONS));
+   *     iw.addDocument(doc);
+   *     doc = new Document();
+   *     doc.add(new Field("field1", "just more text, not broken", Field.Store.NO, Field.Index.ANALYZED));
+   *     doc.add(new Field("field2", "just more text, not broken", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+   *     doc.add(new Field("field3", "just more text, not broken", Field.Store.NO, Field.Index.ANALYZED));
+   *     doc.add(new Field("field4", "just more text, not broken", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+   *     iw.addDocument(doc);
+   *     iw.close();
+   *     d.close();
+   *   }
+   * 
+   *   static class CannedTokenStream extends TokenStream {
+   *     private final Token[] tokens;
+   *     private int upto = 0;
+   *  
+   *     CannedTokenStream(Token... tokens) {
+   *       this.tokens = tokens;
+   *     }
+   *  
+   *     @Override
+   *     public Token next() {
+   *       if (upto < tokens.length) {
+   *         return tokens[upto++];
+   *       } else {
+   *         return null;
+   *       }
+   *     }
+   *   }
+   * }
+   */
+  public static final String bogus24IndexName = "bogus24.upgraded.to.36.zip";
 
+  public void testNegativePositions() throws Exception {
+    File oldIndexDir = _TestUtil.getTempDir("negatives");
+    _TestUtil.unzip(getDataFile(bogus24IndexName), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    DirectoryReader ir = DirectoryReader.open(dir);
+    IndexSearcher is = new IndexSearcher(ir);
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("field3", "more"));
+    pq.add(new Term("field3", "text"));
+    TopDocs td = is.search(pq, 10);
+    assertEquals(1, td.totalHits);
+    SlowCompositeReaderWrapper wrapper = new SlowCompositeReaderWrapper(ir);
+    DocsAndPositionsEnum de = wrapper.termPositionsEnum(null, "field3", new BytesRef("broken"));
+    assert de != null;
+    assertEquals(0, de.nextDoc());
+    assertEquals(0, de.nextPosition());
+    ir.close();
+    _TestUtil.checkIndex(dir);
+    dir.close();
+  }
 }

@@ -417,7 +417,11 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
           int positions[] = new int[freq];
           int pos = 0;
           for(int posUpto=0;posUpto<freq;posUpto++) {
-            pos += tvf.readVInt();
+            int delta = tvf.readVInt();
+            if (delta == -1) {
+              delta = 0; // LUCENE-1542 correction
+            }
+            pos += delta;
             positions[posUpto] = pos;
           }
           t.positions = positions;
