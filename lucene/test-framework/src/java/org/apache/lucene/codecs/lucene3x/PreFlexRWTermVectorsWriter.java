@@ -75,9 +75,12 @@ final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
   private String lastFieldName;
 
   @Override
-  public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException {
+  public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads) throws IOException {
     assert lastFieldName == null || info.name.compareTo(lastFieldName) > 0: "fieldName=" + info.name + " lastFieldName=" + lastFieldName;
     lastFieldName = info.name;
+    if (payloads) {
+      throw new UnsupportedOperationException("3.x codec does not support payloads on vectors!");
+    }
     this.positions = positions;
     this.offsets = offsets;
     lastTerm.length = 0;
@@ -136,24 +139,8 @@ final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
   int lastOffset = 0;
 
   @Override
-  public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
-    // TODO: technically we could just copy bytes and not re-encode if we knew the length...
-    if (positions != null) {
-      for (int i = 0; i < numProx; i++) {
-        tvf.writeVInt(positions.readVInt());
-      }
-    }
-    
-    if (offsets != null) {
-      for (int i = 0; i < numProx; i++) {
-        tvf.writeVInt(offsets.readVInt());
-        tvf.writeVInt(offsets.readVInt());
-      }
-    }
-  }
-
-  @Override
-  public void addPosition(int position, int startOffset, int endOffset) throws IOException {
+  public void addPosition(int position, int startOffset, int endOffset, BytesRef payload) throws IOException {
+    assert payload == null;
     if (positions && offsets) {
       // write position delta
       tvf.writeVInt(position - lastPosition);

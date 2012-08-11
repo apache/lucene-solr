@@ -110,6 +110,9 @@ public abstract class Terms {
   
   /** Returns true if documents in this field store positions. */
   public abstract boolean hasPositions();
+  
+  /** Returns true if documents in this field store payloads. */
+  public abstract boolean hasPayloads();
 
   public final static Terms[] EMPTY_ARRAY = new Terms[0];
 }

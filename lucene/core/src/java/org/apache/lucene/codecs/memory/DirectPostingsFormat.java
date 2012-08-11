@@ -644,6 +644,11 @@ public class DirectPostingsFormat extends PostingsFormat {
     public boolean hasPositions() {
       return hasPos;
     }
+    
+    @Override
+    public boolean hasPayloads() {
+      return hasPayloads;
+    }
 
     private final class DirectTermsEnum extends TermsEnum {
 

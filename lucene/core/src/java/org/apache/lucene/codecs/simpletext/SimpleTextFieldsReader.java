@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
@@ -498,7 +499,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
   private class SimpleTextTerms extends Terms {
     private final long termsStart;
-    private final IndexOptions indexOptions;
+    private final FieldInfo fieldInfo;
     private long sumTotalTermFreq;
     private long sumDocFreq;
     private int docCount;
@@ -509,7 +510,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     public SimpleTextTerms(String field, long termsStart) throws IOException {
       this.termsStart = termsStart;
-      indexOptions = fieldInfos.fieldInfo(field).getIndexOptions();
+      fieldInfo = fieldInfos.fieldInfo(field);
       loadTerms();
     }
 
@@ -579,7 +580,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       if (fst != null) {
-        return new SimpleTextTermsEnum(fst, indexOptions);
+        return new SimpleTextTermsEnum(fst, fieldInfo.getIndexOptions());
       } else {
         return TermsEnum.EMPTY;
       }
@@ -597,7 +598,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public long getSumTotalTermFreq() {
-      return indexOptions == IndexOptions.DOCS_ONLY ? -1 : sumTotalTermFreq;
+      return fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : sumTotalTermFreq;
     }
 
     @Override
@@ -612,12 +613,17 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public boolean hasOffsets() {
-      return indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }
 
     @Override
     public boolean hasPositions() {
-      return indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    }
+    
+    @Override
+    public boolean hasPayloads() {
+      return fieldInfo.hasPayloads();
     }
   }
 

@@ -28,6 +28,8 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
+import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -41,14 +43,14 @@ import org.apache.lucene.util.BytesRef;
  * <ol>
  *   <li>For every document, {@link #startDocument(int)} is called,
  *       informing the Codec how many fields will be written.
- *   <li>{@link #startField(FieldInfo, int, boolean, boolean)} is called for 
+ *   <li>{@link #startField(FieldInfo, int, boolean, boolean, boolean)} is called for 
  *       each field in the document, informing the codec how many terms
- *       will be written for that field, and whether or not positions
- *       or offsets are enabled.
+ *       will be written for that field, and whether or not positions,
+ *       offsets, or payloads are enabled.
  *   <li>Within each field, {@link #startTerm(BytesRef, int)} is called
  *       for each term.
  *   <li>If offsets and/or positions are enabled, then 
- *       {@link #addPosition(int, int, int)} will be called for each term
+ *       {@link #addPosition(int, int, int, BytesRef)} will be called for each term
  *       occurrence.
  *   <li>After all documents have been written, {@link #finish(FieldInfos, int)} 
  *       is called for verification/sanity-checks.
@@ -60,7 +62,7 @@ import org.apache.lucene.util.BytesRef;
 public abstract class TermVectorsWriter implements Closeable {
   
   /** Called before writing the term vectors of the document.
-   *  {@link #startField(FieldInfo, int, boolean, boolean)} will 
+   *  {@link #startField(FieldInfo, int, boolean, boolean, boolean)} will 
    *  be called <code>numVectorFields</code> times. Note that if term 
    *  vectors are enabled, this is called even if the document 
    *  has no vector fields, in this case <code>numVectorFields</code> 
@@ -69,17 +71,17 @@ public abstract class TermVectorsWriter implements Closeable {
   
   /** Called before writing the terms of the field.
    *  {@link #startTerm(BytesRef, int)} will be called <code>numTerms</code> times. */
-  public abstract void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException;
+  public abstract void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads) throws IOException;
   
   /** Adds a term and its term frequency <code>freq</code>.
    * If this field has positions and/or offsets enabled, then
-   * {@link #addPosition(int, int, int)} will be called 
+   * {@link #addPosition(int, int, int, BytesRef)} will be called 
    * <code>freq</code> times respectively.
    */
   public abstract void startTerm(BytesRef term, int freq) throws IOException;
   
   /** Adds a term position and offsets */
-  public abstract void addPosition(int position, int startOffset, int endOffset) throws IOException;
+  public abstract void addPosition(int position, int startOffset, int endOffset, BytesRef payload) throws IOException;
   
   /** Aborts writing entirely, implementation should remove
    *  any partially-written files, etc. */
@@ -99,7 +101,7 @@ public abstract class TermVectorsWriter implements Closeable {
    * This is an expert API that allows the codec to consume 
    * positions and offsets directly from the indexer.
    * <p>
-   * The default implementation calls {@link #addPosition(int, int, int)},
+   * The default implementation calls {@link #addPosition(int, int, int, BytesRef)},
    * but subclasses can override this if they want to efficiently write 
    * all the positions, then all the offsets, for example.
    * <p>
@@ -111,15 +113,36 @@ public abstract class TermVectorsWriter implements Closeable {
   public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
     int position = 0;
     int lastOffset = 0;
+    BytesRef payload = null;
 
     for (int i = 0; i < numProx; i++) {
       final int startOffset;
       final int endOffset;
+      final BytesRef thisPayload;
       
       if (positions == null) {
         position = -1;
+        thisPayload = null;
       } else {
-        position += positions.readVInt();
+        int code = positions.readVInt();
+        position += code >>> 1;
+        if ((code & 1) != 0) {
+          // This position has a payload
+          final int payloadLength = positions.readVInt();
+
+          if (payload == null) {
+            payload = new BytesRef();
+            payload.bytes = new byte[payloadLength];
+          } else if (payload.bytes.length < payloadLength) {
+            payload.grow(payloadLength);
+          }
+
+          positions.readBytes(payload.bytes, 0, payloadLength);
+          payload.length = payloadLength;
+          thisPayload = payload;
+        } else {
+          thisPayload = null;
+        }
       }
       
       if (offsets == null) {
@@ -129,24 +152,31 @@ public abstract class TermVectorsWriter implements Closeable {
         endOffset = startOffset + offsets.readVInt();
         lastOffset = endOffset;
       }
-      addPosition(position, startOffset, endOffset);
+      addPosition(position, startOffset, endOffset, thisPayload);
     }
   }
   
   /** Merges in the term vectors from the readers in 
    *  <code>mergeState</code>. The default implementation skips
    *  over deleted documents, and uses {@link #startDocument(int)},
-   *  {@link #startField(FieldInfo, int, boolean, boolean)}, 
-   *  {@link #startTerm(BytesRef, int)}, {@link #addPosition(int, int, int)},
+   *  {@link #startField(FieldInfo, int, boolean, boolean, boolean)}, 
+   *  {@link #startTerm(BytesRef, int)}, {@link #addPosition(int, int, int, BytesRef)},
    *  and {@link #finish(FieldInfos, int)},
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
-    for (AtomicReader reader : mergeState.readers) {
+    for (int i = 0; i < mergeState.readers.size(); i++) {
+      final AtomicReader reader = mergeState.readers.get(i);
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
+      // set PayloadProcessor
+      if (mergeState.payloadProcessorProvider != null) {
+        mergeState.currentReaderPayloadProcessor = mergeState.readerPayloadProcessor[i];
+      } else {
+        mergeState.currentReaderPayloadProcessor = null;
+      }
       for (int docID = 0; docID < maxDoc; docID++) {
         if (liveDocs != null && !liveDocs.get(docID)) {
           // skip deleted docs
@@ -155,7 +185,7 @@ public abstract class TermVectorsWriter implements Closeable {
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
         Fields vectors = reader.getTermVectors(docID);
-        addAllDocVectors(vectors, mergeState.fieldInfos);
+        addAllDocVectors(vectors, mergeState);
         docCount++;
         mergeState.checkAbort.work(300);
       }
@@ -169,7 +199,7 @@ public abstract class TermVectorsWriter implements Closeable {
    *  implementation requires that the vectors implement
    *  both Fields.size and
    *  Terms.size. */
-  protected final void addAllDocVectors(Fields vectors, FieldInfos fieldInfos) throws IOException {
+  protected final void addAllDocVectors(Fields vectors, MergeState mergeState) throws IOException {
     if (vectors == null) {
       startDocument(0);
       return;
@@ -187,9 +217,12 @@ public abstract class TermVectorsWriter implements Closeable {
     
     TermsEnum termsEnum = null;
     DocsAndPositionsEnum docsAndPositionsEnum = null;
+    
+    final ReaderPayloadProcessor readerPayloadProcessor = mergeState.currentReaderPayloadProcessor;
+    PayloadProcessor payloadProcessor = null;
 
     while((fieldName = fieldsEnum.next()) != null) {
-      final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
+      final FieldInfo fieldInfo = mergeState.fieldInfos.fieldInfo(fieldName);
 
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
       lastFieldName = fieldName;
@@ -202,13 +235,15 @@ public abstract class TermVectorsWriter implements Closeable {
       
       final boolean hasPositions = terms.hasPositions();
       final boolean hasOffsets = terms.hasOffsets();
+      final boolean hasPayloads = terms.hasPayloads();
+      assert !hasPayloads || hasPositions;
       
       final int numTerms = (int) terms.size();
       if (numTerms == -1) {
         throw new IllegalStateException("terms.size() must be implemented (it returned -1)");
       }
       
-      startField(fieldInfo, numTerms, hasPositions, hasOffsets);
+      startField(fieldInfo, numTerms, hasPositions, hasOffsets, hasPayloads);
       termsEnum = terms.iterator(termsEnum);
 
       int termCount = 0;
@@ -218,6 +253,10 @@ public abstract class TermVectorsWriter implements Closeable {
         final int freq = (int) termsEnum.totalTermFreq();
         
         startTerm(termsEnum.term(), freq);
+        
+        if (hasPayloads && readerPayloadProcessor != null) {
+          payloadProcessor = readerPayloadProcessor.getProcessor(fieldName, termsEnum.term());
+        }
 
         if (hasPositions || hasOffsets) {
           docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
@@ -231,9 +270,22 @@ public abstract class TermVectorsWriter implements Closeable {
             final int pos = docsAndPositionsEnum.nextPosition();
             final int startOffset = docsAndPositionsEnum.startOffset();
             final int endOffset = docsAndPositionsEnum.endOffset();
+            
+            BytesRef payload = docsAndPositionsEnum.hasPayload() ? 
+                docsAndPositionsEnum.getPayload() : null;
+                
+            if (payloadProcessor != null && payload != null) {
+              // to not violate the D&P api, we must give the processor a private copy
+              payload = BytesRef.deepCopyOf(payload);
+              payloadProcessor.processPayload(payload);
+              if (payload.length == 0) {
+                // don't let PayloadProcessors corrumpt the index
+                payload = null;
+              }
+            }
 
             assert !hasPositions || pos >= 0;
-            addPosition(pos, startOffset, endOffset);
+            addPosition(pos, startOffset, endOffset, payload);
           }
         }
       }

@@ -937,6 +937,10 @@ public abstract class LuceneTestCase extends Assert {
       }
       if (!newType.storeTermVectorPositions()) {
         newType.setStoreTermVectorPositions(random.nextBoolean());
+        
+        if (newType.storeTermVectorPositions() && !newType.storeTermVectorPayloads() && !PREFLEX_IMPERSONATION_IS_ACTIVE) {
+          newType.setStoreTermVectorPayloads(random.nextBoolean());
+        }
       }
     }
 

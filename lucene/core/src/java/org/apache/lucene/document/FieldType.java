@@ -39,6 +39,7 @@ public class FieldType implements IndexableFieldType {
   private boolean storeTermVectors;
   private boolean storeTermVectorOffsets;
   private boolean storeTermVectorPositions;
+  private boolean storeTermVectorPayloads;
   private boolean omitNorms;
   private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
   private DocValues.Type docValueType;
@@ -53,6 +54,7 @@ public class FieldType implements IndexableFieldType {
     this.storeTermVectors = ref.storeTermVectors();
     this.storeTermVectorOffsets = ref.storeTermVectorOffsets();
     this.storeTermVectorPositions = ref.storeTermVectorPositions();
+    this.storeTermVectorPayloads = ref.storeTermVectorPayloads();
     this.omitNorms = ref.omitNorms();
     this.indexOptions = ref.indexOptions();
     this.docValueType = ref.docValueType();
@@ -132,6 +134,15 @@ public class FieldType implements IndexableFieldType {
     this.storeTermVectorPositions = value;
   }
   
+  public boolean storeTermVectorPayloads() {
+    return this.storeTermVectorPayloads;
+  }
+  
+  public void setStoreTermVectorPayloads(boolean value) {
+    checkIfFrozen();
+    this.storeTermVectorPayloads = value;
+  }
+  
   public boolean omitNorms() {
     return this.omitNorms;
   }
@@ -198,24 +209,19 @@ public class FieldType implements IndexableFieldType {
         result.append(",");
       result.append("indexed");
       if (tokenized()) {
-        if (result.length() > 0)
-          result.append(",");
-        result.append("tokenized");
+        result.append(",tokenized");
       }
       if (storeTermVectors()) {
-        if (result.length() > 0)
-          result.append(",");
-        result.append("termVector");
+        result.append(",termVector");
       }
       if (storeTermVectorOffsets()) {
-        if (result.length() > 0)
-          result.append(",");
-        result.append("termVectorOffsets");
+        result.append(",termVectorOffsets");
       }
       if (storeTermVectorPositions()) {
-        if (result.length() > 0)
-          result.append(",");
-        result.append("termVectorPosition");
+        result.append(",termVectorPosition");
+        if (storeTermVectorPayloads()) {
+          result.append(",termVectorPayloads");
+        }
       }
       if (omitNorms()) {
         result.append(",omitNorms");
@@ -232,7 +238,9 @@ public class FieldType implements IndexableFieldType {
       }
     }
     if (docValueType != null) {
-      result.append(",docValueType=");
+      if (result.length() > 0)
+        result.append(",");
+      result.append("docValueType=");
       result.append(docValueType);
     }
     

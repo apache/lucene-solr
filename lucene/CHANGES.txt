@@ -8,6 +8,13 @@ http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib
 
 ======================= Lucene 4.0.0 =======================
 
+New Features
+
+* LUCENE-1888: Added the option to store payloads in the term
+  vectors (IndexableFieldType.storeTermVectorPayloads()). Note 
+  that you must store term vector positions to store payloads.
+  (Robert Muir)
+
 API Changes
 
 * LUCENE-4299: Added Terms.hasPositions() and Terms.hasOffsets().

@@ -844,6 +844,11 @@ public class MemoryPostingsFormat extends PostingsFormat {
     public boolean hasPositions() {
       return field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     }
+    
+    @Override
+    public boolean hasPayloads() {
+      return field.hasPayloads();
+    }
   }
 
   @Override

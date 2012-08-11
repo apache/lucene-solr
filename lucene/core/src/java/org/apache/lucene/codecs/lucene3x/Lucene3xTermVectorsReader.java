@@ -349,6 +349,11 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     public boolean hasPositions() {
       return storePositions;
     }
+
+    @Override
+    public boolean hasPayloads() {
+      return false;
+    }
   }
 
   static class TermAndPostings {

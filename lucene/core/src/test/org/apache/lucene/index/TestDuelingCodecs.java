@@ -209,6 +209,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     assertTermsStatistics(leftTerms, rightTerms);
     assertEquals(leftTerms.hasOffsets(), rightTerms.hasOffsets());
     assertEquals(leftTerms.hasPositions(), rightTerms.hasPositions());
+    assertEquals(leftTerms.hasPayloads(), rightTerms.hasPayloads());
 
     TermsEnum leftTermsEnum = leftTerms.iterator(null);
     TermsEnum rightTermsEnum = rightTerms.iterator(null);

@@ -258,6 +258,11 @@ class Lucene3xFields extends FieldsProducer {
     public boolean hasPositions() {
       return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     }
+
+    @Override
+    public boolean hasPayloads() {
+      return fieldInfo.hasPayloads();
+    }
   }
 
   private class PreTermsEnum extends TermsEnum {
