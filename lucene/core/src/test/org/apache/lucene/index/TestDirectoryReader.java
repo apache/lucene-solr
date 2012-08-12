@@ -613,7 +613,7 @@ public void testFilesOpenClose() throws IOException {
     
     // check dictionary and posting lists
     FieldsEnum fenum1 = MultiFields.getFields(index1).iterator();
-    FieldsEnum fenum2 = MultiFields.getFields(index1).iterator();
+    FieldsEnum fenum2 = MultiFields.getFields(index2).iterator();
     String field1 = null;
     Bits liveDocs = MultiFields.getLiveDocs(index1);
     while((field1=fenum1.next()) != null) {
