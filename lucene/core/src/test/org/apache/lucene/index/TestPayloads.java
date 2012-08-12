@@ -596,7 +596,9 @@ public class TestPayloads extends LuceneTestCase {
   /** some docs have payload att, some not */
   public void testMixupDocs() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
     Field field = new TextField("field", "", Field.Store.NO);
     TokenStream ts = new MockTokenizer(new StringReader("here we go"), MockTokenizer.WHITESPACE, true);
@@ -615,7 +617,7 @@ public class TestPayloads extends LuceneTestCase {
     field.setTokenStream(ts);
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
-    SegmentReader sr = getOnlySegmentReader(reader);
+    AtomicReader sr = reader.getSequentialSubReaders().get(0);
     DocsAndPositionsEnum de = sr.termPositionsEnum(null, "field", new BytesRef("withPayload"));
     de.nextDoc();
     de.nextPosition();
