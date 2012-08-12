@@ -124,7 +124,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
 @ThreadLeakAction({Action.WARN, Action.INTERRUPT})
 @ThreadLeakLingering(linger = 20000) // Wait long for leaked threads to complete before failure. zk needs this.
 @ThreadLeakZombies(Consequence.IGNORE_REMAINING_TESTS)
-@TimeoutSuite(millis = 10 * (/* minutes */ 1000 * 60)) // max suite execution time.
+@TimeoutSuite(millis = Integer.MAX_VALUE) // NOT YET: until nightly tests etc are factored in.
 @ThreadLeakFilters(defaultFilters = true, filters = {
     QuickPatchThreadsFilter.class
 })
