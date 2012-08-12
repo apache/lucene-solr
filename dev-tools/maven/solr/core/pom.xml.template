@@ -245,6 +245,7 @@
         <configuration>
           <systemPropertyVariables>
             <java.util.logging.config.file>${surefire-top-level}/solr/testlogging.properties</java.util.logging.config.file>
+            <java.util.logging.ConsoleHandler.level>INFO</java.util.logging.ConsoleHandler.level>
           </systemPropertyVariables>
         </configuration>
       </plugin>

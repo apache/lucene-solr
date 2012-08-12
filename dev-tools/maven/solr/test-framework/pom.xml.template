@@ -57,6 +57,8 @@
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
+      <!-- SOLR-3263: Provided scope is required to avoid jar signing conflicts -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
