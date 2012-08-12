@@ -128,9 +128,10 @@ public class TestWeakIdentityMap extends LuceneTestCase {
         assertNotNull(it.next());
         c++;
       }
-      assertTrue(size >= c);
-      assertTrue(c >= map.size());
-      size = map.size();
+      final int newSize = map.size();
+      assertTrue("previousSize("+size+")>=iteratorSize("+c+")", size >= c);
+      assertTrue("iteratorSize("+c+")>=newSize("+newSize+")", c >= newSize);
+      size = newSize;
     } catch (InterruptedException ie) {}
 
     map.clear();
@@ -228,9 +229,10 @@ public class TestWeakIdentityMap extends LuceneTestCase {
         assertNotNull(it.next());
         c++;
       }
-      assertTrue(size >= c);
-      assertTrue(c >= map.size());
-      size = map.size();
+      final int newSize = map.size();
+      assertTrue("previousSize("+size+")>=iteratorSize("+c+")", size >= c);
+      assertTrue("iteratorSize("+c+")>=newSize("+newSize+")", c >= newSize);
+      size = newSize;
     } catch (InterruptedException ie) {}
   }
 
