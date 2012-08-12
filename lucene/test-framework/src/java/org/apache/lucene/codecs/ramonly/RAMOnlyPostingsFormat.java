@@ -524,13 +524,12 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public boolean hasPayload() {
-      return current.payloads != null && current.payloads[posUpto-1] != null;
-    }
-
-    @Override
     public BytesRef getPayload() {
-      return new BytesRef(current.payloads[posUpto-1]);
+      if (current.payloads != null && current.payloads[posUpto-1] != null) {
+        return new BytesRef(current.payloads[posUpto-1]);
+      } else {
+        return null;
+      }
     }
   }
 

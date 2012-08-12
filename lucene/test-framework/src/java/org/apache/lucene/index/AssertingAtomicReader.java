@@ -365,15 +365,9 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert state != DocsEnumState.START : "getPayload() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "getPayload() called after NO_MORE_DOCS";
       assert positionCount > 0 : "getPayload() called before nextPosition()!";
-      return super.getPayload();
-    }
-
-    @Override
-    public boolean hasPayload() {
-      assert state != DocsEnumState.START : "hasPayload() called before nextDoc()/advance()";
-      assert state != DocsEnumState.FINISHED : "hasPayload() called after NO_MORE_DOCS";
-      assert positionCount > 0 : "hasPayload() called before nextPosition()!";
-      return super.hasPayload();
+      BytesRef payload = super.getPayload();
+      assert payload == null || payload.length > 0 : "getPayload() returned payload with invalid length!";
+      return payload;
     }
   }
 

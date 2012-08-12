@@ -271,8 +271,7 @@ public abstract class TermVectorsWriter implements Closeable {
             final int startOffset = docsAndPositionsEnum.startOffset();
             final int endOffset = docsAndPositionsEnum.endOffset();
             
-            BytesRef payload = docsAndPositionsEnum.hasPayload() ? 
-                docsAndPositionsEnum.getPayload() : null;
+            BytesRef payload = docsAndPositionsEnum.getPayload();
                 
             if (payloadProcessor != null && payload != null) {
               // to not violate the D&P api, we must give the processor a private copy

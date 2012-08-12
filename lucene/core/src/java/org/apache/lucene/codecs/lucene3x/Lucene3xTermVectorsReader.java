@@ -641,11 +641,6 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public boolean hasPayload() {
-      return false;
-    }
-
-    @Override
     public int nextPosition() {
       assert (positions != null && nextPos < positions.length) ||
         startOffsets != null && nextPos < startOffsets.length;

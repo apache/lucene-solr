@@ -201,18 +201,10 @@ public class TestPayloads extends LuceneTestCase {
             for (int i = 0; i < freq; i++) {
                 for (int j = 0; j < numTerms; j++) {
                     tps[j].nextPosition();
-                    if (tps[j].hasPayload()) {
-                      BytesRef br = tps[j].getPayload();
+                    BytesRef br = tps[j].getPayload();
+                    if (br != null) {
                       System.arraycopy(br.bytes, br.offset, verifyPayloadData, offset, br.length);
                       offset += br.length;
-                      // Just to ensure all codecs can
-                      // handle a caller that mucks with the
-                      // returned payload:
-                      if (rarely()) {
-                        br.bytes = new byte[random().nextInt(5)];
-                      }
-                      br.length = 0;
-                      br.offset = 0;
                     }
                 }
             }
@@ -267,11 +259,6 @@ public class TestPayloads extends LuceneTestCase {
         tp.advance(3 * skipInterval - 1);
         tp.nextPosition();
         assertEquals("Wrong payload length.", 3 * skipInterval - 2 * numDocs - 1, tp.getPayload().length);
-        
-        /*
-         * Test multiple call of getPayload()
-         */
-        assertFalse(tp.hasPayload());
         
         reader.close();
         
@@ -621,7 +608,6 @@ public class TestPayloads extends LuceneTestCase {
     DocsAndPositionsEnum de = sr.termPositionsEnum(null, "field", new BytesRef("withPayload"));
     de.nextDoc();
     de.nextPosition();
-    assertTrue(de.hasPayload());
     assertEquals(new BytesRef("test"), de.getPayload());
     writer.close();
     reader.close();
@@ -656,7 +642,6 @@ public class TestPayloads extends LuceneTestCase {
     DocsAndPositionsEnum de = sr.termPositionsEnum(null, "field", new BytesRef("withPayload"));
     de.nextDoc();
     de.nextPosition();
-    assertTrue(de.hasPayload());
     assertEquals(new BytesRef("test"), de.getPayload());
     writer.close();
     reader.close();

@@ -533,18 +533,12 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public boolean hasPayload() {
-      return storePayloads && !payloadRetrieved && payloadLength > 0;
-    }
-
-    @Override
     public BytesRef getPayload() throws IOException {
       //System.out.println("PR  getPayload payloadLength=" + payloadLength + " this=" + this);
       if (payloadRetrieved) {
-        throw new IOException("Either no payload exists at this term position or an attempt was made to load it more than once.");
-      }
-      payloadRetrieved = true;
-      if (payloadLength > 0) {
+        return payload;
+      } else if (storePayloads && payloadLength > 0) {
+        payloadRetrieved = true;
         if (payload == null) {
           payload = new BytesRef(payloadLength);
         } else {

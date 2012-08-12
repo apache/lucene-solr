@@ -48,11 +48,8 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
   public abstract int endOffset() throws IOException;
 
   /** Returns the payload at this position, or null if no
-   *  payload was indexed.  Only call this once per
-   *  position. You should not modify anything (neither
-   *  members of the returned BytesRef nor bytes in the
-   *  byte[]). */
+   *  payload was indexed. You should not modify anything 
+   *  (neither members of the returned BytesRef nor bytes 
+   *  in the byte[]). */
   public abstract BytesRef getPayload() throws IOException;
-
-  public abstract boolean hasPayload();
 }

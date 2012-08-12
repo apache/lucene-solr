@@ -1016,11 +1016,6 @@ public class MemoryIndex {
       }
 
       @Override
-      public boolean hasPayload() {
-        return false;
-      }
-
-      @Override
       public BytesRef getPayload() {
         return null;
       }

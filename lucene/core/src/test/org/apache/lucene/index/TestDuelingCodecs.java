@@ -412,12 +412,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
       assertEquals(info, freq, rightDocs.freq());
       for (int i = 0; i < freq; i++) {
         assertEquals(info, leftDocs.nextPosition(), rightDocs.nextPosition());
-        assertEquals(info, leftDocs.hasPayload(), rightDocs.hasPayload());
+        assertEquals(info, leftDocs.getPayload(), rightDocs.getPayload());
         assertEquals(info, leftDocs.startOffset(), rightDocs.startOffset());
         assertEquals(info, leftDocs.endOffset(), rightDocs.endOffset());
-        if (leftDocs.hasPayload()) {
-          assertEquals(info, leftDocs.getPayload(), rightDocs.getPayload());
-        }
       }
     }
     assertEquals(info, DocIdSetIterator.NO_MORE_DOCS, rightDocs.nextDoc());
@@ -509,10 +506,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
       assertEquals(info, freq, rightDocs.freq());
       for (int i = 0; i < freq; i++) {
         assertEquals(info, leftDocs.nextPosition(), rightDocs.nextPosition());
-        assertEquals(info, leftDocs.hasPayload(), rightDocs.hasPayload());
-        if (leftDocs.hasPayload()) {
-          assertEquals(info, leftDocs.getPayload(), rightDocs.getPayload());
-        }
+        assertEquals(info, leftDocs.getPayload(), rightDocs.getPayload());
       }
     }
   }

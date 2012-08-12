@@ -138,11 +138,6 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
 
   @Override
-  public boolean hasPayload() {
-    return current.hasPayload();
-  }
-
-  @Override
   public BytesRef getPayload() throws IOException {
     return current.getPayload();
   }

@@ -472,18 +472,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public BytesRef getPayload() {
-      // Some tests rely on only being able to retrieve the
-      // payload once
-      try {
-        return payload;
-      } finally {
-        payload = null;
-      }
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return payload != null;
+      return payload;
     }
   }
 

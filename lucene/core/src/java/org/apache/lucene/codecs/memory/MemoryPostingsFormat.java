@@ -446,7 +446,6 @@ public class MemoryPostingsFormat extends PostingsFormat {
     private int numDocs;
     private int posPending;
     private int payloadLength;
-    private boolean payloadRetrieved;
     final boolean storeOffsets;
     int offsetLength;
     int startOffset;
@@ -484,7 +483,6 @@ public class MemoryPostingsFormat extends PostingsFormat {
       payloadLength = 0;
       this.numDocs = numDocs;
       posPending = 0;
-      payloadRetrieved = false;
       startOffset = storeOffsets ? 0 : -1; // always return -1 if no offsets are stored
       offsetLength = 0;
       return this;
@@ -577,10 +575,6 @@ public class MemoryPostingsFormat extends PostingsFormat {
         payload.offset = in.getPosition();
         in.skipBytes(payloadLength);
         payload.length = payloadLength;
-        // Necessary, in case caller changed the
-        // payload.bytes from prior call:
-        payload.bytes = buffer;
-        payloadRetrieved = false;
       }
 
       //System.out.println("      pos=" + pos + " payload=" + payload + " fp=" + in.getPosition());
@@ -599,13 +593,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
     @Override
     public BytesRef getPayload() {
-      payloadRetrieved = true;
-      return payload;
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return !payloadRetrieved && payload.length > 0;
+      return payload.length > 0 ? payload : null;
     }
 
     @Override

@@ -126,7 +126,7 @@ public class NearSpansUnordered extends Spans {
 
     // TODO: Remove warning after API has been finalized
     @Override
-    public boolean isPayloadAvailable() {
+    public boolean isPayloadAvailable() throws IOException {
       return spans.isPayloadAvailable();
     }
 
@@ -256,7 +256,7 @@ public class NearSpansUnordered extends Spans {
 
   // TODO: Remove warning after API has been finalized
   @Override
-  public boolean isPayloadAvailable() {
+  public boolean isPayloadAvailable() throws IOException {
     SpansCell pointer = min();
     while (pointer != null) {
       if (pointer.isPayloadAvailable()) {

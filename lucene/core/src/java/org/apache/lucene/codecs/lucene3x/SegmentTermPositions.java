@@ -23,6 +23,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * @lucene.experimental
@@ -36,6 +37,7 @@ extends SegmentTermDocs  {
   private int proxCount;
   private int position;
   
+  private BytesRef payload;
   // the current payload length
   private int payloadLength;
   // indicates whether the payload of the current position has
@@ -192,26 +194,24 @@ extends SegmentTermDocs  {
     return payloadLength;
   }
 
-  public byte[] getPayload(byte[] data, int offset) throws IOException {
-    if (!needToLoadPayload) {
-      throw new IOException("Either no payload exists at this term position or an attempt was made to load it more than once.");
+  public BytesRef getPayload() throws IOException {
+    if (payloadLength <= 0) {
+      return null; // no payload
     }
 
-    // read payloads lazily
-    byte[] retArray;
-    int retOffset;
-    if (data == null || data.length - offset < payloadLength) {
-      // the array is too small to store the payload data,
-      // so we allocate a new one
-      retArray = new byte[payloadLength];
-      retOffset = 0;
-    } else {
-      retArray = data;
-      retOffset = offset;
+    if (needToLoadPayload) {
+      // read payloads lazily
+      if (payload == null) {
+        payload = new BytesRef(payloadLength);
+      } else {
+        payload.grow(payloadLength);
+      }
+      
+      proxStream.readBytes(payload.bytes, payload.offset, payloadLength);
+      payload.length = payloadLength;
+      needToLoadPayload = false;
     }
-    proxStream.readBytes(retArray, retOffset, payloadLength);
-    needToLoadPayload = false;
-    return retArray;
+    return payload;
   }
 
   public boolean isPayloadAvailable() {

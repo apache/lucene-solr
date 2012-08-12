@@ -731,20 +731,21 @@ public class TestPostingsFormat extends LuceneTestCase {
                 System.out.println("      now check payload length=" + (position.payload == null ? 0 : position.payload.length));
               }
               if (position.payload == null || position.payload.length == 0) {
-                assertFalse("should not have payload", docsAndPositionsEnum.hasPayload());
+                assertNull("should not have payload", docsAndPositionsEnum.getPayload());
               } else {
-                assertTrue("should have payload but doesn't", docsAndPositionsEnum.hasPayload());
-
                 BytesRef payload = docsAndPositionsEnum.getPayload();
-                assertFalse("2nd call to hasPayload should be false", docsAndPositionsEnum.hasPayload());
+                assertNotNull("should have payload but doesn't", payload);
 
-                assertNotNull("payload should not be null", payload);
                 assertEquals("payload length is wrong", position.payload.length, payload.length);
                 for(int byteUpto=0;byteUpto<position.payload.length;byteUpto++) {
                   assertEquals("payload bytes are wrong",
                                position.payload[byteUpto],
                                payload.bytes[payload.offset+byteUpto]);
                 }
+                
+                // make a deep copy
+                payload = BytesRef.deepCopyOf(payload);
+                assertEquals("2nd call to getPayload returns something different!", payload, docsAndPositionsEnum.getPayload());
               }
             } else {
               if (VERBOSE) {

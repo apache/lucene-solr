@@ -307,11 +307,6 @@ public class FilterAtomicReader extends AtomicReader {
     public BytesRef getPayload() throws IOException {
       return in.getPayload();
     }
-
-    @Override
-    public boolean hasPayload() {
-      return in.hasPayload();
-    }
     
     @Override
     public AttributeSource attributes() {
