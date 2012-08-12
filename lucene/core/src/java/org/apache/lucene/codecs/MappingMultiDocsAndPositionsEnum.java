@@ -126,6 +126,7 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
     BytesRef payload = current.getPayload();
     if (mergeState.currentPayloadProcessor[upto] != null && payload != null) {
       // to not violate the D&P api, we must give the processor a private copy
+      // TODO: reuse a BytesRef if there is a PPP
       payload = BytesRef.deepCopyOf(payload);
       mergeState.currentPayloadProcessor[upto].processPayload(payload);
       if (payload.length == 0) {
@@ -134,13 +135,6 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
       }
     }
     return payload;
-  }
-
-  @Override
-  public boolean hasPayload() {
-    // TODO: note this is actually bogus if there is a payloadProcessor,
-    // because it might remove it: but lets just remove this method completely
-    return current.hasPayload();
   }
 }
 

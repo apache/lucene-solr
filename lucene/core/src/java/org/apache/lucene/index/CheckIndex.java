@@ -830,11 +830,9 @@ public class CheckIndex {
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
               }
               lastPos = pos;
-              if (postings.hasPayload()) {
-                BytesRef payload = postings.getPayload();
-                if (payload.length < 1) {
-                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " payload length is out of bounds " + payload.length);
-                }
+              BytesRef payload = postings.getPayload();
+              if (payload != null && payload.length < 1) {
+                throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " payload length is out of bounds " + payload.length);
               }
               if (hasOffsets) {
                 int startOffset = postings.startOffset();
@@ -1526,10 +1524,10 @@ public class CheckIndex {
                         }
                       }
                       
-                      BytesRef payload = null;
-                      if (postings.hasPayload()) {
+                      BytesRef payload = postings.getPayload();
+           
+                      if (payload != null) {
                         assert vectorsHasPayload;
-                        payload = postings.getPayload();
                       }
                       
                       if (postingsHasPayload && vectorsHasPayload) {
@@ -1538,13 +1536,13 @@ public class CheckIndex {
                         if (payload == null) {
                           // we have payloads, but not at this position. 
                           // postings has payloads too, it should not have one at this position
-                          if (postingsPostings.hasPayload()) {
+                          if (postingsPostings.getPayload() != null) {
                             throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has no payload but postings does: " + postingsPostings.getPayload());
                           }
                         } else {
                           // we have payloads, and one at this position
                           // postings should also have one at this position, with the same bytes.
-                          if (!postingsPostings.hasPayload()) {
+                          if (postingsPostings.getPayload() == null) {
                             throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has payload=" + payload + " but postings does not.");
                           }
                           BytesRef postingsPayload = postingsPostings.getPayload();

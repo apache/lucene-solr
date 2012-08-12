@@ -524,13 +524,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public BytesRef getPayload() {
-      // assert hasPayload(); // you should have called this
       return payloads == null ? null : payloads[nextPos-1];
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return payloads != null && payloads[nextPos-1] != null;
     }
 
     @Override

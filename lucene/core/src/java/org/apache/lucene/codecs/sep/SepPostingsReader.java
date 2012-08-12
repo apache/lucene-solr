@@ -714,7 +714,11 @@ public class SepPostingsReader extends PostingsReaderBase {
     @Override
     public BytesRef getPayload() throws IOException {
       if (!payloadPending) {
-        throw new IOException("Either no payload exists at this term position or an attempt was made to load it more than once.");
+        return null;
+      }
+      
+      if (pendingPayloadBytes == 0) {
+        return payload;
       }
 
       assert pendingPayloadBytes >= payloadLength;
@@ -731,15 +735,9 @@ public class SepPostingsReader extends PostingsReaderBase {
       }
 
       payloadIn.readBytes(payload.bytes, 0, payloadLength);
-      payloadPending = false;
       payload.length = payloadLength;
       pendingPayloadBytes = 0;
       return payload;
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return payloadPending && payloadLength > 0;
     }
   }
 }

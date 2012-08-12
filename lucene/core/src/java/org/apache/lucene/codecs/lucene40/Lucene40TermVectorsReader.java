@@ -671,7 +671,6 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
     @Override
     public BytesRef getPayload() {
-      // TODO: dumb that we have to duplicate hasPayload
       if (payloadOffsets == null) {
         return null;
       } else {
@@ -684,17 +683,6 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
         payload.offset = off;
         payload.length = end - off;
         return payload;
-      }
-    }
-
-    @Override
-    public boolean hasPayload() {
-      if (payloadOffsets == null) {
-        return false;
-      } else {
-        int off = payloadOffsets[nextPos-1];
-        int end = nextPos == payloadOffsets.length ? payloadBytes.length : payloadOffsets[nextPos];
-        return end - off > 0;
       }
     }
 

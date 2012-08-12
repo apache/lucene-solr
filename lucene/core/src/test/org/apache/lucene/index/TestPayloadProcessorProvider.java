@@ -173,8 +173,8 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
       DocsAndPositionsEnum tpe = MultiFields.getTermPositionsEnum(reader, null, field, text);
       while (tpe.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         tpe.nextPosition();
-        if (tpe.hasPayload()) {
-          BytesRef payload = tpe.getPayload();
+        BytesRef payload = tpe.getPayload();
+        if (payload != null) {
           assertEquals(1, payload.length);
           assertEquals(1, payload.bytes[0]);
           ++numPayloads;

@@ -22,6 +22,11 @@ API Changes
   had positions or offsets, since this can be configured on a 
   per-field-per-document basis. (Robert Muir)
 
+* Removed DocsAndPositionsEnum.hasPayload() and simplified the
+  contract of getPayload(). It returns null if there is no payload,
+  otherwise returns the current payload. You can now call it multiple
+  times per position if you want. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor

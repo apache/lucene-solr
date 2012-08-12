@@ -118,8 +118,8 @@ public class PayloadTermQuery extends SpanTermQuery {
       }
 
       protected void processPayload(Similarity similarity) throws IOException {
-        final DocsAndPositionsEnum postings = termSpans.getPostings();
-        if (postings.hasPayload()) {
+        if (termSpans.isPayloadAvailable()) {
+          final DocsAndPositionsEnum postings = termSpans.getPostings();
           payload = postings.getPayload();
           if (payload != null) {
             payloadScore = function.currentScore(doc, term.field(),

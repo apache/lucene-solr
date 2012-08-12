@@ -436,14 +436,14 @@ public class TestCodecs extends LuceneTestCase {
         final int pos = posEnum.nextPosition();
         assertEquals(positions[i].pos, pos);
         if (positions[i].payload != null) {
-          assertTrue(posEnum.hasPayload());
+          assertNotNull(posEnum.getPayload());
           if (random().nextInt(3) < 2) {
             // Verify the payload bytes
             final BytesRef otherPayload = posEnum.getPayload();
             assertTrue("expected=" + positions[i].payload.toString() + " got=" + otherPayload.toString(), positions[i].payload.equals(otherPayload));
           }
         } else {
-          assertFalse(posEnum.hasPayload());
+          assertNull(posEnum.getPayload());
         }
       }
     }

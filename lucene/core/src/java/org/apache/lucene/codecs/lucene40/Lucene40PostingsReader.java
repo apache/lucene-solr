@@ -873,12 +873,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
      *  payload was indexed. */
     @Override
     public BytesRef getPayload() throws IOException {
-      throw new IOException("No payloads exist for this field!");
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return false;
+      return null;
     }
   }
   
@@ -1152,28 +1147,26 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     @Override
     public BytesRef getPayload() throws IOException {
       if (storePayloads) {
+        if (payloadLength <= 0) {
+          return null;
+        }
         assert lazyProxPointer == -1;
         assert posPendingCount < freq;
-        if (!payloadPending) {
-          throw new IOException("Either no payload exists at this term position or an attempt was made to load it more than once.");
-        }
-        if (payloadLength > payload.bytes.length) {
-          payload.grow(payloadLength);
-        }
+        
+        if (payloadPending) {
+          if (payloadLength > payload.bytes.length) {
+            payload.grow(payloadLength);
+          }
 
-        proxIn.readBytes(payload.bytes, 0, payloadLength);
-        payload.length = payloadLength;
-        payloadPending = false;
+          proxIn.readBytes(payload.bytes, 0, payloadLength);
+          payload.length = payloadLength;
+          payloadPending = false;
+        }
 
         return payload;
       } else {
-        throw new IOException("No payloads exist for this field!");
+        return null;
       }
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return payloadPending && payloadLength > 0;
     }
   }
 }

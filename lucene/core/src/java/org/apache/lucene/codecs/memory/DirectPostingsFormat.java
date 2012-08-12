@@ -348,9 +348,8 @@ public class DirectPostingsFormat extends PostingsFormat {
                     scratch.add(docsAndPositionsEnum.endOffset());
                   }
                   if (hasPayloads) {
-                    final BytesRef payload;
-                    if (docsAndPositionsEnum.hasPayload()) {
-                      payload = docsAndPositionsEnum.getPayload();
+                    final BytesRef payload = docsAndPositionsEnum.getPayload();
+                    if (payload != null) {
                       scratch.add(payload.length);
                       ros.writeBytes(payload.bytes, payload.offset, payload.length);
                     } else {
@@ -421,9 +420,8 @@ public class DirectPostingsFormat extends PostingsFormat {
                 for(int pos=0;pos<freq;pos++) {
                   positions[upto][posUpto] = docsAndPositionsEnum.nextPosition();
                   if (hasPayloads) {
-                    if (docsAndPositionsEnum.hasPayload()) {
-                      BytesRef payload = docsAndPositionsEnum.getPayload();
-                      assert payload != null;
+                    BytesRef payload = docsAndPositionsEnum.getPayload();
+                    if (payload != null) {
                       byte[] payloadBytes = new byte[payload.length];
                       System.arraycopy(payload.bytes, payload.offset, payloadBytes, 0, payload.length);
                       payloads[upto][pos] = payloadBytes;
@@ -1807,17 +1805,11 @@ public class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public boolean hasPayload() {
-      return payloadLength > 0;
-    }
-
-    @Override
     public BytesRef getPayload() {
       if (payloadLength > 0) {
         payload.bytes = payloadBytes;
         payload.offset = lastPayloadOffset;
         payload.length = payloadLength;
-        payloadLength = 0;
         return payload;
       } else {
         return null;
@@ -2010,7 +2002,6 @@ public class DirectPostingsFormat extends PostingsFormat {
     private int upto;
     private int docID = -1;
     private int posUpto;
-    private boolean gotPayload;
     private int[] curPositions;
 
     public HighFreqDocsAndPositionsEnum(Bits liveDocs, boolean hasOffsets) {
@@ -2080,7 +2071,6 @@ public class DirectPostingsFormat extends PostingsFormat {
     @Override
     public int nextPosition() {
       posUpto += posJump;
-      gotPayload = false;
       return curPositions[posUpto];
     }
 
@@ -2214,21 +2204,22 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
     }
 
-    @Override
-    public boolean hasPayload() {
-      return !gotPayload && payloads != null && payloads[upto][posUpto/(hasOffsets ? 3 : 1)] != null;
-    }
-
     private final BytesRef payload = new BytesRef();
 
     @Override
     public BytesRef getPayload() {
-      final byte[] payloadBytes = payloads[upto][posUpto/(hasOffsets ? 3:1)];
-      payload.bytes = payloadBytes;
-      payload.length = payloadBytes.length;
-      payload.offset = 0;
-      gotPayload = true;
-      return payload;
+      if (payloads == null) {
+        return null;
+      } else {
+        final byte[] payloadBytes = payloads[upto][posUpto/(hasOffsets ? 3:1)];
+        if (payloadBytes == null) {
+          return null;
+        }
+        payload.bytes = payloadBytes;
+        payload.length = payloadBytes.length;
+        payload.offset = 0;
+        return payload;
+      }
     }
   }
 }

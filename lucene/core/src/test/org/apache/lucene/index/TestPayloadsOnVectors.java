@@ -74,7 +74,6 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     DocsAndPositionsEnum de = termsEnum.docsAndPositions(null, null);
     assertEquals(0, de.nextDoc());
     assertEquals(0, de.nextPosition());
-    assertTrue(de.hasPayload());
     assertEquals(new BytesRef("test"), de.getPayload());
     writer.close();
     reader.close();
@@ -117,7 +116,6 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     DocsAndPositionsEnum de = termsEnum.docsAndPositions(null, null);
     assertEquals(0, de.nextDoc());
     assertEquals(3, de.nextPosition());
-    assertTrue(de.hasPayload());
     assertEquals(new BytesRef("test"), de.getPayload());
     writer.close();
     reader.close();
