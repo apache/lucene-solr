@@ -17,13 +17,14 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import static com.carrotsearch.randomizedtesting.MethodCollector.flatten;
-import static com.carrotsearch.randomizedtesting.MethodCollector.mutableCopy1;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
 
+import com.carrotsearch.randomizedtesting.ClassModel;
+import com.carrotsearch.randomizedtesting.ClassModel.MethodModel;
 import com.carrotsearch.randomizedtesting.TestMethodProvider;
 
 /**
@@ -31,20 +32,21 @@ import com.carrotsearch.randomizedtesting.TestMethodProvider;
  */
 public final class LuceneJUnit3MethodProvider implements TestMethodProvider {
   @Override
-  public Collection<Method> getTestMethods(Class<?> suiteClass, List<List<Method>> methods) {
-    // We will return all methods starting with test* and rely on further validation to weed
-    // out static or otherwise invalid test methods.
-    List<Method> copy = mutableCopy1(flatten(methods));
-    Iterator<Method> i =copy.iterator();
-    while (i.hasNext()) {
-      Method m= i.next();
-      if (!m.getName().startsWith("test") ||
-          !Modifier.isPublic(m.getModifiers()) ||
-           Modifier.isStatic(m.getModifiers()) ||
-           m.getParameterTypes().length != 0) {
-        i.remove();
+  public Collection<Method> getTestMethods(Class<?> suiteClass, ClassModel classModel) {
+    Map<Method,MethodModel> methods = classModel.getMethods();
+    ArrayList<Method> result = new ArrayList<Method>();
+    for (MethodModel mm : methods.values()) {
+      // Skip any methods that have overrieds/ shadows.
+      if (mm.getDown() != null) continue;
+
+      Method m = mm.element;
+      if (m.getName().startsWith("test") &&
+          Modifier.isPublic(m.getModifiers()) &&
+          !Modifier.isStatic(m.getModifiers()) &&
+          m.getParameterTypes().length == 0) {
+        result.add(m);
       }
     }
-    return copy;
+    return result;
   }
 }
