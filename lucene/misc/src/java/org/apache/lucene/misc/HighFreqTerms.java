@@ -179,7 +179,7 @@ public class HighFreqTerms {
   
   public static long getTotalTermFreq(IndexReader reader, final String field, final BytesRef termText) throws Exception {   
     long totalTF = 0L;
-    for (final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
+    for (final AtomicReaderContext ctx : reader.leaves()) {
       AtomicReader r = ctx.reader();
       Bits liveDocs = r.getLiveDocs();
       if (liveDocs == null) {

@@ -102,7 +102,7 @@ public class PKIndexSplitter {
     boolean success = false;
     final IndexWriter w = new IndexWriter(target, config);
     try {
-      final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+      final List<AtomicReaderContext> leaves = reader.leaves();
       final IndexReader[] subReaders = new IndexReader[leaves.size()];
       int i = 0;
       for (final AtomicReaderContext ctx : leaves) {
