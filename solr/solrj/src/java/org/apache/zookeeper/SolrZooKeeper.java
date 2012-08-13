@@ -19,16 +19,23 @@ package org.apache.zookeeper;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 // we use this class to expose nasty stuff for tests
 public class SolrZooKeeper extends ZooKeeper {
   List<Thread> spawnedThreads = new CopyOnWriteArrayList<Thread>();
+  
+  // for test debug
+  //static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();
 
   public SolrZooKeeper(String connectString, int sessionTimeout,
       Watcher watcher) throws IOException {
     super(connectString, sessionTimeout, watcher);
+    //clients.put(this, new RuntimeException());
   }
   
   public ClientCnxn getConnection() {
@@ -64,9 +71,20 @@ public class SolrZooKeeper extends ZooKeeper {
 
   @Override
   public synchronized void close() throws InterruptedException {
+    //clients.remove(this);
     for (Thread t : spawnedThreads) {
       t.interrupt();
     }
     super.close();
   }
+  
+//  public static void assertCloses() {
+//    if (clients.size() > 0) {
+//      Iterator<Exception> stacktraces = clients.values().iterator();
+//      Exception cause = null;
+//      cause = stacktraces.next();
+//      throw new RuntimeException("Found a bad one!", cause);
+//    }
+//  }
+  
 }

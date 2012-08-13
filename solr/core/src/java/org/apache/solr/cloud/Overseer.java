@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -47,7 +48,7 @@ public class Overseer {
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
-  private class ClusterStateUpdater implements Runnable {
+  private class ClusterStateUpdater implements Runnable, ClosableThread {
     
     private static final String DELETECORE = "deletecore";
     private final ZkStateReader reader;
@@ -58,6 +59,7 @@ public class Overseer {
     //Internal queue where overseer stores events that have not yet been published into cloudstate
     //If Overseer dies while extracting the main queue a new overseer will start from this queue 
     private final DistributedQueue workQueue;
+    private volatile boolean isClosed;
     
     public ClusterStateUpdater(final ZkStateReader reader, final String myId) {
       this.zkClient = reader.getZkClient();
@@ -70,7 +72,7 @@ public class Overseer {
     @Override
     public void run() {
         
-      if(amILeader() && !Overseer.this.isClosed) {
+      if(!this.isClosed && amILeader()) {
         // see if there's something left from the previous Overseer and re
         // process all events that were not persisted into cloud state
           synchronized (reader.getUpdateLock()) { //XXX this only protects against edits inside single node
@@ -110,7 +112,7 @@ public class Overseer {
         }
       
       log.info("Starting to work on the main queue");
-      while (amILeader() && !isClosed) {
+      while (!this.isClosed && amILeader()) {
         synchronized (reader.getUpdateLock()) {
           try {
             byte[] head = stateUpdateQueue.peek();
@@ -399,12 +401,48 @@ public class Overseer {
         ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newStates);
         return newState;
      }
+
+      @Override
+      public void close() {
+        this.isClosed = true;
+      }
+
+      @Override
+      public boolean isClosed() {
+        return this.isClosed;
+      }
     
   }
 
-  private Thread ccThread;
+  class OverseerThread extends Thread implements ClosableThread {
 
-  private Thread updaterThread;
+    private volatile boolean isClosed;
+
+    public OverseerThread(ThreadGroup tg,
+        ClusterStateUpdater clusterStateUpdater) {
+      super(tg, clusterStateUpdater);
+    }
+
+    public OverseerThread(ThreadGroup ccTg,
+        OverseerCollectionProcessor overseerCollectionProcessor, String string) {
+      super(ccTg, overseerCollectionProcessor, string);
+    }
+
+    @Override
+    public void close() {
+      this.isClosed = true;
+    }
+
+    @Override
+    public boolean isClosed() {
+      return this.isClosed;
+    }
+    
+  }
+  
+  private OverseerThread ccThread;
+
+  private OverseerThread updaterThread;
 
   private volatile boolean isClosed;
 
@@ -425,11 +463,11 @@ public class Overseer {
     createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
-    updaterThread = new Thread(tg, new ClusterStateUpdater(reader, id));
+    updaterThread = new OverseerThread(tg, new ClusterStateUpdater(reader, id));
     updaterThread.setDaemon(true);
 
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
-    ccThread = new Thread(ccTg, new OverseerCollectionProcessor(reader, id, shardHandler, adminPath), 
+    ccThread = new OverseerThread(ccTg, new OverseerCollectionProcessor(reader, id, shardHandler, adminPath), 
         "Overseer-" + id);
     ccThread.setDaemon(true);
     
@@ -439,6 +477,12 @@ public class Overseer {
   
   public void close() {
     isClosed = true;
+    if (updaterThread != null) {
+      updaterThread.close();
+    }
+    if (ccThread != null) {
+      ccThread.close();
+    }
   }
 
   /**
