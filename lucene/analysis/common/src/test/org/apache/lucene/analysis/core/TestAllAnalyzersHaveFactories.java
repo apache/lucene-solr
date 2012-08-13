@@ -114,8 +114,9 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
   private static final ResourceLoader loader = new StringMockResourceLoader("");
   
   public void test() throws Exception {
-    List<Class<?>> analysisClasses = TestRandomChains.getClassesForPackage("org.apache.lucene.analysis");
-    TestRandomChains.getClassesForPackage("org.apache.lucene.collation", analysisClasses);
+    List<Class<?>> analysisClasses = new ArrayList<Class<?>>();
+    analysisClasses.addAll(TestRandomChains.getClassesForPackage("org.apache.lucene.analysis"));
+    analysisClasses.addAll(TestRandomChains.getClassesForPackage("org.apache.lucene.collation"));
     
     for (final Class<?> c : analysisClasses) {
       final int modifiers = c.getModifiers();
