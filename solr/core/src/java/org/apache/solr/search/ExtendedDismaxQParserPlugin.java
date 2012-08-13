@@ -958,7 +958,7 @@ class ExtendedDismaxQParser extends QParser {
      * Returns the aliases found for a field.
      * Returns null if there are no aliases for the field
      * @param field
-     * @return
+     * @return Alias
      */
     public Alias getAlias(String field) {
       return aliases.get(field);

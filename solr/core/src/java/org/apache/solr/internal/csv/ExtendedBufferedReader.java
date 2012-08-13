@@ -254,7 +254,7 @@ class ExtendedBufferedReader extends BufferedReader  {
    * Skips all chars in the input until (but excluding) the given char
    * 
    * @param c
-   * @return
+   * @return counter
    * @throws IllegalArgumentException
    * @throws IOException
    */
