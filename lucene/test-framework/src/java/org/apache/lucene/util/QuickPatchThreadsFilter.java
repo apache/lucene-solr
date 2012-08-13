@@ -30,6 +30,12 @@ public class QuickPatchThreadsFilter implements ThreadFilter {
     if (t.getName().equals("AWT-AppKit")) {
       return true;
     }
+
+    // J9 memory pool thread.
+    if (t.getName().equals("MemoryPoolMXBean notification dispatcher")) {
+      return true;
+    }
+
     return false;
   }
 }
