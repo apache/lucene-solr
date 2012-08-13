@@ -105,7 +105,7 @@ public abstract class DocValues implements Closeable {
    * <p>
    * {@link Source} instances obtained from this method are closed / released
    * from the cache once this {@link DocValues} instance is closed by the
-   * {@link IndexReader}, {@link Fields} or {@link FieldsEnum} the
+   * {@link IndexReader}, {@link Fields} or the
    * {@link DocValues} was created from.
    */
   public Source getSource() throws IOException {

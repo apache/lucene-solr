@@ -170,7 +170,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
           assertTrue(storedNumbers.substring(start, end).equals(term));
           if (withPayloads) {
             // check that we have a payload and it starts with "pos"
-            assertTrue(dp.hasPayload());
+            assertNotNull(dp.getPayload());
             BytesRef payload = dp.getPayload();
             assertTrue(payload.utf8ToString().startsWith("pos:"));
           } // note: withPayloads=false doesnt necessarily mean we dont have them from MockAnalyzer!
@@ -198,7 +198,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
         assertTrue(storedNumbers.substring(start, end).equals("hundred"));
         if (withPayloads) {
           // check that we have a payload and it starts with "pos"
-          assertTrue(dp.hasPayload());
+          assertNotNull(dp.getPayload());
           BytesRef payload = dp.getPayload();
           assertTrue(payload.utf8ToString().startsWith("pos:"));
         } // note: withPayloads=false doesnt necessarily mean we dont have them from MockAnalyzer!

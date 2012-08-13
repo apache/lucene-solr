@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,7 +36,6 @@ import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -44,7 +44,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FuzzySet;
@@ -187,9 +186,8 @@ public class BloomFilteringPostingsFormat extends PostingsFormat {
       
     }
     
-    public FieldsEnum iterator() throws IOException {
-      return new BloomFilteredFieldsEnum(delegateFieldsProducer.iterator(),
-          bloomsByFieldName);
+    public Iterator<String> iterator() {
+      return delegateFieldsProducer.iterator();
     }
     
     public void close() throws IOException {
@@ -215,44 +213,6 @@ public class BloomFilteringPostingsFormat extends PostingsFormat {
     
     public long getUniqueTermCount() throws IOException {
       return delegateFieldsProducer.getUniqueTermCount();
-    }
-    
-    // Not all fields in a segment may be subject to a bloom filter. This class
-    // wraps Terms objects appropriately if a filtering request is present
-    class BloomFilteredFieldsEnum extends FieldsEnum {
-      private FieldsEnum delegateFieldsEnum;
-      private HashMap<String,FuzzySet> bloomsByFieldName;
-      private String currentFieldName;
-      
-      public BloomFilteredFieldsEnum(FieldsEnum iterator,
-          HashMap<String,FuzzySet> bloomsByFieldName) {
-        this.delegateFieldsEnum = iterator;
-        this.bloomsByFieldName = bloomsByFieldName;
-      }
-      
-      public AttributeSource attributes() {
-        return delegateFieldsEnum.attributes();
-      }
-      
-      public String next() throws IOException {
-        currentFieldName = delegateFieldsEnum.next();
-        return currentFieldName;
-      }
-      
-      public Terms terms() throws IOException {
-        FuzzySet filter = bloomsByFieldName.get(currentFieldName);
-        if (filter == null) {
-          return delegateFieldsEnum.terms();
-        } else {
-          Terms result = delegateFieldsEnum.terms();
-          if (result == null) {
-            return null;
-          }
-          // wrap the terms object with a bloom filter
-          return new BloomFilteredTerms(result, filter);
-        }
-      }
-      
     }
     
     class BloomFilteredTerms extends Terms {
@@ -313,6 +273,21 @@ public class BloomFilteringPostingsFormat extends PostingsFormat {
       @Override
       public int getDocCount() throws IOException {
         return delegateTerms.getDocCount();
+      }
+
+      @Override
+      public boolean hasOffsets() {
+        return delegateTerms.hasOffsets();
+      }
+
+      @Override
+      public boolean hasPositions() {
+        return delegateTerms.hasPositions();
+      }
+      
+      @Override
+      public boolean hasPayloads() {
+        return delegateTerms.hasPayloads();
       }
     }
     

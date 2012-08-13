@@ -431,7 +431,7 @@ public class WeightedSpanTermExtractor {
     Map<String,WeightedSpanTerm> terms = new PositionCheckingMap<String>();
     extract(query, terms);
 
-    int totalNumDocs = reader.numDocs();
+    int totalNumDocs = reader.maxDoc();
     Set<String> weightedTerms = terms.keySet();
     Iterator<String> it = weightedTerms.iterator();
 
@@ -439,12 +439,8 @@ public class WeightedSpanTermExtractor {
       while (it.hasNext()) {
         WeightedSpanTerm weightedSpanTerm = terms.get(it.next());
         int docFreq = reader.docFreq(new Term(fieldName, weightedSpanTerm.term));
-        // docFreq counts deletes
-        if(totalNumDocs < docFreq) {
-          docFreq = totalNumDocs;
-        }
         // IDF algorithm taken from DefaultSimilarity class
-        float idf = (float) (Math.log((float) totalNumDocs / (double) (docFreq + 1)) + 1.0);
+        float idf = (float) (Math.log(totalNumDocs / (double) (docFreq + 1)) + 1.0);
         weightedSpanTerm.weight *= idf;
       }
     } finally {

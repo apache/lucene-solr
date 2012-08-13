@@ -25,6 +25,7 @@ import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.search.LRUCache;
 import org.junit.BeforeClass;
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -94,7 +95,10 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
     String path = pckgname.replace('.', '/');
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
-      final File f = new File(resources.nextElement().toURI());
+      final URI uri = resources.nextElement().toURI();
+      if (!"file".equalsIgnoreCase(uri.getScheme()))
+        continue;
+      final File f = new File(uri);
       directories.add(f);
     }
       
@@ -114,6 +118,7 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
         }
       }
     }
+    assertFalse("No classes found in package '"+pckgname+"'; maybe your test classes are packaged as JAR file?", classes.isEmpty());
     return classes;
   }
 }

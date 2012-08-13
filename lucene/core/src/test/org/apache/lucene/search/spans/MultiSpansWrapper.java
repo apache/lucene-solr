@@ -160,7 +160,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
   }
 
   @Override
-  public boolean isPayloadAvailable() {
+  public boolean isPayloadAvailable() throws IOException {
     if (current == null) {
       return false;
     }

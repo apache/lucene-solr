@@ -122,8 +122,8 @@ public class JavabinLoader extends ContentStreamLoader {
       for (String s : update.getDeleteById()) {
         delcmd.id = s;
         processor.processDelete(delcmd);
+        delcmd.clear();
       }
-      delcmd.id = null;
     }
     
     if(update.getDeleteQuery() != null) {

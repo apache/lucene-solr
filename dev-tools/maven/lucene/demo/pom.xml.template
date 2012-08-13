@@ -37,15 +37,9 @@
     <module-path>${top-level}/${module-directory}</module-path>
   </properties>
   <scm>
-    <connection>
-      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
-    </connection>
-    <developerConnection>
-      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
-    </developerConnection>
-    <url>
-      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
-    </url>
+    <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
+    <developerConnection>scm:svn:${vc-dev-base-url}/${module-directory}</developerConnection>
+    <url>${vc-browse-base-url}/${module-directory}</url>
   </scm>
   <dependencies>
     <dependency> 
@@ -87,30 +81,5 @@
         </excludes>
       </testResource>
     </testResources>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <configuration>
-          <extraJvmArguments>-Xmx128M</extraJvmArguments>
-          <repositoryLayout>flat</repositoryLayout>
-          <assembleDirectory>${build-directory}</assembleDirectory>
-          <platforms>
-            <platform>windows</platform>
-            <platform>unix</platform>
-          </platforms>
-          <programs>
-            <program>
-              <mainClass>org.apache.lucene.demo.IndexFiles</mainClass>
-              <name>IndexFiles</name>
-            </program>
-            <program>
-              <mainClass>org.apache.lucene.demo.SearchFiles</mainClass>
-              <name>SearchFiles</name>
-            </program>
-          </programs>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 </project>

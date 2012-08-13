@@ -612,20 +612,20 @@ public void testFilesOpenClose() throws IOException {
     }
     
     // check dictionary and posting lists
-    FieldsEnum fenum1 = MultiFields.getFields(index1).iterator();
-    FieldsEnum fenum2 = MultiFields.getFields(index1).iterator();
-    String field1 = null;
+    Fields fields1 = MultiFields.getFields(index1);
+    Fields fields2 = MultiFields.getFields(index2);
+    Iterator<String> fenum2 = fields2.iterator();
     Bits liveDocs = MultiFields.getLiveDocs(index1);
-    while((field1=fenum1.next()) != null) {
+    for (String field1 : fields1) {
       assertEquals("Different fields", field1, fenum2.next());
-      Terms terms1 = fenum1.terms();
+      Terms terms1 = fields1.terms(field1);
       if (terms1 == null) {
-        assertNull(fenum2.terms());
+        assertNull(fields2.terms(field1));
         continue;
       }
       TermsEnum enum1 = terms1.iterator(null);
 
-      Terms terms2 = fenum2.terms();
+      Terms terms2 = fields2.terms(field1);
       assertNotNull(terms2);
       TermsEnum enum2 = terms2.iterator(null);
 
@@ -644,6 +644,7 @@ public void testFilesOpenClose() throws IOException {
         }
       }
     }
+    assertFalse(fenum2.hasNext());
   }
 
   public void testGetIndexCommit() throws IOException {

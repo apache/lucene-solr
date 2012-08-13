@@ -106,12 +106,14 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   private String lastFieldName;
 
   @Override
-  public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException {
+  public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads) throws IOException {
     assert lastFieldName == null || info.name.compareTo(lastFieldName) > 0: "fieldName=" + info.name + " lastFieldName=" + lastFieldName;
     lastFieldName = info.name;
     this.positions = positions;
     this.offsets = offsets;
+    this.payloads = payloads;
     lastTerm.length = 0;
+    lastPayloadLength = -1; // force first payload to write its length
     fps[fieldCount++] = tvf.getFilePointer();
     tvd.writeVInt(info.number);
     tvf.writeVInt(numTerms);
@@ -120,6 +122,8 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
       bits |= Lucene40TermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
     if (offsets)
       bits |= Lucene40TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
+    if (payloads)
+      bits |= Lucene40TermVectorsReader.STORE_PAYLOAD_WITH_TERMVECTOR;
     tvf.writeByte(bits);
     
     assert fieldCount <= numVectorFields;
@@ -138,10 +142,12 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   // we also don't buffer during bulk merges.
   private int offsetStartBuffer[] = new int[10];
   private int offsetEndBuffer[] = new int[10];
-  private int offsetIndex = 0;
-  private int offsetFreq = 0;
+  private BytesRef payloadData = new BytesRef(10);
+  private int bufferedIndex = 0;
+  private int bufferedFreq = 0;
   private boolean positions = false;
   private boolean offsets = false;
+  private boolean payloads = false;
 
   @Override
   public void startTerm(BytesRef term, int freq) throws IOException {
@@ -158,20 +164,40 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
       // we might need to buffer if its a non-bulk merge
       offsetStartBuffer = ArrayUtil.grow(offsetStartBuffer, freq);
       offsetEndBuffer = ArrayUtil.grow(offsetEndBuffer, freq);
-      offsetIndex = 0;
-      offsetFreq = freq;
     }
+    bufferedIndex = 0;
+    bufferedFreq = freq;
+    payloadData.length = 0;
   }
 
   int lastPosition = 0;
   int lastOffset = 0;
+  int lastPayloadLength = -1; // force first payload to write its length
+
+  BytesRef scratch = new BytesRef(); // used only by this optimized flush below
 
   @Override
   public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
-    // TODO: technically we could just copy bytes and not re-encode if we knew the length...
-    if (positions != null) {
+    if (payloads) {
+      // TODO, maybe overkill and just call super.addProx() in this case?
+      // we do avoid buffering the offsets in RAM though.
       for (int i = 0; i < numProx; i++) {
-        tvf.writeVInt(positions.readVInt());
+        int code = positions.readVInt();
+        if ((code & 1) == 1) {
+          int length = positions.readVInt();
+          scratch.grow(length);
+          scratch.length = length;
+          positions.readBytes(scratch.bytes, scratch.offset, scratch.length);
+          writePosition(code >>> 1, scratch);
+        } else {
+          writePosition(code >>> 1, null);
+        }
+      }
+      tvf.writeBytes(payloadData.bytes, payloadData.offset, payloadData.length);
+    } else if (positions != null) {
+      // pure positions, no payloads
+      for (int i = 0; i < numProx; i++) {
+        tvf.writeVInt(positions.readVInt() >>> 1);
       }
     }
     
@@ -184,34 +210,66 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   }
 
   @Override
-  public void addPosition(int position, int startOffset, int endOffset) throws IOException {
-    if (positions && offsets) {
+  public void addPosition(int position, int startOffset, int endOffset, BytesRef payload) throws IOException {
+    if (positions && (offsets || payloads)) {
       // write position delta
-      tvf.writeVInt(position - lastPosition);
+      writePosition(position - lastPosition, payload);
       lastPosition = position;
       
       // buffer offsets
-      offsetStartBuffer[offsetIndex] = startOffset;
-      offsetEndBuffer[offsetIndex] = endOffset;
-      offsetIndex++;
+      if (offsets) {
+        offsetStartBuffer[bufferedIndex] = startOffset;
+        offsetEndBuffer[bufferedIndex] = endOffset;
+      }
+      
+      bufferedIndex++;
       
       // dump buffer if we are done
-      if (offsetIndex == offsetFreq) {
-        for (int i = 0; i < offsetIndex; i++) {
-          tvf.writeVInt(offsetStartBuffer[i] - lastOffset);
-          tvf.writeVInt(offsetEndBuffer[i] - offsetStartBuffer[i]);
-          lastOffset = offsetEndBuffer[i];
+      if (bufferedIndex == bufferedFreq) {
+        if (payloads) {
+          tvf.writeBytes(payloadData.bytes, payloadData.offset, payloadData.length);
+        }
+        for (int i = 0; i < bufferedIndex; i++) {
+          if (offsets) {
+            tvf.writeVInt(offsetStartBuffer[i] - lastOffset);
+            tvf.writeVInt(offsetEndBuffer[i] - offsetStartBuffer[i]);
+            lastOffset = offsetEndBuffer[i];
+          }
         }
       }
     } else if (positions) {
       // write position delta
-      tvf.writeVInt(position - lastPosition);
+      writePosition(position - lastPosition, payload);
       lastPosition = position;
     } else if (offsets) {
       // write offset deltas
       tvf.writeVInt(startOffset - lastOffset);
       tvf.writeVInt(endOffset - startOffset);
       lastOffset = endOffset;
+    }
+  }
+  
+  private void writePosition(int delta, BytesRef payload) throws IOException {
+    if (payloads) {
+      int payloadLength = payload == null ? 0 : payload.length;
+
+      if (payloadLength != lastPayloadLength) {
+        lastPayloadLength = payloadLength;
+        tvf.writeVInt((delta<<1)|1);
+        tvf.writeVInt(payloadLength);
+      } else {
+        tvf.writeVInt(delta << 1);
+      }
+      if (payloadLength > 0) {
+        if (payloadLength + payloadData.length < 0) {
+          // we overflowed the payload buffer, just throw UOE
+          // having > Integer.MAX_VALUE bytes of payload for a single term in a single doc is nuts.
+          throw new UnsupportedOperationException("A term cannot have more than Integer.MAX_VALUE bytes of payload data in a single document");
+        }
+        payloadData.append(payload);
+      }
+    } else {
+      tvf.writeVInt(delta);
     }
   }
 
@@ -255,7 +313,14 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
 
     int idx = 0;
     int numDocs = 0;
-    for (final AtomicReader reader : mergeState.readers) {
+    for (int i = 0; i < mergeState.readers.size(); i++) {
+      final AtomicReader reader = mergeState.readers.get(i);
+      // set PayloadProcessor
+      if (mergeState.payloadProcessorProvider != null) {
+        mergeState.currentReaderPayloadProcessor = mergeState.readerPayloadProcessor[i];
+      } else {
+        mergeState.currentReaderPayloadProcessor = null;
+      }
       final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
       Lucene40TermVectorsReader matchingVectorsReader = null;
       if (matchingSegmentReader != null) {
@@ -288,8 +353,8 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     final int maxDoc = reader.maxDoc();
     final Bits liveDocs = reader.getLiveDocs();
     int totalNumDocs = 0;
-    if (matchingVectorsReader != null) {
-      // We can bulk-copy because the fieldInfos are "congruent"
+    if (matchingVectorsReader != null && mergeState.currentReaderPayloadProcessor == null) {
+      // We can bulk-copy because the fieldInfos are "congruent" and there is no payload processor
       for (int docNum = 0; docNum < maxDoc;) {
         if (!liveDocs.get(docNum)) {
           // skip deleted docs
@@ -324,7 +389,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
         Fields vectors = reader.getTermVectors(docNum);
-        addAllDocVectors(vectors, mergeState.fieldInfos);
+        addAllDocVectors(vectors, mergeState);
         totalNumDocs++;
         mergeState.checkAbort.work(300);
       }
@@ -339,8 +404,8 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
                                       int rawDocLengths2[])
           throws IOException {
     final int maxDoc = reader.maxDoc();
-    if (matchingVectorsReader != null) {
-      // We can bulk-copy because the fieldInfos are "congruent"
+    if (matchingVectorsReader != null && mergeState.currentReaderPayloadProcessor == null) {
+      // We can bulk-copy because the fieldInfos are "congruent" and there is no payload processor
       int docCount = 0;
       while (docCount < maxDoc) {
         int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);
@@ -354,7 +419,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
         Fields vectors = reader.getTermVectors(docNum);
-        addAllDocVectors(vectors, mergeState.fieldInfos);
+        addAllDocVectors(vectors, mergeState);
         mergeState.checkAbort.work(300);
       }
     }

@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
@@ -397,7 +398,7 @@ public class LBHttpSolrServer extends SolrServer {
   public void setSoTimeout(int timeout) {
     HttpClientUtil.setSoTimeout(httpClient, timeout);
   }
-  
+
   @Override
   public void shutdown() {
     if (aliveCheckExecutor != null) {
@@ -555,7 +556,8 @@ public class LBHttpSolrServer extends SolrServer {
     if (aliveCheckExecutor == null) {
       synchronized (this) {
         if (aliveCheckExecutor == null) {
-          aliveCheckExecutor = Executors.newSingleThreadScheduledExecutor();
+          aliveCheckExecutor = Executors.newSingleThreadScheduledExecutor(
+              new SolrjNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
                   getAliveCheckRunner(new WeakReference<LBHttpSolrServer>(this)),
                   this.interval, this.interval, TimeUnit.MILLISECONDS);

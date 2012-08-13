@@ -36,6 +36,7 @@ public class TermSpans extends Spans {
   protected int freq;
   protected int count;
   protected int position;
+  protected boolean readPayload;
 
   public TermSpans(DocsAndPositionsEnum postings, Term term) {
     this.postings = postings;
@@ -64,6 +65,7 @@ public class TermSpans extends Spans {
     }
     position = postings.nextPosition();
     count++;
+    readPayload = false;
     return true;
   }
 
@@ -78,7 +80,7 @@ public class TermSpans extends Spans {
     count = 0;
     position = postings.nextPosition();
     count++;
-
+    readPayload = false;
     return true;
   }
 
@@ -101,6 +103,7 @@ public class TermSpans extends Spans {
   @Override
   public Collection<byte[]> getPayload() throws IOException {
     final BytesRef payload = postings.getPayload();
+    readPayload = true;
     final byte[] bytes;
     if (payload != null) {
       bytes = new byte[payload.length];
@@ -113,8 +116,8 @@ public class TermSpans extends Spans {
 
   // TODO: Remove warning after API has been finalized
   @Override
-  public boolean isPayloadAvailable() {
-    return postings.hasPayload();
+  public boolean isPayloadAvailable() throws IOException {
+    return readPayload == false && postings.getPayload() != null;
   }
 
   @Override

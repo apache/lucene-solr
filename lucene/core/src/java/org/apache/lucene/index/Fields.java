@@ -18,15 +18,16 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
 
 /** Flex API for access to fields and terms
  *  @lucene.experimental */
 
-public abstract class Fields {
+public abstract class Fields implements Iterable<String> {
 
   /** Returns an iterator that will step through all fields
    *  names.  This will not return null.  */
-  public abstract FieldsEnum iterator() throws IOException;
+  public abstract Iterator<String> iterator();
 
   /** Get the {@link Terms} for this field.  This will return
    *  null if the field does not exist. */
@@ -45,12 +46,7 @@ public abstract class Fields {
   // TODO: deprecate?
   public long getUniqueTermCount() throws IOException {
     long numTerms = 0;
-    FieldsEnum it = iterator();
-    while(true) {
-      String field = it.next();
-      if (field == null) {
-        break;
-      }
+    for (String field : this) {
       Terms terms = terms(field);
       if (terms != null) {
         final long termCount = terms.size();

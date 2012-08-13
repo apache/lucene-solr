@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -42,7 +43,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.TermState;
@@ -718,22 +718,27 @@ public class MemoryIndex {
 
     private class MemoryFields extends Fields {
       @Override
-      public FieldsEnum iterator() {
-        return new FieldsEnum() {
+      public Iterator<String> iterator() {
+        return new Iterator<String>() {
           int upto = -1;
 
           @Override
           public String next() {
             upto++;
             if (upto >= sortedFields.length) {
-              return null;
+              throw new NoSuchElementException();
             }
             return sortedFields[upto].getKey();
           }
 
           @Override
-          public Terms terms() {
-            return MemoryFields.this.terms(sortedFields[upto].getKey());
+          public boolean hasNext() {
+            return upto+1 < sortedFields.length;
+          }
+
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
           }
         };
       }
@@ -778,8 +783,21 @@ public class MemoryIndex {
             public int getDocCount() {
               return info.sortedTerms.length > 0 ? 1 : 0;
             }
-              
-              
+
+            @Override
+            public boolean hasOffsets() {
+              return stride == 3;
+            }
+
+            @Override
+            public boolean hasPositions() {
+              return true;
+            }
+            
+            @Override
+            public boolean hasPayloads() {
+              return false;
+            }
           };
         }
       }
@@ -1000,11 +1018,6 @@ public class MemoryIndex {
       @Override
       public int endOffset() {
         return stride == 1 ? -1 : positions.get((posUpto - 1) * stride + 2);
-      }
-
-      @Override
-      public boolean hasPayload() {
-        return false;
       }
 
       @Override

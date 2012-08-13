@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -298,7 +299,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       
       for (int i = 0; i < nodeCount; i++) {
-        nodeExecutors[i] = Executors.newFixedThreadPool(1);
+        nodeExecutors[i] = Executors.newFixedThreadPool(1, new DefaultSolrThreadFactory("testShardAssignment"));
       }
       
       final String[] ids = new String[coreCount];

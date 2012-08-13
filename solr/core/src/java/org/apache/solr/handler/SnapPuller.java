@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
@@ -178,7 +179,8 @@ public class SnapPuller {
         }
       }
     };
-    executorService = Executors.newSingleThreadScheduledExecutor();
+    executorService = Executors.newSingleThreadScheduledExecutor(
+        new DefaultSolrThreadFactory("snapPuller"));
     long initialDelay = pollInterval - (System.currentTimeMillis() % pollInterval);
     executorService.scheduleAtFixedRate(task, initialDelay, pollInterval, TimeUnit.MILLISECONDS);
     LOG.info("Poll Scheduled at an interval of " + pollInterval + "ms");
@@ -311,7 +313,7 @@ public class SnapPuller {
       LOG.info("Number of files in latest index in master: " + filesToDownload.size());
 
       // Create the sync service
-      fsyncService = Executors.newSingleThreadExecutor();
+      fsyncService = Executors.newSingleThreadExecutor(new DefaultSolrThreadFactory("fsyncService"));
       // use a synchronized list because the list is read by other threads (to show details)
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generateion of master is older than that of the slave , it means they are not compatible to be copied

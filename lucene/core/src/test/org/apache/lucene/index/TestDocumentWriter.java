@@ -205,11 +205,11 @@ public class TestDocumentWriter extends LuceneTestCase {
     int freq = termPositions.freq();
     assertEquals(3, freq);
     assertEquals(0, termPositions.nextPosition());
-    assertEquals(true, termPositions.hasPayload());
+    assertNotNull(termPositions.getPayload());
     assertEquals(6, termPositions.nextPosition());
-    assertEquals(false, termPositions.hasPayload());
+    assertNull(termPositions.getPayload());
     assertEquals(7, termPositions.nextPosition());
-    assertEquals(false, termPositions.hasPayload());
+    assertNull(termPositions.getPayload());
     reader.close();
   }
 

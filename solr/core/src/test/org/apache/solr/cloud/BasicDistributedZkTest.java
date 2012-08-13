@@ -71,10 +71,11 @@ import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 
 /**
- *
+ * This test simply does a bunch of basic things in solrcloud mode and asserts things
+ * work as expected.
  */
 @Slow
-public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
+public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
@@ -281,7 +282,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     }
 
     // test debugging
-    handle.put("explain", UNORDERED);
+    handle.put("explain", SKIPVAL);
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
     query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");

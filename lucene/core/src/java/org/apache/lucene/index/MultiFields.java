@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Collection;
@@ -27,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MergedIterator;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -125,7 +127,7 @@ public final class MultiFields extends Fields {
    *  term.  This will return null if the field or term does
    *  not exist. */
   public static DocsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
-    return getTermDocsEnum(r, liveDocs, field, term);
+    return getTermDocsEnum(r, liveDocs, field, term, DocsEnum.FLAG_FREQS);
   }
   
   /** Returns {@link DocsEnum} for the specified field &
@@ -180,22 +182,14 @@ public final class MultiFields extends Fields {
     this.subSlices = subSlices;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public FieldsEnum iterator() throws IOException {
-
-    final List<FieldsEnum> fieldsEnums = new ArrayList<FieldsEnum>();
-    final List<ReaderSlice> fieldsSlices = new ArrayList<ReaderSlice>();
+  public Iterator<String> iterator() {
+    Iterator<String> subIterators[] = new Iterator[subs.length];
     for(int i=0;i<subs.length;i++) {
-      fieldsEnums.add(subs[i].iterator());
-      fieldsSlices.add(subSlices[i]);
+      subIterators[i] = subs[i].iterator();
     }
-    if (fieldsEnums.size() == 0) {
-      return FieldsEnum.EMPTY;
-    } else {
-      return new MultiFieldsEnum(this,
-                                 fieldsEnums.toArray(FieldsEnum.EMPTY_ARRAY),
-                                 fieldsSlices.toArray(ReaderSlice.EMPTY_ARRAY));
-    }
+    return new MergedIterator<String>(subIterators);
   }
 
   @Override

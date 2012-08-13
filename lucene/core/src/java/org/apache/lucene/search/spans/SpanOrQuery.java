@@ -247,7 +247,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
       }
 
       @Override
-      public boolean isPayloadAvailable() {
+      public boolean isPayloadAvailable() throws IOException {
         Spans top = top();
         return top != null && top.isPayloadAvailable();
       }

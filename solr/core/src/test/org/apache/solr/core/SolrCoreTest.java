@@ -25,6 +25,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
@@ -163,7 +164,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     final int LOOP = 100;
     final int MT = 16;
-    ExecutorService service = Executors.newFixedThreadPool(MT);
+    ExecutorService service = Executors.newFixedThreadPool(MT, new DefaultSolrThreadFactory("refCountMT"));
     List<Callable<Integer>> callees = new ArrayList<Callable<Integer>>(MT);
     final CoreContainer cores = h.getCoreContainer();
     for (int i = 0; i < MT; ++i) {

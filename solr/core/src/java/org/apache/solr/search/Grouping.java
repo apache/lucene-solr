@@ -787,7 +787,7 @@ public class Grouping {
           SchemaField schemaField = searcher.getSchema().getField(groupBy);
           FieldType fieldType = schemaField.getType();
           String readableValue = fieldType.indexedToReadable(group.groupValue.utf8ToString());
-          IndexableField field = schemaField.createField(readableValue, 0.0f);
+          IndexableField field = schemaField.createField(readableValue, 1.0f);
           nl.add("groupValue", fieldType.toObject(field));
         } else {
           nl.add("groupValue", null);

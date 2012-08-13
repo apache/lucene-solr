@@ -49,8 +49,8 @@
   <path id="test.classpath" refid="test.base.classpath"/>
 
   <path id="junit.classpath">
-    <path refid="test.classpath"/>
     <pathelement location="${build.dir}/classes/test"/>
+    <path refid="test.classpath"/>
     <pathelement path="${java.class.path}"/>
   </path>
 

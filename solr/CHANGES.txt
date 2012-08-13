@@ -24,7 +24,38 @@ $Id$
 
 (No changes)
 
+==================  4.0.0 ==================
+
+Upgrading from Solr 4.0.0-BETA
+----------------------
+
+In order to better support distributed search mode, the TermVectorComponent's response format has been changed so that if the schema defines a uniqueKeyField, then that field value is used as the "key" for each document in it's response section, instead of the internal lucene doc id.  Users w/o a uniqueKeyField will continue to see the same response format.  See SOLR-3229 for more details.
+
+Optimizations
+----------------------
+
+* SOLR-3715: improve concurrency of the transaction log by removing
+  synchronization around log record serialization. (yonik)
+
+
+Bug Fixes
+----------------------
+
+* SOLR-3685: Solr Cloud sometimes skipped peersync attempt and replicated instead due
+  to tlog flags not being cleared when no updates were buffered during a previous
+  replication.  (Markus Jelsma, Mark Miller, yonik)
+
+* SOLR-3229: Fixed TermVectorComponent to work with distributed search
+  (Hang Xie, hossman)
+
+* SOLR-3725: Fixed package-local-src-tgz target to not bring in unnecessary jars
+  and binary contents.  (Michael Dodsworth via rmuir)
+
+* SOLR-3649: Fixed bug in JavabinLoader that caused deleteById(List<String> ids)
+  to not work in SolrJ (siren)
+
 ==================  4.0.0-BETA ===================
+
 
 Versions of Major Components
 ---------------------
@@ -109,6 +140,18 @@ New Features
 * SOLR-3672: SimplePostTool: Improvements for posting files
   Support for auto mode, recursive and wildcards (janhoy)
 
+Optimizations
+----------------------
+
+* SOLR-3708: Add hashCode to ClusterState so that structures built based on the 
+  ClusterState can be easily cached. (Mark Miller)
+
+* SOLR-3709: Cache the url list created from the ClusterState in CloudSolrServer on each 
+  request. (Mark Miller, yonik)
+  
+* SOLR-3710: Change CloudSolrServer so that update requests are only sent to leaders by 
+  default. (Mark Miller)
+
 Bug Fixes
 ----------------------
 
@@ -176,6 +219,9 @@ Bug Fixes
   
 * SOLR-3428: SolrCmdDistributor flushAdds/flushDeletes can cause repeated 
   adds/deletes to be sent (Mark Miller, Per Steffensen)
+  
+* SOLR-3647: DistributedQueue should use our Solr zk client rather than the std zk 
+  client. ZooKeeper expiration can be permanent otherwise. (Mark Miller)
 
 Other Changes
 ----------------------
@@ -204,7 +250,7 @@ Other Changes
 
 * SOLR-3215: Clone SolrInputDocument when distrib indexing so that update processors after
   the distrib update process do not process the document twice. (Mark Miller)
-  
+
 * SOLR-3683: Improved error handling if an <analyzer> contains both an 
   explicit class attribute, as well as nested factories. (hossman)
 
@@ -217,6 +263,13 @@ Other Changes
   using a file (this previously worked in debug mode only).  When configuration errors are 
   encountered, the error message is returned in XML format.  (James Dyer)
   
+* SOLR-3439: Make SolrCell easier to use out of the box. Also improves "/browse" to display
+  rich-text documents correctly, along with facets for author and content_type.  
+  With the new "content" field, highlighting of body is supported. See also SOLR-3672 for
+  easier posting of a whole directory structure. (Jack Krupansky, janhoy)
+  
+* SOLR-3579: SolrCloud view should default to the graph view rather than tree view.
+  (steffkes, Mark Miller)
 
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the 

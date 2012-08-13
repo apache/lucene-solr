@@ -450,11 +450,25 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 //    System.out.println("resp b:" + b);
     boolean ordered = (flags & UNORDERED) == 0;
 
+    if (!ordered) {
+      Map mapA = new HashMap(a.size());
+      for (int i=0; i<a.size(); i++) {
+        Object prev = mapA.put(a.getName(i), a.getVal(i));
+      }
+
+      Map mapB = new HashMap(b.size());
+      for (int i=0; i<b.size(); i++) {
+        Object prev = mapB.put(b.getName(i), b.getVal(i));
+      }
+
+      return compare(mapA, mapB, flags, handle);
+    }
+
     int posa = 0, posb = 0;
     int aSkipped = 0, bSkipped = 0;
 
     for (; ;) {
-      if (posa >= a.size() || posb >= b.size()) {
+      if (posa >= a.size() && posb >= b.size()) {
         break;
       }
 
@@ -468,13 +482,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         posa++;
         flagsa = flags(handle, namea);
         if ((flagsa & SKIP) != 0) {
+          namea = null; vala = null;
           aSkipped++;
           continue;
         }
         break;
       }
-
-      if (!ordered) posb = 0;  // reset if not ordered
 
       while (posb < b.size()) {
         nameb = b.getName(posb);
@@ -482,15 +495,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         posb++;
         flagsb = flags(handle, nameb);
         if ((flagsb & SKIP) != 0) {
+          nameb = null; valb = null;
           bSkipped++;
           continue;
         }
         if (eq(namea, nameb)) {
           break;
         }
-        if (ordered) {
-          return "." + namea + "!=" + nameb + " (unordered or missing)";
-        }
+        return "." + namea + "!=" + nameb + " (unordered or missing)";
         // if unordered, continue until we find the right field.
       }
 
@@ -503,7 +515,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
 
     if (a.size() - aSkipped != b.size() - bSkipped) {
-      return ".size()==" + a.size() + "," + b.size() + "skipped=" + aSkipped + "," + bSkipped;
+      return ".size()==" + a.size() + "," + b.size() + " skipped=" + aSkipped + "," + bSkipped;
     }
 
     return null;

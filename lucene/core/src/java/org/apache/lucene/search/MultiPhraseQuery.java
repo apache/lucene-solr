@@ -548,12 +548,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   @Override
   public BytesRef getPayload() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean hasPayload() {
-    throw new UnsupportedOperationException();
+    return null;
   }
 
   @Override

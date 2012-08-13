@@ -69,7 +69,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           SimpleOrderedMap<Object> groupResult = new SimpleOrderedMap<Object>();
           if (group.groupValue != null) {
             groupResult.add(
-                "groupValue", groupFieldType.toObject(groupField.createField(group.groupValue.utf8ToString(), 0.0f))
+                "groupValue", groupFieldType.toObject(groupField.createField(group.groupValue.utf8ToString(), 1.0f))
             );
           } else {
             groupResult.add("groupValue", null);

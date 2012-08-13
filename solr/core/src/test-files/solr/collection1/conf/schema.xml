@@ -559,7 +559,7 @@
    <field name="inStock" type="boolean" indexed="true" stored="true" />
 
    <field name="subword" type="subword" indexed="true" stored="true"/>
-   <field name="subword_offsets" type="subword" indexed="true" stored="true" termOffsets="true"/>
+   <field name="subword_offsets" type="subword" indexed="true" stored="true" termVectors="true" termOffsets="true"/>
    <field name="numericsubword" type="numericsubword" indexed="true" stored="true"/>
    <field name="protectedsubword" type="protectedsubword" indexed="true" stored="true"/>
 

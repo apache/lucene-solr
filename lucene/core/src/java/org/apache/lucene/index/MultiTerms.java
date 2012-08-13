@@ -37,12 +37,19 @@ public final class MultiTerms extends Terms {
   private final Terms[] subs;
   private final ReaderSlice[] subSlices;
   private final Comparator<BytesRef> termComp;
+  private final boolean hasOffsets;
+  private final boolean hasPositions;
+  private final boolean hasPayloads;
 
   public MultiTerms(Terms[] subs, ReaderSlice[] subSlices) throws IOException {
     this.subs = subs;
     this.subSlices = subSlices;
     
     Comparator<BytesRef> _termComp = null;
+    assert subs.length > 0 : "inefficient: don't use MultiTerms over one sub";
+    boolean _hasOffsets = true;
+    boolean _hasPositions = true;
+    boolean _hasPayloads = false;
     for(int i=0;i<subs.length;i++) {
       if (_termComp == null) {
         _termComp = subs[i].getComparator();
@@ -54,9 +61,15 @@ public final class MultiTerms extends Terms {
           throw new IllegalStateException("sub-readers have different BytesRef.Comparators; cannot merge");
         }
       }
+      _hasOffsets &= subs[i].hasOffsets();
+      _hasPositions &= subs[i].hasPositions();
+      _hasPayloads |= subs[i].hasPayloads();
     }
 
     termComp = _termComp;
+    hasOffsets = _hasOffsets;
+    hasPositions = _hasPositions;
+    hasPayloads = hasPositions && _hasPayloads; // if all subs have pos, and at least one has payloads.
   }
 
   @Override
@@ -141,6 +154,21 @@ public final class MultiTerms extends Terms {
   @Override
   public Comparator<BytesRef> getComparator() {
     return termComp;
+  }
+
+  @Override
+  public boolean hasOffsets() {
+    return hasOffsets;
+  }
+
+  @Override
+  public boolean hasPositions() {
+    return hasPositions;
+  }
+  
+  @Override
+  public boolean hasPayloads() {
+    return hasPayloads;
   }
 }
 

@@ -32,7 +32,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -44,6 +43,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
@@ -124,36 +124,14 @@ public class DirectPostingsFormat extends PostingsFormat {
     private final Map<String,DirectField> fields = new TreeMap<String,DirectField>();
 
     public DirectFields(SegmentReadState state, Fields fields, int minSkipCount, int lowFreqCutoff) throws IOException {
-      FieldsEnum fieldsEnum = fields.iterator();
-      String field;
-      while ((field = fieldsEnum.next()) != null) {
-        this.fields.put(field, new DirectField(state, field, fieldsEnum.terms(), minSkipCount, lowFreqCutoff));
+      for (String field : fields) {
+        this.fields.put(field, new DirectField(state, field, fields.terms(field), minSkipCount, lowFreqCutoff));
       }
     }
 
     @Override
-    public FieldsEnum iterator() {
-
-      final Iterator<Map.Entry<String,DirectField>> iter = fields.entrySet().iterator();
-
-      return new FieldsEnum() {
-        Map.Entry<String,DirectField> current;
-        
-        @Override
-        public String next() {
-          if (iter.hasNext()) {
-            current = iter.next();
-            return current.getKey();
-          } else {
-            return null;
-          }
-        }
-
-        @Override
-        public Terms terms() {
-          return current.getValue();
-        }
-      };
+    public Iterator<String> iterator() {
+      return new UnmodifiableIterator<String>(fields.keySet().iterator());
     }
 
     @Override
@@ -348,9 +326,8 @@ public class DirectPostingsFormat extends PostingsFormat {
                     scratch.add(docsAndPositionsEnum.endOffset());
                   }
                   if (hasPayloads) {
-                    final BytesRef payload;
-                    if (docsAndPositionsEnum.hasPayload()) {
-                      payload = docsAndPositionsEnum.getPayload();
+                    final BytesRef payload = docsAndPositionsEnum.getPayload();
+                    if (payload != null) {
                       scratch.add(payload.length);
                       ros.writeBytes(payload.bytes, payload.offset, payload.length);
                     } else {
@@ -421,9 +398,8 @@ public class DirectPostingsFormat extends PostingsFormat {
                 for(int pos=0;pos<freq;pos++) {
                   positions[upto][posUpto] = docsAndPositionsEnum.nextPosition();
                   if (hasPayloads) {
-                    if (docsAndPositionsEnum.hasPayload()) {
-                      BytesRef payload = docsAndPositionsEnum.getPayload();
-                      assert payload != null;
+                    BytesRef payload = docsAndPositionsEnum.getPayload();
+                    if (payload != null) {
                       byte[] payloadBytes = new byte[payload.length];
                       System.arraycopy(payload.bytes, payload.offset, payloadBytes, 0, payload.length);
                       payloads[upto][pos] = payloadBytes;
@@ -633,6 +609,21 @@ public class DirectPostingsFormat extends PostingsFormat {
     @Override
     public Comparator<BytesRef> getComparator() {
       return BytesRef.getUTF8SortedAsUnicodeComparator();
+    }
+
+    @Override
+    public boolean hasOffsets() {
+      return hasOffsets;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return hasPos;
+    }
+    
+    @Override
+    public boolean hasPayloads() {
+      return hasPayloads;
     }
 
     private final class DirectTermsEnum extends TermsEnum {
@@ -1792,17 +1783,11 @@ public class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public boolean hasPayload() {
-      return payloadLength > 0;
-    }
-
-    @Override
     public BytesRef getPayload() {
       if (payloadLength > 0) {
         payload.bytes = payloadBytes;
         payload.offset = lastPayloadOffset;
         payload.length = payloadLength;
-        payloadLength = 0;
         return payload;
       } else {
         return null;
@@ -1995,7 +1980,6 @@ public class DirectPostingsFormat extends PostingsFormat {
     private int upto;
     private int docID = -1;
     private int posUpto;
-    private boolean gotPayload;
     private int[] curPositions;
 
     public HighFreqDocsAndPositionsEnum(Bits liveDocs, boolean hasOffsets) {
@@ -2065,7 +2049,6 @@ public class DirectPostingsFormat extends PostingsFormat {
     @Override
     public int nextPosition() {
       posUpto += posJump;
-      gotPayload = false;
       return curPositions[posUpto];
     }
 
@@ -2199,21 +2182,22 @@ public class DirectPostingsFormat extends PostingsFormat {
       }
     }
 
-    @Override
-    public boolean hasPayload() {
-      return !gotPayload && payloads != null && payloads[upto][posUpto/(hasOffsets ? 3 : 1)] != null;
-    }
-
     private final BytesRef payload = new BytesRef();
 
     @Override
     public BytesRef getPayload() {
-      final byte[] payloadBytes = payloads[upto][posUpto/(hasOffsets ? 3:1)];
-      payload.bytes = payloadBytes;
-      payload.length = payloadBytes.length;
-      payload.offset = 0;
-      gotPayload = true;
-      return payload;
+      if (payloads == null) {
+        return null;
+      } else {
+        final byte[] payloadBytes = payloads[upto][posUpto/(hasOffsets ? 3:1)];
+        if (payloadBytes == null) {
+          return null;
+        }
+        payload.bytes = payloadBytes;
+        payload.length = payloadBytes.length;
+        payload.offset = 0;
+        return payload;
+      }
     }
   }
 }

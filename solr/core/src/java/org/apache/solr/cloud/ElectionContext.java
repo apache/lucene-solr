@@ -152,17 +152,19 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           if (zkClient.exists(leaderPath, true)) {
             zkClient.delete(leaderPath, -1, true);
           }
-//          System.out.println("I may be the new Leader:" + leaderPath
-//              + " - I need to try and sync");
+          log.info("I may be the new leader - try and sync");
+          // we are going to attempt to be the leader
+          // first cancel any current recovery
+          core.getUpdateHandler().getSolrCoreState().cancelRecovery();
           boolean success = syncStrategy.sync(zkController, core, leaderProps);
           if (!success && anyoneElseActive()) {
             rejoinLeaderElection(leaderSeqPath, core);
             return;
           } 
         }
+        log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps));
         
         // If I am going to be the leader I have to be active
-        // System.out.println("I am leader go active");
         core.getUpdateHandler().getSolrCoreState().cancelRecovery();
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
         

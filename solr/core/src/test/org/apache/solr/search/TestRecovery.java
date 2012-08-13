@@ -559,7 +559,22 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) == 0);
 
+      ulog.bufferUpdates();
+      // simulate receiving no updates
+      ulog.applyBufferedUpdates();
+      updateJ(jsonAdd(sdoc("id","Q7", "_version_","117")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER)); // do another add to make sure flags are back to normal
 
+      req.close();
+      h.close();
+      createCore();
+
+      req = req();
+      uhandler = req.getCore().getUpdateHandler();
+      ulog = uhandler.getUpdateLog();
+
+      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) == 0); // check flags on Q7
+
+      logReplayFinish.acquire();
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {
       DirectUpdateHandler2.commitOnClose = true;

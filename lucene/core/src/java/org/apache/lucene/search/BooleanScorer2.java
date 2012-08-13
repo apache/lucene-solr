@@ -41,16 +41,16 @@ class BooleanScorer2 extends Scorer {
   private final List<Scorer> prohibitedScorers;
 
   private class Coordinator {
-    float[] coordFactors = null;
-    int maxCoord = 0; // to be increased for each non prohibited scorer
-    int nrMatchers; // to be increased by score() of match counting scorers.
-    
-    void init(boolean disableCoord) { // use after all scorers have been added.
+    final float coordFactors[];
+
+    Coordinator(int maxCoord, boolean disableCoord) {
       coordFactors = new float[optionalScorers.size() + requiredScorers.size() + 1];
       for (int i = 0; i < coordFactors.length; i++) {
         coordFactors[i] = disableCoord ? 1.0f : ((BooleanWeight)weight).coord(i, maxCoord);
       }
     }
+    
+    int nrMatchers; // to be increased by score() of match counting scorers.
   }
 
   private final Coordinator coordinator;
@@ -92,15 +92,13 @@ class BooleanScorer2 extends Scorer {
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
     }
-    coordinator = new Coordinator();
     this.minNrShouldMatch = minNrShouldMatch;
-    coordinator.maxCoord = maxCoord;
 
     optionalScorers = optional;
     requiredScorers = required;    
     prohibitedScorers = prohibited;
+    coordinator = new Coordinator(maxCoord, disableCoord);
     
-    coordinator.init(disableCoord);
     countingSumScorer = makeCountingSumScorer(disableCoord);
   }
   
@@ -177,7 +175,7 @@ class BooleanScorer2 extends Scorer {
                                               List<Scorer> requiredScorers) throws IOException {
     // each scorer from the list counted as a single matcher
     final int requiredNrMatchers = requiredScorers.size();
-    return new ConjunctionScorer(weight, disableCoord ? 1.0f : ((BooleanWeight)weight).coord(requiredScorers.size(), requiredScorers.size()), requiredScorers) {
+    return new ConjunctionScorer(weight, requiredScorers) {
       private int lastScoredDoc = -1;
       // Save the score of lastScoredDoc, so that we don't compute it more than
       // once in score().
@@ -201,8 +199,8 @@ class BooleanScorer2 extends Scorer {
   }
 
   private Scorer dualConjunctionSumScorer(boolean disableCoord,
-                                          Scorer req1, Scorer req2) throws IOException { // non counting.
-    return new ConjunctionScorer(weight, disableCoord ? 1.0f : ((BooleanWeight)weight).coord(2, 2), req1, req2);
+                                                Scorer req1, Scorer req2) throws IOException { // non counting.
+    return new ConjunctionScorer(weight, req1, req2);
     // All scorers match, so defaultSimilarity always has 1 as
     // the coordination factor.
     // Therefore the sum of the scores of two scorers

@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 @Ignore("SOLR-3126")
-public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
+public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final int BASE_RUN_LENGTH = 120000;
 

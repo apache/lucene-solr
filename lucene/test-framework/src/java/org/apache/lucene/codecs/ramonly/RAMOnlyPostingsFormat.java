@@ -39,7 +39,6 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -50,6 +49,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.UnmodifiableIterator;
 
 /** Stores all postings data in RAM, but writes a small
  *  token (header + single int) to identify which "slot" the
@@ -112,8 +112,8 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public FieldsEnum iterator() {
-      return new RAMFieldsEnum(this);
+    public Iterator<String> iterator() {
+      return new UnmodifiableIterator<String>(fieldToTerms.keySet().iterator());
     }
 
     @Override
@@ -127,9 +127,11 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     long sumTotalTermFreq;
     long sumDocFreq;
     int docCount;
+    final FieldInfo info;
 
-    RAMField(String field) {
+    RAMField(String field, FieldInfo info) {
       this.field = field;
+      this.info = info;
     }
 
     @Override
@@ -160,6 +162,21 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public Comparator<BytesRef> getComparator() {
       return reverseUnicodeComparator;
+    }
+
+    @Override
+    public boolean hasOffsets() {
+      return info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    }
+    
+    @Override
+    public boolean hasPayloads() {
+      return info.hasPayloads();
     }
   }
 
@@ -198,7 +215,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
       if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
         throw new UnsupportedOperationException("this codec cannot index offsets");
       }
-      RAMField ramField = new RAMField(field.name);
+      RAMField ramField = new RAMField(field.name, field);
       postings.fieldToTerms.put(field.name, ramField);
       termsConsumer.reset(ramField);
       return termsConsumer;
@@ -283,33 +300,6 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public void finishDoc() {
       assert posUpto == current.positions.length;
-    }
-  }
-
-  // Classes for reading from the postings state
-  static class RAMFieldsEnum extends FieldsEnum {
-    private final RAMPostings postings;
-    private final Iterator<String> it;
-    private String current;
-
-    public RAMFieldsEnum(RAMPostings postings) {
-      this.postings = postings;
-      this.it = postings.fieldToTerms.keySet().iterator();
-    }
-
-    @Override
-    public String next() {
-      if (it.hasNext()) {
-        current = it.next();
-      } else {
-        current = null;
-      }
-      return current;
-    }
-
-    @Override
-    public Terms terms() {
-      return postings.fieldToTerms.get(current);
     }
   }
 
@@ -507,13 +497,12 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public boolean hasPayload() {
-      return current.payloads != null && current.payloads[posUpto-1] != null;
-    }
-
-    @Override
     public BytesRef getPayload() {
-      return new BytesRef(current.payloads[posUpto-1]);
+      if (current.payloads != null && current.payloads[posUpto-1] != null) {
+        return new BytesRef(current.payloads[posUpto-1]);
+      } else {
+        return null;
+      }
     }
   }
 

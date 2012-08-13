@@ -486,6 +486,9 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         ft.setStoreTermVectors(true);
         ft.setStoreTermVectorOffsets(random.nextBoolean());
         ft.setStoreTermVectorPositions(random.nextBoolean());
+        if (ft.storeTermVectorPositions()) {
+          ft.setStoreTermVectorPayloads(random.nextBoolean());
+        }
       }
       if (random.nextBoolean()) {
         ft.setOmitNorms(true);

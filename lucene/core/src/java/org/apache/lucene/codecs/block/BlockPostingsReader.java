@@ -955,11 +955,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     }
   
     @Override
-    public boolean hasPayload() {
-      return false;
-    }
-
-    @Override
     public BytesRef getPayload() {
       return null;
     }
@@ -1226,10 +1221,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       if (DEBUG) {
         System.out.println("  FPR.nextDoc");
       }
-      if (indexHasPayloads) {
-        payloadByteUpto += payloadLength;
-        payloadLength = 0;
-      }
       while (true) {
         if (DEBUG) {
           System.out.println("    docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
@@ -1255,7 +1246,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
             System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
           }
           position = 0;
-          payloadLength = 0;
           lastStartOffset = 0;
           return doc;
         }
@@ -1355,12 +1345,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         if (DEBUG) {
           System.out.println("  return doc=" + accum);
         }
-        if (indexHasPayloads) {
-          payloadByteUpto += payloadLength;
-          payloadLength = 0;
-        }
         position = 0;
-        payloadLength = 0;
         lastStartOffset = 0;
         return doc = accum;
       } else {
@@ -1433,7 +1418,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
 
       position = 0;
-      payloadLength = 0;
       lastStartOffset = 0;
     }
 
@@ -1461,16 +1445,6 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         posBufferUpto = BLOCK_SIZE;
       }
 
-      if (indexHasPayloads) {
-        if (DEBUG) {
-          if (payloadLength != 0) {
-            System.out.println("      skip unread payload length=" + payloadLength);
-          }
-        }
-        payloadByteUpto += payloadLength;
-        payloadLength = 0;
-      }
-
       if (posPendingCount > freq) {
         skipPositions();
         posPendingCount = freq;
@@ -1484,6 +1458,10 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
       if (indexHasPayloads) {
         payloadLength = payloadLengthBuffer[posBufferUpto];
+        payload.bytes = payloadBytes;
+        payload.offset = payloadByteUpto;
+        payload.length = payloadLength;
+        payloadByteUpto += payloadLength;
       }
 
       if (indexHasOffsets) {
@@ -1511,21 +1489,15 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     }
   
     @Override
-    public boolean hasPayload() {
-      return payloadLength != 0;
-    }
-
-    @Override
     public BytesRef getPayload() {
       if (DEBUG) {
         System.out.println("    FPR.getPayload payloadLength=" + payloadLength + " payloadByteUpto=" + payloadByteUpto);
       }
-      payload.bytes = payloadBytes;
-      payload.offset = payloadByteUpto;
-      payload.length = payloadLength;
-      payloadByteUpto += payloadLength;
-      payloadLength = 0;
-      return payload;
+      if (payloadLength == 0) {
+        return null;
+      } else {
+        return payload;
+      }
     }
   }
 }

@@ -62,7 +62,21 @@ public abstract class HashFunction implements NamedSPILoader.NamedSPI {
     return loader.availableServices();
   }
   
-
+  /** 
+   * Reloads the hash function list from the given {@link ClassLoader}.
+   * Changes to the function list are visible after the method ends, all
+   * iterators ({@link #availableHashFunctionNames()},...) stay consistent. 
+   * 
+   * <p><b>NOTE:</b> Only new functions are added, existing ones are
+   * never removed or replaced.
+   * 
+   * <p><em>This method is expensive and should only be called for discovery
+   * of new functions on the given classpath/classloader!</em>
+   */
+  public static void reloadHashFunctions(ClassLoader classloader) {
+    loader.reload(classloader);
+  }
+  
   @Override
   public String toString() {
     return name;
