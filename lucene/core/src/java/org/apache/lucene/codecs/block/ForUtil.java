@@ -55,7 +55,7 @@ final class ForUtil {
    */
   static final int MAX_DATA_SIZE;
   static {
-    int minDataSize = 0;
+    int maxDataSize = 0;
     for (PackedInts.Format format : PackedInts.Format.values()) {
       for (int bpv = 1; bpv <= 32; ++bpv) {
         if (!format.isSupported(bpv)) {
@@ -63,10 +63,10 @@ final class ForUtil {
         }
         final PackedInts.Decoder decoder = PackedInts.getDecoder(format, PACKED_INTS_VERSION, bpv);
         final int iterations = (int) Math.ceil((float) BLOCK_SIZE / decoder.valueCount());
-        minDataSize = Math.max(minDataSize, iterations * decoder.valueCount());
+        maxDataSize = Math.max(maxDataSize, iterations * decoder.valueCount());
       }
     }
-    MAX_DATA_SIZE = minDataSize;
+    MAX_DATA_SIZE = maxDataSize;
   }
 
   /**
