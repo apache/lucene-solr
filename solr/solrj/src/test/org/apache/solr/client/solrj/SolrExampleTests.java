@@ -711,16 +711,11 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertNumFound( "*:*", 3 ); // make sure it got in
     
     // should be able to handle multiple delete commands in a single go
-    StringWriter xml = new StringWriter();
-    xml.append( "<delete>" );
+    List<String> ids = new ArrayList<String>();
     for( SolrInputDocument d : doc ) {
-      xml.append( "<id>" );
-      XML.escapeCharData( (String)d.getField( "id" ).getFirstValue(), xml );
-      xml.append( "</id>" );
+      ids.add(d.getFieldValue("id").toString());
     }
-    xml.append( "</delete>" );
-    DirectXmlRequest up = new DirectXmlRequest( "/update", xml.toString() );
-    server.request( up );
+    server.deleteById(ids);
     server.commit();
     assertNumFound( "*:*", 0 ); // make sure it got out
   }
