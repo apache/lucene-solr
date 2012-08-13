@@ -180,7 +180,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
   }
 
   public BlockPostingsWriter(SegmentWriteState state) throws IOException {
-    this(state, PackedInts.DEFAULT);
+    this(state, PackedInts.COMPACT);
   }
 
   @Override
