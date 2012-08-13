@@ -27,6 +27,11 @@ Bug Fixes:
   had a custom Similarity where coord(1,1) != 1F, then the rewritten
   query would be scored differently.  (Robert Muir)
 
+Documentation
+
+* LUCENE-4302: Fix facet userguide to have HTML loose doctype like
+  all other javadocs.  (Karl Nicholas via Uwe Schindler)
+
 ======================= Lucene 3.6.1 =======================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
