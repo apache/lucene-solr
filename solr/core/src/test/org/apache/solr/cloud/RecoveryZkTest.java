@@ -24,8 +24,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,16 +34,7 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
   private static Logger log = LoggerFactory.getLogger(RecoveryZkTest.class);
   private StopableIndexingThread indexThread;
   private StopableIndexingThread indexThread2;
-  @BeforeClass
-  public static void beforeSuperClass() {
 
-  }
-  
-  @AfterClass
-  public static void afterSuperClass() {
-
-  }
-  
   public RecoveryZkTest() {
     super();
     sliceCount = 1;

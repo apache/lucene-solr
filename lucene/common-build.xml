@@ -88,7 +88,7 @@
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
   <property name="tests.linedocsfile" value="europarl.lines.txt.gz" />
-  <property name="tests.loggingfile" value="/dev/null"/>
+  <property name="tests.loggingfile" value="${common.dir}/tools/junit4/logging.properties"/>
   <property name="tests.nightly" value="false" />
   <property name="tests.weekly" value="false" />
   <property name="tests.slow" value="true" />
@@ -700,15 +700,22 @@
   <condition property="tests.method" value="${testmethod}*">
     <isset property="testmethod" />
   </condition>
+
   <condition property="tests.showSuccess" value="true">
     <or>
       <isset property="tests.class" />
       <isset property="tests.method" />
     </or>
   </condition>
-  <!-- default -->
   <property name="tests.showSuccess" value="false"/>
-  
+
+  <condition property="tests.showOutput" value="always">
+    <or>
+      <isset property="tests.class" />
+      <isset property="tests.method" />
+    </or>
+  </condition>
+  <property name="tests.showOutput" value="onerror"/>
 
   <!-- Test macro using junit4. -->
   <macrodef name="test-macro" description="Executes junit tests.">
@@ -854,6 +861,7 @@
             <syspropertyset>
                 <propertyref prefix="tests.maxfailures" />
                 <propertyref prefix="tests.failfast" />
+                <propertyref prefix="tests.badapples" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->
@@ -875,8 +883,7 @@
                 <junit4:report-text
                     showThrowable="true" 
                     showStackTraces="true" 
-                    showOutputStream="true" 
-                    showErrorStream="true"
+                    showOutput="${tests.showOutput}" 
 
                     showStatusOk="${tests.showSuccess}"
                     showStatusError="${tests.showError}"
@@ -896,8 +903,7 @@
                     file="@{junit.output.dir}/tests-report.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
-                    showOutputStream="true" 
-                    showErrorStream="true"
+                    showOutput="always"
 
                     showStatusOk="true"
                     showStatusError="true"
@@ -913,8 +919,7 @@
                     file="@{junit.output.dir}/tests-failures.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
-                    showOutputStream="true" 
-                    showErrorStream="true"
+                    showOutput="onerror" 
 
                     showStatusOk="false"
                     showStatusError="true"
@@ -929,8 +934,13 @@
                      the slowest tests or for reuse in balancing). -->
                 <junit4:report-execution-times file="@{junit.output.dir}/tests-timehints.txt" historyLength="5" />
 
-                <junit4:report-ant-xml dir="@{junit.output.dir}" />
-                <junit4:report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" />
+                <!-- ANT-compatible XMLs for jenkins records etc. -->
+                <junit4:report-ant-xml dir="@{junit.output.dir}" outputStreams="no" />
+
+                <!--
+                Enable if you wish to have a nice HTML5 report.
+                <junit4:report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" outputStreams="no" />
+                -->
             </listeners>
 
             <!-- Input test classes. -->

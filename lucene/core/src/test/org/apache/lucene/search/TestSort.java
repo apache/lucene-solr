@@ -60,6 +60,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
 import org.junit.BeforeClass;
 
@@ -835,7 +836,7 @@ public class TestSort extends LuceneTestCase {
     assertMatches (full, queryG, sort, "ZYXW");
 
     // Do the same for a ParallelMultiSearcher
-    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random(), 2, 8));
+    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random(), 2, 8), new NamedThreadFactory("testEmptyFieldSort"));
     IndexSearcher parallelSearcher=new IndexSearcher (full.getIndexReader(), exec);
 
     sort.setSort (new SortField ("int", SortField.Type.INT),
@@ -879,7 +880,7 @@ public class TestSort extends LuceneTestCase {
 
   // test a variety of sorts using a parallel multisearcher
   public void testParallelMultiSort() throws Exception {
-    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random(), 2, 8));
+    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random(), 2, 8), new NamedThreadFactory("testParallelMultiSort"));
     IndexSearcher searcher = new IndexSearcher(
                                   new MultiReader(searchX.getIndexReader(),
                                                   searchY.getIndexReader()), exec);

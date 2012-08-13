@@ -397,7 +397,7 @@ public class SimpleFacets {
           Integer.MAX_VALUE,
           10, TimeUnit.SECONDS, // terminate idle threads after 10 sec
           new SynchronousQueue<Runnable>()  // directly hand off tasks
-          , new DefaultSolrThreadFactory("facetExectutor")
+          , new DefaultSolrThreadFactory("facetExecutor")
   );
   
   /**

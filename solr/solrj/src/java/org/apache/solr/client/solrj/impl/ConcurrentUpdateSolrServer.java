@@ -49,6 +49,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +72,8 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
       .getLogger(ConcurrentUpdateSolrServer.class);
   private HttpSolrServer server;
   final BlockingQueue<UpdateRequest> queue;
-  final ExecutorService scheduler = Executors.newCachedThreadPool();
+  final ExecutorService scheduler = Executors.newCachedThreadPool(
+      new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
   final Queue<Runner> runners;
   volatile CountDownLatch lock = null; // used to block everything
   final int threadCount;

@@ -24,6 +24,7 @@ import java.util.logging.*;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.noggit.*;
 import org.apache.solr.common.*;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -38,6 +39,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.TestHarness;
 import org.junit.*;
 import org.junit.rules.RuleChain;
@@ -46,20 +48,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeaks;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4.
  * Unlike {@link AbstractSolrTestCase}, a new core is not created for each test method.
  */
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class
+})
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static int DEFAULT_CONNECTION_TIMEOUT = 1000;  // default socket connection timeout in ms
 
 
   @ClassRule
   public static TestRule solrClassRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+    RuleChain.outerRule(new SystemPropertiesRestoreRule())
+             .around(new RevertDefaultThreadHandlerRule());
 
   @Rule
   public TestRule solrTestRules = 

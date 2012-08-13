@@ -39,6 +39,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 
 /**
  * Spell checker test case
@@ -413,7 +414,7 @@ public class TestSpellChecker extends LuceneTestCase {
     int num_field2 = this.numdoc();
     assertEquals(num_field2, num_field1 + 1);
     int numThreads = 5 + random().nextInt(5);
-    ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+    ExecutorService executor = Executors.newFixedThreadPool(numThreads, new NamedThreadFactory("testConcurrentAccess"));
     SpellCheckWorker[] workers = new SpellCheckWorker[numThreads];
     for (int i = 0; i < numThreads; i++) {
       SpellCheckWorker spellCheckWorker = new SpellCheckWorker(r);

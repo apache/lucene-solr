@@ -1,5 +1,7 @@
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.ThreadFilter;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,28 +19,17 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 /**
- * Require assertions for Lucene/Solr packages.
+ * Last minute patches.
+ * TODO: remove when integrated in system filters in rr.
  */
-public class TestRuleAssertionsRequired implements TestRule {
+public class QuickPatchThreadsFilter implements ThreadFilter {
   @Override
-  public Statement apply(final Statement base, final Description description) {
-    return new Statement() {
-      @Override
-      public void evaluate() throws Throwable {
-        try {
-          assert false;
-          throw new Exception("Test class requires assertions, enable assertions globally (-ea) or for Solr/Lucene subpackages only.");
-        } catch (AssertionError e) {
-          // Ok, enabled.
-        }
-
-        base.evaluate();
-      }
-    };
+  public boolean reject(Thread t) {
+    // MacOS system thread.
+    if (t.getName().equals("AWT-AppKit")) {
+      return true;
+    }
+    return false;
   }
 }

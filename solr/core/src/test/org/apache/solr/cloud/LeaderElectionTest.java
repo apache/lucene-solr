@@ -35,10 +35,12 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
@@ -315,7 +317,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Test
   public void testStressElection() throws Exception {
     final ScheduledExecutorService scheduler = Executors
-        .newScheduledThreadPool(15);
+        .newScheduledThreadPool(15, new DefaultSolrThreadFactory("stressElection"));
     final List<ClientThread> threads = Collections
         .synchronizedList(new ArrayList<ClientThread>());
     
@@ -369,9 +371,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             }
 
             Thread.sleep(10);
-            
           } catch (Exception e) {
-
           }
         }
       }
@@ -382,7 +382,6 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       public void run() {
         
         while (!stopStress) {
-
           try {
             Thread.sleep(50);
             int j;
@@ -426,6 +425,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     
     // cleanup any threads still running
     for (ClientThread thread : threads) {
+      thread.zkClient.getSolrZooKeeper().close();
       thread.close();
     }
     

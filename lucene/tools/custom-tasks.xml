@@ -51,8 +51,9 @@
             <additional-filters />
 
             <!-- Typical version patterns. -->
+            <replaceregex pattern="\.rc[0-9]+" replace="" flags="gi" />
             <replaceregex pattern="\-(r)?([0-9\-\_\.])+(b(eta)?([0-9\-\.])*)?$" replace="" flags="gi" />
-    
+
             <!-- git hashcode pattern: its always 40 chars right? -->
             <replaceregex pattern="\-[a-z0-9]{40,40}$" replace="" flags="gi" />
           </filtermapper>

@@ -67,14 +67,14 @@ public class TestReaderClosed extends LuceneTestCase {
       // expected
     }
   }
-  
+
   // LUCENE-3800
   public void testReaderChaining() throws Exception {
     assertTrue(reader.getRefCount() > 0);
     IndexReader wrappedReader = SlowCompositeReaderWrapper.wrap(reader);
+    wrappedReader = new ParallelAtomicReader((AtomicReader) wrappedReader);
 
     IndexSearcher searcher = newSearcher(wrappedReader);
-
     TermRangeQuery query = TermRangeQuery.newStringRange("field", "a", "z", true, true);
     searcher.search(query, 5);
     reader.close(); // close original child reader
