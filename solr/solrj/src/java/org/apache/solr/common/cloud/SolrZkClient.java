@@ -137,6 +137,18 @@ public class SolrZkClient {
                     "", e);
               }
             }
+            if (isClosed) {
+              // we may have been closed
+              try {
+                SolrZkClient.this.keeper.close();
+              } catch (InterruptedException e) {
+                // Restore the interrupted status
+                Thread.currentThread().interrupt();
+                log.error("", e);
+                throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                    "", e);
+              }
+            }
           }
         });
     connManager.waitForConnected(clientConnectTimeout);
@@ -673,11 +685,13 @@ public class SolrZkClient {
    * @throws InterruptedException 
    */
   void updateKeeper(SolrZooKeeper keeper) throws InterruptedException {
+   if (isClosed) throw new RuntimeException("client is closed");
    SolrZooKeeper oldKeeper = this.keeper;
    this.keeper = keeper;
    if (oldKeeper != null) {
      oldKeeper.close();
    }
+   if (isClosed) this.keeper.close();
   }
   
   public SolrZooKeeper getSolrZooKeeper() {

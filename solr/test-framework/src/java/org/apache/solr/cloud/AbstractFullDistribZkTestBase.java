@@ -31,9 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.params.CoreConnectionPNames;
-import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -42,7 +40,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -65,8 +62,6 @@ import org.slf4j.LoggerFactory;
  * what we test now - the default update chain
  */
 @Slow
-@BadApple
-@AwaitsFix(bugUrl = "SOLR-3727 (leak threads)") 
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
   static Logger log = LoggerFactory.getLogger(AbstractFullDistribZkTestBase.class);
   

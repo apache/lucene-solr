@@ -17,7 +17,7 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-public interface SafeStopThread {
-  public void stop();
+public interface ClosableThread {
+  public void close();
   public boolean isClosed();
 }
