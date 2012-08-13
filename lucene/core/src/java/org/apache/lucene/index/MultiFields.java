@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MergedIterator;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -182,7 +181,7 @@ public final class MultiFields extends Fields {
     this.subSlices = subSlices;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   @Override
   public Iterator<String> iterator() {
     Iterator<String> subIterators[] = new Iterator[subs.length];
