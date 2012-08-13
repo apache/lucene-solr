@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.WeakHashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -396,6 +397,13 @@ public abstract class IndexReader implements Closeable {
    * @lucene.experimental
    */
   public abstract IndexReaderContext getTopReaderContext();
+  
+  /**
+   * Returns the reader's leaves, or itself if this reader is Atomic.
+   */
+  public final List<AtomicReaderContext> leaves() {
+    return getTopReaderContext().leaves();
+  }
 
   /** Expert: Returns a key for this IndexReader, so FieldCache/CachingWrapperFilter can find
    * it again.
