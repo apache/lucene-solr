@@ -24,6 +24,7 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -77,12 +78,12 @@ public class TwoDoublesStrategy extends SpatialStrategy {
   }
 
   @Override
-  public IndexableField[] createIndexableFields(Shape shape) {
+  public Field[] createIndexableFields(Shape shape) {
     if( shape instanceof Point ) {
       Point point = (Point)shape;
       FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
       doubleFieldType.setNumericPrecisionStep(precisionStep);
-      IndexableField[] f = new IndexableField[2];
+      Field[] f = new Field[2];
       f[0] = new DoubleField(fieldNameX, point.getX(), doubleFieldType);
       f[1] = new DoubleField(fieldNameY, point.getY(), doubleFieldType);
       return f;
@@ -90,7 +91,7 @@ public class TwoDoublesStrategy extends SpatialStrategy {
     if( !ignoreIncompatibleGeometry ) {
       throw new IllegalArgumentException( "TwoDoublesStrategy can not index: "+shape );
     }
-    return new IndexableField[0]; // nothing (solr does not support null)
+    return new Field[0]; // nothing (solr does not support null)
   }
 
   @Override

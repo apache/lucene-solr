@@ -23,6 +23,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;
 import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;
@@ -61,7 +62,7 @@ public class FloatField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may
@@ -86,7 +87,7 @@ public class FloatField extends PrimitiveFieldType {
   }
 
   @Override
-  public Float toObject(GeneralField f) {
+  public Float toObject(StorableField f) {
     return Float.valueOf( toExternal(f) );
   }
 }

@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;

@@ -32,7 +32,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -251,7 +250,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     Iterator<Document> iter = docs.values().iterator();
     while (iter.hasNext()) {
       Document d = iter.next();
-      ArrayList<IndexableField> fields = new ArrayList<IndexableField>();
+      ArrayList<Field> fields = new ArrayList<Field>();
       fields.addAll(d.getFields());
       // put fields in same order each time
       Collections.sort(fields, fieldNameComparator);

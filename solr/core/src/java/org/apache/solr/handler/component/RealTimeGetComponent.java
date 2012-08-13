@@ -18,9 +18,9 @@ package org.apache.solr.handler.component;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -298,7 +298,6 @@ public class RealTimeGetComponent extends SearchComponent
   private static SolrDocument toSolrDoc(SolrInputDocument sdoc, IndexSchema schema) {
     // TODO: do something more performant than this double conversion
     Document doc = DocumentBuilder.toDocument(sdoc, schema);
-    List<IndexableField> fields = doc.getFields();
 
     // copy the stored fields only
     StoredDocument out = new StoredDocument();

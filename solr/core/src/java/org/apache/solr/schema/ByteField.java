@@ -20,6 +20,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
 import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.SortField;
 
 import org.apache.solr.response.TextResponseWriter;
@@ -66,7 +67,7 @@ public class ByteField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may
@@ -91,7 +92,7 @@ public class ByteField extends PrimitiveFieldType {
   }
 
   @Override
-  public Byte toObject(GeneralField f) {
+  public Byte toObject(StorableField f) {
     return Byte.valueOf(toExternal(f));
   }
 }

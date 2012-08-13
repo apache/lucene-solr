@@ -19,7 +19,7 @@ package org.apache.solr.search.grouping.distributed.shardresultserializer;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.document.StoredDocument;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;

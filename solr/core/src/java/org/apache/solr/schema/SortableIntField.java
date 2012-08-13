@@ -31,6 +31,7 @@ import org.apache.solr.search.QParser;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
 
@@ -75,7 +76,7 @@ public class SortableIntField extends PrimitiveFieldType {
   }
 
   @Override
-  public String toExternal(GeneralField f) {
+  public String toExternal(StorableField f) {
     return indexedToReadable(f.stringValue());
   }
 
@@ -93,12 +94,12 @@ public class SortableIntField extends PrimitiveFieldType {
   }
 
   @Override
-  public Integer toObject(GeneralField f) {
+  public Integer toObject(StorableField f) {
     return NumberUtils.SortableStr2int(f.stringValue(), 0, 3);    
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     String sval = f.stringValue();
     writer.writeInt(name, NumberUtils.SortableStr2int(sval,0,sval.length()));
   }

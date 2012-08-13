@@ -226,7 +226,7 @@ public class DocMaker implements Closeable {
 
     final DocState ds = getDocState();
     final Document doc = reuseFields ? ds.doc : new Document();
-    doc.getFields().clear();
+    doc.clear();
     
     // Set ID_FIELD
     FieldType ft = new FieldType(valType);

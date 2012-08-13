@@ -1,12 +1,4 @@
-package org.apache.lucene.document;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.util.BytesRef;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,6 +16,21 @@ import org.apache.lucene.util.BytesRef;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.util.BytesRef;
 
 public class StoredDocument implements Iterable<StorableField>{
   
@@ -45,6 +52,10 @@ public class StoredDocument implements Iterable<StorableField>{
     return result.toArray(new StorableField[result.size()]);
   }
   
+  /** Returns a field with the given name if any exist in this document, or
+   * null.  If multiple fields exists with this name, this method returns the
+   * first value added.
+   */
   public final StorableField getField(String name) {
     for (StorableField field : fields) {
       if (field.name().equals(name)) {
@@ -54,36 +65,15 @@ public class StoredDocument implements Iterable<StorableField>{
     return null;
   }
   
-  public final void removeField(String name) {
-    Iterator<StorableField> it = fields.iterator();
-    while (it.hasNext()) {
-      StorableField field = it.next();
-      if (field.name().equals(name)) {
-        it.remove();
-        return;
-      }
-    }
-  }
-  
-  /**
-   * <p>Removes all fields with the given name from the document.
-   * If there is no field with the specified name, the document remains unchanged.</p>
-   * <p> Note that the removeField(s) methods like the add method only make sense 
-   * prior to adding a document to an index. These methods cannot
-   * be used to change the content of an existing index! In order to achieve this,
-   * a document has to be deleted from an index and a new changed version of that
-   * document has to be added.</p>
+
+  /** Returns a List of all the fields in a document.
+   * <p>Note that fields which are <i>not</i> stored are
+   * <i>not</i> available in documents retrieved from the
+   * index, e.g. {@link IndexSearcher#doc(int)} or {@link
+   * IndexReader#document(int)}.
+   * 
+   * @return an immutable <code>List[StorableField]</code> 
    */
-  public final void removeFields(String name) {
-    Iterator<StorableField> it = fields.iterator();
-    while (it.hasNext()) {
-      StorableField field = it.next();
-      if (field.name().equals(name)) {
-        it.remove();
-      }
-    }
-  }
-  
   public final List<StorableField> getFields() {
     return fields;
   }
@@ -179,26 +169,6 @@ public class StoredDocument implements Iterable<StorableField>{
      }
      return null;
    }
-
-  public Document asIndexable() {
-    Document doc = new Document();
-    
-    for (StorableField field : fields) {
-      Field newField = new Field(field.name(), (FieldType) field.fieldType());
-      
-      newField.fieldsData = field.stringValue();
-      if (newField.fieldsData == null) 
-        newField.fieldsData = field.numericValue();
-      if (newField.fieldsData == null) 
-        newField.fieldsData = field.binaryValue();
-      if (newField.fieldsData == null) 
-        newField.fieldsData = field.readerValue();
-      
-      doc.add(newField);
-    }
-    
-    return doc;
-  }
 
   /** Prints the fields of a document for human consumption. */
   @Override

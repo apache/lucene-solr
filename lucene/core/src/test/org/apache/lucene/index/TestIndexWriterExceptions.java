@@ -1556,50 +1556,46 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     try {
       doc = new Document();
       // try to boost with norms omitted
-      List<IndexableField> list = new ArrayList<IndexableField>();
-      list.add(new IndexableField() {
-
+      IndexDocument docList = new IndexDocument() {
+        
+        List<IndexableField> list = new ArrayList<IndexableField>();
+        List<StorableField> storedList = new ArrayList<StorableField>();
+        
         @Override
-        public String name() {
-          return "foo";
+        public Iterable<? extends IndexableField> indexableFields() {
+          if (list.size() == 0) {
+            list.add(new IndexableField() {
+              @Override
+              public String name() {
+                return "foo";
+              }
+
+              @Override
+              public IndexableFieldType fieldType() {
+                return StringField.TYPE_NOT_STORED;
+              }
+
+              @Override
+              public float boost() {
+                return 5f;
+              }
+
+              @Override
+              public TokenStream tokenStream(Analyzer analyzer) throws IOException {
+                return null;
+              }
+            });
+          }
+          return list;
         }
 
         @Override
-        public IndexableFieldType fieldType() {
-          return StringField.TYPE_NOT_STORED;
+        public Iterable<? extends StorableField> storableFields() {
+          return storedList;
         }
-
-        @Override
-        public float boost() {
-          return 5f;
-        }
-
-        @Override
-        public BytesRef binaryValue() {
-          return null;
-        }
-
-        @Override
-        public String stringValue() {
-          return "baz";
-        }
-
-        @Override
-        public Reader readerValue() {
-          return null;
-        }
-
-        @Override
-        public Number numericValue() {
-          return null;
-        }
-
-        @Override
-        public TokenStream tokenStream(Analyzer analyzer) throws IOException {
-          return null;
-        }
-      });
-      iw.addDocument(list);
+        
+      };
+      iw.addDocument(docList);
       fail("didn't get any exception, boost silently discarded");
     } catch (UnsupportedOperationException expected) {
       // expected

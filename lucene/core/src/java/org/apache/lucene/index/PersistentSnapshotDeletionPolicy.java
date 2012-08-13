@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -73,9 +72,9 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
         if (doc.getField(SNAPSHOTS_ID) == null) {
           throw new IllegalStateException("directory is not a valid snapshots store!");
         }
-        doc.removeField(SNAPSHOTS_ID);
         for (StorableField f : doc) {
-          snapshots.put(f.name(), f.stringValue());
+          if (!f.name().equals(SNAPSHOTS_ID))
+            snapshots.put(f.name(), f.stringValue());
         }
       } else if (numDocs != 0) {
         throw new IllegalStateException(

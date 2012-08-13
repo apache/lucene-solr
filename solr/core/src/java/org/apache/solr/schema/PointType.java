@@ -22,6 +22,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -70,7 +71,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   }
 
   @Override
-  public IndexableField[] createFields(SchemaField field, Object value, float boost) {
+  public StorableField[] createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
     String[] point = new String[0];
     try {
@@ -80,7 +81,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     }
 
     // TODO: this doesn't currently support polyFields as sub-field types
-    IndexableField[] f = new IndexableField[ (field.indexed() ? dimension : 0) + (field.stored() ? 1 : 0) ];
+    StorableField[] f = new StorableField[ (field.indexed() ? dimension : 0) + (field.stored() ? 1 : 0) ];
 
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
@@ -116,12 +117,12 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
    *
    */
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public StorableField createField(SchemaField field, Object value, float boost) {
     throw new UnsupportedOperationException("PointType uses multiple fields.  field=" + field.getName());
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, GeneralField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), false);
   }
 

@@ -1,17 +1,5 @@
 package org.apache.lucene.codecs;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StoredDocument;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.util.Bits;
-
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -31,13 +19,13 @@ import org.apache.lucene.util.Bits;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.index.AtomicReader;
 
 /**
  * Codec API for writing stored fields:

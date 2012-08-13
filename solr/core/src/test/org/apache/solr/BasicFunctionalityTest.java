@@ -30,10 +30,11 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.English;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -420,7 +421,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     
     IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
     SchemaField f; // Solr field type
-    IndexableField luf; // Lucene field
+    StorableField luf; // Lucene field
 
     f = ischema.getField("test_basictv");
     luf = f.createField("test", 0f);

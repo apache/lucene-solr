@@ -63,7 +63,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   @Override
-  public IndexableField[] createIndexableFields(Shape shape) {
+  public Field[] createIndexableFields(Shape shape) {
     int detailLevel = grid.getMaxLevelForPrecision(shape,distErrPct);
     List<Node> cells = grid.getNodes(shape, detailLevel, true);//true=intermediates cells
     //If shape isn't a point, add a full-resolution center-point so that
@@ -79,7 +79,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     //  http://code.google.com/p/lucene-spatial-playground/issues/detail?id=4
 
     Field field = new Field(getFieldName(), new CellTokenStream(cells.iterator()), FIELD_TYPE);
-    return new IndexableField[]{field};
+    return new Field[]{field};
   }
 
   /* Indexed, tokenized, not stored. */

@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexReader;  // for javadoc
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;  // for javadoc
 import org.apache.lucene.search.ScoreDoc; // for javadoc
 import org.apache.lucene.util.BytesRef;
@@ -50,6 +51,30 @@ public final class Document implements IndexDocument{
   /** Constructs a new document with no fields. */
   public Document() {}
   
+
+  /**
+  * Creates a Document from StoredDocument so it that can be used e.g. for another
+  * round of indexing.
+  *
+  * @return a new instance of Document representation of this StoredDocument
+  */
+  public Document(StoredDocument storedDoc) {
+    for (StorableField field : storedDoc.getFields()) {
+      Field newField = new Field(field.name(), (FieldType) field.fieldType());
+     
+      newField.fieldsData = field.stringValue();
+      if (newField.fieldsData == null) 
+        newField.fieldsData = field.numericValue();
+      if (newField.fieldsData == null) 
+        newField.fieldsData = field.binaryValue();
+      if (newField.fieldsData == null) 
+        newField.fieldsData = field.readerValue();
+     
+      add(newField);
+    }
+ }
+
+  
   /**
    * <p>Adds a field to a document.  Several fields may be added with
    * the same name.  In this case, if the fields are indexed, their text is
@@ -62,14 +87,6 @@ public final class Document implements IndexDocument{
    */
   public final void add(Field field) {
     fields.add(field);
-  }
-  
-  public final void add(IndexableField field) {
-    fields.add((Field) field);
-  }
-  
-  public final void add(StorableField field) {
-    fields.add((Field) field);
   }
   
   /**
@@ -167,8 +184,8 @@ public final class Document implements IndexDocument{
    * null.  If multiple fields exists with this name, this method returns the
    * first value added.
    */
-  public final IndexableField getField(String name) {
-    for (IndexableField field : fields) {
+  public final Field getField(String name) {
+    for (Field field : fields) {
       if (field.name().equals(name)) {
         return field;
       }
@@ -184,15 +201,15 @@ public final class Document implements IndexDocument{
    * @param name the name of the field
    * @return a <code>Fieldable[]</code> array
    */
-  public IndexableField[] getFields(String name) {
-    List<IndexableField> result = new ArrayList<IndexableField>();
-    for (IndexableField field : fields) {
+  public Field[] getFields(String name) {
+    List<Field> result = new ArrayList<Field>();
+    for (Field field : fields) {
       if (field.name().equals(name)) {
         result.add(field);
       }
     }
 
-    return result.toArray(new IndexableField[result.size()]);
+    return result.toArray(new Field[result.size()]);
   }
   
   /** Returns a List of all the fields in a document.
@@ -200,14 +217,11 @@ public final class Document implements IndexDocument{
    * <i>not</i> available in documents retrieved from the
    * index, e.g. {@link IndexSearcher#doc(int)} or {@link
    * IndexReader#document(int)}.
+   * 
+   * @return an immutable <code>List[Field]</code> 
    */
-  public final List<IndexableField> getFields() {
-    List<IndexableField> result = new ArrayList<IndexableField>();
-    for (IndexableField field : fields) {
-      result.add(field);
-    }
-
-    return result;
+  public final List<Field> getFields() {
+    return Collections.unmodifiableList(fields);
   }
   
    private final static String[] NO_STRINGS = new String[0];
@@ -275,6 +289,7 @@ public final class Document implements IndexDocument{
     return buffer.toString();
   }
 
+  /** Obtains all indexed fields in document */
   @Override
   public Iterable<? extends IndexableField> indexableFields() {
     Iterator<Field> it = indexedFieldsIterator();
@@ -287,6 +302,8 @@ public final class Document implements IndexDocument{
     return result;
   }
 
+
+  /** Obtains all stored fields in document. */
   @Override
   public Iterable<? extends StorableField> storableFields() {
     Iterator<Field> it = storedFieldsIterator();
@@ -299,7 +316,7 @@ public final class Document implements IndexDocument{
     return result;
   }
 
-  public Iterator<Field> storedFieldsIterator() {
+  private Iterator<Field> storedFieldsIterator() {
     return new FilterIterator<Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
@@ -308,12 +325,17 @@ public final class Document implements IndexDocument{
     };
   }
   
-  public Iterator<Field> indexedFieldsIterator() {
+  private Iterator<Field> indexedFieldsIterator() {
     return new FilterIterator<Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
         return field.type.indexed();
       }
     };
+  }
+
+  /** Removes all the fields from document. */
+  public void clear() {
+    fields.clear();
   }
 }

@@ -27,8 +27,8 @@ import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredDocument;
 
 import java.io.IOException;
 

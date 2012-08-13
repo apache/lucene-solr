@@ -33,7 +33,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Stores the normalization value computed in
+ * Stores the normalization value with {@link StorableField} computed in
  * {@link Similarity#computeNorm(FieldInvertState, Norm)} per field.
  * Normalization values must be consistent within a single field, different
  * value types are not permitted within a single field. All values set must be
@@ -48,9 +48,9 @@ public final class Norm  {
   private BytesRef spare;
   
   /**
-   * Returns the {@link IndexableField} representation for this norm
+   * Returns the {@link StorableField} representation for this norm
    */
-  public StoredField field() {
+  public StorableField field() {
     return field;
   }
   

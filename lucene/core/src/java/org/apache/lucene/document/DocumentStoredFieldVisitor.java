@@ -23,6 +23,7 @@ import java.util.HashSet;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.StoredFieldVisitor;
 
 /** A {@link StoredFieldVisitor} that creates a {@link

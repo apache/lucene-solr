@@ -27,6 +27,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.BytesRef;
 
 /** Defers actually loading a field's value until you ask

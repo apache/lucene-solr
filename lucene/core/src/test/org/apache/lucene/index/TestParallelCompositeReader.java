@@ -23,7 +23,6 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;

@@ -594,7 +594,7 @@ public class TestGrouping extends LuceneTestCase {
         Document doc = new Document();
         docs.add(doc);
         if (groupValue.group != null) {
-          doc.add(newStringField("group", groupValue.group.utf8ToString(), Field.Store.NO));
+          doc.add(newStringField("group", groupValue.group.utf8ToString(), Field.Store.YES));
         }
         doc.add(newStringField("sort1", groupValue.sort1.utf8ToString(), Field.Store.NO));
         doc.add(newStringField("sort2", groupValue.sort2.utf8ToString(), Field.Store.NO));

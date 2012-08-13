@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -142,10 +141,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     String id10 = r1.document(10).getField("id").stringValue();
     
-    StoredDocument newDoc = r1.document(10);
+    Document newDoc = new Document(r1.document(10));
     newDoc.removeField("id");
     newDoc.add(newStringField("id", Integer.toString(8000), Field.Store.YES));
-    writer.updateDocument(new Term("id", id10), newDoc.asIndexable());
+    writer.updateDocument(new Term("id", id10), newDoc);
     assertFalse(r1.isCurrent());
 
     DirectoryReader r2 = writer.getReader();

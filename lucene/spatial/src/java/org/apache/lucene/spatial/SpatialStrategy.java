@@ -19,6 +19,8 @@ package org.apache.lucene.spatial;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
+
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -97,7 +99,7 @@ public abstract class SpatialStrategy {
    *
    * @return Not null nor will it have null elements.
    */
-  public abstract IndexableField[] createIndexableFields(Shape shape);
+  public abstract Field[] createIndexableFields(Shape shape);
 
   /**
    * The value source yields a number that is proportional to the distance between the query shape and indexed data.

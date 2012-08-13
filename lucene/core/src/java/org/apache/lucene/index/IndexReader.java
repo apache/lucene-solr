@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Bits;

@@ -43,7 +43,6 @@ import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.ShortDocValuesField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;

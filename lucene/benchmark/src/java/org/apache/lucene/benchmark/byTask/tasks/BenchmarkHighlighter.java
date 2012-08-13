@@ -19,8 +19,8 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StoredDocument;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredDocument;
 
 /**
  * Abstract class for benchmarking highlighting performance

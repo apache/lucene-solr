@@ -17,13 +17,13 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.index.GeneralField;
+import org.apache.lucene.index.StorableField;
 /**
  *
  */
 public class BCDLongField extends BCDIntField {
   @Override
-  public Long toObject(GeneralField f) {
+  public Long toObject(StorableField f) {
     return Long.valueOf( toExternal(f) );
   }
 }
