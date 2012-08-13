@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -258,9 +259,10 @@ public class TestCodecs extends LuceneTestCase {
 
     final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random()), DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
-    final FieldsEnum fieldsEnum = reader.iterator();
-    assertNotNull(fieldsEnum.next());
-    final Terms terms2 = fieldsEnum.terms();
+    final Iterator<String> fieldsEnum = reader.iterator();
+    String fieldName = fieldsEnum.next();
+    assertNotNull(fieldName);
+    final Terms terms2 = reader.terms(fieldName);
     assertNotNull(terms2);
 
     final TermsEnum termsEnum = terms2.iterator(null);
@@ -286,7 +288,7 @@ public class TestCodecs extends LuceneTestCase {
       assertEquals(termsEnum.seekCeil(new BytesRef(terms[i].text2)), TermsEnum.SeekStatus.FOUND);
     }
 
-    assertNull(fieldsEnum.next());
+    assertFalse(fieldsEnum.hasNext());
     reader.close();
     dir.close();
   }

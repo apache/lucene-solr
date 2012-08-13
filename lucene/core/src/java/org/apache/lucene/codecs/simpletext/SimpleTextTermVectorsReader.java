@@ -29,7 +29,6 @@ import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
@@ -45,6 +44,7 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.UnmodifiableIterator;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.*;
 
@@ -240,26 +240,8 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public FieldsEnum iterator() throws IOException {
-      return new FieldsEnum() {
-        private Iterator<Map.Entry<String,SimpleTVTerms>> iterator = fields.entrySet().iterator();
-        private Map.Entry<String,SimpleTVTerms> current = null;
-        
-        @Override
-        public String next() {
-          if (!iterator.hasNext()) {
-            return null;
-          } else {
-            current = iterator.next();
-            return current.getKey();
-          }
-        }
-
-        @Override
-        public Terms terms() {
-          return current.getValue();
-        }
-      };
+    public Iterator<String> iterator() {
+      return new UnmodifiableIterator<String>(fields.keySet().iterator());
     }
 
     @Override

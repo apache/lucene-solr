@@ -34,7 +34,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -49,6 +48,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -862,24 +862,8 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
     return new FieldsProducer() {
       @Override
-      public FieldsEnum iterator() {
-        final Iterator<TermsReader> iter = fields.values().iterator();
-
-        return new FieldsEnum() {
-
-          private TermsReader current;
-
-          @Override
-          public String next() {
-            current = iter.next();
-            return current.field.name;
-          }
-
-          @Override
-          public Terms terms() {
-            return current;
-          }
-        };
+      public Iterator<String> iterator() {
+        return new UnmodifiableIterator<String>(fields.keySet().iterator());
       }
 
       @Override

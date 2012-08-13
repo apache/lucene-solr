@@ -1,6 +1,7 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
@@ -60,30 +61,15 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public FieldsEnum iterator() throws IOException {
-      FieldsEnum fieldsEnum = super.iterator();
-      assert fieldsEnum != null;
-      return new AssertingFieldsEnum(fieldsEnum);
+    public Iterator<String> iterator() {
+      Iterator<String> iterator = super.iterator();
+      assert iterator != null;
+      return iterator;
     }
 
     @Override
     public Terms terms(String field) throws IOException {
       Terms terms = super.terms(field);
-      return terms == null ? null : new AssertingTerms(terms);
-    }
-  }
-  
-  /**
-   * Wraps a FieldsEnum but with additional asserts
-   */
-  public static class AssertingFieldsEnum extends FilterFieldsEnum {
-    public AssertingFieldsEnum(FieldsEnum in) {
-      super(in);
-    }
-
-    @Override
-    public Terms terms() throws IOException {
-      Terms terms = super.terms();
       return terms == null ? null : new AssertingTerms(terms);
     }
   }

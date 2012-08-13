@@ -24,6 +24,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Iterator;
 
 /**  A <code>FilterAtomicReader</code> contains another AtomicReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -46,7 +47,7 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public FieldsEnum iterator() throws IOException {
+    public Iterator<String> iterator() {
       return in.iterator();
     }
 
@@ -123,29 +124,6 @@ public class FilterAtomicReader extends AtomicReader {
     @Override
     public boolean hasPayloads() {
       return in.hasPayloads();
-    }
-  }
-
-  /** Base class for filtering {@link TermsEnum} implementations. */
-  public static class FilterFieldsEnum extends FieldsEnum {
-    protected final FieldsEnum in;
-    public FilterFieldsEnum(FieldsEnum in) {
-      this.in = in;
-    }
-
-    @Override
-    public String next() throws IOException {
-      return in.next();
-    }
-
-    @Override
-    public Terms terms() throws IOException {
-      return in.terms();
-    }
-    
-    @Override
-    public AttributeSource attributes() {
-      return in.attributes();
     }
   }
 

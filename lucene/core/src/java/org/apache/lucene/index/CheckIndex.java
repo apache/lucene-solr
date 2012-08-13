@@ -685,12 +685,7 @@ public class CheckIndex {
     DocsAndPositionsEnum postings = null;
     
     String lastField = null;
-    final FieldsEnum fieldsEnum = fields.iterator();
-    while(true) {
-      final String field = fieldsEnum.next();
-      if (field == null) {
-        break;
-      }
+    for (String field : fields) {
       // MultiFieldsEnum relies upon this order...
       if (lastField != null && field.compareTo(lastField) <= 0) {
         throw new RuntimeException("fields out of order: lastField=" + lastField + " field=" + field);
@@ -713,7 +708,7 @@ public class CheckIndex {
       // assert fields.terms(field) != null;
       computedFieldCount++;
       
-      final Terms terms = fieldsEnum.terms();
+      final Terms terms = fields.terms(field);
       if (terms == null) {
         continue;
       }
@@ -987,11 +982,7 @@ public class CheckIndex {
         // only happen if it's a ghost field (field with
         // no terms, eg there used to be terms but all
         // docs got deleted and then merged away):
-        // make sure TermsEnum is empty:
-        final Terms fieldTerms2 = fieldsEnum.terms();
-        if (fieldTerms2 != null && fieldTerms2.iterator(null).next() != null) {
-          throw new RuntimeException("Fields.terms(field=" + field + ") returned null yet the field appears to have terms");
-        }
+        
       } else {
         if (fieldTerms instanceof BlockTreeTermsReader.FieldReader) {
           final BlockTreeTermsReader.Stats stats = ((BlockTreeTermsReader.FieldReader) fieldTerms).computeStats();
@@ -1402,9 +1393,7 @@ public class CheckIndex {
             status.docCount++;
           }
 
-          FieldsEnum fieldsEnum = tfv.iterator();
-          String field = null;
-          while((field = fieldsEnum.next()) != null) {
+          for(String field : tfv) {
             if (doStats) {
               status.totVectors++;
             }

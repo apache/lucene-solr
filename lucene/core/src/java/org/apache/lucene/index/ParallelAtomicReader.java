@@ -27,6 +27,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.UnmodifiableIterator;
 
 
 /** An {@link AtomicReader} which reads multiple, parallel indexes.  Each index
@@ -121,12 +122,10 @@ public final class ParallelAtomicReader extends AtomicReader {
     for (final AtomicReader reader : this.parallelReaders) {
       final Fields readerFields = reader.fields();
       if (readerFields != null) {
-        final FieldsEnum it = readerFields.iterator();
-        String name;
-        while ((name = it.next()) != null) {
+        for (String field : readerFields) {
           // only add if the reader responsible for that field name is the current:
-          if (fieldToReader.get(name) == reader) {
-            this.fields.addField(name, it.terms());
+          if (fieldToReader.get(field) == reader) {
+            this.fields.addField(field, readerFields.terms(field));
           }
         }
       }
@@ -151,33 +150,6 @@ public final class ParallelAtomicReader extends AtomicReader {
     return buffer.append(')').toString();
   }
   
-  private final class ParallelFieldsEnum extends FieldsEnum {
-    private String currentField;
-    private final Iterator<String> keys;
-    private final ParallelFields fields;
-    
-    ParallelFieldsEnum(ParallelFields fields) {
-      this.fields = fields;
-      keys = fields.fields.keySet().iterator();
-    }
-    
-    @Override
-    public String next() {
-      if (keys.hasNext()) {
-        currentField = keys.next();
-      } else {
-        currentField = null;
-      }
-      return currentField;
-    }
-    
-    @Override
-    public Terms terms() {
-      return fields.terms(currentField);
-    }
-    
-  }
-  
   // Single instance of this, per ParallelReader instance
   private final class ParallelFields extends Fields {
     final Map<String,Terms> fields = new TreeMap<String,Terms>();
@@ -190,8 +162,8 @@ public final class ParallelAtomicReader extends AtomicReader {
     }
     
     @Override
-    public FieldsEnum iterator() {
-      return new ParallelFieldsEnum(this);
+    public Iterator<String> iterator() {
+      return new UnmodifiableIterator<String>(fields.keySet().iterator());
     }
     
     @Override

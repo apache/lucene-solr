@@ -27,6 +27,10 @@ API Changes
   otherwise returns the current payload. You can now call it multiple
   times per position if you want. (Robert Muir)
 
+* Removed FieldsEnum. Fields API instead implements Iterable<String>
+  and exposes Iterator, so you can iterate over field names with
+  for (String field : fields) instead.  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor

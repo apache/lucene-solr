@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -42,7 +43,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.TermState;
@@ -718,22 +718,27 @@ public class MemoryIndex {
 
     private class MemoryFields extends Fields {
       @Override
-      public FieldsEnum iterator() {
-        return new FieldsEnum() {
+      public Iterator<String> iterator() {
+        return new Iterator<String>() {
           int upto = -1;
 
           @Override
           public String next() {
             upto++;
             if (upto >= sortedFields.length) {
-              return null;
+              throw new NoSuchElementException();
             }
             return sortedFields[upto].getKey();
           }
 
           @Override
-          public Terms terms() {
-            return MemoryFields.this.terms(sortedFields[upto].getKey());
+          public boolean hasNext() {
+            return upto+1 < sortedFields.length;
+          }
+
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
           }
         };
       }
