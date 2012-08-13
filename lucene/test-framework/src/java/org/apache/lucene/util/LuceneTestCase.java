@@ -124,7 +124,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
 @ThreadLeakAction({Action.WARN, Action.INTERRUPT})
 @ThreadLeakLingering(linger = 20000) // Wait long for leaked threads to complete before failure. zk needs this.
 @ThreadLeakZombies(Consequence.IGNORE_REMAINING_TESTS)
-@TimeoutSuite(millis = Integer.MAX_VALUE) // NOT YET: until nightly tests etc are factored in.
+@TimeoutSuite(millis = 2 * TimeUnits.HOUR)
 @ThreadLeakFilters(defaultFilters = true, filters = {
     QuickPatchThreadsFilter.class
 })
@@ -211,7 +211,6 @@ public abstract class LuceneTestCase extends Assert {
   public @interface SuppressCodecs {
     String[] value();
   }
-
   
   // -----------------------------------------------------------------
   // Truly immutable fields and constants, initialized once and valid 
