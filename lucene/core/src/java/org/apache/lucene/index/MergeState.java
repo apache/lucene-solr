@@ -199,6 +199,7 @@ public class MergeState {
   // and we could make a codec(wrapper) to do all of this privately so IW is uninvolved
   public PayloadProcessorProvider payloadProcessorProvider;
   public ReaderPayloadProcessor[] readerPayloadProcessor;
+  public ReaderPayloadProcessor currentReaderPayloadProcessor;
   public PayloadProcessor[] currentPayloadProcessor;
 
   // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)

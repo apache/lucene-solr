@@ -58,7 +58,7 @@ def javaExe(version):
 
 def verifyJavaVersion(version):
   s = os.popen('%s; java -version 2>&1' % javaExe(version)).read()
-  if s.find('java version "%s.' % version) == -1:
+  if s.find(' version "%s.' % version) == -1:
     raise RuntimeError('got wrong version for java %s:\n%s' % (version, s))
 
 # http://s.apache.org/lusolr32rc2

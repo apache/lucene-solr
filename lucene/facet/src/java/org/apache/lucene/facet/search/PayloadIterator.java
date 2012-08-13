@@ -99,16 +99,13 @@ public class PayloadIterator {
     // Prepare for payload extraction
     tp.nextPosition();
 
-    // TODO: fix bug in SepCodec and then remove this check (the null check should be enough)
-    if (!tp.hasPayload()) {
-      return false;
-    }
-
     BytesRef br = tp.getPayload();
-
-    if (br == null || br.length == 0) {
+    
+    if (br == null) {
       return false;
     }
+    
+    assert br.length > 0;
 
     this.payloadLength = br.length;
     

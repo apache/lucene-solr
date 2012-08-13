@@ -19,9 +19,12 @@ package org.apache.zookeeper;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 // we use this class to expose nasty stuff for tests
 public class SolrZooKeeper extends ZooKeeper {
+  List<Thread> spawnedThreads = new CopyOnWriteArrayList<Thread>();
 
   public SolrZooKeeper(String connectString, int sessionTimeout,
       Watcher watcher) throws IOException {
@@ -38,21 +41,32 @@ public class SolrZooKeeper extends ZooKeeper {
    * @param ms the number of milliseconds to pause.
    */
   public void pauseCnxn(final long ms) {
-    new Thread() {
+    Thread t = new Thread() {
       public void run() {
-        synchronized (cnxn) {
-          try {
+        try {
+          synchronized (cnxn) {
             try {
               ((SocketChannel) cnxn.sendThread.sockKey.channel()).socket()
                   .close();
             } catch (Exception e) {
-
             }
             Thread.sleep(ms);
-          } catch (InterruptedException e) {}
-        }
+          }
+
+          // Wait a long while to make sure we properly clean up these threads.
+          Thread.sleep(500000);
+        } catch (InterruptedException e) {}
       }
-    }.start();
+    };
+    t.start();
+    spawnedThreads.add(t);
   }
 
+  @Override
+  public synchronized void close() throws InterruptedException {
+    for (Thread t : spawnedThreads) {
+      t.interrupt();
+    }
+    super.close();
+  }
 }

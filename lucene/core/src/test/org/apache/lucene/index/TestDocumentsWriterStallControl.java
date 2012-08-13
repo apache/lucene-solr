@@ -27,12 +27,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeaks;
-
 /**
  * Tests for {@link DocumentsWriterStallControl}
  */
-@ThreadLeaks(failTestIfLeaking = true)
 public class TestDocumentsWriterStallControl extends LuceneTestCase {
   
   public void testSimpleStall() throws InterruptedException {

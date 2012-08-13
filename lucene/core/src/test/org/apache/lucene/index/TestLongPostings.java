@@ -205,8 +205,11 @@ public class TestLongPostings extends LuceneTestCase {
             assertTrue(freq >=1 && freq <= 4);
             for(int pos=0;pos<freq;pos++) {
               assertEquals(pos, postings.nextPosition());
-              if (random().nextBoolean() && postings.hasPayload()) {
+              if (random().nextBoolean()) {
                 postings.getPayload();
+                if (random().nextBoolean()) {
+                  postings.getPayload(); // get it again
+                }
               }
             }
           }
@@ -247,8 +250,11 @@ public class TestLongPostings extends LuceneTestCase {
             assertTrue(freq >=1 && freq <= 4);
             for(int pos=0;pos<freq;pos++) {
               assertEquals(pos, postings.nextPosition());
-              if (random().nextBoolean() && postings.hasPayload()) {
+              if (random().nextBoolean()) {
                 postings.getPayload();
+                if (random().nextBoolean()) {
+                  postings.getPayload(); // get it again
+                }
               }
             }
           }

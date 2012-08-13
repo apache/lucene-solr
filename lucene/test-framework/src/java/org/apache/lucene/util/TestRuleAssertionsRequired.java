@@ -21,30 +21,24 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import com.carrotsearch.randomizedtesting.ClassValidator;
-
 /**
  * Require assertions for Lucene/Solr packages.
  */
-public class TestRuleAssertionsRequired implements TestRule, ClassValidator {
+public class TestRuleAssertionsRequired implements TestRule {
   @Override
   public Statement apply(final Statement base, final Description description) {
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
-        validate(description.getTestClass());
+        try {
+          assert false;
+          throw new Exception("Test class requires assertions, enable assertions globally (-ea) or for Solr/Lucene subpackages only.");
+        } catch (AssertionError e) {
+          // Ok, enabled.
+        }
+
         base.evaluate();
       }
     };
-  }
-
-  @Override
-  public void validate(Class<?> clazz) throws Throwable {
-    try {
-      assert false;
-      throw new Exception("Test class requires assertions, enable assertions globally (-ea) or for Solr/Lucene subpackages only.");
-    } catch (AssertionError e) {
-      // Ok, enabled.
-    }    
   }
 }

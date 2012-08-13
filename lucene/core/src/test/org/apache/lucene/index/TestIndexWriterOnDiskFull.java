@@ -526,8 +526,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
     final Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
     doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));
     try {
       writer.addDocument(doc);

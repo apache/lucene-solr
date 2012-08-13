@@ -42,6 +42,9 @@ public interface IndexableFieldType {
 
   /** True if term vector positions should be indexed */
   public boolean storeTermVectorPositions();
+  
+  /** True if term vector payloads should be indexed */
+  public boolean storeTermVectorPayloads();
 
   /** True if norms should not be indexed */
   public boolean omitNorms();

@@ -114,10 +114,9 @@ public class TestSegmentReader extends LuceneTestCase {
   } 
   
   public void testTerms() throws IOException {
-    FieldsEnum fields = MultiFields.getFields(reader).iterator();
-    String field;
-    while((field = fields.next()) != null) {
-      Terms terms = fields.terms();
+    Fields fields = MultiFields.getFields(reader);
+    for (String field : fields) {
+      Terms terms = fields.terms(field);
       assertNotNull(terms);
       TermsEnum termsEnum = terms.iterator(null);
       while(termsEnum.next() != null) {

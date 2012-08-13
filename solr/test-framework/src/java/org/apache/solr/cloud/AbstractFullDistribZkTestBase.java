@@ -31,7 +31,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.params.CoreConnectionPNames;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -59,12 +61,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 
  * TODO: we should still test this works as a custom update chain as well as
  * what we test now - the default update chain
- * 
  */
 @Slow
+@BadApple
+@AwaitsFix(bugUrl = "SOLR-3727 (leak threads)") 
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
   static Logger log = LoggerFactory.getLogger(AbstractFullDistribZkTestBase.class);
   
@@ -757,7 +759,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         zkStateReader.getClusterState().getSlice(DEFAULT_COLLECTION, shard)
             .getShards().size(), solrJetties.size());
 
-    SolrServer lastClient = null;
+    CloudJettyRunner lastJetty = null;
     for (CloudJettyRunner cjetty : solrJetties) {
       ZkNodeProps props = cjetty.info;
       if (verbose) System.err.println("client" + cnt++);
@@ -790,7 +792,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           ZkStateReader.ACTIVE);
       if (active && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
-          failMessage = shard + " is not consistent.  Got " + lastNum + " from " + lastClient + "lastClient"
+          failMessage = shard + " is not consistent.  Got " + lastNum + " from " + lastJetty.url + "lastClient"
               + " and got " + num + " from " + cjetty.url;
 
           if (verbose || true) {
@@ -801,15 +803,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             query.set("rows","1000");
             query.set("sort","id asc");
 
-            SolrDocumentList lst1 = lastClient.query(query).getResults();
+            SolrDocumentList lst1 = lastJetty.client.solrClient.query(query).getResults();
             SolrDocumentList lst2 = cjetty.client.solrClient.query(query).getResults();
 
-            showDiff(lst1, lst2, lastClient.toString(), cjetty.client.solrClient.toString());
+            showDiff(lst1, lst2, lastJetty.toString(), cjetty.client.solrClient.toString());
           }
 
         }
         lastNum = num;
-        lastClient = cjetty.client.solrClient;
+        lastJetty = cjetty;
       }
     }
     return failMessage;

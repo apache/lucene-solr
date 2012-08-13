@@ -24,6 +24,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Iterator;
 
 /**  A <code>FilterAtomicReader</code> contains another AtomicReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -46,7 +47,7 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public FieldsEnum iterator() throws IOException {
+    public Iterator<String> iterator() {
       return in.iterator();
     }
 
@@ -109,28 +110,20 @@ public class FilterAtomicReader extends AtomicReader {
     public TermsEnum intersect(CompiledAutomaton automaton, BytesRef bytes) throws java.io.IOException {
       return in.intersect(automaton, bytes);
     }
-  }
 
-  /** Base class for filtering {@link TermsEnum} implementations. */
-  public static class FilterFieldsEnum extends FieldsEnum {
-    protected final FieldsEnum in;
-    public FilterFieldsEnum(FieldsEnum in) {
-      this.in = in;
+    @Override
+    public boolean hasOffsets() {
+      return in.hasOffsets();
     }
 
     @Override
-    public String next() throws IOException {
-      return in.next();
-    }
-
-    @Override
-    public Terms terms() throws IOException {
-      return in.terms();
+    public boolean hasPositions() {
+      return in.hasPositions();
     }
     
     @Override
-    public AttributeSource attributes() {
-      return in.attributes();
+    public boolean hasPayloads() {
+      return in.hasPayloads();
     }
   }
 
@@ -291,11 +284,6 @@ public class FilterAtomicReader extends AtomicReader {
     @Override
     public BytesRef getPayload() throws IOException {
       return in.getPayload();
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return in.hasPayload();
     }
     
     @Override

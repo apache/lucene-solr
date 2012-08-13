@@ -112,12 +112,7 @@ public abstract class PostingsConsumer {
         totTF += freq;
         for(int i=0;i<freq;i++) {
           final int position = postingsEnum.nextPosition();
-          final BytesRef payload;
-          if (postingsEnum.hasPayload()) {
-            payload = postingsEnum.getPayload();
-          } else {
-            payload = null;
-          }
+          final BytesRef payload = postingsEnum.getPayload();
           this.addPosition(position, payload, -1, -1);
         }
         this.finishDoc();
@@ -137,12 +132,7 @@ public abstract class PostingsConsumer {
         totTF += freq;
         for(int i=0;i<freq;i++) {
           final int position = postingsEnum.nextPosition();
-          final BytesRef payload;
-          if (postingsEnum.hasPayload()) {
-            payload = postingsEnum.getPayload();
-          } else {
-            payload = null;
-          }
+          final BytesRef payload = postingsEnum.getPayload();
           this.addPosition(position, payload, postingsEnum.startOffset(), postingsEnum.endOffset());
         }
         this.finishDoc();

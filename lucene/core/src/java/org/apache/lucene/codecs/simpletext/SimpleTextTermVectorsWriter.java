@@ -45,10 +45,12 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   static final BytesRef FIELDNAME          = new BytesRef("    name ");
   static final BytesRef FIELDPOSITIONS     = new BytesRef("    positions ");
   static final BytesRef FIELDOFFSETS       = new BytesRef("    offsets   ");
+  static final BytesRef FIELDPAYLOADS      = new BytesRef("    payloads  ");
   static final BytesRef FIELDTERMCOUNT     = new BytesRef("    numterms ");
   static final BytesRef TERMTEXT           = new BytesRef("    term ");
   static final BytesRef TERMFREQ           = new BytesRef("      freq ");
   static final BytesRef POSITION           = new BytesRef("      position ");
+  static final BytesRef PAYLOAD            = new BytesRef("        payload ");
   static final BytesRef STARTOFFSET        = new BytesRef("        startoffset ");
   static final BytesRef ENDOFFSET          = new BytesRef("        endoffset ");
 
@@ -61,6 +63,7 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   private final BytesRef scratch = new BytesRef();
   private boolean offsets;
   private boolean positions;
+  private boolean payloads;
 
   public SimpleTextTermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
@@ -89,7 +92,7 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   }
 
   @Override
-  public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException {  
+  public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads) throws IOException {  
     write(FIELD);
     write(Integer.toString(info.number));
     newLine();
@@ -106,12 +109,17 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
     write(Boolean.toString(offsets));
     newLine();
     
+    write(FIELDPAYLOADS);
+    write(Boolean.toString(payloads));
+    newLine();
+    
     write(FIELDTERMCOUNT);
     write(Integer.toString(numTerms));
     newLine();
     
     this.positions = positions;
     this.offsets = offsets;
+    this.payloads = payloads;
   }
 
   @Override
@@ -126,13 +134,22 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   }
 
   @Override
-  public void addPosition(int position, int startOffset, int endOffset) throws IOException {
+  public void addPosition(int position, int startOffset, int endOffset, BytesRef payload) throws IOException {
     assert positions || offsets;
     
     if (positions) {
       write(POSITION);
       write(Integer.toString(position));
       newLine();
+      
+      if (payloads) {
+        write(PAYLOAD);
+        if (payload != null) {
+          assert payload.length > 0;
+          write(payload);
+        }
+        newLine();
+      }
     }
     
     if (offsets) {

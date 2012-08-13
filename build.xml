@@ -51,11 +51,28 @@
     </sequential>
   </target>
 
-  <target name="validate" description="Validate dependencies, licenses, etc.">
-    <sequential><subant target="validate" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant></sequential>
+  <target name="validate" description="Validate dependencies, licenses, etc." depends="-validate-source-patterns">
+    <subant target="validate" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
+  </target>
+  
+  <target name="-validate-source-patterns" unless="disable.source-patterns">
+    <!-- check that there are no nocommits or @author javadoc tags: -->
+    <property name="validate.currDir" location="."/>
+    <pathconvert pathsep="${line.separator}" dirsep="/" property="validate.patternsFound" setonempty="false">
+      <fileset dir="${validate.currDir}">
+        <include name="**/*.java"/>
+        <exclude name="**/backwards/**"/>
+        <or>
+          <containsregexp expression="@author\b" casesensitive="yes"/>
+          <containsregexp expression="\bno(n|)commit\b" casesensitive="no"/>
+        </or>
+      </fileset>
+      <map from="${validate.currDir}${file.separator}" to="* "/>
+    </pathconvert>
+    <fail if="validate.patternsFound">The following files contain @author tags or nocommits:${line.separator}${validate.patternsFound}</fail>
   </target>
 
   <target name="rat-sources" description="Runs rat across all sources and tests">
@@ -185,15 +202,16 @@
     </sequential>
   </target>
 
+  <!-- define here, as common-build is not included! -->
   <property name="python32.exe" value="python3.2" />
-  <property name="JAVA6_HOME" value="/usr/local/jdk1.6.0_27"/>
-  <property name="JAVA7_HOME" value="/usr/local/jdk1.7.0_01"/>
   <property name="fakeRelease" value="lucene/build/fakeRelease"/>
   <property name="fakeReleaseTmp" value="lucene/build/fakeReleaseTmp"/>
   <property name="fakeReleaseVersion" value="5.0"/> <!-- *not* -SNAPSHOT, the real version -->
 
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it." depends="clean">
    <sequential>
+     <fail unless="JAVA6_HOME">JAVA6_HOME property is not defined.</fail>
+     <fail unless="JAVA7_HOME">JAVA7_HOME property is not defined.</fail>
      <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
        <fileset dir="lucene" includes="build.xml" />
        <fileset dir="solr" includes="build.xml" />
@@ -228,5 +246,66 @@
      <delete dir="${fakeRelease}"/>
      <delete dir="${fakeReleaseTmp}"/>
    </sequential>
+  </target>
+  
+  <!-- Calls only generate-clover-reports on Lucene, as Solr's is just a clone with other target; the database itsself is fixed -->
+  <target name="generate-clover-reports">
+    <subant target="generate-clover-reports" inheritall="false" failonerror="true">
+      <fileset dir="." includes="build-clover.xml" />
+    </subant>
+  </target>
+
+  <!-- Jenkins tasks -->
+  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,-svn-status"/>
+  
+  <target name="jenkins-clover">
+    <antcall target="-jenkins-clover">
+      <param name="run.clover" value="true"/>
+      <!-- must be 1, as clover does not like parallel test runs: -->
+      <param name="tests.jvms" value="1"/>
+      <!-- Also override some other props to be fast, ignoring what's set on command line: -->
+      <param name="tests.multiplier" value="1"/>
+      <param name="tests.slow" value="false"/>
+      <param name="tests.nightly" value="false"/>
+      <param name="tests.weekly" value="false"/>
+      <param name="tests.multiplier" value="1"/>
+    </antcall>
+  </target>
+  <target name="-jenkins-clover" depends="clean,test,generate-clover-reports"/>
+  
+  <!-- we need this extra condition, as we want to match only on "true", not solely if property is set: -->
+  <property name="disable.javadocs-lint" value="false" />
+  <condition property="-disable.javadocs-lint">
+    <equals arg1="${disable.javadocs-lint}" arg2="true"/>
+  </condition>
+  <target name="-jenkins-javadocs-lint" unless="-disable.javadocs-lint">
+    <antcall target="javadocs-lint"/> 
+  </target>
+
+  <!-- define here, as common-build is not included! -->
+  <property name="svn.exe" value="svn" />
+  
+  <target name="-svn-status">
+    <exec executable="${svn.exe}" dir="." failonerror="true">
+      <arg value="status"/>
+      <redirector outputproperty="svn.status.output">
+        <outputfilterchain>
+          <linecontainsregexp>
+            <regexp pattern="^\?" />
+          </linecontainsregexp>
+          <tokenfilter>
+            <replaceregex pattern="^........" replace="* " />
+            <replacestring from="${file.separator}" to="/" />
+          </tokenfilter>
+        </outputfilterchain>
+      </redirector>
+    </exec>
+    <fail message="Source checkout is dirty after running tests!!! Offending files:${line.separator}${svn.status.output}">
+      <condition>
+        <not>
+          <equals arg1="${svn.status.output}" arg2=""/>
+        </not>
+      </condition>
+    </fail>
   </target>
 </project>

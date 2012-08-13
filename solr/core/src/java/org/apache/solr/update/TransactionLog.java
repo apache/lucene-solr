@@ -34,9 +34,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -149,7 +151,8 @@ public class TransactionLog {
       long start = raf.length();
       channel = raf.getChannel();
       os = Channels.newOutputStream(channel);
-      fos = FastOutputStream.wrap(os);
+      fos = new FastOutputStream(os, new byte[65536], 0);
+      // fos = FastOutputStream.wrap(os);
 
       if (openExisting) {
         if (start > 0) {
@@ -300,93 +303,119 @@ public class TransactionLog {
     numRecords++;
   }
 
+  private void checkWriteHeader(LogCodec codec, SolrInputDocument optional) throws IOException {
+
+    // Unsynchronized access.  We can get away with an unsynchronized access here
+    // since we will never get a false non-zero when the position is in fact 0.
+    // rollback() is the only function that can reset to zero, and it blocks updates.
+    if (fos.size() != 0) return;
+
+    synchronized (this) {
+      if (fos.size() != 0) return;  // check again while synchronized
+      if (optional != null) {
+        addGlobalStrings(optional.getFieldNames());
+      }
+      writeLogHeader(codec);
+    }
+  }
+
+  int lastAddSize;
 
   public long write(AddUpdateCommand cmd, int flags) {
     LogCodec codec = new LogCodec();
-    long pos = 0;
-    synchronized (this) {
-      try {
-        pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-        SolrInputDocument sdoc = cmd.getSolrInputDocument();
+    SolrInputDocument sdoc = cmd.getSolrInputDocument();
 
-        if (pos == 0) { // TODO: needs to be changed if we start writing a header first
-          addGlobalStrings(sdoc.getFieldNames());
-          writeLogHeader(codec);
-          pos = fos.size();
-        }
+    try {
+      checkWriteHeader(codec, sdoc);
+
+      // adaptive buffer sizing
+      int bufSize = lastAddSize;    // unsynchronized access of lastAddSize should be fine
+      bufSize = Math.min(1024*1024, bufSize+(bufSize>>3)+256);
+
+      MemOutputStream out = new MemOutputStream(new byte[bufSize]);
+      codec.init(out);
+      codec.writeTag(JavaBinCodec.ARR, 3);
+      codec.writeInt(UpdateLog.ADD | flags);  // should just take one byte
+      codec.writeLong(cmd.getVersion());
+      codec.writeSolrInputDocument(cmd.getSolrInputDocument());
+      lastAddSize = (int)out.size();
+
+      synchronized (this) {
+        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+        assert pos != 0;
 
         /***
-        System.out.println("###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
+         System.out.println("###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
          if (pos != fos.size()) {
-          throw new RuntimeException("ERROR" + "###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
-        }
+         throw new RuntimeException("ERROR" + "###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
+         }
          ***/
 
-        codec.init(fos);
-        codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.ADD | flags);  // should just take one byte
-        codec.writeLong(cmd.getVersion());
-        codec.writeSolrInputDocument(cmd.getSolrInputDocument());
-
+        out.writeAll(fos);
         endRecord(pos);
         // fos.flushBuffer();  // flush later
         return pos;
-      } catch (IOException e) {
-        // TODO: reset our file pointer back to "pos", the start of this record.
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error logging add", e);
       }
+
+    } catch (IOException e) {
+      // TODO: reset our file pointer back to "pos", the start of this record.
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error logging add", e);
     }
   }
 
   public long writeDelete(DeleteUpdateCommand cmd, int flags) {
     LogCodec codec = new LogCodec();
-    synchronized (this) {
-      try {
-        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-        if (pos == 0) {
-          writeLogHeader(codec);
-          pos = fos.size();
-        }
-        codec.init(fos);
-        codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.DELETE | flags);  // should just take one byte
-        codec.writeLong(cmd.getVersion());
-        BytesRef br = cmd.getIndexedId();
-        codec.writeByteArray(br.bytes, br.offset, br.length);
 
+    try {
+      checkWriteHeader(codec, null);
+
+      BytesRef br = cmd.getIndexedId();
+
+      MemOutputStream out = new MemOutputStream(new byte[20 + br.length]);
+      codec.init(out);
+      codec.writeTag(JavaBinCodec.ARR, 3);
+      codec.writeInt(UpdateLog.DELETE | flags);  // should just take one byte
+      codec.writeLong(cmd.getVersion());
+      codec.writeByteArray(br.bytes, br.offset, br.length);
+
+      synchronized (this) {
+        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+        assert pos != 0;
+        out.writeAll(fos);
         endRecord(pos);
         // fos.flushBuffer();  // flush later
-
         return pos;
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
+
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
+
   }
 
   public long writeDeleteByQuery(DeleteUpdateCommand cmd, int flags) {
     LogCodec codec = new LogCodec();
-    synchronized (this) {
-      try {
-        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-        if (pos == 0) {
-          writeLogHeader(codec);
-          pos = fos.size();
-        }
-        codec.init(fos);
-        codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.DELETE_BY_QUERY | flags);  // should just take one byte
-        codec.writeLong(cmd.getVersion());
-        codec.writeStr(cmd.query);
+    try {
+      checkWriteHeader(codec, null);
 
+      MemOutputStream out = new MemOutputStream(new byte[20 + (cmd.query.length())]);
+      codec.init(out);
+      codec.writeTag(JavaBinCodec.ARR, 3);
+      codec.writeInt(UpdateLog.DELETE_BY_QUERY | flags);  // should just take one byte
+      codec.writeLong(cmd.getVersion());
+      codec.writeStr(cmd.query);
+
+      synchronized (this) {
+        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+        out.writeAll(fos);
         endRecord(pos);
         // fos.flushBuffer();  // flush later
-
         return pos;
+      }
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-    }
+
   }
 
 
@@ -742,6 +771,35 @@ class ChannelFastInputStream extends FastInputStream {
   @Override
   public String toString() {
     return "readFromStream="+readFromStream +" pos="+pos +" end="+end + " bufferPos="+getBufferPos() + " position="+position() ;
+  }
+}
+
+
+class MemOutputStream extends FastOutputStream {
+  public List<byte[]> buffers = new LinkedList<byte[]>();
+  public MemOutputStream(byte[] tempBuffer) {
+    super(null, tempBuffer, 0);
+  }
+
+  @Override
+  public void flush(byte[] arr, int offset, int len) throws IOException {
+    if (arr == buf && offset==0 && len==buf.length) {
+      buffers.add(buf);  // steal the buffer
+      buf = new byte[8192];
+    } else if (len > 0) {
+      byte[] newBuf = new byte[len];
+      System.arraycopy(arr, offset, newBuf, 0, len);
+      buffers.add(newBuf);
+    }
+  }
+
+  public void writeAll(FastOutputStream fos) throws IOException {
+    for (byte[] buffer : buffers) {
+      fos.write(buffer);
+    }
+    if (pos > 0) {
+      fos.write(buf, 0, pos);
+    }
   }
 }
 

@@ -157,7 +157,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
 
       // TODO: Remove warning after API has been finalized
       @Override
-      public boolean isPayloadAvailable() {
+      public boolean isPayloadAvailable() throws IOException {
         return includeSpans.isPayloadAvailable();
       }
 

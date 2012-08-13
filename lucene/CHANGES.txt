@@ -8,6 +8,29 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.0.0 =======================
 
+New Features
+
+* LUCENE-1888: Added the option to store payloads in the term
+  vectors (IndexableFieldType.storeTermVectorPayloads()). Note 
+  that you must store term vector positions to store payloads.
+  (Robert Muir)
+
+API Changes
+
+* LUCENE-4299: Added Terms.hasPositions() and Terms.hasOffsets().
+  Previously you had no real way to know that a term vector field
+  had positions or offsets, since this can be configured on a 
+  per-field-per-document basis. (Robert Muir)
+
+* Removed DocsAndPositionsEnum.hasPayload() and simplified the
+  contract of getPayload(). It returns null if there is no payload,
+  otherwise returns the current payload. You can now call it multiple
+  times per position if you want. (Robert Muir)
+
+* Removed FieldsEnum. Fields API instead implements Iterable<String>
+  and exposes Iterator, so you can iterate over field names with
+  for (String field : fields) instead.  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor
@@ -15,6 +38,24 @@ Bug Fixes
   if you had a customized Similarity that returned something other
   than 1 when overlap == maxOverlap (always the case for conjunctions),
   then the score would be incorrect.  (Pascal Chollet, Robert Muir)
+
+* LUCENE-4298: MultiFields.getTermDocsEnum(IndexReader, Bits, String, BytesRef)
+  did not work at all, it would infinitely recurse.
+  (Alberto Paro via Robert Muir)
+
+* LUCENE-4300: BooleanQuery's rewrite was not always safe: if you
+  had a custom Similarity where coord(1,1) != 1F, then the rewritten
+  query would be scored differently.  (Robert Muir)
+
+* Don't allow negatives in the positions file. If you have an index
+  from 2.4.0 or earlier with such negative positions, and you already 
+  upgraded to 3.x, then to Lucene 4.0-ALPHA or -BETA, you should run 
+  CheckIndex. If it fails, then you need to upgrade again to 4.0  (Robert Muir)
+
+Build
+
+* LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
+  thread leak detection. Added support for suite timeouts. (Dawid Weiss)
 
 ======================= Lucene 4.0.0-BETA =======================
 

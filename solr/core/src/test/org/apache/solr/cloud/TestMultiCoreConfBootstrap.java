@@ -37,7 +37,6 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   protected CoreContainer cores = null;
   private String home;
 
-
   protected static ZkTestServer zkServer;
   protected static String zkDir;
   
@@ -101,7 +100,6 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-
   @Test
   public void testMultiCoreConfBootstrap() throws Exception {
     System.setProperty("bootstrap_conf", "true");
@@ -113,6 +111,7 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
     assertTrue(zkclient.exists("/configs/core1/schema.xml", true));
     assertTrue(zkclient.exists("/configs/core0/solrconfig.xml", true));
     assertTrue(zkclient.exists("/configs/core1/schema.xml", true));
+    
+    zkclient.close();
   }
-
 }
