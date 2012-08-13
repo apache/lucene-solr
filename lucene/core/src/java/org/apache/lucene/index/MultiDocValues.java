@@ -128,7 +128,7 @@ public class MultiDocValues extends DocValues {
       return puller.pull((AtomicReader) reader, field);
     }
     assert reader instanceof CompositeReader;
-    final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+    final List<AtomicReaderContext> leaves = reader.leaves();
     switch (leaves.size()) {
       case 0:
         // no fields

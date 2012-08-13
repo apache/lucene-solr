@@ -498,7 +498,7 @@ public class SpellChecker implements java.io.Closeable {
 
       final IndexReader reader = searcher.getIndexReader();
       if (reader.maxDoc() > 0) {
-        for (final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
+        for (final AtomicReaderContext ctx : reader.leaves()) {
           Terms terms = ctx.reader().terms(F_WORD);
           if (terms != null)
             termsEnums.add(terms.iterator(null));

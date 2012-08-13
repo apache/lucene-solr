@@ -63,7 +63,7 @@ public class ValueSourceAugmenter extends DocTransformer
   public void setContext( TransformContext context ) {
     try {
       IndexReader reader = qparser.getReq().getSearcher().getIndexReader();
-      readerContexts = reader.getTopReaderContext().leaves();
+      readerContexts = reader.leaves();
       docValuesArr = new FunctionValues[readerContexts.size()];
 
       searcher = qparser.getReq().getSearcher();

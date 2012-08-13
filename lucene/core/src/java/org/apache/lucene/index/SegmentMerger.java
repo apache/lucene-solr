@@ -75,7 +75,7 @@ final class SegmentMerger {
    * @param reader
    */
   final void add(IndexReader reader) {
-    for (final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
+    for (final AtomicReaderContext ctx : reader.leaves()) {
       final AtomicReader r = ctx.reader();
       mergeState.readers.add(r);
     }

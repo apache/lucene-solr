@@ -1263,7 +1263,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       reader = (AtomicReader) readerIn;
     } else {
       // Composite reader: lookup sub-reader and re-base docID:
-      List<AtomicReaderContext> leaves = readerIn.getTopReaderContext().leaves();
+      List<AtomicReaderContext> leaves = readerIn.leaves();
       int subIndex = ReaderUtil.subIndex(docID, leaves);
       reader = leaves.get(subIndex).reader();
       docID -= leaves.get(subIndex).docBase;

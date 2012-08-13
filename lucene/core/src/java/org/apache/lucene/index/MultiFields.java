@@ -59,7 +59,7 @@ public final class MultiFields extends Fields {
    *  It's better to get the sub-readers and iterate through them
    *  yourself. */
   public static Fields getFields(IndexReader reader) throws IOException {
-    final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+    final List<AtomicReaderContext> leaves = reader.leaves();
     switch (leaves.size()) {
       case 0:
         // no fields
@@ -91,7 +91,7 @@ public final class MultiFields extends Fields {
 
   public static Bits getLiveDocs(IndexReader reader) {
     if (reader.hasDeletions()) {
-      final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+      final List<AtomicReaderContext> leaves = reader.leaves();
       final int size = leaves.size();
       assert size > 0 : "A reader with deletions must have at least one leave";
       if (size == 1) {
@@ -250,7 +250,7 @@ public final class MultiFields extends Fields {
    */
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
     final FieldInfos.Builder builder = new FieldInfos.Builder();
-    for(final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
+    for(final AtomicReaderContext ctx : reader.leaves()) {
       builder.add(ctx.reader().getFieldInfos());
     }
     return builder.finish();
