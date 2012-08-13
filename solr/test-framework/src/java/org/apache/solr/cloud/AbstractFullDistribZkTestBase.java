@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @BadApple
-@AwaitsFix(bugUrl = "thread leaks") 
+@AwaitsFix(bugUrl = "SOLR-3727 (leak threads)") 
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
   static Logger log = LoggerFactory.getLogger(AbstractFullDistribZkTestBase.class);
   
