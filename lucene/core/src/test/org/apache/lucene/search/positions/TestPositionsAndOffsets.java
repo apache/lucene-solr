@@ -30,7 +30,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.Weight.FeatureFlags;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -100,7 +100,7 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
     assertEquals(1, leaves.size());
     Scorer scorer = weight.scorer(leaves.get(0),
-        true, true, FeatureFlags.POSITIONS, leaves.get(0).reader().getLiveDocs());
+        true, true, PostingFeatures.POSITIONS, leaves.get(0).reader().getLiveDocs());
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);

@@ -114,10 +114,9 @@ public class TestSegmentReader extends LuceneTestCase {
   } 
   
   public void testTerms() throws IOException {
-    FieldsEnum fields = MultiFields.getFields(reader).iterator();
-    String field;
-    while((field = fields.next()) != null) {
-      Terms terms = fields.terms();
+    Fields fields = MultiFields.getFields(reader);
+    for (String field : fields) {
+      Terms terms = fields.terms(field);
       assertNotNull(terms);
       TermsEnum termsEnum = terms.iterator(null);
       while(termsEnum.next() != null) {
@@ -133,7 +132,7 @@ public class TestSegmentReader extends LuceneTestCase {
                                        new BytesRef("field"),
                                        MultiFields.getLiveDocs(reader),
                                        null,
-                                       false);
+                                       0);
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     termDocs = _TestUtil.docs(random(), reader,
@@ -141,7 +140,7 @@ public class TestSegmentReader extends LuceneTestCase {
                               new BytesRef(DocHelper.NO_NORMS_TEXT),
                               MultiFields.getLiveDocs(reader),
                               null,
-                              false);
+                              0);
 
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
@@ -149,8 +148,7 @@ public class TestSegmentReader extends LuceneTestCase {
     DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(reader,
                                                                       MultiFields.getLiveDocs(reader),
                                                                       DocHelper.TEXT_FIELD_1_KEY,
-                                                                      new BytesRef("field"),
-                                                                      false);
+                                                                      new BytesRef("field"));
     // NOTE: prior rev of this test was failing to first
     // call next here:
     assertTrue(positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

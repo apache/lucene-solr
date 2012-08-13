@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
@@ -218,7 +219,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
     if (canReuse(reuse, liveDocs)) {
       // if (DEBUG) System.out.println("SPR.docs ts=" + termState);
       return ((SegmentDocsEnumBase) reuse).reset(fieldInfo, (StandardTermState)termState);
@@ -250,10 +251,13 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, boolean needsOffsets)
+                                               DocsAndPositionsEnum reuse, int flags)
     throws IOException {
 
     boolean hasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+
+    // TODO: can we optimize if FLAG_PAYLOADS / FLAG_OFFSETS
+    // isn't passed?
 
     // TODO: refactor
     if (fieldInfo.hasPayloads() || hasOffsets) {
@@ -348,13 +352,16 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
       start = -1;
       count = 0;
+      freq = 1;
+      if (indexOmitsTF) {
+        Arrays.fill(freqs, 1);
+      }
       maxBufferedDocId = -1;
       return this;
     }
     
     @Override
     public final int freq() {
-      assert !indexOmitsTF;
       return freq;
     }
 
@@ -866,12 +873,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
      *  payload was indexed. */
     @Override
     public BytesRef getPayload() throws IOException {
-      throw new IOException("No payloads exist for this field!");
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return false;
+      return null;
     }
   }
   
@@ -1145,28 +1147,26 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     @Override
     public BytesRef getPayload() throws IOException {
       if (storePayloads) {
+        if (payloadLength <= 0) {
+          return null;
+        }
         assert lazyProxPointer == -1;
         assert posPendingCount < freq;
-        if (!payloadPending) {
-          throw new IOException("Either no payload exists at this term position or an attempt was made to load it more than once.");
-        }
-        if (payloadLength > payload.bytes.length) {
-          payload.grow(payloadLength);
-        }
+        
+        if (payloadPending) {
+          if (payloadLength > payload.bytes.length) {
+            payload.grow(payloadLength);
+          }
 
-        proxIn.readBytes(payload.bytes, 0, payloadLength);
-        payload.length = payloadLength;
-        payloadPending = false;
+          proxIn.readBytes(payload.bytes, 0, payloadLength);
+          payload.length = payloadLength;
+          payloadPending = false;
+        }
 
         return payload;
       } else {
-        throw new IOException("No payloads exist for this field!");
+        return null;
       }
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return payloadPending && payloadLength > 0;
     }
   }
 }

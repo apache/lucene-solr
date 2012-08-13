@@ -27,6 +27,10 @@ import java.text.SimpleDateFormat;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.StatsParams;
+
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -339,5 +343,26 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 
     assertQ("test string statistics values", req,
         "//null[@name='active_dt'][.='']");
+  }
+
+  public void testStatsFacetMultivaluedErrorHandling() throws Exception {
+    SolrCore core = h.getCore();
+    SchemaField foo_ss = core.getSchema().getField("foo_ss");
+
+    assertU(adoc("id", "1", "active_i", "1", "foo_ss", "aa" ));
+    assertU(adoc("id", "2", "active_i", "1", "foo_ss", "bb" ));
+    assertU(adoc("id", "3", "active_i", "5", "foo_ss", "aa" ));
+    assertU(commit());
+
+    assertTrue("schema no longer satisfies test requirements: foo_ss no longer multivalued", foo_ss.multiValued());
+    assertTrue("schema no longer satisfies test requirements: foo_ss's fieldtype no longer single valued", ! foo_ss.getType().isMultiValued());
+    
+    assertQEx("no failure trying to get stats facet on foo_ss",
+              req("q", "*:*", 
+                  "stats", "true",
+                  "stats.field", "active_i",
+                  "stats.facet", "foo_ss"),
+              400);
+
   }
 }

@@ -23,8 +23,8 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -37,14 +37,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 
 /**
  * Super basic testing, no shard restarting or anything.
  */
 @Slow
-public class FullSolrCloudDistribCmdsTest extends FullSolrCloudTest {
+public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase {
   
   
   @BeforeClass

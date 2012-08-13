@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.MergedIterator;
 import org.apache.lucene.util._TestUtil;
 
 public class TestPrefixCodedTerms extends LuceneTestCase {
@@ -67,17 +68,20 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     assertFalse(expected.hasNext());
   }
   
+  @SuppressWarnings("unchecked")
   public void testMergeEmpty() {
     List<Iterator<Term>> subs = Collections.emptyList();
-    assertFalse(CoalescedDeletes.mergedIterator(subs).hasNext());
+    Iterator<Term> merged = new MergedIterator<Term>(subs.toArray(new Iterator[0]));
+    assertFalse(merged.hasNext());
 
     subs = new ArrayList<Iterator<Term>>();
     subs.add(new PrefixCodedTerms.Builder().finish().iterator());
     subs.add(new PrefixCodedTerms.Builder().finish().iterator());
-    Iterator<Term> merged = CoalescedDeletes.mergedIterator(subs);
+    merged = new MergedIterator<Term>(subs.toArray(new Iterator[0]));
     assertFalse(merged.hasNext());
   }
 
+  @SuppressWarnings("unchecked")
   public void testMergeOne() {
     Term t1 = new Term("foo", "a");
     PrefixCodedTerms.Builder b1 = new PrefixCodedTerms.Builder();
@@ -93,13 +97,14 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     subs.add(pb1.iterator());
     subs.add(pb2.iterator());
     
-    Iterator<Term> merged = CoalescedDeletes.mergedIterator(subs);
+    Iterator<Term> merged = new MergedIterator<Term>(subs.toArray(new Iterator[0]));
     assertTrue(merged.hasNext());
     assertEquals(t1, merged.next());
     assertTrue(merged.hasNext());
     assertEquals(t2, merged.next());
   }
 
+  @SuppressWarnings("unchecked")
   public void testMergeRandom() {
     PrefixCodedTerms pb[] = new PrefixCodedTerms[_TestUtil.nextInt(random(), 2, 10)];
     Set<Term> superSet = new TreeSet<Term>();
@@ -126,7 +131,7 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     }
     
     Iterator<Term> expected = superSet.iterator();
-    Iterator<Term> actual = CoalescedDeletes.mergedIterator(subs);
+    Iterator<Term> actual = new MergedIterator<Term>(subs.toArray(new Iterator[0]));
     while (actual.hasNext()) {
       assertTrue(expected.hasNext());
       assertEquals(expected.next(), actual.next());

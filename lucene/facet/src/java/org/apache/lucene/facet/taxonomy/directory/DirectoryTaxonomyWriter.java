@@ -375,7 +375,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * returning the category's ordinal, or a negative number in case the
    * category does not yet exist in the taxonomy.
    */
-  protected int findCategory(CategoryPath categoryPath) throws IOException {
+  protected synchronized int findCategory(CategoryPath categoryPath) throws IOException {
     // If we can find the category in the cache, or we know the cache is
     // complete, we can return the response directly from it
     int res = cache.get(categoryPath);
@@ -411,7 +411,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter));
       int base = 0;
       for (AtomicReader r : reader.getSequentialSubReaders()) {
-        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, false);
+        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, 0);
         if (docs != null) {
           doc = docs.nextDoc() + base;
           break;
@@ -454,7 +454,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter, prefixLen));
       int base = 0;
       for (AtomicReader r : reader.getSequentialSubReaders()) {
-        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, false);
+        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, 0);
         if (docs != null) {
           doc = docs.nextDoc() + base;
           break;
@@ -474,12 +474,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public int addCategory(CategoryPath categoryPath) throws IOException {
     ensureOpen();
-    // If the category is already in the cache and/or the taxonomy, we
-    // should return its existing ordinal
-    int res = findCategory(categoryPath);
+    // check the cache outside the synchronized block. this results in better
+    // concurrency when categories are there.
+    int res = cache.get(categoryPath);
     if (res < 0) {
-      // the category is neither in the cache nor in the index - following code
-      // cannot be executed in parallel.
+      // the category is not in the cache - following code cannot be executed in parallel.
       synchronized (this) {
         res = findCategory(categoryPath);
         if (res < 0) {
@@ -494,7 +493,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       }
     }
     return res;
-
   }
 
   /**
@@ -769,7 +767,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
               // 'validation' checks.
               cp.clear();
               cp.add(t.utf8ToString(), delimiter);
-              docsEnum = termsEnum.docs(null, docsEnum, false);
+              docsEnum = termsEnum.docs(null, docsEnum, 0);
               boolean res = cache.put(cp, docsEnum.nextDoc() + base);
               assert !res : "entries should not have been evicted from the cache";
             } else {
@@ -861,7 +859,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
             // the findCategory() call above failed to find it.
             ordinal = addCategory(cp);
           }
-          docs = te.docs(null, docs, false);
+          docs = te.docs(null, docs, 0);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);
         }
         base += ar.maxDoc(); // no deletions, so we're ok

@@ -29,6 +29,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +40,10 @@ import org.slf4j.LoggerFactory;
  * definitely change in the future, so the interface should not be relied-upon
  * 
  * Note: all access must be synchronized.
+ * 
+ * Public for tests.
  */
-final class CommitTracker implements Runnable {
+public final class CommitTracker implements Runnable {
   protected final static Logger log = LoggerFactory.getLogger(CommitTracker.class);
   
   // scheduler delay for maxDoc-triggered autocommits
@@ -50,8 +53,8 @@ final class CommitTracker implements Runnable {
   private int docsUpperBound;
   private long timeUpperBound;
   
-  private final ScheduledExecutorService scheduler = Executors
-      .newScheduledThreadPool(1);
+  private final ScheduledExecutorService scheduler = 
+      Executors.newScheduledThreadPool(1, new DefaultSolrThreadFactory("commitScheduler"));
   private ScheduledFuture pending;
   
   // state
@@ -248,7 +251,8 @@ final class CommitTracker implements Runnable {
     this.docsUpperBound = docsUpperBound;
   }
 
-  void setTimeUpperBound(long timeUpperBound) {
+  // only for testing - not thread safe
+  public void setTimeUpperBound(long timeUpperBound) {
     this.timeUpperBound = timeUpperBound;
   }
 }

@@ -569,7 +569,7 @@ public class IndexSearcher {
     // always use single thread:
     for (AtomicReaderContext ctx : leaves) { // search each subreader
       collector.setNextReader(ctx);
-      Scorer scorer = weight.scorer(ctx, !collector.acceptsDocsOutOfOrder(), true, collector.scorerFlags(), ctx.reader().getLiveDocs());
+      Scorer scorer = weight.scorer(ctx, !collector.acceptsDocsOutOfOrder(), true, collector.postingFeatures(), ctx.reader().getLiveDocs());
       if (scorer != null) {
         scorer.score(collector);
       }

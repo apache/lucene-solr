@@ -100,21 +100,12 @@ public final class TermIntervalIterator extends IntervalIterator {
     }
 
     @Override
-    public boolean payloadAvailable() {
-      return payloads.hasPayload();
-    }
-
-    @Override
-    public boolean nextPayload(BytesRef ref) throws IOException {
+    public BytesRef nextPayload() throws IOException {
       if (pos == termPos.positionsPending) {
-        return false;
+        return null;
       } else {
         pos = termPos.positionsPending;
-        final BytesRef payload = payloads.getPayload();
-        ref.bytes = payload.bytes;
-        ref.length = payload.length;
-        ref.offset = payload.offset;
-        return true;
+        return payloads.getPayload();
       }
     }
 

@@ -229,7 +229,7 @@ public class CustomScoreQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
       // Pass true for "scoresDocsInOrder", because we
       // require in-order scoring, even if caller does not,
       // since we call advance on the valSrcScorers.  Pass

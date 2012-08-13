@@ -24,6 +24,8 @@ import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
@@ -49,6 +51,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   public void testRemoveThenAddDefaultCore() throws Exception {
     final CoreContainer cores = h.getCoreContainer();
     SolrCore core = cores.getCore("");
+
+    IndexSchema schema = h.getCore().getSchema();
     assertEquals(COLLECTION1, cores.getDefaultCoreName());
     
     cores.remove("");
@@ -57,7 +61,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     
     
     SolrCore newCore = new SolrCore(COLLECTION1, dataDir + File.separator
-        + "datadir2", new SolrConfig("solr/collection1", "solrconfig.xml", null), h.getCore().getSchema(),
+        + "datadir2", new SolrConfig("solr/collection1", "solrconfig.xml", null), schema,
         new CoreDescriptor(cores, COLLECTION1, "solr/collection1"));
     
     cores.register(newCore, false);
@@ -160,7 +164,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     final int LOOP = 100;
     final int MT = 16;
-    ExecutorService service = Executors.newFixedThreadPool(MT);
+    ExecutorService service = Executors.newFixedThreadPool(MT, new DefaultSolrThreadFactory("refCountMT"));
     List<Callable<Integer>> callees = new ArrayList<Callable<Integer>>(MT);
     final CoreContainer cores = h.getCoreContainer();
     for (int i = 0; i < MT; ++i) {

@@ -30,7 +30,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Weight.FeatureFlags;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -101,7 +101,7 @@ class TermsIncludingScoreQuery extends Query {
       private TermsEnum segmentTermsEnum;
 
       public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-        SVInnerScorer scorer = (SVInnerScorer) scorer(context, true, false, FeatureFlags.DOCS, context.reader().getLiveDocs());
+        SVInnerScorer scorer = (SVInnerScorer) scorer(context, true, false, PostingFeatures.DOCS_AND_FREQS, context.reader().getLiveDocs());
         if (scorer != null) {
           if (scorer.advance(doc) == doc) {
             return scorer.explain();
@@ -122,7 +122,7 @@ class TermsIncludingScoreQuery extends Query {
         originalWeight.normalize(norm, topLevelBoost * TermsIncludingScoreQuery.this.getBoost());
       }
 
-      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, FeatureFlags flagsß, Bits acceptDocs) throws IOException {
+      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, PostingFeatures flagsß, Bits acceptDocs) throws IOException {
         Terms terms = context.reader().terms(field);
         if (terms == null) {
           return null;
@@ -186,7 +186,7 @@ class TermsIncludingScoreQuery extends Query {
         scoreUpto = upto;
         TermsEnum.SeekStatus status = termsEnum.seekCeil(terms.get(ords[upto++], spare), true);
         if (status == TermsEnum.SeekStatus.FOUND) {
-          docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, false);
+          docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, 0);
         }
       } while (docsEnum == null);
 
@@ -259,7 +259,7 @@ class TermsIncludingScoreQuery extends Query {
           scoreUpto = upto;
           TermsEnum.SeekStatus status = termsEnum.seekCeil(terms.get(ords[upto++], spare), true);
           if (status == TermsEnum.SeekStatus.FOUND) {
-            docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, false);
+            docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, 0);
           }
         } while (docsEnum == null);
 

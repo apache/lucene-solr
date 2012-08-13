@@ -53,7 +53,7 @@ public class PayloadIterator {
     this.buffer = buffer;
     // TODO (Facet): avoid Multi*?
     Bits liveDocs = MultiFields.getLiveDocs(indexReader);
-    this.tp = MultiFields.getTermPositionsEnum(indexReader, liveDocs, term.field(), term.bytes(), false);
+    this.tp = MultiFields.getTermPositionsEnum(indexReader, liveDocs, term.field(), term.bytes(), DocsAndPositionsEnum.FLAG_PAYLOADS);
   }
 
   /**
@@ -99,16 +99,13 @@ public class PayloadIterator {
     // Prepare for payload extraction
     tp.nextPosition();
 
-    // TODO: fix bug in SepCodec and then remove this check (the null check should be enough)
-    if (!tp.hasPayload()) {
-      return false;
-    }
-
     BytesRef br = tp.getPayload();
-
-    if (br == null || br.length == 0) {
+    
+    if (br == null) {
       return false;
     }
+    
+    assert br.length > 0;
 
     this.payloadLength = br.length;
     

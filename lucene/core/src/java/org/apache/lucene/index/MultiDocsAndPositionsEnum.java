@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -137,11 +138,6 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
 
   @Override
-  public boolean hasPayload() {
-    return current.hasPayload();
-  }
-
-  @Override
   public BytesRef getPayload() throws IOException {
     return current.getPayload();
   }
@@ -150,6 +146,16 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   public final static class EnumWithSlice {
     public DocsAndPositionsEnum docsAndPositionsEnum;
     public ReaderSlice slice;
+    
+    @Override
+    public String toString() {
+      return slice.toString()+":"+docsAndPositionsEnum;
+    }
+  }
+  
+  @Override
+  public String toString() {
+    return "MultiDocsAndPositionsEnum(" + Arrays.toString(getSubs()) + ")";
   }
 }
 

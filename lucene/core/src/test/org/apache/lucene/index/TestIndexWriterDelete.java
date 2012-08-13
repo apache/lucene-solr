@@ -426,7 +426,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int END_COUNT = 144;
 
     // First build up a starting index:
-    MockDirectoryWrapper startDir = newDirectory();
+    MockDirectoryWrapper startDir = newMockDirectory();
     // TODO: find the resource leak that only occurs sometimes here.
     startDir.setNoDeleteOpenFile(false);
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
@@ -689,7 +689,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         "Venice has lots of canals" };
     String[] text = { "Amsterdam", "Venice" };
 
-    MockDirectoryWrapper dir = newDirectory();
+    MockDirectoryWrapper dir = newMockDirectory();
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
                                                                      TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2).setReaderPooling(false).setMergePolicy(newLogMergePolicy()));
 
@@ -814,7 +814,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         "Venice has lots of canals" };
     String[] text = { "Amsterdam", "Venice" };
 
-    MockDirectoryWrapper dir = newDirectory();
+    MockDirectoryWrapper dir = newMockDirectory();
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     modifier.commit();
     dir.failOn(failure.reset());
@@ -891,9 +891,12 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   }
   
   public void testIndexingThenDeleting() throws Exception {
+    // TODO: move this test to its own class and just @SuppressCodecs?
+    // TODO: is it enough to just use newFSDirectory?
     final String fieldFormat = _TestUtil.getPostingsFormat("field");
     assumeFalse("This test cannot run with Memory codec", fieldFormat.equals("Memory"));
     assumeFalse("This test cannot run with SimpleText codec", fieldFormat.equals("SimpleText"));
+    assumeFalse("This test cannot run with Direct codec", fieldFormat.equals("Direct"));
     final Random r = random();
     Directory dir = newDirectory();
     // note this test explicitly disables payloads

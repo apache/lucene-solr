@@ -34,7 +34,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -49,6 +48,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -344,6 +344,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       docID = -1;
       accum = 0;
       docUpto = 0;
+      freq = 1;
       payloadLen = 0;
       this.numDocs = numDocs;
       return this;
@@ -428,7 +429,6 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
     @Override
     public int freq() {
-      assert indexOptions != IndexOptions.DOCS_ONLY;
       return freq;
     }
   }
@@ -446,7 +446,6 @@ public class MemoryPostingsFormat extends PostingsFormat {
     private int numDocs;
     private int posPending;
     private int payloadLength;
-    private boolean payloadRetrieved;
     final boolean storeOffsets;
     int offsetLength;
     int startOffset;
@@ -484,7 +483,6 @@ public class MemoryPostingsFormat extends PostingsFormat {
       payloadLength = 0;
       this.numDocs = numDocs;
       posPending = 0;
-      payloadRetrieved = false;
       startOffset = storeOffsets ? 0 : -1; // always return -1 if no offsets are stored
       offsetLength = 0;
       return this;
@@ -577,10 +575,6 @@ public class MemoryPostingsFormat extends PostingsFormat {
         payload.offset = in.getPosition();
         in.skipBytes(payloadLength);
         payload.length = payloadLength;
-        // Necessary, in case caller changed the
-        // payload.bytes from prior call:
-        payload.bytes = buffer;
-        payloadRetrieved = false;
       }
 
       //System.out.println("      pos=" + pos + " payload=" + payload + " fp=" + in.getPosition());
@@ -599,13 +593,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
     @Override
     public BytesRef getPayload() {
-      payloadRetrieved = true;
-      return payload;
-    }
-
-    @Override
-    public boolean hasPayload() {
-      return !payloadRetrieved && payload.length > 0;
+      return payload.length > 0 ? payload : null;
     }
 
     @Override
@@ -696,13 +684,11 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
       decodeMetaData();
       FSTDocsEnum docsEnum;
 
-      if (needsFreqs && field.getIndexOptions() == IndexOptions.DOCS_ONLY) {
-        return null;
-      } else if (reuse == null || !(reuse instanceof FSTDocsEnum)) {
+      if (reuse == null || !(reuse instanceof FSTDocsEnum)) {
         docsEnum = new FSTDocsEnum(field.getIndexOptions(), field.hasPayloads());
       } else {
         docsEnum = (FSTDocsEnum) reuse;        
@@ -714,13 +700,9 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
 
       boolean hasOffsets = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-      if (needsOffsets && !hasOffsets) {
-        return null; // not available
-      }
-      
       if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
         return null;
       }
@@ -840,6 +822,21 @@ public class MemoryPostingsFormat extends PostingsFormat {
     public Comparator<BytesRef> getComparator() {
       return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
+
+    @Override
+    public boolean hasOffsets() {
+      return field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    }
+
+    @Override
+    public boolean hasPositions() {
+      return field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    }
+    
+    @Override
+    public boolean hasPayloads() {
+      return field.hasPayloads();
+    }
   }
 
   @Override
@@ -865,24 +862,8 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
     return new FieldsProducer() {
       @Override
-      public FieldsEnum iterator() {
-        final Iterator<TermsReader> iter = fields.values().iterator();
-
-        return new FieldsEnum() {
-
-          private TermsReader current;
-
-          @Override
-          public String next() {
-            current = iter.next();
-            return current.field.name;
-          }
-
-          @Override
-          public Terms terms() {
-            return current;
-          }
-        };
+      public Iterator<String> iterator() {
+        return new UnmodifiableIterator<String>(fields.keySet().iterator());
       }
 
       @Override

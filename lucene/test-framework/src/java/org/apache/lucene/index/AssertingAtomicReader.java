@@ -1,6 +1,7 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
@@ -60,30 +61,15 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public FieldsEnum iterator() throws IOException {
-      FieldsEnum fieldsEnum = super.iterator();
-      assert fieldsEnum != null;
-      return new AssertingFieldsEnum(fieldsEnum);
+    public Iterator<String> iterator() {
+      Iterator<String> iterator = super.iterator();
+      assert iterator != null;
+      return iterator;
     }
 
     @Override
     public Terms terms(String field) throws IOException {
       Terms terms = super.terms(field);
-      return terms == null ? null : new AssertingTerms(terms);
-    }
-  }
-  
-  /**
-   * Wraps a FieldsEnum but with additional asserts
-   */
-  public static class AssertingFieldsEnum extends FilterFieldsEnum {
-    public AssertingFieldsEnum(FieldsEnum in) {
-      super(in);
-    }
-
-    @Override
-    public Terms terms() throws IOException {
-      Terms terms = super.terms();
       return terms == null ? null : new AssertingTerms(terms);
     }
   }
@@ -125,7 +111,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
 
       // TODO: should we give this thing a random to be super-evil,
@@ -133,12 +119,12 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       if (reuse instanceof AssertingDocsEnum) {
         reuse = ((AssertingDocsEnum) reuse).in;
       }
-      DocsEnum docs = super.docs(liveDocs, reuse, needsFreqs);
+      DocsEnum docs = super.docs(liveDocs, reuse, flags);
       return docs == null ? null : new AssertingDocsEnum(docs);
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
       assert state == State.POSITIONED: "docsAndPositions(...) called on unpositioned TermsEnum";
 
       // TODO: should we give this thing a random to be super-evil,
@@ -146,7 +132,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       if (reuse instanceof AssertingDocsAndPositionsEnum) {
         reuse = ((AssertingDocsAndPositionsEnum) reuse).in;
       }
-      DocsAndPositionsEnum docs = super.docsAndPositions(liveDocs, reuse, needsOffsets);
+      DocsAndPositionsEnum docs = super.docsAndPositions(liveDocs, reuse, flags);
       return docs == null ? null : new AssertingDocsAndPositionsEnum(docs);
     }
 
@@ -365,15 +351,22 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert state != DocsEnumState.START : "getPayload() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "getPayload() called after NO_MORE_DOCS";
       assert positionCount > 0 : "getPayload() called before nextPosition()!";
-      return super.getPayload();
-    }
-
-    @Override
-    public boolean hasPayload() {
-      assert state != DocsEnumState.START : "hasPayload() called before nextDoc()/advance()";
-      assert state != DocsEnumState.FINISHED : "hasPayload() called after NO_MORE_DOCS";
-      assert positionCount > 0 : "hasPayload() called before nextPosition()!";
-      return super.hasPayload();
+      BytesRef payload = super.getPayload();
+      assert payload == null || payload.length > 0 : "getPayload() returned payload with invalid length!";
+      return payload;
     }
   }
+
+  // this is the same hack as FCInvisible
+  @Override
+  public Object getCoreCacheKey() {
+    return cacheKey;
+  }
+
+  @Override
+  public Object getCombinedCoreAndDeletesKey() {
+    return cacheKey;
+  }
+  
+  private final Object cacheKey = new Object();
 }

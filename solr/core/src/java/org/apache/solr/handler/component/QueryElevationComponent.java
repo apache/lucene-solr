@@ -543,7 +543,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         for (String id : elevations.ids) {
           term.copyChars(id);
           if (seen.contains(id) == false  && termsEnum.seekExact(term, false)) {
-            docsEnum = termsEnum.docs(liveDocs, docsEnum, false);
+            docsEnum = termsEnum.docs(liveDocs, docsEnum, 0);
             if (docsEnum != null) {
               int docId = docsEnum.nextDoc();
               if (docId == DocIdSetIterator.NO_MORE_DOCS ) continue;  // must have been deleted

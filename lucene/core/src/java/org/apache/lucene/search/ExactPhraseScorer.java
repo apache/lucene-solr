@@ -64,13 +64,10 @@ final class ExactPhraseScorer extends Scorer {
   
   private final Similarity.ExactSimScorer docScorer;
 
-  private final boolean needsOffsets;
-  
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      Similarity.ExactSimScorer docScorer, boolean needsOffsets) throws IOException {
+      Similarity.ExactSimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
-    this.needsOffsets = needsOffsets;
     
     chunkStates = new ChunkState[postings.length];
     
@@ -334,7 +331,7 @@ final class ExactPhraseScorer extends Scorer {
     TermIntervalIterator[] posIters = new TermIntervalIterator[chunkStates.length];
     DocsAndPositionsEnum[] enums = new DocsAndPositionsEnum[chunkStates.length];
     for (int i = 0; i < chunkStates.length; i++) {
-      posIters[i] = new TermIntervalIterator(this, enums[i] = chunkStates[i].factory.docsAndPositionsEnum(needsOffsets), false, collectPositions);
+      posIters[i] = new TermIntervalIterator(this, enums[i] = chunkStates[i].factory.docsAndPositionsEnum(), false, collectPositions);
     }
     return new PhraseScorer.AdvancingIntervalIterator(this, collectPositions, enums, new BlockIntervalIterator(this, collectPositions, posIters));
   }

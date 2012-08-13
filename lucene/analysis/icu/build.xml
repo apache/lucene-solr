@@ -26,7 +26,7 @@
   <import file="../analysis-module-build.xml"/>
 
   <path id="icujar">
-     <pathelement location="lib/icu4j-4.8.1.1.jar"/>
+     <pathelement location="lib/icu4j-49.1.jar"/>
   </path>
 
   <path id="classpath">
@@ -37,19 +37,32 @@
 
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
 
-  <property name="gennorm2.src.dir" value="src/data/utr30"/>
-  <property name="gennorm2.src.files" 
-  	value="nfkc.txt nfkc_cf.txt BasicFoldings.txt DiacriticFolding.txt DingbatFolding.txt HanRadicalFolding.txt NativeDigitFolding.txt"/>
+  <property name="utr30.data.dir" location="src/data/utr30"/>
+  <target name="gen-utr30-data-files" depends="compile-tools">
+    <java
+        classname="org.apache.lucene.analysis.icu.GenerateUTR30DataFiles"
+        dir="${utr30.data.dir}"
+        fork="true"
+        failonerror="true">
+      <classpath>
+        <path refid="icujar"/>
+        <pathelement location="${build.dir}/classes/tools"/>
+      </classpath>
+    </java>
+  </target>
+
+  <property name="gennorm2.src.files"
+  	value="nfc.txt nfkc.txt nfkc_cf.txt BasicFoldings.txt DiacriticFolding.txt DingbatFolding.txt HanRadicalFolding.txt NativeDigitFolding.txt"/>
   <property name="gennorm2.tmp" value="${build.dir}/gennorm2/utr30.tmp"/>
   <property name="gennorm2.dst" value="src/resources/org/apache/lucene/analysis/icu/utr30.nrm"/>
-  <target name="gennorm2">
+  <target name="gennorm2" depends="gen-utr30-data-files">
     <echo>Note that the gennorm2 and icupkg tools must be on your PATH. These tools
 are part of the ICU4C package. See http://site.icu-project.org/ </echo>
     <mkdir dir="${build.dir}/gennorm2"/>
     <exec executable="gennorm2" failonerror="true">
       <arg value="-v"/>
       <arg value="-s"/>
-      <arg value="${gennorm2.src.dir}"/>
+      <arg value="${utr30.data.dir}"/>
       <arg line="${gennorm2.src.files}"/>
       <arg value="-o"/>
       <arg value="${gennorm2.tmp}"/>

@@ -31,11 +31,7 @@
        <str name="echoParams">explicit</str>       
     </lst>
   </requestHandler>  
-  <requestHandler name="/dataimport-end-to-end" class="org.apache.solr.handler.dataimport.DataImportHandler">
-    <lst name="defaults">
-  	  <str name="config">data-config-end-to-end.xml</str>
-    </lst>
-  </requestHandler>   
+  <requestHandler name="/dataimport-end-to-end" class="org.apache.solr.handler.dataimport.DataImportHandler" />  
   <requestHandler name="/search" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>

@@ -842,7 +842,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (hitOOM) {
           rollbackInternal();
         } else {
-          closeInternal(waitForMerges, !hitOOM);
+          closeInternal(waitForMerges, true);
         }
       }
     }
@@ -870,7 +870,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   private void closeInternal(boolean waitForMerges, boolean doFlush) throws IOException {
-
+    boolean interrupted = false;
     try {
 
       if (pendingCommit != null) {
@@ -883,26 +883,57 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       docWriter.close();
 
-      // Only allow a new merge to be triggered if we are
-      // going to wait for merges:
-      if (doFlush) {
-        flush(waitForMerges, true);
-      } else {
-        docWriter.abort(); // already closed
+      try {
+        // Only allow a new merge to be triggered if we are
+        // going to wait for merges:
+        if (doFlush) {
+          flush(waitForMerges, true);
+        } else {
+          docWriter.abort(); // already closed
+        }
+        
+      } finally {
+        try {
+          // clean up merge scheduler in all cases, although flushing may have failed:
+          interrupted = Thread.interrupted();
+        
+          if (waitForMerges) {
+            try {
+              // Give merge scheduler last chance to run, in case
+              // any pending merges are waiting:
+              mergeScheduler.merge(this);
+            } catch (ThreadInterruptedException tie) {
+              // ignore any interruption, does not matter
+              interrupted = true;
+              if (infoStream.isEnabled("IW")) {
+                infoStream.message("IW", "interrupted while waiting for final merges");
+              }
+            }
+          }
+          
+          synchronized(this) {
+            for (;;) {
+              try {
+                finishMerges(waitForMerges && !interrupted);
+                break;
+              } catch (ThreadInterruptedException tie) {
+                // by setting the interrupted status, the
+                // next call to finishMerges will pass false,
+                // so it will not wait
+                interrupted = true;
+                if (infoStream.isEnabled("IW")) {
+                  infoStream.message("IW", "interrupted while waiting for merges to finish");
+                }
+              }
+            }
+            stopMerges = true;
+          }
+          
+        } finally {
+          // shutdown policy, scheduler and all threads (this call is not interruptible):
+          IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler);
+        }
       }
-
-      if (waitForMerges)
-        // Give merge scheduler last chance to run, in case
-        // any pending merges are waiting:
-        mergeScheduler.merge(this);
-
-      mergePolicy.close();
-
-      synchronized(this) {
-        finishMerges(waitForMerges);
-        stopMerges = true;
-      }
-      mergeScheduler.close();
 
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "now call final commit()");
@@ -943,6 +974,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
         }
       }
+      // finally, restore interrupt status:
+      if (interrupted) Thread.currentThread().interrupt();
     }
   }
 
@@ -1206,6 +1239,78 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteDocuments(Term)");
     }
+  }
+
+  /** Expert: attempts to delete by document ID, as long as
+   *  the provided reader is a near-real-time reader (from {@link
+   *  DirectoryReader#open(IndexWriter,boolean)}).  If the
+   *  provided reader is an NRT reader obtained from this
+   *  writer, and its segment has not been merged away, then
+   *  the delete succeeds and this method returns true; else, it
+   *  returns false the caller must then separately delete by
+   *  Term or Query.
+   *
+   *  <b>NOTE</b>: this method can only delete documents
+   *  visible to the currently open NRT reader.  If you need
+   *  to delete documents indexed after opening the NRT
+   *  reader you must use the other deleteDocument methods
+   *  (e.g., {@link #deleteDocuments(Term)}). */
+  public synchronized boolean tryDeleteDocument(IndexReader readerIn, int docID) throws IOException {
+
+    final AtomicReader reader;
+    if (readerIn instanceof AtomicReader) {
+      // Reader is already atomic: use the incoming docID:
+      reader = (AtomicReader) readerIn;
+    } else {
+      // Composite reader: lookup sub-reader and re-base docID:
+      List<AtomicReaderContext> leaves = readerIn.getTopReaderContext().leaves();
+      int subIndex = ReaderUtil.subIndex(docID, leaves);
+      reader = leaves.get(subIndex).reader();
+      docID -= leaves.get(subIndex).docBase;
+      assert docID >= 0;
+      assert docID < reader.maxDoc();
+    }
+
+    if (!(reader instanceof SegmentReader)) {
+      throw new IllegalArgumentException("the reader must be a SegmentReader or composite reader containing only SegmentReaders");
+    }
+      
+    final SegmentInfoPerCommit info = ((SegmentReader) reader).getSegmentInfo();
+
+    // TODO: this is a slow linear search, but, number of
+    // segments should be contained unless something is
+    // seriously wrong w/ the index, so it should be a minor
+    // cost:
+
+    if (segmentInfos.indexOf(info) != -1) {
+      ReadersAndLiveDocs rld = readerPool.get(info, false);
+      if (rld != null) {
+        synchronized(bufferedDeletesStream) {
+          rld.initWritableLiveDocs();
+          if (rld.delete(docID)) {
+            final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
+            if (fullDelCount == rld.info.info.getDocCount()) {
+              // If a merge has already registered for this
+              // segment, we leave it in the readerPool; the
+              // merge will skip merging it and will then drop
+              // it once it's done:
+              if (!mergingSegments.contains(rld.info)) {
+                segmentInfos.remove(rld.info);
+                readerPool.drop(rld.info);
+                checkpoint();
+              }
+            }
+          }
+          //System.out.println("  yes " + info.info.name + " " + docID);
+          return true;
+        }
+      } else {
+        //System.out.println("  no rld " + info.info.name + " " + docID);
+      }
+    } else {
+      //System.out.println("  no seg " + info.info.name + " " + docID);
+    }
+    return false;
   }
 
   /**
@@ -2207,9 +2312,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
         SegmentInfos sis = new SegmentInfos(); // read infos from dir
         sis.read(dir);
-        final Set<String> dsFilesCopied = new HashSet<String>();
-        final Map<String, String> dsNames = new HashMap<String, String>();
-        final Set<String> copiedFiles = new HashSet<String>();
+
         for (SegmentInfoPerCommit info : sis) {
           assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
 
@@ -2222,7 +2325,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
           IOContext context = new IOContext(new MergeInfo(info.info.getDocCount(), info.info.sizeInBytes(), true, -1));
           
-          infos.add(copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied, context, copiedFiles));
+          infos.add(copySegmentAsIs(info, newSegName, context));
         }
       }
 
@@ -2358,25 +2461,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
-  // TODO: this can be substantially simplified now that 3.x support/shared docstores is removed!
-  private SegmentInfoPerCommit copySegmentAsIs(SegmentInfoPerCommit info, String segName,
-                                               Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context,
-                                               Set<String> copiedFiles)
+  private SegmentInfoPerCommit copySegmentAsIs(SegmentInfoPerCommit info, String segName, IOContext context)
       throws IOException {
-    // Determine if the doc store of this segment needs to be copied. It's
-    // only relevant for segments that share doc store with others,
-    // because the DS might have been copied already, in which case we
-    // just want to update the DS name of this SegmentInfo.
-    final String dsName = info.info.name;
-    assert dsName != null;
-    final String newDsName;
-    if (dsNames.containsKey(dsName)) {
-      newDsName = dsNames.get(dsName);
-    } else {
-      dsNames.put(dsName, segName);
-      newDsName = segName;
-    }
-
+    
     // note: we don't really need this fis (its copied), but we load it up
     // so we don't pass a null value to the si writer
     FieldInfos fis = getFieldInfos(info.info);
@@ -2391,7 +2478,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
-    // Same SI as before but we change directory, name and docStoreSegment:
+    // Same SI as before but we change directory and name
     SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(),
                                           info.info.getUseCompoundFile(),
                                           info.info.getCodec(), info.info.getDiagnostics(), attributes);
@@ -2408,16 +2495,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
     newInfo.setFiles(segFiles);
 
-    // We must rewrite the SI file because it references
-    // segment name (its own name, if its 3.x, and doc
-    // store segment name):
+    // We must rewrite the SI file because it references segment name in its list of files, etc
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
-    try {
-      newInfo.getCodec().segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, newInfo, fis, context);
-    } catch (UnsupportedOperationException uoe) {
-      // OK: 3x codec cannot write a new SI file;
-      // SegmentInfos will write this on commit
-    }
+
+    newInfo.getCodec().segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, newInfo, fis, context);
 
     final Collection<String> siFiles = trackingDir.getCreatedFiles();
 
@@ -2432,8 +2513,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists; siFiles=" + siFiles;
-      assert !copiedFiles.contains(file): "file \"" + file + "\" is being copied more than once";
-      copiedFiles.add(file);
+
       info.info.dir.copy(directory, file, newFileName, context);
     }
     
@@ -3052,7 +3132,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     checkpoint();
 
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "after commit: " + segString());
+      infoStream.message("IW", "after commitMerge: " + segString());
     }
 
     if (merge.maxNumSegments != -1 && !dropSegment) {

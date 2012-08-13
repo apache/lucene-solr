@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Weight.FeatureFlags;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
@@ -124,7 +124,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, final Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, final Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
@@ -151,7 +151,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      final Scorer cs = scorer(context, true, false, FeatureFlags.DOCS, context.reader().getLiveDocs());
+      final Scorer cs = scorer(context, true, false, PostingFeatures.DOCS_AND_FREQS, context.reader().getLiveDocs());
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
       final ComplexExplanation result = new ComplexExplanation();
@@ -225,8 +225,8 @@ public class ConstantScoreQuery extends Query {
         }
         
         @Override
-        public FeatureFlags scorerFlags() {
-          return collector.scorerFlags();
+        public PostingFeatures postingFeatures() {
+          return collector.postingFeatures();
         }
 
         @Override

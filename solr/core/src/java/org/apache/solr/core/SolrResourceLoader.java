@@ -17,23 +17,27 @@
 
 package org.apache.solr.core;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.util.hash.HashFunction;
+import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -42,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CodingErrorAction;
 import java.lang.reflect.Constructor;
 
 import javax.naming.Context;
@@ -108,7 +111,7 @@ public class SolrResourceLoader implements ResourceLoader
     
     this.classLoader = createClassLoader(null, parent);
     addToClassLoader("./lib/", null);
-    
+    reloadLuceneSPI();
     this.coreProperties = coreProperties;
   }
 
@@ -129,7 +132,8 @@ public class SolrResourceLoader implements ResourceLoader
    * Adds every file/dir found in the baseDir which passes the specified Filter
    * to the ClassLoader used by this ResourceLoader.  This method <b>MUST</b>
    * only be called prior to using this ResourceLoader to get any resources, otherwise
-   * it's behavior will be non-deterministic.
+   * it's behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
+   * before using this ResourceLoader.
    *
    * @param baseDir base directory whose children (either jars or directories of
    *                classes) will be in the classpath, will be resolved relative
@@ -145,7 +149,8 @@ public class SolrResourceLoader implements ResourceLoader
    * Adds the specific file/dir specified to the ClassLoader used by this
    * ResourceLoader.  This method <b>MUST</b>
    * only be called prior to using this ResourceLoader to get any resources, otherwise
-   * it's behavior will be non-deterministic.
+   * it's behavior will be non-deterministic. You also have to {link #reloadLuceneSPI()}
+   * before using this ResourceLoader.
    *
    * @param path A jar file (or directory of classes) to be added to the classpath,
    *             will be resolved relative the instance dir.
@@ -162,6 +167,24 @@ public class SolrResourceLoader implements ResourceLoader
     } else {
       log.error("Can't find (or read) file to add to classloader: " + file);
     }
+  }
+  
+  /**
+   * Reloads all Lucene SPI implementations using the new classloader.
+   * This method must be called after {@link #addToClassLoader(String)}
+   * and {@link #addToClassLoader(String,FileFilter)} before using
+   * this ResourceLoader.
+   */
+  void reloadLuceneSPI() {
+    // Hash functions:
+    HashFunction.reloadHashFunctions(this.classLoader);
+    // Codecs:
+    PostingsFormat.reloadPostingsFormats(this.classLoader);
+    Codec.reloadCodecs(this.classLoader);
+    // Analysis:
+    CharFilterFactory.reloadCharFilters(this.classLoader);
+    TokenFilterFactory.reloadTokenFilters(this.classLoader);
+    TokenizerFactory.reloadTokenizers(this.classLoader);
   }
   
   private static URLClassLoader replaceClassLoader(final URLClassLoader oldLoader,
@@ -248,7 +271,7 @@ public class SolrResourceLoader implements ResourceLoader
    * Override this method to customize loading schema resources.
    *@return the stream for the named schema
    */
-  public InputStream openSchema(String name) {
+  public InputStream openSchema(String name) throws IOException {
     return openResource(name);
   }
   
@@ -256,7 +279,7 @@ public class SolrResourceLoader implements ResourceLoader
    * Override this method to customize loading config resources.
    *@return the stream for the named configuration
    */
-  public InputStream openConfig(String name) {
+  public InputStream openConfig(String name) throws IOException {
     return openResource(name);
   }
   
@@ -268,7 +291,7 @@ public class SolrResourceLoader implements ResourceLoader
    * Override this method to customize loading resources.
    *@return the stream for the named resource
    */
-  public InputStream openResource(String resource) {
+  public InputStream openResource(String resource) throws IOException {
     InputStream is=null;
     try {
       File f0 = new File(resource);
@@ -288,10 +311,10 @@ public class SolrResourceLoader implements ResourceLoader
       if (is == null)
         is = classLoader.getResourceAsStream(getConfigDir() + resource);
     } catch (Exception e) {
-      throw new RuntimeException("Error opening " + resource, e);
+      throw new IOException("Error opening " + resource, e);
     }
     if (is==null) {
-      throw new RuntimeException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
+      throw new IOException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
     }
     return is;
   }
@@ -333,41 +356,23 @@ public class SolrResourceLoader implements ResourceLoader
 
 
   public List<String> getLines(String resource, Charset charset) throws IOException{
-    BufferedReader input = null;
-    ArrayList<String> lines;
     try {
-      input = new BufferedReader(new InputStreamReader(openResource(resource),
-          charset.newDecoder()
-          .onMalformedInput(CodingErrorAction.REPORT)
-          .onUnmappableCharacter(CodingErrorAction.REPORT)));
-
-      lines = new ArrayList<String>();
-      for (String word=null; (word=input.readLine())!=null;) {
-        // skip initial bom marker
-        if (lines.isEmpty() && word.length() > 0 && word.charAt(0) == '\uFEFF')
-          word = word.substring(1);
-        // skip comments
-        if (word.startsWith("#")) continue;
-        word=word.trim();
-        // skip blank lines
-        if (word.length()==0) continue;
-        lines.add(word);
-      }
+      return WordlistLoader.getLines(openResource(resource), charset);
     } catch (CharacterCodingException ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-          "Error loading resource (wrong encoding?): " + resource, ex);
-    } finally {
-      if (input != null)
-        input.close();
+         "Error loading resource (wrong encoding?): " + resource, ex);
     }
-    return lines;
   }
 
   /*
    * A static map of short class name to fully qualified class name 
    */
-  private static Map<String, String> classNameCache = new ConcurrentHashMap<String, String>();
+  private static final Map<String, String> classNameCache = new ConcurrentHashMap<String, String>();
 
+  // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
+  private static final Pattern legacyAnalysisPattern = 
+      Pattern.compile("((\\Q"+base+".analysis.\\E)|(\\Q"+project+".\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
+      
   /**
    * This method loads a class either with it's FQN or a short-name (solr.class-simplename or class-simplename).
    * It tries to load the class with the name that is given first and if it fails, it tries all the known
@@ -394,6 +399,27 @@ public class SolrResourceLoader implements ResourceLoader
       }
     }
     Class<? extends T> clazz = null;
+    
+    // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
+    final Matcher m = legacyAnalysisPattern.matcher(cname);
+    if (m.matches()) {
+      final String name = m.group(4);
+      log.trace("Trying to load class from analysis SPI using name='{}'", name);
+      try {
+        if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
+          return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
+        } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
+          return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
+        } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
+          return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
+        } else {
+          log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
+        }
+      } catch (IllegalArgumentException ex) { 
+        // ok, we fall back to legacy loading
+      }
+    }
+    
     // first try cname == full name
     try {
       return Class.forName(cname, true, classLoader).asSubclass(expectedType);
@@ -424,6 +450,12 @@ public class SolrResourceLoader implements ResourceLoader
         classNameCache.put(cname, clazz.getName());
       }
     }
+  }
+  
+  static final String empty[] = new String[0];
+  
+  public <T> T newInstance(String name, Class<T> expectedType) {
+    return newInstance(name, expectedType, empty);
   }
 
   public <T> T newInstance(String cname, Class<T> expectedType, String ... subpackages) {
@@ -568,7 +600,7 @@ public class SolrResourceLoader implements ResourceLoader
   /**
    * Tell all {@link ResourceLoaderAware} instances about the loader
    */
-  public void inform( ResourceLoader loader ) 
+  public void inform( ResourceLoader loader ) throws IOException
   {
 
      // make a copy to avoid potential deadlock of a callback adding to the list

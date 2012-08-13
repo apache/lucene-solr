@@ -121,7 +121,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
       return new ConstantScorer(context, this, queryWeight, acceptDocs);
     }
 

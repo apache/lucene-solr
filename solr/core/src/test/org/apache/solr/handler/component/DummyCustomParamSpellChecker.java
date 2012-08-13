@@ -8,8 +8,10 @@ import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingResult;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -40,7 +42,7 @@ public class DummyCustomParamSpellChecker extends SolrSpellChecker {
   }
 
   @Override
-  public void build(SolrCore core, SolrIndexSearcher searcher) {
+  public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
 
   }
 
@@ -49,12 +51,20 @@ public class DummyCustomParamSpellChecker extends SolrSpellChecker {
 
     SpellingResult result = new SpellingResult();
     //just spit back out the results
+
+    // sort the keys to make ordering predictable
     Iterator<String> iterator = options.customParams.getParameterNamesIterator();
+    List<String> lst = new ArrayList<String>();
+    while (iterator.hasNext()) {
+      lst.add(iterator.next());
+    }
+    Collections.sort(lst);
+
     int i = 0;
-    while (iterator.hasNext()){
-      String name = iterator.next();
+    for (String name : lst) {
       String value = options.customParams.get(name);
-      result.add(new Token(name, i++, i++),  Collections.singletonList(value));
+      result.add(new Token(name, i, i+1),  Collections.singletonList(value));
+      i += 2;
     }    
     return result;
   }

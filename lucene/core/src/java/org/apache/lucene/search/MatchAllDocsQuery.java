@@ -117,7 +117,7 @@ public class MatchAllDocsQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
       return new MatchAllScorer(context.reader(), acceptDocs, this, queryWeight);
     }
 

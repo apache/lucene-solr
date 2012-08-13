@@ -28,7 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Weight.FeatureFlags;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -94,8 +94,8 @@ public final class BrouwerianQuery extends Query implements Cloneable {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
-      flags = flags == FeatureFlags.DOCS ? FeatureFlags.POSITIONS : flags;
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
+      flags = flags == PostingFeatures.DOCS_AND_FREQS ? PostingFeatures.POSITIONS : flags;
       ScorerFactory factory = new ScorerFactory(minuted, subtracted, context, topScorer, flags, acceptDocs);
       final Scorer scorer = factory.minutedScorer();
       final Scorer subScorer = factory.subtractedScorer();
@@ -126,10 +126,10 @@ public final class BrouwerianQuery extends Query implements Cloneable {
     final Weight subtracted;
     final AtomicReaderContext context;
     final boolean topScorer;
-    final FeatureFlags flags;
+    final PostingFeatures flags;
     final Bits acceptDocs;
     ScorerFactory(Weight minuted, Weight subtracted,
-        AtomicReaderContext context, boolean topScorer, FeatureFlags flags,
+        AtomicReaderContext context, boolean topScorer, PostingFeatures flags,
         Bits acceptDocs) {
       this.minuted = minuted;
       this.subtracted = subtracted;

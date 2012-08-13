@@ -21,6 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReaderContext; // javadocs
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -111,7 +113,7 @@ public abstract class Weight {
    * @throws IOException
    */
   public abstract Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-      boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException;
+      boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException;
 
   /**
    * Returns true iff this implementation scores docs only out of order. This
@@ -126,7 +128,37 @@ public abstract class Weight {
    */
   public boolean scoresDocsOutOfOrder() { return false; }
   
-  public static enum FeatureFlags {
-    DOCS, POSITIONS, POSITIONS_AND_PAYLOADS, OFFSETS, OFFSETS_AND_PAYLOADS
+  public static enum PostingFeatures {
+    DOCS_ONLY(0, 0, false), 
+    DOCS_AND_FREQS(DocsEnum.FLAG_FREQS, 0, false), 
+    POSITIONS(DocsEnum.FLAG_FREQS, 0, true),
+    POSITIONS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_PAYLOADS, true),
+    OFFSETS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS, true),
+    OFFSETS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS
+            | DocsAndPositionsEnum.FLAG_PAYLOADS, true);
+    
+    private final int docsAndPositionsFlags;
+    private final int docFlags;
+    private final boolean isProximityFeature;
+    
+    
+    private PostingFeatures(int docFlags, int docsAndPositionsFlags, boolean isProximityFeature) {
+      this.docsAndPositionsFlags = docsAndPositionsFlags;
+      this.docFlags = docsAndPositionsFlags;
+      this.isProximityFeature = isProximityFeature;
+    }
+    
+    public int docsAndPositionsFlags() {
+      return docsAndPositionsFlags;
+    }
+    
+    public int docFlags() {
+      return docFlags;
+    }
+    
+    public boolean isProximityFeature() {
+      return isProximityFeature;
+    }
+    
   }
 }

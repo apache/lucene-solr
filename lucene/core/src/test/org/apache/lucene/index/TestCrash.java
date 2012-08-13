@@ -30,7 +30,7 @@ import org.apache.lucene.document.Document;
 public class TestCrash extends LuceneTestCase {
 
   private IndexWriter initIndex(Random random, boolean initialCommit) throws IOException {
-    return initIndex(random, newDirectory(random), initialCommit);
+    return initIndex(random, newMockDirectory(random), initialCommit);
   }
 
   private IndexWriter initIndex(Random random, MockDirectoryWrapper dir, boolean initialCommit) throws IOException {

@@ -99,7 +99,7 @@ public class BoostedQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer,  FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer,  PostingFeatures flags, Bits acceptDocs) throws IOException {
       // we are gonna advance() the subscorer
       Scorer subQueryScorer = qWeight.scorer(context, true, false, flags, acceptDocs);
       if(subQueryScorer == null) {

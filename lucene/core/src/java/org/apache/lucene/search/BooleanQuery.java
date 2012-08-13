@@ -212,7 +212,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     public float coord(int overlap, int maxOverlap) {
-      return similarity.coord(overlap, maxOverlap);
+      // LUCENE-4300: in most cases of maxOverlap=1, BQ rewrites itself away,
+      // so coord() is not applied. But when BQ cannot optimize itself away
+      // for a single clause (minNrShouldMatch, prohibited clauses, etc), its
+      // important not to apply coord(1,1) for consistency, it might not be 1.0F
+      return maxOverlap == 1 ? 1F : similarity.coord(overlap, maxOverlap);
     }
 
     @Override
@@ -239,7 +243,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
         Weight w = wIter.next();
         BooleanClause c = cIter.next();
-        if (w.scorer(context, true, true, FeatureFlags.DOCS, context.reader().getLiveDocs()) == null) {
+        if (w.scorer(context, true, true, PostingFeatures.DOCS_AND_FREQS, context.reader().getLiveDocs()) == null) {
           if (c.isRequired()) {
             fail = true;
             Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
@@ -302,7 +306,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs)
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs)
         throws IOException {
       if (termConjunction) {
         // specialized scorer for term conjunctions
@@ -329,7 +333,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Check if we can return a BooleanScorer
-      if (!scoreDocsInOrder && flags == FeatureFlags.DOCS && topScorer && required.size() == 0) {
+      if (!scoreDocsInOrder && flags == PostingFeatures.DOCS_AND_FREQS && topScorer && required.size() == 0) {
         return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       
@@ -347,7 +351,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       return new BooleanScorer2(this, disableCoord, minNrShouldMatch, required, prohibited, optional, maxCoord);
     }
 
-    private Scorer createConjunctionTermScorer(AtomicReaderContext context, Bits acceptDocs, FeatureFlags flags)
+    private Scorer createConjunctionTermScorer(AtomicReaderContext context, Bits acceptDocs, PostingFeatures flags)
         throws IOException {
 
       // TODO: fix scorer API to specify "needsScores" up
@@ -360,11 +364,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         final Scorer scorer = weight.scorer(context, true, false, flags, acceptDocs);
         if (scorer == null) {
           return null;
-        }
-        if (scorer instanceof TermScorer) {
-          docsAndFreqs[i] = new DocsAndFreqs((TermScorer) scorer);
         } else {
-          docsAndFreqs[i] = new DocsAndFreqs((MatchOnlyTermScorer) scorer);
+          assert scorer instanceof TermScorer;
+          docsAndFreqs[i] = new DocsAndFreqs((TermScorer) scorer);
         }
       }
       return new ConjunctionTermScorer(this, disableCoord ? 1.0f : coord(

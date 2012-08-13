@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
 import org.apache.lucene.util.*;
@@ -232,7 +233,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
       assert !terms.isEmpty();
       final AtomicReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -254,8 +255,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        final DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null, false);
-
+        final DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null, 0);
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
@@ -263,7 +263,7 @@ public class PhraseQuery extends Query {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }
-        TermDocsEnumFactory factory = new TermDocsEnumFactory(BytesRef.deepCopyOf(t.bytes()), te, acceptDocs);
+        TermDocsEnumFactory factory = new TermDocsEnumFactory(BytesRef.deepCopyOf(t.bytes()), te, flags, acceptDocs);
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, factory, te.docFreq(), positions.get(i).intValue(), t);
       }
 
@@ -273,8 +273,7 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0) {				  // optimize exact case
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context), flags == FeatureFlags.OFFSETS
-            );
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context));
         if (s.noDocs) {
           return null;
         } else {
@@ -282,7 +281,7 @@ public class PhraseQuery extends Query {
         }
       } else {
         return
-          new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context), flags == FeatureFlags.OFFSETS);
+          new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context));
       }
     }
     
@@ -293,7 +292,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, FeatureFlags.POSITIONS, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, true, false, PostingFeatures.POSITIONS, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -395,25 +394,27 @@ public class PhraseQuery extends Query {
     protected final TermsEnum termsEnum;
     protected final Bits liveDocs;
     protected final BytesRef term;
+    protected final PostingFeatures flags;
     
-    TermDocsEnumFactory(TermsEnum termsEnum, Bits liveDocs) {
-      this(null, termsEnum, liveDocs);
+    TermDocsEnumFactory(TermsEnum termsEnum, PostingFeatures flags, Bits liveDocs) {
+      this(null, termsEnum, flags, liveDocs);
     }
     
-    TermDocsEnumFactory(BytesRef term, TermsEnum termsEnum, Bits liveDocs) {
+    TermDocsEnumFactory(BytesRef term, TermsEnum termsEnum, PostingFeatures flags,  Bits liveDocs) {
       this.termsEnum = termsEnum;
       this.liveDocs = liveDocs;
       this.term = term;
+      this.flags = flags;
     }
     
     
-    public DocsAndPositionsEnum docsAndPositionsEnum(boolean offsets)
+    public DocsAndPositionsEnum docsAndPositionsEnum()
         throws IOException {
       if (term != null) {
         assert term != null;
         termsEnum.seekExact(term, false);
       }
-      return termsEnum.docsAndPositions(liveDocs, null, offsets);
+      return termsEnum.docsAndPositions(liveDocs, null, flags.docsAndPositionsFlags());
     }
 
   }

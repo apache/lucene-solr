@@ -71,13 +71,9 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private DataImporter importer;
 
-  private Map<String, Properties> dataSources = new HashMap<String, Properties>();
-
   private boolean debugEnabled = true;
 
   private String myName = "dataimport";
-
-  private Map<String , Object> coreScopeSession = new HashMap<String, Object>();
 
   @Override
   @SuppressWarnings("unchecked")
@@ -102,21 +98,10 @@ public class DataImportHandler extends RequestHandlerBase implements
         }
       }
       debugEnabled = StrUtils.parseBool((String)initArgs.get(ENABLE_DEBUG), true);
-      NamedList defaults = (NamedList) initArgs.get("defaults");
-      if (defaults != null) {
-        String configLoc = (String) defaults.get("config");
-        if (configLoc != null && configLoc.length() != 0) {
-          processConfiguration(defaults);
-          final InputSource is = new InputSource(core.getResourceLoader().openResource(configLoc));
-          is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(configLoc));
-          importer = new DataImporter(is, core,
-                  dataSources, coreScopeSession, myName);
-        }
-      }
+      importer = new DataImporter(core, myName);         
     } catch (Throwable e) {
       LOG.error( DataImporter.MSG.LOAD_EXP, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              DataImporter.MSG.INVALID_CONFIG, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, DataImporter.MSG.LOAD_EXP, e);
     }
   }
 
@@ -136,48 +121,35 @@ public class DataImportHandler extends RequestHandlerBase implements
       }
     }
     SolrParams params = req.getParams();
+    NamedList defaultParams = (NamedList) initArgs.get("defaults");
     RequestInfo requestParams = new RequestInfo(getParamsMap(params), contentStream);
     String command = requestParams.getCommand();
-   
     
-    if (DataImporter.SHOW_CONF_CMD.equals(command)) {
-      // Modify incoming request params to add wt=raw
-      ModifiableSolrParams rawParams = new ModifiableSolrParams(req.getParams());
-      rawParams.set(CommonParams.WT, "raw");
-      req.setParams(rawParams);
-      String dataConfigFile = defaults.get("config");
-      ContentStreamBase content = new ContentStreamBase.StringStream(SolrWriter
-              .getResourceAsString(req.getCore().getResourceLoader().openResource(
-              dataConfigFile)));
-      rsp.add(RawResponseWriter.CONTENT, content);
+    if (DataImporter.SHOW_CONF_CMD.equals(command)) {    
+      String dataConfigFile = params.get("config");
+      String dataConfig = params.get("dataConfig");
+      if(dataConfigFile != null) {
+        dataConfig = SolrWriter.getResourceAsString(req.getCore().getResourceLoader().openResource(dataConfigFile));
+      }
+      if(dataConfig==null)  {
+        rsp.add("status", DataImporter.MSG.NO_CONFIG_FOUND);
+      } else {
+        // Modify incoming request params to add wt=raw
+        ModifiableSolrParams rawParams = new ModifiableSolrParams(req.getParams());
+        rawParams.set(CommonParams.WT, "raw");
+        req.setParams(rawParams);
+        ContentStreamBase content = new ContentStreamBase.StringStream(dataConfig);
+        rsp.add(RawResponseWriter.CONTENT, content);
+      }
       return;
     }
 
     rsp.add("initArgs", initArgs);
     String message = "";
 
-    if (command != null)
+    if (command != null) {
       rsp.add("command", command);
-
-    if (requestParams.isDebug() && (importer == null || !importer.isBusy())) {
-      // Reload the data-config.xml
-      importer = null;
-      if (requestParams.getDataConfig() != null) {
-        try {
-          processConfiguration((NamedList) initArgs.get("defaults"));
-          importer = new DataImporter(new InputSource(new StringReader(requestParams.getDataConfig())), req.getCore()
-                  , dataSources, coreScopeSession, myName);
-        } catch (RuntimeException e) {
-          rsp.add("exception", DebugLogger.getStacktraceString(e));
-          importer = null;
-          return;
-        }
-      } else {
-        inform(req.getCore());
-      }
-      message = DataImporter.MSG.CONFIG_RELOADED;
     }
-
     // If importer is still null
     if (importer == null) {
       rsp.add("status", DataImporter.MSG.NO_INIT);
@@ -192,7 +164,7 @@ public class DataImportHandler extends RequestHandlerBase implements
       if (DataImporter.FULL_IMPORT_CMD.equals(command)
               || DataImporter.DELTA_IMPORT_CMD.equals(command) ||
               IMPORT_CMD.equals(command)) {
-
+        importer.maybeReloadConfiguration(requestParams, defaultParams);
         UpdateRequestProcessorChain processorChain =
                 req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
         UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
@@ -219,10 +191,12 @@ public class DataImportHandler extends RequestHandlerBase implements
             importer.runCmd(requestParams, sw);
           }
         }
-      } else if (DataImporter.RELOAD_CONF_CMD.equals(command)) {
-        importer = null;
-        inform(req.getCore());
-        message = DataImporter.MSG.CONFIG_RELOADED;
+      } else if (DataImporter.RELOAD_CONF_CMD.equals(command)) { 
+        if(importer.maybeReloadConfiguration(requestParams, defaultParams)) {
+          message = DataImporter.MSG.CONFIG_RELOADED;
+        } else {
+          message = DataImporter.MSG.CONFIG_NOT_RELOADED;
+        }
       }
     }
     rsp.add("status", importer.isBusy() ? "busy" : "idle");
@@ -246,36 +220,6 @@ public class DataImportHandler extends RequestHandlerBase implements
         result.put(s, Arrays.asList(val));
     }
     return result;
-  }
-
-  @SuppressWarnings("unchecked")
-  private void processConfiguration(NamedList defaults) {
-    if (defaults == null) {
-      LOG.info("No configuration specified in solrconfig.xml for DataImportHandler");
-      return;
-    }
-
-    LOG.info("Processing configuration from solrconfig.xml: " + defaults);
-
-    dataSources = new HashMap<String, Properties>();
-
-    int position = 0;
-
-    while (position < defaults.size()) {
-      if (defaults.getName(position) == null)
-        break;
-
-      String name = defaults.getName(position);
-      if (name.equals("datasource")) {
-        NamedList dsConfig = (NamedList) defaults.getVal(position);
-        Properties props = new Properties();
-        for (int i = 0; i < dsConfig.size(); i++)
-          props.put(dsConfig.getName(i), dsConfig.getVal(i));
-        LOG.info("Adding properties to datasource: " + props);
-        dataSources.put((String) dsConfig.get("name"), props);
-      }
-      position++;
-    }
   }
 
   private SolrWriter getSolrWriter(final UpdateRequestProcessor processor,

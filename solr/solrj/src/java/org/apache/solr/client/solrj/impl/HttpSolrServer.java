@@ -369,9 +369,6 @@ public class HttpSolrServer extends SolrServer {
                 + " sent back a redirect (" + httpStatus + ").");
           }
           break;
-        case HttpStatus.SC_NOT_FOUND:
-          throw new SolrServerException("Server at " + getBaseURL()
-              + " was not found (404).");
         default:
           throw new SolrException(SolrException.ErrorCode.getErrorCode(httpStatus), "Server at " + getBaseURL()
               + " returned non ok status:" + httpStatus + ", message:"

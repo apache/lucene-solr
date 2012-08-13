@@ -106,7 +106,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   }
   
   @Override
-  public void build(SolrCore core, SolrIndexSearcher searcher) {
+  public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     for (SolrSpellChecker c : checkers) {
       c.build(core, searcher);
     }

@@ -1,3 +1,15 @@
+Apache Solr UIMA Metadata Extraction Library
+
+Introduction
+------------
+This module is intended to be used both as an UpdateRequestProcessor while indexing documents and as a set of tokenizer/filters
+to be configured inside the schema.xml for use during analysis phase.
+UIMAUpdateRequestProcessor purpose is to provide additional on the fly automatically generated fields to the Solr index.
+Such fields could be language, concepts, keywords, sentences, named entities, etc.
+UIMA based tokenizers/filters can be used either inside plain Lucene or as index/query analyzers to be defined
+inside the schema.xml of a Solr core to create/filter tokens using specific UIMA annotations.
+
+
 Getting Started
 ---------------
 To start using Solr UIMA Metadata Extraction Library you should go through the following configuration steps:
@@ -6,6 +18,7 @@ To start using Solr UIMA Metadata Extraction Library you should go through the f
    or set <lib/> tags in solrconfig.xml appropriately to point those jar files.
 
    <lib dir="../../contrib/uima/lib" />
+   <lib dir="../../contrib/uima/lucene-libs" />
    <lib dir="../../dist/" regex="apache-solr-uima-\d.*\.jar" />
 
 2. modify your schema.xml adding the fields you want to be hold metadata specifying proper values for type, indexed, stored and multiValued options:

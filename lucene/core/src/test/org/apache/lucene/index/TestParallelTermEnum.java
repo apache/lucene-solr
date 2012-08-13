@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -81,7 +82,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
       BytesRef b = te.next();
       assertNotNull(b);
       assertEquals(t, b.utf8ToString());
-      DocsEnum td = _TestUtil.docs(random(), te, liveDocs, null, false);
+      DocsEnum td = _TestUtil.docs(random(), te, liveDocs, null, 0);
       assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(0, td.docID());
       assertEquals(td.nextDoc(), DocIdSetIterator.NO_MORE_DOCS);
@@ -94,20 +95,21 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
     Bits liveDocs = pr.getLiveDocs();
 
-    FieldsEnum fe = pr.fields().iterator();
+    Fields fields = pr.fields();
+    Iterator<String> fe = fields.iterator();
 
     String f = fe.next();
     assertEquals("field1", f);
-    checkTerms(fe.terms(), liveDocs, "brown", "fox", "jumps", "quick", "the");
+    checkTerms(fields.terms(f), liveDocs, "brown", "fox", "jumps", "quick", "the");
 
     f = fe.next();
     assertEquals("field2", f);
-    checkTerms(fe.terms(), liveDocs, "brown", "fox", "jumps", "quick", "the");
+    checkTerms(fields.terms(f), liveDocs, "brown", "fox", "jumps", "quick", "the");
 
     f = fe.next();
     assertEquals("field3", f);
-    checkTerms(fe.terms(), liveDocs, "dog", "fox", "jumps", "lazy", "over", "the");
+    checkTerms(fields.terms(f), liveDocs, "dog", "fox", "jumps", "lazy", "over", "the");
 
-    assertNull(fe.next());
+    assertFalse(fe.hasNext());
   }
 }

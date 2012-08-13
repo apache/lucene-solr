@@ -92,13 +92,13 @@ public class FunctionQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer,  FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer,  PostingFeatures flags, Bits acceptDocs) throws IOException {
       return new AllScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      return ((AllScorer)scorer(context, true, true, FeatureFlags.DOCS, context.reader().getLiveDocs())).explain(doc);
+      return ((AllScorer)scorer(context, true, true, PostingFeatures.DOCS_AND_FREQS, context.reader().getLiveDocs())).explain(doc);
     }
   }
 

@@ -121,7 +121,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testBasics() throws Exception {
     assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true", TermVectorParams.TF, "true")
-       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+       ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_posofftv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
@@ -136,7 +136,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
                  "tv.fl", "test_basictv,test_offtv",
                  TermVectorComponent.COMPONENT_NAME, "true", 
                  TermVectorParams.TF, "true")
-       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+       ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
             " 'uniqueKeyFieldName':'id'}"
@@ -150,7 +150,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
                  "tv.fl","test_offtv",
                  TermVectorComponent.COMPONENT_NAME, "true", 
                  TermVectorParams.TF, "true")
-       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+       ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
             " 'uniqueKeyFieldName':'id'}"
@@ -162,7 +162,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
                  "fl", "*,score",
                  TermVectorComponent.COMPONENT_NAME, "true", 
                  TermVectorParams.TF, "true")
-       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+       ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_posofftv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
@@ -176,7 +176,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
                  "fl", "score,test_basictv,[docid],test_postv,val:sum(3,4)",
                  TermVectorComponent.COMPONENT_NAME, "true", 
                  TermVectorParams.TF, "true")
-       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+       ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
             " 'uniqueKeyFieldName':'id'}"
@@ -189,7 +189,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
                  "fl", "[docid],test_postv,val:sum(3,4)",
                  TermVectorComponent.COMPONENT_NAME, "true", 
                  TermVectorParams.TF, "true")
-       ,"/termVectors=={'doc-0':{'uniqueKey':'0'," +
+       ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
             " 'uniqueKeyFieldName':'id'}"
@@ -201,12 +201,12 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
   public void testOptions() throws Exception {
     assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"
        , TermVectorParams.TF, "true", TermVectorParams.DF, "true", TermVectorParams.OFFSETS, "true", TermVectorParams.POSITIONS, "true", TermVectorParams.TF_IDF, "true")
-       ,"/termVectors/doc-0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
+       ,"/termVectors/0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
     );
     
     assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"
         , TermVectorParams.ALL, "true")
-        ,"/termVectors/doc-0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
+        ,"/termVectors/0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
      );
     
     // test each combination at random
@@ -217,7 +217,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
         { TermVectorParams.POSITIONS, "'positions':{'position':1}" },
         { TermVectorParams.DF, "'df':2" },
         { TermVectorParams.TF_IDF, "'tf-idf':0.5" } };
-    StringBuilder expected = new StringBuilder("/termVectors/doc-0/test_posofftv/anoth=={");
+    StringBuilder expected = new StringBuilder("/termVectors/0/test_posofftv/anoth=={");
     boolean first = true;
     for (int i = 0; i < options.length; i++) {
       final boolean use = random().nextBoolean();
@@ -248,57 +248,11 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
         ,"f.test_basictv." + TermVectorParams.TF, "false"
         ,"f.test_basictv." + TermVectorParams.TF_IDF, "false"
         )
-    ,"/termVectors/doc-0/test_basictv=={'anoth':{},'titl':{}}"
-    ,"/termVectors/doc-0/test_postv/anoth=={'tf':1, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
-    ,"/termVectors/doc-0/test_offtv/anoth=={'tf':1, 'df':2, 'tf-idf':0.5}"
+    ,"/termVectors/0/test_basictv=={'anoth':{},'titl':{}}"
+    ,"/termVectors/0/test_postv/anoth=={'tf':1, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
+    ,"/termVectors/0/test_offtv/anoth=={'tf':1, 'df':2, 'tf-idf':0.5}"
     ,"/termVectors/warnings=={ 'noTermVectors':['test_notv'], 'noPositions':['test_basictv', 'test_offtv'], 'noOffsets':['test_basictv', 'test_postv']}"
     );
-  }
-
-
-  // TODO: this test is really fragile since it pokes around in solr's guts and makes many assumptions.
-  // it should be rewritten to use the real distributed interface
-  @Test
-  public void testDistributed() throws Exception {
-    SolrCore core = h.getCore();
-    TermVectorComponent tvComp = (TermVectorComponent) core.getSearchComponent("tvComponent");
-    assertTrue("tvComp is null and it shouldn't be", tvComp != null);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.Q, "id:0");
-    params.add(CommonParams.QT, "tvrh");
-    params.add(TermVectorParams.TF, "true");
-    params.add(TermVectorParams.DF, "true");
-    params.add(TermVectorParams.OFFSETS, "true");
-    params.add(TermVectorParams.POSITIONS, "true");
-    params.add(TermVectorComponent.COMPONENT_NAME, "true");
-
-    ResponseBuilder rb = new ResponseBuilder(new LocalSolrQueryRequest(core, params), new SolrQueryResponse(), (List)Arrays.asList(tvComp));
-    rb.stage = ResponseBuilder.STAGE_GET_FIELDS;
-    rb.shards = new String[]{"localhost:0", "localhost:1", "localhost:2", "localhost:3"};//we don't actually call these, since we are going to invoke distributedProcess directly
-    rb.resultIds = new HashMap<Object, ShardDoc>();
-
-    rb.outgoing = new ArrayList<ShardRequest>();
-    //one doc per shard, but make sure there are enough docs to go around
-    for (int i = 0; i < rb.shards.length; i++){
-      ShardDoc doc = new ShardDoc();
-      doc.id = i; //must be a valid doc that was indexed.
-      doc.score = 1 - (i / (float)rb.shards.length);
-      doc.positionInResponse = i;
-      doc.shard = rb.shards[i];
-      doc.orderInShard = 0;
-      rb.resultIds.put(doc.id, doc);
-    }
-
-    int result = tvComp.distributedProcess(rb);
-    assertTrue(result + " does not equal: " + ResponseBuilder.STAGE_DONE, result == ResponseBuilder.STAGE_DONE);
-    //one outgoing per shard
-    assertTrue("rb.outgoing Size: " + rb.outgoing.size() + " is not: " + rb.shards.length, rb.outgoing.size() == rb.shards.length);
-    for (ShardRequest request : rb.outgoing) {
-      ModifiableSolrParams solrParams = request.params;
-      log.info("Shard: " + Arrays.asList(request.shards) + " Params: " + solrParams);
-    }
-
-    rb.req.close();
   }
 
 }

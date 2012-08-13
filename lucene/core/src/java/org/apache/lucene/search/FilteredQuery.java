@@ -124,7 +124,7 @@ public class FilteredQuery extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
         assert filter != null;
 
         final DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);

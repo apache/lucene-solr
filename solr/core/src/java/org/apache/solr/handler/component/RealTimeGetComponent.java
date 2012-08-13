@@ -352,14 +352,14 @@ public class RealTimeGetComponent extends SearchComponent
 
       String collection = cloudDescriptor.getCollectionName();
 
-      CloudState cloudState = zkController.getCloudState();
+      ClusterState clusterState = zkController.getClusterState();
       
       Map<String, List<String>> shardToId = new HashMap<String, List<String>>();
       for (String id : allIds) {
         BytesRef br = new BytesRef();
         sf.getType().readableToIndexed(id, br);
         int hash = Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
-        String shard = cloudState.getShard(hash,  collection);
+        String shard = clusterState.getShard(hash,  collection);
 
         List<String> idsForShard = shardToId.get(shard);
         if (idsForShard == null) {

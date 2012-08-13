@@ -25,7 +25,6 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -133,16 +132,10 @@ public class HighFreqTerms {
         throw new RuntimeException("no fields found for this index");
       }
       tiq = new TermStatsQueue(numTerms);
-      FieldsEnum fieldsEnum = fields.iterator();
-      while (true) {
-        field = fieldsEnum.next();
-        if (field != null) {
-          Terms terms = fieldsEnum.terms();
-          if (terms != null) {
-            tiq.fill(field, terms.iterator(null));
-          }
-        } else {
-          break;
+      for (String fieldName : fields) {
+        Terms terms = fields.terms(fieldName);
+        if (terms != null) {
+          tiq.fill(fieldName, terms.iterator(null));
         }
       }
     }
@@ -200,7 +193,8 @@ public class HighFreqTerms {
           continue;
         } // otherwise we fall-through
       }
-      DocsEnum de = r.termDocsEnum(liveDocs, field, termText, true);
+      // note: what should we do if field omits freqs? currently it counts as 1...
+      DocsEnum de = r.termDocsEnum(liveDocs, field, termText);
       if (de != null) {
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
           totalTF += de.freq();

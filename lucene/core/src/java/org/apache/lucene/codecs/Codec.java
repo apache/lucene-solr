@@ -86,6 +86,21 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     return loader.availableServices();
   }
   
+  /** 
+   * Reloads the codec list from the given {@link ClassLoader}.
+   * Changes to the codecs are visible after the method ends, all
+   * iterators ({@link #availableCodecs()},...) stay consistent. 
+   * 
+   * <p><b>NOTE:</b> Only new codecs are added, existing ones are
+   * never removed or replaced.
+   * 
+   * <p><em>This method is expensive and should only be called for discovery
+   * of new codecs on the given classpath/classloader!</em>
+   */
+  public static void reloadCodecs(ClassLoader classloader) {
+    loader.reload(classloader);
+  }
+  
   private static Codec defaultCodec = Codec.forName("Lucene40");
   
   /** expert: returns the default codec used for newly created

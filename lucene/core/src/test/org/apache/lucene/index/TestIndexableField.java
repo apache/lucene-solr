@@ -60,17 +60,22 @@ public class TestIndexableField extends LuceneTestCase {
 
       @Override
       public boolean storeTermVectors() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return indexed() && counter % 2 == 1 && counter % 10 != 9;
       }
 
       @Override
       public boolean storeTermVectorOffsets() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return storeTermVectors() && counter % 10 != 9;
       }
 
       @Override
       public boolean storeTermVectorPositions() {
-        return counter % 2 == 1 && counter % 10 != 9;
+        return storeTermVectors() && counter % 10 != 9;
+      }
+      
+      @Override
+      public boolean storeTermVectorPayloads() {
+        return storeTermVectors() && counter % 10 != 9;
       }
 
       @Override
@@ -264,14 +269,14 @@ public class TestIndexableField extends LuceneTestCase {
             TermsEnum termsEnum = tfv.iterator(null);
             assertEquals(new BytesRef(""+counter), termsEnum.next());
             assertEquals(1, termsEnum.totalTermFreq());
-            DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
+            DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
             assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
             assertEquals(1, dpEnum.freq());
             assertEquals(1, dpEnum.nextPosition());
 
             assertEquals(new BytesRef("text"), termsEnum.next());
             assertEquals(1, termsEnum.totalTermFreq());
-            dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
+            dpEnum = termsEnum.docsAndPositions(null, dpEnum);
             assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
             assertEquals(1, dpEnum.freq());
             assertEquals(0, dpEnum.nextPosition());

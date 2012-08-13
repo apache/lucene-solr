@@ -174,18 +174,18 @@
   <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
-    <license-check-macro dir="${basedir}">
+    <license-check-macro dir="${basedir}" licensedir="${common-solr.dir}/licenses">
       <additional-excludes>
         <!-- Exclude start.jar only (it'd be weird to have a license file there?) -->
         <exclude name="example/start.jar" />
         <exclude name="example/exampledocs/post.jar" />
-        <exclude name="example/work/**" />
+        <exclude name="example/solr-webapp/**" />
       </additional-excludes>
       <additional-filters>
-        <replaceregex pattern="/jetty([^/]+)$" replace="/jetty" flags="gi" />
-        <replaceregex pattern="/apache-solr-commons-csv-([^/]+)$" replace="/apache-solr-commons-csv" flags="gi" />
-        <replaceregex pattern="/slf4j-([^/]+)$" replace="/slf4j" flags="gi" />
-        <replaceregex pattern="/(bcmail|bcprov)-([^/]+)$" replace="/\1" flags="gi" />
+        <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
+        <replaceregex pattern="apache-solr-commons-csv-([^/]+)$" replace="apache-solr-commons-csv" flags="gi" />
+        <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
+        <replaceregex pattern="(bcmail|bcprov)-([^/]+)$" replace="\1" flags="gi" />
       </additional-filters>
     </license-check-macro>
   </target>
@@ -200,6 +200,7 @@
         <include name="jdk.txt" />
         <include name="jdk-deprecated.txt" />
         <include name="commons-io.txt" />
+        <include name="executors.txt" />
       </apiFileSet>
       <fileset dir="${basedir}/build">
         <include name="**/*.class" />
@@ -243,7 +244,7 @@
       <fileset dir="example">
         <include name="**/data/**/*" />
         <include name="webapps/**/*" />
-        <include name="work/**/*" />
+        <include name="solr-webapp/**/*" />
         <exclude name="**/.gitignore" />
       </fileset>
     </delete>
@@ -258,27 +259,6 @@
     </delete>
   </target>
 
-  <!--
-   Run after Junit tests.
-   -->
-  <target name="generate-clover-reports" depends="clover">
-    <fail unless="run.clover">Clover not enabled!</fail>
-    <mkdir dir="${clover.report.dir}"/>
-    <fileset dir="build" id="clover.test.result.files">
-      <include name="**/test/TEST-*.xml"/>
-    </fileset>
-    <clover-report>
-      <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
-        <format type="html" filter="assert"/>
-        <testresults refid="clover.test.result.files"/>
-      </current>
-      <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
-        <format type="xml" filter="assert"/>
-        <testresults refid="clover.test.result.files"/>
-      </current>
-    </clover-report>
-  </target>
-  
   <!-- ========================================================================= -->
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
   <!-- ========================================================================= -->
@@ -361,12 +341,17 @@
               value="${common-solr.dir}/build/${fullnamever}-src.tgz"/>
     <delete file="${source.package.file}" failonerror="false" />
 
+    <!-- includes/excludes requires a relative path -->
+    <property name="dist.rel" location="${dist}" relative="yes"/>
+    <property name="package.dir.rel" location="${package.dir}" relative="yes"/>
+
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir=".." prefix="${fullnamever}" includes="*.txt *.xml dev-tools/" />
       <tarfileset dir="." prefix="${fullnamever}" includes="LICENSE.txt NOTICE.txt"/>
       <tarfileset dir="." prefix="${fullnamever}/solr"
-                  excludes="build ${package.dir}/** ${dist}/**
-                            example/webapps/*.war example/exampledocs/post.jar
+                  excludes="build/** ${package.dir.rel}/** ${dist.rel}/**
+                            example/webapps/*.war example/lib/**
+                            **/*.jar 
                             lib/README.committers.txt **/data/ **/logs/*
                             **/*.sh **/bin/ scripts/ 
                             .idea/ **/*.iml **/pom.xml" />
@@ -402,11 +387,11 @@
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt example/**
                              client/README.txt client/ruby/solr-ruby/** contrib/**/lib/**
-                             contrib/**/README.txt contrib/**/CHANGES.txt"
+                             contrib/**/README.txt licenses/**"
                   excludes="lib/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
-                            **/*pom.xml.template **/*.sha1" />
+                            **/*pom.xml.template" />
       <tarfileset dir="${dest}/contrib-lucene-libs-to-package"
                   prefix="${fullnamever}"
                   includes="**" />
@@ -761,6 +746,10 @@
      <delete>
        <fileset dir="." includes="**/*.jar"/>
      </delete>
+  </target>
+
+  <target name="jar-checksums" depends="clean-jars,resolve">
+    <jar-checksum-macro srcdir="${common-solr.dir}" dstdir="${common-solr.dir}/licenses"/>
   </target>
 
 </project>

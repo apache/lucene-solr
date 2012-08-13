@@ -70,6 +70,7 @@ import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -357,7 +358,7 @@ public final class SolrCore implements SolrInfoMBean {
     return responseWriters.put(name, responseWriter);
   }
   
-  public SolrCore reload(SolrResourceLoader resourceLoader) throws IOException,
+  public SolrCore reload(SolrResourceLoader resourceLoader, SolrCore prev) throws IOException,
       ParserConfigurationException, SAXException {
     // TODO - what if indexwriter settings have changed
     
@@ -368,8 +369,8 @@ public final class SolrCore implements SolrInfoMBean {
         getSchema().getResourceName(), null);
     
     updateHandler.incref();
-    SolrCore core = new SolrCore(getName(), null, config,
-        schema, coreDescriptor, updateHandler);
+    SolrCore core = new SolrCore(getName(), getDataDir(), config,
+        schema, coreDescriptor, updateHandler, prev);
     return core;
   }
 
@@ -548,7 +549,7 @@ public final class SolrCore implements SolrInfoMBean {
    * @since solr 1.3
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
-    this(name, dataDir, config, schema, cd, null);
+    this(name, dataDir, config, schema, cd, null, null);
   }
   
   /**
@@ -561,7 +562,7 @@ public final class SolrCore implements SolrInfoMBean {
    *
    *@since solr 1.3
    */
-  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd, UpdateHandler updateHandler) {
+  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd, UpdateHandler updateHandler, SolrCore prev) {
     coreDescriptor = cd;
     this.setName( name );
     resourceLoader = config.getResourceLoader();
@@ -640,10 +641,31 @@ public final class SolrCore implements SolrInfoMBean {
         }
       });
 
+      // use the (old) writer to open the first searcher
+      RefCounted<IndexWriter> iwRef = null;
+      if (prev != null) {
+        iwRef = prev.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
+        if (iwRef != null) {
+          final IndexWriter iw = iwRef.get();
+          newReaderCreator = new Callable<DirectoryReader>() {
+            @Override
+            public DirectoryReader call() throws Exception {
+              return DirectoryReader.open(iw, true);
+            }
+          };
+        }
+      }
+
       // Open the searcher *before* the update handler so we don't end up opening
       // one in the middle.
       // With lockless commits in Lucene now, this probably shouldn't be an issue anymore
-      getSearcher(false,false,null);
+
+      try {
+        getSearcher(false,false,null,true);
+      } finally {
+        newReaderCreator = null;
+        if (iwRef != null) iwRef.decref();
+      }
 
       String updateHandlerClass = solrConfig.getUpdateHandlerInfo().className;
 
@@ -1049,7 +1071,8 @@ public final class SolrCore implements SolrInfoMBean {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<RefCounted<SolrIndexSearcher>>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<RefCounted<SolrIndexSearcher>>();
 
-  final ExecutorService searcherExecutor = Executors.newSingleThreadExecutor();
+  final ExecutorService searcherExecutor = Executors.newSingleThreadExecutor(
+      new DefaultSolrThreadFactory("searcherExecutor"));
   private int onDeckSearchers;  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private Object searcherLock = new Object();  // the sync object for the searcher
@@ -1057,7 +1080,7 @@ public final class SolrCore implements SolrInfoMBean {
   private final int maxWarmingSearchers;  // max number of on-deck searchers allowed
 
   private RefCounted<SolrIndexSearcher> realtimeSearcher;
-
+  private Callable<DirectoryReader> newReaderCreator;
 
   /**
   * Return a registered {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
@@ -1208,9 +1231,20 @@ public final class SolrCore implements SolrInfoMBean {
         tmp = new SolrIndexSearcher(this, schema, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
 
       } else {
+        // newestSearcher == null at this point
+
+        if (newReaderCreator != null) {
+          // this is set in the constructor if there is a currently open index writer
+          // so that we pick up any uncommitted changes and so we don't go backwards
+          // in time on a core reload
+          DirectoryReader newReader = newReaderCreator.call();
+          tmp = new SolrIndexSearcher(this, schema, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+        } else {
+         // normal open that happens at startup
         // verbose("non-reopen START:");
         tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().indexConfig, "main", true, directoryFactory);
         // verbose("non-reopen DONE: searcher=",tmp);
+        }
       }
 
       List<RefCounted<SolrIndexSearcher>> searcherList = realtime ? _realtimeSearchers : _searchers;

@@ -491,6 +491,15 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryEquals(".NET", a, ".NET");
   }
 
+  public void testGroup() throws Exception {
+    assertQueryEquals("!(a AND b) OR c", null, "-(+a +b) c");
+    assertQueryEquals("!(a AND b) AND c", null, "-(+a +b) +c");
+    assertQueryEquals("((a AND b) AND c)", null, "+(+a +b) +c");
+    assertQueryEquals("(a AND b) AND c", null, "+(+a +b) +c");
+    assertQueryEquals("b !(a AND b)", null, "b -(+a +b)");
+    assertQueryEquals("(a AND b)^4 OR c", null, "((+a +b)^4.0) c");
+  }
+
   public void testSlop() throws Exception {
 
     assertQueryEquals("\"term germ\"~2", null, "\"term germ\"~2");
@@ -1313,8 +1322,8 @@ public class TestQPHelper extends LuceneTestCase {
     parser.setAnalyzer(new MockAnalyzer(random()));
 
     BooleanQuery exp = new BooleanQuery();
-    exp.add(new BooleanClause(new RegexpQuery(new Term("b", "ab.+")), BooleanClause.Occur.MUST));
-    exp.add(new BooleanClause(new RegexpQuery(new Term("t", "ab.+")), BooleanClause.Occur.MUST));
+    exp.add(new BooleanClause(new RegexpQuery(new Term("b", "ab.+")), BooleanClause.Occur.SHOULD));//TODO spezification? was "MUST"
+    exp.add(new BooleanClause(new RegexpQuery(new Term("t", "ab.+")), BooleanClause.Occur.SHOULD));//TODO spezification? was "MUST"
 
     assertEquals(exp, parser.parse("/ab.+/", null));
 

@@ -24,28 +24,17 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-public class RecoveryZkTest extends FullSolrCloudTest {
+public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
   private static Logger log = LoggerFactory.getLogger(RecoveryZkTest.class);
   private StopableIndexingThread indexThread;
   private StopableIndexingThread indexThread2;
-  @BeforeClass
-  public static void beforeSuperClass() {
 
-  }
-  
-  @AfterClass
-  public static void afterSuperClass() {
-
-  }
-  
   public RecoveryZkTest() {
     super();
     sliceCount = 1;
@@ -71,7 +60,7 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     Thread.sleep(atLeast(2000));   
     
     // bring shard replica down
-    JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1);
+    JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1).jetty;
 
     
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
@@ -99,8 +88,8 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     checkShardConsistency("shard1", false); 
     SolrQuery query = new SolrQuery("*:*");
     query.setParam("distrib", "false");
-    long client1Docs = shardToClient.get("shard1").get(0).query(query).getResults().getNumFound();
-    long client2Docs = shardToClient.get("shard1").get(1).query(query).getResults().getNumFound();
+    long client1Docs = shardToJetty.get("shard1").get(0).client.solrClient.query(query).getResults().getNumFound();
+    long client2Docs = shardToJetty.get("shard1").get(1).client.solrClient.query(query).getResults().getNumFound();
     
     assertTrue(client1Docs > 0);
     assertEquals(client1Docs, client2Docs);

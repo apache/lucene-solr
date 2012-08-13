@@ -75,7 +75,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
 
       @Override
       public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-          boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+          boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
         Scorer scorer = w.scorer(context, scoreDocsInOrder, topScorer, flags, acceptDocs);
         if (scorer != null) {
           // check that scorer obeys disi contract for docID() before next()/advance

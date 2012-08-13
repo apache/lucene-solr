@@ -34,7 +34,7 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.Weight.FeatureFlags;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.positions.IntervalFilterQuery;
 import org.apache.lucene.search.positions.RangeIntervalIterator;
 import org.apache.lucene.search.positions.WithinIntervalIterator;
@@ -234,7 +234,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       Weight weight = s.createNormalizedWeight(q);
 
       Scorer scorer = weight.scorer(s.leafContexts.get(0),
-                                          true, false, FeatureFlags.DOCS, null);
+                                          true, false, PostingFeatures.DOCS_AND_FREQS, null);
 
       // First pass: just use .nextDoc() to gather all hits
       final List<ScoreDoc> hits = new ArrayList<ScoreDoc>();
@@ -252,7 +252,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
         weight = s.createNormalizedWeight(q);
         scorer = weight.scorer(s.leafContexts.get(0),
-                               true, false, FeatureFlags.DOCS, null);
+                               true, false, PostingFeatures.DOCS_AND_FREQS, null);
 
         if (VERBOSE) {
           System.out.println("  iter2=" + iter2);

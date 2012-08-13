@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.standard;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -36,7 +36,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  */
 %%
 
-%unicode 6.0
+%unicode 6.1
 %integer
 %final
 %public
@@ -44,8 +44,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %implements StandardTokenizerInterface
 %function getNextToken
 %char
+%buffer 4096
 
-%include src/java/org/apache/lucene/analysis/standard/SUPPLEMENTARY.jflex-macro
+%include SUPPLEMENTARY.jflex-macro
 ALetter = ([\p{WB:ALetter}] | {ALetterSupp})
 Format =  ([\p{WB:Format}] | {FormatSupp})
 Numeric = ([\p{WB:Numeric}] | {NumericSupp})

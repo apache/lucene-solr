@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 public final class FieldFilterAtomicReader extends FilterAtomicReader {
@@ -125,15 +127,16 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   }
   
   private class FieldFilterFields extends FilterFields {
+
     public FieldFilterFields(Fields in) {
       super(in);
     }
 
     @Override
-    public int size() throws IOException {
+    public int size() {
       // TODO: add faster implementation!
       int c = 0;
-      final FieldsEnum it = iterator();
+      final Iterator<String> it = iterator();
       while (it.next() != null) {
         c++;
       }
@@ -141,16 +144,46 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public FieldsEnum iterator() throws IOException {
-      return new FilterFieldsEnum(super.iterator()) {
+    public Iterator<String> iterator() {
+      final Iterator<String> in = super.iterator();
+      return new Iterator<String>() {
+        String cached = null;
+        
         @Override
-        public String next() throws IOException {
-          String f;
-          while ((f = super.next()) != null) {
-            if (hasField(f)) return f;
+        public String next() {
+          if (cached != null) {
+            String next = cached;
+            cached = null;
+            return next;
+          } else {
+            String next = doNext();
+            if (next == null) {
+              throw new NoSuchElementException();
+            } else {
+              return next;
+            }
+          }
+        }
+
+        @Override
+        public boolean hasNext() {
+          return cached != null || (cached = doNext()) != null;
+        }
+        
+        private String doNext() {
+          while (in.hasNext()) {
+            String field = in.next();
+            if (hasField(field)) {
+              return field;
+            }
           }
           return null;
-        } 
+        }
+
+        @Override
+        public void remove() {
+          throw new UnsupportedOperationException();
+        }
       };
     }
 

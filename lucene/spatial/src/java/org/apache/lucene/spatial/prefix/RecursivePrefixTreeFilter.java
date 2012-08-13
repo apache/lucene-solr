@@ -112,7 +112,7 @@ RE "scan" threshold:
       if (seekStat == TermsEnum.SeekStatus.NOT_FOUND)
         continue;
       if (cell.getLevel() == detailLevel || cell.isLeaf()) {
-        docsEnum = termsEnum.docs(acceptDocs, docsEnum, false);
+        docsEnum = termsEnum.docs(acceptDocs, docsEnum, 0);
         addDocs(docsEnum,bits);
       } else {//any other intersection
         //If the next indexed term is the leaf marker, then add all of them
@@ -120,7 +120,7 @@ RE "scan" threshold:
         assert StringHelper.startsWith(nextCellTerm, cellTerm);
         scanCell = grid.getNode(nextCellTerm.bytes, nextCellTerm.offset, nextCellTerm.length, scanCell);
         if (scanCell.isLeaf()) {
-          docsEnum = termsEnum.docs(acceptDocs, docsEnum, false);
+          docsEnum = termsEnum.docs(acceptDocs, docsEnum, 0);
           addDocs(docsEnum,bits);
           termsEnum.next();//move pointer to avoid potential redundant addDocs() below
         }
@@ -145,7 +145,7 @@ RE "scan" threshold:
               if(queryShape.relate(cShape, grid.getSpatialContext()) == SpatialRelation.DISJOINT)
                 continue;
 
-              docsEnum = termsEnum.docs(acceptDocs, docsEnum, false);
+              docsEnum = termsEnum.docs(acceptDocs, docsEnum, 0);
               addDocs(docsEnum,bits);
             }
           }//term loop

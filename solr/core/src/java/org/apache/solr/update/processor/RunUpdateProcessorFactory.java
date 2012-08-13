@@ -25,9 +25,14 @@ import org.apache.solr.update.*;
 
 
 /**
- * Pass the command to the UpdateHandler without any modifications
+ * Executes the update commands using the underlying UpdateHandler.
+ * Allmost all processor chains should end with an instance of 
+ * <code>RunUpdateProcessorFactory</code> unless the user is explicitly 
+ * executing the update commands in an alternative custom 
+ * <code>UpdateRequestProcessorFactory</code>
  * 
  * @since solr 1.3
+ * @see DistributingUpdateProcessorFactory
  */
 public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 {

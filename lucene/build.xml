@@ -35,10 +35,9 @@
                         MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
                         CHANGES.txt,
                         **/lib/*.jar,
-                        **/lib/*LICENSE*.txt,
-                        **/lib/*NOTICE*.txt,
+                        licenses/**,
                         */docs/,**/README*"
-              excludes="build/**,site/**"
+              excludes="build/**,site/**,tools/**"
   />
 
 
@@ -140,34 +139,11 @@
 
   <target name="compile-core" depends="compile-lucene-core"/>
 
-  <!--
-   Run after Junit tests.
-   -->
-  <target name="generate-clover-reports" depends="clover">
-    <fail unless="run.clover">Clover not enabled!</fail>
-    <mkdir dir="${clover.report.dir}"/>
-    <fileset dir="build" id="clover.test.result.files">
-      <include name="**/test/TEST-*.xml"/>
-      <!-- do not include BW tests -->
-      <exclude name="backwards/**"/>
-    </fileset>
-    <clover-report>
-      <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
-        <format type="html" filter="assert"/>
-        <testresults refid="clover.test.result.files"/>
-      </current>
-      <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
-        <format type="xml" filter="assert"/>
-        <testresults refid="clover.test.result.files"/>
-      </current>
-    </clover-report>
-  </target>
-
   <!-- Validation (license/notice/api checks). -->
   <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
-    <license-check-macro dir="${basedir}" />
+    <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses" />
   </target>
 
   <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
@@ -177,6 +153,7 @@
       <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
         <include name="jdk.txt" />
         <include name="jdk-deprecated.txt" />
+        <include name="executors.txt" />
       </apiFileSet>
       <fileset dir="${basedir}/build" includes="**/*.class" />
     </forbidden-apis>
@@ -275,14 +252,9 @@
   </target>
   
   <target name="process-webpages" depends="resolve-pegdown">
-    <pathconvert pathsep="|" property="buildfiles">
+    <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
-      <mapper>
-        <scriptmapper language="javascript">
-          self.addMappedName((new java.io.File(source)).toURI());
-        </scriptmapper>
-      </mapper>
-    </pathconvert>
+    </makeurl>
     <!--
       The XSL input file is ignored completely, but XSL expects one to be given,
       so we pass ourself (${ant.file}) here. The list of module build.xmls is given
@@ -293,7 +265,7 @@
       <outputproperty name="version" value="4.0"/>
       <outputproperty name="encoding" value="UTF-8"/>
       <outputproperty name="indent" value="yes"/>
-      <param name="buildfiles" expression="${buildfiles}"/>
+      <param name="buildfiles" expression="${process-webpages.buildfiles}"/>
       <param name="version" expression="${version}"/>
     </xslt>
     
@@ -575,6 +547,10 @@
            dest="enwiki.random.lines.txt.bz2"/>
       <bunzip2 src="enwiki.random.lines.txt.bz2" dest="enwiki.random.lines.txt"/>
     </sequential>
+  </target>
+
+  <target name="jar-checksums" depends="clean-jars,resolve">
+    <jar-checksum-macro srcdir="${common.dir}" dstdir="${common.dir}/licenses"/>
   </target>
 
 </project>

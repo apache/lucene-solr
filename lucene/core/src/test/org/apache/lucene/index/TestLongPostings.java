@@ -37,7 +37,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util._TestUtil;
 
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestLongPostings extends LuceneTestCase {
 
   // Produces a realistic unicode random string that
@@ -170,7 +170,7 @@ public class TestLongPostings extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " doS1=" + doS1);
       }
         
-      final DocsAndPositionsEnum postings = MultiFields.getTermPositionsEnum(r, null, "field", new BytesRef(term), false);
+      final DocsAndPositionsEnum postings = MultiFields.getTermPositionsEnum(r, null, "field", new BytesRef(term));
 
       int docID = -1;
       while(docID < DocIdSetIterator.NO_MORE_DOCS) {
@@ -205,8 +205,11 @@ public class TestLongPostings extends LuceneTestCase {
             assertTrue(freq >=1 && freq <= 4);
             for(int pos=0;pos<freq;pos++) {
               assertEquals(pos, postings.nextPosition());
-              if (random().nextBoolean() && postings.hasPayload()) {
+              if (random().nextBoolean()) {
                 postings.getPayload();
+                if (random().nextBoolean()) {
+                  postings.getPayload(); // get it again
+                }
               }
             }
           }
@@ -247,8 +250,11 @@ public class TestLongPostings extends LuceneTestCase {
             assertTrue(freq >=1 && freq <= 4);
             for(int pos=0;pos<freq;pos++) {
               assertEquals(pos, postings.nextPosition());
-              if (random().nextBoolean() && postings.hasPayload()) {
+              if (random().nextBoolean()) {
                 postings.getPayload();
+                if (random().nextBoolean()) {
+                  postings.getPayload(); // get it again
+                }
               }
             }
           }
@@ -368,10 +374,10 @@ public class TestLongPostings extends LuceneTestCase {
       final DocsEnum postings;
 
       if (options == IndexOptions.DOCS_ONLY) {
-        docs = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, false);
+        docs = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, 0);
         postings = null;
       } else {
-        docs = postings = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, true);
+        docs = postings = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, DocsEnum.FLAG_FREQS);
         assert postings != null;
       }
       assert docs != null;

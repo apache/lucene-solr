@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
 import org.apache.lucene.util.*;
@@ -165,7 +166,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
       assert !termArrays.isEmpty();
       final AtomicReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -207,7 +208,7 @@ public class MultiPhraseQuery extends Query {
             // None of the terms are in this reader
             return null;
           }
-          factory = new MultiTermDocsEnumFactory(liveDocs, context, terms, termContexts, termsEnum);
+          factory = new MultiTermDocsEnumFactory(liveDocs, context, terms, termContexts, termsEnum, flags);
         } else {
           final Term term = terms[0];
           TermState termState = termContexts.get(term).get(context.ord);
@@ -216,15 +217,15 @@ public class MultiPhraseQuery extends Query {
             return null;
           }
           termsEnum.seekExact(term.bytes(), termState);
-          postingsEnum = termsEnum.docsAndPositions(liveDocs, null, false);
+          postingsEnum = termsEnum.docsAndPositions(liveDocs, null, 0);
 
           if (postingsEnum == null) {
             // term does exist, but has no positions
-            assert termsEnum.docs(liveDocs, null, false) != null: "termstate found but no term exists in reader";
+            assert termsEnum.docs(liveDocs, null, 0) != null: "termstate found but no term exists in reader";
             throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
           }
 
-          factory = new TermDocsEnumFactory(BytesRef.deepCopyOf(term.bytes()), termsEnum, acceptDocs);
+          factory = new TermDocsEnumFactory(BytesRef.deepCopyOf(term.bytes()), termsEnum, flags, acceptDocs);
         }
         
         postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, factory, termsEnum.docFreq() , positions.get(pos).intValue(), terms);
@@ -236,20 +237,20 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context), flags == FeatureFlags.OFFSETS);
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context));
         if (s.noDocs) {
           return null;
         } else {
           return s;
         }
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context), flags == FeatureFlags.OFFSETS);
+        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context));
       }
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, FeatureFlags.POSITIONS, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, true, false, PostingFeatures.POSITIONS, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -401,16 +402,16 @@ public class MultiPhraseQuery extends Query {
     Map<Term, TermContext> termContexts;
 
     MultiTermDocsEnumFactory(Bits liveDocs, AtomicReaderContext context, Term[] terms,
-                             Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
-      super(termsEnum, liveDocs);
+                             Map<Term,TermContext> termContexts, TermsEnum termsEnum, PostingFeatures flags) throws IOException {
+      super(termsEnum, flags, liveDocs);
       this.context = context;
       this.terms = terms;
       this.termContexts = termContexts;
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositionsEnum(boolean offsets) throws IOException {
-      return new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum, offsets);
+    public DocsAndPositionsEnum docsAndPositionsEnum() throws IOException {
+      return new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum, flags);
     }
 
   }
@@ -535,11 +536,11 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms,
                                    Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
-    this(liveDocs, context, terms, termContexts, termsEnum, false);
+    this(liveDocs, context, terms, termContexts, termsEnum, PostingFeatures.POSITIONS);
   }
 
   public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms,
-                                     Map<Term,TermContext> termContexts, TermsEnum termsEnum, boolean needsOffsets) throws IOException {
+                                     Map<Term,TermContext> termContexts, TermsEnum termsEnum, PostingFeatures flags) throws IOException {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
     for (int i = 0; i < terms.length; i++) {
       final Term term = terms[i];
@@ -549,7 +550,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
         continue;
       }
       termsEnum.seekExact(term.bytes(), termState);
-      DocsAndPositionsEnum postings = termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
+      DocsAndPositionsEnum postings = termsEnum.docsAndPositions(liveDocs, null, flags.docsAndPositionsFlags());
       if (postings == null) {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
@@ -613,12 +614,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   @Override
   public BytesRef getPayload() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean hasPayload() {
-    throw new UnsupportedOperationException();
+    return null;
   }
 
   @Override

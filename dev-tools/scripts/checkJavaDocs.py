@@ -23,7 +23,7 @@ reMarkup = re.compile('<.*?>')
 
 def checkSummary(fullPath):
   printed = False
-  f = open(fullPath)
+  f = open(fullPath, encoding='UTF-8')
   anyMissing = False
   sawPackage = False
   desc = []
@@ -41,10 +41,10 @@ def checkSummary(fullPath):
           desc = desc.strip()
           if desc == '':
             if not printed:
-              print
-              print fullPath
+              print()
+              print(fullPath)
               printed = True
-            print '  no package description (missing package.html in src?)'
+            print('  no package description (missing package.html in src?)')
             anyMissing = True
           desc = None
         else:
@@ -52,17 +52,17 @@ def checkSummary(fullPath):
       
     if lineLower in ('<td>&nbsp;</td>', '<td></td>', '<td class="collast">&nbsp;</td>'):
       if not printed:
-        print
-        print fullPath
+        print()
+        print(fullPath)
         printed = True
-      print '  missing: %s' % unescapeHTML(lastHREF)
+      print('  missing: %s' % unescapeHTML(lastHREF))
       anyMissing = True
     elif lineLower.find('licensed to the apache software foundation') != -1 or lineLower.find('copyright 2004 the apache software foundation') != -1:
       if not printed:
-        print
-        print fullPath
+        print()
+        print(fullPath)
         printed = True
-      print '  license-is-javadoc: %s' % unescapeHTML(lastHREF)
+      print('  license-is-javadoc: %s' % unescapeHTML(lastHREF))
       anyMissing = True
     m = reHREF.search(line)
     if m is not None:
@@ -85,17 +85,17 @@ def checkPackageSummaries(root, level='class'):
   """
 
   if level != 'class' and level != 'package':
-    print 'unsupported level: %s, must be "class" or "package"' % level
+    print('unsupported level: %s, must be "class" or "package"' % level)
     sys.exit(1)
   
   #for dirPath, dirNames, fileNames in os.walk('%s/lucene/build/docs/api' % root):
 
   if False:
     os.chdir(root)
-    print
-    print 'Run "ant javadocs" > javadocs.log...'
+    print()
+    print('Run "ant javadocs" > javadocs.log...')
     if os.system('ant javadocs > javadocs.log 2>&1'):
-      print '  FAILED'
+      print('  FAILED')
       sys.exit(1)
     
   anyMissing = False
@@ -116,14 +116,14 @@ def checkPackageSummaries(root, level='class'):
 
 if __name__ == '__main__':
   if len(sys.argv) < 2 or len(sys.argv) > 3:
-    print 'usage: %s <dir> [class|package]' % sys.argv[0]
+    print('usage: %s <dir> [class|package]' % sys.argv[0])
     sys.exit(1)
   if len(sys.argv) == 2:
     level = 'class'
   else:
     level = sys.argv[2]
   if checkPackageSummaries(sys.argv[1], level):
-    print
-    print 'Missing javadocs were found!'
+    print()
+    print('Missing javadocs were found!')
     sys.exit(1)
   sys.exit(0)

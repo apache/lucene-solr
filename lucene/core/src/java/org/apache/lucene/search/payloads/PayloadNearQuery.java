@@ -149,14 +149,14 @@ public class PayloadNearQuery extends SpanNearQuery {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
       return new PayloadNearSpanScorer(query.getSpans(context, acceptDocs, termContexts), this,
           similarity, similarity.sloppySimScorer(stats, context));
     }
     
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      PayloadNearSpanScorer scorer = (PayloadNearSpanScorer) scorer(context, true, false, FeatureFlags.POSITIONS, context.reader().getLiveDocs());
+      PayloadNearSpanScorer scorer = (PayloadNearSpanScorer) scorer(context, true, false, PostingFeatures.POSITIONS, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -167,8 +167,9 @@ public class PayloadNearQuery extends SpanNearQuery {
           Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
           expl.addDetail(scoreExplanation);
           expl.setValue(scoreExplanation.getValue());
+          String field = ((SpanQuery)getQuery()).getField();
           // now the payloads part
-          Explanation payloadExpl = function.explain(doc, scorer.payloadsSeen, scorer.payloadScore);
+          Explanation payloadExpl = function.explain(doc, field, scorer.payloadsSeen, scorer.payloadScore);
           // combined
           ComplexExplanation result = new ComplexExplanation();
           result.addDetail(expl);

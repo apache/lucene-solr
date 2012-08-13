@@ -114,7 +114,7 @@ public class ToChildBlockJoinQuery extends Query {
     // child document space
     @Override
     public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
 
       // Pass scoreDocsInOrder true, topScorer false to our sub:
       final Scorer parentScorer = parentWeight.scorer(readerContext, true, false, flags, null);

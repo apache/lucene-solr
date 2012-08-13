@@ -41,7 +41,7 @@ import java.util.Random;
 //
 //   java -server -Xmx8g -d64 -cp .:lib/junit-4.10.jar:./build/classes/test:./build/classes/test-framework:./build/classes/java -Dlucene.version=4.0-dev -Dtests.directory=MMapDirectory -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
 //
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class Test2BTerms extends LuceneTestCase {
 
   private final static int TOKEN_LEN = 10;
@@ -146,9 +146,11 @@ public class Test2BTerms extends LuceneTestCase {
 
     List<BytesRef> savedTerms = null;
 
-    MockDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
+    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
     //MockDirectoryWrapper dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
-    dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    }
     dir.setCheckIndexOnClose(false); // don't double-checkindex
 
     if (true) {

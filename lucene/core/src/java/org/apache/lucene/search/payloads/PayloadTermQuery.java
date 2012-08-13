@@ -28,6 +28,7 @@ import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
@@ -79,7 +80,7 @@ public class PayloadTermQuery extends SpanTermQuery {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
       return new PayloadTermSpanScorer((TermSpans) query.getSpans(context, acceptDocs, termContexts),
           this, similarity.sloppySimScorer(stats, context));
     }
@@ -117,8 +118,8 @@ public class PayloadTermQuery extends SpanTermQuery {
       }
 
       protected void processPayload(Similarity similarity) throws IOException {
-        final DocsAndPositionsEnum postings = termSpans.getPostings();
-        if (postings.hasPayload()) {
+        if (termSpans.isPayloadAvailable()) {
+          final DocsAndPositionsEnum postings = termSpans.getPostings();
           payload = postings.getPayload();
           if (payload != null) {
             payloadScore = function.currentScore(doc, term.field(),
@@ -174,7 +175,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      PayloadTermSpanScorer scorer = (PayloadTermSpanScorer) scorer(context, true, false, FeatureFlags.POSITIONS, context.reader().getLiveDocs());
+      PayloadTermSpanScorer scorer = (PayloadTermSpanScorer) scorer(context, true, false, PostingFeatures.POSITIONS, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -190,7 +191,8 @@ public class PayloadTermQuery extends SpanTermQuery {
           // whether to load the payload or not
           // GSI: I suppose we could toString the payload, but I don't think that
           // would be a good idea
-          Explanation payloadExpl = new Explanation(scorer.getPayloadScore(), "scorePayload(...)");
+          String field = ((SpanQuery)getQuery()).getField();
+          Explanation payloadExpl = function.explain(doc, field, scorer.payloadsSeen, scorer.payloadScore);
           payloadExpl.setValue(scorer.getPayloadScore());
           // combined
           ComplexExplanation result = new ComplexExplanation();

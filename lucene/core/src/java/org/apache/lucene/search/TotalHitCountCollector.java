@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.search.Weight.PostingFeatures;
 
 /**
  * Just counts the total number of hits.
@@ -38,6 +39,12 @@ public class TotalHitCountCollector extends Collector {
   @Override
   public void collect(int doc) {
     totalHits++;
+  }
+
+  @Override
+  public PostingFeatures postingFeatures() {
+    // we don't need frequencies here
+    return PostingFeatures.DOCS_ONLY;
   }
 
   @Override

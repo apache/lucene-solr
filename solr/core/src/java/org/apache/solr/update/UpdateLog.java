@@ -138,7 +138,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   private SyncLevel defaultSyncLevel = SyncLevel.FLUSH;
 
-  private volatile UpdateHandler uhandler;    // a core reload can change this reference!
+  volatile UpdateHandler uhandler;    // a core reload can change this reference!
   private volatile boolean cancelApplyBufferUpdate;
   List<Long> startingVersions;
   int startingOperation;  // last operation in the logs on startup
@@ -177,6 +177,9 @@ public class UpdateLog implements PluginInfoInitialized {
       if (debug) {
         log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id, " this is a reopen... nothing else to do.");
       }
+
+      versionInfo.reload();
+
       // on a normal reopen, we currently shouldn't have to do anything
       return;
     }
@@ -209,7 +212,7 @@ public class UpdateLog implements PluginInfoInitialized {
       if (newestLogsOnStartup.size() >= 2) break;
     }
     
-    versionInfo = new VersionInfo(uhandler, 256);
+    versionInfo = new VersionInfo(this, 256);
 
     // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
     UpdateLog.RecentUpdates startingUpdates = getRecentUpdates();
@@ -1045,6 +1048,7 @@ public class UpdateLog implements PluginInfoInitialized {
     try {
       cancelApplyBufferUpdate = false;
       if (state != State.BUFFERING) return null;
+      operationFlags &= ~FLAG_GAP;
 
       // handle case when no log was even created because no updates
       // were received.
@@ -1054,7 +1058,6 @@ public class UpdateLog implements PluginInfoInitialized {
       }
       tlog.incref();
       state = State.APPLYING_BUFFERED;
-      operationFlags &= ~FLAG_GAP;
     } finally {
       versionInfo.unblockUpdates();
     }

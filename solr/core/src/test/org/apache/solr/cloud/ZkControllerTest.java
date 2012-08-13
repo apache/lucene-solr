@@ -202,7 +202,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       
       assertNotNull(reader.getLeaderUrl("collection1", "shard1", 15000));
       
-      assertEquals("Shard(s) missing from cloudstate", 2, zkController.getZkStateReader().getCloudState().getSlice("collection1", "shard1").getShards().size());
+      assertEquals("Shard(s) missing from cloudstate", 2, zkController.getZkStateReader().getClusterState().getSlice("collection1", "shard1").getShards().size());
       
       // unregister current leader
       final ZkNodeProps shard1LeaderProps = reader.getLeaderProps(
@@ -224,10 +224,10 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           reader.getLeaderUrl("collection1", "shard1", 15000));
 
       for(int i=0;i<30;i++) {
-        if(zkController.getZkStateReader().getCloudState().getSlice("collection1", "shard1").getShards().size()==1) break; 
+        if(zkController.getZkStateReader().getClusterState().getSlice("collection1", "shard1").getShards().size()==1) break; 
         Thread.sleep(500);
       }
-      assertEquals("shard was not unregistered", 1, zkController.getZkStateReader().getCloudState().getSlice("collection1", "shard1").getShards().size());
+      assertEquals("shard was not unregistered", 1, zkController.getZkStateReader().getClusterState().getSlice("collection1", "shard1").getShards().size());
     } finally {
       System.clearProperty("solrcloud.skip.autorecovery");
       System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);

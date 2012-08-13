@@ -65,7 +65,7 @@ class FindHyperlinks(HTMLParser):
         href = href.strip()
         self.links.append(urlparse.urljoin(self.baseURL, href))
       else:
-        if self.baseURL.endswith(os.path.sep + 'AttributeSource.html'):
+        if self.baseURL.endswith('/AttributeSource.html'):
           # LUCENE-4010: AttributeSource's javadocs has an unescaped <A> generics!!  Seems to be a javadocs bug... (fixed in Java 7)
           pass
         else:
@@ -126,7 +126,7 @@ def checkAll(dirName):
          main not in ('deprecated-list',):
         # Somehow even w/ java 7 generaged javadocs,
         # deprecated-list.html can fail to escape generics types
-        fullPath = os.path.join(root, f)
+        fullPath = os.path.join(root, f).replace(os.path.sep,'/')
         #print '  %s' % fullPath
         allFiles[fullPath] = parse(fullPath, open('%s/%s' % (root, f), encoding='UTF-8').read())
 
@@ -193,6 +193,14 @@ def checkAll(dirName):
         # see LUCENE-4011: this is a javadocs bug for constants 
         # on annotations it seems?
         pass
+      elif link.startswith('file:'):
+        filepath = urlparse.unquote(urlparse.urlparse(link).path)
+        if not (os.path.exists(filepath) or os.path.exists(filepath[1:])):
+          if not printed:
+            printed = True
+            print()
+            print(fullPath)
+          print('  BROKEN LINK: %s' % link)
       elif link not in allFiles:
         # We only load HTML... so if the link is another resource (eg
         # SweetSpotSimilarity refs

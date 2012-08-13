@@ -41,7 +41,7 @@ import org.apache.lucene.util._TestUtil;
 //   - test pulling docs in 2nd round trip...
 //   - filter too
 
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestShardSearching extends ShardSearchingTestBase {
 
   private static class PreviousSearchState {
@@ -77,8 +77,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
       System.out.println("TEST: numNodes=" + numNodes + " runTimeSec=" + runTimeSec + " maxSearcherAgeSeconds=" + maxSearcherAgeSeconds);
     }
 
-    start(_TestUtil.getTempDir("TestShardSearching").toString(),
-          numNodes,
+    start(numNodes,
           runTimeSec,
           maxSearcherAgeSeconds
           );

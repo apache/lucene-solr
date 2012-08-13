@@ -331,7 +331,9 @@ public class TaskSequence extends PerfTask {
     // Forwards top request to children
     if (runningParallelTasks != null) {
       for(ParallelTask t : runningParallelTasks) {
-        t.task.stopNow();
+        if (t != null) {
+          t.task.stopNow();
+        }
       }
     }
   }
@@ -354,6 +356,12 @@ public class TaskSequence extends PerfTask {
     }
     // run threads
     startThreads(t);
+
+    if (stopNow) {
+      for (ParallelTask task : t) {
+        task.task.stopNow();
+      }
+    }
 
     // wait for all threads to complete
     int count = 0;

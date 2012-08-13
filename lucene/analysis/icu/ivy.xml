@@ -19,7 +19,7 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="analyzers-icu"/>
     <dependencies>
-      <dependency org="com.ibm.icu" name="icu4j" rev="4.8.1.1" transitive="false"/>
+      <dependency org="com.ibm.icu" name="icu4j" rev="49.1" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

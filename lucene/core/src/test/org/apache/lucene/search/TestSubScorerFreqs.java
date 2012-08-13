@@ -145,7 +145,6 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     }
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void testBooleanQuery() throws Exception {
     TermQuery aQuery = new TermQuery(new Term("f", "a"));
@@ -161,11 +160,15 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     query.add(inner, Occur.MUST);
     query.add(aQuery, Occur.MUST);
     query.add(dQuery, Occur.MUST);
-    Set<String>[] occurList = new Set[] {
+    
+    // Only needed in Java6; Java7+ has a @SafeVarargs annotated Arrays#asList()!
+    // see http://docs.oracle.com/javase/7/docs/api/java/lang/SafeVarargs.html
+    @SuppressWarnings("unchecked") final Iterable<Set<String>> occurList = Arrays.asList(
         Collections.singleton("MUST"), 
         new HashSet<String>(Arrays.asList("MUST", "SHOULD"))
-    };
-    for (Set<String> occur : occurList) {
+    );
+    
+    for (final Set<String> occur : occurList) {
       CountingCollector c = new CountingCollector(TopScoreDocCollector.create(
           10, true), occur);
       s.search(query, null, c);

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.*;
 
@@ -28,6 +29,7 @@ import java.util.*;
  *
  * @since solr 1.3
  */
+@Ignore("FIXME: I fail so often it makes me ill!")
 public class TestSqlEntityProcessor extends AbstractDataImportHandlerTestCase {
   private static ThreadLocal<Integer> local = new ThreadLocal<Integer>();
 

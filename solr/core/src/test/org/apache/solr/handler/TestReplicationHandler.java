@@ -57,6 +57,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Test for ReplicationHandler
@@ -116,6 +117,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveJetty.stop();
     master.tearDown();
     slave.tearDown();
+    masterJetty = slaveJetty = null;
+    master = slave = null;
+    masterClient = slaveClient = null;
   }
 
   private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {
@@ -884,7 +888,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           break;
         }
         Thread.sleep(200);
-        if(waitCnt == 10) {
+        if(waitCnt == 20) {
           fail("Backup success not detected:" + checkStatus.response);
         }
         waitCnt++;

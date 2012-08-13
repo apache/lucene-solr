@@ -305,16 +305,22 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
       }
 
       scriptEngines.add(new EngineInfo((Invocable)engine, scriptFile));
-      Reader scriptSrc = scriptFile.openReader(resourceLoader);
-
       try {
-        engine.eval(scriptSrc);
-      } catch (ScriptException e) {
+        Reader scriptSrc = scriptFile.openReader(resourceLoader);
+  
+        try {
+          engine.eval(scriptSrc);
+        } catch (ScriptException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+                                  "Unable to evaluate script: " + 
+                                  scriptFile.getFileName(), e);
+        } finally {
+          IOUtils.closeQuietly(scriptSrc);
+        }
+      } catch (IOException ioe) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-                                "Unable to evaluate script: " + 
-                                scriptFile.getFileName(), e);
-      } finally {
-        IOUtils.closeQuietly(scriptSrc);
+            "Unable to evaluate script: " + 
+            scriptFile.getFileName(), ioe);        
       }
     }
     return scriptEngines;
@@ -485,7 +491,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
       return extension;
     }
 
-    public Reader openReader(SolrResourceLoader resourceLoader) {
+    public Reader openReader(SolrResourceLoader resourceLoader) throws IOException {
       InputStream input = resourceLoader.openResource(fileName);
       return org.apache.lucene.util.IOUtils.getDecodingReader
         (input, org.apache.lucene.util.IOUtils.CHARSET_UTF_8);

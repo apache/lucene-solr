@@ -21,7 +21,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.Weight.FeatureFlags;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.positions.IntervalIterator.IntervalCollector;
 import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
 import org.apache.lucene.util.Bits;
@@ -82,7 +82,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
         throws IOException {
-      Scorer scorer = scorer(context, true, false, FeatureFlags.POSITIONS, context.reader()
+      Scorer scorer = scorer(context, true, false, PostingFeatures.POSITIONS, context.reader()
               .getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
@@ -96,8 +96,8 @@ public class IntervalFilterQuery extends Query implements Cloneable {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
-      flags = flags == FeatureFlags.DOCS ? FeatureFlags.POSITIONS : flags;
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
+      flags = flags == PostingFeatures.DOCS_AND_FREQS ? PostingFeatures.POSITIONS : flags;
       ScorerFactory factory = new ScorerFactory(other, context, topScorer, flags, acceptDocs);
       final Scorer scorer = factory.scorer();
       return scorer == null ? null : new PositionFilterScorer(this, scorer, factory);
@@ -123,10 +123,10 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     final Weight weight;
     final AtomicReaderContext context;
     final boolean topScorer;
-    final FeatureFlags flags;
+    final PostingFeatures flags;
     final Bits acceptDocs;
     ScorerFactory(Weight weight,
-        AtomicReaderContext context, boolean topScorer, FeatureFlags flags,
+        AtomicReaderContext context, boolean topScorer, PostingFeatures flags,
         Bits acceptDocs) {
       this.weight = weight;
       this.context = context;

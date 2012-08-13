@@ -37,7 +37,7 @@ import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestTermsEnum extends LuceneTestCase {
 
   public void test() throws Exception {
@@ -332,7 +332,7 @@ public class TestTermsEnum extends LuceneTestCase {
           }
           assertEquals(expected, actual);
           assertEquals(1, te.docFreq());
-          docsEnum = _TestUtil.docs(random(), te, null, docsEnum, false);
+          docsEnum = _TestUtil.docs(random(), te, null, docsEnum, 0);
           final int docID = docsEnum.nextDoc();
           assertTrue(docID != DocIdSetIterator.NO_MORE_DOCS);
           assertEquals(docIDToID[docID], termToID.get(expected).intValue());
@@ -747,25 +747,25 @@ public class TestTermsEnum extends LuceneTestCase {
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te = terms.intersect(ca, null);
     assertEquals("aaa", te.next().utf8ToString());
-    assertEquals(0, te.docs(null, null, false).nextDoc());
+    assertEquals(0, te.docs(null, null, 0).nextDoc());
     assertEquals("bbb", te.next().utf8ToString());
-    assertEquals(1, te.docs(null, null, false).nextDoc());
+    assertEquals(1, te.docs(null, null, 0).nextDoc());
     assertEquals("ccc", te.next().utf8ToString());
-    assertEquals(2, te.docs(null, null, false).nextDoc());
+    assertEquals(2, te.docs(null, null, 0).nextDoc());
     assertNull(te.next());
 
     te = terms.intersect(ca, new BytesRef("abc"));
     assertEquals("bbb", te.next().utf8ToString());
-    assertEquals(1, te.docs(null, null, false).nextDoc());
+    assertEquals(1, te.docs(null, null, 0).nextDoc());
     assertEquals("ccc", te.next().utf8ToString());
-    assertEquals(2, te.docs(null, null, false).nextDoc());
+    assertEquals(2, te.docs(null, null, 0).nextDoc());
     assertNull(te.next());
 
     te = terms.intersect(ca, new BytesRef("aaa"));
     assertEquals("bbb", te.next().utf8ToString());
-    assertEquals(1, te.docs(null, null, false).nextDoc());
+    assertEquals(1, te.docs(null, null, 0).nextDoc());
     assertEquals("ccc", te.next().utf8ToString());
-    assertEquals(2, te.docs(null, null, false).nextDoc());
+    assertEquals(2, te.docs(null, null, 0).nextDoc());
     assertNull(te.next());
 
     r.close();

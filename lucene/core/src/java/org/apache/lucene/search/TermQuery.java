@@ -82,7 +82,7 @@ public class TermQuery extends Query {
     
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
       assert termStates.topReaderContext == ReaderUtil
           .getTopLevelContext(context) : "The top-reader used to create Weight ("
           + termStates.topReaderContext
@@ -93,29 +93,13 @@ public class TermQuery extends Query {
         return null;
       }
       DocsEnum docs;
-      boolean needsOffsets = false;
-      switch (flags) {
-        case DOCS:
-          docs = termsEnum.docs(acceptDocs, null, true);
-          break;
-        case OFFSETS:
-        case OFFSETS_AND_PAYLOADS:
-          needsOffsets = true;
-        case POSITIONS:
-        case POSITIONS_AND_PAYLOADS:
-          docs =  termsEnum.docsAndPositions(acceptDocs, null, needsOffsets);
-          break;
-        default:
-          throw new IllegalArgumentException("unknown ScorerFlag " + flags);
-      }
-      if (docs != null) {
-        return new TermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
+      if (!flags.isProximityFeature()) {
+        docs = termsEnum.docs(acceptDocs, null, flags.docFlags());
       } else {
-        // Index does not store freq info
-        docs = termsEnum.docs(acceptDocs, null, false);
-        assert docs != null;
-        return new MatchOnlyTermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
+        docs =  termsEnum.docsAndPositions(acceptDocs, null, flags.docsAndPositionsFlags());
       }
+      assert docs != null;
+      return new TermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
     }
     
     /**
@@ -148,7 +132,7 @@ public class TermQuery extends Query {
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
         throws IOException {
-      Scorer scorer = scorer(context, true, false, FeatureFlags.DOCS, context.reader()
+      Scorer scorer = scorer(context, true, false, PostingFeatures.DOCS_AND_FREQS, context.reader()
               .getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);

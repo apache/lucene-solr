@@ -310,7 +310,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     unIgnoreException("isShard is only acceptable");
 
     // test debugging
-    handle.put("explain", UNORDERED);
+    // handle.put("explain", UNORDERED);
+    handle.put("explain", SKIPVAL);  // internal docids differ, idf differs w/o global idf
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
     query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");

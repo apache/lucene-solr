@@ -150,10 +150,10 @@
       <pathelement path="${analyzers-common.jar}"/>
       <pathelement path="${queryparser.jar}"/>
       <pathelement path="${facet.jar}"/>
-      <fileset dir="${common.dir}/analysis/icu/lib" includes="icu4j-4.8.1.1.jar"/>
+      <fileset dir="${common.dir}/analysis/icu/lib" includes="icu4j-49.1.jar"/>
       <path refid="base.classpath"/>
     	<fileset dir="lib">
-    	  <include name="commons-compress-1.2.jar"/>
+    	  <include name="commons-compress-1.3.jar"/>
     	  <include name="xercesImpl-2.9.1.jar"/>
     	  <include name="nekohtml-1.9.15.jar"/>
     	</fileset>
@@ -208,7 +208,7 @@
 	<path id="collation.runtime.classpath">
 	  <path refid="run.classpath"/>
     <pathelement path="${analyzers-icu.jar}"/>
-    <fileset dir="${common.dir}/analysis/icu/lib" includes="icu4j-4.8.1.1.jar"/>
+    <fileset dir="${common.dir}/analysis/icu/lib" includes="icu4j-49.1.jar"/>
 	</path>
 	
 	<target name="collation" depends="compile,jar-analyzers-icu,top-100k-wiki-word-files">

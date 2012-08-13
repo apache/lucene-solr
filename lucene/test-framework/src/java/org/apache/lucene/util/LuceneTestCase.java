@@ -45,7 +45,13 @@ import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import com.carrotsearch.randomizedtesting.*;
 import com.carrotsearch.randomizedtesting.annotations.*;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
+import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
@@ -113,7 +119,15 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
   RunListenerPrintReproduceInfo.class
 })
 @SeedDecorators({MixWithSuiteName.class}) // See LUCENE-3995 for rationale.
-@ThreadLeaks(failTestIfLeaking = false)
+@ThreadLeakScope(Scope.SUITE)
+@ThreadLeakGroup(Group.MAIN)
+@ThreadLeakAction({Action.WARN, Action.INTERRUPT})
+@ThreadLeakLingering(linger = 20000) // Wait long for leaked threads to complete before failure. zk needs this.
+@ThreadLeakZombies(Consequence.IGNORE_REMAINING_TESTS)
+@TimeoutSuite(millis = 2 * TimeUnits.HOUR)
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    QuickPatchThreadsFilter.class
+})
 public abstract class LuceneTestCase extends Assert {
 
   // --------------------------------------------------------------------
@@ -124,6 +138,7 @@ public abstract class LuceneTestCase extends Assert {
   public static final String SYSPROP_WEEKLY = "tests.weekly";
   public static final String SYSPROP_AWAITSFIX = "tests.awaitsfix";
   public static final String SYSPROP_SLOW = "tests.slow";
+  public static final String SYSPROP_BADAPPLES = "tests.badapples";
 
   /** @see #ignoreAfterMaxFailures*/
   private static final String SYSPROP_MAXFAILURES = "tests.maxfailures";
@@ -170,7 +185,21 @@ public abstract class LuceneTestCase extends Assert {
   @Retention(RetentionPolicy.RUNTIME)
   @TestGroup(enabled = true, sysProperty = SYSPROP_SLOW)
   public @interface Slow {}
-  
+
+  /**
+   * Annotation for tests that fail frequently. You can disable them
+   * if you want to run a long build and not stop on something that
+   * is a known problem.
+   * <pre>
+   * -Dtests.badapples=false
+   * </pre>
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @TestGroup(enabled = true, sysProperty = SYSPROP_BADAPPLES)
+  public @interface BadApple {}
+
   /**
    * Annotation for test classes that should avoid certain codec types
    * (because they are expensive, for example).
@@ -182,7 +211,6 @@ public abstract class LuceneTestCase extends Assert {
   public @interface SuppressCodecs {
     String[] value();
   }
-
   
   // -----------------------------------------------------------------
   // Truly immutable fields and constants, initialized once and valid 
@@ -277,6 +305,15 @@ public abstract class LuceneTestCase extends Assert {
     CORE_DIRECTORIES.add("RAMDirectory");
   };
   
+  protected static final Set<String> doesntSupportOffsets = new HashSet<String>(Arrays.asList( 
+    "Lucene3x",
+    "MockFixedIntBlock",
+    "MockVariableIntBlock",
+    "MockSep",
+    "MockRandom",
+    "For",
+    "PFor"
+  ));
   
   // -----------------------------------------------------------------
   // Fields initialized in class or instance rules.
@@ -340,12 +377,16 @@ public abstract class LuceneTestCase extends Assert {
     .around(ignoreAfterMaxFailures)
     .around(suiteFailureMarker)
     .around(new TestRuleAssertionsRequired())
-    .around(new TestRuleNoStaticHooksShadowing())
-    .around(new TestRuleNoInstanceHooksOverrides())
+    .around(new NoClassHooksShadowingRule())
+    .around(new NoInstanceHooksOverridesRule() {
+      @Override
+      protected boolean verify(Method key) {
+        String name = key.getName();
+        return !(name.equals("setUp") || name.equals("tearDown"));
+      }
+    })
     .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
-    .around(new TestRuleIcuHack())
     .around(classNameRule = new TestRuleStoreClassName())
-    .around(new TestRuleReportUncaughtExceptions())
     .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv());
 
 
@@ -372,7 +413,6 @@ public abstract class LuceneTestCase extends Assert {
     .outerRule(testFailureMarker)
     .around(ignoreAfterMaxFailures)
     .around(threadAndTestNameRule)
-    .around(new TestRuleReportUncaughtExceptions())
     .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(new TestRuleSetupAndRestoreInstanceEnv())
     .around(new TestRuleFieldCacheSanity())
@@ -780,48 +820,56 @@ public abstract class LuceneTestCase extends Assert {
    * Returns a new Directory instance. Use this when the test does not
    * care about the specific Directory implementation (most tests).
    * <p>
-   * The Directory is wrapped with {@link MockDirectoryWrapper}.
-   * By default this means it will be picky, such as ensuring that you
+   * The Directory is wrapped with {@link BaseDirectoryWrapper}.
+   * this means usually it will be picky, such as ensuring that you
    * properly close it and all open files in your test. It will emulate
    * some features of Windows, such as not allowing open files to be
    * overwritten.
    */
-  public static MockDirectoryWrapper newDirectory() {
+  public static BaseDirectoryWrapper newDirectory() {
     return newDirectory(random());
   }
-
+  
   /**
    * Returns a new Directory instance, using the specified random.
    * See {@link #newDirectory()} for more information.
    */
-  public static MockDirectoryWrapper newDirectory(Random r) {
-    Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
-    closeAfterSuite(new CloseableDirectory(dir, suiteFailureMarker));
+  public static BaseDirectoryWrapper newDirectory(Random r) {
+    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), rarely(r));
+  }
 
-    dir.setThrottling(TEST_THROTTLING);
-    if (VERBOSE) {
-      System.out.println("NOTE: LuceneTestCase.newDirectory: returning " + dir);
-    }
-    return dir;
-   }
+  public static MockDirectoryWrapper newMockDirectory() {
+    return newMockDirectory(random());
+  }
+
+  public static MockDirectoryWrapper newMockDirectory(Random r) {
+    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false);
+  }
+
+  public static MockDirectoryWrapper newMockFSDirectory(File f) {
+    return (MockDirectoryWrapper) newFSDirectory(f, null, false);
+  }
 
   /**
    * Returns a new Directory instance, with contents copied from the
    * provided directory. See {@link #newDirectory()} for more
    * information.
    */
-  public static MockDirectoryWrapper newDirectory(Directory d) throws IOException {
+  public static BaseDirectoryWrapper newDirectory(Directory d) throws IOException {
     return newDirectory(random(), d);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static MockDirectoryWrapper newFSDirectory(File f) {
+  public static BaseDirectoryWrapper newFSDirectory(File f) {
     return newFSDirectory(f, null);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) {
+  public static BaseDirectoryWrapper newFSDirectory(File f, LockFactory lf) {
+    return newFSDirectory(f, lf, rarely());
+  }
+
+  private static BaseDirectoryWrapper newFSDirectory(File f, LockFactory lf, boolean bare) {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
@@ -838,14 +886,11 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       Directory fsdir = newFSDirectoryImpl(clazz, f);
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(
-          random(), maybeNRTWrap(random(), fsdir));
+      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
       if (lf != null) {
-        dir.setLockFactory(lf);
+        wrapped.setLockFactory(lf);
       }
-      closeAfterSuite(new CloseableDirectory(dir, suiteFailureMarker));
-      dir.setThrottling(TEST_THROTTLING);
-      return dir;
+      return wrapped;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -856,22 +901,27 @@ public abstract class LuceneTestCase extends Assert {
    * with contents copied from the provided directory. See 
    * {@link #newDirectory()} for more information.
    */
-  public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
+  public static BaseDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
      d.copy(impl, file, file, newIOContext(r));
     }
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
-    closeAfterSuite(new CloseableDirectory(dir, suiteFailureMarker));
-    dir.setThrottling(TEST_THROTTLING);
-    return dir;
+    return wrapDirectory(r, impl, rarely(r));
   }
   
-  private static Directory maybeNRTWrap(Random random, Directory directory) {
+  private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare) {
     if (rarely(random)) {
-      return new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
+      directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
+    }
+    if (bare) {
+      BaseDirectoryWrapper base = new BaseDirectoryWrapper(directory);
+      closeAfterSuite(new CloseableDirectory(base, suiteFailureMarker));
+      return base;
     } else {
-      return directory;
+      MockDirectoryWrapper mock = new MockDirectoryWrapper(random, directory);
+      mock.setThrottling(TEST_THROTTLING);
+      closeAfterSuite(new CloseableDirectory(mock, suiteFailureMarker));
+      return mock;
     }
   }
   
@@ -918,6 +968,10 @@ public abstract class LuceneTestCase extends Assert {
       }
       if (!newType.storeTermVectorPositions()) {
         newType.setStoreTermVectorPositions(random.nextBoolean());
+        
+        if (newType.storeTermVectorPositions() && !newType.storeTermVectorPayloads()) {
+          newType.setStoreTermVectorPayloads(random.nextBoolean());
+        }
       }
     }
 
@@ -1046,9 +1100,9 @@ public abstract class LuceneTestCase extends Assert {
             // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
             // along our reader:
             if (r instanceof AtomicReader) {
-              r = new FCInvisibleMultiReader(new AssertingAtomicReader((AtomicReader)r));
+              r = new AssertingAtomicReader((AtomicReader)r);
             } else if (r instanceof DirectoryReader) {
-              r = new FCInvisibleMultiReader((DirectoryReader)r);
+              r = new AssertingDirectoryReader((DirectoryReader)r);
             }
             break;
           default:

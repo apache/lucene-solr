@@ -1,0 +1,12 @@
+# These methods spawn threads with vague names. Use a custom thread factory and name
+# threads so that you can tell (by its name) which executor it is associated with.
+# see Solr's DefaultSolrThreadFactory
+# see Lucene's NamedThreadFactory
+
+java.util.concurrent.Executors#newFixedThreadPool(int)
+java.util.concurrent.Executors#newSingleThreadExecutor()
+java.util.concurrent.Executors#newCachedThreadPool()
+java.util.concurrent.Executors#newSingleThreadScheduledExecutor()
+java.util.concurrent.Executors#newScheduledThreadPool(int)
+java.util.concurrent.Executors#defaultThreadFactory()
+java.util.concurrent.Executors#privilegedThreadFactory()

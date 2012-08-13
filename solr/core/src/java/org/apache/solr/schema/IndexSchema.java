@@ -40,6 +40,7 @@ import javax.xml.xpath.XPathConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -104,12 +105,16 @@ public final class IndexSchema {
       name = DEFAULT_SCHEMA_FILE;
     this.resourceName = name;
     loader = solrConfig.getResourceLoader();
-    if (is == null) {
-      is = new InputSource(loader.openSchema(name));
-      is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    try {
+      if (is == null) {
+        is = new InputSource(loader.openSchema(name));
+        is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+      }
+      readSchema(is);
+      loader.inform( loader );
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-    readSchema(is);
-    loader.inform( loader );
   }
   
   /**
@@ -494,7 +499,10 @@ public final class IndexSchema {
         log.error("uniqueKey is not stored - distributed search will not work");
       }
       if (uniqueKeyField.multiValued()) {
-        log.error("uniqueKey should not be multivalued");
+        String msg = "uniqueKey field ("+uniqueKeyFieldName+
+          ") can not be configured to be multivalued";
+        log.error(msg);
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
       }
       uniqueKeyFieldName=uniqueKeyField.getName();
       uniqueKeyFieldType=uniqueKeyField.getType();
@@ -693,7 +701,7 @@ public final class IndexSchema {
     return newArr;
   }
 
-  static SimilarityFactory readSimilarity(ResourceLoader loader, Node node) {
+  static SimilarityFactory readSimilarity(SolrResourceLoader loader, Node node) {
     if (node==null) {
       return null;
     } else {

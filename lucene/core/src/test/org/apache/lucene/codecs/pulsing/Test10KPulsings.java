@@ -37,6 +37,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -54,7 +55,7 @@ public class Test10KPulsings extends LuceneTestCase {
     Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing40PostingsFormat(1));
     
     File f = _TestUtil.getTempDir("10kpulsed");
-    MockDirectoryWrapper dir = newFSDirectory(f);
+    BaseDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
@@ -87,7 +88,7 @@ public class Test10KPulsings extends LuceneTestCase {
     for (int i = 0; i < 10050; i++) {
       String expected = df.format(i);
       assertEquals(expected, te.next().utf8ToString());
-      de = _TestUtil.docs(random(), te, null, de, false);
+      de = _TestUtil.docs(random(), te, null, de, 0);
       assertTrue(de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());
     }
@@ -105,7 +106,7 @@ public class Test10KPulsings extends LuceneTestCase {
     Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing40PostingsFormat(freqCutoff));
     
     File f = _TestUtil.getTempDir("10knotpulsed");
-    MockDirectoryWrapper dir = newFSDirectory(f);
+    BaseDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
@@ -145,7 +146,7 @@ public class Test10KPulsings extends LuceneTestCase {
     for (int i = 0; i < 10050; i++) {
       String expected = df.format(i);
       assertEquals(expected, te.next().utf8ToString());
-      de = _TestUtil.docs(random(), te, null, de, false);
+      de = _TestUtil.docs(random(), te, null, de, 0);
       assertTrue(de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());
     }

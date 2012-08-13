@@ -43,7 +43,6 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -156,7 +155,12 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     CountingSearchTestTask.numSearches = 0;
     execBenchmark(algLines);
-    assertTrue(CountingSearchTestTask.numSearches > 0);
+
+    // NOTE: cannot assert this, because on a super-slow
+    // system, it could be after waiting 0.5 seconds that
+    // the search threads hadn't yet succeeded in starting
+    // up and then they start up and do no searching:
+    //assertTrue(CountingSearchTestTask.numSearches > 0);
   }
 
   public void testHighlighting() throws Exception {
@@ -201,6 +205,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "doc.stored=true",//doc storage is required in order to have text to highlight
+        "doc.term.vector=true",
         "doc.term.vector.offsets=true",
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
         "docs.file=" + getReuters20LinesFile(),
@@ -487,20 +492,20 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     int totalTokenCount2 = 0;
 
-    FieldsEnum fields = MultiFields.getFields(reader).iterator();
-    String fieldName = null;
-    while((fieldName = fields.next()) != null) {
+    Fields fields = MultiFields.getFields(reader);
+
+    for (String fieldName : fields) {
       if (fieldName.equals(DocMaker.ID_FIELD) || fieldName.equals(DocMaker.DATE_MSEC_FIELD) || fieldName.equals(DocMaker.TIME_SEC_FIELD)) {
         continue;
       }
-      Terms terms = fields.terms();
+      Terms terms = fields.terms(fieldName);
       if (terms == null) {
         continue;
       }
       TermsEnum termsEnum = terms.iterator(null);
       DocsEnum docs = null;
       while(termsEnum.next() != null) {
-        docs = _TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(reader), docs, true);
+        docs = _TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(reader), docs, DocsEnum.FLAG_FREQS);
         while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           totalTokenCount2 += docs.freq();
         }

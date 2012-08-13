@@ -83,7 +83,8 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
-        f[i] = subField(field, i).createField(point[i], boost);
+        SchemaField sf = subField(field, i);
+        f[i] = sf.createField(point[i], sf.indexed() && !sf.omitNorms() ? boost : 1f);
       }
     }
 
@@ -91,7 +92,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       String storedVal = externalVal;  // normalize or not?
       FieldType customType = new FieldType();
       customType.setStored(true);
-      f[f.length - 1] = createField(field.getName(), storedVal, customType, boost);
+      f[f.length - 1] = createField(field.getName(), storedVal, customType, 1f);
     }
     
     return f;

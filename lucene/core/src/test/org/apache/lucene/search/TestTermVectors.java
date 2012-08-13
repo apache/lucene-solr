@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -124,29 +125,29 @@ public class TestTermVectors extends LuceneTestCase {
     assertEquals(4, v.size());
     String[] expectedFields = new String[]{"a", "b", "c", "x"};
     int[] expectedPositions = new int[]{1, 2, 0};
-    FieldsEnum fieldsEnum = v.iterator();
+    Iterator<String> fieldsEnum = v.iterator();
     for(int i=0;i<expectedFields.length;i++) {
       assertEquals(expectedFields[i], fieldsEnum.next());
       assertEquals(3, v.terms(expectedFields[i]).size());
 
       DocsAndPositionsEnum dpEnum = null;
-      Terms terms = fieldsEnum.terms();
+      Terms terms = v.terms(expectedFields[i]);
       assertNotNull(terms);
       TermsEnum termsEnum = terms.iterator(null);
       assertEquals("content", termsEnum.next().utf8ToString());
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(1, dpEnum.freq());
       assertEquals(expectedPositions[0], dpEnum.nextPosition());
 
       assertEquals("here", termsEnum.next().utf8ToString());
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(1, dpEnum.freq());
       assertEquals(expectedPositions[1], dpEnum.nextPosition());
 
       assertEquals("some", termsEnum.next().utf8ToString());
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(1, dpEnum.freq());
       assertEquals(expectedPositions[2], dpEnum.nextPosition());
@@ -176,7 +177,7 @@ public class TestTermVectors extends LuceneTestCase {
       
       if (shouldBePosVector || shouldBeOffVector) {
         while(true) {
-          dpEnum = termsEnum.docsAndPositions(null, dpEnum, shouldBeOffVector);
+          dpEnum = termsEnum.docsAndPositions(null, dpEnum);
           assertNotNull(dpEnum);
           assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
@@ -251,17 +252,17 @@ public class TestTermVectors extends LuceneTestCase {
     writer.close();
     IndexSearcher knownSearcher = newSearcher(reader);
     knownSearcher.setSimilarity(new DefaultSimilarity());
-    FieldsEnum fields = MultiFields.getFields(knownSearcher.reader).iterator();
+    Fields fields = MultiFields.getFields(knownSearcher.reader);
     
     DocsEnum docs = null;
-    while(fields.next() != null) {
-      Terms terms = fields.terms();
+    for (String fieldName : fields) {
+      Terms terms = fields.terms(fieldName);
       assertNotNull(terms); // NOTE: kinda sketchy assumptions, but ideally we would fix fieldsenum api... 
       TermsEnum termsEnum = terms.iterator(null);
 
       while (termsEnum.next() != null) {
         String text = termsEnum.term().utf8ToString();
-        docs = _TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(knownSearcher.reader), docs, true);
+        docs = _TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(knownSearcher.reader), docs, DocsEnum.FLAG_FREQS);
         
         while (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           int docId = docs.docID();
@@ -426,7 +427,7 @@ public class TestTermVectors extends LuceneTestCase {
     assertNotNull(termsEnum.next());
     assertEquals("one", termsEnum.term().utf8ToString());
     assertEquals(5, termsEnum.totalTermFreq());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
+    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(5, dpEnum.freq());
@@ -434,7 +435,7 @@ public class TestTermVectors extends LuceneTestCase {
       assertEquals(i, dpEnum.nextPosition());
     }
 
-    dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
+    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(5, dpEnum.freq());

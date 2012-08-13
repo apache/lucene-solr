@@ -35,6 +35,10 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
   private final Object recoveryLock = new Object();
+  
+  // protects pauseWriter and writerFree
+  private final Object writerPauseLock = new Object();
+  
   private int refCnt = 1;
   private SolrIndexWriter indexWriter = null;
   private DirectoryFactory directoryFactory;
@@ -55,61 +59,74 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   @Override
   public synchronized RefCounted<IndexWriter> getIndexWriter(SolrCore core)
       throws IOException {
-    while (pauseWriter) {
-      try {
-        wait();
-      } catch (InterruptedException e) {}
-    }
-    
-    if (indexWriter == null) {
-      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false,
-          false);
-    }
-    if (refCntWriter == null) {
-      refCntWriter = new RefCounted<IndexWriter>(indexWriter) {
-        @Override
-        public void close() {
-          synchronized (DefaultSolrCoreState.this) {
-            writerFree = true;
-            DefaultSolrCoreState.this.notifyAll();
+    synchronized (writerPauseLock) {
+      if (core == null) {
+        // core == null is a signal to just return the current writer, or null
+        // if none.
+        if (refCntWriter != null) refCntWriter.incref();
+        return refCntWriter;
+      }
+      
+      while (pauseWriter) {
+        try {
+          writerPauseLock.wait();
+        } catch (InterruptedException e) {}
+      }
+      
+      if (indexWriter == null) {
+        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2",
+            false, false);
+      }
+      if (refCntWriter == null) {
+        refCntWriter = new RefCounted<IndexWriter>(indexWriter) {
+          @Override
+          public void close() {
+            synchronized (writerPauseLock) {
+              writerFree = true;
+              writerPauseLock.notifyAll();
+            }
           }
-        }
-      };
+        };
+      }
+      writerFree = false;
+      writerPauseLock.notifyAll();
+      refCntWriter.incref();
+      return refCntWriter;
     }
-    writerFree = false;
-    notifyAll();
-    refCntWriter.incref();
-    return refCntWriter;
   }
 
   @Override
-  public synchronized void newIndexWriter(SolrCore core) throws IOException {
-    // we need to wait for the Writer to fall out of use
-    // first lets stop it from being lent out
-    pauseWriter = true;
-    // then lets wait until its out of use
-    while(!writerFree) {
-      try {
-        wait();
-      } catch (InterruptedException e) {}
-    }
+  public synchronized void newIndexWriter(SolrCore core, boolean rollback) throws IOException {
     
-    if (indexWriter != null) {
-      try {
-        indexWriter.close();
-      } catch (Exception e) {
-        SolrException.log(log, "Error closing old IndexWriter", e);
+    synchronized (writerPauseLock) {
+      // we need to wait for the Writer to fall out of use
+      // first lets stop it from being lent out
+      pauseWriter = true;
+      // then lets wait until its out of use
+      while (!writerFree) {
+        try {
+          writerPauseLock.wait();
+        } catch (InterruptedException e) {}
       }
-    }
-    
-    try {
-      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false,
-          true);
-      // we need to null this so it picks up the new writer next get call
-      refCntWriter = null;
-    } finally {
-      pauseWriter = false;
-      notifyAll();
+      
+      try {
+        if (indexWriter != null) {
+          try {
+            indexWriter.close();
+          } catch (Throwable t) {
+            SolrException.log(log, "Error closing old IndexWriter", t);
+          }
+        }
+        
+        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2",
+            false, true);
+        // we need to null this so it picks up the new writer next get call
+        refCntWriter = null;
+      } finally {
+        
+        pauseWriter = false;
+        writerPauseLock.notifyAll();
+      }
     }
   }
 
@@ -154,7 +171,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   @Override
   public synchronized void rollbackIndexWriter(SolrCore core) throws IOException {
     indexWriter.rollback();
-    newIndexWriter(core);
+    newIndexWriter(core, true);
   }
   
   protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name,
@@ -181,8 +198,9 @@ public final class DefaultSolrCoreState extends SolrCoreState {
       return;
     }
     
-    cancelRecovery();
     synchronized (recoveryLock) {
+      cancelRecovery();
+      
       while (recoveryRunning) {
         try {
           recoveryLock.wait(1000);

@@ -20,6 +20,9 @@
 
   <property name="ivy.retrieve.pattern" value="${common-solr.dir}/lib/[artifact]-[revision].[ext]"/>
 
+  <!-- we cannot sync because solr/core and solr/solrj share the same lib/... clean this up! -->
+  <property name="ivy.sync" value="false"/>
+
   <import file="../common-build.xml"/>
 
   <!-- Specialized common-solr.test.classpath, to remove the Solr core test output -->

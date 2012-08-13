@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.search.Weight.FeatureFlags;
+import org.apache.lucene.search.Weight.PostingFeatures;
 
 /**
  * <p>Expert: Collectors are primarily meant to be used to
@@ -174,9 +174,9 @@ public abstract class Collector {
    */
   public abstract boolean acceptsDocsOutOfOrder();
   
-  
-  public FeatureFlags scorerFlags() {
-    return FeatureFlags.DOCS;
+  //nocommit add javadocs
+  public PostingFeatures postingFeatures() {
+    return PostingFeatures.DOCS_AND_FREQS;
   }
   
 }

@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.Weight.FeatureFlags;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.util.Bits;
 
 /** 
@@ -56,7 +56,7 @@ public class QueryWrapperFilter extends Filter {
     return new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {
-        return weight.scorer(privateContext, true, false, FeatureFlags.DOCS, acceptDocs);
+        return weight.scorer(privateContext, true, false, PostingFeatures.DOCS_AND_FREQS, acceptDocs);
       }
       @Override
       public boolean isCacheable() { return false; }

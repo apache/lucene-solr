@@ -60,6 +60,7 @@
   <property name="ivy.resource" value="org/apache/ivy/ant/antlib.xml" />
   <available resource="${ivy.resource}" property="ivy.available" />
   <property name="ivy.default.configuration" value="*"/>
+  <property name="ivy.sync" value="true"/>
 
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" value="${common.dir}/test-framework/lib/${junit.jar}"/>
@@ -87,7 +88,7 @@
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
   <property name="tests.linedocsfile" value="europarl.lines.txt.gz" />
-  <property name="tests.loggingfile" value="/dev/null"/>
+  <property name="tests.loggingfile" value="${common.dir}/tools/junit4/logging.properties"/>
   <property name="tests.nightly" value="false" />
   <property name="tests.weekly" value="false" />
   <property name="tests.slow" value="true" />
@@ -144,6 +145,7 @@
   <property name="javadoc.charset" value="utf-8"/>
   <property name="javadoc.dir" value="${common.dir}/build/docs"/>
   <property name="javadoc.maxmemory" value="512m" />
+  <property name="javadoc.noindex" value="true"/>
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
     <path refid="classpath"/>
@@ -293,7 +295,7 @@
     <!-- todo, make this a property or something. 
          only special cases need bundles -->
     <ivy:retrieve type="jar,bundle" log="download-only" 
-                  conf="${ivy.default.configuration}"/>
+                  conf="${ivy.default.configuration}" sync="${ivy.sync}"/>
   </target>
 
   <property name="ivy_install_path" location="${user.home}/.ant/lib" />
@@ -698,15 +700,22 @@
   <condition property="tests.method" value="${testmethod}*">
     <isset property="testmethod" />
   </condition>
+
   <condition property="tests.showSuccess" value="true">
     <or>
       <isset property="tests.class" />
       <isset property="tests.method" />
     </or>
   </condition>
-  <!-- default -->
   <property name="tests.showSuccess" value="false"/>
-  
+
+  <condition property="tests.showOutput" value="always">
+    <or>
+      <isset property="tests.class" />
+      <isset property="tests.method" />
+    </or>
+  </condition>
+  <property name="tests.showOutput" value="onerror"/>
 
   <!-- Test macro using junit4. -->
   <macrodef name="test-macro" description="Executes junit tests.">
@@ -852,6 +861,7 @@
             <syspropertyset>
                 <propertyref prefix="tests.maxfailures" />
                 <propertyref prefix="tests.failfast" />
+                <propertyref prefix="tests.badapples" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->
@@ -873,8 +883,7 @@
                 <junit4:report-text
                     showThrowable="true" 
                     showStackTraces="true" 
-                    showOutputStream="true" 
-                    showErrorStream="true"
+                    showOutput="${tests.showOutput}" 
 
                     showStatusOk="${tests.showSuccess}"
                     showStatusError="${tests.showError}"
@@ -894,8 +903,7 @@
                     file="@{junit.output.dir}/tests-report.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
-                    showOutputStream="true" 
-                    showErrorStream="true"
+                    showOutput="always"
 
                     showStatusOk="true"
                     showStatusError="true"
@@ -911,8 +919,7 @@
                     file="@{junit.output.dir}/tests-failures.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
-                    showOutputStream="true" 
-                    showErrorStream="true"
+                    showOutput="onerror" 
 
                     showStatusOk="false"
                     showStatusError="true"
@@ -927,8 +934,13 @@
                      the slowest tests or for reuse in balancing). -->
                 <junit4:report-execution-times file="@{junit.output.dir}/tests-timehints.txt" historyLength="5" />
 
-                <junit4:report-ant-xml dir="@{junit.output.dir}" />
-                <junit4:report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" />
+                <!-- ANT-compatible XMLs for jenkins records etc. -->
+                <junit4:report-ant-xml dir="@{junit.output.dir}" outputStreams="no" />
+
+                <!--
+                Enable if you wish to have a nice HTML5 report.
+                <junit4:report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" outputStreams="no" />
+                -->
             </listeners>
 
             <!-- Input test classes. -->
@@ -1414,7 +1426,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           encoding="${build.encoding}"
           charset="${javadoc.charset}"
           docencoding="${javadoc.charset}"
-          noindex="true"
+          noindex="${javadoc.noindex}"
           includenosourcepackages="true"
           author="true"
           version="true"
@@ -1565,6 +1577,43 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </macrodef>
 
+  <macrodef name="jar-checksum-macro">
+      <attribute name="srcdir"/>
+      <attribute name="dstdir"/>
+    <sequential>
+      <delete>
+        <fileset dir="@{dstdir}">
+          <include name="**/*.jar.sha1"/>
+        </fileset>
+      </delete>
+
+      <!-- checksum task does not have a flatten=true -->
+      <tempfile property="jar-checksum.temp.dir"/>
+      <mkdir dir="${jar-checksum.temp.dir}"/>
+      <copy todir="${jar-checksum.temp.dir}" flatten="true">
+        <fileset dir="@{srcdir}">
+          <include name="**/*.jar"/>
+          <!-- todo make this something passed into the macro and not some hardcoded set -->
+          <exclude name="build/**"/>
+          <exclude name="dist/**"/>
+          <exclude name="package/**"/>
+          <exclude name="example/exampledocs/**"/>
+        </fileset>
+      </copy>
+
+      <checksum algorithm="SHA1" fileext=".sha1" todir="@{dstdir}">
+        <fileset dir="${jar-checksum.temp.dir}"/>
+      </checksum>
+
+      <delete dir="${jar-checksum.temp.dir}"/>
+
+      <fixcrlf 
+        srcdir="@{dstdir}"
+        includes="**/*.jar.sha1"
+        eol="lf" fixlast="true" encoding="US-ASCII" />
+    </sequential>
+  </macrodef>
+
   <macrodef name="sign-artifacts-macro">
     <attribute name="artifacts.dir"/>
     <sequential>
@@ -1699,7 +1748,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        <attribute name="dir"/>
        <attribute name="level" default="class"/>
      <sequential>
-       <exec dir="." executable="${python.exe}" failonerror="true">
+       <exec dir="." executable="${python32.exe}" failonerror="true">
          <arg value="${dev-tools.dir}/scripts/checkJavaDocs.py"/>
          <arg value="@{dir}"/>
          <arg value="@{level}"/>

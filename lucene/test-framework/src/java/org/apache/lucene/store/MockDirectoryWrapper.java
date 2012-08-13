@@ -57,8 +57,7 @@ import org.apache.lucene.util._TestUtil;
  * </ul>
  */
 
-public class MockDirectoryWrapper extends Directory {
-  final Directory delegate;
+public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   long maxSize;
 
   // Max actual bytes used. This is set by MockRAMOutputStream:
@@ -67,8 +66,6 @@ public class MockDirectoryWrapper extends Directory {
   Random randomState;
   boolean noDeleteOpenFile = true;
   boolean preventDoubleWrite = true;
-  boolean checkIndexOnClose = true;
-  boolean crossCheckTermVectorsOnClose = true;
   boolean trackDiskUsage = false;
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
@@ -109,7 +106,7 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   public MockDirectoryWrapper(Random random, Directory delegate) {
-    this.delegate = delegate;
+    super(delegate);
     // must make a private random since our methods are
     // called from different threads; else test failures may
     // not be reproducible from the original seed
@@ -251,19 +248,19 @@ public class MockDirectoryWrapper extends Directory {
           }
         }
         final IndexOutput tempOut = delegate.createOutput(tempFileName, LuceneTestCase.newIOContext(randomState));
-        IndexInput in = delegate.openInput(name, LuceneTestCase.newIOContext(randomState));
-        tempOut.copyBytes(in, in.length()/2);
+        IndexInput ii = delegate.openInput(name, LuceneTestCase.newIOContext(randomState));
+        tempOut.copyBytes(ii, ii.length()/2);
         tempOut.close();
-        in.close();
+        ii.close();
 
         // Delete original and copy bytes back:
         deleteFile(name, true);
         
         final IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
-        in = delegate.openInput(tempFileName, LuceneTestCase.newIOContext(randomState));
-        out.copyBytes(in, in.length());
+        ii = delegate.openInput(tempFileName, LuceneTestCase.newIOContext(randomState));
+        out.copyBytes(ii, ii.length());
         out.close();
-        in.close();
+        ii.close();
         deleteFile(tempFileName, true);
       } else if (damage == 3) {
         // The file survived intact:
@@ -314,26 +311,6 @@ public class MockDirectoryWrapper extends Directory {
   }
   public boolean getNoDeleteOpenFile() {
     return noDeleteOpenFile;
-  }
-
-  /**
-   * Set whether or not checkindex should be run
-   * on close
-   */
-  public void setCheckIndexOnClose(boolean value) {
-    this.checkIndexOnClose = value;
-  }
-  
-  public boolean getCheckIndexOnClose() {
-    return checkIndexOnClose;
-  }
-
-  public void setCrossCheckTermVectorsOnClose(boolean value) {
-    this.crossCheckTermVectorsOnClose = value;
-  }
-
-  public boolean getCrossCheckTermVectorsOnClose() {
-    return crossCheckTermVectorsOnClose;
   }
 
   /**
@@ -574,9 +551,9 @@ public class MockDirectoryWrapper extends Directory {
     if (noDeleteOpenFile && openLocks.size() > 0) {
       throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks);
     }
-    open = false;
-    if (checkIndexOnClose) {
-      if (indexPossiblyExists(this)) {
+    isOpen = false;
+    if (getCheckIndexOnClose()) {
+      if (indexPossiblyExists()) {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now crash");
         }
@@ -584,7 +561,7 @@ public class MockDirectoryWrapper extends Directory {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
         } 
-        _TestUtil.checkIndex(this, crossCheckTermVectorsOnClose);
+        _TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose());
 
         if (assertNoUnreferencedFilesOnClose) {
           // now look for unreferenced files:
@@ -612,26 +589,6 @@ public class MockDirectoryWrapper extends Directory {
     }
     delegate.close();
   }
-  
-  /** don't rely upon DirectoryReader.fileExists to determine if we should
-   *  checkIndex() or not. It might mask real problems, where we silently
-   *  don't checkindex at all. instead we look for a segments file.
-   */
-  private boolean indexPossiblyExists(Directory d) {
-    String files[];
-    try {
-      files = d.listAll();
-    } catch (IOException ex) {
-      // this means directory doesn't exist, which is ok. return false
-      return false;
-    }
-    for (String f : files) {
-      if (f.startsWith("segments_")) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   synchronized void removeOpenFile(Closeable c, String name) {
     Integer v = openFiles.get(name);
@@ -656,12 +613,6 @@ public class MockDirectoryWrapper extends Directory {
   
   public synchronized void removeIndexInput(IndexInput in, String name) {
     removeOpenFile(in, name);
-  }
-
-  boolean open = true;
-  
-  public synchronized boolean isOpen() {
-    return open;
   }
   
   /**

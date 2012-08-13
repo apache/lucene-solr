@@ -66,13 +66,10 @@ public class Interval implements Cloneable {
     offsetEnd = other.offsetEnd;
   }
   
-  public boolean nextPayload(BytesRef ref) throws IOException {
-    return false;
+  public BytesRef nextPayload() throws IOException {
+    return null;
   }
   
-  public boolean payloadAvailable() {
-    return false;
-  }
   
   public void reset() {
     offsetBegin = offsetEnd = -1;

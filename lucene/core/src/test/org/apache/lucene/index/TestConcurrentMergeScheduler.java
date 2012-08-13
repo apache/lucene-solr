@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -67,7 +68,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // Make sure running BG merges still work fine even when
   // we are hitting exceptions during flushing.
   public void testFlushExceptions() throws IOException {
-    MockDirectoryWrapper directory = newDirectory();
+    MockDirectoryWrapper directory = newMockDirectory();
     FailOnlyOnFlush failure = new FailOnlyOnFlush();
     directory.failOn(failure);
 
@@ -120,7 +121,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // Test that deletes committed after a merge started and
   // before it finishes, are correctly merged back:
   public void testDeleteMerging() throws IOException {
-    MockDirectoryWrapper directory = newDirectory();
+    Directory directory = newDirectory();
 
     LogDocMergePolicy mp = new LogDocMergePolicy();
     // Force degenerate merging so we can get a mix of
@@ -164,7 +165,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   }
 
   public void testNoExtraFiles() throws IOException {
-    MockDirectoryWrapper directory = newDirectory();
+    Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(2));
@@ -195,7 +196,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   }
 
   public void testNoWaitClose() throws IOException {
-    MockDirectoryWrapper directory = newDirectory();
+    Directory directory = newDirectory();
     Document doc = new Document();
     Field idField = newStringField("id", "", Field.Store.YES);
     doc.add(idField);

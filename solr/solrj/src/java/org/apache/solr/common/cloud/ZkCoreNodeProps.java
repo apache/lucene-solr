@@ -45,6 +45,10 @@ public class ZkCoreNodeProps {
     return nodeProps.get(ZkStateReader.CORE_NAME_PROP);
   }
   
+  public static String getCoreUrl(ZkNodeProps nodeProps) {
+    return getCoreUrl(nodeProps.get(ZkStateReader.BASE_URL_PROP), nodeProps.get(ZkStateReader.CORE_NAME_PROP));
+  }
+  
   public static String getCoreUrl(String baseUrl, String coreName) {
     StringBuilder sb = new StringBuilder();
     if (baseUrl == null) return null;
@@ -68,6 +72,10 @@ public class ZkCoreNodeProps {
 
   public ZkNodeProps getNodeProps() {
     return nodeProps;
+  }
+
+  public boolean isLeader() {
+    return nodeProps.containsKey(ZkStateReader.LEADER_PROP);
   }
 
 

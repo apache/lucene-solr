@@ -21,7 +21,9 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -34,6 +36,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +52,10 @@ import java.util.Set;
  * @since solr 1.4
  */
 @Slow
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class
+})
 public class TestLBHttpSolrServer extends LuceneTestCase {
   SolrInstance[] solr = new SolrInstance[3];
   HttpClient httpClient;
@@ -237,7 +245,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     }
 
     public String getSchemaFile() {
-      return "solrj/solr/conf/schema-replication1.xml";
+      return "solrj/solr/collection1/conf/schema-replication1.xml";
     }
 
     public String getConfDir() {
@@ -249,7 +257,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     }
 
     public String getSolrConfigFile() {
-      return "solrj/solr/conf/solrconfig-slave1.xml";
+      return "solrj/solr/collection1/conf/solrconfig-slave1.xml";
     }
 
     public void setUp() throws Exception {

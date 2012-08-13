@@ -30,7 +30,7 @@ import java.io.IOException;
  *
  *
  **/
-public abstract class AbstractUpdateRequest extends SolrRequest {
+public abstract class AbstractUpdateRequest extends SolrRequest implements IsUpdateRequest {
   protected ModifiableSolrParams params;
   protected int commitWithin = -1;
 

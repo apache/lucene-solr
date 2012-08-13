@@ -36,7 +36,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Weight.FeatureFlags;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
@@ -160,7 +160,7 @@ public class ToParentBlockJoinQuery extends Query {
     // parent document space
     @Override
     public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
-        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
 
       // Pass scoreDocsInOrder true, topScorer false to our sub:
       final Scorer childScorer = childWeight.scorer(readerContext, true, false, flags, null);
@@ -197,7 +197,7 @@ public class ToParentBlockJoinQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, true, false, FeatureFlags.DOCS, context.reader().getLiveDocs());
+      BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, true, false, PostingFeatures.DOCS_AND_FREQS, context.reader().getLiveDocs());
       if (scorer != null) {
         if (scorer.advance(doc) == doc) {
           return scorer.explain(context.docBase);

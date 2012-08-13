@@ -28,10 +28,26 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.query.SpatialArgs;
 
 /**
- * The SpatialStrategy encapsulates an approach to indexing and searching based on shapes.
+ * The SpatialStrategy encapsulates an approach to indexing and searching based
+ * on shapes.
  * <p/>
- * Note that a SpatialStrategy is not involved with the Lucene stored field values of shapes, which is
- * immaterial to indexing & search.
+ * Different implementations will support different features. A strategy should
+ * document these common elements:
+ * <ul>
+ *   <li>Can it index more than one shape per field?</li>
+ *   <li>What types of shapes can be indexed?</li>
+ *   <li>What types of query shapes can be used?</li>
+ *   <li>What types of query operations are supported?
+ *   This might vary per shape.</li>
+ *   <li>Are there caches?  Under what circumstances are they used?
+ *   Roughly how big are they?  Is it segmented by Lucene segments, such as is
+ *   done by the Lucene {@link org.apache.lucene.search.FieldCache} and
+ *   {@link org.apache.lucene.index.DocValues} (ideal) or is it for the entire
+ *   index?
+ * </ul>
+ * <p/>
+ * Note that a SpatialStrategy is not involved with the Lucene stored field
+ * values of shapes, which is immaterial to indexing & search.
  * <p/>
  * Thread-safe.
  *

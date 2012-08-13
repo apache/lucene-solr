@@ -67,7 +67,7 @@ import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.packed.PackedInts;
 
-@SuppressCodecs({ "SimpleText", "Memory" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 @Slow
 public class TestFSTs extends LuceneTestCase {
 
@@ -76,7 +76,7 @@ public class TestFSTs extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    dir = newDirectory();
+    dir = newMockDirectory();
     dir.setPreventDoubleWrite(false);
   }
 
@@ -1096,18 +1096,11 @@ public class TestFSTs extends LuceneTestCase {
   // file, up until a time limit
   public void testRealTerms() throws Exception {
 
-    // TODO: is this necessary? we use the annotation...
-    final String defaultFormat = _TestUtil.getPostingsFormat("abracadabra");
-    if (defaultFormat.equals("SimpleText") || defaultFormat.equals("Memory")) {
-      // no
-      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
-    }
-
     final LineFileDocs docs = new LineFileDocs(random(), true);
     final int RUN_TIME_MSEC = atLeast(500);
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = _TestUtil.getTempDir("fstlines");
-    final MockDirectoryWrapper dir = newFSDirectory(tempDir);
+    final Directory dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
     Document doc;

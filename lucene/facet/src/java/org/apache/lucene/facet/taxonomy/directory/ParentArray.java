@@ -106,7 +106,7 @@ class ParentArray {
     Bits liveDocs = MultiFields.getLiveDocs(indexReader);
     DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(indexReader, liveDocs,
                                                                       Consts.FIELD_PAYLOADS, new BytesRef(Consts.PAYLOAD_PARENT),
-                                                                      false);
+                                                                      DocsAndPositionsEnum.FLAG_PAYLOADS);
       if ((positions == null || positions.advance(first) == DocIdSetIterator.NO_MORE_DOCS) && first < num) {
         throw new CorruptIndexException("Missing parent data for category " + first);
       }

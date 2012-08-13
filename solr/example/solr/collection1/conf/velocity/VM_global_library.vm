@@ -4,6 +4,7 @@
 #macro(url_root)/solr#end
 
 ## TODO: s/url_for_solr/url_for_core/ and s/url_root/url_for_solr/
+#macro(core_name)$request.core.name#end
 #macro(url_for_solr)#{url_root}#if($request.core.name != "")/$request.core.name#end#end
 #macro(url_for_home)#url_for_solr/browse#end
 
@@ -132,10 +133,14 @@
 
 #macro(field $f)
   #if($response.response.highlighting.get($docId).get($f).get(0))
-    $!response.response.highlighting.get($docId).get($f).get(0)
+    #set($pad = "")
+    #foreach($v in $response.response.highlighting.get($docId).get($f))
+$pad$v##
+      #set($pad = " ... ")
+    #end
   #else
     #foreach($v in $doc.getFieldValues($f))
-      $v
+$v##
     #end
   #end
 #end  

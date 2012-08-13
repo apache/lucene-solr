@@ -19,9 +19,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.util.Version;
-import org.apache.solr.analysis.KeywordTokenizerFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
@@ -73,7 +73,7 @@ public final class FieldTypePluginLoader
 
 
   @Override
-  protected FieldType create( ResourceLoader loader, 
+  protected FieldType create( SolrResourceLoader loader, 
                               String name, 
                               String className, 
                               Node node ) throws Exception {
@@ -225,7 +225,30 @@ public final class FieldTypePluginLoader
     if (node == null) return null;
     NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(attrs,"class");
+
+    // check for all of these up front, so we can error if used in 
+    // conjunction with an explicit analyzer class.
+    NodeList charFilterNodes = (NodeList)xpath.evaluate
+      ("./charFilter",  node, XPathConstants.NODESET);
+    NodeList tokenizerNodes = (NodeList)xpath.evaluate
+      ("./tokenizer", node, XPathConstants.NODESET);
+    NodeList tokenFilterNodes = (NodeList)xpath.evaluate
+      ("./filter", node, XPathConstants.NODESET);
+      
     if (analyzerName != null) {
+
+      // explicitly check for child analysis factories instead of
+      // just any child nodes, because the user might have their
+      // own custom nodes (ie: <description> or something like that)
+      if (0 != charFilterNodes.getLength() ||
+          0 != tokenizerNodes.getLength() ||
+          0 != tokenFilterNodes.getLength()) {
+        throw new SolrException
+        ( SolrException.ErrorCode.SERVER_ERROR,
+          "Configuration Error: Analyzer class='" + analyzerName +
+          "' can not be combined with nested analysis factories");
+      }
+
       try {
         // No need to be core-aware as Analyzers are not in the core-aware list
         final Class<? extends Analyzer> clazz = loader.findClass(analyzerName, Analyzer.class);
@@ -286,8 +309,7 @@ public final class FieldTypePluginLoader
       }
     };
 
-    charFilterLoader.load( loader, (NodeList)xpath.evaluate("./charFilter",  node, XPathConstants.NODESET) );
-                            
+    charFilterLoader.load( loader, charFilterNodes );
 
     // Load the Tokenizer
     // Although an analyzer only allows a single Tokenizer, we load a list to make sure
@@ -319,13 +341,12 @@ public final class FieldTypePluginLoader
       }
     };
 
-    tokenizerLoader.load( loader, (NodeList)xpath.evaluate("./tokenizer", node, XPathConstants.NODESET) );
+    tokenizerLoader.load( loader, tokenizerNodes );
     
     // Make sure something was loaded
     if( tokenizers.isEmpty() ) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"analyzer without class or tokenizer & filter list");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"analyzer without class or tokenizer");
     }
-    
 
     // Load the Filters
 
@@ -353,7 +374,7 @@ public final class FieldTypePluginLoader
         return null; // used for map registration
       }
     };
-    filterLoader.load( loader, (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET) );
+    filterLoader.load( loader, tokenFilterNodes );
     
     return new TokenizerChain(charFilters.toArray(new CharFilterFactory[charFilters.size()]),
                               tokenizers.get(0), filters.toArray(new TokenFilterFactory[filters.size()]));
