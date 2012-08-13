@@ -28,14 +28,18 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Test indexes ~82M docs with 26 terms each, so you get > Integer.MAX_VALUE terms/docs pairs
  * @lucene.experimental
  */
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@TimeoutSuite(millis = 4 * TimeUnits.HOUR)
 public class Test2BPostings extends LuceneTestCase {
 
   @Nightly
