@@ -52,6 +52,10 @@ Bug Fixes
   upgraded to 3.x, then to Lucene 4.0-ALPHA or -BETA, you should run 
   CheckIndex. If it fails, then you need to upgrade again to 4.0  (Robert Muir)
 
+* LUCENE-4303: PhoneticFilterFactory and SnowballPorterFilterFactory load their
+  encoders / stemmers via the ResourceLoader now instead of Class.forName().
+  Solr users should now no longer have to embed these in its war. (David Smiley)
+
 Build
 
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 

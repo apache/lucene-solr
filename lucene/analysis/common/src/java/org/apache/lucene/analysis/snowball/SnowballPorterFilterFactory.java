@@ -46,35 +46,28 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
   public static final String PROTECTED_TOKENS = "protected";
 
   private String language = "English";
-  private Class<?> stemClass;
+  private Class<? extends SnowballProgram> stemClass;
+  private CharArraySet protectedWords = null;
 
-
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
+    String cfgLanguage = args.get("language");
+    if (cfgLanguage != null)
+      language = cfgLanguage;
+
+    String className = "org.tartarus.snowball.ext." + language + "Stemmer";
+    stemClass = loader.newInstance(className, SnowballProgram.class).getClass();
+
     String wordFiles = args.get(PROTECTED_TOKENS);
     if (wordFiles != null) {
       protectedWords = getWordSet(loader, wordFiles, false);
     }
   }
 
-  private CharArraySet protectedWords = null;
-
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    final String cfgLanguage = args.get("language");
-    if(cfgLanguage!=null) language = cfgLanguage;
-
-    try {
-      stemClass = Class.forName("org.tartarus.snowball.ext." + language + "Stemmer");
-    } catch (ClassNotFoundException e) {
-      throw new IllegalArgumentException("Can't find class for stemmer language " + language, e);
-    }
-  }
-  
   public TokenFilter create(TokenStream input) {
     SnowballProgram program;
     try {
-      program = (SnowballProgram)stemClass.newInstance();
+      program = stemClass.newInstance();
     } catch (Exception e) {
       throw new RuntimeException("Error instantiating stemmer for language " + language + "from class " + stemClass, e);
     }
