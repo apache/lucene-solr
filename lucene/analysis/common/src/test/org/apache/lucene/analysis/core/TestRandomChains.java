@@ -25,6 +25,7 @@ import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.net.URL;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
@@ -165,8 +166,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    List<Class<?>> analysisClasses = new ArrayList<Class<?>>();
-    getClassesForPackage("org.apache.lucene.analysis", analysisClasses);
+    List<Class<?>> analysisClasses = getClassesForPackage("org.apache.lucene.analysis");
     tokenizers = new ArrayList<Constructor<? extends Tokenizer>>();
     tokenfilters = new ArrayList<Constructor<? extends TokenFilter>>();
     charfilters = new ArrayList<Constructor<? extends CharFilter>>();
@@ -235,19 +235,30 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   private static <T> Constructor<T> castConstructor(Class<T> instanceClazz, Constructor<?> ctor) {
     return (Constructor<T>) ctor;
   }
-  static void getClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
+  
+  public static List<Class<?>> getClassesForPackage(String pckgname) throws Exception {
+    final List<Class<?>> classes = new ArrayList<Class<?>>();
+    collectClassesForPackage(pckgname, classes);
+    assertFalse("No classes found in package '"+pckgname+"'; maybe your test classes are packaged as JAR file?", classes.isEmpty());
+    return classes;
+  }
+  
+  private static void collectClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
     final ClassLoader cld = TestRandomChains.class.getClassLoader();
     final String path = pckgname.replace('.', '/');
     final Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
-      final File directory = new File(resources.nextElement().toURI());
+      final URI uri = resources.nextElement().toURI();
+      if (!"file".equalsIgnoreCase(uri.getScheme()))
+        continue;
+      final File directory = new File(uri);
       if (directory.exists()) {
         String[] files = directory.list();
         for (String file : files) {
           if (new File(directory, file).isDirectory()) {
             // recurse
             String subPackage = pckgname + "." + file;
-            getClassesForPackage(subPackage, classes);
+            collectClassesForPackage(subPackage, classes);
           }
           if (file.endsWith(".class")) {
             String clazzName = file.substring(0, file.length() - 6);
