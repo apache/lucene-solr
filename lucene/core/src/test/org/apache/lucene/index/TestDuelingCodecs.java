@@ -173,15 +173,15 @@ public class TestDuelingCodecs extends LuceneTestCase {
     }
     assertFieldStatistics(leftFields, rightFields);
     
-    FieldsEnum leftEnum = leftFields.iterator();
-    FieldsEnum rightEnum = rightFields.iterator();
+    Iterator<String> leftEnum = leftFields.iterator();
+    Iterator<String> rightEnum = rightFields.iterator();
     
-    String field;
-    while ((field = leftEnum.next()) != null) {
+    while (leftEnum.hasNext()) {
+      String field = leftEnum.next();
       assertEquals(info, field, rightEnum.next());
-      assertTerms(leftEnum.terms(), rightEnum.terms(), deep);
+      assertTerms(leftFields.terms(field), rightFields.terms(field), deep);
     }
-    assertNull(rightEnum.next());
+    assertFalse(rightEnum.hasNext());
   }
   
   /** 
@@ -525,9 +525,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
       return;
     }
     
-    FieldsEnum fieldsEnum = leftFields.iterator();
-    String field;
-    while ((field = fieldsEnum.next()) != null) {
+    for (String field : leftFields) {
       DocValues leftNorms = MultiDocValues.getNormDocValues(leftReader, field);
       DocValues rightNorms = MultiDocValues.getNormDocValues(rightReader, field);
       if (leftNorms != null && rightNorms != null) {

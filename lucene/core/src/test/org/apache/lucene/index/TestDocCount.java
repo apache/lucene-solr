@@ -63,9 +63,7 @@ public class TestDocCount extends LuceneTestCase {
     if (fields == null) {
       return;
     }
-    FieldsEnum e = fields.iterator();
-    String field;
-    while ((field = e.next()) != null) {
+    for (String field : fields) {
       Terms terms = fields.terms(field);
       if (terms == null) {
         continue;

@@ -27,7 +27,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -40,6 +39,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
+import org.apache.lucene.util.UnmodifiableIterator;
 
 /** Handles a terms dict, but decouples all details of
  *  doc/freqs/positions reading to an instance of {@link
@@ -184,8 +184,8 @@ public class BlockTermsReader extends FieldsProducer {
   }
 
   @Override
-  public FieldsEnum iterator() {
-    return new TermFieldsEnum();
+  public Iterator<String> iterator() {
+    return new UnmodifiableIterator<String>(fields.keySet().iterator());
   }
 
   @Override
@@ -197,32 +197,6 @@ public class BlockTermsReader extends FieldsProducer {
   @Override
   public int size() {
     return fields.size();
-  }
-
-  // Iterates through all fields
-  private class TermFieldsEnum extends FieldsEnum {
-    final Iterator<FieldReader> it;
-    FieldReader current;
-
-    TermFieldsEnum() {
-      it = fields.values().iterator();
-    }
-
-    @Override
-    public String next() {
-      if (it.hasNext()) {
-        current = it.next();
-        return current.fieldInfo.name;
-      } else {
-        current = null;
-        return null;
-      }
-    }
-    
-    @Override
-    public Terms terms() throws IOException {
-      return current;
-    }
   }
 
   private class FieldReader extends Terms {

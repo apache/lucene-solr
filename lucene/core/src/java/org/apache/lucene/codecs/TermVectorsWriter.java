@@ -26,7 +26,6 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
@@ -211,8 +210,6 @@ public abstract class TermVectorsWriter implements Closeable {
     }
     startDocument(numFields);
     
-    final FieldsEnum fieldsEnum = vectors.iterator();
-    String fieldName;
     String lastFieldName = null;
     
     TermsEnum termsEnum = null;
@@ -221,13 +218,13 @@ public abstract class TermVectorsWriter implements Closeable {
     final ReaderPayloadProcessor readerPayloadProcessor = mergeState.currentReaderPayloadProcessor;
     PayloadProcessor payloadProcessor = null;
 
-    while((fieldName = fieldsEnum.next()) != null) {
+    for(String fieldName : vectors) {
       final FieldInfo fieldInfo = mergeState.fieldInfos.fieldInfo(fieldName);
 
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
       lastFieldName = fieldName;
 
-      final Terms terms = fieldsEnum.terms();
+      final Terms terms = vectors.terms(fieldName);
       if (terms == null) {
         // FieldsEnum shouldn't lie...
         continue;

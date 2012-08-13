@@ -39,7 +39,6 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -50,6 +49,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.UnmodifiableIterator;
 
 /** Stores all postings data in RAM, but writes a small
  *  token (header + single int) to identify which "slot" the
@@ -112,8 +112,8 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public FieldsEnum iterator() {
-      return new RAMFieldsEnum(this);
+    public Iterator<String> iterator() {
+      return new UnmodifiableIterator<String>(fieldToTerms.keySet().iterator());
     }
 
     @Override
@@ -300,33 +300,6 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public void finishDoc() {
       assert posUpto == current.positions.length;
-    }
-  }
-
-  // Classes for reading from the postings state
-  static class RAMFieldsEnum extends FieldsEnum {
-    private final RAMPostings postings;
-    private final Iterator<String> it;
-    private String current;
-
-    public RAMFieldsEnum(RAMPostings postings) {
-      this.postings = postings;
-      this.it = postings.fieldToTerms.keySet().iterator();
-    }
-
-    @Override
-    public String next() {
-      if (it.hasNext()) {
-        current = it.next();
-      } else {
-        current = null;
-      }
-      return current;
-    }
-
-    @Override
-    public Terms terms() {
-      return postings.fieldToTerms.get(current);
     }
   }
 

@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -124,13 +125,13 @@ public class TestTermVectors extends LuceneTestCase {
     assertEquals(4, v.size());
     String[] expectedFields = new String[]{"a", "b", "c", "x"};
     int[] expectedPositions = new int[]{1, 2, 0};
-    FieldsEnum fieldsEnum = v.iterator();
+    Iterator<String> fieldsEnum = v.iterator();
     for(int i=0;i<expectedFields.length;i++) {
       assertEquals(expectedFields[i], fieldsEnum.next());
       assertEquals(3, v.terms(expectedFields[i]).size());
 
       DocsAndPositionsEnum dpEnum = null;
-      Terms terms = fieldsEnum.terms();
+      Terms terms = v.terms(expectedFields[i]);
       assertNotNull(terms);
       TermsEnum termsEnum = terms.iterator(null);
       assertEquals("content", termsEnum.next().utf8ToString());
@@ -251,11 +252,11 @@ public class TestTermVectors extends LuceneTestCase {
     writer.close();
     IndexSearcher knownSearcher = newSearcher(reader);
     knownSearcher.setSimilarity(new DefaultSimilarity());
-    FieldsEnum fields = MultiFields.getFields(knownSearcher.reader).iterator();
+    Fields fields = MultiFields.getFields(knownSearcher.reader);
     
     DocsEnum docs = null;
-    while(fields.next() != null) {
-      Terms terms = fields.terms();
+    for (String fieldName : fields) {
+      Terms terms = fields.terms(fieldName);
       assertNotNull(terms); // NOTE: kinda sketchy assumptions, but ideally we would fix fieldsenum api... 
       TermsEnum termsEnum = terms.iterator(null);
 

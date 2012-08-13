@@ -43,7 +43,6 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -493,13 +492,13 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     int totalTokenCount2 = 0;
 
-    FieldsEnum fields = MultiFields.getFields(reader).iterator();
-    String fieldName = null;
-    while((fieldName = fields.next()) != null) {
+    Fields fields = MultiFields.getFields(reader);
+
+    for (String fieldName : fields) {
       if (fieldName.equals(DocMaker.ID_FIELD) || fieldName.equals(DocMaker.DATE_MSEC_FIELD) || fieldName.equals(DocMaker.TIME_SEC_FIELD)) {
         continue;
       }
-      Terms terms = fields.terms();
+      Terms terms = fields.terms(fieldName);
       if (terms == null) {
         continue;
       }

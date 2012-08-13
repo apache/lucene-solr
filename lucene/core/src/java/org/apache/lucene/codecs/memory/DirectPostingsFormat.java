@@ -32,7 +32,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -44,6 +43,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
@@ -124,36 +124,14 @@ public class DirectPostingsFormat extends PostingsFormat {
     private final Map<String,DirectField> fields = new TreeMap<String,DirectField>();
 
     public DirectFields(SegmentReadState state, Fields fields, int minSkipCount, int lowFreqCutoff) throws IOException {
-      FieldsEnum fieldsEnum = fields.iterator();
-      String field;
-      while ((field = fieldsEnum.next()) != null) {
-        this.fields.put(field, new DirectField(state, field, fieldsEnum.terms(), minSkipCount, lowFreqCutoff));
+      for (String field : fields) {
+        this.fields.put(field, new DirectField(state, field, fields.terms(field), minSkipCount, lowFreqCutoff));
       }
     }
 
     @Override
-    public FieldsEnum iterator() {
-
-      final Iterator<Map.Entry<String,DirectField>> iter = fields.entrySet().iterator();
-
-      return new FieldsEnum() {
-        Map.Entry<String,DirectField> current;
-        
-        @Override
-        public String next() {
-          if (iter.hasNext()) {
-            current = iter.next();
-            return current.getKey();
-          } else {
-            return null;
-          }
-        }
-
-        @Override
-        public Terms terms() {
-          return current.getValue();
-        }
-      };
+    public Iterator<String> iterator() {
+      return new UnmodifiableIterator<String>(fields.keySet().iterator());
     }
 
     @Override

@@ -101,14 +101,13 @@ public class TestSurrogates extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: top now enum reader=" + reader);
     }
-    FieldsEnum fieldsEnum = MultiFields.getFields(reader).iterator();
+    Fields fields = MultiFields.getFields(reader);
 
     {
       // Test straight enum:
-      String field;
       int termCount = 0;
-      while((field = fieldsEnum.next()) != null) {
-        Terms terms = fieldsEnum.terms();
+      for (String field : fields) {
+        Terms terms = fields.terms(field);
         assertNotNull(terms);
         TermsEnum termsEnum = terms.iterator(null);
         BytesRef text;

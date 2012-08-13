@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CorruptIndexException;
@@ -30,7 +32,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
@@ -230,23 +231,27 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     }
     
     @Override
-    public FieldsEnum iterator() throws IOException {
-
-      return new FieldsEnum() {
+    public Iterator<String> iterator() {
+      return new Iterator<String>() {
         private int fieldUpto;
 
         @Override
-        public String next() throws IOException {
+        public String next() {
           if (fieldNumbers != null && fieldUpto < fieldNumbers.length) {
             return fieldInfos.fieldInfo(fieldNumbers[fieldUpto++]).name;
           } else {
-            return null;
+            throw new NoSuchElementException();
           }
         }
 
         @Override
-        public Terms terms() throws IOException {
-          return TVFields.this.terms(fieldInfos.fieldInfo(fieldNumbers[fieldUpto-1]).name);
+        public boolean hasNext() {
+          return fieldNumbers != null && fieldUpto < fieldNumbers.length;
+        }
+
+        @Override
+        public void remove() {
+          throw new UnsupportedOperationException();
         }
       };
     }

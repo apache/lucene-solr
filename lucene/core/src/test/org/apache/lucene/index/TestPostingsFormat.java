@@ -23,8 +23,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -889,6 +891,26 @@ public class TestPostingsFormat extends LuceneTestCase {
       }
     }
   }
+  
+  private void testFields(Fields fields) throws Exception {
+    Iterator<String> iterator = fields.iterator();
+    while (iterator.hasNext()) {
+      String field = iterator.next();
+      try {
+        iterator.remove();
+        fail("Fields.iterator() allows for removal");
+      } catch (UnsupportedOperationException expected) {
+        // expected;
+      }
+    }
+    assertFalse(iterator.hasNext());
+    try {
+      iterator.next();
+      fail("Fields.iterator() doesn't throw NoSuchElementException when past the end");
+    } catch (NoSuchElementException expected) {
+      // expected
+    }
+  }
 
   public void test() throws Exception {
     Directory dir = newFSDirectory(_TestUtil.getTempDir("testPostingsFormat"));
@@ -898,6 +920,7 @@ public class TestPostingsFormat extends LuceneTestCase {
 
     FieldsProducer fieldsProducer = buildIndex(dir, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, indexPayloads);
 
+    testFields(fieldsProducer);
     //testTerms(fieldsProducer, EnumSet.noneOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     //testTerms(fieldsProducer, EnumSet.of(Option.LIVE_DOCS), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     //testTerms(fieldsProducer, EnumSet.of(Option.TERM_STATE, Option.LIVE_DOCS, Option.PARTIAL_DOC_CONSUME, Option.PARTIAL_POS_CONSUME), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);

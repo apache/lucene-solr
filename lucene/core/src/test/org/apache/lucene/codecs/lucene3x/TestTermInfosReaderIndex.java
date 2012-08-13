@@ -32,7 +32,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -154,10 +154,9 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
 
   private static List<Term> sample(Random random, IndexReader reader, int size) throws IOException {
     List<Term> sample = new ArrayList<Term>();
-    FieldsEnum fieldsEnum = MultiFields.getFields(reader).iterator();
-    String field;
-    while((field = fieldsEnum.next()) != null) {
-      Terms terms = fieldsEnum.terms();
+    Fields fields = MultiFields.getFields(reader);
+    for (String field : fields) {
+      Terms terms = fields.terms(field);
       assertNotNull(terms);
       TermsEnum termsEnum = terms.iterator(null);
       while (termsEnum.next() != null) {

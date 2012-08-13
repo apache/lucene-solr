@@ -9,7 +9,7 @@ enumeration APIs.  Here are the major changes:
     by the BytesRef class (which provides an offset + length "slice"
     into an existing byte[]).
 
-  * Fields are separately enumerated (FieldsEnum) from the terms
+  * Fields are separately enumerated (Fields.iterator()) from the terms
     within each field (TermEnum).  So instead of this:
 
         TermEnum termsEnum = ...;
@@ -20,10 +20,8 @@ enumeration APIs.  Here are the major changes:
 
     Do this:
 
-        FieldsEnum fieldsEnum = ...;
-        String field;
-        while((field = fieldsEnum.next()) != null) {
-            TermsEnum termsEnum = fieldsEnum.terms();
+        for(String field : fields) {
+            TermsEnum termsEnum = fields.terms(field);
             BytesRef text;
             while((text = termsEnum.next()) != null) {
               System.out.println("field=" + field + "; text=" + text.utf8ToString());

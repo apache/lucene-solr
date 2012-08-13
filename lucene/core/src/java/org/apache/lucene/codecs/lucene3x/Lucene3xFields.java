@@ -30,7 +30,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Term;
@@ -42,6 +41,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.UnmodifiableIterator;
 
 /** Exposes flex API on a pre-flex index, as a codec. 
  * @lucene.experimental
@@ -133,8 +133,8 @@ class Lucene3xFields extends FieldsProducer {
   }
 
   @Override
-  public FieldsEnum iterator() throws IOException {
-    return new PreFlexFieldsEnum();
+  public Iterator<String> iterator() {
+    return new UnmodifiableIterator<String>(fields.keySet().iterator());
   }
 
   @Override
@@ -176,30 +176,6 @@ class Lucene3xFields extends FieldsProducer {
     }
     if (proxStream != null) {
       proxStream.close();
-    }
-  }
-
-  private class PreFlexFieldsEnum extends FieldsEnum {
-    final Iterator<FieldInfo> it;
-    FieldInfo current;
-
-    public PreFlexFieldsEnum() throws IOException {
-      it = fields.values().iterator();
-    }
-
-    @Override
-    public String next() {
-      if (it.hasNext()) {
-        current = it.next();
-        return current.name;
-      } else {
-        return null;
-      }
-    }
-
-    @Override
-    public Terms terms() throws IOException {
-      return Lucene3xFields.this.terms(current.name);
     }
   }
   

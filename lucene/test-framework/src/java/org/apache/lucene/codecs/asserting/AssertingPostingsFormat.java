@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.asserting;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Iterator;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -30,7 +31,6 @@ import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.AssertingAtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
@@ -70,10 +70,10 @@ public class AssertingPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public FieldsEnum iterator() throws IOException {
-      FieldsEnum iterator = in.iterator();
+    public Iterator<String> iterator() {
+      Iterator<String> iterator = in.iterator();
       assert iterator != null;
-      return new AssertingAtomicReader.AssertingFieldsEnum(iterator);
+      return iterator;
     }
 
     @Override
