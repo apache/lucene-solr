@@ -18,6 +18,8 @@ package org.apache.lucene.search.positions;
  */
 import org.apache.lucene.search.Scorer;
 
+import com.sun.tools.javac.resources.compiler;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -45,20 +47,20 @@ public abstract class BooleanIntervalIterator extends IntervalIterator {
 
   abstract void advance() throws IOException;
   
-  public static IntervalIterator[] pullIterators(Scorer... scorers)
+  public static IntervalIterator[] pullIterators(boolean collectPositions, Scorer... scorers)
       throws IOException {
     IntervalIterator[] iterators = new IntervalIterator[scorers.length];
     for (int i = 0; i < scorers.length; i++) {
-      iterators[i] = scorers[i].positions();
+      iterators[i] = scorers[i].positions(collectPositions);
     }
     return iterators;
   }
   
-  public static IntervalIterator[] pullIterators(List<Scorer> scorers)
+  public static IntervalIterator[] pullIterators(boolean collectPositions,List<Scorer> scorers)
       throws IOException {
     IntervalIterator[] iterators = new IntervalIterator[scorers.size()];
     for (int i = 0; i < iterators.length; i++) {
-      iterators[i] = scorers.get(i).positions();
+      iterators[i] = scorers.get(i).positions(collectPositions);
     }
     return iterators;
   }

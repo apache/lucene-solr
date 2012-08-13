@@ -65,14 +65,12 @@ final class ExactPhraseScorer extends Scorer {
   private final Similarity.ExactSimScorer docScorer;
 
   private final boolean needsOffsets;
-  private final boolean collectPositions;
   
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      Similarity.ExactSimScorer docScorer, boolean needsOffsets, boolean collectPositions) throws IOException {
+      Similarity.ExactSimScorer docScorer, boolean needsOffsets) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.needsOffsets = needsOffsets;
-    this.collectPositions = collectPositions;
     
     chunkStates = new ChunkState[postings.length];
     
@@ -332,7 +330,7 @@ final class ExactPhraseScorer extends Scorer {
   }
   
   @Override
-  public IntervalIterator positions() throws IOException {
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
     TermIntervalIterator[] posIters = new TermIntervalIterator[chunkStates.length];
     DocsAndPositionsEnum[] enums = new DocsAndPositionsEnum[chunkStates.length];
     for (int i = 0; i < chunkStates.length; i++) {

@@ -114,10 +114,10 @@ public class ToChildBlockJoinQuery extends Query {
     // child document space
     @Override
     public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
-        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
+        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
 
       // Pass scoreDocsInOrder true, topScorer false to our sub:
-      final Scorer parentScorer = parentWeight.scorer(readerContext, true, false, needsPositions, needsOffsets, collectPositions, null);
+      final Scorer parentScorer = parentWeight.scorer(readerContext, true, false, flags, null);
 
       if (parentScorer == null) {
         // No matches
@@ -296,8 +296,8 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions() throws IOException {      // nocommit is that correct here?
-      return parentScorer.positions();
+    public IntervalIterator positions(boolean collectPositions) throws IOException {      // nocommit is that correct here?
+      return parentScorer.positions(collectPositions);
     }
   }
 

@@ -36,7 +36,6 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
   /* Used when scoring currently matching doc. */
   private float scoreSum;
   private float scoreMax;
-  private final boolean collectPositions;
 
   /**
    * Creates a new instance of DisjunctionMaxScorer
@@ -53,10 +52,9 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
    *          length may be larger than the actual number of scorers.
    */
   public DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier,
-      Scorer[] subScorers, int numScorers, boolean collectPositions) {
+      Scorer[] subScorers, int numScorers) {
     super(weight, subScorers, numScorers);
     this.tieBreakerMultiplier = tieBreakerMultiplier;
-    this.collectPositions = collectPositions; 
         
   }
 
@@ -141,7 +139,7 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
   }
   
   @Override
-  public IntervalIterator positions() throws IOException {
-    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(subScorers));
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
+    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(collectPositions, subScorers));
   }
 }

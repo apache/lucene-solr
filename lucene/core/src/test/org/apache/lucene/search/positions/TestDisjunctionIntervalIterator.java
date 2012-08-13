@@ -6,6 +6,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.Weight.FeatureFlags;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -104,8 +105,8 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
     assertEquals(1, leaves.size());
     Scorer scorer = weight.scorer(leaves.get(0),
-        true, true, true, false, false, leaves.get(0).reader().getLiveDocs());
-    IntervalIterator positions = scorer.positions();
+        true, true, FeatureFlags.POSITIONS, leaves.get(0).reader().getLiveDocs());
+    IntervalIterator positions = scorer.positions(false);
     for (int i = 0; i < 2; i++) {
 
       int nextDoc = scorer.nextDoc();
@@ -159,11 +160,11 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
     assertEquals(1, leaves.size());
     for (AtomicReaderContext atomicReaderContext : leaves) {
       Scorer scorer = weight.scorer(atomicReaderContext,
-          true, true, true, false, false, atomicReaderContext.reader().getLiveDocs());
+          true, true, FeatureFlags.POSITIONS, atomicReaderContext.reader().getLiveDocs());
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        IntervalIterator positions = scorer.positions();
+        IntervalIterator positions = scorer.positions(false);
         assertEquals(0, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] { 0, 1, 2, 31, 32, 33 };
@@ -182,7 +183,7 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        IntervalIterator positions = scorer.positions();
+        IntervalIterator positions = scorer.positions(false);
         assertEquals(1, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] {  3, 4, 5, 34 };

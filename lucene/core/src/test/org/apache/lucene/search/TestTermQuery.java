@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.Weight.FeatureFlags;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.Interval;
 import org.apache.lucene.store.Directory;
@@ -77,11 +78,11 @@ public class TestTermQuery extends LuceneTestCase {
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       for (AtomicReaderContext atomicReaderContext : leaves) {
-        Scorer scorer = weight.scorer(atomicReaderContext, true, true, true, false, false, null);
+        Scorer scorer = weight.scorer(atomicReaderContext, true, true, FeatureFlags.POSITIONS, null);
         assertNotNull(scorer);
         int toDoc = 1 + random().nextInt(atomicReaderContext.reader().docFreq(new Term(fieldName, "1")) - 1 );
         final int advance = scorer.advance(toDoc);
-        IntervalIterator positions = scorer.positions();
+        IntervalIterator positions = scorer.positions(false);
 
         do {
           assertEquals(scorer.docID(), positions.scorerAdvanced(scorer.docID()));
@@ -181,7 +182,7 @@ public class TestTermQuery extends LuceneTestCase {
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       for (AtomicReaderContext atomicReaderContext : leaves) {
-        Scorer scorer = weight.scorer(atomicReaderContext, true, true, true, false, false, null);
+        Scorer scorer = weight.scorer(atomicReaderContext, true, true, FeatureFlags.POSITIONS, null);
         assertNotNull(scorer);
         int initDoc = 0;
         int maxDoc = atomicReaderContext.reader().maxDoc();
@@ -197,7 +198,7 @@ public class TestTermQuery extends LuceneTestCase {
           if (docID == Scorer.NO_MORE_DOCS) {
             break;
           }
-          IntervalIterator positions = scorer.positions();
+          IntervalIterator positions = scorer.positions(false);
           Integer[] pos = positionsInDoc[atomicReaderContext.docBase + docID];
 
           assertEquals((float) pos.length, positions.getScorer().freq(), 0.0f);
@@ -267,7 +268,7 @@ public class TestTermQuery extends LuceneTestCase {
       Weight weight = one.createWeight(searcher);
       Interval interval = null;
       for (AtomicReaderContext atomicReaderContext : leaves) {
-        Scorer scorer = weight.scorer(atomicReaderContext, true, true, true, false, false, null);
+        Scorer scorer = weight.scorer(atomicReaderContext, true, true, FeatureFlags.POSITIONS, null);
         assertNotNull(scorer);
 
         int initDoc = 0;
@@ -279,7 +280,7 @@ public class TestTermQuery extends LuceneTestCase {
           initDoc = scorer.advance(random().nextInt(maxDoc));
         }
         String msg = "Iteration: " + i + " initDoc: " + initDoc;
-        IntervalIterator positions = scorer.positions();
+        IntervalIterator positions = scorer.positions(false);
         assertEquals(howMany / 2.f, positions.getScorer().freq(), 0.0);
         assertEquals(scorer.docID(), positions.scorerAdvanced(scorer.docID()));
         for (int j = 0; j < howMany; j += 2) {

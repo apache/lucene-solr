@@ -59,7 +59,7 @@ public abstract class IntervalIterator {
   
   public static interface IntervalFilter {
     public abstract IntervalIterator filter(
-        IntervalIterator iter);
+        boolean collectPositions, IntervalIterator iter);
   }
   
   public static interface IntervalCollector {

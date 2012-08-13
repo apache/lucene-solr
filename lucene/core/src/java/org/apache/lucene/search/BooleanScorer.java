@@ -141,8 +141,8 @@ final class BooleanScorer extends Scorer {
     public float score() { return score; }
 
     @Override
-    public IntervalIterator positions() throws IOException {
-      return IntervalIterator.NO_MORE_POSITIONS;
+    public IntervalIterator positions(boolean collectPositions) throws IOException {
+      throw new UnsupportedOperationException("Positions are not supported on out of order collections");
     }
     
   }
@@ -327,7 +327,7 @@ final class BooleanScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions() throws IOException {
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
     throw new UnsupportedOperationException("intervals are not available if docs are matched out of order");
   }
 

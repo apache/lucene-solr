@@ -94,7 +94,7 @@ public class TestBooleanScorer extends LuceneTestCase
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
       }
       @Override
-      public IntervalIterator positions() throws IOException {
+      public IntervalIterator positions(boolean collectPositions) throws IOException {
         return null;
       }
       

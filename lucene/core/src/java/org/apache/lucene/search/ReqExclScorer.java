@@ -34,17 +34,15 @@ class ReqExclScorer extends Scorer {
   private Scorer reqScorer;
   private DocIdSetIterator exclDisi;
   private int doc = -1;
-  private final boolean collectPositions;
 
   /** Construct a <code>ReqExclScorer</code>.
    * @param reqScorer The scorer that must match, except where
    * @param exclDisi indicates exclusion.
    */
-  public ReqExclScorer(Scorer reqScorer, DocIdSetIterator exclDisi, boolean collectPositions) {
+  public ReqExclScorer(Scorer reqScorer, DocIdSetIterator exclDisi) {
     super(reqScorer.weight);
     this.reqScorer = reqScorer;
     this.exclDisi = exclDisi;
-    this.collectPositions = collectPositions;
   }
 
   @Override
@@ -135,7 +133,7 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions() throws IOException {
-    return new ConjunctionIntervalIterator(this, collectPositions, reqScorer.positions());
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
+    return new ConjunctionIntervalIterator(this, collectPositions, reqScorer.positions(collectPositions));
   }
 }

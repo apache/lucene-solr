@@ -88,7 +88,7 @@ class BooleanScorer2 extends Scorer {
    *          the list of optional scorers.
    */
   public BooleanScorer2(BooleanWeight weight, boolean disableCoord, int minNrShouldMatch,
-      List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional, int maxCoord, boolean collectPositions) throws IOException {
+      List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional, int maxCoord) throws IOException {
     super(weight);
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
@@ -102,7 +102,7 @@ class BooleanScorer2 extends Scorer {
     prohibitedScorers = prohibited;
     
     coordinator.init(disableCoord);
-    countingSumScorer = makeCountingSumScorer(disableCoord, collectPositions);
+    countingSumScorer = makeCountingSumScorer(disableCoord);
   }
   
   /** Count a scorer as a single match. */
@@ -152,15 +152,15 @@ class BooleanScorer2 extends Scorer {
     }
     
     @Override
-    public IntervalIterator positions() throws IOException {
-      return scorer.positions();
+    public IntervalIterator positions(boolean collectPositions) throws IOException {
+      return scorer.positions(collectPositions);
     }
   }
 
   private Scorer countingDisjunctionSumScorer(final List<Scorer> scorers,
-      int minNrShouldMatch, boolean collectPositions) throws IOException {
+      int minNrShouldMatch) throws IOException {
     // each scorer from the list counted as a single matcher
-    return new DisjunctionSumScorer(weight, scorers, minNrShouldMatch, collectPositions) {
+    return new DisjunctionSumScorer(weight, scorers, minNrShouldMatch) {
       private int lastScoredDoc = -1;
       // Save the score of lastScoredDoc, so that we don't compute it more than
       // once in score().
@@ -179,11 +179,11 @@ class BooleanScorer2 extends Scorer {
     };
   }
 
-  private Scorer countingConjunctionSumScorer(boolean disableCoord, boolean collectPositions,
+  private Scorer countingConjunctionSumScorer(boolean disableCoord,
                                               List<Scorer> requiredScorers) throws IOException {
     // each scorer from the list counted as a single matcher
     final int requiredNrMatchers = requiredScorers.size();
-    return new ConjunctionScorer(weight, disableCoord ? 1.0f : ((BooleanWeight)weight).coord(requiredScorers.size(), requiredScorers.size()), collectPositions, requiredScorers) {
+    return new ConjunctionScorer(weight, disableCoord ? 1.0f : ((BooleanWeight)weight).coord(requiredScorers.size(), requiredScorers.size()), requiredScorers) {
       private int lastScoredDoc = -1;
       // Save the score of lastScoredDoc, so that we don't compute it more than
       // once in score().
@@ -206,9 +206,9 @@ class BooleanScorer2 extends Scorer {
     };
   }
 
-  private Scorer dualConjunctionSumScorer(boolean disableCoord, boolean collectPositions,
+  private Scorer dualConjunctionSumScorer(boolean disableCoord,
                                           Scorer req1, Scorer req2) throws IOException { // non counting.
-    return new ConjunctionScorer(weight, disableCoord ? 1.0f : ((BooleanWeight)weight).coord(2, 2), collectPositions, req1, req2);
+    return new ConjunctionScorer(weight, disableCoord ? 1.0f : ((BooleanWeight)weight).coord(2, 2), req1, req2);
     // All scorers match, so defaultSimilarity always has 1 as
     // the coordination factor.
     // Therefore the sum of the scores of two scorers
@@ -218,52 +218,51 @@ class BooleanScorer2 extends Scorer {
   /** Returns the scorer to be used for match counting and score summing.
    * Uses requiredScorers, optionalScorers and prohibitedScorers.
    */
-  private Scorer makeCountingSumScorer(boolean disableCoord, boolean collectPositions) throws IOException { // each scorer counted as a single matcher
+  private Scorer makeCountingSumScorer(boolean disableCoord) throws IOException { // each scorer counted as a single matcher
     return (requiredScorers.size() == 0)
-      ? makeCountingSumScorerNoReq(disableCoord, collectPositions)
-      : makeCountingSumScorerSomeReq(disableCoord, collectPositions);
+      ? makeCountingSumScorerNoReq(disableCoord)
+      : makeCountingSumScorerSomeReq(disableCoord);
   }
 
-  private Scorer makeCountingSumScorerNoReq(boolean disableCoord, boolean collectPositions) throws IOException { // No required scorers
+  private Scorer makeCountingSumScorerNoReq(boolean disableCoord) throws IOException { // No required scorers
     // minNrShouldMatch optional scorers are required, but at least 1
     int nrOptRequired = (minNrShouldMatch < 1) ? 1 : minNrShouldMatch;
     Scorer requiredCountingSumScorer;
     if (optionalScorers.size() > nrOptRequired)
-      requiredCountingSumScorer = countingDisjunctionSumScorer(optionalScorers, nrOptRequired, collectPositions);
+      requiredCountingSumScorer = countingDisjunctionSumScorer(optionalScorers, nrOptRequired);
     else if (optionalScorers.size() == 1)
       requiredCountingSumScorer = new SingleMatchScorer(optionalScorers.get(0));
     else {
-      requiredCountingSumScorer = countingConjunctionSumScorer(disableCoord, collectPositions, optionalScorers);
+      requiredCountingSumScorer = countingConjunctionSumScorer(disableCoord, optionalScorers);
     }
-    return addProhibitedScorers(requiredCountingSumScorer, collectPositions);
+    return addProhibitedScorers(requiredCountingSumScorer);
   }
 
-  private Scorer makeCountingSumScorerSomeReq(boolean disableCoord, boolean collectPositions) throws IOException { // At least one required scorer.
+  private Scorer makeCountingSumScorerSomeReq(boolean disableCoord) throws IOException { // At least one required scorer.
     if (optionalScorers.size() == minNrShouldMatch) { // all optional scorers also required.
       ArrayList<Scorer> allReq = new ArrayList<Scorer>(requiredScorers);
       allReq.addAll(optionalScorers);
-      return addProhibitedScorers(countingConjunctionSumScorer(disableCoord, collectPositions, allReq), collectPositions);
+      return addProhibitedScorers(countingConjunctionSumScorer(disableCoord, allReq));
     } else { // optionalScorers.size() > minNrShouldMatch, and at least one required scorer
       Scorer requiredCountingSumScorer =
             requiredScorers.size() == 1
             ? new SingleMatchScorer(requiredScorers.get(0))
-            : countingConjunctionSumScorer(disableCoord, collectPositions, requiredScorers);
+            : countingConjunctionSumScorer(disableCoord, requiredScorers);
       if (minNrShouldMatch > 0) { // use a required disjunction scorer over the optional scorers
         return addProhibitedScorers( 
                       dualConjunctionSumScorer( // non counting
                               disableCoord, 
-                              collectPositions,
                               requiredCountingSumScorer,
                               countingDisjunctionSumScorer(
                                       optionalScorers,
-                                      minNrShouldMatch, collectPositions)), collectPositions);
+                                      minNrShouldMatch)));
       } else { // minNrShouldMatch == 0
         return new ReqOptSumScorer(
-                      addProhibitedScorers(requiredCountingSumScorer, collectPositions),
+                      addProhibitedScorers(requiredCountingSumScorer),
                       optionalScorers.size() == 1
                         ? new SingleMatchScorer(optionalScorers.get(0))
                         // require 1 in combined, optional scorer.
-                        : countingDisjunctionSumScorer(optionalScorers, 1, collectPositions), collectPositions);
+                        : countingDisjunctionSumScorer(optionalScorers, 1));
       }
     }
   }
@@ -272,14 +271,14 @@ class BooleanScorer2 extends Scorer {
    * Uses the given required scorer and the prohibitedScorers.
    * @param requiredCountingSumScorer A required scorer already built.
    */
-  private Scorer addProhibitedScorers(Scorer requiredCountingSumScorer, boolean collectPositions) throws IOException
+  private Scorer addProhibitedScorers(Scorer requiredCountingSumScorer) throws IOException
   {
     return (prohibitedScorers.size() == 0)
           ? requiredCountingSumScorer // no prohibited
           : new ReqExclScorer(requiredCountingSumScorer,
                               ((prohibitedScorers.size() == 1)
                                 ? prohibitedScorers.get(0)
-                                : new DisjunctionSumScorer(weight, collectPositions, prohibitedScorers)), collectPositions);
+                                : new DisjunctionSumScorer(weight, prohibitedScorers)));
   }
 
   /** Scores and collects all matching documents.
@@ -332,8 +331,8 @@ class BooleanScorer2 extends Scorer {
   }
   
   @Override
-  public IntervalIterator positions() throws IOException {
-    return countingSumScorer.positions();
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
+    return countingSumScorer.positions(collectPositions);
   }
 
   @Override

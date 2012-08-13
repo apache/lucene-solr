@@ -80,7 +80,7 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions() throws IOException {
+    public IntervalIterator positions(boolean collectPositions) throws IOException {
       // nocommit this is tricky - I think we can't really provide positions here?
       throw new UnsupportedOperationException();
     }
@@ -117,7 +117,7 @@ public class MatchAllDocsQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
+        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
       return new MatchAllScorer(context.reader(), acceptDocs, this, queryWeight);
     }
 

@@ -26,6 +26,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.Weight.FeatureFlags;
 import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -184,8 +185,8 @@ public class TestBasicIntervals extends LuceneTestCase {
    Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
    
    Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
-       .nextBoolean(), true, true, false, false, r.getLiveDocs());
-   IntervalIterator positions = scorer.positions();
+       .nextBoolean(), true, FeatureFlags.POSITIONS, r.getLiveDocs());
+   IntervalIterator positions = scorer.positions(false);
    positions.scorer.advance(11);
    positions.scorerAdvanced(11);
    Interval interval = positions.next();
@@ -207,8 +208,8 @@ public class TestBasicIntervals extends LuceneTestCase {
   public static class BlockPositionIteratorFilter implements IntervalFilter {
 
     @Override
-    public IntervalIterator filter(IntervalIterator iter) {
-      return new BlockIntervalIterator(false, iter);
+    public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
+      return new BlockIntervalIterator(collectPositions, iter);
     }
     
   }
@@ -228,8 +229,8 @@ public class TestBasicIntervals extends LuceneTestCase {
       Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
       
       Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
-          .nextBoolean(), true, true, false, false, r.getLiveDocs());
-      IntervalIterator positions = scorer.positions();
+          .nextBoolean(), true, FeatureFlags.POSITIONS, r.getLiveDocs());
+      IntervalIterator positions = scorer.positions(false);
       advanceIter(positions, 4);
 
       Interval interval = positions.next();
@@ -288,9 +289,9 @@ public class TestBasicIntervals extends LuceneTestCase {
       AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
       Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
       Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
-          .nextBoolean(), true, true, false, false, r.getLiveDocs());
+          .nextBoolean(), true, FeatureFlags.POSITIONS, r.getLiveDocs());
       
-      IntervalIterator iterator = scorer.positions();
+      IntervalIterator iterator = scorer.positions(false);
       assertEquals(4, advanceIter(iterator, 4));
       Interval interval = iterator.next();
 
@@ -349,8 +350,8 @@ public class TestBasicIntervals extends LuceneTestCase {
     AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
     Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
     
-    Scorer scorer = createWeight.scorer(r.getTopReaderContext(), true, true, true, false, false, r.getLiveDocs());
-    return scorer.positions();
+    Scorer scorer = createWeight.scorer(r.getTopReaderContext(), true, true, FeatureFlags.POSITIONS, r.getLiveDocs());
+    return scorer.positions(false);
   }
   
   private IntervalIterator tstNextPosition(

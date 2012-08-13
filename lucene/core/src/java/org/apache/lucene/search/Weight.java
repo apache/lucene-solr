@@ -103,9 +103,7 @@ public abstract class Weight {
    *          if true, {@link Scorer#score(Collector)} will be called; if false,
    *          {@link Scorer#nextDoc()} and/or {@link Scorer#advance(int)} will
    *          be called.
-   * @param needsPositions TODO
-   * @param needsOffsets TODO
-   * @param collectPositions TODO
+   * @param flags TODO
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
@@ -113,7 +111,7 @@ public abstract class Weight {
    * @throws IOException
    */
   public abstract Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-      boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException;
+      boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException;
 
   /**
    * Returns true iff this implementation scores docs only out of order. This
@@ -127,4 +125,8 @@ public abstract class Weight {
    * the <code>Scorer</code> scores documents in-order.
    */
   public boolean scoresDocsOutOfOrder() { return false; }
+  
+  public static enum FeatureFlags {
+    DOCS, POSITIONS, POSITIONS_AND_PAYLOADS, OFFSETS, OFFSETS_AND_PAYLOADS
+  }
 }

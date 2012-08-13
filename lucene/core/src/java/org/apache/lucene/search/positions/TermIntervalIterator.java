@@ -36,7 +36,7 @@ public final class TermIntervalIterator extends IntervalIterator {
   public TermIntervalIterator(Scorer scorer, DocsAndPositionsEnum docsAndPos, boolean doPayloads,  boolean collectPositions) {
     super(scorer, collectPositions);
     this.docsAndPos = docsAndPos;
-    this.interval = doPayloads ? new PayloadPosInterval(docsAndPos, this)
+    this.interval = doPayloads ? new PayloadInterval(docsAndPos, this)
         : new Interval();
   }
 
@@ -89,12 +89,12 @@ public final class TermIntervalIterator extends IntervalIterator {
     return 0;
   }
   
-  private static final class PayloadPosInterval extends Interval {
+  private static final class PayloadInterval extends Interval {
     private int pos = -1;
     private final DocsAndPositionsEnum payloads;
     private final TermIntervalIterator termPos;
 
-    public PayloadPosInterval(DocsAndPositionsEnum payloads, TermIntervalIterator pos) {
+    public PayloadInterval(DocsAndPositionsEnum payloads, TermIntervalIterator pos) {
       this.payloads = payloads;
       this.termPos = pos;
     }

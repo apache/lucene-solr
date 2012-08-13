@@ -64,7 +64,7 @@ public abstract class Scorer extends DocIdSetIterator {
   }
   
   //nocommit javadocs
-  public abstract IntervalIterator positions() throws IOException;
+  public abstract IntervalIterator positions(boolean collectPositions) throws IOException;
 
   /**
    * Expert: Collects matching documents in a range. Hook for optimization.

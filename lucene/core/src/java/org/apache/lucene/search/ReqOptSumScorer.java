@@ -35,7 +35,6 @@ class ReqOptSumScorer extends Scorer {
    */
   private Scorer reqScorer;
   private Scorer optScorer;
-  private final boolean collectPositions;
 
   /** Construct a <code>ReqOptScorer</code>.
    * @param reqScorer The required scorer. This must match.
@@ -43,14 +42,13 @@ class ReqOptSumScorer extends Scorer {
    */
   public ReqOptSumScorer(
       Scorer reqScorer,
-      Scorer optScorer, boolean collectPositions)
+      Scorer optScorer)
   {
     super(reqScorer.weight);
     assert reqScorer != null;
     assert optScorer != null;
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
-    this.collectPositions = collectPositions;
   }
 
   @Override
@@ -91,8 +89,8 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions() throws IOException {
-    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(reqScorer, optScorer));
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
+    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(collectPositions, reqScorer, optScorer));
   }
 
   @Override

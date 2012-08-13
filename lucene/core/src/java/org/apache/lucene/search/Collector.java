@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.search.Weight.FeatureFlags;
 
 /**
  * <p>Expert: Collectors are primarily meant to be used to
@@ -173,11 +174,9 @@ public abstract class Collector {
    */
   public abstract boolean acceptsDocsOutOfOrder();
   
-  public boolean needsPositions() { return false; }
   
-  public boolean needsOffsets() { return false; }
-
-  public boolean collectsPositions() { return false; }
-
+  public FeatureFlags scorerFlags() {
+    return FeatureFlags.DOCS;
+  }
   
 }

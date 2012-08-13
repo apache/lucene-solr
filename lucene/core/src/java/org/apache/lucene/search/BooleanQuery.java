@@ -239,7 +239,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
         Weight w = wIter.next();
         BooleanClause c = cIter.next();
-        if (w.scorer(context, true, true, false, false, false, context.reader().getLiveDocs()) == null) {
+        if (w.scorer(context, true, true, FeatureFlags.DOCS, context.reader().getLiveDocs()) == null) {
           if (c.isRequired()) {
             fail = true;
             Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
@@ -302,11 +302,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs)
+        boolean topScorer, FeatureFlags flags, Bits acceptDocs)
         throws IOException {
       if (termConjunction) {
         // specialized scorer for term conjunctions
-        return createConjunctionTermScorer(context, acceptDocs, needsPositions, needsOffsets, collectPositions);
+        return createConjunctionTermScorer(context, acceptDocs, flags);
       }
       List<Scorer> required = new ArrayList<Scorer>();
       List<Scorer> prohibited = new ArrayList<Scorer>();
@@ -314,7 +314,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        Scorer subScorer = w.scorer(context, true, false, needsPositions, needsOffsets, collectPositions, acceptDocs);
+        Scorer subScorer = w.scorer(context, true, false, flags, acceptDocs);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -329,7 +329,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Check if we can return a BooleanScorer
-      if (!scoreDocsInOrder && !needsPositions && topScorer && required.size() == 0) {
+      if (!scoreDocsInOrder && flags == FeatureFlags.DOCS && topScorer && required.size() == 0) {
         return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       
@@ -344,10 +344,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Return a BooleanScorer2
-      return new BooleanScorer2(this, disableCoord, minNrShouldMatch, required, prohibited, optional, maxCoord, collectPositions);
+      return new BooleanScorer2(this, disableCoord, minNrShouldMatch, required, prohibited, optional, maxCoord);
     }
 
-    private Scorer createConjunctionTermScorer(AtomicReaderContext context, Bits acceptDocs, boolean needsPositions, boolean needsOffsets, boolean collectPositions)
+    private Scorer createConjunctionTermScorer(AtomicReaderContext context, Bits acceptDocs, FeatureFlags flags)
         throws IOException {
 
       // TODO: fix scorer API to specify "needsScores" up
@@ -357,7 +357,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       final DocsAndFreqs[] docsAndFreqs = new DocsAndFreqs[weights.size()];
       for (int i = 0; i < docsAndFreqs.length; i++) {
         final TermWeight weight = (TermWeight) weights.get(i);
-        final Scorer scorer = weight.scorer(context, true, false, needsPositions, needsOffsets, collectPositions, acceptDocs);
+        final Scorer scorer = weight.scorer(context, true, false, flags, acceptDocs);
         if (scorer == null) {
           return null;
         }
@@ -368,7 +368,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         }
       }
       return new ConjunctionTermScorer(this, disableCoord ? 1.0f : coord(
-          docsAndFreqs.length, docsAndFreqs.length), collectPositions, docsAndFreqs);
+          docsAndFreqs.length, docsAndFreqs.length), docsAndFreqs);
     }
     
     @Override

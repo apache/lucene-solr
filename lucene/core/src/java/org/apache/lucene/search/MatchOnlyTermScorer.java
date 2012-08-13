@@ -99,7 +99,7 @@ final class MatchOnlyTermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override
-  public IntervalIterator positions() throws IOException {
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
     throw new UnsupportedOperationException();
    
   }

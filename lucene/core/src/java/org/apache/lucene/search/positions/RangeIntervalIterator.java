@@ -32,19 +32,19 @@ public class RangeIntervalIterator extends IntervalIterator implements IntervalF
   private int end;
   
   public RangeIntervalIterator(int start, int end) {
-    this(start, end, null);
+    this(false, start, end, null); // template
   }
   
-  public RangeIntervalIterator(int start, int end, IntervalIterator iterator) {
+  public RangeIntervalIterator(boolean collectPositions, int start, int end, IntervalIterator iterator) {
     super(iterator != null ? iterator.scorer : null,
-        iterator != null ? iterator.collectPositions : false);
+        collectPositions);
     this.iterator = iterator;
     this.start = start;
     this.end = end;
   }
 
-  public IntervalIterator filter(IntervalIterator iter) {
-    return new RangeIntervalIterator(start, end, iter);
+  public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
+    return new RangeIntervalIterator(collectPositions, start, end, iter);
   }  
   
   @Override

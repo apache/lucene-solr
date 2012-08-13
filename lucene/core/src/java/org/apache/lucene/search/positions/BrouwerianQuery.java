@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.Weight.FeatureFlags;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -93,15 +94,17 @@ public final class BrouwerianQuery extends Query implements Cloneable {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
-      final Scorer scorer = minuted.scorer(context, true, topScorer, true, needsOffsets, collectPositions, acceptDocs);
-      final Scorer subScorer = subtracted.scorer(context, true, topScorer, true, needsOffsets, collectPositions, acceptDocs);
+        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+      flags = flags == FeatureFlags.DOCS ? FeatureFlags.POSITIONS : flags;
+      ScorerFactory factory = new ScorerFactory(minuted, subtracted, context, topScorer, flags, acceptDocs);
+      final Scorer scorer = factory.minutedScorer();
+      final Scorer subScorer = factory.subtractedScorer();
       if (subScorer == null) {
         return scorer;
       }
-      return scorer == null ? null : new PositionFilterScorer(this, collectPositions, scorer, subScorer);
+      return scorer == null ? null : new PositionFilterScorer(this, scorer, subScorer, factory);
     }
-
+    
     @Override
     public Query getQuery() {
       return BrouwerianQuery.this;
@@ -117,21 +120,49 @@ public final class BrouwerianQuery extends Query implements Cloneable {
       minuted.normalize(norm, topLevelBoost);
     }
   }
-
+  
+  static class ScorerFactory {
+    final Weight minuted;
+    final Weight subtracted;
+    final AtomicReaderContext context;
+    final boolean topScorer;
+    final FeatureFlags flags;
+    final Bits acceptDocs;
+    ScorerFactory(Weight minuted, Weight subtracted,
+        AtomicReaderContext context, boolean topScorer, FeatureFlags flags,
+        Bits acceptDocs) {
+      this.minuted = minuted;
+      this.subtracted = subtracted;
+      this.context = context;
+      this.topScorer = topScorer;
+      this.flags = flags;
+      this.acceptDocs = acceptDocs;
+    }
+    
+    public Scorer minutedScorer() throws IOException {
+      return minuted.scorer(context, true, topScorer, flags, acceptDocs);
+    }
+    
+    public Scorer subtractedScorer() throws IOException {
+      return subtracted.scorer(context, true, topScorer, flags, acceptDocs);
+    }
+    
+  }
+  
   class PositionFilterScorer extends Scorer {
 
     private final Scorer other;
     private IntervalIterator filter;
     private final Scorer subtracted;
     Interval current;
-    private final boolean collectPositions;
+    private final ScorerFactory factory;
 
-    public PositionFilterScorer(Weight weight, boolean collectPositions, Scorer other, Scorer substacted) throws IOException {
+    public PositionFilterScorer(Weight weight, Scorer other, Scorer subtracted, ScorerFactory factory) throws IOException {
       super(weight);
       this.other = other;
-      this.subtracted = substacted;
-      this.collectPositions = collectPositions;
-      this.filter = new BrouwerianIntervalIterator(other, collectPositions, other.positions(), substacted.positions());
+      this.subtracted = subtracted;
+      this.filter = new BrouwerianIntervalIterator(other, false, other.positions(false), subtracted.positions(false));
+      this.factory = factory;
     }
 
     @Override
@@ -140,8 +171,47 @@ public final class BrouwerianQuery extends Query implements Cloneable {
     }
 
     @Override
-    public IntervalIterator positions() throws IOException {
-      return new IntervalIterator(this, collectPositions) {
+    public IntervalIterator positions(boolean collectPositions) throws IOException {
+      if (collectPositions) {
+        final Scorer minuted  = factory.minutedScorer();
+        final Scorer subtracted = factory.subtractedScorer();
+        final BrouwerianIntervalIterator brouwerianIntervalIterator = new BrouwerianIntervalIterator(subtracted, true, minuted.positions(true), subtracted.positions(true));
+        return new IntervalIterator(this, collectPositions) {
+
+          @Override
+          public int scorerAdvanced(int docId) throws IOException {
+            docId = minuted.advance(docId);
+            subtracted.advance(docId);
+            brouwerianIntervalIterator.scorerAdvanced(docId);
+            return docId;
+          }
+
+          @Override
+          public Interval next() throws IOException {
+            return brouwerianIntervalIterator.next();
+          }
+
+          @Override
+          public void collect(IntervalCollector collector) {
+            brouwerianIntervalIterator.collect(collector);
+          }
+
+          @Override
+          public IntervalIterator[] subs(boolean inOrder) {
+            return brouwerianIntervalIterator.subs(inOrder);
+          }
+
+          @Override
+          public int matchDistance() {
+            return brouwerianIntervalIterator.matchDistance();
+          }
+          
+        };
+      }
+      
+
+      
+      return new IntervalIterator(this, false) {
         private boolean buffered = true;
         @Override
         public int scorerAdvanced(int docId) throws IOException {

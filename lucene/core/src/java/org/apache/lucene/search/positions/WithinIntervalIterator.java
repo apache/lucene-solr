@@ -28,14 +28,14 @@ public class WithinIntervalIterator extends IntervalIterator implements Interval
   private IntervalIterator iterator;
   private Interval interval;
   
-  public WithinIntervalIterator(int howMany, IntervalIterator iterator) {
-    super(iterator != null ? iterator.scorer : null, iterator != null ? iterator.collectPositions : false);
+  public WithinIntervalIterator(boolean collectPositions, int howMany, IntervalIterator iterator) {
+    super(iterator != null ? iterator.scorer : null, collectPositions);
     this.howMany = howMany;
     this.iterator = iterator;
   }
   
   public WithinIntervalIterator(int howMany) {
-    this(howMany, null); // use this instance as a filter template
+    this(false, howMany, null); // use this instance as a filter template
   }
   @Override
   public Interval next() throws IOException {
@@ -52,8 +52,8 @@ public class WithinIntervalIterator extends IntervalIterator implements Interval
     return new IntervalIterator[] {iterator};
   }
 
-  public IntervalIterator filter(IntervalIterator iter) {
-    return new WithinIntervalIterator(howMany, iter);
+  public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
+    return new WithinIntervalIterator(collectPositions, howMany, iter);
   }
 
   @Override

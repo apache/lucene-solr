@@ -40,8 +40,6 @@ class DisjunctionSumScorer extends DisjunctionScorer {
 
   private double score = Float.NaN;
 
-  private boolean collectPositions;
-  
   /** Construct a <code>DisjunctionScorer</code>.
    * @param weight The weight to be used.
    * @param needsPositions 
@@ -54,9 +52,8 @@ class DisjunctionSumScorer extends DisjunctionScorer {
    * <br>When minimumNrMatchers equals the number of subScorers,
    * it more efficient to use <code>ConjunctionScorer</code>.
    */
-  public DisjunctionSumScorer(Weight weight, List<Scorer> subScorers, int minimumNrMatchers, boolean collectPositions) throws IOException {
+  public DisjunctionSumScorer(Weight weight, List<Scorer> subScorers, int minimumNrMatchers) throws IOException {
     super(weight, subScorers.toArray(new Scorer[subScorers.size()]), subScorers.size());
-    this.collectPositions = collectPositions;
     if (minimumNrMatchers <= 0) {
       throw new IllegalArgumentException("Minimum nr of matchers must be positive");
     }
@@ -70,8 +67,8 @@ class DisjunctionSumScorer extends DisjunctionScorer {
   /** Construct a <code>DisjunctionScorer</code>, using one as the minimum number
    * of matching subscorers.
    */
-  public DisjunctionSumScorer(Weight weight, boolean collectPositions, List<Scorer> subScorers) throws IOException {
-    this(weight, subScorers, 1, collectPositions);
+  public DisjunctionSumScorer(Weight weight, List<Scorer> subScorers) throws IOException {
+    this(weight, subScorers, 1);
   }
 
   @Override
@@ -172,11 +169,11 @@ class DisjunctionSumScorer extends DisjunctionScorer {
   }
   
   @Override
-  public IntervalIterator positions() throws IOException {
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
     if (minimumNrMatchers > 1) {
       return new ConjunctionIntervalIterator(this,
-          collectPositions, minimumNrMatchers, BooleanIntervalIterator.pullIterators(subScorers));
+          collectPositions, minimumNrMatchers, BooleanIntervalIterator.pullIterators(collectPositions, subScorers));
     }
-    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(subScorers));
+    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(collectPositions, subScorers));
   }
 }

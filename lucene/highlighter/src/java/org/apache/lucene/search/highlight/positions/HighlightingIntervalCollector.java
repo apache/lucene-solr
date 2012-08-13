@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight.FeatureFlags;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator.IntervalCollector;
 import org.apache.lucene.search.positions.Interval;
@@ -71,7 +72,7 @@ public class HighlightingIntervalCollector extends Collector implements Interval
 
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
-    positions = scorer.positions();
+    positions = scorer.positions(true);
     // If we want to visit the other scorers, we can, here...
   }
   
@@ -89,18 +90,8 @@ public class HighlightingIntervalCollector extends Collector implements Interval
   }
   
   @Override
-  public boolean needsPositions() {
-    return true;
-  }
-  
-  @Override
-  public boolean needsOffsets() {
-    return true;
-  }
-  
-  @Override
-  public boolean collectsPositions() {
-    return true;
+  public FeatureFlags scorerFlags() {
+    return FeatureFlags.OFFSETS;
   }
 
   @Override

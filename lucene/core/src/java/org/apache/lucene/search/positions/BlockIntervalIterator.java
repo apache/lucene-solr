@@ -70,8 +70,7 @@ public final class BlockIntervalIterator extends IntervalIterator {
     iterators = new IntervalIterator[subScorers.length];
     intervals = new Interval[subScorers.length];
     for (int i = 0; i < subScorers.length; i++) {
-      // nocommit - offsets and payloads?
-      iterators[i] = subScorers[i].positions();
+      iterators[i] = subScorers[i].positions(collectPositions);
       assert iterators[i] != null;
     }
     lastIter = iterators.length - 1;

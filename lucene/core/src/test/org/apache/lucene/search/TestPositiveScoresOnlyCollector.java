@@ -55,7 +55,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     }
 
     @Override
-    public IntervalIterator positions() throws IOException {
+    public IntervalIterator positions(boolean collectPositions) throws IOException {
       throw new UnsupportedOperationException();
     }
   }

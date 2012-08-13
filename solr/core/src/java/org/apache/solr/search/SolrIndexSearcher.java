@@ -35,6 +35,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.Weight.FeatureFlags;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -2212,7 +2213,7 @@ class FilterImpl extends Filter {
         iterators.add(iter);
       }
       for (Weight w : weights) {
-        Scorer scorer = w.scorer(context, true, false, false, false, false, context.reader().getLiveDocs());
+        Scorer scorer = w.scorer(context, true, false, FeatureFlags.DOCS, context.reader().getLiveDocs());
         if (scorer == null) return null;
         iterators.add(scorer);
       }

@@ -82,7 +82,7 @@ public class TermQuery extends Query {
     
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
+        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
       assert termStates.topReaderContext == ReaderUtil
           .getTopLevelContext(context) : "The top-reader used to create Weight ("
           + termStates.topReaderContext
@@ -92,9 +92,24 @@ public class TermQuery extends Query {
       if (termsEnum == null) {
         return null;
       }
-      DocsEnum docs = needsPositions ? termsEnum.docsAndPositions(acceptDocs, null, needsOffsets) : termsEnum.docs(acceptDocs, null, true);
+      DocsEnum docs;
+      boolean needsOffsets = false;
+      switch (flags) {
+        case DOCS:
+          docs = termsEnum.docs(acceptDocs, null, true);
+          break;
+        case OFFSETS:
+        case OFFSETS_AND_PAYLOADS:
+          needsOffsets = true;
+        case POSITIONS:
+        case POSITIONS_AND_PAYLOADS:
+          docs =  termsEnum.docsAndPositions(acceptDocs, null, needsOffsets);
+          break;
+        default:
+          throw new IllegalArgumentException("unknown ScorerFlag " + flags);
+      }
       if (docs != null) {
-        return new TermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq(), collectPositions);
+        return new TermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
       } else {
         // Index does not store freq info
         docs = termsEnum.docs(acceptDocs, null, false);
@@ -133,7 +148,7 @@ public class TermQuery extends Query {
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
         throws IOException {
-      Scorer scorer = scorer(context, true, false, false, false, false, context.reader()
+      Scorer scorer = scorer(context, true, false, FeatureFlags.DOCS, context.reader()
               .getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);

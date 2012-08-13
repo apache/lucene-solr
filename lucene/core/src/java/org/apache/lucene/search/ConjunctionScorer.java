@@ -34,15 +34,13 @@ class ConjunctionScorer extends Scorer {
   private final Scorer[] scorers;
   private final float coord;
   private int lastDoc = -1;
-  private final boolean collectPositions;
 
-  public ConjunctionScorer(Weight weight, float coord, boolean collectPositions, Collection<Scorer> scorers) throws IOException {
-    this(weight, coord, collectPositions, scorers.toArray(new Scorer[scorers.size()]));
+  public ConjunctionScorer(Weight weight, float coord, Collection<Scorer> scorers) throws IOException {
+    this(weight, coord, scorers.toArray(new Scorer[scorers.size()]));
   }
   
-  public ConjunctionScorer(Weight weight, float coord, boolean collectPositions, Scorer... scorers) throws IOException {
+  public ConjunctionScorer(Weight weight, float coord, Scorer... scorers) throws IOException {
     super(weight);
-    this.collectPositions = collectPositions;
     scorersOrdered = new Scorer[scorers.length];
     System.arraycopy(scorers, 0, scorersOrdered, 0, scorers.length);
     this.scorers = scorers;
@@ -148,12 +146,12 @@ class ConjunctionScorer extends Scorer {
   }
   
   @Override
-  public IntervalIterator positions() throws IOException {
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
     if (scorersOrdered == null) {
       throw new IllegalStateException("no positions requested for this scorer");
     }
       // only created if needed for this scorer - no penalty for non-positional queries
-    return new ConjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(scorersOrdered));
+    return new ConjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(collectPositions, scorersOrdered));
   }
 
 

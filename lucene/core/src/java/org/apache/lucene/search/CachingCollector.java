@@ -92,7 +92,7 @@ public abstract class CachingCollector extends Collector {
     public final int nextDoc() { throw new UnsupportedOperationException(); }
 
     @Override
-    public IntervalIterator positions() throws IOException { throw new UnsupportedOperationException(); }
+    public IntervalIterator positions(boolean collectPositions) throws IOException { throw new UnsupportedOperationException(); }
     }
 
   // A CachingCollector which caches scores

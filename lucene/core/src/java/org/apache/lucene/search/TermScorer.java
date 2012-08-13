@@ -31,7 +31,6 @@ final class TermScorer extends Scorer {
   private final DocsEnum docsEnum;
   private final Similarity.ExactSimScorer docScorer;
   private final int docFreq;
-  private final boolean collectPositions;
   
   /**
    * Construct a <code>TermScorer</code>.
@@ -46,12 +45,11 @@ final class TermScorer extends Scorer {
    * @param docFreq
    *          per-segment docFreq of this term
    */
-  TermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer, int docFreq, boolean collectPositions) {
+  TermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer, int docFreq) {
     super(weight);
     this.docScorer = docScorer;
     this.docsEnum = td;
     this.docFreq = docFreq;
-    this.collectPositions = collectPositions;
   }
 
   @Override
@@ -99,7 +97,7 @@ final class TermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
   
   @Override
-  public IntervalIterator positions() throws IOException {
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
     assert docsEnum instanceof DocsAndPositionsEnum;
     return new TermIntervalIterator(this, (DocsAndPositionsEnum) docsEnum, false, collectPositions);
   }

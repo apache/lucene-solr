@@ -52,14 +52,12 @@ final class SloppyPhraseScorer extends PhraseScorer {
   private PhrasePositions[][] rptGroups; // in each group are PPs that repeats each other (i.e. same term), sorted by (query) offset 
   private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps 
   private final boolean needsOffsets;
-  private final boolean collectPositions;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SloppySimScorer docScorer, boolean needsOffsets, boolean collectPositions) throws IOException {
+      int slop, Similarity.SloppySimScorer docScorer, boolean needsOffsets) throws IOException {
     super(weight, postings, docScorer);
     this.slop = slop;
     this.needsOffsets = needsOffsets;
-    this.collectPositions = collectPositions;
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
 //    iter = (MaxLengthPositionIntervalIterator) positions(false, false, false);
@@ -546,7 +544,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
   }
 
   @Override
-  public IntervalIterator positions() throws IOException {
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
     // nocommit - payloads?
     Map<Term, IterAndOffsets> map = new HashMap<Term, IterAndOffsets>();
     List<DocsAndPositionsEnum> enums = new ArrayList<DocsAndPositionsEnum>();

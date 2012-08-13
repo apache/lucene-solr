@@ -99,9 +99,9 @@ public class BoostedQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
+        boolean topScorer,  FeatureFlags flags, Bits acceptDocs) throws IOException {
       // we are gonna advance() the subscorer
-      Scorer subQueryScorer = qWeight.scorer(context, true, false, needsPositions, needsOffsets, collectPositions, acceptDocs);
+      Scorer subQueryScorer = qWeight.scorer(context, true, false, flags, acceptDocs);
       if(subQueryScorer == null) {
         return null;
       }
@@ -191,8 +191,8 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions() throws IOException {
-      return scorer.positions();
+    public IntervalIterator positions(boolean collectPositions) throws IOException {
+      return scorer.positions(collectPositions);
     }
   }
 

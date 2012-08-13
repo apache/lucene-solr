@@ -350,13 +350,13 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
+        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
       return new SpatialScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      return ((SpatialScorer)scorer(context, true, true, false, false, false, context.reader().getLiveDocs())).explain(doc);
+      return ((SpatialScorer)scorer(context, true, true, FeatureFlags.DOCS, context.reader().getLiveDocs())).explain(doc);
     }
   }
 
@@ -512,7 +512,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
-    public IntervalIterator positions() throws IOException {
+    public IntervalIterator positions(boolean collectPositions) throws IOException {
       throw new UnsupportedOperationException();
     }
   }

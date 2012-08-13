@@ -37,12 +37,9 @@ class ConjunctionTermScorer extends Scorer {
   protected final DocsAndFreqs[] docsAndFreqs;
   private final DocsAndFreqs lead;
   private DocsAndFreqs[] origDocsAndFreqs;
-  private final boolean collectPositions;
 
-  ConjunctionTermScorer(Weight weight, float coord, boolean collectPositions,
-      DocsAndFreqs[] docsAndFreqs) {
+  ConjunctionTermScorer(Weight weight, float coord, DocsAndFreqs[] docsAndFreqs) {
     super(weight);
-    this.collectPositions = collectPositions;
     this.coord = coord;
     this.docsAndFreqs = docsAndFreqs;
     this.origDocsAndFreqs = new DocsAndFreqs[docsAndFreqs.length];
@@ -143,7 +140,7 @@ class ConjunctionTermScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions() throws IOException {
+  public IntervalIterator positions(boolean collectPositions) throws IOException {
     
     TermIntervalIterator[] positionIters = new TermIntervalIterator[origDocsAndFreqs.length];
     for (int i = 0; i < positionIters.length; i++) {

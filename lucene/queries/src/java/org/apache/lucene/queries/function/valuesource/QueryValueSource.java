@@ -23,6 +23,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.Weight.FeatureFlags;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
@@ -123,7 +124,7 @@ class QueryDocValues extends FloatDocValues {
     try {
       if (doc < lastDocRequested) {
         if (noMatches) return defVal;
-        scorer = weight.scorer(readerContext, true, false, false, false, false, acceptDocs);
+        scorer = weight.scorer(readerContext, true, false, FeatureFlags.DOCS, acceptDocs);
         if (scorer==null) {
           noMatches = true;
           return defVal;
@@ -154,7 +155,7 @@ class QueryDocValues extends FloatDocValues {
     try {
       if (doc < lastDocRequested) {
         if (noMatches) return false;
-        scorer = weight.scorer(readerContext, true, false, false, false, false, acceptDocs);
+        scorer = weight.scorer(readerContext, true, false, FeatureFlags.DOCS, acceptDocs);
         scorerDoc = -1;
         if (scorer==null) {
           noMatches = true;
@@ -212,7 +213,7 @@ class QueryDocValues extends FloatDocValues {
             mval.exists = false;
             return;
           }
-          scorer = weight.scorer(readerContext, true, false, false, false, false, acceptDocs);
+          scorer = weight.scorer(readerContext, true, false, FeatureFlags.DOCS, acceptDocs);
           scorerDoc = -1;
           if (scorer==null) {
             noMatches = true;

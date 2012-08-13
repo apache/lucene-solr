@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Weight.FeatureFlags;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
@@ -123,7 +124,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, final Bits acceptDocs) throws IOException {
+        boolean topScorer, FeatureFlags flags, final Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
@@ -134,7 +135,7 @@ public class ConstantScoreQuery extends Query {
         disi = dis.iterator();
       } else {
         assert query != null && innerWeight != null;
-        disi = innerWeight.scorer(context, scoreDocsInOrder, topScorer, needsPositions, needsOffsets, collectPositions, acceptDocs);
+        disi = innerWeight.scorer(context, scoreDocsInOrder, topScorer, flags, acceptDocs);
       }
 
       if (disi == null) {
@@ -150,7 +151,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      final Scorer cs = scorer(context, true, false, false, false, false, context.reader().getLiveDocs());
+      final Scorer cs = scorer(context, true, false, FeatureFlags.DOCS, context.reader().getLiveDocs());
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
       final ComplexExplanation result = new ComplexExplanation();
@@ -224,18 +225,13 @@ public class ConstantScoreQuery extends Query {
         }
         
         @Override
+        public FeatureFlags scorerFlags() {
+          return collector.scorerFlags();
+        }
+
+        @Override
         public boolean acceptsDocsOutOfOrder() {
           return collector.acceptsDocsOutOfOrder();
-        }
-        
-        @Override
-        public boolean needsPositions() {
-          return collector.needsPositions();
-        }
-        
-        @Override
-        public boolean needsOffsets() {
-          return collector.needsOffsets();
         }
       };
     }
@@ -261,9 +257,9 @@ public class ConstantScoreQuery extends Query {
     }
         
     @Override
-    public IntervalIterator positions() throws IOException {
+    public IntervalIterator positions(boolean collectPositions) throws IOException {
       if (docIdSetIterator instanceof Scorer) {
-        return ((Scorer) docIdSetIterator).positions();
+        return ((Scorer) docIdSetIterator).positions(collectPositions);
       } else {
         throw new UnsupportedOperationException("positions are only supported on Scorer subclasses");
       }

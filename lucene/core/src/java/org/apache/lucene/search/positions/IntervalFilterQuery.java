@@ -21,6 +21,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.Weight.FeatureFlags;
 import org.apache.lucene.search.positions.IntervalIterator.IntervalCollector;
 import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
 import org.apache.lucene.util.Bits;
@@ -81,7 +82,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
         throws IOException {
-      Scorer scorer = scorer(context, true, false, true, false, false, context.reader()
+      Scorer scorer = scorer(context, true, false, FeatureFlags.POSITIONS, context.reader()
               .getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
@@ -95,9 +96,11 @@ public class IntervalFilterQuery extends Query implements Cloneable {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, boolean needsPositions, boolean needsOffsets, boolean collectPositions, Bits acceptDocs) throws IOException {
-      final Scorer scorer = other.scorer(context, true, topScorer, true, needsOffsets, collectPositions, acceptDocs);
-      return scorer == null ? null : new PositionFilterScorer(this, collectPositions, scorer);
+        boolean topScorer, FeatureFlags flags, Bits acceptDocs) throws IOException {
+      flags = flags == FeatureFlags.DOCS ? FeatureFlags.POSITIONS : flags;
+      ScorerFactory factory = new ScorerFactory(other, context, topScorer, flags, acceptDocs);
+      final Scorer scorer = factory.scorer();
+      return scorer == null ? null : new PositionFilterScorer(this, scorer, factory);
     }
 
     @Override
@@ -115,19 +118,41 @@ public class IntervalFilterQuery extends Query implements Cloneable {
       other.normalize(norm, topLevelBoost);
     }
   }
+  
+  static class ScorerFactory {
+    final Weight weight;
+    final AtomicReaderContext context;
+    final boolean topScorer;
+    final FeatureFlags flags;
+    final Bits acceptDocs;
+    ScorerFactory(Weight weight,
+        AtomicReaderContext context, boolean topScorer, FeatureFlags flags,
+        Bits acceptDocs) {
+      this.weight = weight;
+      this.context = context;
+      this.topScorer = topScorer;
+      this.flags = flags;
+      this.acceptDocs = acceptDocs;
+    }
+    
+    public Scorer scorer() throws IOException {
+      return weight.scorer(context, true, topScorer, flags, acceptDocs);
+    }
+    
+  }
 
   class PositionFilterScorer extends Scorer {
 
     private final Scorer other;
     private IntervalIterator filter;
     private Interval current;
-    private final boolean collectPositions;
-    public PositionFilterScorer(Weight weight, boolean collectPositions, Scorer other) throws IOException {
+    private final ScorerFactory factory;
+    public PositionFilterScorer(Weight weight, Scorer other, ScorerFactory factory) throws IOException {
       super(weight);
       this.other = other;
-      this.collectPositions = collectPositions;
+      this.factory = factory;
       // nocommit - offsets and payloads?
-      this.filter = IntervalFilterQuery.this.filter.filter(other.positions());
+      this.filter = IntervalFilterQuery.this.filter.filter(false, other.positions(false));
     }
 
     @Override
@@ -136,7 +161,41 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     }
 
     @Override
-    public IntervalIterator positions() throws IOException {
+    public IntervalIterator positions(boolean collectPositions) throws IOException {
+      if (collectPositions) {
+        final Scorer collectingScorer = factory.scorer();
+        final IntervalIterator filter = IntervalFilterQuery.this.filter.filter(true, collectingScorer.positions(true));
+        return new IntervalIterator(this, true) {
+
+          @Override
+          public int scorerAdvanced(int docId) throws IOException {
+            docId = collectingScorer.advance(docId);
+            filter.scorerAdvanced(docId);
+            return docId;
+          }
+
+          @Override
+          public Interval next() throws IOException {
+            return filter.next();
+          }
+
+          @Override
+          public void collect(IntervalCollector collector) {
+            filter.collect(collector);
+          }
+
+          @Override
+          public IntervalIterator[] subs(boolean inOrder) {
+            return filter.subs(inOrder);
+          }
+
+          @Override
+          public int matchDistance() {
+            return filter.matchDistance();
+          }
+          
+        };
+      }
       
       return new IntervalIterator(this, collectPositions) {
         private boolean buffered = true;
