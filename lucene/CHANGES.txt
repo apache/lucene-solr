@@ -31,6 +31,10 @@ API Changes
   and exposes Iterator, so you can iterate over field names with
   for (String field : fields) instead.  (Robert Muir)
 
+* LUCENE-4152: added IndexReader.leaves(), which lets you enumerate
+  the leaf atomic reader contexts for all readers in the tree.
+  (Uwe Schindler, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor
