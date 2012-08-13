@@ -61,6 +61,11 @@ Build
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
   thread leak detection. Added support for suite timeouts. (Dawid Weiss)
 
+Documentation
+
+* LUCENE-4302: Fix facet userguide to have HTML loose doctype like
+  all other javadocs.  (Karl Nicholas via Uwe Schindler)
+
 ======================= Lucene 4.0.0-BETA =======================
 
 New features
