@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.phonetic;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -26,7 +27,8 @@ import java.util.Map;
 import org.apache.commons.codec.Encoder;
 import org.apache.commons.codec.language.*;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.phonetic.PhoneticFilter;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -57,6 +59,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @see PhoneticFilter
  */
 public class PhoneticFilterFactory extends TokenFilterFactory
+  implements ResourceLoaderAware
 {
   public static final String ENCODER = "encoder";
   public static final String INJECT = "inject"; // boolean
@@ -75,18 +78,17 @@ public class PhoneticFilterFactory extends TokenFilterFactory
     registry.put("ColognePhonetic".toUpperCase(Locale.ROOT), ColognePhonetic.class);
   }
 
-  protected boolean inject = true;
-  protected String name = null;
-  protected Class<? extends Encoder> clazz = null;
-  protected Method setMaxCodeLenMethod = null;
-  protected Integer maxCodeLength = null;
+  boolean inject = true; //accessed by the test
+  private String name = null;
+  private Class<? extends Encoder> clazz = null;
+  private Method setMaxCodeLenMethod = null;
+  private Integer maxCodeLength = null;
 
   @Override
-  public void init(Map<String,String> args) {
-    super.init( args );
+  public void inform(ResourceLoader loader) throws IOException {
 
     inject = getBoolean(INJECT, true);
-    
+
     String name = args.get( ENCODER );
     if( name == null ) {
       throw new IllegalArgumentException("Missing required parameter: " + ENCODER
@@ -94,7 +96,7 @@ public class PhoneticFilterFactory extends TokenFilterFactory
     }
     clazz = registry.get(name.toUpperCase(Locale.ROOT));
     if( clazz == null ) {
-      clazz = resolveEncoder(name);
+      clazz = resolveEncoder(name, loader);
     }
 
     String v = args.get(MAX_CODE_LENGTH);
@@ -110,17 +112,15 @@ public class PhoneticFilterFactory extends TokenFilterFactory
     getEncoder();//trigger initialization for potential problems to be thrown now
   }
 
-  private Class<? extends Encoder> resolveEncoder(String name) {
+  private Class<? extends Encoder> resolveEncoder(String name, ResourceLoader loader) {
     String lookupName = name;
     if (name.indexOf('.') == -1) {
       lookupName = PACKAGE_CONTAINING_ENCODERS + name;
     }
     try {
-      return Class.forName(lookupName).asSubclass(Encoder.class);
-    } catch (ClassNotFoundException cnfe) {
-      throw new IllegalArgumentException("Unknown encoder: " + name + " must be full class name or one of " + registry.keySet(), cnfe);
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("Not an encoder: " + name + " must be full class name or one of " + registry.keySet(), e);
+      return loader.newInstance(lookupName, Encoder.class).getClass();
+    } catch (RuntimeException e) {
+      throw new IllegalArgumentException("Error loading encoder '" + name + "': must be full class name or one of " + registry.keySet(), e);
     }
   }
 
