@@ -373,15 +373,7 @@ public class ZkStateReader {
 
   public void close() {
     if (closeClient) {
-      try {
-        zkClient.close();
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      }
+      zkClient.close();
     }
   }
   
