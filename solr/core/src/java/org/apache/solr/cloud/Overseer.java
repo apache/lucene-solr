@@ -479,9 +479,11 @@ public class Overseer {
     isClosed = true;
     if (updaterThread != null) {
       updaterThread.close();
+      updaterThread.interrupt();
     }
     if (ccThread != null) {
       ccThread.close();
+      ccThread.interrupt();
     }
   }
 
