@@ -763,8 +763,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /**
-   * Commits all changes to an index and closes all
-   * associated files.  Note that this may be a costly
+   * Commits all changes to an index, waits for pending merges
+   * to complete, and closes all associated files.  
+   * <p>
+   * This is a "slow graceful shutdown" which may take a long time
+   * especially if a big merge is pending: If you only want to close
+   * resources use {@link #rollback()}. If you only want to commit
+   * pending changes and close resources see {@link #close(boolean)}.
+   * <p>
+   * Note that this may be a costly
    * operation, so, try to re-use a single writer instead of
    * closing and opening a new one.  See {@link #commit()} for
    * caveats about write caching done by some IO devices.
