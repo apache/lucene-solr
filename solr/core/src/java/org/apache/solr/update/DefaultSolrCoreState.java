@@ -97,12 +97,14 @@ public final class DefaultSolrCoreState extends SolrCoreState {
 
   @Override
   public synchronized void newIndexWriter(SolrCore core, boolean rollback) throws IOException {
-    
+    log.info("Creating new IndexWriter...");
+    String coreName = core.getName();
     synchronized (writerPauseLock) {
       // we need to wait for the Writer to fall out of use
       // first lets stop it from being lent out
       pauseWriter = true;
       // then lets wait until its out of use
+      log.info("Waiting until IndexWriter is unused... core=" + coreName);
       while (!writerFree) {
         try {
           writerPauseLock.wait();
@@ -112,14 +114,15 @@ public final class DefaultSolrCoreState extends SolrCoreState {
       try {
         if (indexWriter != null) {
           try {
+            log.info("Closing old IndexWriter... core=" + coreName);
             indexWriter.close();
           } catch (Throwable t) {
-            SolrException.log(log, "Error closing old IndexWriter", t);
+            SolrException.log(log, "Error closing old IndexWriter. core=" + coreName, t);
           }
         }
-        
         indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2",
             false, true);
+        log.info("New IndexWriter is ready to be used.");
         // we need to null this so it picks up the new writer next get call
         refCntWriter = null;
       } finally {
@@ -136,6 +139,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
       refCnt--;
       if (refCnt == 0) {
         try {
+          log.info("SolrCoreState ref count has reached 0 - closing IndexWriter");
           if (closer != null) {
             closer.closeWriter(indexWriter);
           } else if (indexWriter != null) {
