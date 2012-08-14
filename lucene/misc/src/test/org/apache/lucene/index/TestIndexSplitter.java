@@ -59,7 +59,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     }
     iw.commit();
     DirectoryReader iwReader = iw.getReader();
-    assertEquals(3, iwReader.getSequentialSubReaders().size());
+    assertEquals(3, iwReader.leaves().size());
     iwReader.close();
     iw.close();
     // we should have 2 segments now
@@ -87,7 +87,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     // now remove the copied segment from src
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), "-d", splitSegName});
     r = DirectoryReader.open(fsDir);
-    assertEquals(2, r.getSequentialSubReaders().size());
+    assertEquals(2, r.leaves().size());
     r.close();
     fsDir.close();
   }

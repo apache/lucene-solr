@@ -154,11 +154,11 @@ public class TestDocTermOrds extends LuceneTestCase {
       System.out.println("TEST: reader=" + r);
     }
 
-    for(IndexReader subR : r.getSequentialSubReaders()) {
+    for(AtomicReaderContext ctx : r.leaves()) {
       if (VERBOSE) {
-        System.out.println("\nTEST: sub=" + subR);
+        System.out.println("\nTEST: sub=" + ctx.reader());
       }
-      verify((AtomicReader) subR, idToOrds, termsArray, null);
+      verify(ctx.reader(), idToOrds, termsArray, null);
     }
 
     // Also test top-level reader: its enum does not support
@@ -273,11 +273,11 @@ public class TestDocTermOrds extends LuceneTestCase {
         idToOrdsPrefix[id] = newOrdsArray;
       }
 
-      for(IndexReader subR : r.getSequentialSubReaders()) {
+      for(AtomicReaderContext ctx : r.leaves()) {
         if (VERBOSE) {
-          System.out.println("\nTEST: sub=" + subR);
+          System.out.println("\nTEST: sub=" + ctx.reader());
         }
-        verify((AtomicReader) subR, idToOrdsPrefix, termsArray, prefixRef);
+        verify(ctx.reader(), idToOrdsPrefix, termsArray, prefixRef);
       }
 
       // Also test top-level reader: its enum does not support
