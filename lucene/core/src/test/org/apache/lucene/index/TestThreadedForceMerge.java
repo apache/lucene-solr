@@ -130,7 +130,7 @@ public class TestThreadedForceMerge extends LuceneTestCase {
           OpenMode.APPEND).setMaxBufferedDocs(2));
       
       DirectoryReader reader = DirectoryReader.open(directory);
-      assertEquals("reader=" + reader, 1, reader.getSequentialSubReaders().size());
+      assertEquals("reader=" + reader, 1, reader.leaves().size());
       assertEquals(expectedDocCount, reader.numDocs());
       reader.close();
     }

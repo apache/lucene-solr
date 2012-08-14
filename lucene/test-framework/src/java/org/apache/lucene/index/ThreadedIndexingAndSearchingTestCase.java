@@ -334,15 +334,15 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   // Verify 1) IW is correctly setting
                   // diagnostics, and 2) segment warming for
                   // merged segments is actually happening:
-                  for(AtomicReader sub : ((DirectoryReader) s.getIndexReader()).getSequentialSubReaders()) {
-                    SegmentReader segReader = (SegmentReader) sub;
+                  for(final AtomicReaderContext sub : s.getIndexReader().leaves()) {
+                    SegmentReader segReader = (SegmentReader) sub.reader();
                     Map<String,String> diagnostics = segReader.getSegmentInfo().info.getDiagnostics();
                     assertNotNull(diagnostics);
                     String source = diagnostics.get("source");
                     assertNotNull(source);
                     if (source.equals("merge")) {
                       assertTrue("sub reader " + sub + " wasn't warmed: warmed=" + warmed + " diagnostics=" + diagnostics + " si=" + segReader.getSegmentInfo(),
-                                 !assertMergedSegmentsWarmed || warmed.containsKey(((SegmentReader) sub).core));
+                                 !assertMergedSegmentsWarmed || warmed.containsKey(segReader.core));
                     }
                   }
                   if (s.getIndexReader().numDocs() > 0) {

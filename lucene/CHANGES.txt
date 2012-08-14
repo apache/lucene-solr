@@ -42,6 +42,11 @@ API Changes
   module if you want an example of this.
   (Mike McCandless, Uwe Schindler, Shai Erera, Robert Muir)
 
+* LUCENE-4304: Make CompositeReader.getSequentialSubReaders()
+  protected. To get atomic leaves of any IndexReader use the new method
+  leaves() (LUCENE-4152), which lists AtomicReaderContexts including
+  the doc base of each leaf.  (Uwe Schindler, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor

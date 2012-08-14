@@ -94,7 +94,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.close(true);
 
     DirectoryReader reader = DirectoryReader.open(dir, 1);
-    assertEquals(1, reader.getSequentialSubReaders().size());
+    assertEquals(1, reader.leaves().size());
 
     IndexSearcher searcher = new IndexSearcher(reader);
 

@@ -122,7 +122,7 @@ public class TestTypePromotion extends LuceneTestCase {
   private void assertValues(TestType type, Directory dir, long[] values, Type[] sourceType)
       throws IOException {
     DirectoryReader reader = DirectoryReader.open(dir);
-    assertEquals(1, reader.getSequentialSubReaders().size());
+    assertEquals(1, reader.leaves().size());
     IndexReaderContext topReaderContext = reader.getTopReaderContext();
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
     assertEquals(1, leaves.size());
@@ -373,7 +373,7 @@ public class TestTypePromotion extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
-    assertEquals(1, reader.getSequentialSubReaders().size());
+    assertEquals(1, reader.leaves().size());
     IndexReaderContext topReaderContext = reader.getTopReaderContext();
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
     DocValues docValues = leaves.get(0).reader().docValues("promote");
