@@ -315,12 +315,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     int numDocs = 0;
     for (int i = 0; i < mergeState.readers.size(); i++) {
       final AtomicReader reader = mergeState.readers.get(i);
-      // set PayloadProcessor
-      if (mergeState.payloadProcessorProvider != null) {
-        mergeState.currentReaderPayloadProcessor = mergeState.readerPayloadProcessor[i];
-      } else {
-        mergeState.currentReaderPayloadProcessor = null;
-      }
+
       final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
       Lucene40TermVectorsReader matchingVectorsReader = null;
       if (matchingSegmentReader != null) {
@@ -353,8 +348,8 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     final int maxDoc = reader.maxDoc();
     final Bits liveDocs = reader.getLiveDocs();
     int totalNumDocs = 0;
-    if (matchingVectorsReader != null && mergeState.currentReaderPayloadProcessor == null) {
-      // We can bulk-copy because the fieldInfos are "congruent" and there is no payload processor
+    if (matchingVectorsReader != null) {
+      // We can bulk-copy because the fieldInfos are "congruent"
       for (int docNum = 0; docNum < maxDoc;) {
         if (!liveDocs.get(docNum)) {
           // skip deleted docs
@@ -404,8 +399,8 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
                                       int rawDocLengths2[])
           throws IOException {
     final int maxDoc = reader.maxDoc();
-    if (matchingVectorsReader != null && mergeState.currentReaderPayloadProcessor == null) {
-      // We can bulk-copy because the fieldInfos are "congruent" and there is no payload processor
+    if (matchingVectorsReader != null) {
+      // We can bulk-copy because the fieldInfos are "congruent"
       int docCount = 0;
       while (docCount < maxDoc) {
         int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);

@@ -154,14 +154,7 @@ public abstract class TermsConsumer {
         postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn, DocsAndPositionsEnum.FLAG_PAYLOADS);
         assert postingsEnumIn != null;
         postingsEnum.reset(postingsEnumIn);
-        // set PayloadProcessor
-        if (mergeState.payloadProcessorProvider != null) {
-          for (int i = 0; i < mergeState.readers.size(); i++) {
-            if (mergeState.readerPayloadProcessor[i] != null) {
-              mergeState.currentPayloadProcessor[i] = mergeState.readerPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
-            }
-          }
-        }
+
         final PostingsConsumer postingsConsumer = startTerm(term);
         final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum, visitedDocs);
         if (stats.docFreq > 0) {
@@ -188,14 +181,7 @@ public abstract class TermsConsumer {
         postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn);
         assert postingsEnumIn != null;
         postingsEnum.reset(postingsEnumIn);
-        // set PayloadProcessor
-        if (mergeState.payloadProcessorProvider != null) {
-          for (int i = 0; i < mergeState.readers.size(); i++) {
-            if (mergeState.readerPayloadProcessor[i] != null) {
-              mergeState.currentPayloadProcessor[i] = mergeState.readerPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
-            }
-          }
-        }
+
         final PostingsConsumer postingsConsumer = startTerm(term);
         final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum, visitedDocs);
         if (stats.docFreq > 0) {
