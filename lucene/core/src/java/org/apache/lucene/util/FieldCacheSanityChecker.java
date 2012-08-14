@@ -286,7 +286,7 @@ public final class FieldCacheSanityChecker {
       if (obj instanceof IndexReader) {
         try {
           final List<IndexReaderContext> childs =
-            ((IndexReader) obj).getTopReaderContext().children();
+            ((IndexReader) obj).getContext().children();
           if (childs != null) { // it is composite reader
             for (final IndexReaderContext ctx : childs) {
               all.add(ctx.reader().getCoreCacheKey());

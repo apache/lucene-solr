@@ -47,6 +47,9 @@ API Changes
   leaves() (LUCENE-4152), which lists AtomicReaderContexts including
   the doc base of each leaf.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-4307: Renamed IndexReader.getTopReaderContext to 
+  IndexReader.getContext.  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor

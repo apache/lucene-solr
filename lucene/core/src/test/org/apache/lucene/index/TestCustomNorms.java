@@ -145,7 +145,7 @@ public class TestCustomNorms extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     assertEquals(numAdded, reader.numDocs());
-    IndexReaderContext topReaderContext = reader.getTopReaderContext();
+    IndexReaderContext topReaderContext = reader.getContext();
     for (final AtomicReaderContext ctx : topReaderContext.leaves()) {
       AtomicReader atomicReader = ctx.reader();
       Source source = random().nextBoolean() ? atomicReader.normValues("foo").getSource() : atomicReader.normValues("foo").getDirectSource();
