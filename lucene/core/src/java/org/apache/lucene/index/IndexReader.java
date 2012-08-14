@@ -378,9 +378,11 @@ public abstract class IndexReader implements Closeable {
   protected abstract void doClose() throws IOException;
 
   /**
-   * Expert: Returns a the root {@link IndexReaderContext} for this
-   * {@link IndexReader}'s sub-reader tree. Iff this reader is composed of sub
-   * readers ,ie. this reader being a composite reader, this method returns a
+   * Expert: Returns the root {@link IndexReaderContext} for this
+   * {@link IndexReader}'s sub-reader tree. 
+   * <p>
+   * Iff this reader is composed of sub
+   * readers, i.e. this reader being a composite reader, this method returns a
    * {@link CompositeReaderContext} holding the reader's direct children as well as a
    * view of the reader tree's atomic leaf contexts. All sub-
    * {@link IndexReaderContext} instances referenced from this readers top-level
@@ -396,13 +398,13 @@ public abstract class IndexReader implements Closeable {
    * 
    * @lucene.experimental
    */
-  public abstract IndexReaderContext getTopReaderContext();
+  public abstract IndexReaderContext getContext();
   
   /**
    * Returns the reader's leaves, or itself if this reader is Atomic.
    */
   public final List<AtomicReaderContext> leaves() {
-    return getTopReaderContext().leaves();
+    return getContext().leaves();
   }
 
   /** Expert: Returns a key for this IndexReader, so FieldCache/CachingWrapperFilter can find

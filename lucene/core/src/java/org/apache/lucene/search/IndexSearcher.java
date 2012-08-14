@@ -122,7 +122,7 @@ public class IndexSearcher {
    * 
    * @lucene.experimental */
   public IndexSearcher(IndexReader r, ExecutorService executor) {
-    this(r.getTopReaderContext(), executor);
+    this(r.getContext(), executor);
   }
 
   /**
@@ -138,7 +138,7 @@ public class IndexSearcher {
    * href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
    * 
    * @see IndexReaderContext
-   * @see IndexReader#getTopReaderContext()
+   * @see IndexReader#getContext()
    * @lucene.experimental
    */
   public IndexSearcher(IndexReaderContext context, ExecutorService executor) {
@@ -154,7 +154,7 @@ public class IndexSearcher {
    * Creates a searcher searching the provided top-level {@link IndexReaderContext}.
    *
    * @see IndexReaderContext
-   * @see IndexReader#getTopReaderContext()
+   * @see IndexReader#getContext()
    * @lucene.experimental
    */
   public IndexSearcher(IndexReaderContext context) {
@@ -639,7 +639,7 @@ public class IndexSearcher {
   
   /**
    * Returns this searchers the top-level {@link IndexReaderContext}.
-   * @see IndexReader#getTopReaderContext()
+   * @see IndexReader#getContext()
    */
   /* sugar for #getReader().getTopReaderContext() */
   public IndexReaderContext getTopReaderContext() {

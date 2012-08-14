@@ -90,7 +90,7 @@ public abstract class CompositeReader extends IndexReader {
   protected abstract List<? extends IndexReader> getSequentialSubReaders();
 
   @Override
-  public final CompositeReaderContext getTopReaderContext() {
+  public final CompositeReaderContext getContext() {
     ensureOpen();
     // lazy init without thread safety for perf reasons: Building the readerContext twice does not hurt!
     if (readerContext == null) {

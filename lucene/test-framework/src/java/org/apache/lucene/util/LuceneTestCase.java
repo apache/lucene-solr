@@ -1168,7 +1168,7 @@ public abstract class LuceneTestCase extends Assert {
       if (maybeWrap) {
         r = maybeWrapReader(r);
       }
-      IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getTopReaderContext());
+      IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
       ret.setSimilarity(classEnvRule.similarity);
       return ret;
     } else {
@@ -1197,7 +1197,7 @@ public abstract class LuceneTestCase extends Assert {
       }
       IndexSearcher ret = random.nextBoolean() 
           ? new AssertingIndexSearcher(random, r, ex)
-          : new AssertingIndexSearcher(random, r.getTopReaderContext(), ex);
+          : new AssertingIndexSearcher(random, r.getContext(), ex);
       ret.setSimilarity(classEnvRule.similarity);
       return ret;
     }

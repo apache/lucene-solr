@@ -38,7 +38,7 @@ import org.apache.lucene.util.BytesRef;
  *
  * <p><b>NOTE</b>: for composite readers, you'll get better
  * performance by gathering the sub readers using
- * {@link IndexReader#getTopReaderContext()} to get the
+ * {@link IndexReader#getContext()} to get the
  * atomic leaves and then operate per-AtomicReader,
  * instead of using this class.
  *

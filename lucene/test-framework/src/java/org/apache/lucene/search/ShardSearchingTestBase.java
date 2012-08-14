@@ -179,7 +179,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     }
     try {
       for(Term term : terms) {
-        final TermContext termContext = TermContext.build(s.getIndexReader().getTopReaderContext(), term, false);
+        final TermContext termContext = TermContext.build(s.getIndexReader().getContext(), term, false);
         stats.put(term, s.termStatistics(term, termContext));
       }
     } finally {

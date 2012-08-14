@@ -455,7 +455,7 @@ public class TestDocSet extends LuceneTestCase {
   }
 
   public void doFilterTest(IndexReader reader) throws IOException {
-    IndexReaderContext topLevelContext = reader.getTopReaderContext();
+    IndexReaderContext topLevelContext = reader.getContext();
     OpenBitSet bs = getRandomSet(reader.maxDoc(), rand.nextInt(reader.maxDoc()+1));
     DocSet a = new BitDocSet(bs);
     DocSet b = getIntDocSet(bs);
