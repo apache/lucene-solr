@@ -260,9 +260,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // to allow users to query an IndexWriter settings.
   private final LiveIndexWriterConfig config;
 
-  // The PayloadProcessorProvider to use when segments are merged
-  private PayloadProcessorProvider payloadProcessorProvider;
-
   DirectoryReader getReader() throws IOException {
     return getReader(true);
   }
@@ -2406,8 +2403,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                                          false, codec, null, null);
 
       SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir, config.getTermIndexInterval(),
-                                               MergeState.CheckAbort.NONE, payloadProcessorProvider,
-                                               globalFieldNumberMap, context);
+                                               MergeState.CheckAbort.NONE, globalFieldNumberMap, context);
 
       for (IndexReader reader : readers) {    // add new indexes
         merger.add(reader);
@@ -3510,7 +3506,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(directory);
 
     SegmentMerger merger = new SegmentMerger(merge.info.info, infoStream, dirWrapper, config.getTermIndexInterval(), checkAbort,
-                                             payloadProcessorProvider, globalFieldNumberMap, context);
+                                             globalFieldNumberMap, context);
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merging " + segString(merge.segments));
@@ -4064,38 +4060,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // Called by DirectoryReader.doClose
   synchronized void deletePendingFiles() throws IOException {
     deleter.deletePendingFiles();
-  }
-
-  /**
-   * Sets the {@link PayloadProcessorProvider} to use when merging payloads.
-   * Note that the given <code>pcp</code> will be invoked for every segment that
-   * is merged, not only external ones that are given through
-   * {@link #addIndexes}. If you want only the payloads of the external segments
-   * to be processed, you can return <code>null</code> whenever a
-   * {@link PayloadProcessorProvider.ReaderPayloadProcessor} is requested for the {@link Directory} of the
-   * {@link IndexWriter}.
-   * <p>
-   * The default is <code>null</code> which means payloads are processed
-   * normally (copied) during segment merges. You can also unset it by passing
-   * <code>null</code>.
-   * <p>
-   * <b>NOTE:</b> the set {@link PayloadProcessorProvider} will be in effect
-   * immediately, potentially for already running merges too. If you want to be
-   * sure it is used for further operations only, such as {@link #addIndexes} or
-   * {@link #forceMerge}, you can call {@link #waitForMerges()} before.
-   */
-  public void setPayloadProcessorProvider(PayloadProcessorProvider pcp) {
-    ensureOpen();
-    payloadProcessorProvider = pcp;
-  }
-
-  /**
-   * Returns the {@link PayloadProcessorProvider} that is used during segment
-   * merges to process payloads.
-   */
-  public PayloadProcessorProvider getPayloadProcessorProvider() {
-    ensureOpen();
-    return payloadProcessorProvider;
   }
   
   /**

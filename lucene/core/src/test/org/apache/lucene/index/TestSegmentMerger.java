@@ -82,7 +82,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     final SegmentInfo si = new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, -1, false, codec, null, null);
 
     SegmentMerger merger = new SegmentMerger(si, InfoStream.getDefault(), mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL,
-                                             MergeState.CheckAbort.NONE, null, new FieldInfos.FieldNumbers(), newIOContext(random()));
+                                             MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), newIOContext(random()));
     merger.add(reader1);
     merger.add(reader2);
     MergeState mergeState = merger.merge();
