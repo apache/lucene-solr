@@ -31,6 +31,15 @@ Upgrading from Solr 4.0.0-BETA
 
 In order to better support distributed search mode, the TermVectorComponent's response format has been changed so that if the schema defines a uniqueKeyField, then that field value is used as the "key" for each document in it's response section, instead of the internal lucene doc id.  Users w/o a uniqueKeyField will continue to see the same response format.  See SOLR-3229 for more details.
 
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-3670: New CountFieldValuesUpdateProcessorFactory makes it easy to index 
+  the number of values in another field for later use at query time. (hossman)
+
 Optimizations
 ----------------------
 

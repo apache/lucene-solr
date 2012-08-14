@@ -231,6 +231,12 @@
     </processor>
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="count">
+    <processor class="solr.CountFieldValuesUpdateProcessorFactory">
+      <str name="fieldName">count_field</str>
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="ignore-not-in-schema">
     <processor class="solr.IgnoreFieldUpdateProcessorFactory" />
   </updateRequestProcessorChain>
@@ -341,6 +347,20 @@
         </lst>
       </lst>
       <str name="dest">all_prices</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="clone-then-count">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
+      <str name="source">category</str>
+      <str name="dest">category_count</str>
+    </processor>
+    <processor class="solr.CountFieldValuesUpdateProcessorFactory">
+      <str name="fieldName">category_count</str>
+    </processor>
+    <processor class="solr.DefaultValueUpdateProcessorFactory">
+      <str name="fieldName">category_count</str>
+      <int name="value">0</int>
     </processor>
   </updateRequestProcessorChain>
 
