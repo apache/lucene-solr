@@ -54,7 +54,7 @@
     -->
     <maxBufferedDocs>10</maxBufferedDocs>
     <mergePolicy class="org.apache.lucene.index.LogDocMergePolicy"/>
-    <lockType>single</lockType>
+    <lockType>native</lockType>
     <unlockOnStartup>true</unlockOnStartup>
   </indexConfig>
   
