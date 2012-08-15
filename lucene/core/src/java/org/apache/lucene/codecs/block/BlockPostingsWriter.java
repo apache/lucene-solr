@@ -222,6 +222,15 @@ final class BlockPostingsWriter extends PostingsWriterBase {
     if (DEBUG) {
       System.out.println("FPW.startDoc docID["+docBufferUpto+"]=" + docID);
     }
+    // Have collected a block of docs, and get a new doc. 
+    // Should write skip data as well as postings list for
+    // current block.
+    if (lastBlockDocID != -1 && docBufferUpto == 0) {
+      if (DEBUG) {
+        System.out.println("  bufferSkip at writeBlock: lastDocID=" + lastBlockDocID + " docCount=" + (docCount-1));
+      }
+      skipWriter.bufferSkip(lastBlockDocID, docCount, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
+    }
 
     final int docDelta = docID - lastDocID;
 
@@ -254,6 +263,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
       // finishDoc will do so (because it needs to see that
       // the block was filled so it can save skip data)
     }
+
 
     lastDocID = docID;
     lastPosition = 0;
@@ -313,19 +323,6 @@ final class BlockPostingsWriter extends PostingsWriterBase {
 
   @Override
   public void finishDoc() throws IOException {
-    // Have collected a block of docs, and get a new doc. 
-    // Should write skip data as well as postings list for
-    // current block
-
-    if (lastBlockDocID != -1 && docBufferUpto == 1) {
-      // nocomit move to startDoc?  ie we can write skip
-      // data as soon as the next doc starts...
-      if (DEBUG) {
-        System.out.println("  bufferSkip at writeBlock: lastDocID=" + lastBlockDocID + " docCount=" + (docCount-1));
-      }
-      skipWriter.bufferSkip(lastBlockDocID, docCount-1, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
-    }
-
     // Since we don't know df for current term, we had to buffer
     // those skip data for each block, and when a new doc comes, 
     // write them to skip file.
