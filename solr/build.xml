@@ -386,8 +386,9 @@
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt example/**
-                             client/README.txt client/ruby/solr-ruby/** contrib/**/lib/**
-                             contrib/**/README.txt licenses/**"
+                            client/README.txt client/ruby/solr-ruby/** 
+                            contrib/**/lib/** contrib/**/README.txt 
+                            licenses/**"
                   excludes="lib/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
@@ -401,7 +402,9 @@
                   includes="example/**/*.sh example/**/bin/" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
-                  includes="dist/*.jar dist/*.war dist/solrj-lib/*"
+                  includes="dist/*.jar dist/*.war 
+                            dist/solrj-lib/*
+                            dist/test-framework/**"
                   excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />
       <tarfileset dir="${dest}/docs"
                   prefix="${fullnamever}/docs" />

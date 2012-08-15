@@ -66,6 +66,12 @@ Bug Fixes
 * SOLR-3730: Rollback is not implemented quite right and can cause corner case fails in 
   SolrCloud tests. (rmuir, Mark Miller)
 
+Other Changes
+----------------------
+
+* SOLR-3690: Fixed binary release packages to include dependencie needed for 
+  the solr-test-framework (hossman)
+
 ==================  4.0.0-BETA ===================
 
 
