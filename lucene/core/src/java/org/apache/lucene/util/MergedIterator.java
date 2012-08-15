@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.apache.lucene.util.PriorityQueue;
-
 /**
  * Provides a merged sorted view from several sorted iterators, each
  * iterating over a unique set of elements.
@@ -41,13 +39,13 @@ import org.apache.lucene.util.PriorityQueue;
  * </ul>
  * @lucene.internal
  */
-final class MergedIterator<T extends Comparable<T>> implements Iterator<T> {
+public class MergedIterator<T extends Comparable<T>> implements Iterator<T> {
   private T current;
   private final TermMergeQueue<T> queue; 
   private final SubIterator<T>[] top;
   private int numTop;
   
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings("unchecked")
   public MergedIterator(Iterator<T>... iterators) {
     queue = new TermMergeQueue<T>(iterators.length);
     top = new SubIterator[iterators.length];

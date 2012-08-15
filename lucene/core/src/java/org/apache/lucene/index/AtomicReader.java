@@ -54,7 +54,7 @@ public abstract class AtomicReader extends IndexReader {
   }
 
   @Override
-  public final AtomicReaderContext getContext() {
+  public final AtomicReaderContext getTopReaderContext() {
     ensureOpen();
     return readerContext;
   }

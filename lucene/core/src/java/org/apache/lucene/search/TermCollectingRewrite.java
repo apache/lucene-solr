@@ -46,7 +46,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
 
   
   final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
-    IndexReaderContext topReaderContext = reader.getContext();
+    IndexReaderContext topReaderContext = reader.getTopReaderContext();
     Comparator<BytesRef> lastTermComp = null;
     for (AtomicReaderContext context : topReaderContext.leaves()) {
       final Fields fields = context.reader().fields();

@@ -604,7 +604,7 @@ public class TestPayloads extends LuceneTestCase {
     field.setTokenStream(ts);
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
-    AtomicReader sr = SlowCompositeReaderWrapper.wrap(reader);
+    AtomicReader sr = reader.getSequentialSubReaders().get(0);
     DocsAndPositionsEnum de = sr.termPositionsEnum(null, "field", new BytesRef("withPayload"));
     de.nextDoc();
     de.nextPosition();

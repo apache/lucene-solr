@@ -123,7 +123,18 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
   
   @Override
   public BytesRef getPayload() throws IOException {
-    return current.getPayload();
+    BytesRef payload = current.getPayload();
+    if (mergeState.currentPayloadProcessor[upto] != null && payload != null) {
+      // to not violate the D&P api, we must give the processor a private copy
+      // TODO: reuse a BytesRef if there is a PPP
+      payload = BytesRef.deepCopyOf(payload);
+      mergeState.currentPayloadProcessor[upto].processPayload(payload);
+      if (payload.length == 0) {
+        // don't let PayloadProcessors corrumpt the index
+        return null;
+      }
+    }
+    return payload;
   }
 }
 

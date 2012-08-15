@@ -171,8 +171,8 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     TestDirectoryReader.assertIndexEquals(index1, index2_refreshed);
 
     index2_refreshed.close();
-    assertReaderClosed(index2, true);
-    assertReaderClosed(index2_refreshed, true);
+    assertReaderClosed(index2, true, true);
+    assertReaderClosed(index2_refreshed, true, true);
 
     index2 = test.openReader();
     
@@ -190,8 +190,28 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     
     index1.close();
     index2.close();
-    assertReaderClosed(index1, true);
-    assertReaderClosed(index2, true);
+    assertReaderClosed(index1, true, true);
+    assertReaderClosed(index2, true, true);
+  }
+  
+  private void performTestsWithExceptionInReopen(TestReopen test) throws Exception {
+    DirectoryReader index1 = test.openReader();
+    DirectoryReader index2 = test.openReader();
+
+    TestDirectoryReader.assertIndexEquals(index1, index2);
+    
+    try {
+      refreshReader(index1, test, 0, true);
+      fail("Expected exception not thrown.");
+    } catch (Exception e) {
+      // expected exception
+    }
+    
+    // index2 should still be usable and unaffected by the failed reopen() call
+    TestDirectoryReader.assertIndexEquals(index1, index2);
+
+    index1.close();
+    index2.close();
   }
   
   public void testThreadSafety() throws Exception {
@@ -335,11 +355,11 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     reader.close();
     
     for (final DirectoryReader readerToClose : readersToClose) {
-      assertReaderClosed(readerToClose, true);
+      assertReaderClosed(readerToClose, true, true);
     }
 
-    assertReaderClosed(reader, true);
-    assertReaderClosed(firstReader, true);
+    assertReaderClosed(reader, true, true);
+    assertReaderClosed(firstReader, true, true);
 
     dir.close();
   }
@@ -354,7 +374,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     DirectoryReader refreshedReader;
   }
   
-  abstract static class ReaderThreadTask {
+  private abstract static class ReaderThreadTask {
     protected volatile boolean stopped;
     public void stop() {
       this.stopped = true;
@@ -364,8 +384,8 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   }
   
   private static class ReaderThread extends Thread {
-    ReaderThreadTask task;
-    Throwable error;
+    private ReaderThreadTask task;
+    private Throwable error;
     
     
     ReaderThread(ReaderThreadTask task) {
@@ -449,9 +469,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
 
     DirectoryReader r = DirectoryReader.open(dir);
     if (multiSegment) {
-      assertTrue(r.leaves().size() > 1);
+      assertTrue(r.getSequentialSubReaders().size() > 1);
     } else {
-      assertTrue(r.leaves().size() == 1);
+      assertTrue(r.getSequentialSubReaders().size() == 1);
     }
     r.close();
   }
@@ -513,25 +533,46 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     }
   }  
   
-  static void assertReaderClosed(IndexReader reader, boolean checkSubReaders) {
+  static void assertReaderClosed(IndexReader reader, boolean checkSubReaders, boolean checkNormsClosed) {
     assertEquals(0, reader.getRefCount());
     
+    if (checkNormsClosed && reader instanceof AtomicReader) {
+      // TODO: should we really assert something here? we check for open files and this is obselete...
+      // assertTrue(((SegmentReader) reader).normsClosed());
+    }
+    
     if (checkSubReaders && reader instanceof CompositeReader) {
-      // we cannot use reader context here, as reader is
-      // already closed and calling getTopReaderContext() throws AlreadyClosed!
       List<? extends IndexReader> subReaders = ((CompositeReader) reader).getSequentialSubReaders();
-      for (final IndexReader r : subReaders) {
-        assertReaderClosed(r, checkSubReaders);
+      for (IndexReader r : subReaders) {
+        assertReaderClosed(r, checkSubReaders, checkNormsClosed);
       }
     }
   }
 
-  abstract static class TestReopen {
+  /*
+  private void assertReaderOpen(DirectoryReader reader) {
+    reader.ensureOpen();
+    
+    if (reader instanceof DirectoryReader) {
+      DirectoryReader[] subReaders = reader.getSequentialSubReaders();
+      for (int i = 0; i < subReaders.length; i++) {
+        assertReaderOpen(subReaders[i]);
+      }
+    }
+  }
+  */
+
+  private void assertRefCountEquals(int refCount, DirectoryReader reader) {
+    assertEquals("Reader has wrong refCount value.", refCount, reader.getRefCount());
+  }
+
+
+  private abstract static class TestReopen {
     protected abstract DirectoryReader openReader() throws IOException;
     protected abstract void modifyIndex(int i) throws IOException;
   }
   
-  static class KeepAllCommits implements IndexDeletionPolicy {
+  private static class KeepAllCommits implements IndexDeletionPolicy {
     public void onInit(List<? extends IndexCommit> commits) {
     }
     public void onCommit(List<? extends IndexCommit> commits) {

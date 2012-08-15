@@ -24,6 +24,7 @@ import java.util.List;
 
 /**
  * {@link IndexReaderContext} for {@link CompositeReader} instance.
+ * @lucene.experimental
  */
 public final class CompositeReaderContext extends IndexReaderContext {
   private final List<IndexReaderContext> children;

@@ -43,7 +43,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
-    AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     MockFilter filter = new MockFilter();
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
 
@@ -69,7 +69,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
-    AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
       @Override
@@ -92,7 +92,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
-    AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
       @Override
@@ -115,8 +115,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   private static void assertDocIdSetCacheable(IndexReader reader, Filter filter, boolean shouldCacheable) throws IOException {
-    assertTrue(reader.getContext() instanceof AtomicReaderContext);
-    AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
+    assertTrue(reader.getTopReaderContext() instanceof AtomicReaderContext);
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     final CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
     final DocIdSet originalSet = filter.getDocIdSet(context, context.reader().getLiveDocs());
     final DocIdSet cachedSet = cacher.getDocIdSet(context, context.reader().getLiveDocs());

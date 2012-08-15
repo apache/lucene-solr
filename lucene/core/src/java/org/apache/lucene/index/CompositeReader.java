@@ -78,18 +78,16 @@ public abstract class CompositeReader extends IndexReader {
   }
   
   /** Expert: returns the sequential sub readers that this
-   *  reader is logically composed of. This method may not
-   *  return {@code null}.
-   *  
-   *  <p><b>NOTE:</b> In contrast to previous Lucene versions this method
-   *  is no longer public, code that wants to get all {@link AtomicReader}s
-   *  this composite is composed of should use {@link IndexReader#leaves()}.
-   * @see IndexReader#leaves()
+   *  reader is logically composed of. It contrast to previous
+   *  Lucene versions may not return null.
+   *  If this method returns an empty array, that means this
+   *  reader is a null reader (for example a MultiReader
+   *  that has no sub readers).
    */
-  protected abstract List<? extends IndexReader> getSequentialSubReaders();
+  public abstract List<? extends IndexReader> getSequentialSubReaders();
 
   @Override
-  public final CompositeReaderContext getContext() {
+  public final CompositeReaderContext getTopReaderContext() {
     ensureOpen();
     // lazy init without thread safety for perf reasons: Building the readerContext twice does not hurt!
     if (readerContext == null) {

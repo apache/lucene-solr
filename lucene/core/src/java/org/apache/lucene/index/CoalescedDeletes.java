@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.MergedIterator;
 import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 
 class CoalescedDeletes {

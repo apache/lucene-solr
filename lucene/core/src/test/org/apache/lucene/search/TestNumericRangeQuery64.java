@@ -211,7 +211,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   
   @Test
   public void testInverseRange() throws Exception {
-    AtomicReaderContext context = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).getContext();
+    AtomicReaderContext context = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).getTopReaderContext();
     NumericRangeFilter<Long> f = NumericRangeFilter.newLongRange("field8", 8, 1000L, -1000L, true, true);
     assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET,
         f.getDocIdSet(context, context.reader().getLiveDocs()));

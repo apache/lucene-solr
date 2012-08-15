@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.util.List;
 
+import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
+import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
@@ -192,6 +194,14 @@ public class MergeState {
   // Updated per field;
   public FieldInfo fieldInfo;
   
+  // Used to process payloads
+  // TODO: this is a FactoryFactory here basically
+  // and we could make a codec(wrapper) to do all of this privately so IW is uninvolved
+  public PayloadProcessorProvider payloadProcessorProvider;
+  public ReaderPayloadProcessor[] readerPayloadProcessor;
+  public ReaderPayloadProcessor currentReaderPayloadProcessor;
+  public PayloadProcessor[] currentPayloadProcessor;
+
   // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
   // but is this really so expensive to compute again in different components, versus once in SM?
   public SegmentReader[] matchingSegmentReaders;
