@@ -339,13 +339,13 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     if (compositeComposite) {
       rd1 = new MultiReader(DirectoryReader.open(dir1), DirectoryReader.open(dir1));
       rd2 = new MultiReader(DirectoryReader.open(dir2), DirectoryReader.open(dir2));
-      assertEquals(2, rd1.getSequentialSubReaders().size());
-      assertEquals(2, rd2.getSequentialSubReaders().size());
+      assertEquals(2, rd1.getContext().children().size());
+      assertEquals(2, rd2.getContext().children().size());
     } else {
       rd1 = DirectoryReader.open(dir1);
       rd2 = DirectoryReader.open(dir2);
-      assertEquals(3, rd1.getSequentialSubReaders().size());
-      assertEquals(3, rd2.getSequentialSubReaders().size());
+      assertEquals(3, rd1.getContext().children().size());
+      assertEquals(3, rd2.getContext().children().size());
     }
     ParallelCompositeReader pr = new ParallelCompositeReader(rd1, rd2);
     return newSearcher(pr);

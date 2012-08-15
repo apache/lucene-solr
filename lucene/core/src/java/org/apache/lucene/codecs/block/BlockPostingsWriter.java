@@ -318,7 +318,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
     // current block
 
     if (lastBlockDocID != -1 && docBufferUpto == 1) {
-      // nocomit move to startDoc?  ie we can write skip
+      // TODO: can we move this to startDoc?  ie we can write skip
       // data as soon as the next doc starts...
       if (DEBUG) {
         System.out.println("  bufferSkip at writeBlock: lastDocID=" + lastBlockDocID + " docCount=" + (docCount-1));

@@ -21,8 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * {@link IndexReaderContext} for {@link AtomicReader} instances
- * @lucene.experimental
+ * {@link IndexReaderContext} for {@link AtomicReader} instances.
  */
 public final class AtomicReaderContext extends IndexReaderContext {
   /** The readers ord in the top-level's leaves array */

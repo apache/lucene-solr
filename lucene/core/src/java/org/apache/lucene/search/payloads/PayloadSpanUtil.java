@@ -60,7 +60,7 @@ public class PayloadSpanUtil {
    * @param context
    *          that contains doc with payloads to extract
    *          
-   * @see IndexReader#getTopReaderContext()
+   * @see IndexReader#getContext()
    */
   public PayloadSpanUtil(IndexReaderContext context) {
     this.context = context;

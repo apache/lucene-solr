@@ -27,8 +27,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
-import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -170,12 +168,7 @@ public abstract class TermVectorsWriter implements Closeable {
       final AtomicReader reader = mergeState.readers.get(i);
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      // set PayloadProcessor
-      if (mergeState.payloadProcessorProvider != null) {
-        mergeState.currentReaderPayloadProcessor = mergeState.readerPayloadProcessor[i];
-      } else {
-        mergeState.currentReaderPayloadProcessor = null;
-      }
+
       for (int docID = 0; docID < maxDoc; docID++) {
         if (liveDocs != null && !liveDocs.get(docID)) {
           // skip deleted docs
@@ -215,9 +208,6 @@ public abstract class TermVectorsWriter implements Closeable {
     TermsEnum termsEnum = null;
     DocsAndPositionsEnum docsAndPositionsEnum = null;
     
-    final ReaderPayloadProcessor readerPayloadProcessor = mergeState.currentReaderPayloadProcessor;
-    PayloadProcessor payloadProcessor = null;
-
     for(String fieldName : vectors) {
       final FieldInfo fieldInfo = mergeState.fieldInfos.fieldInfo(fieldName);
 
@@ -250,10 +240,6 @@ public abstract class TermVectorsWriter implements Closeable {
         final int freq = (int) termsEnum.totalTermFreq();
         
         startTerm(termsEnum.term(), freq);
-        
-        if (hasPayloads && readerPayloadProcessor != null) {
-          payloadProcessor = readerPayloadProcessor.getProcessor(fieldName, termsEnum.term());
-        }
 
         if (hasPositions || hasOffsets) {
           docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
@@ -268,17 +254,7 @@ public abstract class TermVectorsWriter implements Closeable {
             final int startOffset = docsAndPositionsEnum.startOffset();
             final int endOffset = docsAndPositionsEnum.endOffset();
             
-            BytesRef payload = docsAndPositionsEnum.getPayload();
-                
-            if (payloadProcessor != null && payload != null) {
-              // to not violate the D&P api, we must give the processor a private copy
-              payload = BytesRef.deepCopyOf(payload);
-              payloadProcessor.processPayload(payload);
-              if (payload.length == 0) {
-                // don't let PayloadProcessors corrumpt the index
-                payload = null;
-              }
-            }
+            final BytesRef payload = docsAndPositionsEnum.getPayload();
 
             assert !hasPositions || pos >= 0;
             addPosition(pos, startOffset, endOffset, payload);

@@ -204,7 +204,7 @@ public class TestDoc extends LuceneTestCase {
       final SegmentInfo si = new SegmentInfo(si1.info.dir, Constants.LUCENE_MAIN_VERSION, merged, -1, false, codec, null, null);
 
       SegmentMerger merger = new SegmentMerger(si, InfoStream.getDefault(), trackingDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL,
-                                               MergeState.CheckAbort.NONE, null, new FieldInfos.FieldNumbers(), context);
+                                               MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context);
 
       merger.add(r1);
       merger.add(r2);
