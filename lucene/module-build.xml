@@ -90,6 +90,28 @@
     </sequential>
   </macrodef>
 
+  <property name="test-framework.jar" value="${common.dir}/build/test-framework/lucene-test-framework-${version}.jar"/>
+  <target name="check-test-framework-uptodate" unless="test-framework.uptodate">
+    <module-uptodate name="test-framework" jarfile="${test-framework.jar}" property="test-framework.uptodate"/>
+  </target>
+  <target name="jar-test-framework" unless="test-framework.uptodate" depends="check-test-framework-uptodate">
+    <ant dir="${common.dir}/test-framework" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="test-framework.uptodate" value="true"/>
+  </target>
+
+  <property name="test-framework-javadoc.jar" value="${common.dir}/build/test-framework/lucene-test-framework-${version}-javadoc.jar"/>
+  <target name="check-test-framework-javadocs-uptodate" unless="test-framework-javadocs.uptodate">
+    <module-uptodate name="test-framework" jarfile="${test-framework-javadoc.jar}" property="test-framework-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-test-framework" unless="test-framework-javadocs.uptodate" depends="check-test-framework-javadocs-uptodate">
+    <ant dir="${common.dir}/test-framework" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="test-framework-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="queryparser.jar" value="${common.dir}/build/queryparser/lucene-queryparser-${version}.jar"/>
   <target name="check-queryparser-uptodate" unless="queryparser.uptodate">
     <module-uptodate name="queryparser" jarfile="${queryparser.jar}" property="queryparser.uptodate"/>
