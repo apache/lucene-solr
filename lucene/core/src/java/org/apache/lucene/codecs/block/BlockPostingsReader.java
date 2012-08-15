@@ -60,7 +60,7 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
   private final ForUtil forUtil;
 
-  public static boolean DEBUG = false;
+  // public static boolean DEBUG = false;
 
   public BlockPostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
     boolean success = false;
@@ -371,9 +371,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     
     public DocsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
       this.liveDocs = liveDocs;
-      if (DEBUG) {
-        System.out.println("  FPR.reset: termState=" + termState);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  FPR.reset: termState=" + termState);
+      // }
       docFreq = termState.docFreq;
       docTermStartFP = termState.docStartFP;
       docIn.seek(docTermStartFP);
@@ -406,22 +406,22 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       assert left > 0;
 
       if (left >= BLOCK_SIZE) {
-        if (DEBUG) {
-          System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
+        // }
         forUtil.readBlock(docIn, encoded, docDeltaBuffer);
 
         if (indexHasFreq) {
-          if (DEBUG) {
-            System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
-          }
+          // if (DEBUG) {
+          //   System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
+          // }
           forUtil.readBlock(docIn, encoded, freqBuffer);
         }
       } else {
         // Read vInts:
-        if (DEBUG) {
-          System.out.println("    fill last vInt block from fp=" + docIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("    fill last vInt block from fp=" + docIn.getFilePointer());
+        // }
         readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, indexHasFreq);
       }
       docBufferUpto = 0;
@@ -429,27 +429,27 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-      if (DEBUG) {
-        System.out.println("\nFPR.nextDoc");
-      }
+      // if (DEBUG) {
+      //   System.out.println("\nFPR.nextDoc");
+      // }
       while (true) {
-        if (DEBUG) {
-          System.out.println("  docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("  docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
+        // }
 
         if (docUpto == docFreq) {
-          if (DEBUG) {
-            System.out.println("  return doc=END");
-          }
+          // if (DEBUG) {
+          //   System.out.println("  return doc=END");
+          // }
           return doc = NO_MORE_DOCS;
         }
         if (docBufferUpto == BLOCK_SIZE) {
           refillDocs();
         }
 
-        if (DEBUG) {
-          System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
-        }
+        // if (DEBUG) {
+        //   System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
+        // }
         accum += docDeltaBuffer[docBufferUpto];
         docUpto++;
 
@@ -457,14 +457,14 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           doc = accum;
           freq = freqBuffer[docBufferUpto];
           docBufferUpto++;
-          if (DEBUG) {
-            System.out.println("  return doc=" + doc + " freq=" + freq);
-          }
+          // if (DEBUG) {
+          //   System.out.println("  return doc=" + doc + " freq=" + freq);
+          // }
           return doc;
         }
-        if (DEBUG) {
-          System.out.println("  doc=" + accum + " is deleted; try next doc");
-        }
+        // if (DEBUG) {
+        //   System.out.println("  doc=" + accum + " is deleted; try next doc");
+        // }
         docBufferUpto++;
       }
     }
@@ -472,17 +472,17 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     @Override
     public int advance(int target) throws IOException {
       // TODO: make frq block load lazy/skippable
-      if (DEBUG) {
-        System.out.println("  FPR.advance target=" + target);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  FPR.advance target=" + target);
+      // }
 
       // current skip docID < docIDs generated from current buffer <= next skip docID
       // we don't need to skip if target is buffered already
       if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
 
-        if (DEBUG) {
-          System.out.println("load skipper");
-        }
+        // if (DEBUG) {
+        //   System.out.println("load skipper");
+        // }
 
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
@@ -506,9 +506,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
         if (newDocUpto > docUpto) {
           // Skipper moved
-          if (DEBUG) {
-            System.out.println("skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer());
-          }
+          // if (DEBUG) {
+          //   System.out.println("skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer());
+          // }
           assert newDocUpto % BLOCK_SIZE == 0 : "got " + newDocUpto;
           docUpto = newDocUpto;
 
@@ -529,9 +529,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       // Now scan... this is an inlined/pared down version
       // of nextDoc():
       while (true) {
-        if (DEBUG) {
-          System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
+        // }
         accum += docDeltaBuffer[docBufferUpto];
         docUpto++;
 
@@ -545,16 +545,16 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
 
       if (liveDocs == null || liveDocs.get(accum)) {
-        if (DEBUG) {
-          System.out.println("  return doc=" + accum);
-        }
+        // if (DEBUG) {
+        //   System.out.println("  return doc=" + accum);
+        // }
         freq = freqBuffer[docBufferUpto];
         docBufferUpto++;
         return doc = accum;
       } else {
-        if (DEBUG) {
-          System.out.println("  now do nextDoc()");
-        }
+        // if (DEBUG) {
+        //   System.out.println("  now do nextDoc()");
+        // }
         docBufferUpto++;
         return nextDoc();
       }
@@ -640,9 +640,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     
     public DocsAndPositionsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
       this.liveDocs = liveDocs;
-      if (DEBUG) {
-        System.out.println("  FPR.reset: termState=" + termState);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  FPR.reset: termState=" + termState);
+      // }
       docFreq = termState.docFreq;
       docTermStartFP = termState.docStartFP;
       posTermStartFP = termState.posStartFP;
@@ -683,32 +683,32 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       assert left > 0;
 
       if (left >= BLOCK_SIZE) {
-        if (DEBUG) {
-          System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
+        // }
         forUtil.readBlock(docIn, encoded, docDeltaBuffer);
-        if (DEBUG) {
-          System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
+        // }
         forUtil.readBlock(docIn, encoded, freqBuffer);
       } else {
         // Read vInts:
-        if (DEBUG) {
-          System.out.println("    fill last vInt doc block from fp=" + docIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("    fill last vInt doc block from fp=" + docIn.getFilePointer());
+        // }
         readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, true);
       }
       docBufferUpto = 0;
     }
     
     private void refillPositions() throws IOException {
-      if (DEBUG) {
-        System.out.println("      refillPositions");
-      }
+      // if (DEBUG) {
+      //   System.out.println("      refillPositions");
+      // }
       if (posIn.getFilePointer() == lastPosBlockFP) {
-        if (DEBUG) {
-          System.out.println("        vInt pos block @ fp=" + posIn.getFilePointer() + " hasPayloads=" + indexHasPayloads + " hasOffsets=" + indexHasOffsets);
-        }
+        // if (DEBUG) {
+        //   System.out.println("        vInt pos block @ fp=" + posIn.getFilePointer() + " hasPayloads=" + indexHasPayloads + " hasOffsets=" + indexHasOffsets);
+        // }
         final int count = posIn.readVInt();
         int payloadLength = 0;
         for(int i=0;i<count;i++) {
@@ -730,31 +730,31 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           }
         }
       } else {
-        if (DEBUG) {
-          System.out.println("        bulk pos block @ fp=" + posIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("        bulk pos block @ fp=" + posIn.getFilePointer());
+        // }
         forUtil.readBlock(posIn, encoded, posDeltaBuffer);
       }
     }
 
     @Override
     public int nextDoc() throws IOException {
-      if (DEBUG) {
-        System.out.println("  FPR.nextDoc");
-      }
+      // if (DEBUG) {
+      //   System.out.println("  FPR.nextDoc");
+      // }
       while (true) {
-        if (DEBUG) {
-          System.out.println("    docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("    docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
+        // }
         if (docUpto == docFreq) {
           return doc = NO_MORE_DOCS;
         }
         if (docBufferUpto == BLOCK_SIZE) {
           refillDocs();
         }
-        if (DEBUG) {
-          System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
-        }
+        // if (DEBUG) {
+        //   System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
+        // }
         accum += docDeltaBuffer[docBufferUpto];
         freq = freqBuffer[docBufferUpto];
         posPendingCount += freq;
@@ -764,33 +764,33 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         if (liveDocs == null || liveDocs.get(accum)) {
           doc = accum;
           position = 0;
-          if (DEBUG) {
-            System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
-          }
+          // if (DEBUG) {
+          //   System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
+          // }
           return doc;
         }
-        if (DEBUG) {
-          System.out.println("    doc=" + accum + " is deleted; try next doc");
-        }
+        // if (DEBUG) {
+        //   System.out.println("    doc=" + accum + " is deleted; try next doc");
+        // }
       }
     }
     
     @Override
     public int advance(int target) throws IOException {
       // TODO: make frq block load lazy/skippable
-      if (DEBUG) {
-        System.out.println("  FPR.advance target=" + target);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  FPR.advance target=" + target);
+      // }
 
       if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
-        if (DEBUG) {
-          System.out.println("    try skipper");
-        }
+        // if (DEBUG) {
+        //   System.out.println("    try skipper");
+        // }
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
-          if (DEBUG) {
-            System.out.println("    create skipper");
-          }
+          // if (DEBUG) {
+          //   System.out.println("    create skipper");
+          // }
           skipper = new BlockSkipReader((IndexInput) docIn.clone(),
                                         BlockPostingsWriter.maxSkipLevels,
                                         BLOCK_SIZE,
@@ -803,9 +803,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           assert skipOffset != -1;
           // This is the first time this enum has skipped
           // since reset() was called; load the skip data:
-          if (DEBUG) {
-            System.out.println("    init skipper");
-          }
+          // if (DEBUG) {
+          //   System.out.println("    init skipper");
+          // }
           skipper.init(docTermStartFP+skipOffset, docTermStartFP, posTermStartFP, payTermStartFP, docFreq);
           skipped = true;
         }
@@ -814,9 +814,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
         if (newDocUpto > docUpto) {
           // Skipper moved
-          if (DEBUG) {
-            System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto());
-          }
+          // if (DEBUG) {
+          //   System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto());
+          // }
 
           assert newDocUpto % BLOCK_SIZE == 0 : "got " + newDocUpto;
           docUpto = newDocUpto;
@@ -840,9 +840,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       // Now scan... this is an inlined/pared down version
       // of nextDoc():
       while (true) {
-        if (DEBUG) {
-          System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
+        // }
         if (docUpto == docFreq) {
           return doc = NO_MORE_DOCS;
         }
@@ -861,15 +861,15 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
 
       if (liveDocs == null || liveDocs.get(accum)) {
-        if (DEBUG) {
-          System.out.println("  return doc=" + accum);
-        }
+        // if (DEBUG) {
+        //   System.out.println("  return doc=" + accum);
+        // }
         position = 0;
         return doc = accum;
       } else {
-        if (DEBUG) {
-          System.out.println("  now do nextDoc()");
-        }
+        // if (DEBUG) {
+        //   System.out.println("  now do nextDoc()");
+        // }
         return nextDoc();
       }
     }
@@ -881,31 +881,31 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     private void skipPositions() throws IOException {
       // Skip positions now:
       int toSkip = posPendingCount - freq;
-      if (DEBUG) {
-        System.out.println("      FPR.skipPositions: toSkip=" + toSkip);
-      }
+      // if (DEBUG) {
+      //   System.out.println("      FPR.skipPositions: toSkip=" + toSkip);
+      // }
 
       final int leftInBlock = BLOCK_SIZE - posBufferUpto;
       if (toSkip < leftInBlock) {
         posBufferUpto += toSkip;
-        if (DEBUG) {
-          System.out.println("        skip w/in block to posBufferUpto=" + posBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("        skip w/in block to posBufferUpto=" + posBufferUpto);
+        // }
       } else {
         toSkip -= leftInBlock;
         while(toSkip >= BLOCK_SIZE) {
-          if (DEBUG) {
-            System.out.println("        skip whole block @ fp=" + posIn.getFilePointer());
-          }
+          // if (DEBUG) {
+          //   System.out.println("        skip whole block @ fp=" + posIn.getFilePointer());
+          // }
           assert posIn.getFilePointer() != lastPosBlockFP;
           forUtil.skipBlock(posIn);
           toSkip -= BLOCK_SIZE;
         }
         refillPositions();
         posBufferUpto = toSkip;
-        if (DEBUG) {
-          System.out.println("        skip w/in block to posBufferUpto=" + posBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("        skip w/in block to posBufferUpto=" + posBufferUpto);
+        // }
       }
 
       position = 0;
@@ -913,13 +913,13 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
-      if (DEBUG) {
-        System.out.println("    FPR.nextPosition posPendingCount=" + posPendingCount + " posBufferUpto=" + posBufferUpto);
-      }
+      // if (DEBUG) {
+      //   System.out.println("    FPR.nextPosition posPendingCount=" + posPendingCount + " posBufferUpto=" + posBufferUpto);
+      // }
       if (posPendingFP != -1) {
-        if (DEBUG) {
-          System.out.println("      seek to pendingFP=" + posPendingFP);
-        }
+        // if (DEBUG) {
+        //   System.out.println("      seek to pendingFP=" + posPendingFP);
+        // }
         posIn.seek(posPendingFP);
         posPendingFP = -1;
 
@@ -938,9 +938,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
       position += posDeltaBuffer[posBufferUpto++];
       posPendingCount--;
-      if (DEBUG) {
-        System.out.println("      return pos=" + position);
-      }
+      // if (DEBUG) {
+      //   System.out.println("      return pos=" + position);
+      // }
       return position;
     }
 
@@ -1077,9 +1077,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     
     public EverythingEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
       this.liveDocs = liveDocs;
-      if (DEBUG) {
-        System.out.println("  FPR.reset: termState=" + termState);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  FPR.reset: termState=" + termState);
+      // }
       docFreq = termState.docFreq;
       docTermStartFP = termState.docStartFP;
       posTermStartFP = termState.posStartFP;
@@ -1121,31 +1121,31 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       assert left > 0;
 
       if (left >= BLOCK_SIZE) {
-        if (DEBUG) {
-          System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("    fill doc block from fp=" + docIn.getFilePointer());
+        // }
         forUtil.readBlock(docIn, encoded, docDeltaBuffer);
-        if (DEBUG) {
-          System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
+        // }
         forUtil.readBlock(docIn, encoded, freqBuffer);
       } else {
-        if (DEBUG) {
-          System.out.println("    fill last vInt doc block from fp=" + docIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("    fill last vInt doc block from fp=" + docIn.getFilePointer());
+        // }
         readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, true);
       }
       docBufferUpto = 0;
     }
     
     private void refillPositions() throws IOException {
-      if (DEBUG) {
-        System.out.println("      refillPositions");
-      }
+      // if (DEBUG) {
+      //   System.out.println("      refillPositions");
+      // }
       if (posIn.getFilePointer() == lastPosBlockFP) {
-        if (DEBUG) {
-          System.out.println("        vInt pos block @ fp=" + posIn.getFilePointer() + " hasPayloads=" + indexHasPayloads + " hasOffsets=" + indexHasOffsets);
-        }
+        // if (DEBUG) {
+        //   System.out.println("        vInt pos block @ fp=" + posIn.getFilePointer() + " hasPayloads=" + indexHasPayloads + " hasOffsets=" + indexHasOffsets);
+        // }
         final int count = posIn.readVInt();
         int payloadLength = 0;
         payloadByteUpto = 0;
@@ -1155,9 +1155,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
             if ((code & 1) != 0) {
               payloadLength = posIn.readVInt();
             }
-            if (DEBUG) {
-              System.out.println("        i=" + i + " payloadLen=" + payloadLength);
-            }
+            // if (DEBUG) {
+            //   System.out.println("        i=" + i + " payloadLen=" + payloadLength);
+            // }
             payloadLengthBuffer[i] = payloadLength;
             posDeltaBuffer[i] = code >>> 1;
             if (payloadLength != 0) {
@@ -1173,32 +1173,32 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           }
 
           if (indexHasOffsets) {
-            if (DEBUG) {
-              System.out.println("        i=" + i + " read offsets from posIn.fp=" + posIn.getFilePointer());
-            }
+            // if (DEBUG) {
+            //   System.out.println("        i=" + i + " read offsets from posIn.fp=" + posIn.getFilePointer());
+            // }
             offsetStartDeltaBuffer[i] = posIn.readVInt();
             offsetLengthBuffer[i] = posIn.readVInt();
-            if (DEBUG) {
-              System.out.println("          startOffDelta=" + offsetStartDeltaBuffer[i] + " offsetLen=" + offsetLengthBuffer[i]);
-            }
+            // if (DEBUG) {
+            //   System.out.println("          startOffDelta=" + offsetStartDeltaBuffer[i] + " offsetLen=" + offsetLengthBuffer[i]);
+            // }
           }
         }
         payloadByteUpto = 0;
       } else {
-        if (DEBUG) {
-          System.out.println("        bulk pos block @ fp=" + posIn.getFilePointer());
-        }
+        // if (DEBUG) {
+        //   System.out.println("        bulk pos block @ fp=" + posIn.getFilePointer());
+        // }
         forUtil.readBlock(posIn, encoded, posDeltaBuffer);
 
         if (indexHasPayloads) {
-          if (DEBUG) {
-            System.out.println("        bulk payload block @ pay.fp=" + payIn.getFilePointer());
-          }
+          // if (DEBUG) {
+          //   System.out.println("        bulk payload block @ pay.fp=" + payIn.getFilePointer());
+          // }
           forUtil.readBlock(payIn, encoded, payloadLengthBuffer);
           int numBytes = payIn.readVInt();
-          if (DEBUG) {
-            System.out.println("        " + numBytes + " payload bytes @ pay.fp=" + payIn.getFilePointer());
-          }
+          // if (DEBUG) {
+          //   System.out.println("        " + numBytes + " payload bytes @ pay.fp=" + payIn.getFilePointer());
+          // }
           if (numBytes > payloadBytes.length) {
             payloadBytes = ArrayUtil.grow(payloadBytes, numBytes);
           }
@@ -1207,9 +1207,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
         }
 
         if (indexHasOffsets) {
-          if (DEBUG) {
-            System.out.println("        bulk offset block @ pay.fp=" + payIn.getFilePointer());
-          }
+          // if (DEBUG) {
+          //   System.out.println("        bulk offset block @ pay.fp=" + payIn.getFilePointer());
+          // }
           forUtil.readBlock(payIn, encoded, offsetStartDeltaBuffer);
           forUtil.readBlock(payIn, encoded, offsetLengthBuffer);
         }
@@ -1218,22 +1218,22 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-      if (DEBUG) {
-        System.out.println("  FPR.nextDoc");
-      }
+      // if (DEBUG) {
+      //   System.out.println("  FPR.nextDoc");
+      // }
       while (true) {
-        if (DEBUG) {
-          System.out.println("    docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("    docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
+        // }
         if (docUpto == docFreq) {
           return doc = NO_MORE_DOCS;
         }
         if (docBufferUpto == BLOCK_SIZE) {
           refillDocs();
         }
-        if (DEBUG) {
-          System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
-        }
+        // if (DEBUG) {
+        //   System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
+        // }
         accum += docDeltaBuffer[docBufferUpto];
         freq = freqBuffer[docBufferUpto];
         posPendingCount += freq;
@@ -1242,38 +1242,38 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
         if (liveDocs == null || liveDocs.get(accum)) {
           doc = accum;
-          if (DEBUG) {
-            System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
-          }
+          // if (DEBUG) {
+          //   System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
+          // }
           position = 0;
           lastStartOffset = 0;
           return doc;
         }
 
-        if (DEBUG) {
-          System.out.println("    doc=" + accum + " is deleted; try next doc");
-        }
+        // if (DEBUG) {
+        //   System.out.println("    doc=" + accum + " is deleted; try next doc");
+        // }
       }
     }
     
     @Override
     public int advance(int target) throws IOException {
       // TODO: make frq block load lazy/skippable
-      if (DEBUG) {
-        System.out.println("  FPR.advance target=" + target);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  FPR.advance target=" + target);
+      // }
 
       if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
 
-        if (DEBUG) {
-          System.out.println("    try skipper");
-        }
+        // if (DEBUG) {
+        //   System.out.println("    try skipper");
+        // }
 
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
-          if (DEBUG) {
-            System.out.println("    create skipper");
-          }
+          // if (DEBUG) {
+          //   System.out.println("    create skipper");
+          // }
           skipper = new BlockSkipReader((IndexInput) docIn.clone(),
                                         BlockPostingsWriter.maxSkipLevels,
                                         BLOCK_SIZE,
@@ -1286,9 +1286,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           assert skipOffset != -1;
           // This is the first time this enum has skipped
           // since reset() was called; load the skip data:
-          if (DEBUG) {
-            System.out.println("    init skipper");
-          }
+          // if (DEBUG) {
+          //   System.out.println("    init skipper");
+          // }
           skipper.init(docTermStartFP+skipOffset, docTermStartFP, posTermStartFP, payTermStartFP, docFreq);
           skipped = true;
         }
@@ -1297,9 +1297,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
         if (newDocUpto > docUpto) {
           // Skipper moved
-          if (DEBUG) {
-            System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto() + " pay.fp=" + skipper.getPayPointer() + " lastStartOffset=" + lastStartOffset);
-          }
+          // if (DEBUG) {
+          //   System.out.println("    skipper moved to docUpto=" + newDocUpto + " vs current=" + docUpto + "; docID=" + skipper.getDoc() + " fp=" + skipper.getDocPointer() + " pos.fp=" + skipper.getPosPointer() + " pos.bufferUpto=" + skipper.getPosBufferUpto() + " pay.fp=" + skipper.getPayPointer() + " lastStartOffset=" + lastStartOffset);
+          // }
           assert newDocUpto % BLOCK_SIZE == 0 : "got " + newDocUpto;
           docUpto = newDocUpto;
 
@@ -1324,9 +1324,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
       // Now scan:
       while (true) {
-        if (DEBUG) {
-          System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
+        // }
         accum += docDeltaBuffer[docBufferUpto];
         freq = freqBuffer[docBufferUpto];
         posPendingCount += freq;
@@ -1342,16 +1342,16 @@ public final class BlockPostingsReader extends PostingsReaderBase {
       }
 
       if (liveDocs == null || liveDocs.get(accum)) {
-        if (DEBUG) {
-          System.out.println("  return doc=" + accum);
-        }
+        // if (DEBUG) {
+        //   System.out.println("  return doc=" + accum);
+        // }
         position = 0;
         lastStartOffset = 0;
         return doc = accum;
       } else {
-        if (DEBUG) {
-          System.out.println("  now do nextDoc()");
-        }
+        // if (DEBUG) {
+        //   System.out.println("  now do nextDoc()");
+        // }
         return nextDoc();
       }
     }
@@ -1363,9 +1363,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
     private void skipPositions() throws IOException {
       // Skip positions now:
       int toSkip = posPendingCount - freq;
-      if (DEBUG) {
-        System.out.println("      FPR.skipPositions: toSkip=" + toSkip);
-      }
+      // if (DEBUG) {
+      //   System.out.println("      FPR.skipPositions: toSkip=" + toSkip);
+      // }
 
       final int leftInBlock = BLOCK_SIZE - posBufferUpto;
       if (toSkip < leftInBlock) {
@@ -1376,15 +1376,15 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           }
           posBufferUpto++;
         }
-        if (DEBUG) {
-          System.out.println("        skip w/in block to posBufferUpto=" + posBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("        skip w/in block to posBufferUpto=" + posBufferUpto);
+        // }
       } else {
         toSkip -= leftInBlock;
         while(toSkip >= BLOCK_SIZE) {
-          if (DEBUG) {
-            System.out.println("        skip whole block @ fp=" + posIn.getFilePointer());
-          }
+          // if (DEBUG) {
+          //   System.out.println("        skip whole block @ fp=" + posIn.getFilePointer());
+          // }
           assert posIn.getFilePointer() != lastPosBlockFP;
           forUtil.skipBlock(posIn);
 
@@ -1412,9 +1412,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
           }
           posBufferUpto++;
         }
-        if (DEBUG) {
-          System.out.println("        skip w/in block to posBufferUpto=" + posBufferUpto);
-        }
+        // if (DEBUG) {
+        //   System.out.println("        skip w/in block to posBufferUpto=" + posBufferUpto);
+        // }
       }
 
       position = 0;
@@ -1423,20 +1423,20 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
-      if (DEBUG) {
-        System.out.println("    FPR.nextPosition posPendingCount=" + posPendingCount + " posBufferUpto=" + posBufferUpto + " payloadByteUpto=" + payloadByteUpto);
-      }
+      // if (DEBUG) {
+      //   System.out.println("    FPR.nextPosition posPendingCount=" + posPendingCount + " posBufferUpto=" + posBufferUpto + " payloadByteUpto=" + payloadByteUpto)// ;
+      // }
       if (posPendingFP != -1) {
-        if (DEBUG) {
-          System.out.println("      seek pos to pendingFP=" + posPendingFP);
-        }
+        // if (DEBUG) {
+        //   System.out.println("      seek pos to pendingFP=" + posPendingFP);
+        // }
         posIn.seek(posPendingFP);
         posPendingFP = -1;
 
         if (payPendingFP != -1) {
-          if (DEBUG) {
-            System.out.println("      seek pay to pendingFP=" + payPendingFP);
-          }
+          // if (DEBUG) {
+          //   System.out.println("      seek pay to pendingFP=" + payPendingFP);
+          // }
           payIn.seek(payPendingFP);
           payPendingFP = -1;
         }
@@ -1472,9 +1472,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
 
       posBufferUpto++;
       posPendingCount--;
-      if (DEBUG) {
-        System.out.println("      return pos=" + position);
-      }
+      // if (DEBUG) {
+      //   System.out.println("      return pos=" + position);
+      // }
       return position;
     }
 
@@ -1490,9 +1490,9 @@ public final class BlockPostingsReader extends PostingsReaderBase {
   
     @Override
     public BytesRef getPayload() {
-      if (DEBUG) {
-        System.out.println("    FPR.getPayload payloadLength=" + payloadLength + " payloadByteUpto=" + payloadByteUpto);
-      }
+      // if (DEBUG) {
+      //   System.out.println("    FPR.getPayload payloadLength=" + payloadLength + " payloadByteUpto=" + payloadByteUpto);
+      // }
       if (payloadLength == 0) {
         return null;
       } else {

@@ -51,7 +51,7 @@ import org.apache.lucene.store.IndexInput;
  *
  */
 final class BlockSkipReader extends MultiLevelSkipListReader {
-  private boolean DEBUG = BlockPostingsReader.DEBUG;
+  // private boolean DEBUG = BlockPostingsReader.DEBUG;
   private final int blockSize;
 
   private long docPointer[];
@@ -158,9 +158,9 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
   @Override
   protected void seekChild(int level) throws IOException {
     super.seekChild(level);
-    if (DEBUG) {
-      System.out.println("seekChild level=" + level);
-    }
+    // if (DEBUG) {
+    //   System.out.println("seekChild level=" + level);
+    // }
     docPointer[level] = lastDocPointer;
     if (posPointer != null) {
       posPointer[level] = lastPosPointer;
@@ -181,16 +181,16 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
   protected void setLastSkipData(int level) {
     super.setLastSkipData(level);
     lastDocPointer = docPointer[level];
-    if (DEBUG) {
-      System.out.println("setLastSkipData level=" + level);
-      System.out.println("  lastDocPointer=" + lastDocPointer);
-    }
+    // if (DEBUG) {
+    //   System.out.println("setLastSkipData level=" + level);
+    //   System.out.println("  lastDocPointer=" + lastDocPointer);
+    // }
     if (posPointer != null) {
       lastPosPointer = posPointer[level];
       lastPosBufferUpto = posBufferUpto[level];
-      if (DEBUG) {
-        System.out.println("  lastPosPointer=" + lastPosPointer + " lastPosBUfferUpto=" + lastPosBufferUpto);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  lastPosPointer=" + lastPosPointer + " lastPosBUfferUpto=" + lastPosBufferUpto);
+      // }
       if (payPointer != null) {
         lastPayPointer = payPointer[level];
       }
@@ -205,27 +205,27 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
 
   @Override
   protected int readSkipData(int level, IndexInput skipStream) throws IOException {
-    if (DEBUG) {
-      System.out.println("readSkipData level=" + level);
-    }
+    // if (DEBUG) {
+    //   System.out.println("readSkipData level=" + level);
+    // }
     int delta = skipStream.readVInt();
-    if (DEBUG) {
-      System.out.println("  delta=" + delta);
-    }
+    // if (DEBUG) {
+    //   System.out.println("  delta=" + delta);
+    // }
     docPointer[level] += skipStream.readVInt();
-    if (DEBUG) {
-      System.out.println("  docFP=" + docPointer[level]);
-    }
+    // if (DEBUG) {
+    //   System.out.println("  docFP=" + docPointer[level]);
+    // }
 
     if (posPointer != null) {
       posPointer[level] += skipStream.readVInt();
-      if (DEBUG) {
-        System.out.println("  posFP=" + posPointer[level]);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  posFP=" + posPointer[level]);
+      // }
       posBufferUpto[level] = skipStream.readVInt();
-      if (DEBUG) {
-        System.out.println("  posBufferUpto=" + posBufferUpto[level]);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  posBufferUpto=" + posBufferUpto[level]);
+      // }
 
       if (payloadByteUpto != null) {
         payloadByteUpto[level] = skipStream.readVInt();

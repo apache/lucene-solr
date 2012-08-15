@@ -44,7 +44,7 @@ import org.apache.lucene.codecs.MultiLevelSkipListWriter;
  *
  */
 final class BlockSkipWriter extends MultiLevelSkipListWriter {
-  private boolean DEBUG = BlockPostingsReader.DEBUG;
+  // private boolean DEBUG = BlockPostingsReader.DEBUG;
   
   private int[] lastSkipDoc;
   private long[] lastSkipDocPointer;
@@ -128,9 +128,9 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
   @Override
   protected void writeSkipData(int level, IndexOutput skipBuffer) throws IOException {
     int delta = curDoc - lastSkipDoc[level];
-    if (DEBUG) {
-      System.out.println("writeSkipData level=" + level + " lastDoc=" + curDoc + " delta=" + delta + " curDocPointer=" + curDocPointer);
-    }
+    // if (DEBUG) {
+    //   System.out.println("writeSkipData level=" + level + " lastDoc=" + curDoc + " delta=" + delta + " curDocPointer=" + curDocPointer);
+    // }
     skipBuffer.writeVInt(delta);
     lastSkipDoc[level] = curDoc;
 
@@ -138,9 +138,9 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
     lastSkipDocPointer[level] = curDocPointer;
 
     if (fieldHasPositions) {
-      if (DEBUG) {
-        System.out.println("  curPosPointer=" + curPosPointer + " curPosBufferUpto=" + curPosBufferUpto);
-      }
+      // if (DEBUG) {
+      //   System.out.println("  curPosPointer=" + curPosPointer + " curPosBufferUpto=" + curPosBufferUpto);
+      // }
       skipBuffer.writeVInt((int) (curPosPointer - lastSkipPosPointer[level]));
       lastSkipPosPointer[level] = curPosPointer;
       skipBuffer.writeVInt(curPosBufferUpto);
