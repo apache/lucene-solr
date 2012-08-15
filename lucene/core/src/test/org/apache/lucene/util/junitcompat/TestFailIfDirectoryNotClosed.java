@@ -17,13 +17,7 @@ package org.apache.lucene.util.junitcompat;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -40,39 +34,10 @@ public class TestFailIfDirectoryNotClosed extends WithNestedTests {
       System.out.println(dir.toString());
     }
   }
-  
-  public static class Nested2 extends WithNestedTests.AbstractNestedTest {
-    public void testDummy() throws IOException {
-      MockDirectoryWrapper dir = newMockDirectory();
-      IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
-      dir.close();
-    }
-  }
-  
-  public static class Nested3 extends WithNestedTests.AbstractNestedTest {
-    public void testDummy() throws IOException {
-      MockDirectoryWrapper dir = newMockDirectory();
-      dir.setLockFactory(new SingleInstanceLockFactory());
-      IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
-      dir.close();
-    }
-  }
 
   @Test
   public void testFailIfDirectoryNotClosed() {
     Result r = JUnitCore.runClasses(Nested1.class);
-    Assert.assertEquals(1, r.getFailureCount());
-  }
-  
-  @Test
-  public void testFailIfIndexWriterNotClosed() {
-    Result r = JUnitCore.runClasses(Nested2.class);
-    Assert.assertEquals(1, r.getFailureCount());
-  }
-  
-  @Test
-  public void testFailIfIndexWriterNotClosedChangeLockFactory() {
-    Result r = JUnitCore.runClasses(Nested3.class);
     Assert.assertEquals(1, r.getFailureCount());
   }
 }
