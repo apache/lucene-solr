@@ -62,8 +62,8 @@ public class TermsFilterTest extends LuceneTestCase {
       w.addDocument(doc);
     }
     IndexReader reader = new SlowCompositeReaderWrapper(w.getReader());
-    assertTrue(reader.getTopReaderContext() instanceof AtomicReaderContext);
-    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
+    assertTrue(reader.getContext() instanceof AtomicReaderContext);
+    AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
     w.close();
 
     TermsFilter tf = new TermsFilter();
@@ -110,7 +110,7 @@ public class TermsFilterTest extends LuceneTestCase {
     tf.addTerm(new Term(fieldName, "content1"));
     
     MultiReader multi = new MultiReader(reader1, reader2);
-    for (AtomicReaderContext context : multi.getTopReaderContext().leaves()) {
+    for (AtomicReaderContext context : multi.leaves()) {
       FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
       assertTrue("Must be >= 0", bits.cardinality() >= 0);      
     }

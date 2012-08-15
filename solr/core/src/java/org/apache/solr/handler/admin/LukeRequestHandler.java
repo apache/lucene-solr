@@ -31,6 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -425,6 +426,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       field.add("className", ft.getClass().getName());
       field.add("indexAnalyzer", getAnalyzerInfo(ft.getAnalyzer()));
       field.add("queryAnalyzer", getAnalyzerInfo(ft.getQueryAnalyzer()));
+      field.add("similarity", getSimilarityInfo(ft.getSimilarity()));
       types.add( ft.getTypeName(), field );
     }
 
@@ -450,6 +452,14 @@ public class LukeRequestHandler extends RequestHandlerBase
     return finfo;
   }
 
+  private static SimpleOrderedMap<Object> getSimilarityInfo(Similarity similarity) {
+    SimpleOrderedMap<Object> toReturn = new SimpleOrderedMap<Object>();
+    if (similarity != null) {
+      toReturn.add("className", similarity.getClass().getName());
+      toReturn.add("details", similarity.toString());
+    }
+    return toReturn;
+  }
 
   private static SimpleOrderedMap<Object> getAnalyzerInfo(Analyzer analyzer) {
     SimpleOrderedMap<Object> aninfo = new SimpleOrderedMap<Object>();
@@ -544,7 +554,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("maxDoc", reader.maxDoc());
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
-    indexInfo.add("segmentCount", reader.getTopReaderContext().leaves().size());
+    indexInfo.add("segmentCount", reader.leaves().size());
     indexInfo.add("current", reader.isCurrent() );
     indexInfo.add("hasDeletions", reader.hasDeletions() );
     indexInfo.add("directory", dir );

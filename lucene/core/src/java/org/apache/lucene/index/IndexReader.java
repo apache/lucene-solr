@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.WeakHashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -379,9 +380,11 @@ public abstract class IndexReader implements Closeable {
   protected abstract void doClose() throws IOException;
 
   /**
-   * Expert: Returns a the root {@link IndexReaderContext} for this
-   * {@link IndexReader}'s sub-reader tree. Iff this reader is composed of sub
-   * readers ,ie. this reader being a composite reader, this method returns a
+   * Expert: Returns the root {@link IndexReaderContext} for this
+   * {@link IndexReader}'s sub-reader tree. 
+   * <p>
+   * Iff this reader is composed of sub
+   * readers, i.e. this reader being a composite reader, this method returns a
    * {@link CompositeReaderContext} holding the reader's direct children as well as a
    * view of the reader tree's atomic leaf contexts. All sub-
    * {@link IndexReaderContext} instances referenced from this readers top-level
@@ -390,14 +393,21 @@ public abstract class IndexReader implements Closeable {
    * atomic leaf reader at a time. If this reader is not composed of child
    * readers, this method returns an {@link AtomicReaderContext}.
    * <p>
-   * Note: Any of the sub-{@link CompositeReaderContext} instances reference from this
-   * top-level context holds a <code>null</code> {@link CompositeReaderContext#leaves()}
-   * reference. Only the top-level context maintains the convenience leaf-view
+   * Note: Any of the sub-{@link CompositeReaderContext} instances referenced
+   * from this top-level context do not support {@link CompositeReaderContext#leaves()}.
+   * Only the top-level context maintains the convenience leaf-view
    * for performance reasons.
-   * 
-   * @lucene.experimental
    */
-  public abstract IndexReaderContext getTopReaderContext();
+  public abstract IndexReaderContext getContext();
+  
+  /**
+   * Returns the reader's leaves, or itself if this reader is atomic.
+   * This is a convenience method calling {@code this.getContext().leaves()}.
+   * @see IndexReaderContext#leaves()
+   */
+  public final List<AtomicReaderContext> leaves() {
+    return getContext().leaves();
+  }
 
   /** Expert: Returns a key for this IndexReader, so FieldCache/CachingWrapperFilter can find
    * it again.

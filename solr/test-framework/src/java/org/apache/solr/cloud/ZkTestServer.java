@@ -240,6 +240,7 @@ public class ZkTestServer {
       }
       cnt++;
     }
+    log.info("start zk server on port:" + port);
   }
 
   @SuppressWarnings("deprecation")

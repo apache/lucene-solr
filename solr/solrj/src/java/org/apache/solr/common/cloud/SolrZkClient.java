@@ -82,11 +82,11 @@ public class SolrZkClient {
    * @throws TimeoutException
    * @throws IOException
    */
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout) throws InterruptedException, TimeoutException, IOException {
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout) {
     this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), null);
   }
   
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, OnReconnect onReonnect) throws InterruptedException, TimeoutException, IOException {
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, OnReconnect onReonnect) {
     this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), onReonnect, zkClientConnectTimeout);
   }
 
@@ -100,8 +100,7 @@ public class SolrZkClient {
    * @throws IOException
    */
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
-      ZkClientConnectionStrategy strat, final OnReconnect onReconnect) throws InterruptedException,
-      TimeoutException, IOException {
+      ZkClientConnectionStrategy strat, final OnReconnect onReconnect) {
     this(zkServerAddress, zkClientTimeout, strat, onReconnect, DEFAULT_CLIENT_CONNECT_TIMEOUT);
   }
 
@@ -116,30 +115,46 @@ public class SolrZkClient {
    * @throws IOException
    */
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
-      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, int clientConnectTimeout) throws InterruptedException,
-      TimeoutException, IOException {
+      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, int clientConnectTimeout) {
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
         + zkServerAddress, this, zkServerAddress, zkClientTimeout, strat, onReconnect);
-    strat.connect(zkServerAddress, zkClientTimeout, connManager,
-        new ZkUpdate() {
-          @Override
-          public void update(SolrZooKeeper zooKeeper) {
-            SolrZooKeeper oldKeeper = keeper;
-            keeper = zooKeeper;
-            if (oldKeeper != null) {
+    try {
+      strat.connect(zkServerAddress, zkClientTimeout, connManager,
+          new ZkUpdate() {
+            @Override
+            public void update(SolrZooKeeper zooKeeper) {
+              SolrZooKeeper oldKeeper = keeper;
+              keeper = zooKeeper;
               try {
-                oldKeeper.close();
-              } catch (InterruptedException e) {
-                // Restore the interrupted status
-                Thread.currentThread().interrupt();
-                log.error("", e);
-                throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                    "", e);
+                closeKeeper(oldKeeper);
+              } finally {
+                if (isClosed) {
+                  // we may have been closed
+                  closeKeeper(SolrZkClient.this.keeper);
+                }
               }
             }
-          }
-        });
-    connManager.waitForConnected(clientConnectTimeout);
+          });
+    } catch (IOException e) {
+      connManager.close();
+      throw new RuntimeException();
+    } catch (InterruptedException e) {
+      connManager.close();
+      throw new RuntimeException();
+    } catch (TimeoutException e) {
+      connManager.close();
+      throw new RuntimeException();
+    }
+    try {
+      connManager.waitForConnected(clientConnectTimeout);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      connManager.close();
+      throw new RuntimeException();
+    } catch (TimeoutException e) {
+      connManager.close();
+      throw new RuntimeException();
+    }
     numOpens.incrementAndGet();
   }
 
@@ -651,11 +666,11 @@ public class SolrZkClient {
   /**
    * @throws InterruptedException
    */
-  public void close() throws InterruptedException {
+  public void close() {
     if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;
     try {
-      keeper.close();
+      closeKeeper(keeper);
     } finally {
       connManager.close();
     }
@@ -678,10 +693,26 @@ public class SolrZkClient {
    if (oldKeeper != null) {
      oldKeeper.close();
    }
+   // we might have been closed already
+   if (isClosed) this.keeper.close();
   }
   
   public SolrZooKeeper getSolrZooKeeper() {
     return keeper;
+  }
+  
+  private void closeKeeper(SolrZooKeeper keeper) {
+    if (keeper != null) {
+      try {
+        keeper.close();
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
+            e);
+      }
+    }
   }
 
   // yeah, it's recursive :(

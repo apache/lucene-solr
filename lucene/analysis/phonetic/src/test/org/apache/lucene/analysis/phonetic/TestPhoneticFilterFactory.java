@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.phonetic;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
 
@@ -41,48 +43,54 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   /**
    * Case: default
    */
-  public void testFactory()
-  {
+  public void testFactory() throws IOException {
     Map<String,String> args = new HashMap<String, String>();
     
     PhoneticFilterFactory ff = new PhoneticFilterFactory();
     
     args.put( PhoneticFilterFactory.ENCODER, "Metaphone" );
     ff.init( args );
+    ff.inform(new ClasspathResourceLoader(ff.getClass()));
     assertTrue( ff.getEncoder() instanceof Metaphone );
     assertTrue( ff.inject ); // default
 
     args.put( PhoneticFilterFactory.INJECT, "false" );
     ff.init( args );
+    ff.inform(new ClasspathResourceLoader(ff.getClass()));
     assertFalse( ff.inject );
 
     args.put( PhoneticFilterFactory.MAX_CODE_LENGTH, "2");
-    ff.init( args );
-    assertEquals(2,((Metaphone) ff.getEncoder()).getMaxCodeLen());
+    ff.init(args);
+    ff.inform(new ClasspathResourceLoader(ff.getClass()));
+    assertEquals(2, ((Metaphone) ff.getEncoder()).getMaxCodeLen());
   }
   
   /**
    * Case: Failures and Exceptions
    */
-  public void testFactoryCaseFailure()
-  {
+  public void testFactoryCaseFailure() throws IOException {
     Map<String,String> args = new HashMap<String, String>();
     
     PhoneticFilterFactory ff = new PhoneticFilterFactory();
+    ClasspathResourceLoader loader = new ClasspathResourceLoader(ff.getClass());
+
     try {
       ff.init( args );
+      ff.inform( loader );
       fail( "missing encoder parameter" );
     }
     catch( Exception ex ) {}
     args.put( PhoneticFilterFactory.ENCODER, "XXX" );
     try {
       ff.init( args );
+      ff.inform( loader );
       fail( "unknown encoder parameter" );
     }
     catch( Exception ex ) {}
     args.put( PhoneticFilterFactory.ENCODER, "org.apache.commons.codec.language.NonExistence" );
     try {
       ff.init( args );
+      ff.inform( loader );
       fail( "unknown encoder parameter" );
     }
     catch( Exception ex ) {}
@@ -91,14 +99,15 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   /**
    * Case: Reflection
    */
-  public void testFactoryCaseReflection()
-  {
+  public void testFactoryCaseReflection() throws IOException {
     Map<String,String> args = new HashMap<String, String>();
     
     PhoneticFilterFactory ff = new PhoneticFilterFactory();
+    ClasspathResourceLoader loader = new ClasspathResourceLoader(ff.getClass());
 
     args.put( PhoneticFilterFactory.ENCODER, "org.apache.commons.codec.language.Metaphone" );
     ff.init( args );
+    ff.inform( loader );
     assertTrue( ff.getEncoder() instanceof Metaphone );
     assertTrue( ff.inject ); // default
 
@@ -106,12 +115,14 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
     // so this effectively tests reflection without package name
     args.put( PhoneticFilterFactory.ENCODER, "Caverphone2" );
     ff.init( args );
+    ff.inform( loader );
     assertTrue( ff.getEncoder() instanceof Caverphone2 );
     assertTrue( ff.inject ); // default
     
     // cross check with registry
     args.put( PhoneticFilterFactory.ENCODER, "Caverphone" );
     ff.init( args );
+    ff.inform( loader );
     assertTrue( ff.getEncoder() instanceof Caverphone2 );
     assertTrue( ff.inject ); // default
   }
@@ -158,6 +169,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
     args.put("inject", inject);
     PhoneticFilterFactory factory = new PhoneticFilterFactory();
     factory.init(args);
+    factory.inform(new ClasspathResourceLoader(factory.getClass()));
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, expected);
   }

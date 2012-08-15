@@ -203,6 +203,8 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.clearProperty("solr.test.sys.prop2");
     resetExceptionIgnores();
     super.tearDown();
+    
+    JettySolrRunner.assertStoppedJetties();
   }
   
   protected void printLayout() throws Exception {

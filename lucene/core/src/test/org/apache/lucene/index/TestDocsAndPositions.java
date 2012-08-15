@@ -63,7 +63,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("1");
-      IndexReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getContext();
       for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
@@ -138,7 +138,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
-      IndexReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getContext();
       for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
@@ -214,7 +214,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
-      IndexReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getContext();
       for (AtomicReaderContext context : topReaderContext.leaves()) {
         int maxDoc = context.reader().maxDoc();
         DocsEnum docsEnum = _TestUtil.docs(random(), context.reader(), fieldName, bytes, null, null, DocsEnum.FLAG_FREQS);
@@ -292,7 +292,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("even");
 
-      IndexReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getContext();
       for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);

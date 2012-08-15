@@ -315,7 +315,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     IndexReader r = writer.getReader();
 
     // Test each sub-segment
-    for (AtomicReaderContext ctx : r.getTopReaderContext().leaves()) {
+    for (AtomicReaderContext ctx : r.leaves()) {
       checkTermsOrder(ctx.reader(), allTerms, false);
     }
     checkTermsOrder(r, allTerms, true);

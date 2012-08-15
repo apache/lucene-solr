@@ -35,6 +35,11 @@ public class QuickPatchThreadsFilter implements ThreadFilter {
     if (t.getName().equals("MemoryPoolMXBean notification dispatcher")) {
       return true;
     }
+    
+    // forked process reaper on Unixish systems
+    if (t.getName().equals("process reaper")) {
+      return true;
+    }
 
     return false;
   }

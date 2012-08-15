@@ -283,7 +283,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile SnapPuller tempSnapPuller;
 
-  public boolean doFetch(SolrParams solrParams, boolean force) {
+  public boolean doFetch(SolrParams solrParams, boolean forceReplication) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
     if (!snapPullLock.tryLock())
       return false;
@@ -294,7 +294,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         nl.remove(SnapPuller.POLL_INTERVAL);
         tempSnapPuller = new SnapPuller(nl, this, core);
       }
-      return tempSnapPuller.fetchLatestIndex(core, force);
+      return tempSnapPuller.fetchLatestIndex(core, forceReplication);
     } catch (Exception e) {
       SolrException.log(LOG, "SnapPull failed ", e);
     } finally {

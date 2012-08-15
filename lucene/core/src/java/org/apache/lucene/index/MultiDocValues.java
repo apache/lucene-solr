@@ -36,7 +36,7 @@ import org.apache.lucene.util.packed.PackedInts.Reader;
  * 
  * <p><b>NOTE</b>: for multi readers, you'll get better
  * performance by gathering the sub readers using
- * {@link IndexReader#getTopReaderContext()} to get the
+ * {@link IndexReader#getContext()} to get the
  * atomic leaves and then operate per-AtomicReader,
  * instead of using this class.
  *
@@ -128,7 +128,7 @@ public class MultiDocValues extends DocValues {
       return puller.pull((AtomicReader) reader, field);
     }
     assert reader instanceof CompositeReader;
-    final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+    final List<AtomicReaderContext> leaves = reader.leaves();
     switch (leaves.size()) {
       case 0:
         // no fields

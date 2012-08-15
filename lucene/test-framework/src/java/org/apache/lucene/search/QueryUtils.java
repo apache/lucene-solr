@@ -353,7 +353,7 @@ public class QueryUtils {
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
           indexSearcher.setSimilarity(s.getSimilarity());
           Weight w = indexSearcher.createNormalizedWeight(q);
-          AtomicReaderContext ctx = previousReader.getTopReaderContext();
+          AtomicReaderContext ctx = previousReader.getContext();
           Scorer scorer = w.scorer(ctx, true, false, ctx.reader().getLiveDocs());
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;

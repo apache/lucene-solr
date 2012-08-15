@@ -105,7 +105,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   public void close() throws IOException {
     synchronized (this) {
       for (CacheValue val : byDirectoryCache.values()) {
-        val.directory.close();
+        try {
+          val.directory.close();
+        } catch (Throwable t) {
+          SolrException.log(log, "Error closing directory", t);
+        }
       }
       byDirectoryCache.clear();
       byPathCache.clear();

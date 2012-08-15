@@ -19,6 +19,9 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 import javax.servlet.DispatcherType;
@@ -27,7 +30,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.GzipHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
@@ -43,6 +47,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * @since solr 1.3
  */
 public class JettySolrRunner {
+  static Map<JettySolrRunner,Exception> RUNNING_JETTIES = new HashMap<JettySolrRunner,Exception>();
+  
   Server server;
 
   FilterHolder dispatchFilter;
@@ -202,6 +208,7 @@ public class JettySolrRunner {
     
     if (!server.isRunning()) {
       server.start();
+      RUNNING_JETTIES.put(this, new RuntimeException());
     }
     synchronized (JettySolrRunner.this) {
       int cnt = 0;
@@ -220,8 +227,18 @@ public class JettySolrRunner {
   public void stop() throws Exception {
     if (!server.isStopped() && !server.isStopping()) {
       server.stop();
+      RUNNING_JETTIES.remove(this);
     }
     server.join();
+  }
+  
+  public static void assertStoppedJetties() {
+    if (RUNNING_JETTIES.size() > 0) {
+      Iterator<Exception> stacktraces = RUNNING_JETTIES.values().iterator();
+      Exception cause = null;
+      cause = stacktraces.next();
+      throw new RuntimeException("Found a bad one!", cause);
+    }
   }
 
   /**

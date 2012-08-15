@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
@@ -114,11 +115,15 @@ public class TestFactories extends BaseTokenStreamTestCase {
   }
   
   /** tries to initialize a factory with no arguments */
-  private boolean initialize(AbstractAnalysisFactory factory) {
+  private boolean initialize(AbstractAnalysisFactory factory) throws IOException {
     boolean success = false;
     try {
       factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
       factory.init(Collections.<String,String>emptyMap());
+      if (factory instanceof ResourceLoaderAware) {
+        ResourceLoaderAware resourceLoaderAware = (ResourceLoaderAware) factory;
+          resourceLoaderAware.inform(new ClasspathResourceLoader(factory.getClass()));
+      }
       success = true;
     } catch (IllegalArgumentException ignored) {
       // its ok if we dont provide the right parameters to throw this
