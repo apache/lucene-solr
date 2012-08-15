@@ -16,18 +16,19 @@ package org.apache.lucene.codecs.block;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.block.BlockPostingsFormat.BLOCK_SIZE;
-
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedInts.Decoder;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
+import org.apache.lucene.util.packed.PackedInts;
+
+import static org.apache.lucene.codecs.block.BlockPostingsFormat.BLOCK_SIZE;
 
 /**
  * Encode all values in normal area with fixed bit width, 
@@ -39,7 +40,8 @@ final class ForUtil {
    * Special number of bits per value used whenever all values to encode are equal.
    */
   private static final int ALL_VALUES_EQUAL = 0;
-  private static final int PACKED_INTS_VERSION = 0; // nocommit: encode in the stream?
+  private static final int PACKED_INTS_VERSION_START = 0;
+  private static final int PACKED_INTS_VERSION_CURRENT = PACKED_INTS_VERSION_START;
 
   /**
    * Upper limit of the number of bytes that might be required to stored
@@ -61,7 +63,7 @@ final class ForUtil {
         if (!format.isSupported(bpv)) {
           continue;
         }
-        final PackedInts.Decoder decoder = PackedInts.getDecoder(format, PACKED_INTS_VERSION, bpv);
+        final PackedInts.Decoder decoder = PackedInts.getDecoder(format, PACKED_INTS_VERSION_START, bpv);
         final int iterations = (int) Math.ceil((float) BLOCK_SIZE / decoder.valueCount());
         maxDataSize = Math.max(maxDataSize, iterations * decoder.valueCount());
       }
@@ -94,6 +96,7 @@ final class ForUtil {
    * Create a new {@link ForUtil} instance and save state into <code>out</code>.
    */
   ForUtil(float acceptableOverheadRatio, DataOutput out) throws IOException {
+    out.writeVInt(PACKED_INTS_VERSION_CURRENT);
     encodedSizes = new int[33];
     encoders = new PackedInts.Encoder[33];
     decoders = new PackedInts.Decoder[33];
@@ -106,9 +109,9 @@ final class ForUtil {
       assert formatAndBits.bitsPerValue <= 32;
       encodedSizes[bpv] = encodedSize(formatAndBits.format, formatAndBits.bitsPerValue);
       encoders[bpv] = PackedInts.getEncoder(
-          formatAndBits.format, PACKED_INTS_VERSION, formatAndBits.bitsPerValue);
+          formatAndBits.format, PACKED_INTS_VERSION_CURRENT, formatAndBits.bitsPerValue);
       decoders[bpv] = PackedInts.getDecoder(
-          formatAndBits.format, PACKED_INTS_VERSION, formatAndBits.bitsPerValue);
+          formatAndBits.format, PACKED_INTS_VERSION_CURRENT, formatAndBits.bitsPerValue);
       iterations[bpv] = computeIterations(decoders[bpv]);
 
       out.writeVInt(formatAndBits.format.getId() << 5 | (formatAndBits.bitsPerValue - 1));
@@ -119,6 +122,10 @@ final class ForUtil {
    * Restore a {@link ForUtil} from a {@link DataInput}.
    */
   ForUtil(DataInput in) throws IOException {
+    int packedIntsVersion = in.readVInt();
+    if (packedIntsVersion != PACKED_INTS_VERSION_START) {
+      throw new CorruptIndexException("expected version=" + PACKED_INTS_VERSION_START + " but got version=" + packedIntsVersion);
+    }
     encodedSizes = new int[33];
     encoders = new PackedInts.Encoder[33];
     decoders = new PackedInts.Decoder[33];
@@ -133,9 +140,9 @@ final class ForUtil {
       assert format.isSupported(bitsPerValue);
       encodedSizes[bpv] = encodedSize(format, bitsPerValue);
       encoders[bpv] = PackedInts.getEncoder(
-          format, PACKED_INTS_VERSION, bitsPerValue);
+          format, packedIntsVersion, bitsPerValue);
       decoders[bpv] = PackedInts.getDecoder(
-          format, PACKED_INTS_VERSION, bitsPerValue);
+          format, packedIntsVersion, bitsPerValue);
       iterations[bpv] = computeIterations(decoders[bpv]);
     }
   }

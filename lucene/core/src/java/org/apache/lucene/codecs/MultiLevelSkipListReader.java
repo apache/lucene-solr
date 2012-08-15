@@ -67,7 +67,6 @@ public abstract class MultiLevelSkipListReader {
   private boolean inputIsBuffered;
   private final int skipMultiplier;
 
-  // nocommit made protected from public
   protected MultiLevelSkipListReader(IndexInput skipStream, int maxSkipLevels, int skipInterval, int skipMultiplier) {
     this.skipStream = new IndexInput[maxSkipLevels];
     this.skipPointer = new long[maxSkipLevels];
