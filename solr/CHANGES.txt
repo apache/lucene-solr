@@ -66,6 +66,10 @@ Bug Fixes
 * SOLR-3730: Rollback is not implemented quite right and can cause corner case fails in 
   SolrCloud tests. (rmuir, Mark Miller)
 
+* SOLR-2981: Fixed StatsComponent to no longer return duplicated information 
+  when requesting multiple stats.facet fields.
+  (Roman Kliewer via hossman)
+
 Other Changes
 ----------------------
 
