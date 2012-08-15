@@ -124,9 +124,21 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       try {
         setupOnConnect();
       } catch (InterruptedException e) {
+        log.error("setup failed", e);
+        
+        if (this.zkClient != null) {
+          this.zkClient.close();
+        }
+
         return;
       } catch (Throwable e) {
-        // e.printStackTrace();
+        log.error("setup failed", e);
+        
+        if (this.zkClient != null) {
+          this.zkClient.close();
+        }
+        
+        return;
       }
         
       while (!stop) {
@@ -221,76 +233,77 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     
     for (int i = 0; i < 15; i++) {
       ClientThread thread = new ClientThread(i);
-      
       threads.add(thread);
     }
-    
-    for (Thread thread : threads) {
-      thread.start();
-    }
-    
-    
-    while(true) { //wait for election to complete
-      int doneCount = 0;
-      for (ClientThread thread : threads) {
-        if(thread.electionDone) {
-          doneCount++;
+    try {
+      for (Thread thread : threads) {
+        thread.start();
+      }
+      
+      while (true) { // wait for election to complete
+        int doneCount = 0;
+        for (ClientThread thread : threads) {
+          if (thread.electionDone) {
+            doneCount++;
+          }
         }
+        if (doneCount == 15) {
+          break;
+        }
+        Thread.sleep(100);
       }
-      if(doneCount==15) {
-        break;
+      
+      int leaderThread = getLeaderThread();
+      
+      // whoever the leader is, should be the n_0 seq
+      assertEquals(0, threads.get(leaderThread).seq);
+      
+      // kill n_0, 1, 3 and 4
+      ((ClientThread) seqToThread.get(0)).close();
+      
+      waitForLeader(threads, 1);
+      
+      leaderThread = getLeaderThread();
+      
+      // whoever the leader is, should be the n_1 seq
+      
+      assertEquals(1, threads.get(leaderThread).seq);
+      
+      ((ClientThread) seqToThread.get(4)).close();
+      ((ClientThread) seqToThread.get(1)).close();
+      ((ClientThread) seqToThread.get(3)).close();
+      
+      // whoever the leader is, should be the n_2 seq
+      
+      waitForLeader(threads, 2);
+      
+      leaderThread = getLeaderThread();
+      assertEquals(2, threads.get(leaderThread).seq);
+      
+      // kill n_5, 2, 6, 7, and 8
+      ((ClientThread) seqToThread.get(5)).close();
+      ((ClientThread) seqToThread.get(2)).close();
+      ((ClientThread) seqToThread.get(6)).close();
+      ((ClientThread) seqToThread.get(7)).close();
+      ((ClientThread) seqToThread.get(8)).close();
+      
+      waitForLeader(threads, 9);
+      leaderThread = getLeaderThread();
+      
+      // whoever the leader is, should be the n_9 seq
+      assertEquals(9, threads.get(leaderThread).seq);
+      
+    } finally {
+      // cleanup any threads still running
+      for (ClientThread thread : threads) {
+        thread.close();
+        thread.interrupt();
+        
       }
-      Thread.sleep(100);
-    }
-    
-    int leaderThread = getLeaderThread();
-    
-    // whoever the leader is, should be the n_0 seq
-    assertEquals(0, threads.get(leaderThread).seq);
-    
-    // kill n_0, 1, 3 and 4
-    ((ClientThread) seqToThread.get(0)).close();
-    
-    waitForLeader(threads, 1);
-    
-    leaderThread = getLeaderThread();
-    
-    // whoever the leader is, should be the n_1 seq
-    
-    assertEquals(1, threads.get(leaderThread).seq);
-    
-    ((ClientThread) seqToThread.get(4)).close();
-    ((ClientThread) seqToThread.get(1)).close();
-    ((ClientThread) seqToThread.get(3)).close();
-    
-    // whoever the leader is, should be the n_2 seq
-    
-    waitForLeader(threads, 2);
-    
-    leaderThread = getLeaderThread();
-    assertEquals(2, threads.get(leaderThread).seq);
-    
-    // kill n_5, 2, 6, 7, and 8
-    ((ClientThread) seqToThread.get(5)).close();
-    ((ClientThread) seqToThread.get(2)).close();
-    ((ClientThread) seqToThread.get(6)).close();
-    ((ClientThread) seqToThread.get(7)).close();
-    ((ClientThread) seqToThread.get(8)).close();
-    
-    waitForLeader(threads, 9);
-    leaderThread = getLeaderThread();
-    
-    // whoever the leader is, should be the n_9 seq
-    assertEquals(9, threads.get(leaderThread).seq);
-    
-    // cleanup any threads still running
-    for (ClientThread thread : threads) {
-      thread.close();
-      thread.interrupt();
-    }
-    
-    for (Thread thread : threads) {
-      thread.join();
+      
+      for (Thread thread : threads) {
+        thread.join();
+      }
     }
     
   }

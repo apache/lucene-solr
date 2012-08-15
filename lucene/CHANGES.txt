@@ -31,6 +31,25 @@ API Changes
   and exposes Iterator, so you can iterate over field names with
   for (String field : fields) instead.  (Robert Muir)
 
+* LUCENE-4152: added IndexReader.leaves(), which lets you enumerate
+  the leaf atomic reader contexts for all readers in the tree.
+  (Uwe Schindler, Robert Muir)
+
+* LUCENE-4304: removed PayloadProcessorProvider. If you want to change
+  payloads (or other things) when merging indexes, its recommended
+  to just use a FilterAtomicReader + IndexWriter.addIndexes. See the
+  OrdinalMappingAtomicReader and TaxonomyMergeUtils in the facets
+  module if you want an example of this.
+  (Mike McCandless, Uwe Schindler, Shai Erera, Robert Muir)
+
+* LUCENE-4304: Make CompositeReader.getSequentialSubReaders()
+  protected. To get atomic leaves of any IndexReader use the new method
+  leaves() (LUCENE-4152), which lists AtomicReaderContexts including
+  the doc base of each leaf.  (Uwe Schindler, Robert Muir)
+
+* LUCENE-4307: Renamed IndexReader.getTopReaderContext to 
+  IndexReader.getContext.  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor
@@ -52,10 +71,19 @@ Bug Fixes
   upgraded to 3.x, then to Lucene 4.0-ALPHA or -BETA, you should run 
   CheckIndex. If it fails, then you need to upgrade again to 4.0  (Robert Muir)
 
+* LUCENE-4303: PhoneticFilterFactory and SnowballPorterFilterFactory load their
+  encoders / stemmers via the ResourceLoader now instead of Class.forName().
+  Solr users should now no longer have to embed these in its war. (David Smiley)
+
 Build
 
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
   thread leak detection. Added support for suite timeouts. (Dawid Weiss)
+
+Documentation
+
+* LUCENE-4302: Fix facet userguide to have HTML loose doctype like
+  all other javadocs.  (Karl Nicholas via Uwe Schindler)
 
 ======================= Lucene 4.0.0-BETA =======================
 

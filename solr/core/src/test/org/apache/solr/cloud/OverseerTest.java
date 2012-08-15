@@ -95,13 +95,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
     }
 
-    public void close(){
-      try {
-        deleteNode(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
-        zkClient.close();
-      } catch (InterruptedException e) {
-        //e.printStackTrace();
-      }
+    public void close() {
+      deleteNode(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
+      zkClient.close();
     }
     
     public void publishState(String coreName, String stateName, int numShards)

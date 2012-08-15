@@ -247,15 +247,7 @@ public final class ZkController {
     } catch(Throwable t) {
       log.error("Error closing overseer", t);
     }
-    try {
-      zkClient.close();
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.warn("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "", e);
-    }
+    zkClient.close();
   }
 
   /**

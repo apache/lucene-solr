@@ -69,8 +69,8 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   public ChaosMonkeySafeLeaderTest() {
     super();
-    sliceCount = atLeast(2);
-    shardCount = atLeast(sliceCount*2);
+    sliceCount = 3;//atLeast(2);
+    shardCount = 12;//atLeast(sliceCount*2);
   }
   
   @Override
@@ -114,7 +114,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     
     // try and wait for any replications and what not to finish...
     
-    waitForThingsToLevelOut(Math.round((runLength / 1000.0f / 5.0f)));
+    waitForThingsToLevelOut(Integer.MAX_VALUE);//Math.round((runLength / 1000.0f / 3.0f)));
 
     checkShardConsistency(true, true);
     

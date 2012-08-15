@@ -77,9 +77,9 @@ public class TestLockFactory extends LuceneTestCase {
     // exceptions raised:
     // Verify: NoLockFactory allows two IndexWriters
     public void testRAMDirectoryNoLocking() throws IOException {
-        Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
         dir.setLockFactory(NoLockFactory.getNoLockFactory());
-
+        dir.setWrapLockFactory(false); // we are gonna explicitly test we get this back
         assertTrue("RAMDirectory.setLockFactory did not take",
                    NoLockFactory.class.isInstance(dir.getLockFactory()));
 

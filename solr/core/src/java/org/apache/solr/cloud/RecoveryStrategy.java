@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SafeStopThread;
+import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -56,7 +56,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RecoveryStrategy extends Thread implements SafeStopThread {
+public class RecoveryStrategy extends Thread implements ClosableThread {
   private static final int MAX_RETRIES = 500;
   private static final int INTERRUPTED = MAX_RETRIES + 1;
   private static final int STARTING_RECOVERY_DELAY = 1000;
@@ -139,7 +139,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
       solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
       
       if (isClosed()) retries = INTERRUPTED;
-      boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making sure force=true does not download files we already have
+      boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making force=true not download files we already have?
 
       if (!success) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
@@ -292,9 +292,6 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
     while (!successfulRecovery && !isClosed() && !isInterrupted()) { // don't use interruption or it will close channels though
       try {
-        // first thing we just try to sync
-        zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
-
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
             .getCloudDescriptor();
         ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
@@ -305,6 +302,19 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
         String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName);
 
+        String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+
+        boolean isLeader = leaderUrl.equals(ourUrl);
+        if (isLeader) {
+          // we are now the leader - no one else must have been suitable
+          log.warn("We have not yet recovered - but we are now the leader! core=" + coreName);
+          log.info("Finished recovery process. core=" + coreName);
+          zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
+          return;
+        }
+        
+        zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
+        
         sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
 
 
@@ -358,7 +368,19 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         log.info("Begin buffering updates. core=" + coreName);
         ulog.bufferUpdates();
         replayed = false;
-
+        
+//        // open a new IndexWriter - we don't want any background merges ongoing
+//        // also ensures something like NRTCachingDirectory is flushed
+//        boolean forceNewIndexDir = false;
+//        try {
+//          core.getUpdateHandler().newIndexWriter(false);
+//        } catch (Throwable t) {
+//          SolrException.log(log, "Could not read the current index - replicating to a new directory", t);
+//          // something is wrong with the index
+//          // we need to force using a new index directory
+//          forceNewIndexDir = true;
+//        }
+//        
         try {
 
           replicate(zkController.getNodeName(), core,
@@ -377,7 +399,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           log.warn("Recovery was interrupted", e);
           retries = INTERRUPTED;
         } catch (Throwable t) {
-          log.error("Error while trying to recover", t);
+          SolrException.log(log, "Error while trying to recover", t);
         } finally {
           if (!replayed) {
             try {
@@ -390,7 +412,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         }
 
       } catch (Throwable t) {
-        log.error("Error while trying to recover. core=" + coreName, t);
+        SolrException.log(log, "Error while trying to recover. core=" + coreName, t);
       }
 
       if (!successfulRecovery) {
@@ -405,7 +427,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             if (retries == INTERRUPTED) {
 
             } else {
-              log.error("Recovery failed - max retries exceeded. core=" + coreName);
+              SolrException.log(log, "Recovery failed - max retries exceeded. core=" + coreName);
               recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
                   core.getCoreDescriptor());
             }
@@ -413,7 +435,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           }
 
         } catch (Exception e) {
-          log.error("core=" + coreName, e);
+          SolrException.log(log, "core=" + coreName, e);
         }
 
         try {

@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
   
-  private static final int BASE_RUN_LENGTH = 180000;
+  private static final int BASE_RUN_LENGTH = 45000;
 
   @BeforeClass
   public static void beforeSuperClass() {
@@ -71,8 +71,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
-    sliceCount = 2;
-    shardCount = 6;
+    sliceCount = 3;
+    shardCount = 12;
   }
   
   @Override
@@ -105,6 +105,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         searchThread.start();
       }
       
+      // TODO: only do this randomly - if we don't do it, compare against control below
       FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
           clients, i * 50000, true);
       threads.add(ftIndexThread);
@@ -137,7 +138,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       Thread.sleep(2000);
       
       // wait until there are no recoveries...
-      waitForThingsToLevelOut(Math.round((runLength / 1000.0f / 5.0f)));
+      waitForThingsToLevelOut(Integer.MAX_VALUE);//Math.round((runLength / 1000.0f / 3.0f)));
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
@@ -151,6 +152,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       zkStateReader.updateClusterState(true);
       assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);
       
+      // we dont't current check vs control because the full throttle thread can
+      // have request fails
       checkShardConsistency(false, true);
       
       // ensure we have added more than 0 docs

@@ -56,13 +56,11 @@ final class SegmentMerger {
 
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
   SegmentMerger(SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval,
-                MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider,
-                FieldInfos.FieldNumbers fieldNumbers, IOContext context) {
+                MergeState.CheckAbort checkAbort, FieldInfos.FieldNumbers fieldNumbers, IOContext context) {
     mergeState.segmentInfo = segmentInfo;
     mergeState.infoStream = infoStream;
     mergeState.readers = new ArrayList<AtomicReader>();
     mergeState.checkAbort = checkAbort;
-    mergeState.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     this.termIndexInterval = termIndexInterval;
     this.codec = segmentInfo.getCodec();
@@ -75,7 +73,7 @@ final class SegmentMerger {
    * @param reader
    */
   final void add(IndexReader reader) {
-    for (final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
+    for (final AtomicReaderContext ctx : reader.leaves()) {
       final AtomicReader r = ctx.reader();
       mergeState.readers.add(r);
     }
@@ -274,8 +272,6 @@ final class SegmentMerger {
     // Remap docIDs
     mergeState.docMaps = new MergeState.DocMap[numReaders];
     mergeState.docBase = new int[numReaders];
-    mergeState.readerPayloadProcessor = new PayloadProcessorProvider.ReaderPayloadProcessor[numReaders];
-    mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[numReaders];
 
     int docBase = 0;
 
@@ -288,10 +284,6 @@ final class SegmentMerger {
       final MergeState.DocMap docMap = MergeState.DocMap.build(reader);
       mergeState.docMaps[i] = docMap;
       docBase += docMap.numDocs();
-
-      if (mergeState.payloadProcessorProvider != null) {
-        mergeState.readerPayloadProcessor[i] = mergeState.payloadProcessorProvider.getReaderProcessor(reader);
-      }
 
       i++;
     }

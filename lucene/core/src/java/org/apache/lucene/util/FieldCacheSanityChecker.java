@@ -25,8 +25,10 @@ import java.util.Set;
 
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.store.AlreadyClosedException;
 
 /** 
  * Provides methods for sanity checking that entries in the FieldCache 
@@ -272,20 +274,28 @@ public final class FieldCacheSanityChecker {
   /**
    * Checks if the seed is an IndexReader, and if so will walk
    * the hierarchy of subReaders building up a list of the objects 
-   * returned by obj.getFieldCacheKey()
+   * returned by {@code seed.getCoreCacheKey()}
    */
   private List<Object> getAllDescendantReaderKeys(Object seed) {
     List<Object> all = new ArrayList<Object>(17); // will grow as we iter
     all.add(seed);
     for (int i = 0; i < all.size(); i++) {
-      Object obj = all.get(i);
-      if (obj instanceof CompositeReader) {
-        List<? extends IndexReader> subs = ((CompositeReader)obj).getSequentialSubReaders();
-        for (int j = 0; (null != subs) && (j < subs.size()); j++) {
-          all.add(subs.get(j).getCoreCacheKey());
+      final Object obj = all.get(i);
+      // TODO: We don't check closed readers here (as getTopReaderContext
+      // throws AlreadyClosedException), what should we do? Reflection?
+      if (obj instanceof IndexReader) {
+        try {
+          final List<IndexReaderContext> childs =
+            ((IndexReader) obj).getContext().children();
+          if (childs != null) { // it is composite reader
+            for (final IndexReaderContext ctx : childs) {
+              all.add(ctx.reader().getCoreCacheKey());
+            }
+          }
+        } catch (AlreadyClosedException ace) {
+          // ignore this reader
         }
       }
-      
     }
     // need to skip the first, because it was the seed
     return all.subList(1, all.size());

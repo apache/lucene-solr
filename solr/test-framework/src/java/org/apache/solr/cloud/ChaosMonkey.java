@@ -68,6 +68,8 @@ public class ChaosMonkey {
   private boolean aggressivelyKillLeaders;
   private Map<String,CloudJettyRunner> shardToLeaderJetty;
   private long startTime;
+
+  private Thread monkeyThread;
   
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
@@ -355,7 +357,7 @@ public class ChaosMonkey {
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
     
     stop = false;
-    new Thread() {
+    monkeyThread = new Thread() {
       private List<CloudJettyRunner> deadPool = new ArrayList<CloudJettyRunner>();
 
       @Override
@@ -413,7 +415,8 @@ public class ChaosMonkey {
             + ". I also expired " + expires.get() + " and caused " + connloss
             + " connection losses");
       }
-    }.start();
+    };
+    monkeyThread.start();
   }
   
   public static void monkeyLog(String msg) {
@@ -422,6 +425,11 @@ public class ChaosMonkey {
   
   public void stopTheMonkey() {
     stop = true;
+    try {
+      monkeyThread.join();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   public int getStarts() {
@@ -435,17 +443,18 @@ public class ChaosMonkey {
   public static boolean start(JettySolrRunner jetty) throws Exception {
     try {
       jetty.start();
-    } catch (BindException e) {
+    } catch (Exception e) {
       jetty.stop();
       Thread.sleep(2000);
       try {
         jetty.start();
-      } catch (BindException e2) {
+      } catch (Exception e2) {
         jetty.stop();
         Thread.sleep(5000);
         try {
           jetty.start();
-        } catch (BindException e3) {
+        } catch (Exception e3) {
+          log.error("", e3);
           // we coud not get the port
           jetty.stop();
           return false;
