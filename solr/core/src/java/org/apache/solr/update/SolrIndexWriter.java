@@ -141,6 +141,8 @@ public class SolrIndexWriter extends IndexWriter {
       super.rollback();
     } finally {
       isClosed = true;
+      directoryFactory.release(getDirectory());
+      numCloses.incrementAndGet();
     }
   }
 
