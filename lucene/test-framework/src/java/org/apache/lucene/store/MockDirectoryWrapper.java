@@ -67,6 +67,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   boolean noDeleteOpenFile = true;
   boolean preventDoubleWrite = true;
   boolean trackDiskUsage = false;
+  boolean wrapLockFactory = true;
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   private Set<String> openFilesForWrite = new HashSet<String>();
@@ -114,11 +115,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     this.throttledOutput = new ThrottledIndexOutput(ThrottledIndexOutput
         .mBitsToBytes(40 + randomState.nextInt(10)), 5 + randomState.nextInt(5), null);
     // force wrapping of lockfactory
-    try {
-      setLockFactory(new MockLockFactoryWrapper(this, delegate.getLockFactory()));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    this.lockFactory = new MockLockFactoryWrapper(this, delegate.getLockFactory());
 
     // 2% of the time use rate limiter
     if (randomState.nextInt(50) == 17) {
@@ -530,6 +527,19 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public void setAssertNoUnrefencedFilesOnClose(boolean v) {
     assertNoUnreferencedFilesOnClose = v;
   }
+  
+  /**
+   * Set to false if you want to return the pure lockfactory
+   * and not wrap it with MockLockFactoryWrapper.
+   * <p>
+   * Be careful if you turn this off: MockDirectoryWrapper might
+   * no longer be able to detect if you forget to close an IndexWriter,
+   * and spit out horribly scary confusing exceptions instead of
+   * simply telling you that.
+   */
+  public void setWrapLockFactory(boolean v) {
+    this.wrapLockFactory = v;
+  }
 
   @Override
   public synchronized void close() throws IOException {
@@ -699,25 +709,33 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   @Override
   public synchronized Lock makeLock(String name) {
     maybeYield();
-    return delegate.makeLock(name);
+    return getLockFactory().makeLock(name);
   }
 
   @Override
   public synchronized void clearLock(String name) throws IOException {
     maybeYield();
-    delegate.clearLock(name);
+    getLockFactory().clearLock(name);
   }
 
   @Override
   public synchronized void setLockFactory(LockFactory lockFactory) throws IOException {
     maybeYield();
+    // sneaky: we must pass the original this way to the dir, because
+    // some impls (e.g. FSDir) do instanceof here.
     delegate.setLockFactory(lockFactory);
+    // now set our wrapped factory here
+    this.lockFactory = new MockLockFactoryWrapper(this, lockFactory);
   }
 
   @Override
   public synchronized LockFactory getLockFactory() {
     maybeYield();
-    return delegate.getLockFactory();
+    if (wrapLockFactory) {
+      return lockFactory;
+    } else {
+      return delegate.getLockFactory();
+    }
   }
 
   @Override
