@@ -81,11 +81,10 @@ public abstract class CompositeReader extends IndexReader {
    *  reader is logically composed of. This method may not
    *  return {@code null}.
    *  
-   *  <p>In contrast to previous Lucene versions this method is no
-   *  longer public, code that wants to get all {@link AtomicReader}s
+   *  <p><b>NOTE:</b> In contrast to previous Lucene versions this method
+   *  is no longer public, code that wants to get all {@link AtomicReader}s
    *  this composite is composed of should use {@link IndexReader#leaves()}.
-   *  
-   *  @lucene.internal
+   * @see IndexReader#leaves()
    */
   protected abstract List<? extends IndexReader> getSequentialSubReaders();
 

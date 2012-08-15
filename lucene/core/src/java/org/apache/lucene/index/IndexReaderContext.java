@@ -22,7 +22,6 @@ import java.util.List;
 /**
  * A struct like class that represents a hierarchical relationship between
  * {@link IndexReader} instances. 
- * @lucene.experimental
  */
 public abstract class IndexReaderContext {
   /** The reader context for this reader's immediate parent, or null if none */

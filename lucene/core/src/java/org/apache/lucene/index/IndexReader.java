@@ -391,17 +391,17 @@ public abstract class IndexReader implements Closeable {
    * atomic leaf reader at a time. If this reader is not composed of child
    * readers, this method returns an {@link AtomicReaderContext}.
    * <p>
-   * Note: Any of the sub-{@link CompositeReaderContext} instances reference from this
-   * top-level context holds a <code>null</code> {@link CompositeReaderContext#leaves()}
-   * reference. Only the top-level context maintains the convenience leaf-view
+   * Note: Any of the sub-{@link CompositeReaderContext} instances referenced
+   * from this top-level context do not support {@link CompositeReaderContext#leaves()}.
+   * Only the top-level context maintains the convenience leaf-view
    * for performance reasons.
-   * 
-   * @lucene.experimental
    */
   public abstract IndexReaderContext getContext();
   
   /**
-   * Returns the reader's leaves, or itself if this reader is Atomic.
+   * Returns the reader's leaves, or itself if this reader is atomic.
+   * This is a convenience method calling {@code this.getContext().leaves()}.
+   * @see IndexReaderContext#leaves()
    */
   public final List<AtomicReaderContext> leaves() {
     return getContext().leaves();
