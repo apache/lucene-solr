@@ -237,7 +237,7 @@
       <!-- core: problems -->
       <check-missing-javadocs dir="build/docs/demo" level="class"/>
       <check-missing-javadocs dir="build/docs/facet" level="class"/>
-      <!-- grouping: problems -->
+      <check-missing-javadocs dir="build/docs/grouping" level="class"/>
       <!-- highlighter: problems -->
       <check-missing-javadocs dir="build/docs/join" level="class"/>
       <check-missing-javadocs dir="build/docs/memory" level="class"/>
