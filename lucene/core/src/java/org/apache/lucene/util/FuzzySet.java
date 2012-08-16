@@ -48,6 +48,11 @@ public class FuzzySet {
   
   public static final int FUZZY_SERIALIZATION_VERSION=1;
   
+  /**
+   * Result from {@link FuzzySet#contains(BytesRef)}:
+   * can never return definitively YES (always MAYBE), 
+   * but can sometimes definitely return NO.
+   */
   public enum ContainsResult {
     MAYBE, NO
   };
