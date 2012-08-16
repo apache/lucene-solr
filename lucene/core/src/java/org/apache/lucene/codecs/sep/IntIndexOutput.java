@@ -38,6 +38,7 @@ public abstract class IntIndexOutput implements Closeable {
    * >= 0.  */
   public abstract void write(int v) throws IOException;
 
+  /** Records a single skip-point in the IndexOutput. */
   public abstract static class Index {
 
     /** Internally records the current location */
