@@ -127,6 +127,13 @@ public class AutomatonTestUtil {
     return code;
   }
 
+  /**
+   * Lets you retrieve random strings accepted
+   * by an Automaton.
+   * <p>
+   * Once created, call {@link #getRandomAcceptedString(Random)}
+   * to get a new string (in UTF-32 codepoints).
+   */
   public static class RandomAcceptedStrings {
 
     private final Map<Transition,Boolean> leadsToAccept;

@@ -72,6 +72,9 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
     return new MockIntFactory(blockSize);
   }
 
+  /**
+   * Encodes blocks as vInts of a fixed block size.
+   */
   public static class MockIntFactory extends IntStreamFactory {
     private final int blockSize;
 

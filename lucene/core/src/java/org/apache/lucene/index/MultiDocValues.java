@@ -43,7 +43,7 @@ import org.apache.lucene.util.packed.PackedInts.Reader;
  * @lucene.experimental
  * @lucene.internal
  */
-public class MultiDocValues extends DocValues {
+class MultiDocValues extends DocValues {
   
   private static DocValuesPuller DEFAULT_PULLER = new DocValuesPuller();
   private static final DocValuesPuller NORMS_PULLER = new DocValuesPuller() {

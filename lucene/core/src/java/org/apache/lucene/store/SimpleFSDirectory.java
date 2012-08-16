@@ -85,8 +85,16 @@ public class SimpleFSDirectory extends FSDirectory {
     };
   }
 
+  /**
+   * Reads bytes with {@link RandomAccessFile#seek(long)} followed by
+   * {@link RandomAccessFile#read(byte[], int, int)}.  
+   */
   protected static class SimpleFSIndexInput extends BufferedIndexInput {
   
+    /**
+     * Extension of RandomAccessFile that tracks if the file is 
+     * open.
+     */
     protected static class Descriptor extends RandomAccessFile {
       // remember if the file is open, so that we don't try to close it
       // more than once

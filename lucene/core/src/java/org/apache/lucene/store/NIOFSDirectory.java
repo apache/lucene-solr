@@ -106,6 +106,9 @@ public class NIOFSDirectory extends FSDirectory {
     };
   }
 
+  /**
+   * Reads bytes with {@link FileChannel#read(ByteBuffer, long)}
+   */
   protected static class NIOFSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
 
     private ByteBuffer byteBuf; // wraps the buffer for NIO
