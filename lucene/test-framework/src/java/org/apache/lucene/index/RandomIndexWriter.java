@@ -139,7 +139,7 @@ public class RandomIndexWriter implements Closeable {
   
   /**
    * Adds a Document.
-   * @see IndexWriter#addDocument(Iterable)
+   * @see IndexWriter#addDocument(org.apache.lucene.index.IndexDocument)
    */
   public <T extends IndexableField> void addDocument(final IndexDocument doc) throws IOException {
     addDocument(doc, w.getAnalyzer());
@@ -285,7 +285,7 @@ public class RandomIndexWriter implements Closeable {
 
   /**
    * Updates a document.
-   * @see IndexWriter#updateDocument(Term, Iterable)
+   * @see IndexWriter#updateDocument(Term, org.apache.lucene.index.IndexDocument)
    */
   public <T extends IndexableField> void updateDocument(Term t, final IndexDocument doc) throws IOException {
     if (doDocValues) {

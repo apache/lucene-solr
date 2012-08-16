@@ -56,7 +56,6 @@ public final class Document implements IndexDocument{
   * Creates a Document from StoredDocument so it that can be used e.g. for another
   * round of indexing.
   *
-  * @return a new instance of Document representation of this StoredDocument
   */
   public Document(StoredDocument storedDoc) {
     for (StorableField field : storedDoc.getFields()) {

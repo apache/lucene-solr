@@ -69,10 +69,10 @@ import org.apache.lucene.util.ThreadInterruptedException;
   new index if there is not already an index at the provided path
   and otherwise open the existing index.</p>
 
-  <p>In either case, documents are added with {@link #addDocument(Iterable)
+  <p>In either case, documents are added with {@link #addDocument(IndexDocument)
   addDocument} and removed with {@link #deleteDocuments(Term)} or {@link
   #deleteDocuments(Query)}. A document can be updated with {@link
-  #updateDocument(Term, Iterable) updateDocument} (which just deletes
+  #updateDocument(Term, IndexDocument) updateDocument} (which just deletes
   and then adds the entire document). When finished adding, deleting 
   and updating documents, {@link #close() close} should be called.</p>
 
@@ -1096,7 +1096,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * Adds a document to this index, using the provided analyzer instead of the
    * value of {@link #getAnalyzer()}.
    *
-   * <p>See {@link #addDocument(Iterable)} for details on
+   * <p>See {@link #addDocument(IndexDocument)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
    *
@@ -1132,7 +1132,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * perhaps to obtain better index compression), in which case
    * you may need to fully re-index your documents at that time.
    *
-   * <p>See {@link #addDocument(Iterable)} for details on
+   * <p>See {@link #addDocument(IndexDocument)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
    *
