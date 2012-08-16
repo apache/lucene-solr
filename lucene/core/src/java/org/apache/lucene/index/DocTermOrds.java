@@ -119,10 +119,13 @@ public class DocTermOrds {
   protected final String field;
 
   protected int numTermsInField;
-  protected long termInstances; // total number of references to term numbers
+  /** total number of references to term numbers */
+  protected long termInstances;
   private long memsz;
-  protected int total_time;  // total time to uninvert the field
-  protected int phase1_time;  // time for phase1 of the uninvert process
+  /** total time to uninvert the field */
+  protected int total_time;
+  /** time for phase1 of the uninvert process */
+  protected int phase1_time;
 
   protected int[] index;
   protected byte[][] tnums = new byte[256][];
@@ -234,7 +237,7 @@ public class DocTermOrds {
   protected void setActualDocFreq(int termNum, int df) throws IOException {
   }
 
-  // Call this only once (if you subclass!)
+  /** Call this only once (if you subclass!) */
   protected void uninvert(final AtomicReader reader, final BytesRef termPrefix) throws IOException {
     //System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);
     final long startTime = System.currentTimeMillis();

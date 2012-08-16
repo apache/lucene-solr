@@ -117,10 +117,13 @@ public final class ByteBlockPool {
   public byte[][] buffers = new byte[10][];
 
   int bufferUpto = -1;                        // Which buffer we are upto
-  public int byteUpto = BYTE_BLOCK_SIZE;             // Where we are in head buffer
+  /** Where we are in head buffer */
+  public int byteUpto = BYTE_BLOCK_SIZE;
 
-  public byte[] buffer;                              // Current head buffer
-  public int byteOffset = -BYTE_BLOCK_SIZE;          // Current head offset
+  /** Current head buffer */
+  public byte[] buffer;
+  /** Current head offset */
+  public int byteOffset = -BYTE_BLOCK_SIZE;
 
   private final Allocator allocator;
 

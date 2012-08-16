@@ -33,8 +33,8 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
 
-  // This is used in case topDocs() is called with illegal parameters, or there
-  // simply aren't (enough) results.
+  /** This is used in case topDocs() is called with illegal parameters, or there
+   *  simply aren't (enough) results. */
   protected static final TopDocs EMPTY_TOPDOCS = new TopDocs(0, new ScoreDoc[0], Float.NaN);
   
   /**
