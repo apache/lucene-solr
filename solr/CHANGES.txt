@@ -76,6 +76,10 @@ Other Changes
 * SOLR-3690: Fixed binary release packages to include dependencie needed for 
   the solr-test-framework (hossman)
 
+* SOLR-2857: The /update/json and /update/csv URLs were restored to aid
+  in the migration of existing clients.  (yonik)
+
+
 ==================  4.0.0-BETA ===================
 
 
