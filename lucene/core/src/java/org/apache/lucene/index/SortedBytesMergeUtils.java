@@ -179,10 +179,36 @@ public final class SortedBytesMergeUtils {
     return merger.currentOrd;
   }
   
+  /**
+   * Implementation of this interface consume the merged bytes with their
+   * corresponding ordinal and byte offset. The offset is the byte offset in
+   * target sorted source where the currently merged {@link BytesRef} instance
+   * should be stored at.
+   */
   public static interface BytesRefConsumer {
+    
+    /**
+     * Consumes a single {@link BytesRef}. The provided {@link BytesRef}
+     * instances are strictly increasing with respect to the used
+     * {@link Comparator} used for merging
+     * 
+     * @param ref
+     *          the {@link BytesRef} to consume
+     * @param ord
+     *          the ordinal of the given {@link BytesRef} in the merge target
+     * @param offset
+     *          the byte offset of the given {@link BytesRef} in the merge
+     *          target
+     * @throws IOException
+     *           if an {@link IOException} occurs
+     */
     public void consume(BytesRef ref, int ord, long offset) throws IOException;
   }
   
+  /**
+   * A simple {@link BytesRefConsumer} that writes the merged {@link BytesRef}
+   * instances sequentially to an {@link IndexOutput}.
+   */
   public static final class IndexOutputBytesRefConsumer implements BytesRefConsumer {
     private final IndexOutput datOut;
     
