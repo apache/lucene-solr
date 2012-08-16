@@ -68,7 +68,7 @@ public class AlcoholicMergePolicy extends LogMergePolicy {
     return info.sizeInBytes();
   }
   
-  public static enum Drink {
+  private static enum Drink {
     
     Beer(15), Wine(17), Champagne(21), WhiteRussian(22), SingleMalt(30);
     
@@ -77,11 +77,6 @@ public class AlcoholicMergePolicy extends LogMergePolicy {
     Drink(long drunkFactor) {
       this.drunkFactor = drunkFactor;
     }
-    
-    public long drunk() {
-      return drunkFactor;
-    }
-    
   }
   
 }

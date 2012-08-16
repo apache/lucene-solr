@@ -247,7 +247,7 @@
       <check-missing-javadocs dir="build/docs/sandbox" level="class"/>
       <!-- spatial: problems -->
       <check-missing-javadocs dir="build/docs/suggest" level="class"/>
-      <!-- test-framework: problems -->
+      <check-missing-javadocs dir="build/docs/test-framework" level="class"/>
     </sequential>
   </target>
   

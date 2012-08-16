@@ -32,6 +32,9 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
+ * Utility class for merging SortedBytes DocValues
+ * instances.
+ *  
  * @lucene.internal
  */
 public final class SortedBytesMergeUtils {
