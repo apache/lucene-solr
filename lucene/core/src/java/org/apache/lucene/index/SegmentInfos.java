@@ -137,7 +137,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
                                // or wrote; this is normally the same as generation except if
                                // there was an IOException that had interrupted a commit
 
-  public Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
+  /** Opaque Map&lt;String, String&gt; that user can specify during IndexWriter.commit */
+  public Map<String,String> userData = Collections.<String,String>emptyMap();
   
   private List<SegmentInfoPerCommit> segments = new ArrayList<SegmentInfoPerCommit>();
   
