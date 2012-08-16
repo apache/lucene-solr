@@ -25,12 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringReader;
-import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -111,12 +107,12 @@ public class ContentStreamTest extends LuceneTestCase
       charset = ContentStreamBase.DEFAULT_CHARSET;
     // Re-open the stream and this time use a reader
     stream = new ContentStreamBase.URLStream( url );
-    StringBuilder sb = new StringBuilder();
     Reader reader = stream.getReader();
-    int ch;
-    while ((ch = reader.read()) > 0) {
-      sb.append((char)ch);
+    try {
+      String streamContent = IOUtils.toString(reader);
+      assertEquals(new String(content, charset), streamContent);
+    } finally {
+      IOUtils.closeQuietly(reader);
     }
-    assertEquals(new String(content, charset), sb.toString());
   }
 }
