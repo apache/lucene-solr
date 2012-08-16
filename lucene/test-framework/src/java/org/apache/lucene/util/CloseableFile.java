@@ -24,25 +24,30 @@ import java.io.*;
  */
 final class CloseableFile implements Closeable {
   private final File file;
+  private final TestRuleMarkFailure failureMarker;
 
-  public CloseableFile(File file) {
+  public CloseableFile(File file, TestRuleMarkFailure failureMarker) {
     this.file = file;
+    this.failureMarker = failureMarker;
   }
 
   @Override
   public void close() throws IOException {
-    if (file.exists()) {
-      try {
-        _TestUtil.rmDir(file);
-      } catch (IOException e) {
-        // Ignore the exception from rmDir.
-      }
-
-      // Re-check.
+    // only if there were no other test failures.
+    if (failureMarker.wasSuccessful()) {
       if (file.exists()) {
-        throw new IOException(
+        try {
+          _TestUtil.rmDir(file);
+        } catch (IOException e) {
+          // Ignore the exception from rmDir.
+        }
+
+        // Re-check.
+        if (file.exists()) {
+          throw new IOException(
             "Could not remove: " + file.getAbsolutePath());
-      }
+        }
+    }
     }
   }
 }
