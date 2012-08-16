@@ -29,8 +29,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Locale;
 
-import org.apache.lucene.util.IOUtils;
-
 /**
  * Three concrete implementations for ContentStream - one for File/URL/String
  * 
@@ -120,7 +118,9 @@ public abstract class ContentStreamBase implements ContentStream
           }
         } catch(Exception ex) {
         } finally {
-          IOUtils.closeWhileHandlingException(stream);
+          if (stream != null) try {
+            stream.close();
+          } catch (IOException ioe) {}
         }
       }
       return contentType;
