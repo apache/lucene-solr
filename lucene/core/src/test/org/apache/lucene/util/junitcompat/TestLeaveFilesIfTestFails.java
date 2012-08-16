@@ -1,15 +1,5 @@
 package org.apache.lucene.util.junitcompat;
 
-import java.io.File;
-
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.junitcompat.TestFailIfDirectoryNotClosed.Nested1;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,6 +16,14 @@ import org.junit.runner.Result;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.File;
+
+import org.apache.lucene.util._TestUtil;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
 
 public class TestLeaveFilesIfTestFails extends WithNestedTests {
   public TestLeaveFilesIfTestFails() {
