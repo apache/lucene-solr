@@ -57,7 +57,14 @@ public final class SortedBytesMergeUtils {
     }
     return new MergeContext(comp, mergeDocCount, size, type);
   }
-
+  /**
+   * Encapsulates contextual information about the merge. 
+   * This class holds document id to ordinal mappings, offsets for
+   * variable length values and the comparator to sort the merged
+   * bytes.
+   * 
+   * @lucene.internal
+   */
   public static final class MergeContext {
     private final Comparator<BytesRef> comp;
     private final BytesRef missingValue = new BytesRef();
@@ -189,7 +196,15 @@ public final class SortedBytesMergeUtils {
           currentMergedBytes.length);      
     }
   }
-
+  
+  /**
+   * {@link RecordMerger} merges a list of {@link SortedSourceSlice} lazily by
+   * consuming the sorted source records one by one and de-duplicates records
+   * that are shared across slices. The algorithm is based on a lazy priority queue
+   * that prevents reading merge sources into heap memory. 
+   * 
+   * @lucene.internal
+   */
   private static final class RecordMerger {
     private final MergeQueue queue;
     private final SortedSourceSlice[] top;
@@ -234,6 +249,12 @@ public final class SortedBytesMergeUtils {
     }
   }
 
+  /**
+   * {@link SortedSourceSlice} represents a single {@link SortedSource} merge candidate.
+   * It encapsulates ordinal and pre-calculated target doc id to ordinal mappings.
+   * This class also holds state private to the merge process.
+   * @lucene.internal
+   */
   public static class SortedSourceSlice {
     final SortedSource source;
     final int readerIdx;
