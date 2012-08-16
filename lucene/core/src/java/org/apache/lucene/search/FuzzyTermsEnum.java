@@ -398,12 +398,17 @@ public class FuzzyTermsEnum extends TermsEnum {
     return scale_factor;
   }
   
-  /** @lucene.internal */
+  /**
+   * reuses compiled automata across different segments,
+   * because they are independent of the index
+   * @lucene.internal */
   public static interface LevenshteinAutomataAttribute extends Attribute {
     public List<CompiledAutomaton> automata();
   }
     
-  /** @lucene.internal */
+  /** 
+   * Stores compiled automata as a list (indexed by edit distance)
+   * @lucene.internal */
   public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
     private final List<CompiledAutomaton> automata = new ArrayList<CompiledAutomaton>();
       
