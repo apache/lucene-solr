@@ -771,16 +771,14 @@ public final class Util {
    *  IntsRef. */
   public static IntsRef toUTF16(CharSequence s, IntsRef scratch) {
     final int charLimit = s.length();
-    scratch.grow(charLimit);
-    int idx = 0;
-    while(idx < charLimit) {
-      scratch.ints[idx] = (int) s.charAt(idx);
-      idx++;
-    }
     scratch.offset = 0;
-    scratch.length = idx;
+    scratch.length = charLimit;
+    scratch.grow(charLimit);
+    for (int idx = 0; idx < charLimit; idx++) {
+      scratch.ints[idx] = (int) s.charAt(idx);
+    }
     return scratch;
-  }
+  }    
 
   /** Decodes the Unicode codepoints from the provided
    *  CharSequence and places them in the provided scratch
