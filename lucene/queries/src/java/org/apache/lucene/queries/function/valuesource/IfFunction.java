@@ -30,6 +30,10 @@ import java.util.List;
 import java.util.Map;
 
 
+/**
+ * Depending on the boolean value of the <code>ifSource</code> function,
+ * returns the value of the <code>trueSource</code> or <code>falseSource</code> function.
+ */
 public class IfFunction extends BoolFunction {
   private final ValueSource ifSource;
   private final ValueSource trueSource;
