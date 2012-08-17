@@ -28,7 +28,13 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.Map;
 
-/** @lucene.internal */
+/** 
+ * Function that returns {@link TFIDFSimilarity #idf(long, long)}
+ * for every document.
+ * <p>
+ * Note that the configured Similarity for the field must be
+ * a subclass of {@link TFIDFSimilarity}
+ * @lucene.internal */
 public class IDFValueSource extends DocFreqValueSource {
   public IDFValueSource(String field, String val, String indexedField, BytesRef indexedBytes) {
     super(field, val, indexedField, indexedBytes);

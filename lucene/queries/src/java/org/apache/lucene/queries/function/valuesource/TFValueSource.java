@@ -28,6 +28,13 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.Map;
 
+/** 
+ * Function that returns {@link TFIDFSimilarity#tf(int)}
+ * for every document.
+ * <p>
+ * Note that the configured Similarity for the field must be
+ * a subclass of {@link TFIDFSimilarity}
+ * @lucene.internal */
 public class TFValueSource extends TermFreqValueSource {
   public TFValueSource(String field, String val, String indexedField, BytesRef indexedBytes) {
     super(field, val, indexedField, indexedBytes);
