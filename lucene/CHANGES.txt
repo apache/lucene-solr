@@ -79,6 +79,10 @@ Bug Fixes
   Also, ensure immutability and use only one instance of this table in RAM (lazy
   loaded) since its quite large. (sausarkar, Steven Rowe, Robert Muir)
 
+* LUCENE-4310: MappingCharFilter was failing to match input strings
+  containing non-BMP Unicode characters.  (Dawid Weiss, Robert Muir,
+  Mike McCandless)
+
 Build
 
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
