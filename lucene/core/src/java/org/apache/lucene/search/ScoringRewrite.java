@@ -32,7 +32,11 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 
-/** @lucene.internal Only public to be accessible by spans package. */
+/** 
+ * Base rewrite method that translates each term into a query, and keeps
+ * the scores as computed by the query.
+ * <p>
+ * @lucene.internal Only public to be accessible by spans package. */
 public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewrite<Q> {
 
   /** A rewrite method that first translates each term into
