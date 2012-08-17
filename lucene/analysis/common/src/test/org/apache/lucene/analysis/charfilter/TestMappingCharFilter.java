@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 
 public class TestMappingCharFilter extends BaseTokenStreamTestCase {
@@ -54,6 +55,11 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     builder.add( "ll", "llll" );
 
     builder.add( "empty", "" );
+
+    // BMP (surrogate pair):
+    builder.add(UnicodeUtil.newString(new int[] {0x1D122}, 0, 1), "fclef");
+
+    builder.add("\uff01", "full-width-exclamation");
 
     normMap = builder.build();
   }
@@ -126,6 +132,18 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "empty" ) );
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts, new String[0], new int[]{}, new int[]{}, 5);
+  }
+
+  public void testNonBMPChar() throws Exception {
+    CharFilter cs = new MappingCharFilter( normMap, new StringReader( UnicodeUtil.newString(new int[] {0x1D122}, 0, 1) ) );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    assertTokenStreamContents(ts, new String[]{"fclef"}, new int[]{0}, new int[]{2}, 2);
+  }
+
+  public void testFullWidthChar() throws Exception {
+    CharFilter cs = new MappingCharFilter( normMap, new StringReader( "\uff01") );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    assertTokenStreamContents(ts, new String[]{"full-width-exclamation"}, new int[]{0}, new int[]{1}, 1);
   }
 
   //
