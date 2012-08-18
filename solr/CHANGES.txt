@@ -79,6 +79,9 @@ Other Changes
 * SOLR-2857: The /update/json and /update/csv URLs were restored to aid
   in the migration of existing clients.  (yonik)
 
+* SOLR-3691: SimplePostTool: Mode for crawling/posting web pages
+  See http://wiki.apache.org/solr/ExtractingRequestHandler for examples (janhoy)
+
 
 ==================  4.0.0-BETA ===================
 
