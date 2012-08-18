@@ -129,14 +129,14 @@ import org.apache.lucene.util.packed.PackedInts;
  *                            &lt;PosFPDelta, PosVIntBlockFPDelta?, PayFPDelta?&gt;?, 
  *                            SkipFPDelta?&gt;<sup>EntryCount</sup></li>
  *   <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, RootCodeLength, 
- *                           Byte<sup>RootCodeLength</sup>, SumDocFreq, DocCount&gt;
+ *                           {@link DataOutput#writeByte byte}<sup>RootCodeLength</sup>, SumDocFreq, DocCount&gt;
  *                           <sup>NumFields</sup></li>
  *   <li>Header, PostingsHeader --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
  *   <li>PackedBlockSize, EntryCount, SuffixLength, StatsLength, DocFreq, MetaLength, 
- *       PosVIntBlockFPDelta , SkipFPDelta, NumFields, FieldNumber, RootCodeLength, DocCount --&gt; 
+ *       PosVIntBlockFPDelta, SkipFPDelta, NumFields, FieldNumber, RootCodeLength, DocCount --&gt; 
  *       {@link DataOutput#writeVInt VInt}</li>
- *   <li>TotalTermFreq, DocFPDelta, PosFPDelta, NumTerms, SumTotalTermFreq, SumDocFreq --&gt; 
+ *   <li>TotalTermFreq, DocFPDelta, PosFPDelta, PayFPDelta, NumTerms, SumTotalTermFreq, SumDocFreq --&gt; 
  *       {@link DataOutput#writeVLong VLong}</li>
  * </ul>
  * <p>Notes:</p>
@@ -203,7 +203,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>PackedBlock --&gt; PackedDocDeltaBlock, PackedFreqBlock?
  *   <li>VIntBlock --&gt; &lt;DocDelta[, Freq?]&gt;<sup>DocFreq-PackedBlockSize*PackedDocBlockNum</sup>
  *   <li>SkipData --&gt; &lt;&lt;SkipLevelLength, SkipLevel&gt;
- *       <sup>NumSkipLevels-1</sup>, SkipLevel&gt; &lt;SkipDatum?&gt;</li>
+ *       <sup>NumSkipLevels-1</sup>, SkipLevel&gt;, SkipDatum?</li>
  *   <li>SkipLevel --&gt; &lt;SkipDatum&gt; <sup>TrimmedDocFreq/(PackedBlockSize^(Level + 1))</sup></li>
  *   <li>SkipDatum --&gt; DocSkip, DocFPSkip, &lt;PosFPSkip, PosBlockOffset, PayLength?, 
  *                        OffsetStart?, PayFPSkip?&gt;?, SkipChildLevelPointer?</li>
@@ -267,11 +267,11 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>The .pos file contains the lists of positions that each term occurs at within documents. It also
  *    sometimes stores part of payloads and offsets for speedup.</p>
  * <ul>
- *   <li>Pos(.pos) --&gt; Header, &lt;TermPositions&gt; <sup>TermCount</sup></li>
+ *   <li>PosFile(.pos) --&gt; Header, &lt;TermPositions&gt; <sup>TermCount</sup></li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermPositions --&gt; &lt;PackedPosDeltaBlock&gt; <sup>PackedPosBlockNum</sup>,  
  *                            VIntBlock? </li>
- *   <li>VIntBlock --&gt; PosVIntCount &lt;PosDelta[, PayLength?], PayData?, 
+ *   <li>VIntBlock --&gt; PosVIntCount, &lt;PosDelta[, PayLength?], PayData?, 
  *                        OffsetStartDelta?, OffsetLength?&gt;<sup>PosVIntCount</sup>
  *   <li>PackedPosDeltaBlock --&gt; {@link PackedInts PackedInts}</li>
  *   <li>PosVIntCount, PosDelta, OffsetStartDelta, OffsetLength --&gt; 
@@ -283,7 +283,9 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>TermPositions are order by term (terms are implicit, from the term dictionary), and position 
  *       values for each term document pair are incremental, and ordered by document number.</li>
  *   <li>PackedPosBlockNum is the number of packed blocks for current term's positions, payloads or offsets. 
- *       In particular, PackedDocBlockNum = floor(totalTermFreq/PackedBlockSize) </li>
+ *       In particular, PackedPosBlockNum = floor(totalTermFreq/PackedBlockSize) </li>
+ *   <li>PosVIntCount is the number of positions encoded as VInt format. In particular, 
+ *       PosVIntCount = totalTermFreq - PackedPosBlockNum*PackedBlockSize</li>
  *   <li>The procedure how PackedPosDeltaBlock is generated is the same as PackedDocDeltaBlock 
  *       in chapter <a href="#Frequencies">Frequencies and Skip Data</a>.</li>
  *   <li>PosDelta is the same as the format mentioned in 
@@ -302,12 +304,13 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dl>
  * <dd>
  * <b>Payloads and Offsets</b>
- * <p>The .pay file will store payload and offset associated with certain term-document positons. 
+ * <p>The .pay file will store payloads and offsets associated with certain term-document positons. 
  *    Some payloads and offsets will be seperated out into .pos file, for speedup reason.</p>
  * <ul>
  *   <li>PayFile(.pay): --&gt; Header, &lt;TermPayloads, TermOffsets?&gt; <sup>TermCount</sup></li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *   <li>TermPayloads --&gt; &lt;PackedPayLengthBlock, PayBlockLength, PayData, PackedOffsetStartDeltaBlock?, PackedOffsetLengthBlock?&gt; <sup>PackedPayBlockNum</sup>
+ *   <li>TermPayloads --&gt; &lt;PackedPayLengthBlock, PayBlockLength, PayData&gt; <sup>PackedPayBlockNum</sup>
+ *   <li>TermOffsets --&gt; &lt;PackedOffsetStartDeltaBlock?, PackedOffsetLengthBlock?&gt; <sup>PackedPayBlockNum</sup>
  *   <li>PackedPayLengthBlock, PackedOffsetStartDeltaBlock, PackedOffsetLengthBlock --&gt; {@link PackedInts PackedInts}</li>
  *   <li>PayBlockLength --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>PayData --&gt; {@link DataOutput#writeByte byte}<sup>PayBlockLength</sup></li>
@@ -319,11 +322,13 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>The procedure how PackedPayLengthBlock and PackedOffsetLengthBlock are generated is the 
  *       same as PackedFreqBlock in chapter <a href="#Frequencies">Frequencies and Skip Data</a>. 
  *       While PackedStartDeltaBlock follows a same procedure as PackedDocDeltaBlock.</li>
+ *   <li>PackedPayBlockNum is always equal to PackedPosBlockNum, for the same term. It is also synonym 
+ *       for PackedOffsetBlockNum.</li>
  *   <li>PayBlockLength is the total length of payloads written within one block, should be the sum
  *       of PayLengths in one packed block.</li>
  *   <li>PayLength in PackedPayLengthBlock is the length of each payload, associated with current 
  *       position.</li>
- * </u>
+ * </ul>
  * </dd>
  * </dl>
  * </p>
@@ -331,13 +336,31 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 
 public final class BlockPostingsFormat extends PostingsFormat {
+  /**
+   * Filename extension for document number, frequencies, and skip data.
+   * See chapter: <a href="#Frequencies">Frequencies and Skip Data</a>
+   */
   public static final String DOC_EXTENSION = "doc";
+
+  /**
+   * Filename extension for positions. 
+   * See chapter: <a href="#Positions">Positions</a>
+   */
   public static final String POS_EXTENSION = "pos";
+
+  /**
+   * Filename extension for payloads and offsets.
+   * See chapter: <a href="#Payloads">Payloads and Offsets</a>
+   */
   public static final String PAY_EXTENSION = "pay";
 
   private final int minTermBlockSize;
   private final int maxTermBlockSize;
 
+  /**
+   * Fixed packed block size, number of integers encoded in 
+   * a single packed block.
+   */
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
 

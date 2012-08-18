@@ -502,6 +502,8 @@ final class BlockPostingsReader extends PostingsReaderBase {
           skipped = true;
         }
 
+        // always plus one to fix the result, since skip position in BlockSkipReader 
+        // is a little different from MultiLevelSkipListReader
         final int newDocUpto = skipper.skipTo(target) + 1; 
 
         if (newDocUpto > docUpto) {
@@ -517,6 +519,8 @@ final class BlockPostingsReader extends PostingsReaderBase {
           accum = skipper.getDoc();               // actually, this is just lastSkipEntry
           docIn.seek(skipper.getDocPointer());    // now point to the block we want to search
         }
+        // next time we call advance, this is used to 
+        // foresee whether skipper is necessary.
         nextSkipDoc = skipper.getNextSkipDoc();
       }
       if (docUpto == docFreq) {

@@ -52,6 +52,10 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 final class BlockPostingsWriter extends PostingsWriterBase {
 
+  /** 
+   * Expert: The maximum number of skip levels. Smaller values result in 
+   * slightly smaller indexes, but slower skipping in big posting lists.
+   */
   static final int maxSkipLevels = 10;
 
   final static String TERMS_CODEC = "BlockPostingsWriterTerms";
