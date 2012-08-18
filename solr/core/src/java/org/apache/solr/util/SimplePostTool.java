@@ -147,7 +147,7 @@ public class SimplePostTool {
   }
   
   /**
-   * See {@link #usage()} for valid command line usage
+   * See usage() for valid command line usage
    * @param args the params on the command line
    */
   public static void main(String[] args) {
@@ -228,7 +228,7 @@ public class SimplePostTool {
 
   /**
    * Constructor which takes in all mandatory input for the tool to work.
-   * Also see {@link #usage()} for further explanation of the params.
+   * Also see usage() for further explanation of the params.
    * @param mode whether to post files, web pages, params or stdin
    * @param url the Solr base Url to post to, should end with /update
    * @param auto if true, we'll guess type and add resourcename/url
