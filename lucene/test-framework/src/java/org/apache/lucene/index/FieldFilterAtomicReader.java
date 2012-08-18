@@ -64,11 +64,7 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
     f = new FieldFilterFields(f);
     // we need to check for emptyness, so we can return
     // null:
-    if (f.iterator().hasNext()) {
-      return f;
-    } else {
-      return null;
-    }
+    return f.iterator().hasNext() ? f : null;
   }
 
   @Override
@@ -146,7 +142,8 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
       // TODO: add faster implementation!
       int c = 0;
       final Iterator<String> it = iterator();
-      while (it.next() != null) {
+      while (it.hasNext()) {
+        it.next();
         c++;
       }
       return c;
@@ -156,7 +153,7 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
     public Iterator<String> iterator() {
       final Iterator<String> in = super.iterator();
       return new Iterator<String>() {
-        String cached = null;
+        private String cached = null;
         
         @Override
         public String next() {
