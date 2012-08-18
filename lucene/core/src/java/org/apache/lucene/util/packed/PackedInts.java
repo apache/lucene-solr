@@ -734,7 +734,7 @@ public class PackedInts {
         }
         return new Packed64(in, valueCount, bitsPerValue);
       default:
-        throw new AssertionError("Unknwown Writer format: " + format);
+        throw new AssertionError("Unknown Writer format: " + format);
     }
   }
 

@@ -20,10 +20,14 @@
 
   <import file="../common-build.xml"/>
 
-  <path id="javadoc.classpath">
-    <path refid="test.classpath"/>
-    <pathelement location="${common.dir}/build/test-framework/classes/java"/>
-    <pathelement location="${build.dir}/classes/java"/>
+  <path id="solr.test.framework.lucene.libs">
+    <pathelement location="${test-framework.jar}"/>
+  </path>
+
+  <path id="classpath">
+    <fileset dir="lib" excludes="${common.classpath.excludes}"/>
+    <path refid="solr.test.framework.lucene.libs" />
+    <path refid="solr.base.classpath"/>
   </path>
 
   <!-- Redefine Lucene test-framework compilation here to avoid circular dependency on compile-core -->
@@ -39,19 +43,26 @@
     </compile>
   </target>
 
-  <!-- Override common-solr.javadocs to include JUnit,test-framework links -->
+  <!-- Override common-solr.javadocs to include JUnit links -->
   <!-- and to copy the built javadocs to ${dest}/docs/api/test-framework -->
   <target name="javadocs"
-          depends="compile-core,lucene-javadocs,javadocs-test-framework,define-lucene-javadoc-url">
+          depends="compile-core,jar-test-framework,lucene-javadocs,javadocs-test-framework,define-lucene-javadoc-url">
     <sequential>
       <mkdir dir="${javadoc.dir}"/>
+      <!-- NOTE: explicitly not using solr-invoke-javadoc, or attempting to 
+	   link to lucene-test-framework because if we did javadoc would 
+	   attempt to link class refs in in org.apache.lucene, causing 
+	   broken links. (either broken links to things like "Directory" if 
+	   lucene-test-framework was first, or broken links to things like 
+	   LuceneTestCase if lucene-core was first)
+      -->
       <invoke-javadoc destdir="${javadoc.dir}" 
-                      title="${Name}" overview="${src.dir}/overview.html">
-        <sources>
-          <link offline="true" href="${javadoc.link.junit}"
-                packagelistLoc="${javadoc.packagelist.dir}/junit"/>
-          <packageset dir="${src.dir}"/>
-        </sources>
+		      title="${Name} ${version} Test Framework API">
+	<sources>
+	  <link offline="true" href="${javadoc.link.junit}"
+		packagelistLoc="${javadoc.packagelist.dir}/junit"/>
+	  <packageset dir="${src.dir}"/>
+	</sources>
       </invoke-javadoc>
       <solr-jarify basedir="${javadoc.dir}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
       <mkdir dir="${dest}/docs/api/test-framework"/>
@@ -60,5 +71,28 @@
       </copy>
     </sequential>
   </target>
+
+  <target name="module-jars-to-solr"
+          depends="jar-test-framework">
+    <mkdir dir="${build.dir}/lucene-libs"/>
+    <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+      <path refid="solr.test.framework.lucene.libs" />
+    </copy>
+  </target>
+
+  <target name="dist" depends="module-jars-to-solr, common-solr.dist">
+    <!-- we're not a contrib, our lucene-libs and go in a special place -->
+    <mkdir  dir="${dist}/test-framework" />
+    <copy todir="${dist}/test-framework">
+      <fileset dir="${build.dir}">
+	<include name="lucene-libs/*.jar" />
+      </fileset>
+      <fileset dir=".">
+	<include name="lib/*" />
+	<include name="README.txt" />
+      </fileset>
+    </copy>
+  </target>
+
 </project>
 

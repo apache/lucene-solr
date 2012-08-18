@@ -23,6 +23,10 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+/**
+ * A {@link FilterAtomicReader} that exposes only a subset
+ * of fields from the underlying wrapped reader.
+ */
 public final class FieldFilterAtomicReader extends FilterAtomicReader {
   
   private final Set<String> fields;

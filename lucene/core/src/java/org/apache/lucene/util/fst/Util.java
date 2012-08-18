@@ -767,6 +767,19 @@ public final class Util {
     }
   }
 
+  /** Just maps each UTF16 unit (char) to the ints in an
+   *  IntsRef. */
+  public static IntsRef toUTF16(CharSequence s, IntsRef scratch) {
+    final int charLimit = s.length();
+    scratch.offset = 0;
+    scratch.length = charLimit;
+    scratch.grow(charLimit);
+    for (int idx = 0; idx < charLimit; idx++) {
+      scratch.ints[idx] = (int) s.charAt(idx);
+    }
+    return scratch;
+  }    
+
   /** Decodes the Unicode codepoints from the provided
    *  CharSequence and places them in the provided scratch
    *  IntsRef, which must not be null, returning it. */

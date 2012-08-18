@@ -182,8 +182,8 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       for (Map.Entry<String, StatsValues> e2 : entry.getValue().entrySet()) {
         nl2.add(e2.getKey(), e2.getValue().getStatsValues());
       }
-      res.add(FACETS, nl);
     }
+    res.add(FACETS, nl);
     return res;
   }
 

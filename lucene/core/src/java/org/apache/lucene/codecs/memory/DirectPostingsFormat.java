@@ -1796,7 +1796,7 @@ public class DirectPostingsFormat extends PostingsFormat {
   }
 
   // Docs + freqs:
-  public final static class HighFreqDocsEnum extends DocsEnum {
+  private final static class HighFreqDocsEnum extends DocsEnum {
     private int[] docIDs;
     private int[] freqs;
     private final Bits liveDocs;
@@ -1969,7 +1969,7 @@ public class DirectPostingsFormat extends PostingsFormat {
   }
 
   // TODO: specialize offsets and not
-  public final static class HighFreqDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private final static class HighFreqDocsAndPositionsEnum extends DocsAndPositionsEnum {
     private int[] docIDs;
     private int[] freqs;
     private int[][] positions;

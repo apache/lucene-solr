@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 /**
+ * Converts numbers to english strings for testing.
  * @lucene.internal
  */ 
 public final class English {

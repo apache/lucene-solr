@@ -47,7 +47,7 @@
   All of the attributes in cores after defaultCoreName only apply when running in SolrCloud mode.
   You can read more about SolrCloud mode at http://wiki.apache.org/solr/SolrCloud
   -->
-  <cores adminPath="/admin/cores" defaultCoreName="collection1" host="${host:}" hostPort="${jetty.port:}" zkClientTimeout="${zkClientTimeout:15000}">
+  <cores adminPath="/admin/cores" defaultCoreName="collection1" host="${host:}" hostPort="${jetty.port:}" hostContext="${hostContext:}" zkClientTimeout="${zkClientTimeout:15000}">
     <core name="collection1" instanceDir="collection1" />
   </cores>
 </solr>

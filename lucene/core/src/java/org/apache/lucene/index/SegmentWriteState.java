@@ -33,11 +33,11 @@ public class SegmentWriteState {
   public final FieldInfos fieldInfos;
   public int delCountOnFlush;
 
-  // Deletes to apply while we are flushing the segment.  A
-  // Term is enrolled in here if it was deleted at one
-  // point, and it's mapped to the docIDUpto, meaning any
-  // docID < docIDUpto containing this term should be
-  // deleted.
+  /** Deletes to apply while we are flushing the segment.  A
+   *  Term is enrolled in here if it was deleted at one
+   *  point, and it's mapped to the docIDUpto, meaning any
+   *  docID &lt; docIDUpto containing this term should be
+   *  deleted. */
   public final BufferedDeletes segDeletes;
 
   // Lazily created:

@@ -70,6 +70,10 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
     return getName() + "(baseBlockSize="+ baseBlockSize + ")";
   }
 
+  /**
+   * If the first value is <= 3, writes baseBlockSize vInts at once,
+   * otherwise writes 2*baseBlockSize vInts.
+   */
   public static class MockIntFactory extends IntStreamFactory {
 
     private final int baseBlockSize;

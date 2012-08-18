@@ -1,10 +1,5 @@
 package org.apache.lucene.util;
 
-import org.apache.lucene.search.FieldCache;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,6 +17,30 @@ import org.junit.runners.model.Statement;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.FieldCacheSanityChecker; // javadocs
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
+/**
+ * This rule will fail the test if it has insane field caches.
+ * <p>
+ * calling assertSaneFieldCaches here isn't as useful as having test
+ * classes call it directly from the scope where the index readers
+ * are used, because they could be gc'ed just before this tearDown
+ * method is called.
+ * <p>
+ * But it's better then nothing.
+ * <p>
+ * If you are testing functionality that you know for a fact
+ * "violates" FieldCache sanity, then you should either explicitly
+ * call purgeFieldCache at the end of your test method, or refactor
+ * your Test class so that the inconsistent FieldCache usages are
+ * isolated in distinct test methods
+ * 
+ * @see FieldCacheSanityChecker
+ */
 public class TestRuleFieldCacheSanity implements TestRule {
   
   @Override
@@ -33,18 +52,6 @@ public class TestRuleFieldCacheSanity implements TestRule {
 
         Throwable problem = null;
         try {
-          // calling assertSaneFieldCaches here isn't as useful as having test
-          // classes call it directly from the scope where the index readers
-          // are used, because they could be gc'ed just before this tearDown
-          // method is called.
-          //
-          // But it's better then nothing.
-          //
-          // If you are testing functionality that you know for a fact
-          // "violates" FieldCache sanity, then you should either explicitly
-          // call purgeFieldCache at the end of your test method, or refactor
-          // your Test class so that the inconsistent FieldCache usages are
-          // isolated in distinct test methods
           LuceneTestCase.assertSaneFieldCaches(d.getDisplayName());
         } catch (Throwable t) {
           problem = t;

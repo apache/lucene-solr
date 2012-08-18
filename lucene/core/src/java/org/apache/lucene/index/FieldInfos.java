@@ -267,11 +267,11 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
     }
 
-    // NOTE: this method does not carry over termVector
-    // booleans nor docValuesType; the indexer chain
-    // (TermVectorsConsumerPerField, DocFieldProcessor) must
-    // set these fields when they succeed in consuming
-    // the document:
+    /** NOTE: this method does not carry over termVector
+     *  booleans nor docValuesType; the indexer chain
+     *  (TermVectorsConsumerPerField, DocFieldProcessor) must
+     *  set these fields when they succeed in consuming
+     *  the document */
     public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType) {
       // TODO: really, indexer shouldn't even call this
       // method (it's only called from DocFieldProcessor);

@@ -29,7 +29,9 @@ import org.apache.lucene.util._TestUtil;
 // a MockRemovesTokensTF, ideally subclassing FilteringTF
 // (in modules/analysis)
 
-// Randomly injects holes:
+/** 
+ * Randomly injects holes (similar to what a stopfilter would do)
+ */
 public final class MockHoleInjectingTokenFilter extends TokenFilter {
 
   private final long randomSeed;

@@ -28,7 +28,7 @@ import org.apache.lucene.store.IndexInput;
 
 /** Reads IndexInputs written with {@link
  *  MockSingleIntIndexOutput}.  NOTE: this class is just for
- *  demonstration puprposes (it is a very slow way to read a
+ *  demonstration purposes (it is a very slow way to read a
  *  block of ints).
  *
  * @lucene.experimental
@@ -54,6 +54,9 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     in.close();
   }
 
+  /**
+   * Just reads a vInt directly from the file.
+   */
   public static class Reader extends IntIndexInput.Reader {
     // clone:
     private final IndexInput in;

@@ -17,28 +17,17 @@ package org.apache.lucene.analysis.stempel;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.pl.PolishAnalyzer;
 import org.apache.lucene.analysis.stempel.StempelFilter;
 import org.apache.lucene.analysis.stempel.StempelStemmer;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.egothor.stemmer.Trie;
 
 /**
  * Factory for {@link StempelFilter} using a Polish stemming table.
  */
-public class StempelPolishStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-  private Trie stemmer = null;
-  private static final String STEMTABLE = "/org/apache/lucene/analysis/pl/stemmer_20000.tbl";
-  
+public class StempelPolishStemFilterFactory extends TokenFilterFactory {  
   public TokenStream create(TokenStream input) {
-    return new StempelFilter(input, new StempelStemmer(stemmer));
-  }
-
-  public void inform(ResourceLoader loader) throws IOException {
-    stemmer = StempelStemmer.load(loader.openResource(STEMTABLE));
+    return new StempelFilter(input, new StempelStemmer(PolishAnalyzer.getDefaultTable()));
   }
 }

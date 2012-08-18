@@ -42,9 +42,15 @@ import org.apache.lucene.util._TestUtil;
 //   - doc blocks?  so we can test joins/grouping...
 //   - controlled consistency (NRTMgr)
 
+/**
+ * Base test class for simulating distributed search across multiple shards.
+ */
 public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
   // TODO: maybe SLM should throw this instead of returning null...
+  /**
+   * Thrown when the lease for a searcher has expired.
+   */
   public static class SearcherExpiredException extends RuntimeException {
     public SearcherExpiredException(String message) {
       super(message);
@@ -604,6 +610,9 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     }
   }
 
+  /**
+   * An IndexSearcher and associated version (lease)
+   */
   protected static class SearcherAndVersion {
     public final IndexSearcher searcher;
     public final long version;

@@ -94,7 +94,7 @@ public class _TestUtil {
     try {
       File f = createTempFile(desc, "tmp", LuceneTestCase.TEMP_DIR);
       f.delete();
-      LuceneTestCase.closeAfterSuite(new CloseableFile(f));
+      LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
       return f;
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -136,7 +136,7 @@ public class _TestUtil {
     rmDir(destDir);
 
     destDir.mkdir();
-    LuceneTestCase.closeAfterSuite(new CloseableFile(destDir));
+    LuceneTestCase.closeAfterSuite(new CloseableFile(destDir, LuceneTestCase.suiteFailureMarker));
 
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();

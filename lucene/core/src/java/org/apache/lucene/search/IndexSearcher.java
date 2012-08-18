@@ -82,7 +82,7 @@ public class IndexSearcher {
   // in the next release
   protected final IndexReaderContext readerContext;
   protected final List<AtomicReaderContext> leafContexts;
-  // used with executor - each slice holds a set of leafs executed within one thread
+  /** used with executor - each slice holds a set of leafs executed within one thread */
   protected final LeafSlice[] leafSlices;
 
   // These are only used for multi-threaded search

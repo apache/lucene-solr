@@ -26,6 +26,14 @@ $Id$
 
 ==================  4.0.0 ==================
 
+Versions of Major Components
+---------------------
+Apache Tika 1.2
+Carrot2 3.5.0
+Velocity 1.6.4 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.3.6
+
 Upgrading from Solr 4.0.0-BETA
 ----------------------
 
@@ -62,6 +70,27 @@ Bug Fixes
 
 * SOLR-3649: Fixed bug in JavabinLoader that caused deleteById(List<String> ids)
   to not work in SolrJ (siren)
+
+* SOLR-3730: Rollback is not implemented quite right and can cause corner case fails in 
+  SolrCloud tests. (rmuir, Mark Miller)
+
+* SOLR-2981: Fixed StatsComponent to no longer return duplicated information 
+  when requesting multiple stats.facet fields.
+  (Roman Kliewer via hossman)
+
+Other Changes
+----------------------
+
+* SOLR-3690: Fixed binary release packages to include dependencie needed for 
+  the solr-test-framework (hossman)
+
+* SOLR-2857: The /update/json and /update/csv URLs were restored to aid
+  in the migration of existing clients.  (yonik)
+
+* SOLR-3691: SimplePostTool: Mode for crawling/posting web pages
+  See http://wiki.apache.org/solr/ExtractingRequestHandler for examples (janhoy)
+
+* SOLR-3707: Upgrade Solr to Tika 1.2 (janhoy)
 
 ==================  4.0.0-BETA ===================
 
@@ -271,7 +300,6 @@ Other Changes
   Also, the configuration itself can be passed using the "dataConfig" parameter rather than
   using a file (this previously worked in debug mode only).  When configuration errors are 
   encountered, the error message is returned in XML format.  (James Dyer)
-  
 * SOLR-3439: Make SolrCell easier to use out of the box. Also improves "/browse" to display
   rich-text documents correctly, along with facets for author and content_type.  
   With the new "content" field, highlighting of body is supported. See also SOLR-3672 for

@@ -19,8 +19,5 @@ The Apache Software Foundation (http://www.apache.org/).
 This product includes software (Hex Encoder extracted from commons-codec) developed by
 The Apache Software Foundation (http://www.apache.org/).
 
-This product includes software (JHexEditor) developed by
-Germán Laullón (http://www.apache.org/).
-
 This product includes software (package com.googlecode.mp4parser.h264) developed by
 Stanislav Vitvitskiy and originally licensed under MIT license (http://www.opensource.org/licenses/mit-license.php)
