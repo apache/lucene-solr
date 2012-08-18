@@ -403,8 +403,11 @@ final class BlockPostingsWriter extends PostingsWriterBase {
       //   }
       // }
 
+      // totalTermFreq is just total number of positions(or payloads, or offsets)
+      // associated with current term.
       assert stats.totalTermFreq != -1;
       if (stats.totalTermFreq > BLOCK_SIZE) {
+        // record file offset for last pos in last block
         lastPosBlockOffset = (int) (posOut.getFilePointer() - posTermStartFP);
       } else {
         lastPosBlockOffset = -1;
