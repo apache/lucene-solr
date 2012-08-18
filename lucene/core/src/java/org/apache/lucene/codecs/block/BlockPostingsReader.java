@@ -52,7 +52,7 @@ import org.apache.lucene.util.IOUtils;
  * @see BlockSkipReader for details
  *
  */
-public final class BlockPostingsReader extends PostingsReaderBase {
+final class BlockPostingsReader extends PostingsReaderBase {
 
   private final IndexInput docIn;
   private final IndexInput posIn;

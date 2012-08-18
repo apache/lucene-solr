@@ -26,6 +26,8 @@ import org.apache.lucene.util.MathUtil;
 /**
  * This abstract class writes skip lists with multiple levels.
  * 
+ * <pre>
+ *
  * Example for skipInterval = 3:
  *                                                     c            (skip level 2)
  *                 c                 c                 c            (skip level 1) 
@@ -45,6 +47,7 @@ import org.apache.lucene.util.MathUtil;
  * 
  * While this class takes care of writing the different skip levels,
  * subclasses must define the actual format of the skip data.
+ * </pre>
  * @lucene.experimental
  */
 
