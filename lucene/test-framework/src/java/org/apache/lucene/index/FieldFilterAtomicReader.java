@@ -62,8 +62,13 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
       return null;
     }
     f = new FieldFilterFields(f);
-    // we need to check for emptyness, so we can return null:
-    return (f.iterator().next() == null) ? null : f;
+    // we need to check for emptyness, so we can return
+    // null:
+    if (f.iterator().hasNext()) {
+      return f;
+    } else {
+      return null;
+    }
   }
 
   @Override
