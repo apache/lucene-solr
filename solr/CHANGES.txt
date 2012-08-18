@@ -26,6 +26,14 @@ $Id$
 
 ==================  4.0.0 ==================
 
+Versions of Major Components
+---------------------
+Apache Tika 1.2
+Carrot2 3.5.0
+Velocity 1.6.4 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.3.6
+
 Upgrading from Solr 4.0.0-BETA
 ----------------------
 
@@ -82,6 +90,7 @@ Other Changes
 * SOLR-3691: SimplePostTool: Mode for crawling/posting web pages
   See http://wiki.apache.org/solr/ExtractingRequestHandler for examples (janhoy)
 
+* SOLR-3707: Upgrade Solr to Tika 1.2 (janhoy)
 
 ==================  4.0.0-BETA ===================
 
@@ -291,7 +300,6 @@ Other Changes
   Also, the configuration itself can be passed using the "dataConfig" parameter rather than
   using a file (this previously worked in debug mode only).  When configuration errors are 
   encountered, the error message is returned in XML format.  (James Dyer)
-  
 * SOLR-3439: Make SolrCell easier to use out of the box. Also improves "/browse" to display
   rich-text documents correctly, along with facets for author and content_type.  
   With the new "content" field, highlighting of body is supported. See also SOLR-3672 for
