@@ -30,7 +30,7 @@ public abstract class FilterIterator<T> implements Iterator<T> {
   private T next = null;
   private boolean nextIsSet = false;
   
-  /** returns true, if this element should be returned by {@link next()}. */
+  /** returns true, if this element should be returned by {@link #next()}. */
   protected abstract boolean predicateFunction(T object);
   
   public FilterIterator(Iterator<T> baseIterator) {
