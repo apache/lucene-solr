@@ -75,8 +75,6 @@ public class SpatialArgsParser {
       body = v.substring(edx + 1).trim();
       if (body.length() > 0) {
         Map<String, String> aa = parseMap(body);
-        args.setMin(readDouble(aa.remove("min")));
-        args.setMax(readDouble(aa.remove("max")));
         args.setDistPrecision(readDouble(aa.remove("distPrec")));
         if (!aa.isEmpty()) {
           throw new InvalidSpatialArgument("unused parameters: " + aa, null);
