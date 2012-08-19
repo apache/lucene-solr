@@ -45,6 +45,9 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public interface FieldCache {
 
+  /**
+   * Placeholder indicating creation of this cache is currently in-progress.
+   */
   public static final class CreationPlaceholder {
     Object value;
   }

@@ -384,7 +384,7 @@ public class SnapPuller {
             // may be closed
             core.getDirectoryFactory().doneWithDirectory(oldDirectory);
           }
-          doCommit();
+          doCommit(isFullCopyNeeded);
         }
         
         replicationStartTime = 0;
@@ -533,11 +533,11 @@ public class SnapPuller {
     return sb;
   }
 
-  private void doCommit() throws IOException {
+  private void doCommit(boolean isFullCopyNeeded) throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
     // reboot the writer on the new index and get a new searcher
-    solrCore.getUpdateHandler().newIndexWriter(true);
+    solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
     
     try {
       // first try to open an NRT searcher so that the new 

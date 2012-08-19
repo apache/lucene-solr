@@ -158,7 +158,7 @@ public final class FST<T> {
   private final boolean packed;
   private PackedInts.Reader nodeRefToAddress;
 
-  // If arc has this label then that arc is final/accepted
+  /** If arc has this label then that arc is final/accepted */
   public static final int END_LABEL = -1;
 
   private boolean allowArrayArcs = true;
@@ -174,7 +174,7 @@ public final class FST<T> {
     // building an FST w/ willPackFST=true:
     int node;
 
-    // To node (ord or address):
+    /** To node (ord or address) */
     public int target;
 
     byte flags;
@@ -542,8 +542,8 @@ public final class FST<T> {
     return v;
   }
 
-  // returns true if the node at this address has any
-  // outgoing arcs
+  /** returns true if the node at this address has any
+   *  outgoing arcs */
   public static<T> boolean targetHasArcs(Arc<T> arc) {
     return arc.target > 0;
   }

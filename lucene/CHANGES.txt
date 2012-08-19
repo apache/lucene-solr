@@ -75,6 +75,14 @@ Bug Fixes
   encoders / stemmers via the ResourceLoader now instead of Class.forName().
   Solr users should now no longer have to embed these in its war. (David Smiley)
 
+* SOLR-3737: StempelPolishStemFilterFactory loaded its stemmer table incorrectly.
+  Also, ensure immutability and use only one instance of this table in RAM (lazy
+  loaded) since its quite large. (sausarkar, Steven Rowe, Robert Muir)
+
+* LUCENE-4310: MappingCharFilter was failing to match input strings
+  containing non-BMP Unicode characters.  (Dawid Weiss, Robert Muir,
+  Mike McCandless)
+
 Build
 
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 

@@ -225,6 +225,8 @@ public class TimeLimitingCollector extends Collector {
   }
 
   /**
+   * Thread used to timeout search requests.
+   * Can be stopped completely with {@link TimerThread#stopTimer()}
    * @lucene.experimental
    */
   public static final class TimerThread extends Thread  {

@@ -36,7 +36,7 @@ public abstract class IntIndexInput implements Closeable {
 
   public abstract Index index() throws IOException;
   
-  // TODO: -- can we simplify this?
+  /** Records a single skip-point in the {@link IntIndexInput.Reader}. */
   public abstract static class Index {
 
     public abstract void read(DataInput indexIn, boolean absolute) throws IOException;
@@ -50,6 +50,7 @@ public abstract class IntIndexInput implements Closeable {
     public abstract Index clone();
   }
 
+  /** Reads int values. */
   public abstract static class Reader {
 
     /** Reads next single int */

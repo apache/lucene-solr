@@ -122,6 +122,8 @@ public final class MultiDocsEnum extends DocsEnum {
   }
 
   // TODO: implement bulk read more efficiently than super
+  /** Holds a {@link DocsEnum} along with the
+   *  corresponding {@link ReaderSlice}. */
   public final static class EnumWithSlice {
     public DocsEnum docsEnum;
     public ReaderSlice slice;

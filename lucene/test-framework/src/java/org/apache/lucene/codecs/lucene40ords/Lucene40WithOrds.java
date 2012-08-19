@@ -30,6 +30,7 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.TermsIndexReaderBase;
 import org.apache.lucene.codecs.TermsIndexWriterBase;
+import org.apache.lucene.codecs.lucene40.Lucene40Codec; // javadocs
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsReader;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
@@ -39,6 +40,10 @@ import org.apache.lucene.util.BytesRef;
 // TODO: we could make separate base class that can wrapp
 // any PostingsBaseFormat and make it ord-able...
 
+/**
+ * Customized version of {@link Lucene40Codec} that uses
+ * {@link FixedGapTermsIndexWriter}.
+ */
 public class Lucene40WithOrds extends PostingsFormat {
     
   public Lucene40WithOrds() {

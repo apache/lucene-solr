@@ -22,8 +22,15 @@ import org.apache.lucene.store.IOContext;
 
 import java.io.IOException;
 
-/** @lucene.experimental */
+/** Provides int reader and writer to specified files.
+ *
+ * @lucene.experimental */
 public abstract class IntStreamFactory {
+  /** Create an {@link IntIndexInput} on the provided
+   *  fileName. */
   public abstract IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException;
+
+  /** Create an {@link IntIndexOutput} on the provided
+   *  fileName. */
   public abstract IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException;
 }

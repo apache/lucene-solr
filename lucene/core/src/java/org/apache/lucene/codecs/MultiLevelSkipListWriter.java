@@ -49,7 +49,7 @@ import org.apache.lucene.util.MathUtil;
  */
 
 public abstract class MultiLevelSkipListWriter {
-  // number of levels in this skip list
+  /** number of levels in this skip list */
   protected int numberOfSkipLevels;
   
   // the skip interval in the list with level = 0
@@ -77,8 +77,8 @@ public abstract class MultiLevelSkipListWriter {
     }
   }
 
+  /** creates new buffers or empties the existing ones */
   protected void resetSkip() {
-    // creates new buffers or empties the existing ones
     if (skipBuffer == null) {
       init();
     } else {

@@ -74,8 +74,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
       }
       
       if (indexWriter == null) {
-        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2",
-            false, false);
+        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false);
       }
       if (refCntWriter == null) {
         refCntWriter = new RefCounted<IndexWriter>(indexWriter) {
@@ -110,18 +109,28 @@ public final class DefaultSolrCoreState extends SolrCoreState {
           writerPauseLock.wait();
         } catch (InterruptedException e) {}
       }
-      
+
       try {
         if (indexWriter != null) {
-          try {
-            log.info("Closing old IndexWriter... core=" + coreName);
-            indexWriter.close();
-          } catch (Throwable t) {
-            SolrException.log(log, "Error closing old IndexWriter. core=" + coreName, t);
+          if (!rollback) {
+            try {
+              log.info("Closing old IndexWriter... core=" + coreName);
+              indexWriter.close();
+            } catch (Throwable t) {
+              SolrException.log(log, "Error closing old IndexWriter. core="
+                  + coreName, t);
+            }
+          } else {
+            try {
+              log.info("Rollback old IndexWriter... core=" + coreName);
+              indexWriter.rollback();
+            } catch (Throwable t) {
+              SolrException.log(log, "Error rolling back old IndexWriter. core="
+                  + coreName, t);
+            }
           }
         }
-        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2",
-            false, true);
+        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", true);
         log.info("New IndexWriter is ready to be used.");
         // we need to null this so it picks up the new writer next get call
         refCntWriter = null;
@@ -174,14 +183,12 @@ public final class DefaultSolrCoreState extends SolrCoreState {
 
   @Override
   public synchronized void rollbackIndexWriter(SolrCore core) throws IOException {
-    indexWriter.rollback();
     newIndexWriter(core, true);
   }
   
-  protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name,
-      boolean removeAllExisting, boolean forceNewDirectory) throws IOException {
+  protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name, boolean forceNewDirectory) throws IOException {
     return new SolrIndexWriter(name, core.getNewIndexDir(),
-        core.getDirectoryFactory(), removeAllExisting, core.getSchema(),
+        core.getDirectoryFactory(), false, core.getSchema(),
         core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), forceNewDirectory);
   }
 

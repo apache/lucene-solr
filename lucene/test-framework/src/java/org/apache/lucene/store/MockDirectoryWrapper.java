@@ -146,6 +146,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     preventDoubleWrite = value;
   }
   
+  /**
+   * Enum for controlling hard disk throttling.
+   * Set via {@link MockDirectoryWrapper #setThrottling(Throttling)}
+   * <p>
+   * WARNING: can make tests very slow.
+   */
   public static enum Throttling {
     /** always emulate a slow hard disk. could be very slow! */
     ALWAYS,

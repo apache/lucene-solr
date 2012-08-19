@@ -21,6 +21,10 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+/**
+ * Stores the suite name so you can retrieve it
+ * from {@link #getTestClass()}
+ */
 public class TestRuleStoreClassName implements TestRule {
   private volatile Description description;
 

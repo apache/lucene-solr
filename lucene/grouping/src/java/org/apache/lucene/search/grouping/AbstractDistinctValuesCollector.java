@@ -44,6 +44,10 @@ public abstract class AbstractDistinctValuesCollector<GC extends AbstractDistinc
   public void setScorer(Scorer scorer) throws IOException {
   }
 
+  /**
+   * Returned by {@link AbstractDistinctValuesCollector#getGroups()},
+   * representing the value and set of distinct values for the group.
+   */
   public abstract static class GroupCount<GROUP_VALUE_TYPE> {
 
     public final GROUP_VALUE_TYPE groupValue;

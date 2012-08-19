@@ -36,7 +36,7 @@ import org.apache.lucene.util.MathUtil;
  */
 
 public abstract class MultiLevelSkipListReader {
-  // the maximum number of skip levels possible for this index
+  /** the maximum number of skip levels possible for this index */
   protected int maxNumberOfSkipLevels; 
   
   // number of levels in this skip list

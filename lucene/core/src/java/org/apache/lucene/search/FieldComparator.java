@@ -194,6 +194,9 @@ public abstract class FieldComparator<T> {
    *  than the provided value. */
   public abstract int compareDocToValue(int doc, T value) throws IOException;
 
+  /**
+   * Base FieldComparator class for numeric types
+   */
   public static abstract class NumericComparator<T extends Number> extends FieldComparator<T> {
     protected final T missingValue;
     protected final String field;

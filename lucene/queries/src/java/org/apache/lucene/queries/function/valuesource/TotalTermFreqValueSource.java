@@ -28,7 +28,10 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * <code>TotalTermFreqValueSource</code> returns the total term freq (sum of term freqs across all docuyments).
+ * <code>TotalTermFreqValueSource</code> returns the total term freq 
+ * (sum of term freqs across all documents).
+ * Returns -1 if frequencies were omitted for the field, or if 
+ * the codec doesn't support this statistic.
  * @lucene.internal
  */
 public class TotalTermFreqValueSource extends ValueSource {

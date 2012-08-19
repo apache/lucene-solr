@@ -59,6 +59,13 @@ public final class PolishAnalyzer extends StopwordAnalyzerBase {
   }
   
   /**
+   * Returns an unmodifiable instance of the default stemmer table.
+   */
+  public static Trie getDefaultTable() {
+    return DefaultsHolder.DEFAULT_TABLE;
+  }
+  
+  /**
    * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class 
    * accesses the static final set the first time.;
    */

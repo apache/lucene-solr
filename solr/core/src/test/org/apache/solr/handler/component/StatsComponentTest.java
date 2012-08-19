@@ -228,32 +228,35 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   }
 
   public void doTestFacetStatisticsResult(String f) throws Exception {
-    assertU(adoc("id", "1", f, "10", "active_s", "true"));
-    assertU(adoc("id", "2", f, "20", "active_s", "true"));
-    assertU(adoc("id", "3", f, "30", "active_s", "false"));
-    assertU(adoc("id", "4", f, "40", "active_s", "false"));
+    assertU(adoc("id", "1", f, "10", "active_s", "true",  "other_s", "foo"));
+    assertU(adoc("id", "2", f, "20", "active_s", "true",  "other_s", "bar"));
+    assertU(adoc("id", "3", f, "30", "active_s", "false", "other_s", "foo"));
+    assertU(adoc("id", "4", f, "40", "active_s", "false", "other_s", "foo"));
     assertU(commit());
     
-    assertQ("test value for active_s=true", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s","indent","true")
-            , "//lst[@name='true']/double[@name='min'][.='10.0']"
-            , "//lst[@name='true']/double[@name='max'][.='20.0']"
-            , "//lst[@name='true']/double[@name='sum'][.='30.0']"
-            , "//lst[@name='true']/long[@name='count'][.='2']"
-            , "//lst[@name='true']/long[@name='missing'][.='0']"
-            , "//lst[@name='true']/double[@name='sumOfSquares'][.='500.0']"
-            , "//lst[@name='true']/double[@name='mean'][.='15.0']"
-            , "//lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']"
+    final String pre = "//lst[@name='stats_fields']/lst[@name='"+f+"']/lst[@name='facets']/lst[@name='active_s']";
+
+    assertQ("test value for active_s=true", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s","stats.facet","other_s","indent","true")
+            , "*[count("+pre+")=1]"
+            , pre+"/lst[@name='true']/double[@name='min'][.='10.0']"
+            , pre+"/lst[@name='true']/double[@name='max'][.='20.0']"
+            , pre+"/lst[@name='true']/double[@name='sum'][.='30.0']"
+            , pre+"/lst[@name='true']/long[@name='count'][.='2']"
+            , pre+"/lst[@name='true']/long[@name='missing'][.='0']"
+            , pre+"/lst[@name='true']/double[@name='sumOfSquares'][.='500.0']"
+            , pre+"/lst[@name='true']/double[@name='mean'][.='15.0']"
+            , pre+"/lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']"
     );
 
     assertQ("test value for active_s=false", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s")
-            , "//lst[@name='false']/double[@name='min'][.='30.0']"
-            , "//lst[@name='false']/double[@name='max'][.='40.0']"
-            , "//lst[@name='false']/double[@name='sum'][.='70.0']"
-            , "//lst[@name='false']/long[@name='count'][.='2']"
-            , "//lst[@name='false']/long[@name='missing'][.='0']"
-            , "//lst[@name='false']/double[@name='sumOfSquares'][.='2500.0']"
-            , "//lst[@name='false']/double[@name='mean'][.='35.0']"
-            , "//lst[@name='false']/double[@name='stddev'][.='7.0710678118654755']"
+            , pre+"/lst[@name='false']/double[@name='min'][.='30.0']"
+            , pre+"/lst[@name='false']/double[@name='max'][.='40.0']"
+            , pre+"/lst[@name='false']/double[@name='sum'][.='70.0']"
+            , pre+"/lst[@name='false']/long[@name='count'][.='2']"
+            , pre+"/lst[@name='false']/long[@name='missing'][.='0']"
+            , pre+"/lst[@name='false']/double[@name='sumOfSquares'][.='2500.0']"
+            , pre+"/lst[@name='false']/double[@name='mean'][.='35.0']"
+            , pre+"/lst[@name='false']/double[@name='stddev'][.='7.0710678118654755']"
     );
   }
   

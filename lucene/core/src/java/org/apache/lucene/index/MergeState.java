@@ -29,6 +29,9 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental */
 public class MergeState {
 
+  /**
+   * Remaps docids around deletes during merge
+   */
   public static abstract class DocMap {
     private final Bits liveDocs;
 
@@ -197,6 +200,9 @@ public class MergeState {
   public SegmentReader[] matchingSegmentReaders;
   public int matchedCount;
   
+  /**
+   * Class for recording units of work when merging segments.
+   */
   public static class CheckAbort {
     private double workCount;
     private final MergePolicy.OneMerge merge;

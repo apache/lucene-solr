@@ -1554,7 +1554,7 @@ public final class SolrCore implements SolrInfoMBean {
         } catch (Throwable e) {
           // do not allow decref() operations to fail since they are typically called in finally blocks
           // and throwing another exception would be very unexpected.
-          SolrException.log(log, "Error closing searcher:", e);
+          SolrException.log(log, "Error closing searcher:" + this, e);
         }
       }
     };

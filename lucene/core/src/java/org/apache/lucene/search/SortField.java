@@ -38,6 +38,9 @@ import org.apache.lucene.util.StringHelper;
  */
 public class SortField {
 
+  /**
+   * Specifies the type of the terms to be sorted, or special types such as CUSTOM
+   */
   public static enum Type {
 
     /** Sort by document score (relevance).  Sort values are Float and higher

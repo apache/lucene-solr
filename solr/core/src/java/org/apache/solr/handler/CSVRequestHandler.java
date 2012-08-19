@@ -29,7 +29,7 @@ public class CSVRequestHandler extends UpdateRequestHandler {
   public void init(NamedList args) {
     super.init(args);
     setAssumeContentType("application/csv");
-    log.warn("Using deprecated class: "+this.getClass().getSimpleName()+" -- replace with UpdateRequestHandler");
+    // log.warn("Using deprecated class: "+this.getClass().getSimpleName()+" -- replace with UpdateRequestHandler");
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

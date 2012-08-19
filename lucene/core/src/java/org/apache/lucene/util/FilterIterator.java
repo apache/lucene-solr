@@ -20,12 +20,17 @@ import java.util.NoSuchElementException;
  * the License.
  */
 
+/**
+ * An {@link Iterator} implementation that filters elements with a boolean predicate.
+ * @see #predicateFunction
+ */
 public abstract class FilterIterator<T> implements Iterator<T> {
   
   private final Iterator<T> iterator;
   private T next = null;
   private boolean nextIsSet = false;
   
+  /** returns true, if this element should be returned by {@link #next()}. */
   protected abstract boolean predicateFunction(T object);
   
   public FilterIterator(Iterator<T> baseIterator) {

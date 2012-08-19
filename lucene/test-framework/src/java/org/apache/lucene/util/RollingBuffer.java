@@ -26,6 +26,9 @@ package org.apache.lucene.util;
  *  @lucene.internal */
 public abstract class RollingBuffer<T extends RollingBuffer.Resettable> {
 
+  /**
+   * Implement to reset an instance
+   */
   public static interface Resettable {
     public void reset();
   }

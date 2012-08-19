@@ -76,6 +76,7 @@ public abstract class ContentStreamBase implements ContentStream
       sourceInfo = "url";
     }
 
+    @Override
     public InputStream getStream() throws IOException {
       URLConnection conn = this.url.openConnection();
       
@@ -102,36 +103,32 @@ public abstract class ContentStreamBase implements ContentStream
       sourceInfo = file.toURI().toString();
     }
 
+    @Override
     public String getContentType() {
       if(contentType==null) {
+        InputStream stream = null;
         try {
-          char first = (char)new FileInputStream( file ).read();
+          stream = new FileInputStream(file);
+          char first = (char)stream.read();
           if(first == '<') {
             return "application/xml";
           }
           if(first == '{') {
             return "application/json";
           }
+        } catch(Exception ex) {
+        } finally {
+          if (stream != null) try {
+            stream.close();
+          } catch (IOException ioe) {}
         }
-        catch(Exception ex) {}
       }
       return contentType;
     }
 
+    @Override
     public InputStream getStream() throws IOException {
       return new FileInputStream( file );
-    }
-
-    /**
-     * If an charset is defined (by the contentType) use that, otherwise 
-     * use a UTF-8 reader
-     */
-    @Override
-    public Reader getReader() throws IOException {
-      String charset = getCharsetFromContentType( contentType );
-      return charset == null 
-        ? new InputStreamReader(getStream(), "UTF-8")
-        : new InputStreamReader( getStream(), charset );
     }
   }
   
@@ -152,6 +149,7 @@ public abstract class ContentStreamBase implements ContentStream
       sourceInfo = "string";
     }
 
+    @Override
     public String getContentType() {
       if(contentType==null && str.length() > 0) {
         char first = str.charAt(0);
@@ -166,6 +164,7 @@ public abstract class ContentStreamBase implements ContentStream
       return contentType;
     }
 
+    @Override
     public InputStream getStream() throws IOException {
       return new ByteArrayInputStream( str.getBytes(DEFAULT_CHARSET) );
     }

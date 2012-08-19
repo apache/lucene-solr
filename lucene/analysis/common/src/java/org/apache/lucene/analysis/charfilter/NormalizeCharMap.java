@@ -111,9 +111,8 @@ public class NormalizeCharMap {
         final org.apache.lucene.util.fst.Builder<CharsRef> builder = new org.apache.lucene.util.fst.Builder<CharsRef>(FST.INPUT_TYPE.BYTE2, outputs);
         final IntsRef scratch = new IntsRef();
         for(Map.Entry<String,String> ent : pendingPairs.entrySet()) {
-          builder.add(Util.toUTF32(ent.getKey(), scratch),
+          builder.add(Util.toUTF16(ent.getKey(), scratch),
                       new CharsRef(ent.getValue()));
-      
         }
         map = builder.finish();
         pendingPairs.clear();

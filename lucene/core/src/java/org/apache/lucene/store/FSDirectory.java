@@ -436,6 +436,9 @@ public abstract class FSDirectory extends Directory {
     return chunkSize;
   }
 
+  /**
+   * Writes output with {@link RandomAccessFile#write(byte[], int, int)}
+   */
   protected static class FSIndexOutput extends BufferedIndexOutput {
     private final FSDirectory parent;
     private final String name;
