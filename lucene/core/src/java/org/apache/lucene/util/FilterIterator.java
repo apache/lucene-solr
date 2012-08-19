@@ -22,41 +22,40 @@ import java.util.NoSuchElementException;
 
 public abstract class FilterIterator<T> implements Iterator<T> {
   
-  private Iterator<T> iterator;
+  private final Iterator<T> iterator;
   private T next = null;
   private boolean nextIsSet = false;
   
-  protected abstract boolean predicateFunction(T field);
+  protected abstract boolean predicateFunction(T object);
   
   public FilterIterator(Iterator<T> baseIterator) {
     this.iterator = baseIterator;
   }
   
-  public boolean hasNext() {
-    if (nextIsSet) {
-      return true;
-    } else {
-      return setNext();
+  public final boolean hasNext() {
+    return nextIsSet || setNext();
+  }
+  
+  public final T next() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
+    }
+    assert nextIsSet;
+    try {
+      return next;
+    } finally {
+      nextIsSet = false;
+      next = null;
     }
   }
   
-  public T next() {
-    if (!nextIsSet) {
-      if (!setNext()) {
-        throw new NoSuchElementException();
-      }
-    }
-    nextIsSet = false;
-    return next;
-  }
-  
-  public void remove() {
+  public final void remove() {
     throw new UnsupportedOperationException();
   }
   
   private boolean setNext() {
     while (iterator.hasNext()) {
-      T object = iterator.next();
+      final T object = iterator.next();
       if (predicateFunction(object)) {
         next = object;
         nextIsSet = true;
