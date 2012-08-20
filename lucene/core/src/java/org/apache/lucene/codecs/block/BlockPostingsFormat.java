@@ -309,11 +309,11 @@ import org.apache.lucene.util.packed.PackedInts;
  * <ul>
  *   <li>PayFile(.pay): --&gt; Header, &lt;TermPayloads, TermOffsets?&gt; <sup>TermCount</sup></li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *   <li>TermPayloads --&gt; &lt;PackedPayLengthBlock, PayBlockLength, PayData&gt; <sup>PackedPayBlockNum</sup>
- *   <li>TermOffsets --&gt; &lt;PackedOffsetStartDeltaBlock?, PackedOffsetLengthBlock?&gt; <sup>PackedPayBlockNum</sup>
+ *   <li>TermPayloads --&gt; &lt;PackedPayLengthBlock, SumPayLength, PayData&gt; <sup>PackedPayBlockNum</sup>
+ *   <li>TermOffsets --&gt; &lt;PackedOffsetStartDeltaBlock, PackedOffsetLengthBlock&gt; <sup>PackedPayBlockNum</sup>
  *   <li>PackedPayLengthBlock, PackedOffsetStartDeltaBlock, PackedOffsetLengthBlock --&gt; {@link PackedInts PackedInts}</li>
- *   <li>PayBlockLength --&gt; {@link DataOutput#writeVInt VInt}</li>
- *   <li>PayData --&gt; {@link DataOutput#writeByte byte}<sup>PayBlockLength</sup></li>
+ *   <li>SumPayLength --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *   <li>PayData --&gt; {@link DataOutput#writeByte byte}<sup>SumPayLength</sup></li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
@@ -324,7 +324,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *       While PackedStartDeltaBlock follows a same procedure as PackedDocDeltaBlock.</li>
  *   <li>PackedPayBlockNum is always equal to PackedPosBlockNum, for the same term. It is also synonym 
  *       for PackedOffsetBlockNum.</li>
- *   <li>PayBlockLength is the total length of payloads written within one block, should be the sum
+ *   <li>SumPayLength is the total length of payloads written within one block, should be the sum
  *       of PayLengths in one packed block.</li>
  *   <li>PayLength in PackedPayLengthBlock is the length of each payload, associated with current 
  *       position.</li>
