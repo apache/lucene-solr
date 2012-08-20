@@ -78,6 +78,11 @@ Bug Fixes
   when requesting multiple stats.facet fields.
   (Roman Kliewer via hossman)
 
+* SOLR-3743: Fixed issues with atomic updates and optimistic concurrency in
+  conjunction with stored copyField targets by making real-time get never
+  return copyField targets. (yonik)
+
+
 Other Changes
 ----------------------
 
