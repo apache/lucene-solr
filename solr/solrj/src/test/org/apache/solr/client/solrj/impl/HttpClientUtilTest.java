@@ -18,6 +18,8 @@ package org.apache.solr.client.solrj.impl;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.http.auth.AuthScope;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.params.ClientPNames;
@@ -25,6 +27,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
 public class HttpClientUtilTest {
@@ -58,6 +61,33 @@ public class HttpClientUtilTest {
     assertEquals("user", client.getCredentialsProvider().getCredentials(new AuthScope("127.0.0.1", 1234)).getUserPrincipal().getName());
     assertEquals(true, client.getParams().getParameter(ClientPNames.HANDLE_REDIRECTS));
     client.getConnectionManager().shutdown();
+  }
+  
+  @Test
+  public void testReplaceConfigurer(){
+    
+    try {
+    final AtomicInteger counter = new AtomicInteger();
+    HttpClientConfigurer custom = new HttpClientConfigurer(){
+      @Override
+      protected void configure(DefaultHttpClient httpClient, SolrParams config) {
+        super.configure(httpClient, config);
+        counter.set(config.getInt("custom-param", -1));
+      }
+      
+    };
+    
+    HttpClientUtil.setConfigurer(custom);
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("custom-param", 5);
+    HttpClientUtil.createClient(params).getConnectionManager().shutdown();
+    assertEquals(5, counter.get());
+    } finally {
+      //restore default configurer
+      HttpClientUtil.setConfigurer(new HttpClientConfigurer());
+    }
+
   }
   
 }
