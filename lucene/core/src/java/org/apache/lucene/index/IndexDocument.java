@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 /**
+ * Elementary interface used for indexing an document.
  * @lucene.internal
  */
 public interface IndexDocument {

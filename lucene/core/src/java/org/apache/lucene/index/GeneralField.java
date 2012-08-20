@@ -17,6 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+/** Represents a single field in lucene document. Further generalizations
+ * are {@link IndexableField} and {@link StorableField} interfaces.  
+ *
+ *  @lucene.experimental */
+
 public interface GeneralField {
 
   /** Field name */

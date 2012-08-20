@@ -30,8 +30,12 @@ import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.util.BytesRef;
 
+/** 
+* StoredDocument is retrieved from IndexReader containing only stored fields from indexed {@link IndexDocument}.
+*/
 public class StoredDocument implements Iterable<StorableField>{
   
   private final List<StorableField> fields = new ArrayList<StorableField>();

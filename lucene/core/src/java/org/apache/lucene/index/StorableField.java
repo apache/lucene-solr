@@ -21,6 +21,11 @@ import java.io.Reader;
 
 import org.apache.lucene.util.BytesRef;
 
+/** Represents a single stored field in lucene document. These fields
+ * are contained in document retrieved from IndexReader.
+ *
+ *  @lucene.experimental */
+
 public interface StorableField extends GeneralField {
 
   /** Non-null if this field has a binary value */

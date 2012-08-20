@@ -17,6 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+// TODO: Move some properties from IndexableFieldType here, those regarding stored fields. 
+
+/** 
+ * Describes the properties of a stored field.
+ * @lucene.experimental 
+ */
 public interface StorableFieldType {
 
   /** DocValues type; if non-null then the field's value
