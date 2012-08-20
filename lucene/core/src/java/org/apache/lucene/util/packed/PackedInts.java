@@ -675,6 +675,9 @@ public class PackedInts {
    * @return a decoder
    */
   public static Decoder getDecoder(Format format, int version, int bitsPerValue) {
+    if (version != VERSION_START) {
+      throw new IllegalArgumentException("only VERSION_START is valid (got " + version + ")");
+    }
     return BulkOperation.of(format, bitsPerValue);
   }
 
@@ -687,6 +690,9 @@ public class PackedInts {
    * @return an encoder
    */
   public static Encoder getEncoder(Format format, int version, int bitsPerValue) {
+    if (version != VERSION_START) {
+      throw new IllegalArgumentException("only VERSION_START is valid (got " + version + ")");
+    }
     return BulkOperation.of(format, bitsPerValue);
   }
 

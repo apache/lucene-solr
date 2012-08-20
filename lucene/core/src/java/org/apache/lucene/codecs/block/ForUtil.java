@@ -40,8 +40,6 @@ final class ForUtil {
    * Special number of bits per value used whenever all values to encode are equal.
    */
   private static final int ALL_VALUES_EQUAL = 0;
-  private static final int PACKED_INTS_VERSION_START = 0;
-  private static final int PACKED_INTS_VERSION_CURRENT = PACKED_INTS_VERSION_START;
 
   /**
    * Upper limit of the number of bytes that might be required to stored
@@ -58,14 +56,16 @@ final class ForUtil {
   static final int MAX_DATA_SIZE;
   static {
     int maxDataSize = 0;
-    for (PackedInts.Format format : PackedInts.Format.values()) {
-      for (int bpv = 1; bpv <= 32; ++bpv) {
-        if (!format.isSupported(bpv)) {
-          continue;
+    for(int version=PackedInts.VERSION_START;version<=PackedInts.VERSION_CURRENT;version++) {
+      for (PackedInts.Format format : PackedInts.Format.values()) {
+        for (int bpv = 1; bpv <= 32; ++bpv) {
+          if (!format.isSupported(bpv)) {
+            continue;
+          }
+          final PackedInts.Decoder decoder = PackedInts.getDecoder(format, version, bpv);
+          final int iterations = (int) Math.ceil((float) BLOCK_SIZE / decoder.valueCount());
+          maxDataSize = Math.max(maxDataSize, iterations * decoder.valueCount());
         }
-        final PackedInts.Decoder decoder = PackedInts.getDecoder(format, PACKED_INTS_VERSION_START, bpv);
-        final int iterations = (int) Math.ceil((float) BLOCK_SIZE / decoder.valueCount());
-        maxDataSize = Math.max(maxDataSize, iterations * decoder.valueCount());
       }
     }
     MAX_DATA_SIZE = maxDataSize;
@@ -96,7 +96,7 @@ final class ForUtil {
    * Create a new {@link ForUtil} instance and save state into <code>out</code>.
    */
   ForUtil(float acceptableOverheadRatio, DataOutput out) throws IOException {
-    out.writeVInt(PACKED_INTS_VERSION_CURRENT);
+    out.writeVInt(PackedInts.VERSION_CURRENT);
     encodedSizes = new int[33];
     encoders = new PackedInts.Encoder[33];
     decoders = new PackedInts.Decoder[33];
@@ -109,9 +109,9 @@ final class ForUtil {
       assert formatAndBits.bitsPerValue <= 32;
       encodedSizes[bpv] = encodedSize(formatAndBits.format, formatAndBits.bitsPerValue);
       encoders[bpv] = PackedInts.getEncoder(
-          formatAndBits.format, PACKED_INTS_VERSION_CURRENT, formatAndBits.bitsPerValue);
+          formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
       decoders[bpv] = PackedInts.getDecoder(
-          formatAndBits.format, PACKED_INTS_VERSION_CURRENT, formatAndBits.bitsPerValue);
+          formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
       iterations[bpv] = computeIterations(decoders[bpv]);
 
       out.writeVInt(formatAndBits.format.getId() << 5 | (formatAndBits.bitsPerValue - 1));
@@ -123,8 +123,8 @@ final class ForUtil {
    */
   ForUtil(DataInput in) throws IOException {
     int packedIntsVersion = in.readVInt();
-    if (packedIntsVersion != PACKED_INTS_VERSION_START) {
-      throw new CorruptIndexException("expected version=" + PACKED_INTS_VERSION_START + " but got version=" + packedIntsVersion);
+    if (packedIntsVersion != PackedInts.VERSION_START) {
+      throw new CorruptIndexException("expected version=" + PackedInts.VERSION_START + " but got version=" + packedIntsVersion);
     }
     encodedSizes = new int[33];
     encoders = new PackedInts.Encoder[33];
