@@ -63,7 +63,7 @@ final class ForUtil {
             continue;
           }
           final PackedInts.Decoder decoder = PackedInts.getDecoder(format, version, bpv);
-          final int iterations = (int) Math.ceil((float) BLOCK_SIZE / decoder.valueCount());
+          final int iterations = computeIterations(decoder);
           maxDataSize = Math.max(maxDataSize, iterations * decoder.valueCount());
         }
       }
