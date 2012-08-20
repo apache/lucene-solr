@@ -82,7 +82,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *      in current position. </p>
  *   <p>When payloads and offsets are not omitted, numPositions==numPayloads==numOffsets (assuming a 
  *      null payload contributes one count). As mentioned in block structure, it is possible to encode 
- *      these three either centralizedly or separately. 
+ *      these three either combined or separately. 
  *   <p>For all the cases, payloads and offsets are stored together. When encoded as packed block, 
  *      position data is separated out as .pos, while payloads and offsets are encoded in .pay (payload 
  *      metadata will also be stored directly in .pay). When encoded as VInt block, all these three are 
@@ -137,8 +137,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>Notes:</p>
  * <ul>
  *    <li>Here explains MetadataBlock only, other fields are mentioned in 
- *   <!--NOTE: change this manual html link, when directory structure is changed. -->
- *   <a href="../../../../../org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Termdictionary">Lucene40PostingsFormat:TermDictionary</a>
+ *   <a href="../lucene40/Lucene40PostingsFormat.html#Termdictionary">Lucene40PostingsFormat:TermDictionary</a>
  *    </li>
  *    <li>PackedBlockSize is the fixed block size for packed blocks. In packed block, bit width is 
  *        determined by the largest integer. Smaller block size result in smaller variance among width 
@@ -156,7 +155,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>PosVIntBlockFPDelta determines the position of this term's last TermPosition in last pos packed
  *        block within the .pos file. It is synonym for PayVIntBlockFPDelta or OffsetVIntBlockFPDelta. 
  *        This is actually used to indicate whether it is necessary to load following
- *        payloads and offsets from .pos instead of .pay. Everytime a new block of positions are to be 
+ *        payloads and offsets from .pos instead of .pay. Every time a new block of positions are to be 
  *        loaded, the PostingsReader will use this value to check whether current block is packed format
  *        or VInt. When packed format, payloads and offsets are fetched from .pay, otherwise from .pos. 
  *        (this value is neglected when total number of positions i.e. totalTermFreq is less or equal 
@@ -174,8 +173,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dd>
  * <b>Term Index</b>
  * <p>The .tim file format is mentioned in
- *   <!--NOTE: change this manual html link, when directory structure is changed. -->
- *   <a href="../../../../../org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Termindex">Lucene40PostingsFormat:TermIndex</a>
+ *   <a href="../lucene40/Lucene40PostingsFormat.html#Termindex">Lucene40PostingsFormat:TermIndex</a>
  * </dd>
  * </dl>
  *
@@ -215,14 +213,13 @@ import org.apache.lucene.util.packed.PackedInts;
  *       <li>Calculate the difference between each document number and previous one, 
  *           and get a d-gaps list (for the first document, use absolute value); </li>
  *       <li>For those d-gaps from first one to PackedDocBlockNum*PackedBlockSize<sup>th</sup>, 
- *           seperately encode as packed blocks.</li>
+ *           separately encode as packed blocks.</li>
  *     </ol>
  *     If frequencies are not omitted, PackedFreqBlock will be generated without d-gap step.
  *   </li>
  *   <li>VIntBlock stores remaining d-gaps (along with frequencies when possible) with a format 
  *       mentioned in
- *   <!--NOTE: change this manual html link, when directory structure is changed. -->
- *   <a href="../../../../../org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Frequencies">Lucene40PostingsFormat:Frequencies</a>
+ *   <a href="../lucene40/Lucene40PostingsFormat.html#Frequencies">Lucene40PostingsFormat:Frequencies</a>
  *   </li>
  *   <li>PackedDocBlockNum is the number of packed blocks for current term's docids or frequencies. 
  *       In particular, PackedDocBlockNum = floor(DocFreq/PackedBlockSize) </li>
@@ -284,8 +281,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>The procedure how PackedPosDeltaBlock is generated is the same as PackedDocDeltaBlock 
  *       in chapter <a href="#Frequencies">Frequencies and Skip Data</a>.</li>
  *   <li>PosDelta is the same as the format mentioned in 
- *   <!--NOTE: change this manual html link, when directory structure is changed. -->
- *   <a href="../../../../../org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Positions">Lucene40PostingsFormat:Positions</a>
+ *   <a href="../lucene40/Lucene40PostingsFormat.html#Positions">Lucene40PostingsFormat:Positions</a>
  *   </li>
  *   <li>OffsetStartDelta is the difference between this position's startOffset from the previous 
  *       occurrence (or zero, if this is the first occurrence in this document).</li>
@@ -299,8 +295,8 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dl>
  * <dd>
  * <b>Payloads and Offsets</b>
- * <p>The .pay file will store payloads and offsets associated with certain term-document positons. 
- *    Some payloads and offsets will be seperated out into .pos file, for speedup reason.</p>
+ * <p>The .pay file will store payloads and offsets associated with certain term-document positions. 
+ *    Some payloads and offsets will be separated out into .pos file, for speedup reason.</p>
  * <ul>
  *   <li>PayFile(.pay): --&gt; Header, &lt;TermPayloads, TermOffsets?&gt; <sup>TermCount</sup></li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
