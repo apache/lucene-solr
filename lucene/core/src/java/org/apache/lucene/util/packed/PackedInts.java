@@ -65,6 +65,14 @@ public class PackedInts {
   public final static int VERSION_START = 0;
   public final static int VERSION_CURRENT = VERSION_START;
 
+  private static void checkVersion(int version) {
+    if (version < VERSION_START) {
+      throw new IllegalArgumentException("Version is too old, should be at least " + VERSION_START + " (got " + version + ")");
+    } else if (version > VERSION_CURRENT) {
+      throw new IllegalArgumentException("Version is too new, should be at most " + VERSION_CURRENT + " (got " + version + ")");
+    }
+  }
+
   /**
    * A format to write packed ints.
    *
@@ -675,9 +683,7 @@ public class PackedInts {
    * @return a decoder
    */
   public static Decoder getDecoder(Format format, int version, int bitsPerValue) {
-    if (version != VERSION_START) {
-      throw new IllegalArgumentException("only VERSION_START is valid (got " + version + ")");
-    }
+    checkVersion(version);
     return BulkOperation.of(format, bitsPerValue);
   }
 
@@ -690,9 +696,7 @@ public class PackedInts {
    * @return an encoder
    */
   public static Encoder getEncoder(Format format, int version, int bitsPerValue) {
-    if (version != VERSION_START) {
-      throw new IllegalArgumentException("only VERSION_START is valid (got " + version + ")");
-    }
+    checkVersion(version);
     return BulkOperation.of(format, bitsPerValue);
   }
 
@@ -714,6 +718,7 @@ public class PackedInts {
    */
   public static Reader getReaderNoHeader(DataInput in, Format format, int version,
       int valueCount, int bitsPerValue) throws IOException {
+    checkVersion(version);
     switch (format) {
       case PACKED_SINGLE_BLOCK:
         return Packed64SingleBlock.create(in, valueCount, bitsPerValue);
@@ -781,6 +786,7 @@ public class PackedInts {
    */
   public static ReaderIterator getReaderIteratorNoHeader(DataInput in, Format format, int version,
       int valueCount, int bitsPerValue, int mem) {
+    checkVersion(version);
     return new PackedReaderIterator(format, valueCount, bitsPerValue, in, mem);
   }
 
@@ -821,6 +827,7 @@ public class PackedInts {
    */
   public static Reader getDirectReaderNoHeader(IndexInput in, Format format,
       int version, int valueCount, int bitsPerValue) {
+    checkVersion(version);
     switch (format) {
       case PACKED:
         return new DirectPackedReader(bitsPerValue, valueCount, in);
