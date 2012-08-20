@@ -20,8 +20,9 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Set;
+
+import org.apache.lucene.util.FilterIterator;
 
 /**
  * A {@link FilterAtomicReader} that exposes only a subset
@@ -62,8 +63,9 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
       return null;
     }
     f = new FieldFilterFields(f);
-    // we need to check for emptyness, so we can return null:
-    return (f.iterator().next() == null) ? null : f;
+    // we need to check for emptyness, so we can return
+    // null:
+    return f.iterator().hasNext() ? f : null;
   }
 
   @Override
@@ -138,55 +140,16 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
 
     @Override
     public int size() {
-      // TODO: add faster implementation!
-      int c = 0;
-      final Iterator<String> it = iterator();
-      while (it.next() != null) {
-        c++;
-      }
-      return c;
+      // this information is not cheap, return -1 like MultiFields does:
+      return -1;
     }
 
     @Override
     public Iterator<String> iterator() {
-      final Iterator<String> in = super.iterator();
-      return new Iterator<String>() {
-        String cached = null;
-        
+      return new FilterIterator<String>(super.iterator()) {
         @Override
-        public String next() {
-          if (cached != null) {
-            String next = cached;
-            cached = null;
-            return next;
-          } else {
-            String next = doNext();
-            if (next == null) {
-              throw new NoSuchElementException();
-            } else {
-              return next;
-            }
-          }
-        }
-
-        @Override
-        public boolean hasNext() {
-          return cached != null || (cached = doNext()) != null;
-        }
-        
-        private String doNext() {
-          while (in.hasNext()) {
-            String field = in.next();
-            if (hasField(field)) {
-              return field;
-            }
-          }
-          return null;
-        }
-
-        @Override
-        public void remove() {
-          throw new UnsupportedOperationException();
+        protected boolean predicateFunction(String field) {
+          return hasField(field);
         }
       };
     }

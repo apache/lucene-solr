@@ -255,6 +255,7 @@ public class RealTimeGetComponent extends SearchComponent
       SchemaField sf = schema.getFieldOrNull(f.name());
       Object val = null;
       if (sf != null) {
+        if (!sf.stored() || schema.isCopyFieldTarget(sf)) continue;
         val = sf.getType().toObject(f);   // object or external string?
       } else {
         val = f.stringValue();
@@ -277,6 +278,10 @@ public class RealTimeGetComponent extends SearchComponent
       Object existing = out.get(f.name());
       if (existing == null) {
         SchemaField sf = schema.getFieldOrNull(f.name());
+
+        // don't return copyField targets
+        if (sf != null && schema.isCopyFieldTarget(sf)) continue;
+
         if (sf != null && sf.multiValued()) {
           List<Object> vals = new ArrayList<Object>();
           vals.add( f );
@@ -301,7 +306,7 @@ public class RealTimeGetComponent extends SearchComponent
     // copy the stored fields only
     Document out = new Document();
     for (IndexableField f : doc.getFields()) {
-      if (f.fieldType().stored()) {
+      if (f.fieldType().stored() ) {
         out.add(f);
       }
     }

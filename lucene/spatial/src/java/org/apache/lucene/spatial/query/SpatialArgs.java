@@ -35,10 +35,6 @@ public class SpatialArgs {
   private Shape shape;
   private double distPrecision = DEFAULT_DIST_PRECISION;
 
-  // Useful for 'distance' calculations
-  private Double min;
-  private Double max;
-
   public SpatialArgs(SpatialOperation operation) {
     this.operation = operation;
   }
@@ -60,12 +56,6 @@ public class SpatialArgs {
     StringBuilder str = new StringBuilder();
     str.append(operation.getName()).append('(');
     str.append(shape.toString());
-    if (min != null) {
-      str.append(" min=").append(min);
-    }
-    if (max != null) {
-      str.append(" max=").append(max);
-    }
     str.append(" distPrec=").append(String.format(Locale.ROOT, "%.2f%%", distPrecision / 100d));
     str.append(')');
     return str.toString();
@@ -111,19 +101,4 @@ public class SpatialArgs {
       this.distPrecision = distPrecision;
   }
 
-  public Double getMin() {
-    return min;
-  }
-
-  public void setMin(Double min) {
-    this.min = min;
-  }
-
-  public Double getMax() {
-    return max;
-  }
-
-  public void setMax(Double max) {
-    this.max = max;
-  }
 }

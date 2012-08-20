@@ -33,10 +33,9 @@ public abstract class Fields implements Iterable<String> {
    *  null if the field does not exist. */
   public abstract Terms terms(String field) throws IOException;
 
-  /** Returns the number of terms for all fields, or -1 if this 
-   *  measure isn't stored by the codec. Note that, just like 
-   *  other term measures, this measure does not take deleted 
-   *  documents into account. */
+  /** Returns the number of fields or -1 if the number of
+   * distinct field names is unknown. If &gt;= 0,
+   * {@link #iterator} will return as many field names. */
   public abstract int size() throws IOException;
   
   /** Returns the number of terms for all fields, or -1 if this 
