@@ -107,7 +107,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
 
   @Override
   public void init(IndexInput termsIn) throws IOException {
-    // Make sure we are talking to the matching past writer
+    // Make sure we are talking to the matching postings writer
     CodecUtil.checkHeader(termsIn,
                           BlockPostingsWriter.TERMS_CODEC,
                           BlockPostingsWriter.VERSION_START,
@@ -880,7 +880,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
 
     // TODO: in theory we could avoid loading frq block
     // when not needed, ie, use skip data to load how far to
-    // seek the pos pointe ... instead of having to load frq
+    // seek the pos pointer ... instead of having to load frq
     // blocks only to sum up how many positions to skip
     private void skipPositions() throws IOException {
       // Skip positions now:
@@ -1362,7 +1362,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
 
     // TODO: in theory we could avoid loading frq block
     // when not needed, ie, use skip data to load how far to
-    // seek the pos pointe ... instead of having to load frq
+    // seek the pos pointer ... instead of having to load frq
     // blocks only to sum up how many positions to skip
     private void skipPositions() throws IOException {
       // Skip positions now:

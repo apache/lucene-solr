@@ -99,7 +99,7 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
    * Trim original docFreq to tell skipReader read proper number of skip points.
    *
    * Since our definition in BlockSkip* is a little different from MultiLevelSkip*
-   * This trimed docFreq will prevent skipReader from:
+   * This trimmed docFreq will prevent skipReader from:
    * 1. silly reading a non-existed skip point after the last block boundary
    * 2. moving into the vInt block
    *
