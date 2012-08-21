@@ -1112,21 +1112,6 @@ public class CheckIndex {
         throw new RuntimeException("fieldCount mismatch " + fieldCount + " vs recomputed field count " + computedFieldCount);
       }
     }
-    
-    // for most implementations, this is boring (just the sum across all fields)
-    // but codecs that don't work per-field like preflex actually implement this,
-    // but don't implement it on Terms, so the check isn't redundant.
-    long uniqueTermCountAllFields = fields.getUniqueTermCount();
-    
-    // this means something is seriously screwed, e.g. we are somehow getting enclosed in PFCW!!!!!!
-    
-    if (uniqueTermCountAllFields == -1) {
-      throw new RuntimeException("invalid termCount: -1");
-    }
-    
-    if (status.termCount != uniqueTermCountAllFields) {
-      throw new RuntimeException("termCount mismatch " + uniqueTermCountAllFields + " vs " + (status.termCount));
-    }
 
     if (doPrint) {
       msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");

@@ -60,11 +60,6 @@ public class FilterAtomicReader extends AtomicReader {
     public int size() {
       return in.size();
     }
-
-    @Override
-    public long getUniqueTermCount() throws IOException {
-      return in.getUniqueTermCount();
-    }
   }
 
   /** Base class for filtering {@link Terms}

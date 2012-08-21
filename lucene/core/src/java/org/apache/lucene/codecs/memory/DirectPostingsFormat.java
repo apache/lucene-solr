@@ -145,15 +145,6 @@ public class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public long getUniqueTermCount() {
-      long numTerms = 0;      
-      for(DirectField field : fields.values()) {
-        numTerms += field.terms.length;
-      }
-      return numTerms;
-    }
-
-    @Override
     public void close() {
     }
   }

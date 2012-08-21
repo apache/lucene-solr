@@ -211,10 +211,6 @@ public class BloomFilteringPostingsFormat extends PostingsFormat {
       return delegateFieldsProducer.size();
     }
     
-    public long getUniqueTermCount() throws IOException {
-      return delegateFieldsProducer.getUniqueTermCount();
-    }
-    
     class BloomFilteredTerms extends Terms {
       private Terms delegateTerms;
       private FuzzySet filter;

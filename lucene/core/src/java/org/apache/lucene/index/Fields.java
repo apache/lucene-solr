@@ -38,26 +38,5 @@ public abstract class Fields implements Iterable<String> {
    * {@link #iterator} will return as many field names. */
   public abstract int size();
   
-  /** Returns the number of terms for all fields, or -1 if this 
-   *  measure isn't stored by the codec. Note that, just like 
-   *  other term measures, this measure does not take deleted 
-   *  documents into account. */
-  // TODO: deprecate?
-  public long getUniqueTermCount() throws IOException {
-    long numTerms = 0;
-    for (String field : this) {
-      Terms terms = terms(field);
-      if (terms != null) {
-        final long termCount = terms.size();
-        if (termCount == -1) {
-          return -1;
-        }
-          
-        numTerms += termCount;
-      }
-    }
-    return numTerms;
-  }
-  
   public final static Fields[] EMPTY_ARRAY = new Fields[0];
 }

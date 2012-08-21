@@ -191,10 +191,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
     if (leftFields.size() != -1 && rightFields.size() != -1) {
       assertEquals(info, leftFields.size(), rightFields.size());
     }
-    
-    if (leftFields.getUniqueTermCount() != -1 && rightFields.getUniqueTermCount() != -1) {
-      assertEquals(info, leftFields.getUniqueTermCount(), rightFields.getUniqueTermCount());
-    }
   }
   
   /** 

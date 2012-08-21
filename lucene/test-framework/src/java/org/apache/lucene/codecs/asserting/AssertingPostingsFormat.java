@@ -86,11 +86,6 @@ public class AssertingPostingsFormat extends PostingsFormat {
     public int size() {
       return in.size();
     }
-
-    @Override
-    public long getUniqueTermCount() throws IOException {
-      return in.getUniqueTermCount();
-    }
   }
   
   static class AssertingFieldsConsumer extends FieldsConsumer {
