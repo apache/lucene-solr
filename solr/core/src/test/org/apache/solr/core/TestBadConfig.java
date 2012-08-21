@@ -27,6 +27,21 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad_solrconfig.xml","schema.xml","unset.sys.property");
   }
 
+  public void testUpdateLogButNoVersionField() throws Exception {
+    
+    // :TODO: neccessary until SOLR-3699 is fixed
+    System.setProperty("solr.directoryFactory", 
+                       "org.apache.solr.core.SimpleFSDirectoryFactory");
+
+
+    System.setProperty("enable.update.log", "true");
+    try {
+      assertConfigs("solrconfig.xml", "schema12.xml", "_version_");
+    } finally {
+      System.clearProperty("enable.update.log");
+    }
+  }
+
   public void testBogusScriptEngine() throws Exception {
     // sanity check
     Assume.assumeTrue(null == (new ScriptEngineManager()).getEngineByName("giberish"));

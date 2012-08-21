@@ -82,6 +82,9 @@ Bug Fixes
   conjunction with stored copyField targets by making real-time get never
   return copyField targets. (yonik)
 
+* SOLR-3746: Proper error reporting if updateLog is configured w/o necessary 
+  "_version_" field in schema.xml (hossman)
+
 
 Other Changes
 ----------------------
