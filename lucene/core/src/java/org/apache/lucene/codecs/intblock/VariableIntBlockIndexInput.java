@@ -90,12 +90,10 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     private long lastBlockFP;
     private int blockSize;
     private final BlockReader blockReader;
-    private final IntsRef bulkResult = new IntsRef();
 
     public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader) {
       this.in = in;
       this.pending = pending;
-      bulkResult.ints = pending;
       this.blockReader = blockReader;
     }
 
@@ -146,26 +144,6 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
 
       return pending[upto++];
     }
-
-    @Override
-    public IntsRef read(final int count) throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
-        lastBlockFP = in.getFilePointer();
-        blockSize = blockReader.readBlock();
-        upto = 0;
-      }
-      bulkResult.offset = upto;
-      if (upto + count < blockSize) {
-        bulkResult.length = count;
-        upto += count;
-      } else {
-        bulkResult.length = blockSize - upto;
-        upto = blockSize;
-      }
-
-      return bulkResult;
-    }
   }
 
   private class Index extends IntIndexInput.Index {
@@ -204,7 +182,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void set(final IntIndexInput.Index other) {
+    public void copyFrom(final IntIndexInput.Index other) {
       final Index idx = (Index) other;
       fp = idx.fp;
       upto = idx.upto;

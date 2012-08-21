@@ -18,14 +18,13 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.Closeable;
+import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongsRef;
-
-import java.io.IOException;
 
 /**
  * Simplistic compression for array of unsigned long values.
@@ -65,6 +64,14 @@ public class PackedInts {
   public final static String CODEC_NAME = "PackedInts";
   public final static int VERSION_START = 0;
   public final static int VERSION_CURRENT = VERSION_START;
+
+  private static void checkVersion(int version) {
+    if (version < VERSION_START) {
+      throw new IllegalArgumentException("Version is too old, should be at least " + VERSION_START + " (got " + version + ")");
+    } else if (version > VERSION_CURRENT) {
+      throw new IllegalArgumentException("Version is too new, should be at most " + VERSION_CURRENT + " (got " + version + ")");
+    }
+  }
 
   /**
    * A format to write packed ints.
@@ -239,6 +246,146 @@ public class PackedInts {
     }
 
     return new FormatAndBits(format, actualBitsPerValue);
+  }
+
+  /**
+   * A decoder for packed integers.
+   */
+  public static interface Decoder {
+
+    /**
+     * The minimum number of long blocks to decode in a single call.
+     */
+    int blockCount();
+
+    /**
+     * The number of values that can be stored in <code>blockCount()</code> long
+     * blocks.
+     */
+    int valueCount();
+
+    /**
+     * Read <code>iterations * blockCount()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * valueCount()</code> values into
+     * <code>values</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start reading blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start writing values
+     * @param iterations   controls how much data to decode
+     */
+    void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations);
+
+    /**
+     * Read <code>8 * iterations * blockCount()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * valueCount()</code> values into
+     * <code>values</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start reading blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start writing values
+     * @param iterations   controls how much data to decode
+     */
+    void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations);
+
+    /**
+     * Read <code>iterations * blockCount()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * valueCount()</code> values into
+     * <code>values</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start reading blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start writing values
+     * @param iterations   controls how much data to decode
+     */
+    void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations);
+
+    /**
+     * Read <code>8 * iterations * blockCount()</code> blocks from <code>blocks</code>,
+     * decode them and write <code>iterations * valueCount()</code> values into
+     * <code>values</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start reading blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start writing values
+     * @param iterations   controls how much data to decode
+     */
+    void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations);
+
+  }
+
+  /**
+   * An encoder for packed integers.
+   */
+  public static interface Encoder {
+
+    /**
+     * The minimum number of long blocks to encode in a single call.
+     */
+    int blockCount();
+
+    /**
+     * The number of values that can be stored in <code>blockCount()</code> long
+     * blocks.
+     */
+    int valueCount();
+
+    /**
+     * Read <code>iterations * valueCount()</code> values from <code>values</code>,
+     * encode them and write <code>iterations * blockCount()</code> blocks into
+     * <code>blocks</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start writing blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start reading values
+     * @param iterations   controls how much data to encode
+     */
+    void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations);
+
+    /**
+     * Read <code>iterations * valueCount()</code> values from <code>values</code>,
+     * encode them and write <code>8 * iterations * blockCount()</code> blocks into
+     * <code>blocks</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start writing blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start reading values
+     * @param iterations   controls how much data to encode
+     */
+    void encode(long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations);
+
+    /**
+     * Read <code>iterations * valueCount()</code> values from <code>values</code>,
+     * encode them and write <code>iterations * blockCount()</code> blocks into
+     * <code>blocks</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start writing blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start reading values
+     * @param iterations   controls how much data to encode
+     */
+    void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations);
+
+    /**
+     * Read <code>iterations * valueCount()</code> values from <code>values</code>,
+     * encode them and write <code>8 * iterations * blockCount()</code> blocks into
+     * <code>blocks</code>.
+     *
+     * @param blocks       the long blocks that hold packed integer values
+     * @param blocksOffset the offset where to start writing blocks
+     * @param values       the values buffer
+     * @param valuesOffset the offset where to start reading values
+     * @param iterations   controls how much data to encode
+     */
+    void encode(int[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations);
+
   }
 
   /**
@@ -490,8 +637,7 @@ public class PackedInts {
     protected final int valueCount;
     protected final int bitsPerValue;
 
-    protected Writer(DataOutput out, int valueCount, int bitsPerValue)
-      throws IOException {
+    protected Writer(DataOutput out, int valueCount, int bitsPerValue) {
       assert bitsPerValue <= 64;
       assert valueCount >= 0 || valueCount == -1;
       this.out = out;
@@ -529,6 +675,32 @@ public class PackedInts {
   }
 
   /**
+   * Get a {@link Decoder}.
+   *
+   * @param format         the format used to store packed ints
+   * @param version        the compatibility version
+   * @param bitsPerValue   the number of bits per value
+   * @return a decoder
+   */
+  public static Decoder getDecoder(Format format, int version, int bitsPerValue) {
+    checkVersion(version);
+    return BulkOperation.of(format, bitsPerValue);
+  }
+
+  /**
+   * Get an {@link Encoder}.
+   *
+   * @param format         the format used to store packed ints
+   * @param version        the compatibility version
+   * @param bitsPerValue   the number of bits per value
+   * @return an encoder
+   */
+  public static Encoder getEncoder(Format format, int version, int bitsPerValue) {
+    checkVersion(version);
+    return BulkOperation.of(format, bitsPerValue);
+  }
+
+  /**
    * Expert: Restore a {@link Reader} from a stream without reading metadata at
    * the beginning of the stream. This method is useful to restore data from
    * streams which have been created using
@@ -546,6 +718,7 @@ public class PackedInts {
    */
   public static Reader getReaderNoHeader(DataInput in, Format format, int version,
       int valueCount, int bitsPerValue) throws IOException {
+    checkVersion(version);
     switch (format) {
       case PACKED_SINGLE_BLOCK:
         return Packed64SingleBlock.create(in, valueCount, bitsPerValue);
@@ -612,7 +785,8 @@ public class PackedInts {
    * @lucene.internal
    */
   public static ReaderIterator getReaderIteratorNoHeader(DataInput in, Format format, int version,
-      int valueCount, int bitsPerValue, int mem) throws IOException {
+      int valueCount, int bitsPerValue, int mem) {
+    checkVersion(version);
     return new PackedReaderIterator(format, valueCount, bitsPerValue, in, mem);
   }
 
@@ -652,7 +826,8 @@ public class PackedInts {
    * @lucene.internal
    */
   public static Reader getDirectReaderNoHeader(IndexInput in, Format format,
-      int version, int valueCount, int bitsPerValue) throws IOException {
+      int version, int valueCount, int bitsPerValue) {
+    checkVersion(version);
     switch (format) {
       case PACKED:
         return new DirectPackedReader(bitsPerValue, valueCount, in);
@@ -784,7 +959,7 @@ public class PackedInts {
    * @lucene.internal
    */
   public static Writer getWriterNoHeader(
-      DataOutput out, Format format, int valueCount, int bitsPerValue, int mem) throws IOException {
+      DataOutput out, Format format, int valueCount, int bitsPerValue, int mem) {
     return new PackedWriter(format, out, valueCount, bitsPerValue, mem);
   }
 

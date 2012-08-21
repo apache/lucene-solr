@@ -34,6 +34,8 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 public class FieldInfos implements Iterable<FieldInfo> {
   private final boolean hasFreq;
   private final boolean hasProx;
+  private final boolean hasPayloads;
+  private final boolean hasOffsets;
   private final boolean hasVectors;
   private final boolean hasNorms;
   private final boolean hasDocValues;
@@ -45,6 +47,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
   public FieldInfos(FieldInfo[] infos) {
     boolean hasVectors = false;
     boolean hasProx = false;
+    boolean hasPayloads = false;
+    boolean hasOffsets = false;
     boolean hasFreq = false;
     boolean hasNorms = false;
     boolean hasDocValues = false;
@@ -58,12 +62,16 @@ public class FieldInfos implements Iterable<FieldInfo> {
       hasVectors |= info.hasVectors();
       hasProx |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       hasFreq |= info.isIndexed() && info.getIndexOptions() != IndexOptions.DOCS_ONLY;
+      hasOffsets |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       hasNorms |= info.hasNorms();
       hasDocValues |= info.hasDocValues();
+      hasPayloads |= info.hasPayloads();
     }
     
     this.hasVectors = hasVectors;
     this.hasProx = hasProx;
+    this.hasPayloads = hasPayloads;
+    this.hasOffsets = hasOffsets;
     this.hasFreq = hasFreq;
     this.hasNorms = hasNorms;
     this.hasDocValues = hasDocValues;
@@ -78,6 +86,16 @@ public class FieldInfos implements Iterable<FieldInfo> {
   /** Returns true if any fields have positions */
   public boolean hasProx() {
     return hasProx;
+  }
+
+  /** Returns true if any fields have payloads */
+  public boolean hasPayloads() {
+    return hasPayloads;
+  }
+
+  /** Returns true if any fields have offsets */
+  public boolean hasOffsets() {
+    return hasOffsets;
   }
   
   /**

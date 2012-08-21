@@ -15,6 +15,11 @@ New Features
   that you must store term vector positions to store payloads.
   (Robert Muir)
 
+* LUCENE-3892: Add a new BlockPostingsFormat that bulk-encodes docs,
+  freqs and positions in large (size 128) packed-int blocks for faster
+  search performance.  This was from Han Jiang's 2012 Google Summer of
+  Code project (Han Jiang, Adrien Grand, Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-4299: Added Terms.hasPositions() and Terms.hasOffsets().

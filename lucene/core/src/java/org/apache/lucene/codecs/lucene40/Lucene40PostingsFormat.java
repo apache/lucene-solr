@@ -159,7 +159,7 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * with the frequency of the term in that document (except when frequencies are
  * omitted: {@link IndexOptions#DOCS_ONLY}).</p>
  * <ul>
- *   <li>FreqFile (.frq) --&gt; Header, &lt;TermFreqs, SkipData&gt; <sup>TermCount</sup></li>
+ *   <li>FreqFile (.frq) --&gt; Header, &lt;TermFreqs, SkipData?&gt; <sup>TermCount</sup></li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermFreqs --&gt; &lt;TermFreq&gt; <sup>DocFreq</sup></li>
  *   <li>TermFreq --&gt; DocDelta[, Freq?]</li>

@@ -444,9 +444,9 @@ public class TestPostingsOffsets extends LuceneTestCase {
         makeToken("foo", 1, 0, 3),
         makeToken("foo", 0, 0, 3),
         makeToken("foo", 0, 0, 3)
-     });
+      });
   }
-  
+
   public void testLegalbutVeryLargeOffsets() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
