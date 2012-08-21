@@ -107,7 +107,7 @@ public class SlowRAMDirectory extends RAMDirectory {
       ii.readBytes(b, offset, len);
     }
     
-    @Override public IndexInput clone() { return (IndexInput)ii.clone(); }
+    @Override public IndexInput clone() { return ii.clone(); }
     @Override public void close() throws IOException { ii.close(); }
     @Override public boolean equals(Object o) { return ii.equals(o); }
     @Override public long getFilePointer() { return ii.getFilePointer(); }

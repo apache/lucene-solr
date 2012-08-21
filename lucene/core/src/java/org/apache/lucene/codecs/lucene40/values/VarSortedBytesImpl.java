@@ -211,7 +211,7 @@ final class VarSortedBytesImpl {
       valueCount = ordToOffsetIndex.size()-1; // the last value here is just a dummy value to get the length of the last value
       // advance this iterator to the end and clone the stream once it points to the docToOrdIndex header
       ordToOffsetIndex.get(valueCount);
-      docToOrdIndex = PackedInts.getDirectReader((IndexInput) idxIn.clone()); // read the ords in to prevent too many random disk seeks
+      docToOrdIndex = PackedInts.getDirectReader(idxIn.clone()); // read the ords in to prevent too many random disk seeks
       basePointer = datIn.getFilePointer();
       this.datIn = datIn;
     }

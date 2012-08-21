@@ -418,7 +418,7 @@ public class SepPostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // This DocsEnum has never done any skipping
-          skipper = new SepSkipListReader((IndexInput) skipIn.clone(),
+          skipper = new SepSkipListReader(skipIn.clone(),
                                           freqIn,
                                           docIn,
                                           posIn,
@@ -506,7 +506,7 @@ public class SepPostingsReader extends PostingsReaderBase {
       freqIndex = freqIn.index();
       posReader = posIn.reader();
       posIndex = posIn.index();
-      payloadIn = (IndexInput) SepPostingsReader.this.payloadIn.clone();
+      payloadIn = SepPostingsReader.this.payloadIn.clone();
     }
 
     SepDocsAndPositionsEnum init(FieldInfo fieldInfo, SepTermState termState, Bits liveDocs) throws IOException {
@@ -597,7 +597,7 @@ public class SepPostingsReader extends PostingsReaderBase {
         if (skipper == null) {
           //System.out.println("  create skipper");
           // This DocsEnum has never done any skipping
-          skipper = new SepSkipListReader((IndexInput) skipIn.clone(),
+          skipper = new SepSkipListReader(skipIn.clone(),
                                           freqIn,
                                           docIn,
                                           posIn,

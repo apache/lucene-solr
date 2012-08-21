@@ -70,7 +70,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     in = state.dir.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
    
     fieldInfos = state.fieldInfos;
-    fields = readFields((IndexInput)in.clone());
+    fields = readFields(in.clone());
   }
   
   private TreeMap<String,Long> readFields(IndexInput in) throws IOException {
@@ -230,7 +230,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     
     public SimpleTextDocsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
-      this.in = (IndexInput) this.inStart.clone();
+      this.in = this.inStart.clone();
     }
 
     public boolean canReuse(IndexInput in) {
@@ -330,7 +330,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     public SimpleTextDocsAndPositionsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
-      this.in = (IndexInput) inStart.clone();
+      this.in = inStart.clone();
     }
 
     public boolean canReuse(IndexInput in) {
@@ -500,7 +500,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<Long,PairOutputs.Pair<Long,Long>>(posIntOutputs,
                                                                                                                       outputsInner);
       b = new Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(FST.INPUT_TYPE.BYTE1, outputs);
-      IndexInput in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
+      IndexInput in = SimpleTextFieldsReader.this.in.clone();
       in.seek(termsStart);
       final BytesRef lastTerm = new BytesRef(10);
       long lastDocsStart = -1;

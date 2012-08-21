@@ -403,7 +403,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     // NOTE: tvf is pre-positioned by caller
     public TVTermsEnum() {
       this.origTVF = Lucene40TermVectorsReader.this.tvf;
-      tvf = (IndexInput) origTVF.clone();
+      tvf = origTVF.clone();
     }
 
     public boolean canReuse(IndexInput tvf) {
@@ -752,9 +752,9 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     // These are null when a TermVectorsReader was created
     // on a segment that did not have term vectors saved
     if (tvx != null && tvd != null && tvf != null) {
-      cloneTvx = (IndexInput) tvx.clone();
-      cloneTvd = (IndexInput) tvd.clone();
-      cloneTvf = (IndexInput) tvf.clone();
+      cloneTvx = tvx.clone();
+      cloneTvd = tvd.clone();
+      cloneTvf = tvf.clone();
     }
     
     return new Lucene40TermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs);

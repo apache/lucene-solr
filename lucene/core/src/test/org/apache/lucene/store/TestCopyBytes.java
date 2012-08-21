@@ -127,7 +127,7 @@ public class TestCopyBytes extends LuceneTestCase {
     // now make N copies of the remaining bytes
     CopyThread copies[] = new CopyThread[10];
     for (int i = 0; i < copies.length; i++) {
-      copies[i] = new CopyThread((IndexInput) input.clone(), d.createOutput("copy" + i, IOContext.DEFAULT));
+      copies[i] = new CopyThread(input.clone(), d.createOutput("copy" + i, IOContext.DEFAULT));
     }
     
     for (int i = 0; i < copies.length; i++) {

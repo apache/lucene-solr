@@ -170,7 +170,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
     private void loadTermsIndex() throws IOException {
       if (fst == null) {
-        IndexInput clone = (IndexInput) in.clone();
+        IndexInput clone = in.clone();
         clone.seek(indexStart);
         fst = new FST<Long>(clone, fstOutputs);
         clone.close();

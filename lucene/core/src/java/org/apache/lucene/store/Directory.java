@@ -231,7 +231,7 @@ public abstract class Directory implements Closeable {
       }
       @Override
       public IndexInput openFullSlice() {
-        return (IndexInput) base.clone();
+        return base.clone();
       }
     };
   }
@@ -278,7 +278,7 @@ public abstract class Directory implements Closeable {
     
     SlicedIndexInput(final String sliceDescription, final IndexInput base, final long fileOffset, final long length, int readBufferSize) {
       super("SlicedIndexInput(" + sliceDescription + " in " + base + " slice=" + fileOffset + ":" + (fileOffset+length) + ")", readBufferSize);
-      this.base = (IndexInput) base.clone();
+      this.base = base.clone();
       this.fileOffset = fileOffset;
       this.length = length;
     }
@@ -286,7 +286,7 @@ public abstract class Directory implements Closeable {
     @Override
     public SlicedIndexInput clone() {
       SlicedIndexInput clone = (SlicedIndexInput)super.clone();
-      clone.base = (IndexInput)base.clone();
+      clone.base = base.clone();
       clone.fileOffset = fileOffset;
       clone.length = length;
       return clone;
