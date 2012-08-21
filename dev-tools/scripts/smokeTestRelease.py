@@ -546,7 +546,7 @@ def testNotice(unpackPath):
   if solrNotice.find(expected) == -1:
     raise RuntimeError('Solr\'s NOTICE.txt does not have the verbatim copy, plus header/footer, of Lucene\'s NOTICE.txt')
   
-def readSolrOutput(p, startupEvent, logFile):
+def readSolrOutput(p, startupEvent, failureEvent, logFile):
   f = open(logFile, 'wb')
   try:
     while True:
@@ -556,8 +556,13 @@ def readSolrOutput(p, startupEvent, logFile):
       f.write(line)
       f.flush()
       # print 'SOLR: %s' % line.strip()
-      if line.decode('UTF-8').find('Started SocketConnector@0.0.0.0:8983') != -1:
+      if not startupEvent.isSet() and line.find(b'Started SocketConnector@0.0.0.0:8983') != -1:
         startupEvent.set()
+  except:
+    print()
+    print('Exception reading Solr output:')
+    traceback.print_exc()
+    failureEvent.set()
   finally:
     f.close()
     
@@ -572,7 +577,8 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   server = subprocess.Popen(['java', '-jar', 'start.jar'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
 
   startupEvent = threading.Event()
-  serverThread = threading.Thread(target=readSolrOutput, args=(server.stderr, startupEvent, logFile))
+  failureEvent = threading.Event()
+  serverThread = threading.Thread(target=readSolrOutput, args=(server.stderr, startupEvent, failureEvent, logFile))
   serverThread.setDaemon(True)
   serverThread.start()
 
@@ -609,6 +615,9 @@ def testSolrExample(unpackPath, javaPath, isSrc):
         # Shouldn't happen unless something is seriously wrong...
         print('***WARNING***: Solr instance didn\'t respond to SIGKILL; ignoring...')
 
+  if failureEvent.isSet():
+    raise RuntimeError('exception while reading Solr output')
+    
   os.chdir('..')
     
 def checkJavadocpath(path):
