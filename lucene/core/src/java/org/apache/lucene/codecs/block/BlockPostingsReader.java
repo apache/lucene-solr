@@ -354,7 +354,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
 
     public BlockDocsEnum(FieldInfo fieldInfo) throws IOException {
       this.startDocIn = BlockPostingsReader.this.docIn;
-      this.docIn = (IndexInput) startDocIn.clone();
+      this.docIn = startDocIn.clone();
       indexHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
       indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
@@ -486,7 +486,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
-          skipper = new BlockSkipReader((IndexInput) docIn.clone(),
+          skipper = new BlockSkipReader(docIn.clone(),
                                         BlockPostingsWriter.maxSkipLevels,
                                         BLOCK_SIZE,
                                         indexHasPos,
@@ -629,8 +629,8 @@ final class BlockPostingsReader extends PostingsReaderBase {
     
     public BlockDocsAndPositionsEnum(FieldInfo fieldInfo) throws IOException {
       this.startDocIn = BlockPostingsReader.this.docIn;
-      this.docIn = (IndexInput) startDocIn.clone();
-      this.posIn = (IndexInput) BlockPostingsReader.this.posIn.clone();
+      this.docIn = startDocIn.clone();
+      this.posIn = BlockPostingsReader.this.posIn.clone();
       encoded = new byte[MAX_ENCODED_SIZE];
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
@@ -795,7 +795,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
           // if (DEBUG) {
           //   System.out.println("    create skipper");
           // }
-          skipper = new BlockSkipReader((IndexInput) docIn.clone(),
+          skipper = new BlockSkipReader(docIn.clone(),
                                         BlockPostingsWriter.maxSkipLevels,
                                         BLOCK_SIZE,
                                         true,
@@ -1046,9 +1046,9 @@ final class BlockPostingsReader extends PostingsReaderBase {
     
     public EverythingEnum(FieldInfo fieldInfo) throws IOException {
       this.startDocIn = BlockPostingsReader.this.docIn;
-      this.docIn = (IndexInput) startDocIn.clone();
-      this.posIn = (IndexInput) BlockPostingsReader.this.posIn.clone();
-      this.payIn = (IndexInput) BlockPostingsReader.this.payIn.clone();
+      this.docIn = startDocIn.clone();
+      this.posIn = BlockPostingsReader.this.posIn.clone();
+      this.payIn = BlockPostingsReader.this.payIn.clone();
       encoded = new byte[MAX_ENCODED_SIZE];
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (indexHasOffsets) {
@@ -1278,7 +1278,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
           // if (DEBUG) {
           //   System.out.println("    create skipper");
           // }
-          skipper = new BlockSkipReader((IndexInput) docIn.clone(),
+          skipper = new BlockSkipReader(docIn.clone(),
                                         BlockPostingsWriter.maxSkipLevels,
                                         BLOCK_SIZE,
                                         true,
