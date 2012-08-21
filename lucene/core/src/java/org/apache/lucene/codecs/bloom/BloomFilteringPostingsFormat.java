@@ -207,7 +207,7 @@ public class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
     
-    public int size() throws IOException {
+    public int size() {
       return delegateFieldsProducer.size();
     }
     

@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -41,7 +42,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.UnmodifiableIterator;
 
 /** Exposes flex API on a pre-flex index, as a codec. 
  * @lucene.experimental
@@ -134,7 +134,7 @@ class Lucene3xFields extends FieldsProducer {
 
   @Override
   public Iterator<String> iterator() {
-    return new UnmodifiableIterator<String>(fields.keySet().iterator());
+    return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
   @Override
@@ -144,7 +144,8 @@ class Lucene3xFields extends FieldsProducer {
 
   @Override
   public int size() {
-    return preTerms.size();
+    assert preTerms.size() == fields.size();
+    return fields.size();
   }
 
   @Override

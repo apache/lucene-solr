@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
@@ -43,7 +44,6 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
@@ -131,7 +131,7 @@ public class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public Iterator<String> iterator() {
-      return new UnmodifiableIterator<String>(fields.keySet().iterator());
+      return Collections.unmodifiableSet(fields.keySet()).iterator();
     }
 
     @Override

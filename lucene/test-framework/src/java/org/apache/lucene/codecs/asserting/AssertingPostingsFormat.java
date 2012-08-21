@@ -83,7 +83,7 @@ public class AssertingPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int size() throws IOException {
+    public int size() {
       return in.size();
     }
 
