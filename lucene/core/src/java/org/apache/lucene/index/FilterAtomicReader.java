@@ -57,7 +57,7 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public int size() throws IOException {
+    public int size() {
       return in.size();
     }
 

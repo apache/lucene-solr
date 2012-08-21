@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
@@ -44,8 +45,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.UnmodifiableIterator;
-
 import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.*;
 
 /**
@@ -241,7 +240,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public Iterator<String> iterator() {
-      return new UnmodifiableIterator<String>(fields.keySet().iterator());
+      return Collections.unmodifiableSet(fields.keySet()).iterator();
     }
 
     @Override
@@ -250,7 +249,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public int size() throws IOException {
+    public int size() {
       return fields.size();
     }
   }

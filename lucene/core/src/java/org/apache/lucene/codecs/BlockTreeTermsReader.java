@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Locale;
@@ -45,7 +46,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
@@ -200,7 +200,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
   @Override
   public Iterator<String> iterator() {
-    return new UnmodifiableIterator<String>(fields.keySet().iterator());
+    return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
   @Override

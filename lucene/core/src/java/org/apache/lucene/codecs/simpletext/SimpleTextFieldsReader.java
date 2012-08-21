@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -43,7 +44,6 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
@@ -608,7 +608,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
   @Override
   public Iterator<String> iterator() {
-    return new UnmodifiableIterator<String>(fields.keySet().iterator());
+    return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
   private final Map<String,Terms> termsCache = new HashMap<String,Terms>();

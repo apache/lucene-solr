@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Iterator;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -187,19 +188,21 @@ public abstract class TermVectorsWriter implements Closeable {
   }
   
   /** Safe (but, slowish) default method to write every
-   *  vector field in the document.  This default
-   *  implementation requires that the vectors implement
-   *  both Fields.size and
-   *  Terms.size. */
+   *  vector field in the document. */
   protected final void addAllDocVectors(Fields vectors, MergeState mergeState) throws IOException {
     if (vectors == null) {
       startDocument(0);
       return;
     }
 
-    final int numFields = vectors.size();
+    int numFields = vectors.size();
     if (numFields == -1) {
-      throw new IllegalStateException("vectors.size() must be implemented (it returned -1)");
+      // count manually! TODO: Maybe enforce that Fields.size() returns something valid?
+      numFields = 0;
+      for (final Iterator<String> it = vectors.iterator(); it.hasNext(); ) {
+        it.next();
+        numFields++;
+      }
     }
     startDocument(numFields);
     
@@ -208,7 +211,9 @@ public abstract class TermVectorsWriter implements Closeable {
     TermsEnum termsEnum = null;
     DocsAndPositionsEnum docsAndPositionsEnum = null;
     
+    int fieldCount = 0;
     for(String fieldName : vectors) {
+      fieldCount++;
       final FieldInfo fieldInfo = mergeState.fieldInfos.fieldInfo(fieldName);
 
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
@@ -225,9 +230,14 @@ public abstract class TermVectorsWriter implements Closeable {
       final boolean hasPayloads = terms.hasPayloads();
       assert !hasPayloads || hasPositions;
       
-      final int numTerms = (int) terms.size();
+      int numTerms = (int) terms.size();
       if (numTerms == -1) {
-        throw new IllegalStateException("terms.size() must be implemented (it returned -1)");
+        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics function
+        numTerms = 0;
+        termsEnum = terms.iterator(termsEnum);
+        while(termsEnum.next() != null) {
+          numTerms++;
+        }
       }
       
       startField(fieldInfo, numTerms, hasPositions, hasOffsets, hasPayloads);
@@ -263,6 +273,7 @@ public abstract class TermVectorsWriter implements Closeable {
       }
       assert termCount == numTerms;
     }
+    assert fieldCount == numFields;
   }
   
   /** Return the BytesRef Comparator used to sort terms

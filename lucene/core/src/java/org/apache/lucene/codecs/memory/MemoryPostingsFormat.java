@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.SortedMap;
@@ -48,7 +49,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -863,7 +863,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
     return new FieldsProducer() {
       @Override
       public Iterator<String> iterator() {
-        return new UnmodifiableIterator<String>(fields.keySet().iterator());
+        return Collections.unmodifiableSet(fields.keySet()).iterator();
       }
 
       @Override
