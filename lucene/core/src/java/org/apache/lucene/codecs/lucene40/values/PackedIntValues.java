@@ -186,7 +186,7 @@ class PackedIntValues {
       final Source source;
       IndexInput input = null;
       try {
-        input = (IndexInput) datIn.clone();
+        input = datIn.clone();
         
         if (values == null) {
           source = new PackedIntsSource(input, false);
@@ -217,7 +217,7 @@ class PackedIntValues {
 
     @Override
     public Source getDirectSource() throws IOException {
-      return values != null ? new FixedStraightBytesImpl.DirectFixedStraightSource((IndexInput) datIn.clone(), 8, Type.FIXED_INTS_64) : new PackedIntsSource((IndexInput) datIn.clone(), true);
+      return values != null ? new FixedStraightBytesImpl.DirectFixedStraightSource(datIn.clone(), 8, Type.FIXED_INTS_64) : new PackedIntsSource(datIn.clone(), true);
     }
   }
 

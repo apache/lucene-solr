@@ -105,7 +105,7 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
   @Override
   public Lucene3xStoredFieldsReader clone() {
     ensureOpen();
-    return new Lucene3xStoredFieldsReader(fieldInfos, numTotalDocs, size, format, docStoreOffset, (IndexInput)fieldsStream.clone(), (IndexInput)indexStream.clone());
+    return new Lucene3xStoredFieldsReader(fieldInfos, numTotalDocs, size, format, docStoreOffset, fieldsStream.clone(), indexStream.clone());
   }
 
   /** Verifies that the code version which wrote the segment is supported. */

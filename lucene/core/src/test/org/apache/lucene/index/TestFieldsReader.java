@@ -186,7 +186,7 @@ public class TestFieldsReader extends LuceneTestCase {
     }
     @Override
     public FaultyIndexInput clone() {
-      return new FaultyIndexInput((IndexInput) delegate.clone());
+      return new FaultyIndexInput(delegate.clone());
     }
   }
 

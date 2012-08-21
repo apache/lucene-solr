@@ -61,7 +61,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
   @Override
   public Lucene40StoredFieldsReader clone() {
     ensureOpen();
-    return new Lucene40StoredFieldsReader(fieldInfos, numTotalDocs, size, (IndexInput)fieldsStream.clone(), (IndexInput)indexStream.clone());
+    return new Lucene40StoredFieldsReader(fieldInfos, numTotalDocs, size, fieldsStream.clone(), indexStream.clone());
   }
   
   // Used only by clone

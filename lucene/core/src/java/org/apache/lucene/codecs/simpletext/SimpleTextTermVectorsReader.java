@@ -205,7 +205,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     if (in == null) {
       throw new AlreadyClosedException("this TermVectorsReader is closed");
     }
-    return new SimpleTextTermVectorsReader(offsets, (IndexInput) in.clone());
+    return new SimpleTextTermVectorsReader(offsets, in.clone());
   }
   
   @Override

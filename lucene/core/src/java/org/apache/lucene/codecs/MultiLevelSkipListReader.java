@@ -208,7 +208,7 @@ public abstract class MultiLevelSkipListReader {
         toBuffer--;
       } else {
         // clone this stream, it is already at the start of the current level
-        skipStream[i] = (IndexInput) skipStream[0].clone();
+        skipStream[i] = skipStream[0].clone();
         if (inputIsBuffered && length < BufferedIndexInput.BUFFER_SIZE) {
           ((BufferedIndexInput) skipStream[i]).setBufferSize((int) length);
         }

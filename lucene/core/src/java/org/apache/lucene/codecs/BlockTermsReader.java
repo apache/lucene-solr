@@ -308,7 +308,7 @@ public class BlockTermsReader extends FieldsProducer {
       private int metaDataUpto;
 
       public SegmentTermsEnum() throws IOException {
-        in = (IndexInput) BlockTermsReader.this.in.clone();
+        in = BlockTermsReader.this.in.clone();
         in.seek(termsStartPointer);
         indexEnum = indexReader.getFieldEnum(fieldInfo);
         doOrd = indexReader.supportsOrd();

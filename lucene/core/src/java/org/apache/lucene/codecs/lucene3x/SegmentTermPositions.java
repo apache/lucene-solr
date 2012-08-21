@@ -172,7 +172,7 @@ extends SegmentTermDocs  {
   private void lazySkip() throws IOException {
     if (proxStream == null) {
       // clone lazily
-      proxStream = (IndexInput)proxStreamOrig.clone();
+      proxStream = proxStreamOrig.clone();
     }
     
     // we might have to skip the current payload

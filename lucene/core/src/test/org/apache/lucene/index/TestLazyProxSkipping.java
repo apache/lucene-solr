@@ -226,7 +226,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
           
           @Override
           public SeeksCountingStream clone() {
-              return new SeeksCountingStream((IndexInput) this.input.clone());
+              return new SeeksCountingStream(this.input.clone());
           }
       
     }

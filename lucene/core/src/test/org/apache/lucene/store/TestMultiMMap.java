@@ -53,8 +53,8 @@ public class TestMultiMMap extends LuceneTestCase {
     io.writeVInt(5);
     io.close();
     IndexInput one = mmapDir.openInput("bytes", IOContext.DEFAULT);
-    IndexInput two = (IndexInput) one.clone();
-    IndexInput three = (IndexInput) two.clone(); // clone of clone
+    IndexInput two = one.clone();
+    IndexInput three = two.clone(); // clone of clone
     one.close();
     try {
       one.readVInt();

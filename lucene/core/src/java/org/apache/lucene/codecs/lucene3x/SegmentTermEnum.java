@@ -106,7 +106,7 @@ final class SegmentTermEnum implements Cloneable {
       clone = (SegmentTermEnum) super.clone();
     } catch (CloneNotSupportedException e) {}
 
-    clone.input = (IndexInput) input.clone();
+    clone.input = input.clone();
     clone.termInfo = new TermInfo(termInfo);
 
     clone.termBuffer = termBuffer.clone();

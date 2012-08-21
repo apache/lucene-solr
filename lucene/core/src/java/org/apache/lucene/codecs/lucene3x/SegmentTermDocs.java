@@ -54,7 +54,7 @@ class SegmentTermDocs {
   protected IndexOptions indexOptions;
   
   public SegmentTermDocs(IndexInput freqStream, TermInfosReader tis, FieldInfos fieldInfos) {
-    this.freqStream = (IndexInput) freqStream.clone();
+    this.freqStream = freqStream.clone();
     this.tis = tis;
     this.fieldInfos = fieldInfos;
     skipInterval = tis.getSkipInterval();
@@ -201,7 +201,7 @@ class SegmentTermDocs {
     // don't skip if the target is close (within skipInterval docs away)
     if ((target - skipInterval) >= doc && df >= skipInterval) {                      // optimized case
       if (skipListReader == null)
-        skipListReader = new Lucene3xSkipListReader((IndexInput) freqStream.clone(), maxSkipLevels, skipInterval); // lazily clone
+        skipListReader = new Lucene3xSkipListReader(freqStream.clone(), maxSkipLevels, skipInterval); // lazily clone
 
       if (!haveSkipped) {                          // lazily initialize skip stream
         skipListReader.init(skipPointer, freqBasePointer, proxBasePointer, df, currentFieldStoresPayloads);

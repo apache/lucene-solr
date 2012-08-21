@@ -325,7 +325,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     
     SegmentDocsEnumBase(IndexInput startFreqIn, Bits liveDocs) {
       this.startFreqIn = startFreqIn;
-      this.freqIn = (IndexInput)startFreqIn.clone();
+      this.freqIn = startFreqIn.clone();
       this.liveDocs = liveDocs;
       
     }
@@ -474,7 +474,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
-          skipper = new Lucene40SkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
+          skipper = new Lucene40SkipListReader(freqIn.clone(), maxSkipLevels, skipInterval);
         }
 
         if (!skipped) {
@@ -705,8 +705,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
     public SegmentDocsAndPositionsEnum(IndexInput freqIn, IndexInput proxIn) {
       startFreqIn = freqIn;
-      this.freqIn = (IndexInput) freqIn.clone();
-      this.proxIn = (IndexInput) proxIn.clone();
+      this.freqIn = freqIn.clone();
+      this.proxIn = proxIn.clone();
     }
 
     public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
@@ -795,7 +795,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
-          skipper = new Lucene40SkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
+          skipper = new Lucene40SkipListReader(freqIn.clone(), maxSkipLevels, skipInterval);
         }
 
         if (!skipped) {
@@ -913,8 +913,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
     public SegmentFullPositionsEnum(IndexInput freqIn, IndexInput proxIn) {
       startFreqIn = freqIn;
-      this.freqIn = (IndexInput) freqIn.clone();
-      this.proxIn = (IndexInput) proxIn.clone();
+      this.freqIn = freqIn.clone();
+      this.proxIn = proxIn.clone();
     }
 
     public SegmentFullPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
@@ -1009,7 +1009,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
-          skipper = new Lucene40SkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
+          skipper = new Lucene40SkipListReader(freqIn.clone(), maxSkipLevels, skipInterval);
         }
 
         if (!skipped) {
