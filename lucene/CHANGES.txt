@@ -55,6 +55,12 @@ API Changes
 * LUCENE-4307: Renamed IndexReader.getTopReaderContext to 
   IndexReader.getContext.  (Robert Muir)
 
+* LUCENE-4316: Deprecate Fields.getUniqueTermCount and remove it from
+  AtomicReader. If you really want the unique term count across all
+  fields, just sum up Terms.size() across those fields. This method
+  only exists so that this statistic can be accessed for Lucene 3.x 
+  segments, which don't support Terms.size().  (Uwe Schindler, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor

@@ -807,7 +807,7 @@ public void testFilesOpenClose() throws IOException {
   
     DirectoryReader r = DirectoryReader.open(dir);
     AtomicReader r1 = getOnlySegmentReader(r);
-    assertEquals(36, r1.getUniqueTermCount());
+    assertEquals(36, r1.fields().getUniqueTermCount());
     writer.addDocument(doc);
     writer.commit();
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
@@ -815,7 +815,7 @@ public void testFilesOpenClose() throws IOException {
     r.close();
   
     for(AtomicReaderContext s : r2.leaves()) {
-      assertEquals(36, s.reader().getUniqueTermCount());
+      assertEquals(36, s.reader().fields().getUniqueTermCount());
     }
     r2.close();
     writer.close();

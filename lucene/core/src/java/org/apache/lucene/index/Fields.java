@@ -41,8 +41,13 @@ public abstract class Fields implements Iterable<String> {
   /** Returns the number of terms for all fields, or -1 if this 
    *  measure isn't stored by the codec. Note that, just like 
    *  other term measures, this measure does not take deleted 
-   *  documents into account. */
-  // TODO: deprecate?
+   *  documents into account. 
+   *  @deprecated iterate fields and add their size() instead. 
+   *   this method is only provided as a transition mechanism
+   *   to access this statistic for 3.x indexes, which do not
+   *   have this statistic per-field.
+   *  @see Terms#size() */
+  @Deprecated
   public long getUniqueTermCount() throws IOException {
     long numTerms = 0;
     for (String field : this) {
