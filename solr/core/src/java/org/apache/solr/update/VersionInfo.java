@@ -28,6 +28,7 @@ import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
@@ -41,10 +42,45 @@ public class VersionInfo {
   private SchemaField idField;
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
+  /**
+   * Gets and returns the {@link #VERSION_FIELD} from the specified 
+   * schema, after verifying that it is indexed, stored, and single-valued.  
+   * If any of these pre-conditions are not met, it throws a SolrException 
+   * with a user suitable message indicating the problem.
+   */
+  public static SchemaField getAndCheckVersionField(IndexSchema schema) 
+    throws SolrException {
+    final String errPrefix = VERSION_FIELD + "field must exist in schema, using indexed=\"true\" stored=\"true\" and multiValued=\"false\"";
+    SchemaField sf = schema.getFieldOrNull(VERSION_FIELD);
+
+    if (null == sf) {
+      throw new SolrException
+        (SolrException.ErrorCode.SERVER_ERROR, 
+         errPrefix + " (" + VERSION_FIELD + " does not exist)");
+    }
+    if ( !sf.indexed() ) {
+      throw new SolrException
+        (SolrException.ErrorCode.SERVER_ERROR, 
+         errPrefix + " (" + VERSION_FIELD + " is not indexed");
+    }
+    if ( !sf.stored() ) {
+      throw new SolrException
+        (SolrException.ErrorCode.SERVER_ERROR, 
+         errPrefix + " (" + VERSION_FIELD + " is not stored");
+    }
+    if ( sf.multiValued() ) {
+      throw new SolrException
+        (SolrException.ErrorCode.SERVER_ERROR, 
+         errPrefix + " (" + VERSION_FIELD + " is not multiValued");
+    }
+    
+    return sf;
+  }
+
   public VersionInfo(UpdateLog ulog, int nBuckets) {
     this.ulog = ulog;
     SolrCore core = ulog.uhandler.core;
-    versionField = core.getSchema().getFieldOrNull(VERSION_FIELD);
+    versionField = getAndCheckVersionField(core.getSchema());
     idField = core.getSchema().getUniqueKeyField();
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
     for (int i=0; i<buckets.length; i++) {

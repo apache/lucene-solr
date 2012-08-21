@@ -479,6 +479,13 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      // The JVM likes to wrap our helpful SolrExceptions in things like
+      // "InvocationTargetException" that have no useful getMessage
+      if (null != e.getCause() && e.getCause() instanceof SolrException) {
+        SolrException inner = (SolrException) e.getCause();
+        throw inner;
+      }
+
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +cast.getName(), e);
     }
   }
@@ -502,6 +509,13 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      // The JVM likes to wrap our helpful SolrExceptions in things like
+      // "InvocationTargetException" that have no useful getMessage
+      if (null != e.getCause() && e.getCause() instanceof SolrException) {
+        SolrException inner = (SolrException) e.getCause();
+        throw inner;
+      }
+
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " + UpdateHandler.class.getName(), e);
     }
   }
