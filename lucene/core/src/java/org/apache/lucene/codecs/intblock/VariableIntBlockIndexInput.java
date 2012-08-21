@@ -26,7 +26,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.sep.IntIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.IntsRef;
 
 // TODO: much of this can be shared code w/ the fixed case
 
