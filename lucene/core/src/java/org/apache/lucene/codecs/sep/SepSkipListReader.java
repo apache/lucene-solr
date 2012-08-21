@@ -108,12 +108,12 @@ class SepSkipListReader extends MultiLevelSkipListReader {
     lastPayloadPointer = payloadBasePointer;
 
     for(int i=0;i<maxNumberOfSkipLevels;i++) {
-      docIndex[i].set(docBaseIndex);
+      docIndex[i].copyFrom(docBaseIndex);
       if (freqIndex != null) {
-        freqIndex[i].set(freqBaseIndex);
+        freqIndex[i].copyFrom(freqBaseIndex);
       }
       if (posBaseIndex != null) {
-        posIndex[i].set(posBaseIndex);
+        posIndex[i].copyFrom(posBaseIndex);
       }
     }
     Arrays.fill(payloadPointer, payloadBasePointer);
@@ -145,20 +145,20 @@ class SepSkipListReader extends MultiLevelSkipListReader {
     lastPayloadPointer = payloadPointer[level];
     lastPayloadLength = payloadLength[level];
     if (freqIndex != null) {
-      lastFreqIndex.set(freqIndex[level]);
+      lastFreqIndex.copyFrom(freqIndex[level]);
     }
-    lastDocIndex.set(docIndex[level]);
+    lastDocIndex.copyFrom(docIndex[level]);
     if (lastPosIndex != null) {
-      lastPosIndex.set(posIndex[level]);
+      lastPosIndex.copyFrom(posIndex[level]);
     }
 
     if (level > 0) {
       if (freqIndex != null) {
-        freqIndex[level-1].set(freqIndex[level]);
+        freqIndex[level-1].copyFrom(freqIndex[level]);
       }
-      docIndex[level-1].set(docIndex[level]);
+      docIndex[level-1].copyFrom(docIndex[level]);
       if (posIndex != null) {
-        posIndex[level-1].set(posIndex[level]);
+        posIndex[level-1].copyFrom(posIndex[level]);
       }
     }
   }

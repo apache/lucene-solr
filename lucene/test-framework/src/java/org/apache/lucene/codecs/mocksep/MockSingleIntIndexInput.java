@@ -87,7 +87,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void set(IntIndexInput.Index other) {
+    public void copyFrom(IntIndexInput.Index other) {
       fp = ((MockSingleIntIndexInputIndex) other).fp;
     }
 

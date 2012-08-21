@@ -77,75 +77,47 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
 
   private static class Reader extends IntIndexInput.Reader {
     private final IndexInput in;
-
-    protected final int[] pending;
-    int upto;
-
-    private boolean seekPending;
-    private long pendingFP;
-    private int pendingUpto;
-    private long lastBlockFP;
     private final BlockReader blockReader;
     private final int blockSize;
-    private final IntsRef bulkResult = new IntsRef();
+    private final int[] pending;
+
+    private int upto;
+    private boolean seekPending;
+    private long pendingFP;
+    private long lastBlockFP = -1;
 
     public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader) {
       this.in = in;
       this.pending = pending;
       this.blockSize = pending.length;
-      bulkResult.ints = pending;
       this.blockReader = blockReader;
       upto = blockSize;
     }
 
     void seek(final long fp, final int upto) {
-      pendingFP = fp;
-      pendingUpto = upto;
-      seekPending = true;
-    }
-
-    private void maybeSeek() throws IOException {
-      if (seekPending) {
-        if (pendingFP != lastBlockFP) {
-          // need new block
-          in.seek(pendingFP);
-          lastBlockFP = pendingFP;
-          blockReader.readBlock();
-        }
-        upto = pendingUpto;
-        seekPending = false;
+      assert upto < blockSize;
+      if (seekPending || fp != lastBlockFP) {
+        pendingFP = fp;
+        seekPending = true;
       }
+      this.upto = upto;
     }
 
     @Override
     public int next() throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
+      if (seekPending) {
+        // Seek & load new block
+        in.seek(pendingFP);
+        lastBlockFP = pendingFP;
+        blockReader.readBlock();
+        seekPending = false;
+      } else if (upto == blockSize) {
+        // Load new block
         lastBlockFP = in.getFilePointer();
         blockReader.readBlock();
         upto = 0;
       }
-
       return pending[upto++];
-    }
-
-    @Override
-    public IntsRef read(final int count) throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
-        blockReader.readBlock();
-        upto = 0;
-      }
-      bulkResult.offset = upto;
-      if (upto + count < blockSize) {
-        bulkResult.length = count;
-        upto += count;
-      } else {
-        bulkResult.length = blockSize - upto;
-        upto = blockSize;
-      }
-
-      return bulkResult;
     }
   }
 
@@ -178,7 +150,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void set(final IntIndexInput.Index other) {
+    public void copyFrom(final IntIndexInput.Index other) {
       final Index idx = (Index) other;
       fp = idx.fp;
       upto = idx.upto;

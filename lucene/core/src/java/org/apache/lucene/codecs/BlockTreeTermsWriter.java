@@ -724,7 +724,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           // Write term stats, to separate byte[] blob:
           bytesWriter2.writeVInt(term.stats.docFreq);
           if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-            assert term.stats.totalTermFreq >= term.stats.docFreq;
+            assert term.stats.totalTermFreq >= term.stats.docFreq: term.stats.totalTermFreq + " vs " + term.stats.docFreq;
             bytesWriter2.writeVLong(term.stats.totalTermFreq - term.stats.docFreq);
           }
         }

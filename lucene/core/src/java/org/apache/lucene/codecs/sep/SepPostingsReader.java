@@ -160,13 +160,13 @@ public class SepPostingsReader extends PostingsReaderBase {
       if (docIndex == null) {
         docIndex = other.docIndex.clone();
       } else {
-        docIndex.set(other.docIndex);
+        docIndex.copyFrom(other.docIndex);
       }
       if (other.freqIndex != null) {
         if (freqIndex == null) {
           freqIndex = other.freqIndex.clone();
         } else {
-          freqIndex.set(other.freqIndex);
+          freqIndex.copyFrom(other.freqIndex);
         }
       } else {
         freqIndex = null;
@@ -175,7 +175,7 @@ public class SepPostingsReader extends PostingsReaderBase {
         if (posIndex == null) {
           posIndex = other.posIndex.clone();
         } else {
-          posIndex.set(other.posIndex);
+          posIndex.copyFrom(other.posIndex);
         }
       } else {
         posIndex = null;
@@ -352,11 +352,11 @@ public class SepPostingsReader extends PostingsReaderBase {
 
       // TODO: can't we only do this if consumer
       // skipped consuming the previous docs?
-      docIndex.set(termState.docIndex);
+      docIndex.copyFrom(termState.docIndex);
       docIndex.seek(docReader);
 
       if (!omitTF) {
-        freqIndex.set(termState.freqIndex);
+        freqIndex.copyFrom(termState.freqIndex);
         freqIndex.seek(freqReader);
       }
 
@@ -516,15 +516,15 @@ public class SepPostingsReader extends PostingsReaderBase {
 
       // TODO: can't we only do this if consumer
       // skipped consuming the previous docs?
-      docIndex.set(termState.docIndex);
+      docIndex.copyFrom(termState.docIndex);
       docIndex.seek(docReader);
       //System.out.println("  docIndex=" + docIndex);
 
-      freqIndex.set(termState.freqIndex);
+      freqIndex.copyFrom(termState.freqIndex);
       freqIndex.seek(freqReader);
       //System.out.println("  freqIndex=" + freqIndex);
 
-      posIndex.set(termState.posIndex);
+      posIndex.copyFrom(termState.posIndex);
       //System.out.println("  posIndex=" + posIndex);
       posSeekPending = true;
       payloadPending = false;
@@ -629,7 +629,7 @@ public class SepPostingsReader extends PostingsReaderBase {
           // NOTE: don't seek pos here; do it lazily
           // instead.  Eg a PhraseQuery may skip to many
           // docs before finally asking for positions...
-          posIndex.set(skipper.getPosIndex());
+          posIndex.copyFrom(skipper.getPosIndex());
           posSeekPending = true;
           count = newCount;
           doc = accum = skipper.getDoc();
