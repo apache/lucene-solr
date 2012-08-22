@@ -34,7 +34,7 @@ public class PersianCharFilter extends CharFilter {
   
   @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
-    final int charsRead = super.read(cbuf, off, len);
+    final int charsRead = input.read(cbuf, off, len);
     if (charsRead > 0) {
       final int end = off + charsRead;
       while (off < end) {
@@ -44,6 +44,17 @@ public class PersianCharFilter extends CharFilter {
       }
     }
     return charsRead;
+  }
+  
+  // optimized impl: some other charfilters consume with read()
+  @Override
+  public int read() throws IOException {
+    int ch = input.read();
+    if (ch == '\u200C') {
+      return ' ';
+    } else {
+      return ch;
+    }
   }
 
   @Override

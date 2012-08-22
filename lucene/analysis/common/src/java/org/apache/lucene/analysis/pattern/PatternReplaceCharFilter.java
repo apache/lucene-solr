@@ -80,7 +80,7 @@ public class PatternReplaceCharFilter extends BaseCharFilter {
   private void fill() throws IOException {
     StringBuilder buffered = new StringBuilder();
     char [] temp = new char [1024];
-    for (int cnt = in.read(temp); cnt > 0; cnt = in.read(temp)) {
+    for (int cnt = input.read(temp); cnt > 0; cnt = input.read(temp)) {
       buffered.append(temp, 0, cnt);
     }
     transformedInput = new StringReader(processPattern(buffered).toString());

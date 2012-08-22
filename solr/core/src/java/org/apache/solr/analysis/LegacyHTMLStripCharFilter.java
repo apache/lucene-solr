@@ -103,7 +103,7 @@ public class LegacyHTMLStripCharFilter extends BaseCharFilter {
       return ch;
     }
     numRead++;
-    return in.read();
+    return input.read();
   }
 
   private int nextSkipWS() throws IOException {
@@ -118,7 +118,7 @@ public class LegacyHTMLStripCharFilter extends BaseCharFilter {
       return pushed.charAt(len-1);
     }
     numRead++;
-    int ch = in.read();
+    int ch = input.read();
     push(ch);
     return ch;
   }
@@ -180,11 +180,11 @@ public class LegacyHTMLStripCharFilter extends BaseCharFilter {
 
   private void saveState() throws IOException {
     lastMark = numRead;
-    in.mark(readAheadLimit);
+    input.mark(readAheadLimit);
   }
 
   private void restoreState() throws IOException {
-    in.reset();
+    input.reset();
     pushed.setLength(0);
   }
 

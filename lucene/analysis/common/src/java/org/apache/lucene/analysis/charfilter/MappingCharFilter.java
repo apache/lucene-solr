@@ -67,8 +67,8 @@ public class MappingCharFilter extends BaseCharFilter {
 
   @Override
   public void reset() throws IOException {
-    super.reset();
-    buffer.reset(in);
+    input.reset();
+    buffer.reset(input);
     replacement = null;
     inputOff = 0;
   }
