@@ -61,6 +61,14 @@ API Changes
   only exists so that this statistic can be accessed for Lucene 3.x 
   segments, which don't support Terms.size().  (Uwe Schindler, Robert Muir)
 
+* LUCENE-4321: Change CharFilter to extend Reader directly, as FilterReader
+  overdelegates (read(), read(char[], int, int), skip, etc). This made it
+  hard to implement CharFilters that were correct. Instead only close() is
+  delegated by default: read(char[], int, int) and correct(int) are abstract
+  so that its obvious which methods you should implement.  The protected 
+  inner Reader is 'input' like CharFilter in the 3.x series, instead of 'in'.  
+  (Dawid Weiss, Uwe Schindler, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor
