@@ -41,6 +41,9 @@ import org.apache.lucene.util.packed.PackedInts;
  * Block postings format, which encodes postings in packed int blocks 
  * for faster decode.
  *
+ * <p><b>NOTE</b>: this format is still experimental and
+ * subject to change without backwards compatibility.
+ *
  * <p>
  * Basic idea:
  * <ul>
@@ -324,6 +327,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * </dl>
  * </p>
  *
+ * @lucene.experimental
  */
 
 public final class BlockPostingsFormat extends PostingsFormat {
