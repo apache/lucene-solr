@@ -42,13 +42,6 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import java.nio.LongBuffer;
-import java.nio.ByteBuffer;
-
-/**
- * Efficient sequential read/write of packed integers.
- */
-enum BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 """
 
 FOOTER="""
@@ -150,20 +143,18 @@ def get_type(bits):
 
 def packed64singleblock(bpv, f):
   values = 64 / bpv
-  f.write("\n  PACKED_SINGLE_BLOCK_%d {\n\n" %bpv)
   f.write("    public int blockCount() {\n")
   f.write("      return 1;\n")
   f.write("     }\n\n")
   f.write("    public int valueCount() {\n")
   f.write("      return %d;\n" %values)
   f.write("    }\n\n")
-  p64sb_decode(bpv, 32)
-  p64sb_decode(bpv, 64)
-  p64sb_encode(bpv, 32)
-  p64sb_encode(bpv, 64)
-  f.write("  }")
+  p64sb_decode(bpv, f, 32)
+  p64sb_decode(bpv, f, 64)
+  p64sb_encode(bpv, f, 32)
+  p64sb_encode(bpv, f, 64)
 
-def p64sb_decode(bpv, bits):
+def p64sb_decode(bpv, f, bits):
   values = 64 / bpv
   typ = get_type(bits)
   cast_start, cast_end = casts(typ)
@@ -235,7 +226,7 @@ def p64sb_decode(bpv, bits):
   f.write("      }\n")
   f.write("    }\n\n")
 
-def p64sb_encode(bpv, bits):
+def p64sb_encode(bpv, f, bits):
   values = 64 / bpv
   typ = get_type(bits)
   mask_start, mask_end = masks(bits)
@@ -267,7 +258,6 @@ def packed64(bpv, f):
     values /= 2
   assert values * bpv == 64 * blocks, "%d values, %d blocks, %d bits per value" %(values, blocks, bpv)
   mask = (1 << bpv) - 1
-  f.write("  PACKED_%d {\n\n" %bpv)
   f.write("    public int blockCount() {\n")
   f.write("      return %d;\n" %blocks)
   f.write("    }\n\n")
@@ -287,17 +277,14 @@ def packed64(bpv, f):
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       System.arraycopy(values, valuesOffset, blocks, blocksOffset, valueCount() * iterations);
     }
-
-  }
 """)
   else:
-    p64_decode(bpv, 32, values)
-    p64_decode(bpv, 64, values)
-    p64_encode(bpv, 32, values)
-    p64_encode(bpv, 64, values)
-    f.write("  }\n")
+    p64_decode(bpv, f, 32, values)
+    p64_decode(bpv, f, 64, values)
+    p64_encode(bpv, f, 32, values)
+    p64_encode(bpv, f, 64, values)
 
-def p64_decode(bpv, bits, values):
+def p64_decode(bpv, f, bits, values):
   typ = get_type(bits)
   cast_start, cast_end = casts(typ)
 
@@ -379,7 +366,7 @@ def p64_decode(bpv, bits, values):
   f.write("      }\n")
   f.write("    }\n\n")
 
-def p64_encode(bpv, bits, values):
+def p64_encode(bpv, f, bits, values):
   typ = get_type(bits)
   mask_start, mask_end = masks(bits)
   f.write("    public void encode(%s[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {\n" %typ)
@@ -409,16 +396,46 @@ def p64_encode(bpv, bits, values):
 
 if __name__ == '__main__':
   p64_bpv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 21, 32]
+
   f = open(OUTPUT_FILE, 'w')
   f.write(HEADER)
+  f.write('import java.nio.ByteBuffer;\n')
+  f.write('\n')
+  f.write('''/**
+ * Efficient sequential read/write of packed integers.
+ */\n''')
+
+  f.write('abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {\n')
+    
   for bpv in xrange(1, 65):
-    packed64(bpv, f)
-    f.write("  ,\n")
+    f2 = open('BulkOperationPacked%d.java' % bpv, 'w')
+    f2.write(HEADER)
+    if bpv == 64:
+      f2.write('import java.nio.LongBuffer;\n')
+      f2.write('import java.nio.ByteBuffer;\n')
+      f2.write('\n')
+    f2.write('''/**
+ * Efficient sequential read/write of packed integers.
+ */\n''')
+    f2.write('final class BulkOperationPacked%d extends BulkOperation {\n' % bpv)
+    packed64(bpv, f2)
+    f2.write('}\n')
+    f2.close()
+    f.write('  private static final BulkOperationPacked%d packed%d = new BulkOperationPacked%d();\n' % (bpv, bpv, bpv))
+    
+    
   for bpv in PACKED_64_SINGLE_BLOCK_BPV:
-    if bpv != PACKED_64_SINGLE_BLOCK_BPV[0]:
-      f.write("  ,\n")
-    packed64singleblock(bpv,f)
-  f.write("  ;\n\n")
+    f2 = open('BulkOperationPackedSingleBlock%d.java' % bpv, 'w')
+    f2.write(HEADER)
+    f2.write('''/**
+ * Efficient sequential read/write of packed integers.
+ */\n''')
+    f2.write('final class BulkOperationPackedSingleBlock%d extends BulkOperation {\n' % bpv)
+    packed64singleblock(bpv,f2)
+    f2.write('}\n')
+    f2.close()
+    f.write('  private static final BulkOperationPackedSingleBlock%d packedSingleBlock%d = new BulkOperationPackedSingleBlock%d();\n' % (bpv, bpv, bpv))
+
   f.write("  public static BulkOperation of(PackedInts.Format format, int bitsPerValue) {\n")
   f.write("    switch (format) {\n")
 
@@ -426,7 +443,7 @@ if __name__ == '__main__':
   f.write("      switch (bitsPerValue) {\n")
   for i in xrange(1, 65):
     f.write("      case %d:\n" %i)
-    f.write("        return PACKED_%d;\n" %i)
+    f.write("        return packed%d;\n" %i)
   f.write("      default:\n")
   f.write("        throw new AssertionError();\n")
   f.write("      }\n")
@@ -434,7 +451,7 @@ if __name__ == '__main__':
   f.write("      switch (bitsPerValue) {\n")
   for i in PACKED_64_SINGLE_BLOCK_BPV:
     f.write("      case %d:\n" %i)
-    f.write("        return PACKED_SINGLE_BLOCK_%d;\n" %i)
+    f.write("        return packedSingleBlock%d;\n" %i)
   f.write("      default:\n")
   f.write("        throw new AssertionError();\n")
   f.write("      }\n")
