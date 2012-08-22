@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.NumericTokenStream;
@@ -73,7 +72,8 @@ public class Field implements IndexableField {
   // customize how it's tokenized:
   protected TokenStream tokenStream;
 
-  protected transient TokenStream internalTokenStream;
+  private transient TokenStream internalTokenStream;
+  private transient ReusableStringReader internalReader;
 
   protected float boost = 1.0f;
 
@@ -460,10 +460,54 @@ public class Field implements IndexableField {
     } else if (readerValue() != null) {
       return analyzer.tokenStream(name(), readerValue());
     } else if (stringValue() != null) {
-      return analyzer.tokenStream(name(), new StringReader(stringValue()));
+      if (internalReader == null) {
+        internalReader = new ReusableStringReader();
+      }
+      internalReader.setValue(stringValue());
+      return analyzer.tokenStream(name(), internalReader);
     }
 
     throw new IllegalArgumentException("Field must have either TokenStream, String, Reader or Number value");
+  }
+  
+  static final class ReusableStringReader extends Reader {
+    private int pos = 0, size = 0;
+    private String s = null;
+    
+    void setValue(String s) {
+      this.s = s;
+      this.size = s.length();
+      this.pos = 0;
+    }
+    
+    @Override
+    public int read() {
+      if (pos < size) {
+        return s.charAt(pos++);
+      } else {
+        s = null;
+        return -1;
+      }
+    }
+    
+    @Override
+    public int read(char[] c, int off, int len) {
+      if (pos < size) {
+        len = Math.min(len, size-pos);
+        s.getChars(pos, pos+len, c, off);
+        pos += len;
+        return len;
+      } else {
+        s = null;
+        return -1;
+      }
+    }
+    
+    @Override
+    public void close() {
+      pos = size; // this prevents NPE when reading after close!
+      s = null;
+    }
   }
   
   static final class StringTokenStream extends TokenStream {
@@ -505,6 +549,11 @@ public class Field implements IndexableField {
     @Override
     public void reset() {
       used = false;
+    }
+
+    @Override
+    public void close() {
+      value = null;
     }
   }
 

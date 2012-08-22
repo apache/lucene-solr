@@ -104,8 +104,8 @@ Bug Fixes
 
 Optimizations
 
-* LUCENE-4317: Improve reuse of internal TokenStreams in oal.document.Field.
-  (Uwe Schindler, Chris Male, Robert Muir)
+* LUCENE-4317: Improve reuse of internal TokenStreams and StringReader
+  in oal.document.Field.  (Uwe Schindler, Chris Male, Robert Muir)
 
 Build
 
