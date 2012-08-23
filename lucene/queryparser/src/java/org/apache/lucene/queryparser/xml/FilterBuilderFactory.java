@@ -25,7 +25,7 @@ import java.util.HashMap;
  */
 
 /**
- *
+ * Factory for {@link FilterBuilder}
  */
 public class FilterBuilderFactory implements FilterBuilder {
 

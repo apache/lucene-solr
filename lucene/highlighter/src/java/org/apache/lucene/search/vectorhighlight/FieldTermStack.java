@@ -159,6 +159,9 @@ public class FieldTermStack {
     return termList == null || termList.size() == 0;
   }
   
+  /**
+   * Single term with its position/offsets in the document and IDF weight
+   */
   public static class TermInfo implements Comparable<TermInfo>{
 
     private final String text;

@@ -23,7 +23,7 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ * Interface for building {@link Filter}s
  */
 public interface FilterBuilder {
 

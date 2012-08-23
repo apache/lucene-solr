@@ -44,6 +44,9 @@ import org.apache.lucene.search.MultiTermQuery.RewriteMethod;
  */
 public class StandardQueryConfigHandler extends QueryConfigHandler {
 
+  /**
+   * Class holding keys for StandardQueryNodeProcessorPipeline options.
+   */
   final public static class ConfigurationKeys  {
     
     /**
@@ -182,6 +185,9 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     
   }
   
+  /**
+   * Boolean Operator: AND or OR
+   */
   public static enum Operator {
     AND, OR;
   }

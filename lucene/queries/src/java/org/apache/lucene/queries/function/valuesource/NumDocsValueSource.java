@@ -17,6 +17,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -24,6 +25,11 @@ import org.apache.lucene.queries.function.ValueSource;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Returns the value of {@link IndexReader#numDocs()}
+ * for every document. This is the number of documents
+ * excluding deletions.
+ */
 public class NumDocsValueSource extends ValueSource {
   public String name() {
     return "numdocs";

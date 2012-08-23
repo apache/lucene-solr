@@ -25,6 +25,8 @@ import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.core.util.UnescapedCharSequence;
 
 /**
+ * Implementation of {@link EscapeQuerySyntax} for the standard lucene
+ * syntax.
  */
 public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
 

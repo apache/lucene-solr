@@ -36,6 +36,9 @@ import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
  */
 public class ModifierQueryNode extends QueryNodeImpl {
 
+  /**
+   * Modifier type: such as required (REQ), prohibited (NOT)
+   */
   public enum Modifier {
     MOD_NONE, MOD_NOT, MOD_REQ;
 

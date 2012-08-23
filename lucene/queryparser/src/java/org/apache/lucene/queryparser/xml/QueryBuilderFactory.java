@@ -25,7 +25,7 @@ import java.util.HashMap;
  */
 
 /**
- *
+ * Factory for {@link QueryBuilder}
  */
 public class QueryBuilderFactory implements QueryBuilder {
 

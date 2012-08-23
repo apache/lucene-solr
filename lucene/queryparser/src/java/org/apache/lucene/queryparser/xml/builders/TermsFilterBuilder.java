@@ -33,7 +33,7 @@ import java.io.StringReader;
  */
 
 /**
- *
+ * Builder for {@link TermsFilter}
  */
 public class TermsFilterBuilder implements FilterBuilder {
 

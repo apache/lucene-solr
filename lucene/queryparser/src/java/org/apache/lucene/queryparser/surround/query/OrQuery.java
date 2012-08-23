@@ -23,6 +23,9 @@ import org.apache.lucene.search.BooleanClause;
 
 import java.io.IOException;
 
+/**
+ * Factory for disjunctions
+ */
 public class OrQuery extends ComposedQuery implements DistanceSubQuery { 
   public OrQuery(List<SrndQuery> queries, boolean infix, String opName) {
     super(queries, infix, opName);
