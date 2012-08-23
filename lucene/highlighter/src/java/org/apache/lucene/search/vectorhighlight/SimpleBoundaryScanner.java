@@ -21,6 +21,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Simple boundary scanner implementation that divides fragments
+ * based on a set of separator characters.
+ */
 public class SimpleBoundaryScanner implements BoundaryScanner {
   
   public static final int DEFAULT_MAX_SCAN = 20;

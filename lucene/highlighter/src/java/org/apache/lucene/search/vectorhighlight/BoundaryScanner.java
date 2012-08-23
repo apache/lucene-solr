@@ -18,7 +18,7 @@ package org.apache.lucene.search.vectorhighlight;
  */
 
 /**
- *
+ * Finds fragment boundaries: pluggable into {@link BaseFragmentsBuilder}
  */
 public interface BoundaryScanner {
 

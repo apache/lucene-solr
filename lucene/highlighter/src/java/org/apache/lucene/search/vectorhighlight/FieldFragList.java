@@ -57,6 +57,9 @@ public abstract class FieldFragList {
     return fragInfos;
   }
 
+  /**
+   * List of term offsets + weight for a frag info
+   */
   public static class WeightedFragInfo {
 
     private List<SubInfo> subInfos;
@@ -97,6 +100,9 @@ public abstract class FieldFragList {
       return sb.toString();
     }
     
+    /**
+     * Represents the list of term offsets for some text
+     */
     public static class SubInfo {
       private final String text;  // unnecessary member, just exists for debugging purpose
       private final List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,

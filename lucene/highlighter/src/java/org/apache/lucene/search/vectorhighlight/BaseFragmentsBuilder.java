@@ -38,6 +38,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Base FragmentsBuilder implementation that supports colored pre/post
+ * tags and multivalued fields.
+ * <p>
+ * Uses {@link BoundaryScanner} to determine fragments.
+ */
 public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
 
   protected String[] preTags, postTags;

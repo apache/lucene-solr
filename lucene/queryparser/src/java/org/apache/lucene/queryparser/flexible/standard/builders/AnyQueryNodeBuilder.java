@@ -30,6 +30,10 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
 
+/**
+ * Builds a BooleanQuery of SHOULD clauses, possibly with
+ * some minimum number to match.
+ */
 public class AnyQueryNodeBuilder implements StandardQueryBuilder {
 
   public AnyQueryNodeBuilder() {

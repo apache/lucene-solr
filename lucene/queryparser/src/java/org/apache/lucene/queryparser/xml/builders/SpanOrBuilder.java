@@ -27,7 +27,7 @@ import java.util.List;
  */
 
 /**
- *
+ * Builder for {@link SpanOrQuery}
  */
 public class SpanOrBuilder extends SpanBuilderBase {
 

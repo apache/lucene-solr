@@ -24,6 +24,10 @@ import java.util.Locale;
  * to escape the queries, when the toQueryString method is called.
  */
 public interface EscapeQuerySyntax {
+  /**
+   * Type of escaping: String for escaping syntax,
+   * NORMAL for escaping reserved words (like AND) in terms
+   */
   public enum Type {
     STRING, NORMAL;
   }

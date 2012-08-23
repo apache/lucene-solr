@@ -33,6 +33,9 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 
+/**
+ * TokenStream created from a term vector field.
+ */
 public final class TokenStreamFromTermPositionVector extends TokenStream {
 
   private final List<Token> positionedTokens = new ArrayList<Token>();

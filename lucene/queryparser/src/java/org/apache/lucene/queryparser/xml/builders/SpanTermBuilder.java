@@ -24,7 +24,7 @@ import org.w3c.dom.Element;
  */
 
 /**
- *
+ * Builder for {@link SpanTermQuery}
  */
 public class SpanTermBuilder extends SpanBuilderBase {
 

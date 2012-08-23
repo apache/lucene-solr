@@ -28,7 +28,7 @@ import org.w3c.dom.Element;
 
 
 /**
- *
+ * Builder for {@link TermRangeFilter}
  */
 public class RangeFilterBuilder implements FilterBuilder {
 
