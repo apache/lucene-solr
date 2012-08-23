@@ -406,6 +406,7 @@ if __name__ == '__main__':
  */\n''')
 
   f.write('abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {\n')
+  f.write('  private static final BulkOperation[] packedBulkOps = new BulkOperation[] {\n')
     
   for bpv in xrange(1, 65):
     f2 = open('BulkOperationPacked%d.java' % bpv, 'w')
@@ -421,8 +422,10 @@ if __name__ == '__main__':
     packed64(bpv, f2)
     f2.write('}\n')
     f2.close()
-    f.write('  private static final BulkOperationPacked%d packed%d = new BulkOperationPacked%d();\n' % (bpv, bpv, bpv))
+    f.write('    new BulkOperationPacked%d(),\n' % bpv)
     
+  f.write('  };\n')
+  f.write('\n')
     
   for bpv in PACKED_64_SINGLE_BLOCK_BPV:
     f2 = open('BulkOperationPackedSingleBlock%d.java' % bpv, 'w')
@@ -434,19 +437,14 @@ if __name__ == '__main__':
     packed64singleblock(bpv,f2)
     f2.write('}\n')
     f2.close()
-    f.write('  private static final BulkOperationPackedSingleBlock%d packedSingleBlock%d = new BulkOperationPackedSingleBlock%d();\n' % (bpv, bpv, bpv))
+    f.write('  private static final BulkOperation packedSingleBlock%d = new BulkOperationPackedSingleBlock%d();\n' % (bpv, bpv))
 
+  f.write("\n")
   f.write("  public static BulkOperation of(PackedInts.Format format, int bitsPerValue) {\n")
   f.write("    switch (format) {\n")
 
   f.write("    case PACKED:\n")
-  f.write("      switch (bitsPerValue) {\n")
-  for i in xrange(1, 65):
-    f.write("      case %d:\n" %i)
-    f.write("        return packed%d;\n" %i)
-  f.write("      default:\n")
-  f.write("        throw new AssertionError();\n")
-  f.write("      }\n")
+  f.write("      return packedBulkOps[bitsPerValue - 1];\n")
   f.write("    case PACKED_SINGLE_BLOCK:\n")
   f.write("      switch (bitsPerValue) {\n")
   for i in PACKED_64_SINGLE_BLOCK_BPV:
