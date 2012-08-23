@@ -124,10 +124,17 @@ def casts(typ):
     cast_end = ""
   return cast_start, cast_end
 
+def hexNoLSuffix(n):
+  # On 32 bit Python values > (1 << 31)-1 will have L appended by hex function:
+  s = hex(n)
+  if s.endswith('L'):
+    s = s[:-1]
+  return s
+
 def masks(bits):
   if bits == 64:
     return "", ""
-  return "(", " & %sL)" %(hex((1 << bits) - 1))
+  return "(", " & %sL)" %(hexNoLSuffix((1 << bits) - 1))
 
 def get_type(bits):
   if bits == 8:
@@ -427,32 +434,35 @@ if __name__ == '__main__':
   f.write('  };\n')
   f.write('\n')
     
-  for bpv in PACKED_64_SINGLE_BLOCK_BPV:
-    f2 = open('BulkOperationPackedSingleBlock%d.java' % bpv, 'w')
-    f2.write(HEADER)
-    f2.write('''/**
+  f.write('  // NOTE: this is sparse (some entries are null):\n')
+  f.write('  private static final BulkOperation[] packedSingleBlockBulkOps = new BulkOperation[] {\n')
+  for bpv in xrange(1, 65):
+    if bpv in PACKED_64_SINGLE_BLOCK_BPV:
+      f2 = open('BulkOperationPackedSingleBlock%d.java' % bpv, 'w')
+      f2.write(HEADER)
+      f2.write('''/**
  * Efficient sequential read/write of packed integers.
  */\n''')
-    f2.write('final class BulkOperationPackedSingleBlock%d extends BulkOperation {\n' % bpv)
-    packed64singleblock(bpv,f2)
-    f2.write('}\n')
-    f2.close()
-    f.write('  private static final BulkOperation packedSingleBlock%d = new BulkOperationPackedSingleBlock%d();\n' % (bpv, bpv))
-
+      f2.write('final class BulkOperationPackedSingleBlock%d extends BulkOperation {\n' % bpv)
+      packed64singleblock(bpv,f2)
+      f2.write('}\n')
+      f2.close()
+      f.write('    new BulkOperationPackedSingleBlock%d(),\n' % bpv)
+    else:
+      f.write('    null,\n')
+  f.write('  };\n')
+  f.write('\n')
+      
   f.write("\n")
   f.write("  public static BulkOperation of(PackedInts.Format format, int bitsPerValue) {\n")
   f.write("    switch (format) {\n")
 
   f.write("    case PACKED:\n")
+  f.write("      assert packedBulkOps[bitsPerValue - 1] != null;\n")
   f.write("      return packedBulkOps[bitsPerValue - 1];\n")
   f.write("    case PACKED_SINGLE_BLOCK:\n")
-  f.write("      switch (bitsPerValue) {\n")
-  for i in PACKED_64_SINGLE_BLOCK_BPV:
-    f.write("      case %d:\n" %i)
-    f.write("        return packedSingleBlock%d;\n" %i)
-  f.write("      default:\n")
-  f.write("        throw new AssertionError();\n")
-  f.write("      }\n")
+  f.write("      assert packedSingleBlockBulkOps[bitsPerValue - 1] != null;\n")
+  f.write("      return packedSingleBlockBulkOps[bitsPerValue - 1];\n")
   f.write("    default:\n")
   f.write("      throw new AssertionError();\n")
   f.write("    }\n")

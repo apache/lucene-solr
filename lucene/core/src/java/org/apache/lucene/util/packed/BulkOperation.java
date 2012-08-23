@@ -92,58 +92,83 @@ abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
     new BulkOperationPacked64(),
   };
 
-  private static final BulkOperation packedSingleBlock1 = new BulkOperationPackedSingleBlock1();
-  private static final BulkOperation packedSingleBlock2 = new BulkOperationPackedSingleBlock2();
-  private static final BulkOperation packedSingleBlock3 = new BulkOperationPackedSingleBlock3();
-  private static final BulkOperation packedSingleBlock4 = new BulkOperationPackedSingleBlock4();
-  private static final BulkOperation packedSingleBlock5 = new BulkOperationPackedSingleBlock5();
-  private static final BulkOperation packedSingleBlock6 = new BulkOperationPackedSingleBlock6();
-  private static final BulkOperation packedSingleBlock7 = new BulkOperationPackedSingleBlock7();
-  private static final BulkOperation packedSingleBlock8 = new BulkOperationPackedSingleBlock8();
-  private static final BulkOperation packedSingleBlock9 = new BulkOperationPackedSingleBlock9();
-  private static final BulkOperation packedSingleBlock10 = new BulkOperationPackedSingleBlock10();
-  private static final BulkOperation packedSingleBlock12 = new BulkOperationPackedSingleBlock12();
-  private static final BulkOperation packedSingleBlock16 = new BulkOperationPackedSingleBlock16();
-  private static final BulkOperation packedSingleBlock21 = new BulkOperationPackedSingleBlock21();
-  private static final BulkOperation packedSingleBlock32 = new BulkOperationPackedSingleBlock32();
+  // NOTE: this is sparse (some entries are null):
+  private static final BulkOperation[] packedSingleBlockBulkOps = new BulkOperation[] {
+    new BulkOperationPackedSingleBlock1(),
+    new BulkOperationPackedSingleBlock2(),
+    new BulkOperationPackedSingleBlock3(),
+    new BulkOperationPackedSingleBlock4(),
+    new BulkOperationPackedSingleBlock5(),
+    new BulkOperationPackedSingleBlock6(),
+    new BulkOperationPackedSingleBlock7(),
+    new BulkOperationPackedSingleBlock8(),
+    new BulkOperationPackedSingleBlock9(),
+    new BulkOperationPackedSingleBlock10(),
+    null,
+    new BulkOperationPackedSingleBlock12(),
+    null,
+    null,
+    null,
+    new BulkOperationPackedSingleBlock16(),
+    null,
+    null,
+    null,
+    null,
+    new BulkOperationPackedSingleBlock21(),
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    new BulkOperationPackedSingleBlock32(),
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+  };
+
 
   public static BulkOperation of(PackedInts.Format format, int bitsPerValue) {
     switch (format) {
     case PACKED:
+      assert packedBulkOps[bitsPerValue - 1] != null;
       return packedBulkOps[bitsPerValue - 1];
     case PACKED_SINGLE_BLOCK:
-      switch (bitsPerValue) {
-      case 1:
-        return packedSingleBlock1;
-      case 2:
-        return packedSingleBlock2;
-      case 3:
-        return packedSingleBlock3;
-      case 4:
-        return packedSingleBlock4;
-      case 5:
-        return packedSingleBlock5;
-      case 6:
-        return packedSingleBlock6;
-      case 7:
-        return packedSingleBlock7;
-      case 8:
-        return packedSingleBlock8;
-      case 9:
-        return packedSingleBlock9;
-      case 10:
-        return packedSingleBlock10;
-      case 12:
-        return packedSingleBlock12;
-      case 16:
-        return packedSingleBlock16;
-      case 21:
-        return packedSingleBlock21;
-      case 32:
-        return packedSingleBlock32;
-      default:
-        throw new AssertionError();
-      }
+      assert packedSingleBlockBulkOps[bitsPerValue - 1] != null;
+      return packedSingleBlockBulkOps[bitsPerValue - 1];
     default:
       throw new AssertionError();
     }
