@@ -46,6 +46,26 @@ import java.util.Map;
  * };
  * </pre>
  * For more examples, see the {@link org.apache.lucene.analysis Analysis package documentation}.
+ * <p>
+ * For some concrete implementations bundled with Lucene, look in the analysis modules:
+ * <ul>
+ *   <li><a href="{@docRoot}/../analyzers-common/overview-summary.html">Common</a>:
+ *       Analyzers for indexing content in different languages and domains.
+ *   <li><a href="{@docRoot}/../analyzers-icu/overview-summary.html">ICU</a>:
+ *       Exposes functionality from ICU to Apache Lucene. 
+ *   <li><a href="{@docRoot}/../analyzers-kuromoji/overview-summary.html">Kuromoji</a>:
+ *       Morphological analyzer for Japanese text.
+ *   <li><a href="{@docRoot}/../analyzers-morfologik/overview-summary.html">Morfologik</a>:
+ *       Dictionary-driven lemmatization for the Polish language.
+ *   <li><a href="{@docRoot}/../analyzers-phonetic/overview-summary.html">Phonetic</a>:
+ *       Analysis for indexing phonetic signatures (for sounds-alike search).
+ *   <li><a href="{@docRoot}/../analyzers-smartcn/overview-summary.html">Smart Chinese</a>:
+ *       Analyzer for Simplified Chinese, which indexes words.
+ *   <li><a href="{@docRoot}/../analyzers-stempel/overview-summary.html">Stempel</a>:
+ *       Algorithmic Stemmer for the Polish Language.
+ *   <li><a href="{@docRoot}/../analyzers-uima/overview-summary.html">UIMA</a>: 
+ *       Analysis integration with Apache UIMA. 
+ * </ul>
  */
 public abstract class Analyzer {
 
