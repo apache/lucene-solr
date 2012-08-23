@@ -619,3 +619,10 @@ you can now do this:
   postings in simple arrrays (byte[] for terms, int[] for docs, freqs,
   positions, offsets).  Note that this only covers postings, whereas
   Instantiated covered all other parts of the index as well.
+
+* LUCENE-3309: The expert FieldSelector API has been replaced with
+  StoredFieldVisitor.  The idea is the same (you have full control
+  over which fields should be loaded).  Instead of a single accept
+  method, StoredFieldVisitor has a needsField method: if that method
+  returns true then the field will be loaded and the appropriate
+  type-specific method will be invoked with that fields's value.

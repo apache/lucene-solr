@@ -69,6 +69,10 @@ API Changes
   inner Reader is 'input' like CharFilter in the 3.x series, instead of 'in'.  
   (Dawid Weiss, Uwe Schindler, Robert Muir)
 
+* LUCENE-3309: The expert FieldSelector API, used to load only certain
+  fields in a stored document, has been replaced with the simpler
+  StoredFieldVisitor API.  (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor
