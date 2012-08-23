@@ -265,7 +265,6 @@
       <param name="tests.jvms" value="1"/>
       <!-- Also override some other props to be fast, ignoring what's set on command line: -->
       <param name="tests.multiplier" value="1"/>
-      <param name="tests.slow" value="false"/>
       <param name="tests.nightly" value="false"/>
       <param name="tests.weekly" value="false"/>
       <param name="tests.multiplier" value="1"/>
