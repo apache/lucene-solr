@@ -38,6 +38,16 @@ final class BulkOperationPacked64 extends BulkOperation {
       System.arraycopy(blocks, blocksOffset, values, valuesOffset, valueCount() * iterations);
     }
 
+    @Override
+    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
+    }
+
     public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       LongBuffer.wrap(values, valuesOffset, iterations * valueCount()).put(ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer());
     }

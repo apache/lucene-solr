@@ -35,6 +35,10 @@ final class BulkOperationPacked63 extends BulkOperation {
       throw new UnsupportedOperationException();
     }
 
+    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+      throw new UnsupportedOperationException();
+    }
+
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
