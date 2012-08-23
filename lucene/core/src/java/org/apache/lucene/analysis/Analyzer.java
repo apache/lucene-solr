@@ -30,8 +30,22 @@ import java.util.Map;
  * policy for extracting index terms from text.
  * <p>
  * In order to define what analysis is done, subclasses must define their
- * {@link TokenStreamComponents} in {@link #createComponents(String, Reader)}.
+ * {@link TokenStreamComponents TokenStreamComponents} in {@link #createComponents(String, Reader)}.
  * The components are then reused in each call to {@link #tokenStream(String, Reader)}.
+ * <p>
+ * Simple example:
+ * <pre class="prettyprint">
+ * Analyzer analyzer = new Analyzer() {
+ *  {@literal @Override}
+ *   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+ *     Tokenizer source = new FooTokenizer(reader);
+ *     TokenStream filter = new FooFilter(source);
+ *     filter = new BarFilter(filter);
+ *     return new TokenStreamComponents(source, filter);
+ *   }
+ * };
+ * </pre>
+ * For more examples, see the {@link org.apache.lucene.analysis Analysis package documentation}.
  */
 public abstract class Analyzer {
 
