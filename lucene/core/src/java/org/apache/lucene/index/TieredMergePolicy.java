@@ -84,6 +84,7 @@ public class TieredMergePolicy extends MergePolicy {
   private double forceMergeDeletesPctAllowed = 10.0;
   private boolean useCompoundFile = true;
   private double noCFSRatio = 0.1;
+  private long maxCFSSegmentSize = Long.MAX_VALUE;
   private double reclaimDeletesWeight = 2.0;
 
   /** Maximum number of segments to be merged at a time
@@ -127,7 +128,11 @@ public class TieredMergePolicy extends MergePolicy {
    *  sizes of to-be-merged segments (compensating for
    *  percent deleted docs).  Default is 5 GB. */
   public TieredMergePolicy setMaxMergedSegmentMB(double v) {
-    maxMergedSegmentBytes = (long) (v*1024*1024);
+    if (v < 0.0) {
+      throw new IllegalArgumentException("maxMergedSegmentMB must be >=0 (got " + v + ")");
+    }
+    v *= 1024 * 1024;
+    maxMergedSegmentBytes = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
     return this;
   }
 
@@ -162,7 +167,8 @@ public class TieredMergePolicy extends MergePolicy {
     if (v <= 0.0) {
       throw new IllegalArgumentException("floorSegmentMB must be >= 0.0 (got " + v + ")");
     }
-    floorSegmentBytes = (long) (v*1024*1024);
+    v *= 1024 * 1024;
+    floorSegmentBytes = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
     return this;
   }
 
@@ -602,21 +608,21 @@ public class TieredMergePolicy extends MergePolicy {
 
   @Override
   public boolean useCompoundFile(SegmentInfos infos, SegmentInfoPerCommit mergedInfo) throws IOException {
-    final boolean doCFS;
-
-    if (!useCompoundFile) {
-      doCFS = false;
-    } else if (noCFSRatio == 1.0) {
-      doCFS = true;
-    } else {
-      long totalSize = 0;
-      for (SegmentInfoPerCommit info : infos) {
-        totalSize += size(info);
-      }
-
-      doCFS = size(mergedInfo) <= noCFSRatio * totalSize;
+    if (!getUseCompoundFile()) {
+        return false;
     }
-    return doCFS;
+    long mergedInfoSize = size(mergedInfo);
+    if (mergedInfoSize > maxCFSSegmentSize) {
+        return false;
+    }
+    if (getNoCFSRatio() >= 1.0) {
+        return true;
+    }
+    long totalSize = 0;
+    for (SegmentInfoPerCommit info : infos) {
+        totalSize += size(info);
+    }
+    return mergedInfoSize <= getNoCFSRatio() * totalSize;
   }
 
   @Override
@@ -630,7 +636,7 @@ public class TieredMergePolicy extends MergePolicy {
     return !hasDeletions &&
       !info.info.hasSeparateNorms() &&
       info.info.dir == w.getDirectory() &&
-      (info.info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0);
+      (info.info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0 || maxCFSSegmentSize < Long.MAX_VALUE);
   }
 
   // Segment size in bytes, pro-rated by % deleted
@@ -665,7 +671,27 @@ public class TieredMergePolicy extends MergePolicy {
     sb.append("forceMergeDeletesPctAllowed=").append(forceMergeDeletesPctAllowed).append(", ");
     sb.append("segmentsPerTier=").append(segsPerTier).append(", ");
     sb.append("useCompoundFile=").append(useCompoundFile).append(", ");
+    sb.append("maxCFSSegmentSizeMB=").append(getMaxCFSSegmentSizeMB()).append(", ");
     sb.append("noCFSRatio=").append(noCFSRatio);
     return sb.toString();
+  }
+
+  /** Returns the largest size allowed for a compound file segment */
+  public final double getMaxCFSSegmentSizeMB() {
+    return maxCFSSegmentSize/1024/1024.;
+  }
+
+  /** If a merged segment will be more than this value,
+   *  leave the segment as
+   *  non-compound file even if compound file is enabled.
+   *  Set this to Double.POSITIVE_INFINITY (default) and noCFSRatio to 1.0
+   *  to always use CFS regardless of merge size. */
+  public final TieredMergePolicy setMaxCFSSegmentSizeMB(double v) {
+    if (v < 0.0) {
+      throw new IllegalArgumentException("maxCFSSegmentSizeMB must be >=0 (got " + v + ")");
+    }
+    v *= 1024 * 1024;
+    this.maxCFSSegmentSize = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
+    return this;
   }
 }

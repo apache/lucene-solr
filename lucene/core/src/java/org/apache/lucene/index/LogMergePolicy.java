@@ -64,6 +64,13 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  @see #setNoCFSRatio */
   public static final double DEFAULT_NO_CFS_RATIO = 0.1;
 
+  /** Default maxCFSSegmentSize value allows compound file
+   * for a segment of any size. The actual file format is
+   * still subject to noCFSRatio.
+   * @see #setMaxCFSSegmentSizeMB(double)
+   */
+  public static final long DEFAULT_MAX_CFS_SEGMENT_SIZE = Long.MAX_VALUE;
+
   protected int mergeFactor = DEFAULT_MERGE_FACTOR;
 
   protected long minMergeSize;
@@ -74,6 +81,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   protected int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
   protected double noCFSRatio = DEFAULT_NO_CFS_RATIO;
+  protected long maxCFSSegmentSize = DEFAULT_MAX_CFS_SEGMENT_SIZE;
 
   protected boolean calibrateSizeByDeletes = true;
   
@@ -136,21 +144,21 @@ public abstract class LogMergePolicy extends MergePolicy {
   // Javadoc inherited
   @Override
   public boolean useCompoundFile(SegmentInfos infos, SegmentInfoPerCommit mergedInfo) throws IOException {
-    final boolean doCFS;
-
-    if (!useCompoundFile) {
-      doCFS = false;
-    } else if (noCFSRatio == 1.0) {
-      doCFS = true;
-    } else {
-      long totalSize = 0;
-      for (SegmentInfoPerCommit info : infos) {
-        totalSize += size(info);
-      }
-
-      doCFS = size(mergedInfo) <= noCFSRatio * totalSize;
+    if (!getUseCompoundFile()) {
+      return false;
     }
-    return doCFS;
+    long mergedInfoSize = size(mergedInfo);
+    if (mergedInfoSize > maxCFSSegmentSize) {
+      return false;
+    }
+    if (getNoCFSRatio() >= 1.0) {
+      return true;
+    }
+    long totalSize = 0;
+    for (SegmentInfoPerCommit info : infos) {
+      totalSize += size(info);
+    }
+    return mergedInfoSize <= getNoCFSRatio() * totalSize;
   }
 
   /** Sets whether compound file format should be used for
@@ -675,9 +683,28 @@ public abstract class LogMergePolicy extends MergePolicy {
     sb.append("calibrateSizeByDeletes=").append(calibrateSizeByDeletes).append(", ");
     sb.append("maxMergeDocs=").append(maxMergeDocs).append(", ");
     sb.append("useCompoundFile=").append(useCompoundFile).append(", ");
+    sb.append("maxCFSSegmentSizeMB=").append(getMaxCFSSegmentSizeMB()).append(", ");
     sb.append("noCFSRatio=").append(noCFSRatio);
     sb.append("]");
     return sb.toString();
   }
-  
+
+  /** Returns the largest size allowed for a compound file segment */
+  public final double getMaxCFSSegmentSizeMB() {
+    return maxCFSSegmentSize/1024/1024.;
+  }
+
+  /** If a merged segment will be more than this value,
+   *  leave the segment as
+   *  non-compound file even if compound file is enabled.
+   *  Set this to Double.POSITIVE_INFINITY (default) and noCFSRatio to 1.0
+   *  to always use CFS regardless of merge size. */
+  public final void setMaxCFSSegmentSizeMB(double v) {
+    if (v < 0.0) {
+      throw new IllegalArgumentException("maxCFSSegmentSizeMB must be >=0 (got " + v + ")");
+    }
+    v *= 1024 * 1024;
+    this.maxCFSSegmentSize = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
+  }
+
 }
