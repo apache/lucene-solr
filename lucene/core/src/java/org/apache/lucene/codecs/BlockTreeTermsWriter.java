@@ -71,7 +71,7 @@ import org.apache.lucene.util.fst.Util;
 */
 
 /**
- * block-based terms index and dictionary writer.
+ * Block-based terms index and dictionary writer.
  * <p>
  * Writes terms dict and index, block-encoding (column
  * stride) each term's metadata for each set of terms

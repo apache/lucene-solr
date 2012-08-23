@@ -27,7 +27,8 @@ import org.apache.lucene.index.StoredFieldVisitor;
 
 /** A {@link StoredFieldVisitor} that creates a {@link
  *  Document} containing all stored fields, or only specific
- *  requested fields provided to {@link #DocumentStoredFieldVisitor(Set)}
+ *  requested fields provided to {@link #DocumentStoredFieldVisitor(Set)}.
+ *  <p>
  *  This is used by {@link IndexReader#document(int)} to load a
  *  document.
  *

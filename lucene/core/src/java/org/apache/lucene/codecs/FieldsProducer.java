@@ -22,7 +22,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.Fields;
 
-/** Abstract API that produces terms, doc, freq, prox and
+/** Abstract API that produces terms, doc, freq, prox, offset and
  *  payloads postings.  
  *
  * @lucene.experimental

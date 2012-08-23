@@ -51,7 +51,7 @@ public abstract class TermsIndexReaderBase implements Closeable {
   /** 
    * Similar to TermsEnum, except, the only "metadata" it
    * reports for a given indexed term is the long fileOffset
-   * into the main terms dictionary file:
+   * into the main terms dictionary file.
    */
   public static abstract class FieldIndexEnum {
 

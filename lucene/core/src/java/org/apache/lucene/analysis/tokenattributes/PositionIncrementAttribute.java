@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.tokenattributes;
 
 import org.apache.lucene.util.Attribute;
 
-/** The positionIncrement determines the position of this token
+/** Determines the position of this token
  * relative to the previous Token in a TokenStream, used in phrase
  * searching.
  *
