@@ -23,22 +23,27 @@ package org.apache.lucene.util.packed;
  * Efficient sequential read/write of packed integers.
  */
 final class BulkOperationPacked39 extends BulkOperation {
+    @Override
     public int blockCount() {
       return 39;
     }
 
+    @Override
     public int valueCount() {
       return 64;
     }
 
+    @Override
     public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -149,6 +154,7 @@ final class BulkOperationPacked39 extends BulkOperation {
       }
     }
 
+    @Override
     public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -532,6 +538,7 @@ final class BulkOperationPacked39 extends BulkOperation {
       }
     }
 
+    @Override
     public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;
@@ -578,6 +585,7 @@ final class BulkOperationPacked39 extends BulkOperation {
       }
     }
 
+    @Override
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       assert blocksOffset + iterations * blockCount() <= blocks.length;
       assert valuesOffset + iterations * valueCount() <= values.length;

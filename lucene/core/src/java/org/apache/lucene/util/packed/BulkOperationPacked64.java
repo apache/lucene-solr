@@ -26,14 +26,17 @@ import java.nio.ByteBuffer;
  * Efficient sequential read/write of packed integers.
  */
 final class BulkOperationPacked64 extends BulkOperation {
+    @Override
     public int blockCount() {
       return 1;
     }
 
+    @Override
     public int valueCount() {
       return 1;
     }
 
+    @Override
     public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       System.arraycopy(blocks, blocksOffset, values, valuesOffset, valueCount() * iterations);
     }
@@ -48,10 +51,12 @@ final class BulkOperationPacked64 extends BulkOperation {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       LongBuffer.wrap(values, valuesOffset, iterations * valueCount()).put(ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer());
     }
 
+    @Override
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       System.arraycopy(values, valuesOffset, blocks, blocksOffset, valueCount() * iterations);
     }

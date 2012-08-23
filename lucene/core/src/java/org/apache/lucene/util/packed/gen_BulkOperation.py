@@ -140,9 +140,11 @@ def get_type(bits):
 
 def packed64singleblock(bpv, f):
   values = 64 / bpv
+  f.write("    @Override\n")
   f.write("    public int blockCount() {\n")
   f.write("      return 1;\n")
   f.write("     }\n\n")
+  f.write("    @Override\n")
   f.write("    public int valueCount() {\n")
   f.write("      return %d;\n" %values)
   f.write("    }\n\n")
@@ -155,6 +157,7 @@ def p64sb_decode(bpv, f, bits):
   values = 64 / bpv
   typ = get_type(bits)
   cast_start, cast_end = casts(typ)
+  f.write("    @Override\n")
   f.write("    public void decode(long[] blocks, int blocksOffset, %s[] values, int valuesOffset, int iterations) {\n" %typ)
   if bits < bpv:
     f.write("      throw new UnsupportedOperationException();\n")
@@ -177,6 +180,7 @@ def p64sb_decode(bpv, f, bits):
   f.write("      }\n")
   f.write("    }\n\n")
 
+  f.write("    @Override\n")
   f.write("    public void decode(byte[] blocks, int blocksOffset, %s[] values, int valuesOffset, int iterations) {\n" %typ)
   if bits < bpv:
     f.write("      throw new UnsupportedOperationException();\n")
@@ -227,6 +231,7 @@ def p64sb_encode(bpv, f, bits):
   values = 64 / bpv
   typ = get_type(bits)
   mask_start, mask_end = masks(bits)
+  f.write("    @Override\n")
   f.write("    public void encode(%s[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {\n" %typ)
   if bits < bpv:
     f.write("      throw new UnsupportedOperationException();\n")
@@ -255,15 +260,18 @@ def packed64(bpv, f):
     values /= 2
   assert values * bpv == 64 * blocks, "%d values, %d blocks, %d bits per value" %(values, blocks, bpv)
   mask = (1 << bpv) - 1
+  f.write("    @Override\n")
   f.write("    public int blockCount() {\n")
   f.write("      return %d;\n" %blocks)
   f.write("    }\n\n")
+  f.write("    @Override\n")
   f.write("    public int valueCount() {\n")
   f.write("      return %d;\n" %values)
   f.write("    }\n\n")
 
   if bpv == 64:
-    f.write("""    public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+    f.write("""    @Override
+    public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       System.arraycopy(blocks, blocksOffset, values, valuesOffset, valueCount() * iterations);
     }
 
@@ -277,10 +285,12 @@ def packed64(bpv, f):
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       LongBuffer.wrap(values, valuesOffset, iterations * valueCount()).put(ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer());
     }
 
+    @Override
     public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
       System.arraycopy(values, valuesOffset, blocks, blocksOffset, valueCount() * iterations);
     }
@@ -295,6 +305,7 @@ def p64_decode(bpv, f, bits, values):
   typ = get_type(bits)
   cast_start, cast_end = casts(typ)
 
+  f.write("    @Override\n")
   f.write("    public void decode(long[] blocks, int blocksOffset, %s[] values, int valuesOffset, int iterations) {\n" %typ)
   if bits < bpv:
     f.write("      throw new UnsupportedOperationException();\n")
@@ -326,6 +337,7 @@ def p64_decode(bpv, f, bits, values):
     f.write("      }\n")
   f.write("    }\n\n")
 
+  f.write("    @Override\n")
   f.write("    public void decode(byte[] blocks, int blocksOffset, %s[] values, int valuesOffset, int iterations) {\n" %typ)
   if bits < bpv:
     f.write("      throw new UnsupportedOperationException();\n")
@@ -374,6 +386,7 @@ def p64_decode(bpv, f, bits, values):
 def p64_encode(bpv, f, bits, values):
   typ = get_type(bits)
   mask_start, mask_end = masks(bits)
+  f.write("    @Override\n")
   f.write("    public void encode(%s[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {\n" %typ)
   f.write("      assert blocksOffset + iterations * blockCount() <= blocks.length;\n")
   f.write("      assert valuesOffset + iterations * valueCount() <= values.length;\n")
