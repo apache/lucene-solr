@@ -72,6 +72,16 @@
     </sequential>
   </macrodef>
 
+  <target name="createBulkPackedIntSources">
+    <sequential>
+      <exec dir="src/java/org/apache/lucene/util/packed"
+            executable="${python.exe}" failonerror="true">
+        <arg line="gen_BulkOperation.py"/>
+      </exec>
+      <fixcrlf srcdir="src/java/org/apache/lucene/util/packed" includes="BulkOperation*.java" encoding="UTF-8"/>
+    </sequential>
+  </target>
+
   <target name="createLevAutomata" depends="check-moman,clone-moman,pull-moman">
   	<createLevAutomaton n="1"/>
   	<createLevAutomaton n="2"/>
