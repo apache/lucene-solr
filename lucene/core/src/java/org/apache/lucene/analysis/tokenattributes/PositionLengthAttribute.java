@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.tokenattributes;
 
 import org.apache.lucene.util.Attribute;
 
-/** The positionLength determines how many positions this
+/** Determines how many positions this
  *  token spans.  Very few analyzer components actually
  *  produce this attribute, and indexing ignores it, but
  *  it's useful to express the graph structure naturally

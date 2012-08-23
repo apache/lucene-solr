@@ -34,7 +34,7 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexFileNames;
 
 /** 
- * TermsIndexReader for simple every-nth terms indexes.
+ * TermsIndexReader for simple every Nth terms indexes.
  *
  * @see FixedGapTermsIndexWriter
  * @lucene.experimental 
