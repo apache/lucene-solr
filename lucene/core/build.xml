@@ -76,12 +76,24 @@
     </sequential>
   </macrodef>
 
-  <target name="createBulkPackedIntSources">
+  <target name="createPackedIntSources">
     <exec dir="src/java/org/apache/lucene/util/packed"
           executable="${python.exe}" failonerror="true">
       <arg value="gen_BulkOperation.py"/>
     </exec>
-    <fixcrlf srcdir="src/java/org/apache/lucene/util/packed" includes="BulkOperation*.java" encoding="UTF-8"/>
+    <exec dir="src/java/org/apache/lucene/util/packed"
+          executable="${python.exe}" failonerror="true">
+      <arg value="gen_Direct.py"/>
+    </exec>
+    <exec dir="src/java/org/apache/lucene/util/packed"
+          executable="${python.exe}" failonerror="true">
+      <arg value="gen_Packed64SingleBlock.py"/>
+    </exec>
+    <exec dir="src/java/org/apache/lucene/util/packed"
+          executable="${python.exe}" failonerror="true">
+      <arg value="gen_PackedThreeBlocks.py"/>
+    </exec>
+    <fixcrlf srcdir="src/java/org/apache/lucene/util/packed" includes="BulkOperation*.java,Direct*.java,Packed64SingleBlock.java,Packed*ThreeBlocks.py" encoding="UTF-8"/>
   </target>
 
   <target name="createLevAutomata" depends="check-moman,clone-moman,pull-moman">
