@@ -436,7 +436,7 @@ if __name__ == '__main__':
     
   f.write('  // NOTE: this is sparse (some entries are null):\n')
   f.write('  private static final BulkOperation[] packedSingleBlockBulkOps = new BulkOperation[] {\n')
-  for bpv in xrange(1, 65):
+  for bpv in xrange(1, max(PACKED_64_SINGLE_BLOCK_BPV)+1):
     if bpv in PACKED_64_SINGLE_BLOCK_BPV:
       f2 = open('BulkOperationPackedSingleBlock%d.java' % bpv, 'w')
       f2.write(HEADER)
