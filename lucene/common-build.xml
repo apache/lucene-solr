@@ -713,6 +713,7 @@
     <or>
       <isset property="tests.class" />
       <isset property="tests.method" />
+      <istrue value="${tests.showSuccess}"/>
     </or>
   </condition>
   <property name="tests.showOutput" value="onerror"/>
