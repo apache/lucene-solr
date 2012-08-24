@@ -83,9 +83,7 @@ public class FilteredQuery extends Query {
       
       @Override
       public boolean scoresDocsOutOfOrder() {
-        // TODO: Support out-of-order scoring!
-        // For now we return false here, as we always get the scorer in order
-        return false;
+        return true;
       }
 
       @Override
@@ -148,9 +146,7 @@ public class FilteredQuery extends Query {
 
         if (useRandomAccess) {
           // if we are using random access, we return the inner scorer, just with other acceptDocs
-          // TODO, replace this by when BooleanWeight is fixed to be consistent with its scorer implementations:
-          // return weight.scorer(context, scoreDocsInOrder, topScorer, filterAcceptDocs);
-          return weight.scorer(context, true, topScorer, filterAcceptDocs);
+          return weight.scorer(context, scoreDocsInOrder, topScorer, filterAcceptDocs);
         } else {
           assert firstFilterDoc > -1;
           // we are gonna advance() this scorer, so we set inorder=true/toplevel=false

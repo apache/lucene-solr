@@ -115,6 +115,9 @@ Optimizations
 * LUCENE-4317: Improve reuse of internal TokenStreams and StringReader
   in oal.document.Field.  (Uwe Schindler, Chris Male, Robert Muir)
 
+* LUCENE-4327: Support out-of-order scoring in FilteredQuery for higher
+  performance.  (Mike McCandless, Robert Muir)
+
 Build
 
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
