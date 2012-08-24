@@ -97,7 +97,9 @@ public class RegexpQuery extends AutomatonQuery {
       buffer.append(term.field());
       buffer.append(":");
     }
+    buffer.append('/');
     buffer.append(term.text());
+    buffer.append('/');
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
