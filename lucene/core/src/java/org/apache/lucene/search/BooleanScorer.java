@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 
 /* Description from Doug Cutting (excerpted from
@@ -115,7 +114,7 @@ final class BooleanScorer extends Scorer {
   // Therefore the only methods that are implemented are score() and doc().
   private static final class BucketScorer extends Scorer {
 
-    float score;
+    double score;
     int doc = NO_MORE_DOCS;
     int freq;
     
@@ -134,13 +133,13 @@ final class BooleanScorer extends Scorer {
     public int nextDoc() { return NO_MORE_DOCS; }
     
     @Override
-    public float score() { return score; }
+    public float score() { return (float)score; }
     
   }
 
   static final class Bucket {
     int doc = -1;            // tells if bucket is valid
-    float score;             // incremental score
+    double score;             // incremental score
     // TODO: break out bool anyProhibited, int
     // numRequiredMatched; then we can remove 32 limit on
     // required clauses

@@ -51,7 +51,6 @@ import org.apache.solr.core.Config;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
@@ -113,18 +112,14 @@ public final class ZkController {
   private final String nodeName;           // example: 127.0.0.1:54065_solr
   private final String baseURL;            // example: http://127.0.0.1:54065/solr
 
-
   private LeaderElector overseerElector;
-  
 
-  // for now, this can be null in tests, in which case recovery will be inactive, and other features
-  // may accept defaults or use mocks rather than pulling things from a CoreContainer
   private CoreContainer cc;
 
   protected volatile Overseer overseer;
 
   /**
-   * @param cc if null, recovery will not be enabled
+   * @param cc
    * @param zkServerAddress
    * @param zkClientTimeout
    * @param zkClientConnectTimeout
@@ -139,6 +134,7 @@ public final class ZkController {
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
+    if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
     if (localHostContext.contains("/")) {
       throw new IllegalArgumentException("localHostContext ("
@@ -165,13 +161,8 @@ public final class ZkController {
               //Overseer.createClientNodes(zkClient, getNodeName());
               ShardHandler shardHandler;
               String adminPath;
-              if (cc == null) {
-                shardHandler = new HttpShardHandlerFactory().getShardHandler();
-                adminPath = "/admin/cores";
-              } else {
-                shardHandler = cc.getShardHandlerFactory().getShardHandler();
-                adminPath = cc.getAdminPath();
-              }
+              shardHandler = cc.getShardHandlerFactory().getShardHandler();
+              adminPath = cc.getAdminPath();
               ZkController.this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
               ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
               overseerElector.joinElection(context);
@@ -354,13 +345,8 @@ public final class ZkController {
 
       ShardHandler shardHandler;
       String adminPath;
-      if (cc == null) {
-        shardHandler = new HttpShardHandlerFactory().getShardHandler();
-        adminPath = "/admin/cores";
-      } else {
-        shardHandler = cc.getShardHandlerFactory().getShardHandler();
-        adminPath = cc.getAdminPath();
-      }
+      shardHandler = cc.getShardHandlerFactory().getShardHandler();
+      adminPath = cc.getAdminPath();
       
       overseerElector = new LeaderElector(zkClient);
       this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
@@ -557,46 +543,42 @@ public final class ZkController {
     
 
     SolrCore core = null;
-    if (cc != null) { // CoreContainer only null in tests
-      try {
-        core = cc.getCore(desc.getName());
+    try {
+      core = cc.getCore(desc.getName());
 
  
-        // recover from local transaction log and wait for it to complete before
-        // going active
-        // TODO: should this be moved to another thread? To recoveryStrat?
-        // TODO: should this actually be done earlier, before (or as part of)
-        // leader election perhaps?
-        // TODO: if I'm the leader, ensure that a replica that is trying to recover waits until I'm
-        // active (or don't make me the
-        // leader until my local replay is done.
+      // recover from local transaction log and wait for it to complete before
+      // going active
+      // TODO: should this be moved to another thread? To recoveryStrat?
+      // TODO: should this actually be done earlier, before (or as part of)
+      // leader election perhaps?
+      // TODO: if I'm the leader, ensure that a replica that is trying to recover waits until I'm
+      // active (or don't make me the
+      // leader until my local replay is done.
 
-        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-        if (!core.isReloaded() && ulog != null) {
-          Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
-              .getUpdateLog().recoverFromLog();
-          if (recoveryFuture != null) {
-            recoveryFuture.get(); // NOTE: this could potentially block for
-            // minutes or more!
-            // TODO: public as recovering in the mean time?
-            // TODO: in the future we could do peerync in parallel with recoverFromLog
-          } else {
-            log.info("No LogReplay needed for core="+core.getName() + " baseURL=" + baseUrl);
-          }
-        }
-        
-        boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
-            collection, coreZkNodeName, shardId, leaderProps, core, cc);
-        if (!didRecovery) {
-          publish(desc, ZkStateReader.ACTIVE);
-        }
-      } finally {
-        if (core != null) {
-          core.close();
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+      if (!core.isReloaded() && ulog != null) {
+        Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
+            .getUpdateLog().recoverFromLog();
+        if (recoveryFuture != null) {
+          recoveryFuture.get(); // NOTE: this could potentially block for
+          // minutes or more!
+          // TODO: public as recovering in the mean time?
+          // TODO: in the future we could do peerync in parallel with recoverFromLog
+        } else {
+          log.info("No LogReplay needed for core="+core.getName() + " baseURL=" + baseUrl);
         }
       }
-    } else {
-      publish(desc, ZkStateReader.ACTIVE);
+      
+      boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
+          collection, coreZkNodeName, shardId, leaderProps, core, cc);
+      if (!didRecovery) {
+        publish(desc, ZkStateReader.ACTIVE);
+      }
+    } finally {
+      if (core != null) {
+        core.close();
+      }
     }
     
     // make sure we have an update cluster state right away

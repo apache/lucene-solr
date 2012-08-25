@@ -350,7 +350,7 @@ public class TestCompoundFile extends LuceneTestCase
 
         IndexInput one = cr.openInput("f11", newIOContext(random()));
 
-        IndexInput two = (IndexInput) one.clone();
+        IndexInput two = one.clone();
 
         assertSameStreams("basic clone one", expected, one);
         expected.seek(0);
@@ -476,8 +476,8 @@ public class TestCompoundFile extends LuceneTestCase
         IndexInput e1 = cr.openInput("f11", newIOContext(random()));
         IndexInput e2 = cr.openInput("f3", newIOContext(random()));
 
-        IndexInput a1 = (IndexInput) e1.clone();
-        IndexInput a2 = (IndexInput) e2.clone();
+        IndexInput a1 = e1.clone();
+        IndexInput a2 = e2.clone();
 
         // Seek the first pair
         e1.seek(100);

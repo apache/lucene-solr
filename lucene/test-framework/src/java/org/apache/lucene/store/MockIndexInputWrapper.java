@@ -68,7 +68,7 @@ public class MockIndexInputWrapper extends IndexInput {
   public MockIndexInputWrapper clone() {
     ensureOpen();
     dir.inputCloneCount.incrementAndGet();
-    IndexInput iiclone = (IndexInput) delegate.clone();
+    IndexInput iiclone = delegate.clone();
     MockIndexInputWrapper clone = new MockIndexInputWrapper(dir, name, iiclone);
     clone.isClone = true;
     // Pending resolution on LUCENE-686 we may want to

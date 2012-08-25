@@ -19,11 +19,15 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.CharBuffer;
+import java.util.Random;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+
+import com.carrotsearch.randomizedtesting.RandomizedContext;
 
 /**
  * Tokenizer for testing.
@@ -76,6 +80,9 @@ public class MockTokenizer extends Tokenizer {
   private State streamState = State.CLOSE;
   private int lastOffset = 0; // only for asserting
   private boolean enableChecks = true;
+  
+  // evil: but we don't change the behavior with this random, we only switch up how we read
+  private final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
   
   public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
     super(factory, input);
@@ -139,14 +146,14 @@ public class MockTokenizer extends Tokenizer {
   }
 
   protected int readCodePoint() throws IOException {
-    int ch = input.read();
+    int ch = readChar();
     if (ch < 0) {
       return ch;
     } else {
       assert !Character.isLowSurrogate((char) ch) : "unpaired low surrogate: " + Integer.toHexString(ch);
       off++;
       if (Character.isHighSurrogate((char) ch)) {
-        int ch2 = input.read();
+        int ch2 = readChar();
         if (ch2 >= 0) {
           off++;
           assert Character.isLowSurrogate((char) ch2) : "unpaired high surrogate: " + Integer.toHexString(ch) + ", followed by: " + Integer.toHexString(ch2);
@@ -156,6 +163,33 @@ public class MockTokenizer extends Tokenizer {
 	}
       }
       return ch;
+    }
+  }
+  
+  protected int readChar() throws IOException {
+    switch(random.nextInt(10)) {
+      case 0: {
+        // read(char[])
+        char c[] = new char[1];
+        int ret = input.read(c);
+        return ret < 0 ? ret : c[0];
+      }
+      case 1: {
+        // read(char[], int, int)
+        char c[] = new char[2];
+        int ret = input.read(c, 1, 1);
+        return ret < 0 ? ret : c[1];
+      }
+      case 2: {
+        // read(CharBuffer)
+        char c[] = new char[1];
+        CharBuffer cb = CharBuffer.wrap(c);
+        int ret = input.read(cb);
+        return ret < 0 ? ret : c[0];
+      }
+      default: 
+        // read()
+        return input.read();
     }
   }
 

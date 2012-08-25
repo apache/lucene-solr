@@ -30,7 +30,7 @@ import org.w3c.dom.NodeList;
  */
 
 /**
- *
+ * Builder for {@link BooleanQuery}
  */
 public class BooleanQueryBuilder implements QueryBuilder {
 

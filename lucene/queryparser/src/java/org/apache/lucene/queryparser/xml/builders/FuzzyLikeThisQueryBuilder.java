@@ -28,7 +28,7 @@ import org.w3c.dom.NodeList;
  */
 
 /**
- *
+ * Builder for {@link FuzzyLikeThisQuery}
  */
 public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
 

@@ -22,8 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.index.StoredFieldVisitor;
 
 /**
- * Codec API for reading stored fields:
- * 
+ * Codec API for reading stored fields.
+ * <p>
  * You need to implement {@link #visitDocument(int, StoredFieldVisitor)} to
  * read the stored fields for a document, implement {@link #clone()} (creating
  * clones of any IndexInputs used, etc), and {@link #close()}

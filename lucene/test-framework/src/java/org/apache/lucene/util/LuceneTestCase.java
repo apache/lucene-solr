@@ -310,9 +310,7 @@ public abstract class LuceneTestCase extends Assert {
     "MockFixedIntBlock",
     "MockVariableIntBlock",
     "MockSep",
-    "MockRandom",
-    "For",
-    "PFor"
+    "MockRandom"
   ));
   
   // -----------------------------------------------------------------
@@ -767,6 +765,11 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       logmp.setMergeFactor(_TestUtil.nextInt(r, 10, 50));
     }
+    logmp.setUseCompoundFile(r.nextBoolean());
+    logmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    if (rarely()) {
+      logmp.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
+    }
     return logmp;
   }
 
@@ -793,6 +796,9 @@ public abstract class LuceneTestCase extends Assert {
     }
     tmp.setUseCompoundFile(r.nextBoolean());
     tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    if (rarely()) {
+      tmp.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
+    }
     tmp.setReclaimDeletesWeight(r.nextDouble()*4);
     return tmp;
   }

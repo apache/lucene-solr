@@ -78,8 +78,17 @@ public class HttpClientUtil {
   static final DefaultHttpRequestRetryHandler NO_RETRY = new DefaultHttpRequestRetryHandler(
       0, false);
 
+  private static HttpClientConfigurer configurer = new HttpClientConfigurer();
+  
   private HttpClientUtil(){}
   
+  /**
+   * Replace the {@link HttpClientConfigurer} class used in configuring the http
+   * clients with a custom implementation.
+   */
+  public static void setConfigurer(HttpClientConfigurer newConfigurer) {
+    configurer = newConfigurer;
+  }
   /**
    * Creates new http client by using the provided configuration.
    * 
@@ -103,38 +112,7 @@ public class HttpClientUtil {
    */
   public static void configureClient(final DefaultHttpClient httpClient,
       SolrParams config) {
-
-    if (config.get(PROP_MAX_CONNECTIONS) != null) {
-      setMaxConnections(httpClient, config.getInt(PROP_MAX_CONNECTIONS));
-    }
-
-    if (config.get(PROP_MAX_CONNECTIONS_PER_HOST) != null) {
-      setMaxConnectionsPerHost(httpClient, config.getInt(PROP_MAX_CONNECTIONS_PER_HOST));
-    }
-
-    if (config.get(PROP_CONNECTION_TIMEOUT) != null) {
-      setConnectionTimeout(httpClient, config.getInt(PROP_CONNECTION_TIMEOUT));
-    }
-    
-    if (config.get(PROP_SO_TIMEOUT) != null) {
-      setSoTimeout(httpClient, config.getInt(PROP_SO_TIMEOUT));
-    }
-    
-    if (config.get(PROP_USE_RETRY) != null) {
-      setUseRetry(httpClient, config.getBool(PROP_USE_RETRY));
-    }
-
-    if (config.get(PROP_FOLLOW_REDIRECTS) != null) {
-      setFollowRedirects(httpClient, config.getBool(PROP_FOLLOW_REDIRECTS));
-    }
-
-    final String basicAuthUser = config.get(PROP_BASIC_AUTH_USER);
-    final String basicAuthPass = config.get(PROP_BASIC_AUTH_PASS);
-    setBasicAuth(httpClient, basicAuthUser, basicAuthPass);
-    
-    if (config.get(PROP_ALLOW_COMPRESSION) != null) {
-      setAllowCompression(httpClient, config.getBool(PROP_ALLOW_COMPRESSION));
-    }
+    configurer.configure(httpClient,  config);
   }
 
   /**

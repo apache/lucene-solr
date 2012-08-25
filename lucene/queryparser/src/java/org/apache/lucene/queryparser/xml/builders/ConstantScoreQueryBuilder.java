@@ -25,7 +25,7 @@ import org.w3c.dom.Element;
  */
 
 /**
- *
+ * Builder for {@link ConstantScoreQuery}
  */
 public class ConstantScoreQueryBuilder implements QueryBuilder {
 

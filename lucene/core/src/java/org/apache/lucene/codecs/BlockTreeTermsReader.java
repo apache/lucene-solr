@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Locale;
@@ -45,7 +46,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
@@ -200,7 +200,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
   @Override
   public Iterator<String> iterator() {
-    return new UnmodifiableIterator<String>(fields.keySet().iterator());
+    return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
   @Override
@@ -400,7 +400,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
 
       if (indexIn != null) {
-        final IndexInput clone = (IndexInput) indexIn.clone();
+        final IndexInput clone = indexIn.clone();
         //System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
         clone.seek(indexStartFP);
         index = new FST<BytesRef>(clone, ByteSequenceOutputs.getSingleton());
@@ -746,7 +746,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // }
         runAutomaton = compiled.runAutomaton;
         compiledAutomaton = compiled;
-        in = (IndexInput) BlockTreeTermsReader.this.in.clone();
+        in = BlockTreeTermsReader.this.in.clone();
         stack = new Frame[5];
         for(int idx=0;idx<stack.length;idx++) {
           stack[idx] = new Frame(idx);
@@ -1236,7 +1236,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       // Not private to avoid synthetic access$NNN methods
       void initIndexInput() {
         if (this.in == null) {
-          this.in = (IndexInput) BlockTreeTermsReader.this.in.clone();
+          this.in = BlockTreeTermsReader.this.in.clone();
         }
       }
 

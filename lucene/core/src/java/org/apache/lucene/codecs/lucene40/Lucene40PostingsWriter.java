@@ -185,8 +185,6 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   int lastDocID;
   int df;
   
-  /** Adds a new doc in this term.  If this returns null
-   *  then we just skip consuming positions/payloads. */
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
     // if (DEBUG) System.out.println("SPW:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq + " freqOut.fp=" + freqOut.getFilePointer());

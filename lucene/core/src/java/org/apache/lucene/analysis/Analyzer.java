@@ -30,8 +30,42 @@ import java.util.Map;
  * policy for extracting index terms from text.
  * <p>
  * In order to define what analysis is done, subclasses must define their
- * {@link TokenStreamComponents} in {@link #createComponents(String, Reader)}.
+ * {@link TokenStreamComponents TokenStreamComponents} in {@link #createComponents(String, Reader)}.
  * The components are then reused in each call to {@link #tokenStream(String, Reader)}.
+ * <p>
+ * Simple example:
+ * <pre class="prettyprint">
+ * Analyzer analyzer = new Analyzer() {
+ *  {@literal @Override}
+ *   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+ *     Tokenizer source = new FooTokenizer(reader);
+ *     TokenStream filter = new FooFilter(source);
+ *     filter = new BarFilter(filter);
+ *     return new TokenStreamComponents(source, filter);
+ *   }
+ * };
+ * </pre>
+ * For more examples, see the {@link org.apache.lucene.analysis Analysis package documentation}.
+ * <p>
+ * For some concrete implementations bundled with Lucene, look in the analysis modules:
+ * <ul>
+ *   <li><a href="{@docRoot}/../analyzers-common/overview-summary.html">Common</a>:
+ *       Analyzers for indexing content in different languages and domains.
+ *   <li><a href="{@docRoot}/../analyzers-icu/overview-summary.html">ICU</a>:
+ *       Exposes functionality from ICU to Apache Lucene. 
+ *   <li><a href="{@docRoot}/../analyzers-kuromoji/overview-summary.html">Kuromoji</a>:
+ *       Morphological analyzer for Japanese text.
+ *   <li><a href="{@docRoot}/../analyzers-morfologik/overview-summary.html">Morfologik</a>:
+ *       Dictionary-driven lemmatization for the Polish language.
+ *   <li><a href="{@docRoot}/../analyzers-phonetic/overview-summary.html">Phonetic</a>:
+ *       Analysis for indexing phonetic signatures (for sounds-alike search).
+ *   <li><a href="{@docRoot}/../analyzers-smartcn/overview-summary.html">Smart Chinese</a>:
+ *       Analyzer for Simplified Chinese, which indexes words.
+ *   <li><a href="{@docRoot}/../analyzers-stempel/overview-summary.html">Stempel</a>:
+ *       Algorithmic Stemmer for the Polish Language.
+ *   <li><a href="{@docRoot}/../analyzers-uima/overview-summary.html">UIMA</a>: 
+ *       Analysis integration with Apache UIMA. 
+ * </ul>
  */
 public abstract class Analyzer {
 

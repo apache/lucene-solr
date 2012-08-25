@@ -26,7 +26,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Build a DisjunctionMaxQuery.
+ * Builder for {@link DisjunctionMaxQuery}
  */
 public class DisjunctionMaxQueryBuilder implements QueryBuilder {
 

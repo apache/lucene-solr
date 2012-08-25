@@ -22,6 +22,17 @@ import java.io.IOException;
 
 /** Abstract base class for input from a file in a {@link Directory}.  A
  * random-access input stream.  Used for all Lucene index input operations.
+ *
+ * <p>{@code IndexInput} may only be used from one thread, because it is not
+ * thread safe (it keeps internal state like file position). To allow
+ * multithreaded use, every {@code IndexInput} instance must be cloned before
+ * used in another thread. Subclasses must therefore implement {@link #clone()},
+ * returning a new {@code IndexInput} which operates on the same underlying
+ * resource, but positioned independently. Lucene never closes cloned
+ * {@code IndexInput}s, it will only do this on the original one.
+ * The original instance must take care that cloned instances throw
+ * {@link AlreadyClosedException} when the original one is closed.
+ 
  * @see Directory
  */
 public abstract class IndexInput extends DataInput implements Cloneable,Closeable {
@@ -82,5 +93,16 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
   @Override
   public String toString() {
     return resourceDescription;
+  }
+  
+  /** {@inheritDoc}
+   * <p><b>Warning:</b> Lucene never closes cloned
+   * {@code IndexInput}s, it will only do this on the original one.
+   * The original instance must take care that cloned instances throw
+   * {@link AlreadyClosedException} when the original one is closed.
+   */
+  @Override
+  public IndexInput clone() {
+    return (IndexInput) super.clone();
   }
 }

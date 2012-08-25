@@ -107,6 +107,8 @@ public final class WeakIdentityMap<K,V> {
   public Iterator<K> keyIterator() {
     reap();
     final Iterator<IdentityWeakReference> iterator = backingStore.keySet().iterator();
+    // IMPORTANT: Don't use oal.util.FilterIterator here:
+    // We need *strong* reference to current key after setNext()!!!
     return new Iterator<K>() {
       // holds strong reference to next element in backing iterator:
       private Object next = null;

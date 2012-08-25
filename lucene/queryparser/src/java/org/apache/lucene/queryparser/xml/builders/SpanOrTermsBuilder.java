@@ -34,7 +34,7 @@ import java.util.List;
  */
 
 /**
- *
+ * Builder that analyzes the text into a {@link SpanOrQuery}
  */
 public class SpanOrTermsBuilder extends SpanBuilderBase {
 

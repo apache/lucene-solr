@@ -62,6 +62,10 @@ public class ScoreOrderFragmentsBuilder extends BaseFragmentsBuilder {
     return src;
   }
 
+  /**
+   * Comparator for {@link WeightedFragInfo} by boost, breaking ties
+   * by offset.
+   */
   public static class ScoreComparator implements Comparator<WeightedFragInfo> {
 
     public int compare( WeightedFragInfo o1, WeightedFragInfo o2 ) {

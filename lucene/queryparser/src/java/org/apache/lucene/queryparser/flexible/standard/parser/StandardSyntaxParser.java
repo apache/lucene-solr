@@ -40,6 +40,9 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
+/**
+ * Parser for the standard Lucene syntax
+ */
 public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserConstants {
 
         private static final int CONJ_NONE =0;

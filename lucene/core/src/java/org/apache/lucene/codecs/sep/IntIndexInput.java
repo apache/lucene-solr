@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.util.IntsRef;
 
 /** Defines basic API for writing ints to an IndexOutput.
  *  IntBlockCodec interacts with this API. @see
@@ -44,7 +43,7 @@ public abstract class IntIndexInput implements Closeable {
     /** Seeks primary stream to the last read offset */
     public abstract void seek(IntIndexInput.Reader stream) throws IOException;
 
-    public abstract void set(Index other);
+    public abstract void copyFrom(Index other);
     
     @Override
     public abstract Index clone();
@@ -55,23 +54,5 @@ public abstract class IntIndexInput implements Closeable {
 
     /** Reads next single int */
     public abstract int next() throws IOException;
-
-    /** Reads next chunk of ints */
-    private IntsRef bulkResult;
-
-    /** Read up to count ints. */
-    public IntsRef read(int count) throws IOException {
-      if (bulkResult == null) {
-        bulkResult = new IntsRef();
-        bulkResult.ints = new int[count];
-      } else {
-        bulkResult.grow(count);
-      }
-      for(int i=0;i<count;i++) {
-        bulkResult.ints[i] = next();
-      }
-      bulkResult.length = count;
-      return bulkResult;
-    }
   }
 }

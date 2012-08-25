@@ -62,15 +62,39 @@
   	<sequential>
       <exec dir="src/java/org/apache/lucene/util/automaton"
             executable="${python.exe}" failonerror="true">
-        <arg line="createLevAutomata.py @{n} True"/>
+        <arg value="createLevAutomata.py"/>
+        <arg value="@{n}"/>
+        <arg value="True"/>
       </exec>
       <exec dir="src/java/org/apache/lucene/util/automaton"
             executable="${python.exe}" failonerror="true">
-        <arg line="createLevAutomata.py @{n} False"/>
+        <arg value="createLevAutomata.py"/>
+        <arg value="@{n}"/>
+        <arg value="False"/>
       </exec>
       <fixcrlf srcdir="src/java/org/apache/lucene/util/automaton" includes="*ParametricDescription.java" encoding="UTF-8"/>
     </sequential>
   </macrodef>
+
+  <target name="createPackedIntSources">
+    <exec dir="src/java/org/apache/lucene/util/packed"
+          executable="${python.exe}" failonerror="true">
+      <arg value="gen_BulkOperation.py"/>
+    </exec>
+    <exec dir="src/java/org/apache/lucene/util/packed"
+          executable="${python.exe}" failonerror="true">
+      <arg value="gen_Direct.py"/>
+    </exec>
+    <exec dir="src/java/org/apache/lucene/util/packed"
+          executable="${python.exe}" failonerror="true">
+      <arg value="gen_Packed64SingleBlock.py"/>
+    </exec>
+    <exec dir="src/java/org/apache/lucene/util/packed"
+          executable="${python.exe}" failonerror="true">
+      <arg value="gen_PackedThreeBlocks.py"/>
+    </exec>
+    <fixcrlf srcdir="src/java/org/apache/lucene/util/packed" includes="BulkOperation*.java,Direct*.java,Packed64SingleBlock.java,Packed*ThreeBlocks.py" encoding="UTF-8"/>
+  </target>
 
   <target name="createLevAutomata" depends="check-moman,clone-moman,pull-moman">
   	<createLevAutomaton n="1"/>
@@ -86,14 +110,21 @@
   <target name="clone-moman" unless="moman.cloned">
   	<exec dir="src/java/org/apache/lucene/util/automaton" 
           executable="${hg.exe}" failonerror="true">
-      <arg line="clone -r ${moman.rev} ${moman.url} moman"/>
+      <arg value="clone"/>
+      <arg value="-r"/>
+      <arg value="${moman.rev}"/>
+      <arg value="${moman.url}"/>
+      <arg value="moman"/>
     </exec>
   </target>
 
   <target name="pull-moman" if="moman.cloned">
     <exec dir="src/java/org/apache/lucene/util/automaton/moman" 
           executable="${hg.exe}" failonerror="true">
-      <arg line="pull -f -r ${moman.rev}"/>
+      <arg value="pull"/>
+      <arg value="-f"/>
+      <arg value="-r"/>
+      <arg value="${moman.rev}"/>
     </exec>
   </target>
 </project>

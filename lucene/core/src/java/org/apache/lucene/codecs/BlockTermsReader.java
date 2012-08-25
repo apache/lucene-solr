@@ -18,6 +18,7 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeMap;
@@ -39,7 +40,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
-import org.apache.lucene.util.UnmodifiableIterator;
 
 /** Handles a terms dict, but decouples all details of
  *  doc/freqs/positions reading to an instance of {@link
@@ -185,7 +185,7 @@ public class BlockTermsReader extends FieldsProducer {
 
   @Override
   public Iterator<String> iterator() {
-    return new UnmodifiableIterator<String>(fields.keySet().iterator());
+    return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
   @Override
@@ -308,7 +308,7 @@ public class BlockTermsReader extends FieldsProducer {
       private int metaDataUpto;
 
       public SegmentTermsEnum() throws IOException {
-        in = (IndexInput) BlockTermsReader.this.in.clone();
+        in = BlockTermsReader.this.in.clone();
         in.seek(termsStartPointer);
         indexEnum = indexReader.getFieldEnum(fieldInfo);
         doOrd = indexReader.supportsOrd();

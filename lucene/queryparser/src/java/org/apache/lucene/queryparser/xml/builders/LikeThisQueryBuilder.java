@@ -35,7 +35,7 @@ import org.w3c.dom.Element;
  */
 
 /**
- *
+ * Builder for {@link MoreLikeThisQuery}
  */
 public class LikeThisQueryBuilder implements QueryBuilder {
 

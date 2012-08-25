@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.perfield;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -34,7 +35,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.UnmodifiableIterator;
 
 /**
  * Enables per field format support.
@@ -199,7 +199,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public Iterator<String> iterator() {
-      return new UnmodifiableIterator<String>(fields.keySet().iterator());
+      return Collections.unmodifiableSet(fields.keySet()).iterator();
     }
 
     @Override

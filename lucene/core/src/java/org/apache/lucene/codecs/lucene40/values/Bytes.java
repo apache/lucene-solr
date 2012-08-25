@@ -350,7 +350,7 @@ public final class Bytes {
      */
     protected final IndexInput cloneData() {
       assert datIn != null;
-      return (IndexInput) datIn.clone();
+      return datIn.clone();
     }
 
     /**
@@ -358,7 +358,7 @@ public final class Bytes {
      */
     protected final IndexInput cloneIndex() {
       assert idxIn != null;
-      return (IndexInput) idxIn.clone();
+      return idxIn.clone();
     }
 
     @Override

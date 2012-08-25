@@ -34,7 +34,7 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexFileNames;
 
 /** 
- * TermsIndexReader for simple every-nth terms indexes.
+ * TermsIndexReader for simple every Nth terms indexes.
  *
  * @see FixedGapTermsIndexWriter
  * @lucene.experimental 
@@ -278,7 +278,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
         this.termsStart = termsStart;
         termBytesStart = termBytes.getPointer();
 
-        IndexInput clone = (IndexInput) in.clone();
+        IndexInput clone = in.clone();
         clone.seek(indexStart);
 
         // -1 is passed to mean "don't load term index", but
@@ -309,8 +309,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           }
         } else {
           // Get packed iterators
-          final IndexInput clone1 = (IndexInput) in.clone();
-          final IndexInput clone2 = (IndexInput) in.clone();
+          final IndexInput clone1 = in.clone();
+          final IndexInput clone2 = in.clone();
 
           try {
             // Subsample the index terms

@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -43,7 +44,6 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.UnmodifiableIterator;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
@@ -70,7 +70,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     in = state.dir.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
    
     fieldInfos = state.fieldInfos;
-    fields = readFields((IndexInput)in.clone());
+    fields = readFields(in.clone());
   }
   
   private TreeMap<String,Long> readFields(IndexInput in) throws IOException {
@@ -230,7 +230,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     
     public SimpleTextDocsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
-      this.in = (IndexInput) this.inStart.clone();
+      this.in = this.inStart.clone();
     }
 
     public boolean canReuse(IndexInput in) {
@@ -330,7 +330,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     public SimpleTextDocsAndPositionsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
-      this.in = (IndexInput) inStart.clone();
+      this.in = inStart.clone();
     }
 
     public boolean canReuse(IndexInput in) {
@@ -500,7 +500,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<Long,PairOutputs.Pair<Long,Long>>(posIntOutputs,
                                                                                                                       outputsInner);
       b = new Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(FST.INPUT_TYPE.BYTE1, outputs);
-      IndexInput in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
+      IndexInput in = SimpleTextFieldsReader.this.in.clone();
       in.seek(termsStart);
       final BytesRef lastTerm = new BytesRef(10);
       long lastDocsStart = -1;
@@ -608,7 +608,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
   @Override
   public Iterator<String> iterator() {
-    return new UnmodifiableIterator<String>(fields.keySet().iterator());
+    return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
   private final Map<String,Terms> termsCache = new HashMap<String,Terms>();

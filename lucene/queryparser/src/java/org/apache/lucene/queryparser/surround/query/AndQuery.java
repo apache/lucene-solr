@@ -21,6 +21,9 @@ import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause;
 
+/**
+ * Factory for conjunctions
+ */
 public class AndQuery extends ComposedQuery { 
   public AndQuery(List<SrndQuery> queries, boolean inf, String opName) { 
     super(queries, inf, opName);

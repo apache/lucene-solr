@@ -17,11 +17,15 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.PhraseQuery; // javadocs
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeError;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
+/**
+ * Query node for {@link PhraseQuery}'s slop factor.
+ */
 public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode {
 
   private int value = 0;

@@ -132,7 +132,7 @@ public class SimpleTextPerDocProducer extends PerDocProducerBase {
     @Override
     public Source load() throws IOException {
       boolean success = false;
-      IndexInput in = (IndexInput) input.clone();
+      IndexInput in = input.clone();
       try {
         Source source = null;
         switch (type) {

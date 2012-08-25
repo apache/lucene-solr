@@ -27,6 +27,9 @@ import org.apache.lucene.search.MultiTermQuery;
  * limitations under the License.
  */
 
+/**
+ * Configuration options common across queryparser implementations.
+ */
 public interface CommonQueryParserConfiguration {
   
   /**

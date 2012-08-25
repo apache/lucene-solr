@@ -153,4 +153,60 @@ public class TestTieredMergePolicy extends LuceneTestCase {
 
     dir.close();
   }
+  
+  private static final double EPSILON = 1E-14;
+  
+  public void testSetters() {
+    final TieredMergePolicy tmp = new TieredMergePolicy();
+    
+    tmp.setMaxMergedSegmentMB(0.5);
+    assertEquals(0.5, tmp.getMaxMergedSegmentMB(), EPSILON);
+    
+    tmp.setMaxMergedSegmentMB(Double.POSITIVE_INFINITY);
+    assertEquals(Long.MAX_VALUE/1024/1024., tmp.getMaxMergedSegmentMB(), EPSILON*Long.MAX_VALUE);
+    
+    tmp.setMaxMergedSegmentMB(Long.MAX_VALUE/1024/1024.);
+    assertEquals(Long.MAX_VALUE/1024/1024., tmp.getMaxMergedSegmentMB(), EPSILON*Long.MAX_VALUE);
+    
+    try {
+      tmp.setMaxMergedSegmentMB(-2.0);
+      fail("Didn't throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+    
+    tmp.setFloorSegmentMB(2.0);
+    assertEquals(2.0, tmp.getFloorSegmentMB(), EPSILON);
+    
+    tmp.setFloorSegmentMB(Double.POSITIVE_INFINITY);
+    assertEquals(Long.MAX_VALUE/1024/1024., tmp.getFloorSegmentMB(), EPSILON*Long.MAX_VALUE);
+    
+    tmp.setFloorSegmentMB(Long.MAX_VALUE/1024/1024.);
+    assertEquals(Long.MAX_VALUE/1024/1024., tmp.getFloorSegmentMB(), EPSILON*Long.MAX_VALUE);
+    
+    try {
+      tmp.setFloorSegmentMB(-2.0);
+      fail("Didn't throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+    
+    tmp.setMaxCFSSegmentSizeMB(2.0);
+    assertEquals(2.0, tmp.getMaxCFSSegmentSizeMB(), EPSILON);
+    
+    tmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    assertEquals(Long.MAX_VALUE/1024/1024., tmp.getMaxCFSSegmentSizeMB(), EPSILON*Long.MAX_VALUE);
+    
+    tmp.setMaxCFSSegmentSizeMB(Long.MAX_VALUE/1024/1024.);
+    assertEquals(Long.MAX_VALUE/1024/1024., tmp.getMaxCFSSegmentSizeMB(), EPSILON*Long.MAX_VALUE);
+    
+    try {
+      tmp.setMaxCFSSegmentSizeMB(-2.0);
+      fail("Didn't throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+    
+    // TODO: Add more checks for other non-double setters!
+  }
 }

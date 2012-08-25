@@ -32,7 +32,7 @@ import org.w3c.dom.NodeList;
  */
 
 /**
- *
+ * Builder for {@link BooleanFilter}
  */
 public class BooleanFilterBuilder implements FilterBuilder {
 

@@ -265,7 +265,6 @@
       <param name="tests.jvms" value="1"/>
       <!-- Also override some other props to be fast, ignoring what's set on command line: -->
       <param name="tests.multiplier" value="1"/>
-      <param name="tests.slow" value="false"/>
       <param name="tests.nightly" value="false"/>
       <param name="tests.weekly" value="false"/>
       <param name="tests.multiplier" value="1"/>
@@ -276,7 +275,7 @@
   <!-- we need this extra condition, as we want to match only on "true", not solely if property is set: -->
   <property name="disable.javadocs-lint" value="false" />
   <condition property="-disable.javadocs-lint">
-    <equals arg1="${disable.javadocs-lint}" arg2="true"/>
+    <istrue value="${disable.javadocs-lint}"/>
   </condition>
   <target name="-jenkins-javadocs-lint" unless="-disable.javadocs-lint">
     <antcall target="javadocs-lint"/> 

@@ -782,31 +782,51 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
       readSomething = true;
-      return in.read(cbuf, off, len);
+      return input.read(cbuf, off, len);
     }
 
     @Override
     public int read() throws IOException {
       readSomething = true;
-      return in.read();
+      return input.read();
     }
 
     @Override
     public int read(CharBuffer target) throws IOException {
       readSomething = true;
-      return in.read(target);
+      return input.read(target);
     }
 
     @Override
     public int read(char[] cbuf) throws IOException {
       readSomething = true;
-      return in.read(cbuf);
+      return input.read(cbuf);
     }
 
     @Override
     public long skip(long n) throws IOException {
       readSomething = true;
-      return in.skip(n);
+      return input.skip(n);
+    }
+
+    @Override
+    public void mark(int readAheadLimit) throws IOException {
+      input.mark(readAheadLimit);
+    }
+
+    @Override
+    public boolean markSupported() {
+      return input.markSupported();
+    }
+
+    @Override
+    public boolean ready() throws IOException {
+      return input.ready();
+    }
+
+    @Override
+    public void reset() throws IOException {
+      input.reset();
     }
   }
   

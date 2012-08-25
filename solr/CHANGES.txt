@@ -78,6 +78,14 @@ Bug Fixes
   when requesting multiple stats.facet fields.
   (Roman Kliewer via hossman)
 
+* SOLR-3743: Fixed issues with atomic updates and optimistic concurrency in
+  conjunction with stored copyField targets by making real-time get never
+  return copyField targets. (yonik)
+
+* SOLR-3746: Proper error reporting if updateLog is configured w/o necessary 
+  "_version_" field in schema.xml (hossman)
+
+
 Other Changes
 ----------------------
 

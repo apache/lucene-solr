@@ -211,8 +211,13 @@ public class UpdateLog implements PluginInfoInitialized {
       newestLogsOnStartup.addFirst(ll);
       if (newestLogsOnStartup.size() >= 2) break;
     }
-    
-    versionInfo = new VersionInfo(this, 256);
+
+    try {
+      versionInfo = new VersionInfo(this, 256);
+    } catch (SolrException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Unable to use updateLog: " + e.getMessage(), e);
+    }
 
     // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
     UpdateLog.RecentUpdates startingUpdates = getRecentUpdates();

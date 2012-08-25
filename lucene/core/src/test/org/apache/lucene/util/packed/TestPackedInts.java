@@ -18,17 +18,24 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.store.*;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
 @Slow
@@ -620,6 +627,108 @@ public class TestPackedInts extends LuceneTestCase {
         directory.deleteFile("packed-ints.bin");
       }
     }
+  }
+
+  public void testEncodeDecode() {
+    for (PackedInts.Format format : PackedInts.Format.values()) {
+      for (int bpv = 1; bpv <= 64; ++bpv) {
+        if (!format.isSupported(bpv)) {
+          continue;
+        }
+        String msg = format + " " + bpv;
+
+        final PackedInts.Encoder encoder = PackedInts.getEncoder(format, PackedInts.VERSION_CURRENT, bpv);
+        final PackedInts.Decoder decoder = PackedInts.getDecoder(format, PackedInts.VERSION_CURRENT, bpv);
+        final int blockCount = encoder.blockCount();
+        final int valueCount = encoder.valueCount();
+        assertEquals(blockCount, decoder.blockCount());
+        assertEquals(valueCount, decoder.valueCount());
+
+        final int iterations = random().nextInt(100);
+        final int blocksOffset = random().nextInt(100);
+        final int valuesOffset = random().nextInt(100);
+        final int blocksOffset2 = random().nextInt(100);
+        final int blocksLen = iterations * blockCount;
+
+        // 1. generate random inputs
+        final long[] blocks = new long[blocksOffset + blocksLen];
+        for (int i = 0; i < blocks.length; ++i) {
+          blocks[i] = random().nextLong();
+          if (format == PackedInts.Format.PACKED_SINGLE_BLOCK && 64 % bpv != 0) {
+            // clear highest bits for packed
+            final int toClear = 64 % bpv;
+            blocks[i] = (blocks[i] << toClear) >>> toClear;
+          }
+        }
+
+        // 2. decode
+        final long[] values = new long[valuesOffset + iterations * valueCount];
+        decoder.decode(blocks, blocksOffset, values, valuesOffset, iterations);
+        for (long value : values) {
+          assertTrue(value <= PackedInts.maxValue(bpv));
+        }
+        // test decoding to int[]
+        final int[] intValues;
+        if (bpv <= 32) {
+          intValues = new int[values.length];
+          decoder.decode(blocks, blocksOffset, intValues, valuesOffset, iterations);
+          assertTrue(equals(intValues, values));
+        } else {
+          intValues = null;
+        }
+
+        // 3. re-encode
+        final long[] blocks2 = new long[blocksOffset2 + blocksLen];
+        encoder.encode(values, valuesOffset, blocks2, blocksOffset2, iterations);
+        assertArrayEquals(msg, Arrays.copyOfRange(blocks, blocksOffset, blocks.length),
+            Arrays.copyOfRange(blocks2, blocksOffset2, blocks2.length));
+        // test encoding from int[]
+        if (bpv <= 32) {
+          final long[] blocks3 = new long[blocks2.length];
+          encoder.encode(intValues, valuesOffset, blocks3, blocksOffset2, iterations);
+          assertArrayEquals(msg, blocks2, blocks3);
+        }
+
+        // 4. byte[] decoding
+        final byte[] byteBlocks = new byte[8 * blocks.length];
+        ByteBuffer.wrap(byteBlocks).asLongBuffer().put(blocks);
+        final long[] values2 = new long[valuesOffset + iterations * valueCount];
+        decoder.decode(byteBlocks, blocksOffset * 8, values2, valuesOffset, iterations);
+        for (long value : values2) {
+          assertTrue(msg, value <= PackedInts.maxValue(bpv));
+        }
+        assertArrayEquals(msg, values, values2);
+        // test decoding to int[]
+        if (bpv <= 32) {
+          final int[] intValues2 = new int[values2.length];
+          decoder.decode(byteBlocks, blocksOffset * 8, intValues2, valuesOffset, iterations);
+          assertTrue(msg, equals(intValues2, values2));
+        }
+
+        // 5. byte[] encoding
+        final byte[] blocks3 = new byte[8 * (blocksOffset2 + blocksLen)];
+        encoder.encode(values, valuesOffset, blocks3, 8 * blocksOffset2, iterations);
+        assertEquals(msg, LongBuffer.wrap(blocks2), ByteBuffer.wrap(blocks3).asLongBuffer());
+        // test encoding from int[]
+        if (bpv <= 32) {
+          final byte[] blocks4 = new byte[blocks3.length];
+          encoder.encode(intValues, valuesOffset, blocks4, 8 * blocksOffset2, iterations);
+          assertArrayEquals(msg, blocks3, blocks4);
+        }
+      }
+    }
+  }
+
+  private static boolean equals(int[] ints, long[] longs) {
+    if (ints.length != longs.length) {
+      return false;
+    }
+    for (int i = 0; i < ints.length; ++i) {
+      if ((ints[i] & 0xFFFFFFFFL) != longs[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
 }

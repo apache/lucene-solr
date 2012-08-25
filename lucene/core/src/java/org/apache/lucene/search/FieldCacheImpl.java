@@ -1110,14 +1110,8 @@ class FieldCacheImpl implements FieldCache {
         // Try for coarse estimate for number of bits; this
         // should be an underestimate most of the time, which
         // is fine -- GrowableWriter will reallocate as needed
-        long numUniqueTerms = 0;
-        try {
-          numUniqueTerms = terms.size();
-        } catch (UnsupportedOperationException uoe) {
-          numUniqueTerms = -1;
-        }
-        if (numUniqueTerms != -1) {
-
+        long numUniqueTerms = terms.size();
+        if (numUniqueTerms != -1L) {
           if (numUniqueTerms > termCountHardLimit) {
             // app is misusing the API (there is more than
             // one term per doc); in this case we make best
@@ -1248,13 +1242,8 @@ class FieldCacheImpl implements FieldCache {
         // Try for coarse estimate for number of bits; this
         // should be an underestimate most of the time, which
         // is fine -- GrowableWriter will reallocate as needed
-        long numUniqueTerms = 0;
-        try {
-          numUniqueTerms = terms.size();
-        } catch (UnsupportedOperationException uoe) {
-          numUniqueTerms = -1;
-        }
-        if (numUniqueTerms != -1) {
+        long numUniqueTerms = terms.size();
+        if (numUniqueTerms != -1L) {
           if (numUniqueTerms > termCountHardLimit) {
             numUniqueTerms = termCountHardLimit;
           }

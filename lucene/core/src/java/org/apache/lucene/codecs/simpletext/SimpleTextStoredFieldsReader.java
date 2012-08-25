@@ -163,7 +163,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     if (in == null) {
       throw new AlreadyClosedException("this FieldsReader is closed");
     }
-    return new SimpleTextStoredFieldsReader(offsets, (IndexInput) in.clone(), fieldInfos);
+    return new SimpleTextStoredFieldsReader(offsets, in.clone(), fieldInfos);
   }
   
   @Override

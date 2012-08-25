@@ -17,6 +17,9 @@ package org.apache.lucene.queryparser.flexible.core.util;
  * limitations under the License.
  */
 
+/**
+ * String manipulation routines
+ */
 final public class StringUtils {
 
   public static String toString(Object obj) {

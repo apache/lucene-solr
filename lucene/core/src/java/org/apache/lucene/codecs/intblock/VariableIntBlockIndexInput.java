@@ -26,7 +26,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.sep.IntIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.IntsRef;
 
 // TODO: much of this can be shared code w/ the fixed case
 
@@ -51,7 +50,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
   @Override
   public Reader reader() throws IOException {
     final int[] buffer = new int[maxBlockSize];
-    final IndexInput clone = (IndexInput) in.clone();
+    final IndexInput clone = in.clone();
     // TODO: can this be simplified?
     return new Reader(clone, buffer, this.getBlockReader(clone, buffer));
   }
@@ -90,12 +89,10 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     private long lastBlockFP;
     private int blockSize;
     private final BlockReader blockReader;
-    private final IntsRef bulkResult = new IntsRef();
 
     public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader) {
       this.in = in;
       this.pending = pending;
-      bulkResult.ints = pending;
       this.blockReader = blockReader;
     }
 
@@ -146,26 +143,6 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
 
       return pending[upto++];
     }
-
-    @Override
-    public IntsRef read(final int count) throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
-        lastBlockFP = in.getFilePointer();
-        blockSize = blockReader.readBlock();
-        upto = 0;
-      }
-      bulkResult.offset = upto;
-      if (upto + count < blockSize) {
-        bulkResult.length = count;
-        upto += count;
-      } else {
-        bulkResult.length = blockSize - upto;
-        upto = blockSize;
-      }
-
-      return bulkResult;
-    }
   }
 
   private class Index extends IntIndexInput.Index {
@@ -204,7 +181,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void set(final IntIndexInput.Index other) {
+    public void copyFrom(final IntIndexInput.Index other) {
       final Index idx = (Index) other;
       fp = idx.fp;
       upto = idx.upto;

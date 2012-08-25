@@ -38,10 +38,10 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
     bulkOperation = BulkOperation.of(format, bitsPerValue);
     iterations = bulkOperation.computeIterations(valueCount, mem);
     assert iterations > 0;
-    nextBlocks = new long[iterations * bulkOperation.blocks()];
-    nextValues = new LongsRef(new long[iterations * bulkOperation.values()], 0, 0);
-    assert iterations * bulkOperation.values() == nextValues.longs.length;
-    assert iterations * bulkOperation.blocks() == nextBlocks.length;
+    nextBlocks = new long[iterations * bulkOperation.blockCount()];
+    nextValues = new LongsRef(new long[iterations * bulkOperation.valueCount()], 0, 0);
+    assert iterations * bulkOperation.valueCount() == nextValues.longs.length;
+    assert iterations * bulkOperation.blockCount() == nextBlocks.length;
     nextValues.offset = nextValues.longs.length;
     position = -1;
   }
@@ -70,7 +70,7 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
         nextBlocks[i] = 0L;
       }
 
-      bulkOperation.get(nextBlocks, 0, nextValues.longs, 0, iterations);
+      bulkOperation.decode(nextBlocks, 0, nextValues.longs, 0, iterations);
       nextValues.offset = 0;
     }
 

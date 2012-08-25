@@ -175,17 +175,6 @@ public abstract class AtomicReader extends IndexReader {
     }
     return null;
   }
-
-  /** Returns the number of unique terms (across all fields)
-   *  in this reader.
-   */
-  public final long getUniqueTermCount() throws IOException {
-    final Fields fields = fields();
-    if (fields == null) {
-      return 0;
-    }
-    return fields.getUniqueTermCount();
-  }
   
   /**
    * Returns {@link DocValues} for this field.

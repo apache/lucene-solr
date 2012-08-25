@@ -46,7 +46,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
 
   @Override
   public Reader reader() throws IOException {
-    return new Reader((IndexInput) in.clone());
+    return new Reader(in.clone());
   }
 
   @Override
@@ -87,7 +87,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void set(IntIndexInput.Index other) {
+    public void copyFrom(IntIndexInput.Index other) {
       fp = ((MockSingleIntIndexInputIndex) other).fp;
     }
 

@@ -207,12 +207,8 @@ public class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
     
-    public int size() throws IOException {
+    public int size() {
       return delegateFieldsProducer.size();
-    }
-    
-    public long getUniqueTermCount() throws IOException {
-      return delegateFieldsProducer.getUniqueTermCount();
     }
     
     class BloomFilteredTerms extends Terms {

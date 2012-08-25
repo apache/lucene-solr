@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.NumericTokenStream;
@@ -74,7 +73,8 @@ public class Field implements IndexableField, StorableField {
   // customize how it's tokenized:
   protected TokenStream tokenStream;
 
-  protected transient NumericTokenStream numericTokenStream;
+  private transient TokenStream internalTokenStream;
+  private transient ReusableStringReader internalReader;
 
   protected float boost = 1.0f;
 
@@ -284,18 +284,12 @@ public class Field implements IndexableField, StorableField {
     if (!(fieldsData instanceof Byte)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Byte");
     }
-    if (numericTokenStream != null) {
-      numericTokenStream.setIntValue(value);
-    }
     fieldsData = Byte.valueOf(value);
   }
 
   public void setShortValue(short value) {
     if (!(fieldsData instanceof Short)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Short");
-    }
-    if (numericTokenStream != null) {
-      numericTokenStream.setIntValue(value);
     }
     fieldsData = Short.valueOf(value);
   }
@@ -304,18 +298,12 @@ public class Field implements IndexableField, StorableField {
     if (!(fieldsData instanceof Integer)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Integer");
     }
-    if (numericTokenStream != null) {
-      numericTokenStream.setIntValue(value);
-    }
     fieldsData = Integer.valueOf(value);
   }
 
   public void setLongValue(long value) {
     if (!(fieldsData instanceof Long)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Long");
-    }
-    if (numericTokenStream != null) {
-      numericTokenStream.setLongValue(value);
     }
     fieldsData = Long.valueOf(value);
   }
@@ -324,18 +312,12 @@ public class Field implements IndexableField, StorableField {
     if (!(fieldsData instanceof Float)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Float");
     }
-    if (numericTokenStream != null) {
-      numericTokenStream.setFloatValue(value);
-    }
     fieldsData = Float.valueOf(value);
   }
 
   public void setDoubleValue(double value) {
     if (!(fieldsData instanceof Double)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Double");
-    }
-    if (numericTokenStream != null) {
-      numericTokenStream.setDoubleValue(value);
     }
     fieldsData = Double.valueOf(value);
   }
@@ -434,62 +416,44 @@ public class Field implements IndexableField, StorableField {
 
     final NumericType numericType = fieldType().numericType();
     if (numericType != null) {
-      if (numericTokenStream == null) {
+      if (!(internalTokenStream instanceof NumericTokenStream)) {
         // lazy init the TokenStream as it is heavy to instantiate
         // (attributes,...) if not needed (stored field loading)
-        numericTokenStream = new NumericTokenStream(type.numericPrecisionStep());
-        // initialize value in TokenStream
-        final Number val = (Number) fieldsData;
-        switch (numericType) {
-        case INT:
-          numericTokenStream.setIntValue(val.intValue());
-          break;
-        case LONG:
-          numericTokenStream.setLongValue(val.longValue());
-          break;
-        case FLOAT:
-          numericTokenStream.setFloatValue(val.floatValue());
-          break;
-        case DOUBLE:
-          numericTokenStream.setDoubleValue(val.doubleValue());
-          break;
-        default:
-          assert false : "Should never get here";
-        }
-      } else {
-        // OK -- previously cached and we already updated if
-        // setters were called.
+        internalTokenStream = new NumericTokenStream(type.numericPrecisionStep());
       }
-
-      return numericTokenStream;
+      final NumericTokenStream nts = (NumericTokenStream) internalTokenStream;
+      // initialize value in TokenStream
+      final Number val = (Number) fieldsData;
+      switch (numericType) {
+      case INT:
+        nts.setIntValue(val.intValue());
+        break;
+      case LONG:
+        nts.setLongValue(val.longValue());
+        break;
+      case FLOAT:
+        nts.setFloatValue(val.floatValue());
+        break;
+      case DOUBLE:
+        nts.setDoubleValue(val.doubleValue());
+        break;
+      default:
+        assert false : "Should never get here";
+      }
+      return internalTokenStream;
     }
 
     if (!fieldType().tokenized()) {
       if (stringValue() == null) {
         throw new IllegalArgumentException("Non-Tokenized Fields must have a String value");
       }
-
-      return new TokenStream() {
-        CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
-        OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
-        boolean used;
-
-        @Override
-        public boolean incrementToken() {
-          if (used) {
-            return false;
-          }
-          termAttribute.setEmpty().append(stringValue());
-          offsetAttribute.setOffset(0, stringValue().length());
-          used = true;
-          return true;
-        }
-
-        @Override
-        public void reset() {
-          used = false;
-        }
-      };
+      if (!(internalTokenStream instanceof StringTokenStream)) {
+        // lazy init the TokenStream as it is heavy to instantiate
+        // (attributes,...) if not needed (stored field loading)
+        internalTokenStream = new StringTokenStream();
+      }
+      ((StringTokenStream) internalTokenStream).setValue(stringValue());
+      return internalTokenStream;
     }
 
     if (tokenStream != null) {
@@ -497,10 +461,101 @@ public class Field implements IndexableField, StorableField {
     } else if (readerValue() != null) {
       return analyzer.tokenStream(name(), readerValue());
     } else if (stringValue() != null) {
-      return analyzer.tokenStream(name(), new StringReader(stringValue()));
+      if (internalReader == null) {
+        internalReader = new ReusableStringReader();
+      }
+      internalReader.setValue(stringValue());
+      return analyzer.tokenStream(name(), internalReader);
     }
 
     throw new IllegalArgumentException("Field must have either TokenStream, String, Reader or Number value");
+  }
+  
+  static final class ReusableStringReader extends Reader {
+    private int pos = 0, size = 0;
+    private String s = null;
+    
+    void setValue(String s) {
+      this.s = s;
+      this.size = s.length();
+      this.pos = 0;
+    }
+    
+    @Override
+    public int read() {
+      if (pos < size) {
+        return s.charAt(pos++);
+      } else {
+        s = null;
+        return -1;
+      }
+    }
+    
+    @Override
+    public int read(char[] c, int off, int len) {
+      if (pos < size) {
+        len = Math.min(len, size-pos);
+        s.getChars(pos, pos+len, c, off);
+        pos += len;
+        return len;
+      } else {
+        s = null;
+        return -1;
+      }
+    }
+    
+    @Override
+    public void close() {
+      pos = size; // this prevents NPE when reading after close!
+      s = null;
+    }
+  }
+  
+  static final class StringTokenStream extends TokenStream {
+    private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
+    private boolean used = false;
+    private String value = null;
+    
+    /** Creates a new TokenStream that returns a String as single token.
+     * <p>Warning: Does not initialize the value, you must call
+     * {@link #setValue()} afterwards!
+     */
+    StringTokenStream() {
+    }
+    
+    /** Sets the string value. */
+    void setValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public boolean incrementToken() {
+      if (used) {
+        return false;
+      }
+      clearAttributes();
+      termAttribute.append(value);
+      offsetAttribute.setOffset(0, value.length());
+      used = true;
+      return true;
+    }
+
+    @Override
+    public void end() {
+      final int finalOffset = value.length();
+      offsetAttribute.setOffset(finalOffset, finalOffset);
+    }
+    
+    @Override
+    public void reset() {
+      used = false;
+    }
+
+    @Override
+    public void close() {
+      value = null;
+    }
   }
 
   /** Specifies whether and how a field should be stored. */

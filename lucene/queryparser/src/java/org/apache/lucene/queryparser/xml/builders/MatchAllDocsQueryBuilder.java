@@ -23,7 +23,7 @@ import org.w3c.dom.Element;
  */
 
 /**
- *
+ * Builder for {@link MatchAllDocsQuery}
  */
 public class MatchAllDocsQueryBuilder implements QueryBuilder {
   

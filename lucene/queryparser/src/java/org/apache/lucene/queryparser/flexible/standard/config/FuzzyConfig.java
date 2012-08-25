@@ -19,6 +19,9 @@ package org.apache.lucene.queryparser.flexible.standard.config;
 
 import org.apache.lucene.search.FuzzyQuery;
 
+/**
+ * Configuration parameters for {@link FuzzyQuery}s
+ */
 public class FuzzyConfig {
   
   private int prefixLength = FuzzyQuery.defaultPrefixLength;

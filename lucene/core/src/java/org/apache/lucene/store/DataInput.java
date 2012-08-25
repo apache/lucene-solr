@@ -28,6 +28,13 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Abstract base class for performing read operations of Lucene's low-level
  * data types.
+ *
+ * <p>{@code DataInput} may only be used from one thread, because it is not
+ * thread safe (it keeps internal state like file position). To allow
+ * multithreaded use, every {@code DataInput} instance must be cloned before
+ * used in another thread. Subclasses must therefore implement {@link #clone()},
+ * returning a new {@code DataInput} which operates on the same underlying
+ * resource, but positioned independently.
  */
 public abstract class DataInput implements Cloneable {
   /** Reads and returns a single byte.
@@ -195,12 +202,11 @@ public abstract class DataInput implements Cloneable {
    */
   @Override
   public DataInput clone() {
-    DataInput clone = null;
     try {
-      clone = (DataInput)super.clone();
-    } catch (CloneNotSupportedException e) {}
-
-    return clone;
+      return (DataInput) super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new Error("This cannot happen: Failing to clone DataInput");
+    }
   }
 
   /** Reads a Map&lt;String,String&gt; previously written
