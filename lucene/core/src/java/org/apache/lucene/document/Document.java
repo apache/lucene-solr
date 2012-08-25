@@ -45,8 +45,6 @@ import org.apache.lucene.util.FilterIterator;
 public final class Document implements IndexDocument{
 
   private final List<Field> fields = new ArrayList<Field>();
-  
-  //private final List<Field> fields
 
   /** Constructs a new document with no fields. */
   public Document() {}
@@ -291,28 +289,24 @@ public final class Document implements IndexDocument{
   /** Obtains all indexed fields in document */
   @Override
   public Iterable<? extends IndexableField> indexableFields() {
-    Iterator<Field> it = indexedFieldsIterator();
-    
-    List<IndexableField> result = new ArrayList<IndexableField>();
-    while(it.hasNext()) {
-      result.add(it.next());
-    }
-    
-    return result;
+    return new Iterable<Field>() {
+      @Override
+      public Iterator<Field> iterator() {
+        return Document.this.indexedFieldsIterator();
+      }
+    };
   }
 
 
   /** Obtains all stored fields in document. */
   @Override
   public Iterable<? extends StorableField> storableFields() {
-    Iterator<Field> it = storedFieldsIterator();
-    
-    List<StorableField> result = new ArrayList<StorableField>();
-    while(it.hasNext()) {
-      result.add(it.next());
-    }
-    
-    return result;
+    return new Iterable<Field>() {
+      @Override
+      public Iterator<Field> iterator() {
+        return Document.this.storedFieldsIterator();
+      }
+    };
   }
 
   private Iterator<Field> storedFieldsIterator() {
