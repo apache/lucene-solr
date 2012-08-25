@@ -449,7 +449,7 @@ public class TestNumericUtils extends LuceneTestCase {
     // a inverse range should produce no sub-ranges
     assertLongRangeSplit(9500L, -5000L, 4, false, Collections.<Long>emptyList(), Collections.<Integer>emptyList());    
 
-    // a 0-length range should reproduce the range itsself
+    // a 0-length range should reproduce the range itself
     assertLongRangeSplit(9500L, 9500L, 4, false, Arrays.asList(
       0x800000000000251cL,0x800000000000251cL
     ), Arrays.asList(
@@ -557,7 +557,7 @@ public class TestNumericUtils extends LuceneTestCase {
     // a inverse range should produce no sub-ranges
     assertIntRangeSplit(9500, -5000, 4, false, Collections.<Integer>emptyList(), Collections.<Integer>emptyList());    
 
-    // a 0-length range should reproduce the range itsself
+    // a 0-length range should reproduce the range itself
     assertIntRangeSplit(9500, 9500, 4, false, Arrays.asList(
       0x8000251c,0x8000251c
     ), Arrays.asList(

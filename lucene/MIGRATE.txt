@@ -318,9 +318,9 @@ FieldCache, use them with care!
 
 The method IndexReader#getSequentialSubReaders() was moved to CompositeReader
 (see LUCENE-2858, LUCENE-3733) and made protected. It is solely used by
-CompositeReader itsself to build its reader tree. To get all atomic leaves
+CompositeReader itself to build its reader tree. To get all atomic leaves
 of a reader, use IndexReader#leaves(), which also provides the doc base
-of each leave. Readers that are already atomic return itsself as leaf with
+of each leave. Readers that are already atomic return itself as leaf with
 doc base 0. To emulate Lucene 3.x getSequentialSubReaders(),
 use getContext().children().
 
