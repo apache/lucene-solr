@@ -883,7 +883,7 @@ API Changes
 
 * LUCENE-3866: IndexReaderContext.leaves() is now the preferred way to access
   atomic sub-readers of any kind of IndexReader (for AtomicReaders it returns
-  itsself as only leaf with docBase=0).  (Uwe Schindler)
+  itself as only leaf with docBase=0).  (Uwe Schindler)
 
 New features
 
@@ -2306,7 +2306,7 @@ Changes in backwards compatibility policy
   (Mike McCandless, Shai Erera)
 
 * LUCENE-3084: MergePolicy.OneMerge.segments was changed from
-  SegmentInfos to a List<SegmentInfo>. SegmentInfos itsself was changed
+  SegmentInfos to a List<SegmentInfo>. SegmentInfos itself was changed
   to no longer extend Vector<SegmentInfo> (to update code that is using
   Vector-API, use the new asList() and asSet() methods returning unmodifiable
   collections; modifying SegmentInfos is now only possible through

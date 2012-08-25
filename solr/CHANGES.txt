@@ -1690,7 +1690,7 @@ Bug Fixes
 * SOLR-2625: TermVectorComponent throws NPE if TF-IDF option is used without DF
   option. (Daniel Erenrich, Simon Willnauer)
 
-* SOLR-2631: PingRequestHandler should not allow to ping itsself using "qt"
+* SOLR-2631: PingRequestHandler should not allow to ping itself using "qt"
   param to prevent infinite loop. (Edoardo Tosca, Uwe Schindler)
 
 * SOLR-2636: Fix explain functionality for negative queries. (Tom Hill via yonik)

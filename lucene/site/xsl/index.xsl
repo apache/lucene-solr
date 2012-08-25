@@ -26,7 +26,7 @@
   <!--
     NOTE: This template matches the root element of any given input XML document!
     The XSL input file is ignored completely, but XSL expects one to be given,
-    so build.xml passes itsself here. The list of module build.xmls is given via
+    so build.xml passes itself here. The list of module build.xmls is given via
     string parameter, that must be splitted at '|'.
   --> 
   <xsl:template match="/">
