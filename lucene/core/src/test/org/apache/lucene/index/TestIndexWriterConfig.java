@@ -337,9 +337,11 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     ((LogMergePolicy) iwc.getMergePolicy()).setUseCompoundFile(false); 
     IndexWriter w = new IndexWriter(dir, iwc);
 
+    // Change to true:
     LogMergePolicy lmp = ((LogMergePolicy) w.getConfig().getMergePolicy());
     lmp.setNoCFSRatio(1.0);
     lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    lmp.setUseCompoundFile(true);
 
     Document doc = new Document();
     doc.add(newStringField("field", "foo", Store.NO));
