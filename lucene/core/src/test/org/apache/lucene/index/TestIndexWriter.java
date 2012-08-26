@@ -1275,7 +1275,10 @@ public class TestIndexWriter extends LuceneTestCase {
       Directory dir = newMockDirectory(); // relies on windows semantics
 
       LogMergePolicy mergePolicy = newLogMergePolicy(true);
-      mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
+      
+      // This test expects all of its segments to be in CFS
+      mergePolicy.setNoCFSRatio(1.0);
+      mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
 
       IndexWriter w = new IndexWriter(
           dir,

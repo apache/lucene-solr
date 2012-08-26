@@ -1134,7 +1134,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
                               newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
                               setMergePolicy(newLogMergePolicy(true))
                               );
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
+    LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
+    // Force creation of CFS:
+    lmp.setNoCFSRatio(1.0);
+    lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
 
     // add 100 documents
     for (int i = 0; i < 100; i++) {
