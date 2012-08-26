@@ -510,6 +510,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
     mp.setUseCompoundFile(doCFS);
     mp.setNoCFSRatio(1.0);
+    mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     // TODO: remove randomness
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMaxBufferedDocs(10).setMergePolicy(mp);
