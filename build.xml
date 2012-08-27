@@ -74,6 +74,12 @@
     </pathconvert>
     <fail if="validate.patternsFound">The following files contain @author tags or nocommits:${line.separator}${validate.patternsFound}</fail>
   </target>
+	
+  <target name="check-svn-properties">
+  	<subant target="-check-svn-properties" inheritall="false" failonerror="true">
+  	  <fileset dir="lucene" includes="build.xml" />
+  	</subant>
+  </target>
 
   <target name="rat-sources" description="Runs rat across all sources and tests">
     <sequential><subant target="rat-sources" inheritall="false" failonerror="true">
@@ -256,7 +262,7 @@
   </target>
 
   <!-- Jenkins tasks -->
-  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,-svn-status"/>
+  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,-svn-status,check-svn-properties"/>
   
   <target name="jenkins-clover">
     <antcall target="-jenkins-clover">

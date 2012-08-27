@@ -198,6 +198,16 @@
     </forbidden-apis>
   </target>
 
+  <!-- note: we don't include this in validate because we want to check from releases -->
+  <target name="-check-svn-properties" depends="compile-tools,resolve,load-custom-tasks">
+     <svn-eol-style svnExecutable="${svn.exe}">
+       <fileset dir="${basedir}/..">
+          <exclude name="**/build/**"/>
+          <exclude name="**/*.jar"/>
+       </fileset>
+     </svn-eol-style>
+  </target>
+
   <target name="resolve">
     <sequential>
       <ant dir="test-framework" target="resolve" inheritall="false">
