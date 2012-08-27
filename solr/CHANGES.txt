@@ -85,6 +85,9 @@ Bug Fixes
 * SOLR-3746: Proper error reporting if updateLog is configured w/o necessary 
   "_version_" field in schema.xml (hossman)
 
+* SOLR-3745: Proper error reporting if SolrCloud mode is used w/o 
+  necessary "_version_" field in schema.xml (hossman)
+
 
 Other Changes
 ----------------------
