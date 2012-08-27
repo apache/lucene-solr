@@ -25,8 +25,9 @@ import org.apache.lucene.search.FieldCache;
 
 
 /**
- *
- *
+ * Obtains short field values from the {@link org.apache.lucene.search.FieldCache}
+ * using <code>getShorts()</code>
+ * and makes those values available as other numeric types, casting as needed.
  **/
 public class ShortFieldSource extends FieldCacheSource {
 
