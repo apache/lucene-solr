@@ -22,6 +22,8 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.search.similarities.DefaultSimilarity; // javadocs
+import org.apache.lucene.search.similarities.Similarity; // javadocs
 import org.apache.lucene.util.BytesRef;
 
 // TODO: how to handle versioning here...?
@@ -42,7 +44,26 @@ public interface IndexableField {
    * of this field. */
   public IndexableFieldType fieldType();
   
-  /** Field boost (you must pre-multiply in any doc boost). */
+  /** 
+   * Returns the field's index-time boost.
+   * <p>
+   * Only fields can have an index-time boost, if you want to simulate
+   * a "document boost", then you must pre-multiply it across all the
+   * relevant fields yourself. 
+   * <p>The boost is used to compute the norm factor for the field.  By
+   * default, in the {@link Similarity#computeNorm(FieldInvertState, Norm)} method, 
+   * the boost value is multiplied by the length normalization factor and then
+   * rounded by {@link DefaultSimilarity#encodeNormValue(float)} before it is stored in the
+   * index.  One should attempt to ensure that this product does not overflow
+   * the range of that encoding.
+   * <p>
+   * It is illegal to return a boost other than 1.0f for a field that is not
+   * indexed ({@link IndexableFieldType#indexed()} is false) or omits normalization values
+   * ({@link IndexableFieldType#omitNorms()} returns true).
+   *
+   * @see Similarity#computeNorm(FieldInvertState, Norm)
+   * @see DefaultSimilarity#encodeNormValue(float)
+   */
   public float boost();
 
   /** Non-null if this field has a binary value */
