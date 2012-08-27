@@ -138,9 +138,6 @@ public class FSTCompletionLookup extends Lookup {
         completion.getFST(), true, exactMatchFirst);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void build(TermFreqIterator tfit) throws IOException {
     File tempInput = File.createTempFile(

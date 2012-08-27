@@ -174,7 +174,6 @@ public final class SegmentInfo {
     return Collections.unmodifiableSet(setFiles);
   }
 
-  /** {@inheritDoc} */
   @Override
   public String toString() {
     return toString(dir, 0);
