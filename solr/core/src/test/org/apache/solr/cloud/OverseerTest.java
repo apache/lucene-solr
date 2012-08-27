@@ -143,7 +143,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           elector.joinElection(ctx);
           return shardId;
         }
-        Thread.sleep(200);
+        Thread.sleep(400);
       }
       return null;
     }
