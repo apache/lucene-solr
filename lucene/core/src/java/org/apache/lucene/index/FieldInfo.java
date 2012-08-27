@@ -55,14 +55,29 @@ public final class FieldInfo {
     // NOTE: order is important here; FieldInfo uses this
     // order to merge two conflicting IndexOptions (always
     // "downgrades" by picking the lowest).
-    /** only documents are indexed: term frequencies and positions are omitted */
+    /** 
+     * Only documents are indexed: term frequencies and positions are omitted.
+     * Phrase and other positional queries on the field will throw an exception, and scoring
+     * will behave as if any term in the document appears only once.
+     */
     // TODO: maybe rename to just DOCS?
     DOCS_ONLY,
-    /** only documents and term frequencies are indexed: positions are omitted */  
+    /** 
+     * Only documents and term frequencies are indexed: positions are omitted. 
+     * This enables normal scoring, except Phrase and other positional queries
+     * will throw an exception.
+     */  
     DOCS_AND_FREQS,
-    /** documents, frequencies and positions */
+    /** 
+     * Indexes documents, frequencies and positions.
+     * This is a typical default for full-text search: full scoring is enabled
+     * and positional queries are supported.
+     */
     DOCS_AND_FREQS_AND_POSITIONS,
-    /** documents, frequencies, positions and offsets */
+    /** 
+     * Indexes documents, frequencies, positions and offsets.
+     * Character offsets are encoded alongside the positions. 
+     */
     DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
   };
 
