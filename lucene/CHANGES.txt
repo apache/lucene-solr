@@ -110,6 +110,9 @@ Bug Fixes
   containing non-BMP Unicode characters.  (Dawid Weiss, Robert Muir,
   Mike McCandless)
 
+* LUCENE-4224: Add in-order scorer to query time joining and the
+  out-of-order scorer throws an UOE. (Martijn van Groningen, Robert Muir)
+
 Optimizations
 
 * LUCENE-4317: Improve reuse of internal TokenStreams and StringReader
