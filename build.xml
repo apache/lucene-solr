@@ -262,7 +262,9 @@
   </target>
 
   <!-- Jenkins tasks -->
-  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,-svn-status,check-svn-properties"/>
+  <!-- TODO: figure out how to run check-svn-properties for the various jenkins' that
+       are configured in slow ways / have slow i/o systems -->
+  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,-svn-status"/>
   
   <target name="jenkins-clover">
     <antcall target="-jenkins-clover">
