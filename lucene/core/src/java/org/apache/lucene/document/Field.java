@@ -63,13 +63,13 @@ public class Field implements IndexableField {
   protected final FieldType type;
   protected final String name;
 
-  // Field's value:
+  /** Field's value */
   protected Object fieldsData;
 
-  // Pre-analyzed tokenStream for indexed fields; this is
-  // separate from fieldsData because you are allowed to
-  // have both; eg maybe field has a String value but you
-  // customize how it's tokenized:
+  /** Pre-analyzed tokenStream for indexed fields; this is
+   * separate from fieldsData because you are allowed to
+   * have both; eg maybe field has a String value but you
+   * customize how it's tokenized */
   protected TokenStream tokenStream;
 
   private transient TokenStream internalTokenStream;
