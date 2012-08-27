@@ -41,6 +41,14 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
 
   private final String name;
 
+  /**
+   * Creates a new codec.
+   * <p>
+   * The provided name will be written into the index segment: in order to
+   * for the segment to be read this class should be registered with Java's
+   * SPI mechanism (registered in META-INF/ of your jar file, etc).
+   * @param name must be all ascii alphanumeric, and less than 128 characters in length.
+   */
   public Codec(String name) {
     NamedSPILoader.checkServiceName(name);
     this.name = name;
@@ -118,6 +126,10 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     defaultCodec = codec;
   }
 
+  /**
+   * returns the codec's name. Subclasses can override to provide
+   * more detail (such as parameters).
+   */
   @Override
   public String toString() {
     return name;
