@@ -21,4 +21,7 @@
     <taskdef 
         name="forbidden-apis" 
         classname="org.apache.lucene.validation.ForbiddenApisCheckTask" />
+    <taskdef
+        name="svn-eol-style"
+        classname="org.apache.lucene.validation.SVNEolCheckTask" />
 </antlib> 
