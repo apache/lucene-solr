@@ -468,15 +468,17 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
     // Get the current (fresh) searcher for this node
     public ShardIndexSearcher acquire() {
-      final ShardIndexSearcher s = currentShardSearcher;
-      // TODO: this isn't thread safe.... in theory the
-      // reader could get decRef'd to 0 before we have a
-      // chance to incRef, ie if a reopen happens right
-      // after the above line, this thread gets stalled, and
-      // the old IR is closed.  But because we use SLM in
-      // this test, this will be exceptionally rare:
-      s.getIndexReader().incRef();
-      return s;
+      while(true) {
+        final ShardIndexSearcher s = currentShardSearcher;
+        // In theory the reader could get decRef'd to 0
+        // before we have a chance to incRef, ie if a reopen
+        // happens right after the above line, this thread
+        // gets stalled, and the old IR is closed.  So we
+        // must try/retry until incRef succeeds:
+        if (s.getIndexReader().tryIncRef()) {
+          return s;
+        }
+      }
     }
 
     public void release(ShardIndexSearcher s) throws IOException {
