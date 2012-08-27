@@ -326,16 +326,12 @@ public abstract class Analyzer {
    */
   public final static class GlobalReuseStrategy extends ReuseStrategy {
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
     public TokenStreamComponents getReusableComponents(String fieldName) {
       return (TokenStreamComponents) getStoredValue();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
     public void setReusableComponents(String fieldName, TokenStreamComponents components) {
       setStoredValue(components);
     }
@@ -347,19 +343,15 @@ public abstract class Analyzer {
    */
   public static class PerFieldReuseStrategy extends ReuseStrategy {
 
-    /**
-     * {@inheritDoc}
-     */
     @SuppressWarnings("unchecked")
+    @Override
     public TokenStreamComponents getReusableComponents(String fieldName) {
       Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue();
       return componentsPerField != null ? componentsPerField.get(fieldName) : null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @SuppressWarnings("unchecked")
+    @Override
     public void setReusableComponents(String fieldName, TokenStreamComponents components) {
       Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue();
       if (componentsPerField == null) {

@@ -168,17 +168,11 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
       this.crashAfterCreateOutput = name;
     }
         
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void close() throws IOException {
       realDirectory.close();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IndexOutput createOutput(String name, IOContext cxt) throws IOException {
       IndexOutput indexOutput = realDirectory.createOutput(name, cxt);
@@ -194,49 +188,31 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
       return indexOutput;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void deleteFile(String name) throws IOException {
       realDirectory.deleteFile(name);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean fileExists(String name) throws IOException {
       return realDirectory.fileExists(name);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long fileLength(String name) throws IOException {
       return realDirectory.fileLength(name);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public String[] listAll() throws IOException {
       return realDirectory.listAll();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IndexInput openInput(String name, IOContext cxt) throws IOException {
       return realDirectory.openInput(name, cxt);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void sync(Collection<String> names) throws IOException {
       realDirectory.sync(names);

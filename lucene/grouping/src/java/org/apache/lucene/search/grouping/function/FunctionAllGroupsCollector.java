@@ -61,13 +61,12 @@ public class FunctionAllGroupsCollector extends AbstractAllGroupsCollector<Mutab
     this.groupBy = groupBy;
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  @Override
   public Collection<MutableValue> getGroups() {
     return groups;
   }
 
+  @Override
   public void collect(int doc) throws IOException {
     filler.fillValue(doc);
     if (!groups.contains(mval)) {
@@ -75,9 +74,7 @@ public class FunctionAllGroupsCollector extends AbstractAllGroupsCollector<Mutab
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
     FunctionValues values = groupBy.getValues(vsContext, context);
     filler = values.getValueFiller();

@@ -64,17 +64,13 @@ public class FunctionSecondPassGroupingCollector extends AbstractSecondPassGroup
     this.vsContext = vsContext;
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  @Override
   protected SearchGroupDocs<MutableValue> retrieveGroup(int doc) throws IOException {
     filler.fillValue(doc);
     return groupMap.get(mval);
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  @Override
   public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     super.setNextReader(readerContext);
     FunctionValues values = groupByVS.getValues(vsContext, readerContext);

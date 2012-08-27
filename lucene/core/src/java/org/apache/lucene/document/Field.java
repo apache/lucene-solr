@@ -213,7 +213,7 @@ public class Field implements IndexableField {
   }
   
   /**
-   * The TokesStream for this field to be used when indexing, or null. If null,
+   * The TokenStream for this field to be used when indexing, or null. If null,
    * the Reader value or String value is analyzed to produce the indexed tokens.
    */
   public TokenStream tokenStreamValue() {
@@ -405,9 +405,6 @@ public class Field implements IndexableField {
     return type;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   public TokenStream tokenStream(Analyzer analyzer) throws IOException {
     if (!fieldType().indexed()) {
       return null;
