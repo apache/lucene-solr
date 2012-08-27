@@ -26,6 +26,9 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.BytesRef;
 
  
+/**
+ * Simple single-term clause
+ */
 public class SrndTermQuery extends SimpleTerm {
   public SrndTermQuery(String termText, boolean quoted) {
     super(quoted);

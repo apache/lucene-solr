@@ -22,7 +22,9 @@ import org.apache.lucene.queryparser.xml.builders.*;
  */
 
 /**
- *
+ * Assembles a QueryBuilder which uses Query objects from
+ * Lucene's <code>sandbox</code> and <code>queries</code>
+ * modules in addition to core queries.
  */
 public class CorePlusExtensionsParser extends CoreParser {
 
