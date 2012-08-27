@@ -20,7 +20,82 @@ import re
 reHREF = re.compile('<a.*?>(.*?)</a>', re.IGNORECASE)
 
 reMarkup = re.compile('<.*?>')
+reDivBlock = re.compile('<div class="block">(.*?)</div>', re.IGNORECASE)
+reCaption = re.compile('<caption><span>(.*?)</span>', re.IGNORECASE)
+reTDLast = re.compile('<td class="colLast">(.*?)$', re.IGNORECASE)
+reColOne = re.compile('<td class="colOne">(.*?)</td>', re.IGNORECASE)
 
+def cleanHTML(s):
+  s = reMarkup.sub('', s)
+  s = s.replace('&nbsp;', ' ')
+  s = s.replace('&lt;', '<')
+  s = s.replace('&gt;', '>')
+  s = s.replace('&amp;', '&')
+  return s.strip()
+
+def checkClass(fullPath):
+  # TODO: only works with java7 generated javadocs now!
+  f = open(fullPath, encoding='UTF-8')
+  anyMissing = False
+
+  printed = False
+  inThing = False
+  lastCaption = None
+  lastItem = None
+
+  desc = None
+  
+  for line in f.readlines():
+    m = reCaption.search(line)
+    if m is not None:
+      lastCaption = m.group(1)
+      #print('    caption %s' % lastCaption)
+    m = reTDLast.search(line)
+    if m is not None:
+      # TODO: this will only get the first line of multi-line things:
+      lastItem = cleanHTML(m.group(1))
+      #print('      item %s' % lastItem)
+    else:
+      m = reColOne.search(line)
+      if m is not None:
+        # TODO: this will only get the first line of multi-line things:
+        lastItem = cleanHTML(m.group(1))
+        #print('      item %s' % lastItem)
+
+    lineLower = line.strip().lower()
+
+    if lineLower.find('<tr class="') != -1:
+      inThing = True
+      hasDesc = False
+      continue
+
+    if inThing:
+      if lineLower.find('</tr>') != -1:
+        if not hasDesc:
+          if not printed:
+            print()
+            print(fullPath)
+            printed = True
+          print('  missing %s: %s' % (lastCaption, lastItem))
+          anyMissing = True
+        inThing = False
+        continue
+      else:
+        if line.find('<div class="block">') != -1:
+          desc = []
+        if desc is not None:
+          desc.append(line)
+          if line.find('</div>') != -1:
+            desc = ''.join(desc)
+            desc = desc.replace('<div class="block">', '')
+            desc = desc.replace('</div>', '')
+            desc = desc.strip()
+            #print('        desc %s' % desc)
+            hasDesc = len(desc) > 0
+            desc = None
+  f.close()
+  return anyMissing
+  
 def checkSummary(fullPath):
   printed = False
   f = open(fullPath, encoding='UTF-8')
@@ -84,8 +159,8 @@ def checkPackageSummaries(root, level='class'):
   True if there are problems.
   """
 
-  if level != 'class' and level != 'package':
-    print('unsupported level: %s, must be "class" or "package"' % level)
+  if level != 'class' and level != 'package' and level != 'method':
+    print('unsupported level: %s, must be "class" or "package" or "method"' % level)
     sys.exit(1)
   
   #for dirPath, dirNames, fileNames in os.walk('%s/lucene/build/docs/api' % root):
@@ -100,7 +175,7 @@ def checkPackageSummaries(root, level='class'):
     
   anyMissing = False
   for dirPath, dirNames, fileNames in os.walk(root):
-    
+
     if dirPath.find('/all/') != -1:
       # These are dups (this is a bit risk, eg, root IS this /all/ directory..)
       continue
@@ -108,6 +183,12 @@ def checkPackageSummaries(root, level='class'):
     if 'package-summary.html' in fileNames:
       if level != 'package' and checkSummary('%s/package-summary.html' % dirPath):
         anyMissing = True
+      if level == 'method': 
+        for fileName in fileNames:
+          fullPath = '%s/%s' % (dirPath, fileName)
+          if not fileName.startswith('package-') and fileName.endswith('.html') and os.path.isfile(fullPath):
+            if checkClass(fullPath):
+               anyMissing = True
     if 'overview-summary.html' in fileNames:        
       if checkSummary('%s/overview-summary.html' % dirPath):
         anyMissing = True
@@ -116,7 +197,7 @@ def checkPackageSummaries(root, level='class'):
 
 if __name__ == '__main__':
   if len(sys.argv) < 2 or len(sys.argv) > 3:
-    print('usage: %s <dir> [class|package]' % sys.argv[0])
+    print('usage: %s <dir> [class|package|method]' % sys.argv[0])
     sys.exit(1)
   if len(sys.argv) == 2:
     level = 'class'
