@@ -27,10 +27,10 @@ import org.apache.lucene.analysis.TokenStream;
 
 public final class TextField extends Field {
 
-  /* Indexed, tokenized, not stored. */
+  /** Indexed, tokenized, not stored. */
   public static final FieldType TYPE_NOT_STORED = new FieldType();
 
-  /* Indexed, tokenized, stored. */
+  /** Indexed, tokenized, stored. */
   public static final FieldType TYPE_STORED = new FieldType();
 
   static {
