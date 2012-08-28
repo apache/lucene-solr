@@ -220,7 +220,7 @@ public class Row {
    * Character.
    * 
    * @param way the Character associated with the desired Cell
-   * @return the reference, or -1 if the Cell is <tt>null,/tt>
+   * @return the reference, or -1 if the Cell is <tt>null</tt>
    */
   public int getRef(Character way) {
     Cell c = at(way);

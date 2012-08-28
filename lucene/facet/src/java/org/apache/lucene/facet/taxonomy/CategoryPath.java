@@ -570,7 +570,7 @@ public class CategoryPath implements Serializable, Cloneable, Comparable<Categor
    * changed later by the user. Copying the contents into a new object is a
    * solution.
    * <P>
-   * This constructor </I>does not</I> copy the capacity (spare buffer size)
+   * This constructor <I>does not</I> copy the capacity (spare buffer size)
    * of the existing CategoryPath. Rather, the new object occupies exactly the
    * space it needs, without any spare. This is the expected behavior in the
    * typical use case outlined in the previous paragraph.
