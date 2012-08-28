@@ -22,8 +22,9 @@ reHREF = re.compile('<a.*?>(.*?)</a>', re.IGNORECASE)
 reMarkup = re.compile('<.*?>')
 reDivBlock = re.compile('<div class="block">(.*?)</div>', re.IGNORECASE)
 reCaption = re.compile('<caption><span>(.*?)</span>', re.IGNORECASE)
-reTDLast = re.compile('<td class="colLast">.*<a href=".*#(.*?)">', re.IGNORECASE)
-reColOne = re.compile('<td class="colOne">.*<a href=".*#(.*?)">', re.IGNORECASE)
+reTDLastNested = re.compile('<td class="colLast"><code><strong><a href="[^>]*\.([^>]*?)\.html" title="class in[^>]*">', re.IGNORECASE)
+reTDLast = re.compile('<td class="colLast"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
+reColOne = re.compile('<td class="colOne"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
 
 def cleanHTML(s):
   s = reMarkup.sub('', s)
@@ -50,18 +51,25 @@ def checkClass(fullPath):
     if m is not None:
       lastCaption = m.group(1)
       #print('    caption %s' % lastCaption)
-    m = reTDLast.search(line)
+    m = reTDLastNested.search(line)
     if m is not None:
-      # TODO: this is actually the link anchor for the method, which we must
-      # somehow defer and only later check if the list at that anchor does not contain
-      # the text 'specified by' (in which case its an overridden method from an external library)
+      # nested classes
       lastItem = m.group(1)
       #print('      item %s' % lastItem)
     else:
-      m = reColOne.search(line)
+      m = reTDLast.search(line)
       if m is not None:
+        # methods etc
+        # TODO: this is actually the link anchor for the method, which we must
+        # somehow defer and only later check if the list at that anchor does not contain
+        # the text 'specified by' (in which case its an overridden method from an external library)
         lastItem = m.group(1)
-        #print('      item %s' % lastItem)
+      else:
+        # ctors etc
+        m = reColOne.search(line)
+        if m is not None:
+          lastItem = m.group(1)
+          #print('      item %s' % lastItem)
 
     lineLower = line.strip().lower()
 
