@@ -847,7 +847,8 @@
             <sysproperty key="tests.multiplier" value="@{tests.multiplier}"/>
             
             <!-- Temporary directory in the cwd. -->
-            <sysproperty key="tempDir" value="."/>
+            <sysproperty key="tempDir" value="." />
+            <sysproperty key="java.io.tmpdir" value="." />
 
             <sysproperty key="lucene.version" value="${dev.version}"/>
 
