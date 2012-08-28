@@ -26,6 +26,11 @@ reTDLastNested = re.compile('<td class="colLast"><code><strong><a href="[^>]*\.(
 reTDLast = re.compile('<td class="colLast"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
 reColOne = re.compile('<td class="colOne"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
 
+# the Method detail section at the end
+reMethodDetail = re.compile('^<h3>Method Detail</h3>$', re.IGNORECASE)
+reMethodDetailAnchor = re.compile('^<a name="([^>]*?)">$', re.IGNORECASE)
+reMethodOverridden = re.compile('^<dt><strong>(Specified by:|Overrides:)</strong></dt>$', re.IGNORECASE)
+
 def cleanHTML(s):
   s = reMarkup.sub('', s)
   s = s.replace('&nbsp;', ' ')
@@ -44,8 +49,29 @@ def checkClass(fullPath):
   lastItem = None
 
   desc = None
+
+  foundMethodDetail = False
+  lastMethodAnchor = None
   
   for line in f.readlines():
+    m = reMethodDetail.search(line)
+    if m is not None:
+      foundMethodDetail = True
+      continue
+
+    # prune methods that are just @Overrides of other interface/classes,
+    # they should be specified elsewhere, if they are e.g. jdk or 
+    # external classes we cannot inherit their docs anyway
+    if foundMethodDetail:
+      m = reMethodDetailAnchor.search(line)
+      if m is not None:
+        lastMethodAnchor = m.group(1)
+        continue
+      m = reMethodOverridden.search(line)
+      if m is not None and ('Methods', lastMethodAnchor) in missing:
+        #print('removing @overridden method: %s' % lastMethodAnchor)
+        missing.remove(('Methods', lastMethodAnchor))
+
     m = reCaption.search(line)
     if m is not None:
       lastCaption = m.group(1)
