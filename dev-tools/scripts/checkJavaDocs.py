@@ -22,7 +22,7 @@ reHREF = re.compile('<a.*?>(.*?)</a>', re.IGNORECASE)
 reMarkup = re.compile('<.*?>')
 reDivBlock = re.compile('<div class="block">(.*?)</div>', re.IGNORECASE)
 reCaption = re.compile('<caption><span>(.*?)</span>', re.IGNORECASE)
-reTDLast = re.compile('<td class="colLast">(.*?)$', re.IGNORECASE)
+reTDLast = re.compile('<td class="colLast">.*<a href=".*#(.*?)">', re.IGNORECASE)
 reColOne = re.compile('<td class="colOne">(.*?)</td>', re.IGNORECASE)
 
 def cleanHTML(s):
@@ -52,8 +52,10 @@ def checkClass(fullPath):
       #print('    caption %s' % lastCaption)
     m = reTDLast.search(line)
     if m is not None:
-      # TODO: this will only get the first line of multi-line things:
-      lastItem = cleanHTML(m.group(1))
+      # TODO: this is actually the link anchor for the method, which we must
+      # somehow defer and only later check if the list at that anchor does not contain
+      # the text 'specified by' (in which case its an overridden method from an external library)
+      lastItem = m.group(1)
       #print('      item %s' % lastItem)
     else:
       m = reColOne.search(line)
