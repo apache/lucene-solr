@@ -452,16 +452,6 @@
     <sign-artifacts-macro artifacts.dir="${dist.dir}"/>
   </target>
 
-  <!-- ================================================================== -->
-  <!-- Build the JavaCC files into the source tree                        -->
-  <!-- ================================================================== -->
-
-  <target name="javacc" depends="javacc-check">
-  	<subant target="javacc" failonerror="true" inheritall="false">
-  	  <fileset dir="${common.dir}/queryparser" includes="build.xml"/>
-  	</subant>
-  </target>
-
   <target name="build-modules" depends="compile-test"
           description="Builds all additional modules and their tests">
     <modules-crawl target="build-artifacts-and-tests"/>
