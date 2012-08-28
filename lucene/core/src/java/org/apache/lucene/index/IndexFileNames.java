@@ -40,6 +40,9 @@ import org.apache.lucene.codecs.Codec;
  */
 
 public final class IndexFileNames {
+  
+  /** No instance */
+  private IndexFileNames() {}
 
   /** Name of the index segment file */
   public static final String SEGMENTS = "segments";
