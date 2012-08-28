@@ -103,7 +103,7 @@ public abstract class PriorityQueue<T> {
    * 
    * <pre>
    * // extends getSentinelObject() to return a non-null value.
-   * PriorityQueue<MyObject> pq = new MyQueue<MyObject>(numHits);
+   * PriorityQueue&lt;MyObject&gt; pq = new MyQueue&lt;MyObject&gt;(numHits);
    * // save the 'top' element, which is guaranteed to not be null.
    * MyObject pqTop = pq.top();
    * &lt;...&gt;

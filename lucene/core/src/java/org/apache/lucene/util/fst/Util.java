@@ -89,7 +89,7 @@ public final class Util {
    *  pair where the output is equal to the target, and will
    *  return null if that output does not exist.
    *
-   *  <p>NOTE: this only works with FST<Long>, only
+   *  <p>NOTE: this only works with {@code FST<Long>}, only
    *  works when the outputs are ascending in order with
    *  the inputs and only works when you shared
    *  the outputs (pass doShare=true to {@link
