@@ -49,7 +49,7 @@ def verifyHTML(s):
     else:
       justTag = tag
       
-    if justTag.lower() in ('br', 'li', 'p'):
+    if justTag.lower() in ('br', 'li', 'p', 'col'):
       continue
 
     if tag[:1] == '/':
@@ -72,7 +72,71 @@ def cleanHTML(s):
   s = s.replace('&amp;', '&')
   return s.strip()
 
-def checkClass(fullPath):
+reH3 = re.compile('<h3>(.*?)</h3>', re.IGNORECASE)
+reH4 = re.compile('<h4>(.*?)</h4>', re.IGNORECASE)
+  
+def checkClassDetails(fullPath):
+  """
+  Checks for invalid HTML in the full javadocs under each field/method.
+  """
+
+  # TODO: only works with java7 generated javadocs now!
+  with open(fullPath, encoding='UTF-8') as f:
+    desc = None
+    cat = None
+    item = None
+    errors = []
+    for line in f.readlines():
+      m = reH3.search(line)
+      if m is not None:
+        if desc is not None:
+          # Have to fake <ul> context because we pulled a fragment out "across" two <ul>s:
+          desc = ''.join(desc)
+          if True or cat == 'Constructor Detail':
+            idx = desc.find('</div>')
+            if idx == -1:
+              # Ctor missing javadocs ... checkClassSummaries catches it
+              desc = None
+              continue
+            desc = desc[:idx+6]
+          else:
+            desc = '<ul>%s</ul>' % ''.join(desc)
+          #print('  VERIFY %s: %s: %s' % (cat, item, desc))
+          try:
+            verifyHTML(desc)
+          except RuntimeError as re:
+            #print('    FAILED: %s' % re)
+            errors.append((cat, item, str(re)))
+          desc = None
+        cat = m.group(1)
+        continue
+
+      m = reH4.search(line)
+      if m is not None:
+        if desc is not None:
+          # Have to fake <ul> context because we pulled a fragment out "across" two <ul>s:
+          desc = '<ul>%s</ul>' % ''.join(desc)
+          #print('  VERIFY %s: %s: %s' % (cat, item, desc))
+          try:
+            verifyHTML(desc)
+          except RuntimeError as re:
+            #print('    FAILED: %s' % re)
+            errors.append((cat, item, str(re)))
+        item = m.group(1)
+        desc = []
+        continue
+
+      if desc is not None:
+        desc.append(line)
+
+  if len(errors) != 0:
+    print()
+    print(fullPath)
+    for cat, item, message in errors:
+      print('  broken details HTML: %s: %s: %s' % (cat, item, message))
+
+def checkClassSummaries(fullPath):
+
   # TODO: only works with java7 generated javadocs now!
   f = open(fullPath, encoding='UTF-8')
 
@@ -250,6 +314,11 @@ def checkPackageSummaries(root, level='class'):
       sys.exit(1)
     
   anyMissing = False
+  if not os.path.isdir(root):
+    checkClassSummaries(root)
+    checkClassDetails(root)
+    sys.exit(0)
+    
   for dirPath, dirNames, fileNames in os.walk(root):
 
     if dirPath.find('/all/') != -1:
@@ -263,8 +332,11 @@ def checkPackageSummaries(root, level='class'):
         for fileName in fileNames:
           fullPath = '%s/%s' % (dirPath, fileName)
           if not fileName.startswith('package-') and fileName.endswith('.html') and os.path.isfile(fullPath):
-            if checkClass(fullPath):
+            if checkClassSummaries(fullPath):
               anyMissing = True
+            if checkClassDetails(fullPath):
+              anyMissing = True
+              
     if 'overview-summary.html' in fileNames:        
       if checkSummary('%s/overview-summary.html' % dirPath):
         anyMissing = True
