@@ -37,9 +37,8 @@ def cleanHTML(s):
 def checkClass(fullPath):
   # TODO: only works with java7 generated javadocs now!
   f = open(fullPath, encoding='UTF-8')
-  anyMissing = False
-
-  printed = False
+  
+  missing = []
   inThing = False
   lastCaption = None
   lastItem = None
@@ -81,12 +80,7 @@ def checkClass(fullPath):
     if inThing:
       if lineLower.find('</tr>') != -1:
         if not hasDesc:
-          if not printed:
-            print()
-            print(fullPath)
-            printed = True
-          print('  missing %s: %s' % (lastCaption, lastItem))
-          anyMissing = True
+          missing.append((lastCaption, lastItem))
         inThing = False
         continue
       else:
@@ -99,11 +93,17 @@ def checkClass(fullPath):
             desc = desc.replace('<div class="block">', '')
             desc = desc.replace('</div>', '')
             desc = desc.strip()
-            #print('        desc %s' % desc)
             hasDesc = len(desc) > 0
             desc = None
   f.close()
-  return anyMissing
+  if len(missing) > 0:
+    print()
+    print(fullPath)
+    for (caption, item) in missing:
+      print('  missing %s: %s' % (caption, item))
+    return True
+  else:
+    return False
   
 def checkSummary(fullPath):
   printed = False
