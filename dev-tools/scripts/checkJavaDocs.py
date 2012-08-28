@@ -31,6 +31,39 @@ reMethodDetail = re.compile('^<h3>Method Detail</h3>$', re.IGNORECASE)
 reMethodDetailAnchor = re.compile('^(?:</a>)?<a name="([^>]*?)">$', re.IGNORECASE)
 reMethodOverridden = re.compile('^<dt><strong>(Specified by:|Overrides:)</strong></dt>$', re.IGNORECASE)
 
+reTag = re.compile("(?i)<(\/?\w+)((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>")
+
+def verifyHTML(s):
+
+  stack = []
+  upto = 0
+  while True:
+    m = reTag.search(s, upto)
+    if m is None:
+      break
+    tag = m.group(1)
+    upto = m.end(0)
+
+    if tag[:1] == '/':
+      justTag = tag[1:]
+    else:
+      justTag = tag
+      
+    if justTag.lower() in ('br', 'li', 'p'):
+      continue
+
+    if tag[:1] == '/':
+      if len(stack) == 0:
+        raise RuntimeError('saw closing "%s" without opening <%s...>' % (m.group(0), tag[1:]))
+      elif stack[-1][0] != tag[1:].lower():
+        raise RuntimeError('closing "%s" does not match opening "%s"' % (m.group(0), stack[-1][1]))
+      stack.pop()
+    else:
+      stack.append((tag.lower(), m.group(0)))
+
+  if len(stack) != 0:
+    raise RuntimeError('"%s" was never closed' % stack[-1][1])
+
 def cleanHTML(s):
   s = reMarkup.sub('', s)
   s = s.replace('&nbsp;', ' ')
@@ -42,8 +75,9 @@ def cleanHTML(s):
 def checkClass(fullPath):
   # TODO: only works with java7 generated javadocs now!
   f = open(fullPath, encoding='UTF-8')
-  
+
   missing = []
+  broken = []
   inThing = False
   lastCaption = None
   lastItem = None
@@ -113,17 +147,27 @@ def checkClass(fullPath):
           desc.append(line)
           if line.find('</div>') != -1:
             desc = ''.join(desc)
+
+            try:
+              verifyHTML(desc)
+            except RuntimeError as e:
+              broken.append((lastCaption, lastItem, str(e)))
+              #print('FAIL: %s: %s: %s: %s' % (lastCaption, lastItem, e, desc))
+                            
             desc = desc.replace('<div class="block">', '')
             desc = desc.replace('</div>', '')
             desc = desc.strip()
             hasDesc = len(desc) > 0
+
             desc = None
   f.close()
-  if len(missing) > 0:
+  if len(missing) > 0 or len(broken) > 0:
     print()
     print(fullPath)
     for (caption, item) in missing:
       print('  missing %s: %s' % (caption, item))
+    for (caption, item, why) in broken:
+      print('  broken HTML: %s: %s: %s' % (caption, item, why))
     return True
   else:
     return False
@@ -220,7 +264,7 @@ def checkPackageSummaries(root, level='class'):
           fullPath = '%s/%s' % (dirPath, fileName)
           if not fileName.startswith('package-') and fileName.endswith('.html') and os.path.isfile(fullPath):
             if checkClass(fullPath):
-               anyMissing = True
+              anyMissing = True
     if 'overview-summary.html' in fileNames:        
       if checkSummary('%s/overview-summary.html' % dirPath):
         anyMissing = True
