@@ -508,6 +508,9 @@
     <attribute name="spec.version"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
     <sequential>
+      <!-- If possible, include the svnversion -->
+      <exec dir="." executable="${svnversion.exe}" outputproperty="svnversion" failifexecutionfails="false"/>
+
       <manifest file="@{manifest.file}">
         <!--
         http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
@@ -558,12 +561,6 @@
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="nested" optional="true" implicit="true"/>
     <sequential>
-      <!-- If possible, include the svnversion -->
-      <exec dir="." executable="${svnversion.exe}"
-            outputproperty="svnversion" failifexecutionfails="false">
-        <arg value="."/>
-      </exec>
-      
       <build-manifest title="@{title}"
                       implementation.title="@{implementation.title}"
                       spec.version="@{spec.version}"
@@ -1547,10 +1544,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
             description="Populates properties svn.URL and svn.Revision using 'svn info'.">
     <attribute name="directory"/>
     <sequential>
-      <exec dir="." executable="${svnversion.exe}" outputproperty="svn.ver"/>
+      <exec dir="@{directory}" executable="${svnversion.exe}" outputproperty="svn.ver"/>
       <fail message="A subversion checkout is required for this target">
         <condition>
-          <equals arg1="${svn.ver}" arg2="exported"/>
+          <matches pattern="(exported|unversioned.*)" string="${svn.ver}" casesensitive="false"/>
         </condition>
       </fail>
       <exec dir="@{directory}" executable="${svn.exe}" outputproperty="svn.info" failonerror="true">

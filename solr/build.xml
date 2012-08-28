@@ -638,12 +638,6 @@
     </exec>
   </target>
  
-  <target name="svn-up">
-    <exec executable="${svn.exe}">
-      <arg value="update"/>
-    </exec>
-  </target>
-
   <property name="analysis-common.res.dir"  value="../lucene/analysis/common/src/resources/org/apache/lucene/analysis"/>
   <property name="analysis-kuromoji.res.dir"  value="../lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis"/>
   <property name="analysis.conf.dest" value="${example}/solr/conf/lang"/>
