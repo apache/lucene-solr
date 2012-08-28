@@ -187,7 +187,7 @@ public abstract class Directory implements Closeable {
    * }
    * </pre>
    * <p>
-   * <b>NOTE:</b> this method does not check whether <i>dest<i> exist and will
+   * <b>NOTE:</b> this method does not check whether <i>dest</i> exist and will
    * overwrite it if it does.
    */
   public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
