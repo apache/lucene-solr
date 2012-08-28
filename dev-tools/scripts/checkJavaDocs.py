@@ -22,13 +22,13 @@ reHREF = re.compile('<a.*?>(.*?)</a>', re.IGNORECASE)
 reMarkup = re.compile('<.*?>')
 reDivBlock = re.compile('<div class="block">(.*?)</div>', re.IGNORECASE)
 reCaption = re.compile('<caption><span>(.*?)</span>', re.IGNORECASE)
-reTDLastNested = re.compile('<td class="colLast"><code><strong><a href="[^>]*\.([^>]*?)\.html" title="class in[^>]*">', re.IGNORECASE)
-reTDLast = re.compile('<td class="colLast"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
-reColOne = re.compile('<td class="colOne"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
+reTDLastNested = re.compile('^<td class="colLast"><code><strong><a href="[^>]*\.([^>]*?)\.html" title="class in[^>]*">', re.IGNORECASE)
+reTDLast = re.compile('^<td class="colLast"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
+reColOne = re.compile('^<td class="colOne"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
 
 # the Method detail section at the end
 reMethodDetail = re.compile('^<h3>Method Detail</h3>$', re.IGNORECASE)
-reMethodDetailAnchor = re.compile('^(</a>)?<a name="([^>]*?)">$', re.IGNORECASE)
+reMethodDetailAnchor = re.compile('^(?:</a>)?<a name="([^>]*?)">$', re.IGNORECASE)
 reMethodOverridden = re.compile('^<dt><strong>(Specified by:|Overrides:)</strong></dt>$', re.IGNORECASE)
 
 def cleanHTML(s):
@@ -65,7 +65,7 @@ def checkClass(fullPath):
     if foundMethodDetail:
       m = reMethodDetailAnchor.search(line)
       if m is not None:
-        lastMethodAnchor = m.group(2)
+        lastMethodAnchor = m.group(1)
         continue
       m = reMethodOverridden.search(line)
       if m is not None and ('Methods', lastMethodAnchor) in missing:
