@@ -128,7 +128,7 @@ import org.apache.lucene.queryparser.flexible.core.messages.*;"
     <mkdir dir="${build.dir}/javacc/bin/lib" />
     <ivy:cachefileset xmlns:ivy="antlib:org.apache.ivy.ant" organisation="net.java.dev.javacc" module="javacc" revision="5.0"
       inline="true" conf="default" transitive="false" type="jar" setid="javacc.files"/>
-    <copy todir="${build.dir}/javacc/bin/lib" flatten="true">
+    <copy todir="${build.dir}/javacc/bin/lib">
       <fileset refid="javacc.files"/>
       <!-- file must be named: javacc.jar, otherwise task will not find it... -->
       <mergemapper to="javacc.jar"/>
@@ -139,7 +139,6 @@ import org.apache.lucene.queryparser.flexible.core.messages.*;"
     <attribute name="target"/>
     <attribute name="outputDir"/>
     <sequential>
-      <!-- run javacc: -->
       <mkdir dir="@{outputDir}"/>
       <delete>
         <fileset dir="@{outputDir}" includes="*.java">
