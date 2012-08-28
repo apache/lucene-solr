@@ -482,7 +482,9 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
       source = analyzer.tokenStream(field, new StringReader(queryText));
       source.reset();
     } catch (IOException e) {
-      throw new ParseException("Unable to initialize TokenStream to analyze query text", e);
+      ParseException p = new ParseException("Unable to initialize TokenStream to analyze query text");
+      p.initCause(e);
+      throw p;
     }
     CachingTokenFilter buffer = new CachingTokenFilter(source);
     TermToBytesRefAttribute termAtt = null;
@@ -527,7 +529,9 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
       source.close();
     }
     catch (IOException e) {
-      throw new ParseException("Cannot close TokenStream analyzing query text", e);
+      ParseException p = new ParseException("Cannot close TokenStream analyzing query text");
+      p.initCause(e);
+      throw p;
     }
 
     BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();

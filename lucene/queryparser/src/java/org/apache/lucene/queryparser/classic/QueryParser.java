@@ -44,8 +44,8 @@ import org.apache.lucene.util.Version;
  *
  * <p>
  * Examples of appropriately formatted queries can be found in the <a
- * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package_description">
- * query syntax documentation</a>
+ * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package_description">query syntax
+ * documentation</a>.
  * </p>
  *
  * <p>
@@ -76,6 +76,14 @@ import org.apache.lucene.util.Version;
  * <p><b>NOTE</b>: there is a new QueryParser in contrib, which matches
  * the same syntax as this class, but is more modular,
  * enabling substantial customization to how a query is created.
+ *
+ * <a name="version"/>
+ * <p><b>NOTE</b>: You must specify the required {@link Version}
+ * compatibility when creating QueryParser:
+ * <ul>
+ *    <li> As of 3.1, {@link #setAutoGeneratePhraseQueries} is false by
+ *         default.
+ * </ul>
  */
 public class QueryParser extends QueryParserBase implements QueryParserConstants {
   /** The default operator for parsing queries.
@@ -84,7 +92,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   static public enum Operator { OR, AND }
 
   /** Create a query parser.
-   *  @param matchVersion  Lucene version to match.
+   *  @param matchVersion  Lucene version to match. See <a href="#version">above</a>.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
    */
@@ -632,7 +640,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List jj_expentries = new java.util.ArrayList();
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];
@@ -647,7 +655,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       for (int i = 0; i < jj_endpos; i++) {
         jj_expentry[i] = jj_lasttokens[i];
       }
-      jj_entries_loop: for (java.util.Iterator it = jj_expentries.iterator(); it.hasNext();) {
+      jj_entries_loop: for (java.util.Iterator<?> it = jj_expentries.iterator(); it.hasNext();) {
         int[] oldentry = (int[])(it.next());
         if (oldentry.length == jj_expentry.length) {
           for (int i = 0; i < jj_expentry.length; i++) {
@@ -695,7 +703,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
     jj_add_error_token(0, 0);
     int[][] exptokseq = new int[jj_expentries.size()][];
     for (int i = 0; i < jj_expentries.size(); i++) {
-      exptokseq[i] = (int[])jj_expentries.get(i);
+      exptokseq[i] = jj_expentries.get(i);
     }
     return new ParseException(token, exptokseq, tokenImage);
   }
