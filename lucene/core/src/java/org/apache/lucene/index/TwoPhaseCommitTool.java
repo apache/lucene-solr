@@ -27,6 +27,9 @@ import java.util.Map;
  * @lucene.experimental
  */
 public final class TwoPhaseCommitTool {
+  
+  /** No instance */
+  private TwoPhaseCommitTool() {}
 
   /**
    * A wrapper of a {@link TwoPhaseCommit}, which delegates all calls to the
