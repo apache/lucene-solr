@@ -80,7 +80,7 @@ public class QueryNodeParseException extends QueryNodeException {
   }
 
   /**
-   * For EndOfLine and EndOfFile ("<EOF>") parsing problems the last char in the
+   * For EndOfLine and EndOfFile ("&lt;EOF&gt;") parsing problems the last char in the
    * string is returned For the case where the parser is not able to figure out
    * the line and column number -1 will be returned
    * 
@@ -91,7 +91,7 @@ public class QueryNodeParseException extends QueryNodeException {
   }
 
   /**
-   * For EndOfLine and EndOfFile ("<EOF>") parsing problems the last char in the
+   * For EndOfLine and EndOfFile ("&lt;EOF&gt;") parsing problems the last char in the
    * string is returned For the case where the parser is not able to figure out
    * the line and column number -1 will be returned
    * 
