@@ -28,7 +28,7 @@ reColOne = re.compile('<td class="colOne"><code><strong><a href="[^>]*#([^>]*?)"
 
 # the Method detail section at the end
 reMethodDetail = re.compile('^<h3>Method Detail</h3>$', re.IGNORECASE)
-reMethodDetailAnchor = re.compile('^<a name="([^>]*?)">$', re.IGNORECASE)
+reMethodDetailAnchor = re.compile('^(</a>)?<a name="([^>]*?)">$', re.IGNORECASE)
 reMethodOverridden = re.compile('^<dt><strong>(Specified by:|Overrides:)</strong></dt>$', re.IGNORECASE)
 
 def cleanHTML(s):
@@ -65,7 +65,7 @@ def checkClass(fullPath):
     if foundMethodDetail:
       m = reMethodDetailAnchor.search(line)
       if m is not None:
-        lastMethodAnchor = m.group(1)
+        lastMethodAnchor = m.group(2)
         continue
       m = reMethodOverridden.search(line)
       if m is not None and ('Methods', lastMethodAnchor) in missing:
@@ -85,9 +85,6 @@ def checkClass(fullPath):
       m = reTDLast.search(line)
       if m is not None:
         # methods etc
-        # TODO: this is actually the link anchor for the method, which we must
-        # somehow defer and only later check if the list at that anchor does not contain
-        # the text 'specified by' (in which case its an overridden method from an external library)
         lastItem = m.group(1)
       else:
         # ctors etc
