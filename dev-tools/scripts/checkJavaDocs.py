@@ -72,8 +72,8 @@ def cleanHTML(s):
   s = s.replace('&amp;', '&')
   return s.strip()
 
-reH3 = re.compile('<h3>(.*?)</h3>', re.IGNORECASE)
-reH4 = re.compile('<h4>(.*?)</h4>', re.IGNORECASE)
+reH3 = re.compile('^<h3>(.*?)</h3>', re.IGNORECASE | re.MULTILINE)
+reH4 = re.compile('^<h4>(.*?)</h4>', re.IGNORECASE | re.MULTILINE)
   
 def checkClassDetails(fullPath):
   """
