@@ -1104,30 +1104,33 @@
 
        http://wiki.apache.org/solr/SolrReplication 
 
-       In the example below, remove the <lst name="master"> section if
-       this is just a slave and remove  the <lst name="slave"> section
-       if this is just a master.
+       It is also neccessary for SolrCloud to function (in Cloud mode, the 
+       replication handler is used to bulk transfer segments when nodes 
+       are added or need to recover).
+
+       https://wiki.apache.org/solr/SolrCloud/
     -->
-  <!--
-     <requestHandler name="/replication" class="solr.ReplicationHandler" >
+  <requestHandler name="/replication" class="solr.ReplicationHandler" > 
+    <!--
+       To enable simple master/slave replication, uncomment one of the 
+       sections below, depending on wether this solr instance should be 
+       the "master" or a "slave".  If this instance is a "slave" you will 
+       also need to fill in the masterUrl to point to a real machine.
+    -->
+    <!--
        <lst name="master">
          <str name="replicateAfter">commit</str>
          <str name="replicateAfter">startup</str>
          <str name="confFiles">schema.xml,stopwords.txt</str>
        </lst>
+    -->
+    <!--
        <lst name="slave">
-         <str name="masterUrl">http://localhost:8983/solr</str>
+         <str name="masterUrl">http://your-master-hostname:8983/solr</str>
          <str name="pollInterval">00:00:60</str>
        </lst>
-     </requestHandler>
     -->
-    
-    <!-- Solr Replication for SolrCloud Recovery
-    
-         This is the config need for SolrCloud's recovery replication.
-    -->
-	<requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
-
+  </requestHandler>
 
   <!-- Search Components
 
