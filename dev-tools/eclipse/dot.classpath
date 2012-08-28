@@ -95,7 +95,6 @@
   <classpathentry kind="src" path="solr/contrib/velocity/src/test"/>
   <classpathentry kind="src" path="solr/contrib/velocity/src/test-files"/>
   <classpathentry kind="lib" path="lucene/test-framework/lib/ant-1.8.2.jar"/>
-  <classpathentry kind="lib" path="lucene/test-framework/lib/ant-junit-1.8.2.jar"/>
   <classpathentry kind="lib" path="lucene/test-framework/lib/junit-4.10.jar"/>
   <classpathentry kind="lib" path="lucene/sandbox/lib/jakarta-regexp-1.4.jar"/>
   <classpathentry kind="lib" path="lucene/analysis/icu/lib/icu4j-49.1.jar"/>

@@ -30,7 +30,6 @@
 
     <dependencies defaultconf="default">
       <dependency org="org.apache.ant" name="ant" rev="1.8.2" transitive="false" />
-      <dependency org="org.apache.ant" name="ant-junit" rev="1.8.2" transitive="false" />
 
       <dependency org="junit" name="junit" rev="4.10" transitive="false" conf="default->*;junit4-stdalone->*" />
       <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="2.0.0.rc5" transitive="false" conf="default->*;junit4-stdalone->*" />
