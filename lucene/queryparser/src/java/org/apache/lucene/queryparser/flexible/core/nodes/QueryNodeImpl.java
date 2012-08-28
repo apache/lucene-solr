@@ -211,7 +211,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   /**
    * Every implementation of this class should return pseudo xml like this:
    * 
-   * For FieldQueryNode: <field start='1' end='2' field='subject' text='foo'/>
+   * For FieldQueryNode: &lt;field start='1' end='2' field='subject' text='foo'/&gt;
    * 
    * @see org.apache.lucene.queryparser.flexible.core.nodes.QueryNode#toString()
    */
