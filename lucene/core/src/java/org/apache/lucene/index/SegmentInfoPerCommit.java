@@ -97,15 +97,25 @@ public class SegmentInfoPerCommit {
     sizeInBytes =  -1;
   }
 
+  /**
+   * Sets the generation number of the live docs file.
+   * @see #getDelGen()
+   */
   public void setDelGen(long delGen) {
     this.delGen = delGen;
     sizeInBytes =  -1;
   }
 
+  /** Returns true if there are any deletions for the 
+   * segment at this commit. */
   public boolean hasDeletions() {
     return delGen != -1;
   }
 
+  /**
+   * Returns the next available generation number
+   * of the live docs file.
+   */
   public long getNextDelGen() {
     if (delGen == -1) {
       return 1;
@@ -114,10 +124,17 @@ public class SegmentInfoPerCommit {
     }
   }
 
+  /**
+   * Returns generation number of the live docs file 
+   * or -1 if there are no deletes yet.
+   */
   public long getDelGen() {
     return delGen;
   }
   
+  /**
+   * Returns the number of deleted docs in the segment.
+   */
   public int getDelCount() {
     return delCount;
   }

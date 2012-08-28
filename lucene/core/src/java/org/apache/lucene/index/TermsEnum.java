@@ -51,12 +51,15 @@ public abstract class TermsEnum implements BytesRefIterator {
     return atts;
   }
   
-  /** Represents returned result from {@link #seekCeil}.
-   *  If status is FOUND, then the precise term was found.
-   *  If status is NOT_FOUND, then a different term was
-   *  found.  If the status is END, the end of the iteration
-   *  was hit. */
-  public static enum SeekStatus {END, FOUND, NOT_FOUND};
+  /** Represents returned result from {@link #seekCeil}. */
+  public static enum SeekStatus {
+    /** The term was not found, and the end of iteration was hit. */
+    END,
+    /** The precise term was found. */
+    FOUND,
+    /** A different term was found after the requested term */
+    NOT_FOUND
+  };
 
   /** Attempts to seek to the exact term, returning
    *  true if the term is found.  If this returns false, the

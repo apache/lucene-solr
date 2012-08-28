@@ -243,7 +243,8 @@ public abstract class IndexReader implements Closeable {
   }
   
   /**
-   * @throws AlreadyClosedException if this IndexReader is closed
+   * Throws AlreadyClosedException if this IndexReader or any
+   * of its child readers is closed, otherwise returns.
    */
   protected final void ensureOpen() throws AlreadyClosedException {
     if (refCount.get() <= 0) {

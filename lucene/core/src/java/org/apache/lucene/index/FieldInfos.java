@@ -44,6 +44,9 @@ public class FieldInfos implements Iterable<FieldInfo> {
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private final Collection<FieldInfo> values; // for an unmodifiable iterator
   
+  /**
+   * Constructs a new FieldInfos from an array of FieldInfo objects
+   */
   public FieldInfos(FieldInfo[] infos) {
     boolean hasVectors = false;
     boolean hasProx = false;
@@ -98,30 +101,22 @@ public class FieldInfos implements Iterable<FieldInfo> {
     return hasOffsets;
   }
   
-  /**
-   * @return true if at least one field has any vectors
-   */
+  /** Returns true if any fields have vectors */
   public boolean hasVectors() {
     return hasVectors;
   }
   
-  /**
-   * @return true if at least one field has any norms
-   */
+  /** Returns true if any fields have norms */
   public boolean hasNorms() {
     return hasNorms;
   }
   
-  /**
-   * @return true if at least one field has doc values
-   */
+  /** Returns true if any fields have DocValues */
   public boolean hasDocValues() {
     return hasDocValues;
   }
   
-  /**
-   * @return number of fields
-   */
+  /** Returns the number of fields */
   public int size() {
     assert byNumber.size() == byName.size();
     return byNumber.size();

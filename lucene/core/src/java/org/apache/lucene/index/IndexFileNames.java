@@ -187,6 +187,10 @@ public final class IndexFileNames {
     return filename;
   }
   
+  /**
+   * Removes the extension (anything after the first '.'),
+   * otherwise returns the original filename.
+   */
   public static String stripExtension(String filename) {
     int idx = filename.indexOf('.');
     if (idx != -1) {
