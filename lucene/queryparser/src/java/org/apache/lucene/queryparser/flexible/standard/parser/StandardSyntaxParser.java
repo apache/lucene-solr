@@ -732,30 +732,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     finally { jj_save(1, xla); }
   }
 
-  private boolean jj_3R_4() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_scan_token(15)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(16)) return true;
-    }
-    if (jj_3R_6()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_6() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_7()) {
-    jj_scanpos = xsp;
-    if (jj_3R_8()) {
-    jj_scanpos = xsp;
-    if (jj_3R_9()) return true;
-    }
-    }
-    return false;
-  }
-
   private boolean jj_3_2() {
     if (jj_scan_token(TERM)) return true;
     Token xsp;
@@ -782,16 +758,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     return false;
   }
 
-  private boolean jj_3R_8() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_12()) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(27)) return true;
-    }
-    return false;
-  }
-
   private boolean jj_3_1() {
     if (jj_scan_token(TERM)) return true;
     Token xsp;
@@ -803,8 +769,13 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     return false;
   }
 
-  private boolean jj_3R_9() {
-    if (jj_scan_token(QUOTED)) return true;
+  private boolean jj_3R_8() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_12()) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(27)) return true;
+    }
     return false;
   }
 
@@ -818,6 +789,11 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     if (jj_scan_token(28)) return true;
     }
     }
+    return false;
+  }
+
+  private boolean jj_3R_9() {
+    if (jj_scan_token(QUOTED)) return true;
     return false;
   }
 
@@ -840,6 +816,30 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     if (jj_scan_token(22)) {
     jj_scanpos = xsp;
     if (jj_scan_token(28)) return true;
+    }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_4() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_scan_token(15)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(16)) return true;
+    }
+    if (jj_3R_6()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_6() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_7()) {
+    jj_scanpos = xsp;
+    if (jj_3R_8()) {
+    jj_scanpos = xsp;
+    if (jj_3R_9()) return true;
     }
     }
     return false;
@@ -986,7 +986,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List jj_expentries = new java.util.ArrayList();
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];
@@ -1001,7 +1001,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       for (int i = 0; i < jj_endpos; i++) {
         jj_expentry[i] = jj_lasttokens[i];
       }
-      jj_entries_loop: for (java.util.Iterator it = jj_expentries.iterator(); it.hasNext();) {
+      jj_entries_loop: for (java.util.Iterator<?> it = jj_expentries.iterator(); it.hasNext();) {
         int[] oldentry = (int[])(it.next());
         if (oldentry.length == jj_expentry.length) {
           for (int i = 0; i < jj_expentry.length; i++) {
@@ -1049,7 +1049,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     jj_add_error_token(0, 0);
     int[][] exptokseq = new int[jj_expentries.size()][];
     for (int i = 0; i < jj_expentries.size(); i++) {
-      exptokseq[i] = (int[])jj_expentries.get(i);
+      exptokseq[i] = jj_expentries.get(i);
     }
     return new ParseException(token, exptokseq, tokenImage);
   }
