@@ -113,6 +113,9 @@ Bug Fixes
 * LUCENE-4224: Add in-order scorer to query time joining and the
   out-of-order scorer throws an UOE. (Martijn van Groningen, Robert Muir)
 
+* LUCENE-4333: Fixed NPE in TermGroupFacetCollector when faceting on mv fields.
+  (Jesse MacVicar, Martijn van Groningen)
+
 Optimizations
 
 * LUCENE-4317: Improve reuse of internal TokenStreams and StringReader

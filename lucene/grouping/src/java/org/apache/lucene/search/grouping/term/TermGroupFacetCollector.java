@@ -186,6 +186,10 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
     }
 
     public void collect(int doc) throws IOException {
+      if (facetFieldDocTermOrds.isEmpty()) {
+        return;
+      }
+
       int groupOrd = groupFieldTermsIndex.getOrd(doc);
       if (facetOrdTermsEnum != null) {
         reuse = facetFieldDocTermOrds.lookup(doc, reuse);
@@ -240,6 +244,10 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       segmentTotalCount = 0;
 
       segmentGroupedFacetHits.clear();
+      if (facetFieldDocTermOrds.isEmpty()) {
+        return;
+      }
+
       for (GroupedFacetHit groupedFacetHit : groupedFacetHits) {
         int groupOrd = groupFieldTermsIndex.binarySearchLookup(groupedFacetHit.groupValue, spare);
         if (groupOrd < 0) {
