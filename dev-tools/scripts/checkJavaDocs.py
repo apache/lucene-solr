@@ -23,7 +23,7 @@ reMarkup = re.compile('<.*?>')
 reDivBlock = re.compile('<div class="block">(.*?)</div>', re.IGNORECASE)
 reCaption = re.compile('<caption><span>(.*?)</span>', re.IGNORECASE)
 reTDLast = re.compile('<td class="colLast">.*<a href=".*#(.*?)">', re.IGNORECASE)
-reColOne = re.compile('<td class="colOne">(.*?)</td>', re.IGNORECASE)
+reColOne = re.compile('<td class="colOne">.*<a href=".*#(.*?)">', re.IGNORECASE)
 
 def cleanHTML(s):
   s = reMarkup.sub('', s)
@@ -60,8 +60,7 @@ def checkClass(fullPath):
     else:
       m = reColOne.search(line)
       if m is not None:
-        # TODO: this will only get the first line of multi-line things:
-        lastItem = cleanHTML(m.group(1))
+        lastItem = m.group(1)
         #print('      item %s' % lastItem)
 
     lineLower = line.strip().lower()
