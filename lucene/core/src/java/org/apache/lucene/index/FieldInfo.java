@@ -31,7 +31,9 @@ import org.apache.lucene.index.DocValues.Type;
  **/
 
 public final class FieldInfo {
+  /** Field's name */
   public final String name;
+  /** Internal field number */
   public final int number;
 
   private boolean indexed;
@@ -164,27 +166,27 @@ public final class FieldInfo {
     assert checkConsistency();
   }
   
-  /** @return IndexOptions for the field, or null if the field is not indexed */
+  /** Returns IndexOptions for the field, or null if the field is not indexed */
   public IndexOptions getIndexOptions() {
     return indexOptions;
   }
   
   /**
-   * @return true if this field has any docValues.
+   * Returns true if this field has any docValues.
    */
   public boolean hasDocValues() {
     return docValueType != null;
   }
 
   /**
-   * @return {@link DocValues.Type} of the docValues. this may be null if the field has no docvalues.
+   * Returns {@link DocValues.Type} of the docValues. this may be null if the field has no docvalues.
    */
   public DocValues.Type getDocValuesType() {
     return docValueType;
   }
   
   /**
-   * @return {@link DocValues.Type} of the norm. this may be null if the field has no norms.
+   * Returns {@link DocValues.Type} of the norm. this may be null if the field has no norms.
    */
   public DocValues.Type getNormType() {
     return normType;
@@ -208,35 +210,35 @@ public final class FieldInfo {
   }
   
   /**
-   * @return true if norms are explicitly omitted for this field
+   * Returns true if norms are explicitly omitted for this field
    */
   public boolean omitsNorms() {
     return omitNorms;
   }
   
   /**
-   * @return true if this field actually has any norms.
+   * Returns true if this field actually has any norms.
    */
   public boolean hasNorms() {
     return normType != null;
   }
   
   /**
-   * @return true if this field is indexed.
+   * Returns true if this field is indexed.
    */
   public boolean isIndexed() {
     return indexed;
   }
   
   /**
-   * @return true if any payloads exist for this field.
+   * Returns true if any payloads exist for this field.
    */
   public boolean hasPayloads() {
     return storePayloads;
   }
   
   /**
-   * @return true if any term vectors exist for this field.
+   * Returns true if any term vectors exist for this field.
    */
   public boolean hasVectors() {
     return storeTermVector;
@@ -271,7 +273,7 @@ public final class FieldInfo {
   }
   
   /**
-   * @return internal codec attributes map. May be null if no mappings exist.
+   * Returns internal codec attributes map. May be null if no mappings exist.
    */
   public Map<String,String> attributes() {
     return attributes;

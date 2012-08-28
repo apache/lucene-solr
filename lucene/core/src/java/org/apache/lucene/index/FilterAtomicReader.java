@@ -40,8 +40,13 @@ public class FilterAtomicReader extends AtomicReader {
   /** Base class for filtering {@link Fields}
    *  implementations. */
   public static class FilterFields extends Fields {
+    /** The underlying Fields instance. */
     protected final Fields in;
 
+    /**
+     * Creates a new FilterFields.
+     * @param in the underlying Fields instance.
+     */
     public FilterFields(Fields in) {
       this.in = in;
     }
@@ -70,8 +75,13 @@ public class FilterAtomicReader extends AtomicReader {
   /** Base class for filtering {@link Terms}
    *  implementations. */
   public static class FilterTerms extends Terms {
+    /** The underlying Terms instance. */
     protected final Terms in;
 
+    /**
+     * Creates a new FilterTerms
+     * @param in the underlying Terms instance.
+     */
     public FilterTerms(Terms in) {
       this.in = in;
     }
@@ -129,8 +139,13 @@ public class FilterAtomicReader extends AtomicReader {
 
   /** Base class for filtering {@link TermsEnum} implementations. */
   public static class FilterTermsEnum extends TermsEnum {
+    /** The underlying TermsEnum instance. */
     protected final TermsEnum in;
 
+    /**
+     * Creates a new FilterTermsEnum
+     * @param in the underlying TermsEnum instance.
+     */
     public FilterTermsEnum(TermsEnum in) { this.in = in; }
 
     @Override
@@ -206,8 +221,13 @@ public class FilterAtomicReader extends AtomicReader {
 
   /** Base class for filtering {@link DocsEnum} implementations. */
   public static class FilterDocsEnum extends DocsEnum {
+    /** The underlying DocsEnum instance. */
     protected final DocsEnum in;
 
+    /**
+     * Create a new FilterDocsEnum
+     * @param in the underlying DocsEnum instance.
+     */
     public FilterDocsEnum(DocsEnum in) {
       this.in = in;
     }
@@ -240,8 +260,13 @@ public class FilterAtomicReader extends AtomicReader {
 
   /** Base class for filtering {@link DocsAndPositionsEnum} implementations. */
   public static class FilterDocsAndPositionsEnum extends DocsAndPositionsEnum {
+    /** The underlying DocsAndPositionsEnum instance. */
     protected final DocsAndPositionsEnum in;
 
+    /**
+     * Create a new FilterDocsAndPositionsEnum
+     * @param in the underlying DocsAndPositionsEnum instance.
+     */
     public FilterDocsAndPositionsEnum(DocsAndPositionsEnum in) {
       this.in = in;
     }
@@ -292,6 +317,7 @@ public class FilterAtomicReader extends AtomicReader {
     }
   }
 
+  /** The underlying AtomicReader. */
   protected final AtomicReader in;
 
   /**

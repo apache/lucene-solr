@@ -212,11 +212,15 @@ final class TermInfosReader {
                    new TermInfoAndOrd(enumerator.termInfo,
                                       enumerator.position));
   }
+  
+  static Term deepCopyOf(Term other) {
+    return new Term(other.field(), BytesRef.deepCopyOf(other.bytes()));
+  }
 
   TermInfo seekEnum(SegmentTermEnum enumerator, Term term, boolean useCache) throws IOException {
     if (useCache) {
       return seekEnum(enumerator, term,
-                      termsCache.get(new CloneableTerm(term.deepCopyOf())),
+                      termsCache.get(new CloneableTerm(deepCopyOf(term))),
                       useCache);
     } else {
       return seekEnum(enumerator, term, null, useCache);
@@ -249,7 +253,7 @@ final class TermInfosReader {
             // of terms in order
             if (tiOrd == null) {
               if (useCache) {
-                termsCache.put(new CloneableTerm(term.deepCopyOf()),
+                termsCache.put(new CloneableTerm(deepCopyOf(term)),
                                new TermInfoAndOrd(ti, enumerator.position));
               }
             } else {
@@ -282,7 +286,7 @@ final class TermInfosReader {
       ti = enumerator.termInfo;
       if (tiOrd == null) {
         if (useCache) {
-          termsCache.put(new CloneableTerm(term.deepCopyOf()),
+          termsCache.put(new CloneableTerm(deepCopyOf(term)),
                          new TermInfoAndOrd(ti, enumerator.position));
         }
       } else {

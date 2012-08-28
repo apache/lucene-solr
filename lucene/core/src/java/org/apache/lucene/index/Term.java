@@ -132,8 +132,4 @@ public final class Term implements Comparable<Term> {
 
   @Override
   public final String toString() { return field + ":" + bytes.utf8ToString(); }
-
-  public Term deepCopyOf() {
-    return new Term(field, BytesRef.deepCopyOf(bytes));
-  }
 }
