@@ -19,8 +19,6 @@
 
 <project name="misc" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
 
-  <!-- TODO: add javacc capability for PrecedenceQueryParser -->
-
   <description>
     Index tools and other miscellaneous code
   </description>

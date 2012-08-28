@@ -38,8 +38,6 @@
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <target name="compile-core" depends="jflex-notice, javacc-notice, common.compile-core"/>
-  
   <target name="test-core" depends="common.test"/>
 
   <target name="javadocs-core" depends="javadocs"/>

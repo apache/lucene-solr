@@ -66,34 +66,12 @@ system.
 
 NOTE: the ~ character represents your user account home directory.
 
-Step 3) Install JavaCC
-
-Building the Lucene distribution from the source does not require the JavaCC
-parser generator, but if you wish to regenerate any of the pre-generated
-parser pieces, you will need to install JavaCC. Version 4.1 is tested to
-work correctly.
-
-  http://javacc.dev.java.net
-
-Follow the download links and download the zip file to a temporary
-location on your file system.
-
-After JavaCC is installed, create a build.properties file
-(as in step 2), and add the line
-
-  javacc.home=/javacc
-
-where this points to the root directory of your javacc installation
-(the directory that contains bin/lib/javacc.jar).
-
-Step 4) Run ant
+Step 3) Run ant
 
 Assuming you have ant in your PATH and have set ANT_HOME to the
 location of your ant installation, typing "ant" at the shell prompt
 and command prompt should run ant.  Ant will by default look for the
 "build.xml" file in your current directory, and compile Lucene.
-
-To rebuild any of the JavaCC-based parsers, run "ant javacc".
 
 For further information on Lucene, go to:
   http://lucene.apache.org/

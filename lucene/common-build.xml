@@ -173,7 +173,6 @@
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
 
-  <property name="javacc.home" location="${common.dir}"/>
   <property name="jflex.home" location="${common.dir}"/>
 
   <path id="jflex.classpath">
@@ -182,12 +181,6 @@
       <include name="jflex/target/*.jar"/>
       <!-- for a JFlex distribution (not yet available): -->
       <include name="lib/*.jar"/>
-    </fileset>
-  </path>
-
-  <path id="javacc.classpath">
-    <fileset dir="${javacc.home}/">
-      <include name="bin/lib/*.jar"/>
     </fileset>
   </path>
 
@@ -259,23 +252,6 @@
     <delete dir="${build.dir}"/>
     <delete dir="${dist.dir}"/>
     <delete file="velocity.log"/>
-  </target>
-
-  <!-- TODO: maybe make JavaCC checking specific to only the projects
-             that use it (Lucene core and queryparsers)
-  -->
-  <target name="javacc-uptodate-check">
-    <uptodate property="javacc.files.uptodate">
-      <srcfiles dir="${src.dir}" includes="**/*.jj" />
-      <mapper type="glob" from="*.jj" to="*.java"/>
-    </uptodate>
-  </target>
-
-  <target name="javacc-notice" depends="javacc-uptodate-check" unless="javacc.files.uptodate">
-    <echo>
-      One or more of the JavaCC .jj files is newer than its corresponding
-      .java file.  Run the "javacc" target to regenerate the artifacts.
-    </echo>
   </target>
 
   <target name="init" depends="resolve">
@@ -391,36 +367,6 @@
     </echo>
   </target>
 
-  <target name="javacc-check">
-    <available property="javacc.present" classname="org.javacc.parser.Main">
-      <classpath refid="javacc.classpath"/>
-    </available>
-    <fail unless="javacc.present">
-      ##################################################################
-      JavaCC not found.
-      JavaCC Home: ${javacc.home}
-
-      Please download and install JavaCC 5.0 from:
-
-      &lt;http://javacc.dev.java.net&gt;
-
-      Then, create a build.properties file either in your home
-      directory, or within the Lucene directory and set the javacc.home
-      property to the path where JavaCC is installed. For example,
-      if you installed JavaCC in /usr/local/java/javacc-5.0, then set the
-      javacc.home property to:
-
-      javacc.home=/usr/local/java/javacc-5.0
-
-      If you get an error like the one below, then you have not installed
-      things correctly. Please check all your paths and try again.
-
-      java.lang.NoClassDefFoundError: org.javacc.parser.Main
-      ##################################################################
-    </fail>
-
-  </target>
-	
   <target name="jflex-check">
     <available property="jflex.present" classname="jflex.anttask.JFlexTask">
       <classpath refid="jflex.classpath"/>
@@ -1379,28 +1325,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <!-- <compilerarg line="-Xmaxwarns 10000000"/>
         <compilerarg line="-Xmaxerrs 10000000"/> -->
         <!-- for generics in Java 1.5: -->
-	<compilerarg line="${javac.args}"/>
+        <compilerarg line="${javac.args}"/>
       </javac>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="invoke-javacc">
-    <attribute name="target"/>
-    <attribute name="outputDir"/>
-    <sequential>
-      <mkdir dir="@{outputDir}"/>
-      <javacc
-          target="@{target}"
-          outputDirectory="@{outputDir}"
-          debugTokenManager="${javacc.debug.tokenmgr}"
-          debugParser="${javacc.debug.parser}"
-          debuglookahead="${javacc.debug.lookahead}"
-          javacchome="${javacc.home}"
-          jdkversion="${javac.source}"
-      />
-      <fixcrlf srcdir="@{outputDir}" includes="*.java" encoding="UTF-8">
-        <containsregexp expression="Generated.*By.*JavaCC"/>
-      </fixcrlf>
     </sequential>
   </macrodef>
 
