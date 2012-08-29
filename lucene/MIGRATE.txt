@@ -626,3 +626,8 @@ you can now do this:
   method, StoredFieldVisitor has a needsField method: if that method
   returns true then the field will be loaded and the appropriate
   type-specific method will be invoked with that fields's value.
+
+* LUCENE-4122: Removed the Payload class and replaced with BytesRef.
+  PayloadAttribute's name is unchanged, it just uses the BytesRef
+  class to refer to the payload bytes/start offset/end offset 
+  (or null if there is no payload).
