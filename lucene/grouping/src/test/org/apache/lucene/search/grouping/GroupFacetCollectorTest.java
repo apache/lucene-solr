@@ -231,6 +231,9 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
             new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
     boolean useDv = false;
 
+    // Cannot assert this since we use NoMergePolicy:
+    w.setDoRandomForceMergeAssert(false);
+
     // 0
     Document doc = new Document();
     addField(doc, "x", "x", useDv);
