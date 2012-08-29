@@ -244,9 +244,6 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       segmentTotalCount = 0;
 
       segmentGroupedFacetHits.clear();
-      if (facetFieldDocTermOrds.isEmpty()) {
-        return;
-      }
       for (GroupedFacetHit groupedFacetHit : groupedFacetHits) {
         int groupOrd = groupFieldTermsIndex.binarySearchLookup(groupedFacetHit.groupValue, spare);
         if (groupOrd < 0) {

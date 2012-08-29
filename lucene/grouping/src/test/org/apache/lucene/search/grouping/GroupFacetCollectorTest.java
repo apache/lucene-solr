@@ -239,6 +239,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     addField(doc, "x", "x", useDv);
     w.addDocument(doc);
 
+    // 1
     doc = new Document();
     addField(doc, groupField, "a", useDv);
     addField(doc, "airport", "ams", useDv);
@@ -247,28 +248,16 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     w.commit();
     w.deleteDocuments(new TermQuery(new Term("airport", "ams")));
 
-    // 0
-    doc = new Document();
-    addField(doc, groupField, "a", useDv);
-    addField(doc, "airport", "ams", useDv);
-    w.addDocument(doc);
-
-    // 1
-    doc = new Document();
-    addField(doc, groupField, "a", useDv);
-    addField(doc, "airport", "dus", useDv);
-    w.addDocument(doc);
-
     // 2
     doc = new Document();
-    addField(doc, groupField, "b", useDv);
+    addField(doc, groupField, "a", useDv);
     addField(doc, "airport", "ams", useDv);
     w.addDocument(doc);
 
     // 3
     doc = new Document();
-    addField(doc, groupField, "b", useDv);
-    addField(doc, "airport", "ams", useDv);
+    addField(doc, groupField, "a", useDv);
+    addField(doc, "airport", "dus", useDv);
     w.addDocument(doc);
 
     // 4
@@ -277,7 +266,25 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     addField(doc, "airport", "ams", useDv);
     w.addDocument(doc);
 
+    // 5
+    doc = new Document();
+    addField(doc, groupField, "b", useDv);
+    addField(doc, "airport", "ams", useDv);
+    w.addDocument(doc);
+
+    // 6
+    doc = new Document();
+    addField(doc, groupField, "b", useDv);
+    addField(doc, "airport", "ams", useDv);
+    w.addDocument(doc);
     w.commit();
+
+    // 7
+    doc = new Document();
+    addField(doc, "x", "x", useDv);
+    w.addDocument(doc);
+    w.commit();
+
     w.close();
     IndexSearcher indexSearcher = new IndexSearcher(DirectoryReader.open(dir));
     AbstractGroupFacetCollector groupedAirportFacetCollector = createRandomCollector(groupField, "airport", null, true, useDv);
