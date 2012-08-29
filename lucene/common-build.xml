@@ -1681,4 +1681,22 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
      </sequential>
   </macrodef>
 
+  <!--
+   compile changes.txt into an html file
+   -->
+  <macrodef name="build-changes">
+    <attribute name="changes.src.dir" default="${changes.src.dir}"/>
+    <attribute name="changes.target.dir" default="${changes.target.dir}"/>
+    <sequential>
+      <mkdir dir="@{changes.target.dir}"/>
+      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
+            failonerror="true" logError="true">
+        <arg value="@{changes.src.dir}/changes2html.pl"/>
+      </exec>
+      <copy todir="@{changes.target.dir}">
+        <fileset dir="@{changes.src.dir}" includes="*.css"/>
+      </copy>
+    </sequential>
+  </macrodef>
+
 </project>

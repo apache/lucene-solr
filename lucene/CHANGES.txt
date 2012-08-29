@@ -7553,7 +7553,7 @@ Infrastructure
 11. Fixed bugs in GermanAnalyzer (gschwarz)
 
 
-1.2 RC2:
+1.2 RC2
  - added sources to distribution
  - removed broken build scripts and libraries from distribution
  - SegmentsReader: fixed potential race condition
@@ -7568,7 +7568,8 @@ Infrastructure
  - JDK 1.1 compatibility fix: disabled lock files for JDK 1.1,
    since they rely on a feature added in JDK 1.2.
 
-1.2 RC1 (first Apache release):
+1.2 RC1
+  - first Apache release
   - packages renamed from com.lucene to org.apache.lucene
   - license switched from LGPL to Apache
   - ant-only build -- no more makefiles
@@ -7579,7 +7580,8 @@ Infrastructure
   - Analyzers can choose tokenizer based on field name
   - misc bug fixes.
 
-1.01b (last Sourceforge release)
+1.01b
+ . last Sourceforge release
  . a few bug fixes
  . new Query Parser
  . new prefix query (search for "foo*" matches "food")
