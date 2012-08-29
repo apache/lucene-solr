@@ -123,16 +123,11 @@ import org.apache.lucene.queryparser.flexible.core.messages.*;"
                              byline="true"/>
   </target>
 
-  <target name="resolve-javacc">
-    <!-- setup a "fake" JavaCC distribution folder in ${build.dir} to make javacc task happy: -->
-    <mkdir dir="${build.dir}/javacc/bin/lib" />
-    <ivy:cachefileset xmlns:ivy="antlib:org.apache.ivy.ant" organisation="net.java.dev.javacc" module="javacc" revision="5.0"
-      inline="true" conf="default" transitive="false" type="jar" setid="javacc.files"/>
-    <copy todir="${build.dir}/javacc/bin/lib">
-      <fileset refid="javacc.files"/>
-      <!-- file must be named: javacc.jar, otherwise task will not find it... -->
-      <mergemapper to="javacc.jar"/>
-    </copy>
+  <target name="resolve-javacc" xmlns:ivy="antlib:org.apache.ivy.ant">
+    <!-- setup a "fake" JavaCC distribution folder in ${build.dir} to make JavaCC ANT task happy: -->
+    <ivy:retrieve organisation="net.java.dev.javacc" module="javacc" revision="5.0"
+      inline="true" conf="default" transitive="false" type="jar" sync="true"
+      pattern="${build.dir}/javacc/bin/lib/[artifact].[ext]"/>
   </target>
 
   <macrodef name="invoke-javacc">
