@@ -470,24 +470,6 @@
     <modules-crawl target="test" failonerror="true"/>
   </target>
 
-  <!--
-   compile changes.txt into an html file
-   -->
-  <macrodef name="build-changes">
-    <attribute name="changes.src.dir" default="${changes.src.dir}"/>
-    <attribute name="changes.target.dir" default="${changes.target.dir}"/>
-    <sequential>
-      <mkdir dir="@{changes.target.dir}"/>
-      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
-            failonerror="true" logError="true">
-        <arg value="@{changes.src.dir}/changes2html.pl"/>
-      </exec>
-      <copy todir="@{changes.target.dir}">
-        <fileset dir="@{changes.src.dir}" includes="*.css"/>
-      </copy>
-    </sequential>
-  </macrodef>
-
   <target name="changes-to-html">
     <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" />
   </target>
