@@ -19,6 +19,7 @@ from fractions import gcd
 
 """Code generation for bulk operations"""
 
+MAX_SPECIALIZED_BITS_PER_VALUE = 24;
 PACKED_64_SINGLE_BLOCK_BPV = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 21, 32]
 OUTPUT_FILE = "BulkOperation.java"
 HEADER = """// This file has been automatically generated, DO NOT EDIT
@@ -45,32 +46,11 @@ package org.apache.lucene.util.packed;
 """
 
 FOOTER="""
-
-  private static long[] toLongArray(int[] ints, int offset, int length) {
-    long[] arr = new long[length];
-    for (int i = 0; i < length; ++i) {
-      arr[i] = ints[offset + i];
+  protected int writeLong(long block, byte[] blocks, int blocksOffset) {
+    for (int j = 1; j <= 8; ++j) {
+      blocks[blocksOffset++] = (byte) (block >>> (64 - (j << 3)));
     }
-    return arr;
-  }
-
-  @Override
-  public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-    encode(toLongArray(values, valuesOffset, iterations * valueCount()), 0, blocks, blocksOffset, iterations);
-  }
-
-  @Override
-  public void encode(long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
-    final long[] longBLocks = new long[blockCount() * iterations];
-    encode(values, valuesOffset, longBLocks, 0, iterations);
-    ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer().put(longBLocks);
-  }
-
-  @Override
-  public void encode(int[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
-    final long[] longBLocks = new long[blockCount() * iterations];
-    encode(values, valuesOffset, longBLocks, 0, iterations);
-    ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer().put(longBLocks);
+    return blocksOffset;
   }
 
   /**
@@ -140,18 +120,12 @@ def get_type(bits):
 
 def packed64singleblock(bpv, f):
   values = 64 / bpv
-  f.write("    @Override\n")
-  f.write("    public int blockCount() {\n")
-  f.write("      return 1;\n")
-  f.write("     }\n\n")
-  f.write("    @Override\n")
-  f.write("    public int valueCount() {\n")
-  f.write("      return %d;\n" %values)
+  f.write("\n")
+  f.write("    public BulkOperationPackedSingleBlock%d() {\n" %bpv)
+  f.write("      super(%d);\n" %bpv)
   f.write("    }\n\n")
   p64sb_decode(bpv, f, 32)
   p64sb_decode(bpv, f, 64)
-  p64sb_encode(bpv, f, 32)
-  p64sb_encode(bpv, f, 64)
 
 def p64sb_decode(bpv, f, bits):
   values = 64 / bpv
@@ -227,31 +201,6 @@ def p64sb_decode(bpv, f, bits):
   f.write("      }\n")
   f.write("    }\n\n")
 
-def p64sb_encode(bpv, f, bits):
-  values = 64 / bpv
-  typ = get_type(bits)
-  mask_start, mask_end = masks(bits)
-  f.write("    @Override\n")
-  f.write("    public void encode(%s[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {\n" %typ)
-  if bits < bpv:
-    f.write("      throw new UnsupportedOperationException();\n")
-    f.write("    }\n\n")
-    return
-  f.write("      assert blocksOffset + iterations * blockCount() <= blocks.length;\n")
-  f.write("      assert valuesOffset + iterations * valueCount() <= values.length;\n")
-  f.write("      for (int i = 0; i < iterations; ++i) {\n")
-  for i in xrange(values):
-    block_offset = i / values
-    offset_in_block = i % values
-    if i == 0:
-      f.write("        blocks[blocksOffset++] = %svalues[valuesOffset++]%s" %(mask_start, mask_end))
-    else:
-      f.write(" | (%svalues[valuesOffset++]%s << %d)" %(mask_start, mask_end, i * bpv))
-      if i == values - 1:
-        f.write(";\n")
-  f.write("      }\n")
-  f.write("    }\n\n")
-
 def packed64(bpv, f):
   blocks = bpv
   values = blocks * 64 / bpv
@@ -260,13 +209,12 @@ def packed64(bpv, f):
     values /= 2
   assert values * bpv == 64 * blocks, "%d values, %d blocks, %d bits per value" %(values, blocks, bpv)
   mask = (1 << bpv) - 1
-  f.write("    @Override\n")
-  f.write("    public int blockCount() {\n")
-  f.write("      return %d;\n" %blocks)
-  f.write("    }\n\n")
-  f.write("    @Override\n")
-  f.write("    public int valueCount() {\n")
-  f.write("      return %d;\n" %values)
+
+  f.write("\n")
+  f.write("    public BulkOperationPacked%d() {\n" %bpv)
+  f.write("      super(%d);\n" %bpv)
+  f.write("      assert blockCount() == %d;\n" %blocks)
+  f.write("      assert valueCount() == %d;\n" %values)
   f.write("    }\n\n")
 
   if bpv == 64:
@@ -289,17 +237,10 @@ def packed64(bpv, f):
     public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
       LongBuffer.wrap(values, valuesOffset, iterations * valueCount()).put(ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer());
     }
-
-    @Override
-    public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      System.arraycopy(values, valuesOffset, blocks, blocksOffset, valueCount() * iterations);
-    }
 """)
   else:
     p64_decode(bpv, f, 32, values)
     p64_decode(bpv, f, 64, values)
-    p64_encode(bpv, f, 32, values)
-    p64_encode(bpv, f, 64, values)
 
 def p64_decode(bpv, f, bits, values):
   typ = get_type(bits)
@@ -383,41 +324,11 @@ def p64_decode(bpv, f, bits, values):
     f.write("      }\n")
   f.write("    }\n\n")
 
-def p64_encode(bpv, f, bits, values):
-  typ = get_type(bits)
-  mask_start, mask_end = masks(bits)
-  f.write("    @Override\n")
-  f.write("    public void encode(%s[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {\n" %typ)
-  f.write("      assert blocksOffset + iterations * blockCount() <= blocks.length;\n")
-  f.write("      assert valuesOffset + iterations * valueCount() <= values.length;\n")
-  f.write("      for (int i = 0; i < iterations; ++i) {\n")
-  for i in xrange(0, values):
-    block_offset = i * bpv / 64
-    bit_offset = (i * bpv) % 64
-    if bit_offset == 0:
-      # start of block
-      f.write("        blocks[blocksOffset++] = (%svalues[valuesOffset++]%s << %d)" %(mask_start, mask_end, 64 - bpv))
-    elif bit_offset + bpv == 64:
-      # end of block
-      f.write(" | %svalues[valuesOffset++]%s;\n" %(mask_start, mask_end))
-    elif bit_offset + bpv < 64:
-      # inside a block
-      f.write(" | (%svalues[valuesOffset++]%s << %d)" %(mask_start, mask_end, 64 - bit_offset - bpv))
-    else:
-      # value spans across 2 blocks
-      right_bits = bit_offset + bpv - 64
-      f.write(" | (%svalues[valuesOffset]%s >>> %d);\n" %(mask_start, mask_end, right_bits))
-      f.write("        blocks[blocksOffset++] = (%svalues[valuesOffset++]%s << %d)" %(mask_start, mask_end, 64 - right_bits))
-  f.write("      }\n")
-  f.write("    }\n\n")
-
-
 if __name__ == '__main__':
   p64_bpv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 21, 32]
 
   f = open(OUTPUT_FILE, 'w')
   f.write(HEADER)
-  f.write('import java.nio.ByteBuffer;\n')
   f.write('\n')
   f.write('''/**
  * Efficient sequential read/write of packed integers.
@@ -427,6 +338,9 @@ if __name__ == '__main__':
   f.write('  private static final BulkOperation[] packedBulkOps = new BulkOperation[] {\n')
     
   for bpv in xrange(1, 65):
+    if bpv > MAX_SPECIALIZED_BITS_PER_VALUE:
+      f.write('    new BulkOperationPacked(%d),\n' % bpv)
+      continue
     f2 = open('BulkOperationPacked%d.java' % bpv, 'w')
     f2.write(HEADER)
     if bpv == 64:
@@ -436,7 +350,7 @@ if __name__ == '__main__':
     f2.write('''/**
  * Efficient sequential read/write of packed integers.
  */\n''')
-    f2.write('final class BulkOperationPacked%d extends BulkOperation {\n' % bpv)
+    f2.write('final class BulkOperationPacked%d extends BulkOperationPacked {\n' % bpv)
     packed64(bpv, f2)
     f2.write('}\n')
     f2.close()
@@ -449,12 +363,15 @@ if __name__ == '__main__':
   f.write('  private static final BulkOperation[] packedSingleBlockBulkOps = new BulkOperation[] {\n')
   for bpv in xrange(1, max(PACKED_64_SINGLE_BLOCK_BPV)+1):
     if bpv in PACKED_64_SINGLE_BLOCK_BPV:
+      if bpv > MAX_SPECIALIZED_BITS_PER_VALUE:
+        f.write('    new BulkOperationPackedSingleBlock(%d),\n' % bpv)
+        continue
       f2 = open('BulkOperationPackedSingleBlock%d.java' % bpv, 'w')
       f2.write(HEADER)
       f2.write('''/**
  * Efficient sequential read/write of packed integers.
  */\n''')
-      f2.write('final class BulkOperationPackedSingleBlock%d extends BulkOperation {\n' % bpv)
+      f2.write('final class BulkOperationPackedSingleBlock%d extends BulkOperationPackedSingleBlock {\n' % bpv)
       packed64singleblock(bpv,f2)
       f2.write('}\n')
       f2.close()

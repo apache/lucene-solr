@@ -22,15 +22,10 @@ package org.apache.lucene.util.packed;
 /**
  * Efficient sequential read/write of packed integers.
  */
-final class BulkOperationPackedSingleBlock4 extends BulkOperation {
-    @Override
-    public int blockCount() {
-      return 1;
-     }
+final class BulkOperationPackedSingleBlock4 extends BulkOperationPackedSingleBlock {
 
-    @Override
-    public int valueCount() {
-      return 16;
+    public BulkOperationPackedSingleBlock4() {
+      super(4);
     }
 
     @Override
@@ -144,24 +139,6 @@ final class BulkOperationPackedSingleBlock4 extends BulkOperation {
         values[valuesOffset++] = byte6 >>> 4;
         values[valuesOffset++] = byte7 & 15;
         values[valuesOffset++] = byte7 >>> 4;
-      }
-    }
-
-    @Override
-    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 60);
-      }
-    }
-
-    @Override
-    public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = values[valuesOffset++] | (values[valuesOffset++] << 4) | (values[valuesOffset++] << 8) | (values[valuesOffset++] << 12) | (values[valuesOffset++] << 16) | (values[valuesOffset++] << 20) | (values[valuesOffset++] << 24) | (values[valuesOffset++] << 28) | (values[valuesOffset++] << 32) | (values[valuesOffset++] << 36) | (values[valuesOffset++] << 40) | (values[valuesOffset++] << 44) | (values[valuesOffset++] << 48) | (values[valuesOffset++] << 52) | (values[valuesOffset++] << 56) | (values[valuesOffset++] << 60);
       }
     }
 

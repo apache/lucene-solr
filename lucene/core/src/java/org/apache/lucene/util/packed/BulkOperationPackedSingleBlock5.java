@@ -22,15 +22,10 @@ package org.apache.lucene.util.packed;
 /**
  * Efficient sequential read/write of packed integers.
  */
-final class BulkOperationPackedSingleBlock5 extends BulkOperation {
-    @Override
-    public int blockCount() {
-      return 1;
-     }
+final class BulkOperationPackedSingleBlock5 extends BulkOperationPackedSingleBlock {
 
-    @Override
-    public int valueCount() {
-      return 12;
+    public BulkOperationPackedSingleBlock5() {
+      super(5);
     }
 
     @Override
@@ -128,24 +123,6 @@ final class BulkOperationPackedSingleBlock5 extends BulkOperation {
         values[valuesOffset++] = (byte5 >>> 5) | ((byte6 & 3) << 3);
         values[valuesOffset++] = (byte6 >>> 2) & 31;
         values[valuesOffset++] = (byte6 >>> 7) | ((byte7 & 15) << 1);
-      }
-    }
-
-    @Override
-    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 55);
-      }
-    }
-
-    @Override
-    public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = values[valuesOffset++] | (values[valuesOffset++] << 5) | (values[valuesOffset++] << 10) | (values[valuesOffset++] << 15) | (values[valuesOffset++] << 20) | (values[valuesOffset++] << 25) | (values[valuesOffset++] << 30) | (values[valuesOffset++] << 35) | (values[valuesOffset++] << 40) | (values[valuesOffset++] << 45) | (values[valuesOffset++] << 50) | (values[valuesOffset++] << 55);
       }
     }
 

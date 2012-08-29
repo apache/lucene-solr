@@ -22,15 +22,10 @@ package org.apache.lucene.util.packed;
 /**
  * Efficient sequential read/write of packed integers.
  */
-final class BulkOperationPackedSingleBlock9 extends BulkOperation {
-    @Override
-    public int blockCount() {
-      return 1;
-     }
+final class BulkOperationPackedSingleBlock9 extends BulkOperationPackedSingleBlock {
 
-    @Override
-    public int valueCount() {
-      return 7;
+    public BulkOperationPackedSingleBlock9() {
+      super(9);
     }
 
     @Override
@@ -108,24 +103,6 @@ final class BulkOperationPackedSingleBlock9 extends BulkOperation {
         values[valuesOffset++] = (byte4 >>> 4) | ((byte5 & 31) << 4);
         values[valuesOffset++] = (byte5 >>> 5) | ((byte6 & 63) << 3);
         values[valuesOffset++] = (byte6 >>> 6) | ((byte7 & 127) << 2);
-      }
-    }
-
-    @Override
-    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 54);
-      }
-    }
-
-    @Override
-    public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = values[valuesOffset++] | (values[valuesOffset++] << 9) | (values[valuesOffset++] << 18) | (values[valuesOffset++] << 27) | (values[valuesOffset++] << 36) | (values[valuesOffset++] << 45) | (values[valuesOffset++] << 54);
       }
     }
 

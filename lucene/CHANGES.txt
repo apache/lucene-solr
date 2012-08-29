@@ -118,6 +118,10 @@ Bug Fixes
 
 Optimizations
 
+* LUCENE-4322: Decrease lucene-core JAR size. The core JAR size had increased a
+  lot because of generated code introduced in LUCENE-4161 and LUCENE-3892.
+  (Adrien Grand)
+
 * LUCENE-4317: Improve reuse of internal TokenStreams and StringReader
   in oal.document.Field.  (Uwe Schindler, Chris Male, Robert Muir)
 
