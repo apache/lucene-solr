@@ -172,7 +172,6 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     }
     $item =~ s/\n+\Z/\n/;                  # Trim trailing blank lines
     push @$items, $item;
-    print STDERR "Last line: '$lines[$line_num]'\n" if ($line_num == $#lines);
     --$line_num unless ($line_num == $#lines && $lines[$line_num] !~ /^20/);
   } elsif ($type eq 'paragraph') {         # List item boundary is a blank line
     my $line;
@@ -192,7 +191,6 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
       ++$line_num;
     }
     push @$items, $item;
-    print STDERR "Last line: '$lines[$line_num]'\n" if ($line_num == $#lines);
     --$line_num unless ($line_num == $#lines && $lines[$line_num] !~ /^20/);
   } else { # $type is one of the bulleted types
     # List item boundary is another bullet or a blank line
@@ -210,7 +208,6 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
       $item .= "$line\n";
     }
     push @$items, $item;
-    print STDERR "Last line: '$lines[$line_num]'\n" if ($line_num == $#lines);
     --$line_num unless ($line_num == $#lines && $lines[$line_num] !~ /^20/);
   }
 }
