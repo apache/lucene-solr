@@ -22,15 +22,10 @@ package org.apache.lucene.util.packed;
 /**
  * Efficient sequential read/write of packed integers.
  */
-final class BulkOperationPackedSingleBlock16 extends BulkOperation {
-    @Override
-    public int blockCount() {
-      return 1;
-     }
+final class BulkOperationPackedSingleBlock16 extends BulkOperationPackedSingleBlock {
 
-    @Override
-    public int valueCount() {
-      return 4;
+    public BulkOperationPackedSingleBlock16() {
+      super(16);
     }
 
     @Override
@@ -96,24 +91,6 @@ final class BulkOperationPackedSingleBlock16 extends BulkOperation {
         values[valuesOffset++] = byte2 | (byte3 << 8);
         values[valuesOffset++] = byte4 | (byte5 << 8);
         values[valuesOffset++] = byte6 | (byte7 << 8);
-      }
-    }
-
-    @Override
-    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 48);
-      }
-    }
-
-    @Override
-    public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = values[valuesOffset++] | (values[valuesOffset++] << 16) | (values[valuesOffset++] << 32) | (values[valuesOffset++] << 48);
       }
     }
 

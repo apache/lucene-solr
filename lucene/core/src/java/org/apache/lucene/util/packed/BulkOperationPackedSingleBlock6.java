@@ -22,15 +22,10 @@ package org.apache.lucene.util.packed;
 /**
  * Efficient sequential read/write of packed integers.
  */
-final class BulkOperationPackedSingleBlock6 extends BulkOperation {
-    @Override
-    public int blockCount() {
-      return 1;
-     }
+final class BulkOperationPackedSingleBlock6 extends BulkOperationPackedSingleBlock {
 
-    @Override
-    public int valueCount() {
-      return 10;
+    public BulkOperationPackedSingleBlock6() {
+      super(6);
     }
 
     @Override
@@ -120,24 +115,6 @@ final class BulkOperationPackedSingleBlock6 extends BulkOperation {
         values[valuesOffset++] = byte5 >>> 2;
         values[valuesOffset++] = byte6 & 63;
         values[valuesOffset++] = (byte6 >>> 6) | ((byte7 & 15) << 2);
-      }
-    }
-
-    @Override
-    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 54);
-      }
-    }
-
-    @Override
-    public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = values[valuesOffset++] | (values[valuesOffset++] << 6) | (values[valuesOffset++] << 12) | (values[valuesOffset++] << 18) | (values[valuesOffset++] << 24) | (values[valuesOffset++] << 30) | (values[valuesOffset++] << 36) | (values[valuesOffset++] << 42) | (values[valuesOffset++] << 48) | (values[valuesOffset++] << 54);
       }
     }
 
