@@ -320,8 +320,8 @@
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${svn.export.dir}/lucene/tools/clover"/>
 
-    <build-changes changes.src.dir="${svn.export.dir}/site/changes"
-                   changes.target.dir="${svn.export.dir}/docs/changes"/>
+    <build-changes changes.src.dir="${svn.export.dir}/lucene/site/changes"
+                   changes.target.dir="${svn.export.dir}/solr/docs/changes"/>
 
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir="${svn.export.dir}"
