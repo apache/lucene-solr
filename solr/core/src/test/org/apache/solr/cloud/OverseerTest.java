@@ -347,7 +347,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       //make sure leaders are in cloud state
       for (int i = 0; i < sliceCount; i++) {
-        assertNotNull(reader.getLeaderUrl("collection1", "shard" + (i + 1)), 15000);
+        assertNotNull(reader.getLeaderUrl("collection1", "shard" + (i + 1), 15000));
       }
 
     } finally {
