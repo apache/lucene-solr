@@ -134,6 +134,9 @@ def checkClassDetails(fullPath):
     print(fullPath)
     for cat, item, message in errors:
       print('  broken details HTML: %s: %s: %s' % (cat, item, message))
+    return True
+  else:
+    return False
 
 def checkClassSummaries(fullPath):
 
@@ -328,14 +331,15 @@ def checkPackageSummaries(root, level='class'):
     if 'package-summary.html' in fileNames:
       if level != 'package' and checkSummary('%s/package-summary.html' % dirPath):
         anyMissing = True
-      if level == 'method': 
-        for fileName in fileNames:
-          fullPath = '%s/%s' % (dirPath, fileName)
-          if not fileName.startswith('package-') and fileName.endswith('.html') and os.path.isfile(fullPath):
+      for fileName in fileNames:
+        fullPath = '%s/%s' % (dirPath, fileName)
+        if not fileName.startswith('package-') and fileName.endswith('.html') and os.path.isfile(fullPath):
+          if level == 'method':
             if checkClassSummaries(fullPath):
               anyMissing = True
-            if checkClassDetails(fullPath):
-              anyMissing = True
+          # always look for broken html, regardless of level supplied
+          if checkClassDetails(fullPath):
+            anyMissing = True
               
     if 'overview-summary.html' in fileNames:        
       if checkSummary('%s/overview-summary.html' % dirPath):
