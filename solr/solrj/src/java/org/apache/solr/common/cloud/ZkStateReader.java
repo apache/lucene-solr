@@ -385,13 +385,6 @@ public class ZkStateReader {
 
 	}
   
-  /**
-   * Get shard leader url.
-   */
-  public String getLeaderUrl(String collection, String shard) throws InterruptedException, KeeperException {
-    return getLeaderUrl(collection, shard, 1000);
-  }
-  
   public String getLeaderUrl(String collection, String shard, int timeout)
       throws InterruptedException, KeeperException {
     ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderProps(collection,
