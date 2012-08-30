@@ -126,8 +126,8 @@ public class Overseer {
                 final String operation = message.get(QUEUE_OPERATION);
                 
                 clusterState = processMessage(clusterState, message, operation);
-                byte[] processed = stateUpdateQueue.remove();
-                workQueue.offer(processed);
+                workQueue.offer(head);
+                stateUpdateQueue.remove();
                 head = stateUpdateQueue.peek();
               }
               zkClient.setData(ZkStateReader.CLUSTER_STATE,
