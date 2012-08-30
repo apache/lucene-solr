@@ -37,12 +37,21 @@ import org.apache.lucene.index.DocValues;
 
 public class FloatDocValuesField extends Field {
 
+  /**
+   * Type for 32-bit float DocValues.
+   */
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValueType(DocValues.Type.FLOAT_32);
     TYPE.freeze();
   }
 
+  /** 
+   * Creates a new DocValues field with the specified 32-bit float value 
+   * @param name field name
+   * @param value 32-bit float value
+   * @throws IllegalArgumentException if the field name is null
+   */
   public FloatDocValuesField(String name, float value) {
     super(name, TYPE);
     fieldsData = Float.valueOf(value);

@@ -92,10 +92,14 @@ public class CompressionTools {
     return compress(result.bytes, 0, result.length, compressionLevel);
   }
 
+  /** Decompress the byte array previously returned by
+   *  compress (referenced by the provided BytesRef) */
   public static byte[] decompress(BytesRef bytes) throws DataFormatException {
     return decompress(bytes.bytes, bytes.offset, bytes.length);
   }
 
+  /** Decompress the byte array previously returned by
+   *  compress */
   public static byte[] decompress(byte[] value) throws DataFormatException {
     return decompress(value, 0, value.length);
   }
@@ -130,6 +134,8 @@ public class CompressionTools {
     return decompressString(value, 0, value.length);
   }
 
+  /** Decompress the byte array previously returned by
+   *  compressString back into a String */
   public static String decompressString(byte[] value, int offset, int length) throws DataFormatException {
     final byte[] bytes = decompress(value, offset, length);
     CharsRef result = new CharsRef(bytes.length);
@@ -137,6 +143,8 @@ public class CompressionTools {
     return new String(result.chars, 0, result.length);
   }
 
+  /** Decompress the byte array (referenced by the provided BytesRef) 
+   *  previously returned by compressString back into a String */
   public static String decompressString(BytesRef bytes) throws DataFormatException {
     return decompressString(bytes.bytes, bytes.offset, bytes.length);
   }

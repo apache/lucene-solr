@@ -32,7 +32,16 @@ public class FieldType implements IndexableFieldType {
   /** Data type of the numeric value
    * @since 3.2
    */
-  public static enum NumericType {INT, LONG, FLOAT, DOUBLE}
+  public static enum NumericType {
+    /** 32-bit integer numeric type */
+    INT, 
+    /** 64-bit long numeric type */
+    LONG, 
+    /** 32-bit float numeric type */
+    FLOAT, 
+    /** 64-bit double numeric type */
+    DOUBLE
+  }
 
   private boolean indexed;
   private boolean stored;
@@ -99,6 +108,9 @@ public class FieldType implements IndexableFieldType {
   
   /**
    * Set to <code>true</code> to index (invert) this field.
+   * @param value true if this field should be indexed.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #indexed()
    */
   public void setIndexed(boolean value) {
@@ -118,6 +130,9 @@ public class FieldType implements IndexableFieldType {
   
   /**
    * Set to <code>true</code> to store this field.
+   * @param value true if this field should be stored.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #stored()
    */
   public void setStored(boolean value) {
@@ -138,6 +153,9 @@ public class FieldType implements IndexableFieldType {
   /**
    * Set to <code>true</code> to tokenize this field's contents via the 
    * configured {@link Analyzer}.
+   * @param value true if this field should be tokenized.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #tokenized()
    */
   public void setTokenized(boolean value) {
@@ -158,6 +176,9 @@ public class FieldType implements IndexableFieldType {
   /**
    * Set to <code>true</code> if this field's indexed form should be also stored 
    * into term vectors.
+   * @param value true if this field should store term vectors.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #storeTermVectors()
    */
   public void setStoreTermVectors(boolean value) {
@@ -178,6 +199,9 @@ public class FieldType implements IndexableFieldType {
   /**
    * Set to <code>true</code> to also store token character offsets into the term
    * vector for this field.
+   * @param value true if this field should store term vector offsets.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #storeTermVectorOffsets()
    */
   public void setStoreTermVectorOffsets(boolean value) {
@@ -198,6 +222,9 @@ public class FieldType implements IndexableFieldType {
   /**
    * Set to <code>true</code> to also store token positions into the term
    * vector for this field.
+   * @param value true if this field should store term vector positions.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #storeTermVectorPositions()
    */
   public void setStoreTermVectorPositions(boolean value) {
@@ -218,6 +245,9 @@ public class FieldType implements IndexableFieldType {
   /**
    * Set to <code>true</code> to also store token payloads into the term
    * vector for this field.
+   * @param value true if this field should store term vector payloads.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #storeTermVectorPayloads()
    */
   public void setStoreTermVectorPayloads(boolean value) {
@@ -237,6 +267,9 @@ public class FieldType implements IndexableFieldType {
   
   /**
    * Set to <code>true</code> to omit normalization values for the field.
+   * @param value true if this field should omit norms.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #omitNorms()
    */
   public void setOmitNorms(boolean value) {
@@ -256,6 +289,9 @@ public class FieldType implements IndexableFieldType {
   
   /**
    * Sets the indexing options for the field:
+   * @param value indexing options
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #indexOptions()
    */
   public void setIndexOptions(IndexOptions value) {
@@ -265,6 +301,9 @@ public class FieldType implements IndexableFieldType {
 
   /**
    * Set's the field's DocValues.Type
+   * @param type DocValues type, or null if no DocValues should be stored.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #docValueType()
    */
   public void setDocValueType(DocValues.Type type) {
@@ -285,6 +324,9 @@ public class FieldType implements IndexableFieldType {
 
   /**
    * Specifies the field's numeric type.
+   * @param type numeric type, or null if the field has no numeric type.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #numericType()
    */
   public void setNumericType(NumericType type) {
@@ -306,6 +348,10 @@ public class FieldType implements IndexableFieldType {
 
   /**
    * Sets the numeric precision step for the field.
+   * @param precisionStep numeric precision step for the field
+   * @throws IllegalArgumentException if precisionStep is less than 1. 
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
    * @see #numericPrecisionStep()
    */
   public void setNumericPrecisionStep(int precisionStep) {
