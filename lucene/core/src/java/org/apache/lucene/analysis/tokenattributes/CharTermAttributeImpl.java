@@ -26,14 +26,15 @@ import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
-/**
- * The term text of a Token.
- */
+/** Default implementation of {@link CharTermAttribute}. */
 public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttribute, TermToBytesRefAttribute, Cloneable {
   private static int MIN_BUFFER_SIZE = 10;
   
   private char[] termBuffer = new char[ArrayUtil.oversize(MIN_BUFFER_SIZE, RamUsageEstimator.NUM_BYTES_CHAR)];
   private int termLength = 0;
+  
+  /** Initialize this attribute with empty term text */
+  public CharTermAttributeImpl() {}
 
   public final void copyBuffer(char[] buffer, int offset, int length) {
     growTermBuffer(length);

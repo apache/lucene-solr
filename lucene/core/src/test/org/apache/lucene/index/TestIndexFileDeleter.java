@@ -45,7 +45,10 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     }
 
     LogMergePolicy mergePolicy = newLogMergePolicy(true, 10);
-    mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
+    
+    // This test expects all of its segments to be in CFS
+    mergePolicy.setNoCFSRatio(1.0);
+    mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
 
     IndexWriter writer = new IndexWriter(
         dir,

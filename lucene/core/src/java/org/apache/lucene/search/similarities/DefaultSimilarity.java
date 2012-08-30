@@ -1,9 +1,5 @@
 package org.apache.lucene.search.similarities;
 
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
-import org.apache.lucene.util.BytesRef;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +16,10 @@ import org.apache.lucene.util.BytesRef;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.Norm;
+import org.apache.lucene.util.BytesRef;
 
 /** Expert: Default scoring implementation. */
 public class DefaultSimilarity extends TFIDFSimilarity {

@@ -78,9 +78,6 @@ public final class PatternTokenizer extends Tokenizer {
     if (group >= 0 && group > matcher.groupCount()) {
       throw new IllegalArgumentException("invalid group specified: pattern only has: " + matcher.groupCount() + " capturing groups");
     }
-    fillBuffer(str, input);
-    matcher.reset(str);
-    index = 0;
   }
 
   @Override
@@ -136,8 +133,7 @@ public final class PatternTokenizer extends Tokenizer {
   }
 
   @Override
-  public void setReader(Reader input) throws IOException {
-    super.setReader(input);
+  public void reset() throws IOException {
     fillBuffer(str, input);
     matcher.reset(str);
     index = 0;

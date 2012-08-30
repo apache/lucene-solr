@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -125,7 +124,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         q.offer(ZkStateReader.toJSON(m));
       }
       
-      for (int i = 0; i < 30; i++) {
+      for (int i = 0; i < 120; i++) {
         String shardId = getShardId(coreName);
         if (shardId != null) {
           try {
@@ -143,7 +142,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           elector.joinElection(ctx);
           return shardId;
         }
-        Thread.sleep(200);
+        Thread.sleep(500);
       }
       return null;
     }
@@ -297,21 +296,25 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       
       // make sure all cores have been assigned a id in cloudstate
+      int cloudStateSliceCount = 0;
       for (int i = 0; i < 40; i++) {
+        cloudStateSliceCount = 0;
         reader.updateClusterState(true);
         ClusterState state = reader.getClusterState();
         Map<String,Slice> slices = state.getSlices("collection1");
-        int count = 0;
         for (String name : slices.keySet()) {
-          count += slices.get(name).getShards().size();
+          cloudStateSliceCount += slices.get(name).getShards().size();
         }
-        if (coreCount == count) break;
+        if (coreCount == cloudStateSliceCount) break;
         Thread.sleep(200);
       }
+      assertEquals("Unable to verify all cores have been assigned an id in cloudstate", 
+                   coreCount, cloudStateSliceCount);
 
-      // make sure all cores have been returned a id
+      // make sure all cores have been returned an id
+      int assignedCount = 0;
       for (int i = 0; i < 90; i++) {
-        int assignedCount = 0;
+        assignedCount = 0;
         for (int j = 0; j < coreCount; j++) {
           if (ids[j] != null) {
             assignedCount++;
@@ -322,6 +325,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
         }
         Thread.sleep(500);
       }
+      assertEquals("Unable to verify all cores have been returned an id", 
+                   coreCount, assignedCount);
       
       final HashMap<String, AtomicInteger> counters = new HashMap<String,AtomicInteger>();
       for (int i = 1; i < sliceCount+1; i++) {
@@ -347,7 +352,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       //make sure leaders are in cloud state
       for (int i = 0; i < sliceCount; i++) {
-        assertNotNull(reader.getLeaderUrl("collection1", "shard" + (i + 1)), 15000);
+        assertNotNull(reader.getLeaderUrl("collection1", "shard" + (i + 1), 15000));
       }
 
     } finally {
@@ -574,7 +579,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
     public void run() {
       try {
         overseerClient = electNewOverseer(zkAddress);
-        Random rnd = random();
         while (run) {
           if (killCounter.get()>0) {
             try {

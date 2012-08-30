@@ -108,7 +108,8 @@ public class SyncStrategy {
       if (!success
           && !areAnyOtherReplicasActive(zkController, leaderProps, collection,
               shardId)) {
-        log.info("Sync was not a success but no on else i active! I am the leader");
+        log.info("Sync was not a success but no one else is active! I am the leader");
+        zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
         success = true;
       }
       
@@ -224,14 +225,14 @@ public class SyncStrategy {
            
            requestRecovery(((ShardCoreRequest)srsp.getShardRequest()).baseUrl, ((ShardCoreRequest)srsp.getShardRequest()).coreName);
 
-         } catch (Exception e) {
-           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", e);
+         } catch (Throwable t) {
+           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
          }
       } else {
         log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + ": " + " sync completed with " + srsp.getShardAddress());
       }
+      
     }
-    
 
   }
   

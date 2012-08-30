@@ -320,6 +320,9 @@
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${svn.export.dir}/lucene/tools/clover"/>
 
+    <build-changes changes.src.dir="${svn.export.dir}/lucene/site/changes"
+                   changes.target.dir="${svn.export.dir}/solr/docs/changes"/>
+
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir="${svn.export.dir}"
                   prefix="${fullnamever}"
@@ -368,7 +371,7 @@
 
   <target name="create-package"
           description="Packages the Solr Binary Distribution"
-          depends="init-dist, dist, example, javadocs">
+          depends="init-dist, dist, example, javadocs, changes-to-html">
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
       <fileset dir="${example}/solr-webapp" includes="**/*"/>
@@ -443,6 +446,10 @@
                   filemode="755" />
     </zip>
     <make-checksums file="${package.dir}/${fullnamever}.zip"/>
+  </target>
+
+  <target name="changes-to-html">
+    <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" />
   </target>
  
   <target name="sign-artifacts">
@@ -638,12 +645,6 @@
     </exec>
   </target>
  
-  <target name="svn-up">
-    <exec executable="${svn.exe}">
-      <arg value="update"/>
-    </exec>
-  </target>
-
   <property name="analysis-common.res.dir"  value="../lucene/analysis/common/src/resources/org/apache/lucene/analysis"/>
   <property name="analysis-kuromoji.res.dir"  value="../lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis"/>
   <property name="analysis.conf.dest" value="${example}/solr/conf/lang"/>

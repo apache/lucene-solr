@@ -81,8 +81,7 @@ public class TestMultiPhraseQueryParsing extends LuceneTestCase {
     }
 
     @Override
-    public void setReader(Reader reader) throws IOException {
-      super.setReader(reader);
+    public void reset() throws IOException {
       this.upto = 0;
       this.lastPos = 0;
     }

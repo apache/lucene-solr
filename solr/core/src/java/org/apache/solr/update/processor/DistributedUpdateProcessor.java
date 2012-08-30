@@ -183,15 +183,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // set num nodes
       numNodes = zkController.getClusterState().getLiveNodes().size();
       
-      // the leader is...
-      // TODO: if there is no leader, wait and look again
-      // TODO: we are reading the leader from zk every time - we should cache
-      // this and watch for changes?? Just pull it from ZkController cluster state probably?
       String shardId = getShard(hash, collection, zkController.getClusterState()); // get the right shard based on the hash...
 
       try {
-        // TODO: if we find out we cannot talk to zk anymore, we should probably realize we are not
-        // a leader anymore - we shouldn't accept updates at all??
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
             collection, shardId));
         
@@ -201,7 +195,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         isLeader = coreNodeName.equals(leaderNodeName);
         
         DistribPhase phase = 
-          DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+            DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+       
+        doDefensiveChecks(shardId, phase);
+     
 
         if (DistribPhase.FROMLEADER == phase) {
           // we are coming from the leader, just go local - add no urls
@@ -249,6 +246,36 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     return nodes;
+  }
+
+  private void doDefensiveChecks(String shardId, DistribPhase phase) {
+    String from = req.getParams().get("distrib.from");
+    boolean localIsLeader = req.getCore().getCoreDescriptor().getCloudDescriptor().isLeader();
+    if (DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
+      log.error("Request says it is coming from leader, but we are the leader: " + req.getParamString());
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Request says it is coming from leader, but we are the leader");
+    }
+
+    if (DistribPhase.FROMLEADER == phase && from != null) { // from will be null on log replay
+     
+      ZkCoreNodeProps clusterStateLeader = new ZkCoreNodeProps(zkController
+          .getClusterState().getLeader(collection, shardId));
+    
+      if (clusterStateLeader.getNodeProps() == null
+          || !clusterStateLeader.getCoreUrl().equals(from)) {
+        String coreUrl = null;
+        if (clusterStateLeader.getNodeProps() != null) {
+          coreUrl = clusterStateLeader.getCoreUrl();
+        }
+        log.error("We got a request from the leader, but it's not who our cluster state says is the leader :"
+            + req.getParamString()
+            + " : "
+            + coreUrl);
+
+        new SolrException(ErrorCode.BAD_REQUEST, "We got a request from the leader, but it's not who our cluster state says is the leader.");
+      }
+ 
+    }
   }
 
 
@@ -329,6 +356,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   DistribPhase.FROMLEADER.toString() : 
                   DistribPhase.TOLEADER.toString()));
       params.remove("commit"); // this will be distributed from the local commit
+      params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
+          zkController.getBaseUrl(), req.getCore().getName()));
       cmdDistrib.distribAdd(cmd, nodes, params);
     }
     
@@ -378,9 +407,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     // TODO: we should do this in the background it would seem
     for (SolrCmdDistributor.Error error : response.errors) {
-      if (error.node instanceof RetryNode) {
+      if (error.node instanceof RetryNode || error.e instanceof SolrException) {
         // we don't try to force a leader to recover
         // when we cannot forward to it
+        // and we assume SolrException means
+        // the node went down
         continue;
       }
       // TODO: we should force their state to recovering ??
@@ -658,6 +689,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                  (isLeader ? 
                   DistribPhase.FROMLEADER.toString() : 
                   DistribPhase.TOLEADER.toString()));
+      if (isLeader) {
+        params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
+            zkController.getBaseUrl(), req.getCore().getName()));
+      }
       params.remove("commit"); // we already will have forwarded this from our local commit
       cmdDistrib.distribDelete(cmd, nodes, params);
     }
@@ -819,6 +854,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
       params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
+      params.set("update.from", ZkCoreNodeProps.getCoreUrl(
+          zkController.getBaseUrl(), req.getCore().getName()));
       cmdDistrib.distribDelete(cmd, replicas, params);
       cmdDistrib.finish();
     }

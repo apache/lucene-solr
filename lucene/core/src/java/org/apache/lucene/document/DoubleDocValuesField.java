@@ -38,12 +38,21 @@ import org.apache.lucene.index.DocValues;
 
 public class DoubleDocValuesField extends StoredField {
 
+  /**
+   * Type for 64-bit double DocValues.
+   */
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValueType(DocValues.Type.FLOAT_64);
     TYPE.freeze();
   }
 
+  /** 
+   * Creates a new DocValues field with the specified 64-bit double value 
+   * @param name field name
+   * @param value 64-bit double value
+   * @throws IllegalArgumentException if the field name is null
+   */
   public DoubleDocValuesField(String name, double value) {
     super(name, TYPE);
     fieldsData = Double.valueOf(value);

@@ -40,10 +40,6 @@
   <target name="dist"
           description="Creates the Solr WAR Distribution file."
           depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
-    <exec dir="." executable="${svnversion.exe}"
-          outputproperty="svnversion" failifexecutionfails="false">
-      <arg line="."/>
-    </exec>
     <build-manifest title="Apache Solr Search Server"
                     implementation.title="org.apache.solr"
                     spec.version="${solr.spec.version}"/>

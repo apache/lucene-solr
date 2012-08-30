@@ -36,7 +36,8 @@ public class TestIndexSplitter extends LuceneTestCase {
     Directory fsDir = newFSDirectory(dir);
 
     LogMergePolicy mergePolicy = new LogByteSizeMergePolicy();
-    mergePolicy.setNoCFSRatio(1);
+    mergePolicy.setNoCFSRatio(1.0);
+    mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     IndexWriter iw = new IndexWriter(
         fsDir,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).

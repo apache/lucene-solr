@@ -126,8 +126,8 @@ public class Overseer {
                 final String operation = message.get(QUEUE_OPERATION);
                 
                 clusterState = processMessage(clusterState, message, operation);
-                byte[] processed = stateUpdateQueue.remove();
-                workQueue.offer(processed);
+                workQueue.offer(head);
+                stateUpdateQueue.remove();
                 head = stateUpdateQueue.peek();
               }
               zkClient.setData(ZkStateReader.CLUSTER_STATE,
@@ -166,17 +166,19 @@ public class Overseer {
       } else if (DELETECORE.equals(operation)) {
         clusterState = removeCore(clusterState, message);
       } else if (ZkStateReader.LEADER_PROP.equals(operation)) {
+
         StringBuilder sb = new StringBuilder();
         String baseUrl = message.get(ZkStateReader.BASE_URL_PROP);
         String coreName = message.get(ZkStateReader.CORE_NAME_PROP);
         sb.append(baseUrl);
-        if (!baseUrl.endsWith("/")) sb.append("/");
+        if (baseUrl != null && !baseUrl.endsWith("/")) sb.append("/");
         sb.append(coreName == null ? "" : coreName);
-        if (!(sb.substring(sb.length() - 1).equals("/"))) sb
-            .append("/");
+        if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
         clusterState = setShardLeader(clusterState,
             message.get(ZkStateReader.COLLECTION_PROP),
-            message.get(ZkStateReader.SHARD_ID_PROP), sb.toString());
+            message.get(ZkStateReader.SHARD_ID_PROP),
+            sb.length() > 0 ? sb.toString() : null);
+
       } else {
         throw new RuntimeException("unknown operation:" + operation
             + " contents:" + message.getProperties());

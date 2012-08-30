@@ -37,12 +37,21 @@ import org.apache.lucene.index.DocValues;
 
 public class IntDocValuesField extends StoredField {
 
+  /**
+   * Type for 32-bit integer DocValues.
+   */
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValueType(DocValues.Type.FIXED_INTS_32);
     TYPE.freeze();
   }
 
+  /** 
+   * Creates a new DocValues field with the specified 32-bit integer value 
+   * @param name field name
+   * @param value 32-bit integer value
+   * @throws IllegalArgumentException if the field name is null
+   */
   public IntDocValuesField(String name, int value) {
     super(name, TYPE);
     fieldsData = Integer.valueOf(value);

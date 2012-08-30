@@ -74,7 +74,7 @@
     </pathconvert>
     <fail if="validate.patternsFound">The following files contain @author tags or nocommits:${line.separator}${validate.patternsFound}</fail>
   </target>
-
+	
   <target name="rat-sources" description="Runs rat across all sources and tests">
     <sequential><subant target="rat-sources" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
@@ -248,15 +248,21 @@
    </sequential>
   </target>
   
+  <target name="check-svn-working-copy">
+    <subant target="check-svn-working-copy" inheritall="false" failonerror="true">
+      <fileset dir="." includes="extra-targets.xml" />
+    </subant>
+  </target>
+
   <!-- Calls only generate-clover-reports on Lucene, as Solr's is just a clone with other target; the database itsself is fixed -->
   <target name="generate-clover-reports">
     <subant target="generate-clover-reports" inheritall="false" failonerror="true">
-      <fileset dir="." includes="build-clover.xml" />
+      <fileset dir="." includes="extra-targets.xml" />
     </subant>
   </target>
 
   <!-- Jenkins tasks -->
-  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,-svn-status"/>
+  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,check-svn-working-copy"/>
   
   <target name="jenkins-clover">
     <antcall target="-jenkins-clover">
@@ -279,32 +285,5 @@
   </condition>
   <target name="-jenkins-javadocs-lint" unless="-disable.javadocs-lint">
     <antcall target="javadocs-lint"/> 
-  </target>
-
-  <!-- define here, as common-build is not included! -->
-  <property name="svn.exe" value="svn" />
-  
-  <target name="-svn-status">
-    <exec executable="${svn.exe}" dir="." failonerror="true">
-      <arg value="status"/>
-      <redirector outputproperty="svn.status.output">
-        <outputfilterchain>
-          <linecontainsregexp>
-            <regexp pattern="^\?" />
-          </linecontainsregexp>
-          <tokenfilter>
-            <replaceregex pattern="^........" replace="* " />
-            <replacestring from="${file.separator}" to="/" />
-          </tokenfilter>
-        </outputfilterchain>
-      </redirector>
-    </exec>
-    <fail message="Source checkout is dirty after running tests!!! Offending files:${line.separator}${svn.status.output}">
-      <condition>
-        <not>
-          <equals arg1="${svn.status.output}" arg2=""/>
-        </not>
-      </condition>
-    </fail>
   </target>
 </project>

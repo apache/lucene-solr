@@ -111,6 +111,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     // assign bogus values
     in.clearAttributes();
     termAtt.setEmpty().append("bogusTerm");
+    in.reset();
     while (in.incrementToken()) {
       if (out.length() > 0)
         out.append(' ');

@@ -331,15 +331,17 @@ public class TestIndexWriterConfig extends LuceneTestCase {
   public void testLiveChangeToCFS() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    iwc.setMergePolicy(newLogMergePolicy());
+    iwc.setMergePolicy(newLogMergePolicy(true));
 
     // Start false:
     ((LogMergePolicy) iwc.getMergePolicy()).setUseCompoundFile(false); 
     IndexWriter w = new IndexWriter(dir, iwc);
 
     // Change to true:
-    ((LogMergePolicy) w.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
-    ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundFile(true);
+    LogMergePolicy lmp = ((LogMergePolicy) w.getConfig().getMergePolicy());
+    lmp.setNoCFSRatio(1.0);
+    lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    lmp.setUseCompoundFile(true);
 
     Document doc = new Document();
     doc.add(newStringField("field", "foo", Store.NO));

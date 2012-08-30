@@ -510,6 +510,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
     mp.setUseCompoundFile(doCFS);
     mp.setNoCFSRatio(1.0);
+    mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     // TODO: remove randomness
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMaxBufferedDocs(10).setMergePolicy(mp);
@@ -561,7 +562,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory dir = newFSDirectory(outputDir);
 
       LogMergePolicy mergePolicy = newLogMergePolicy(true, 10);
-      mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
+      
+      // This test expects all of its segments to be in CFS:
+      mergePolicy.setNoCFSRatio(1.0); 
+      mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
 
       IndexWriter writer = new IndexWriter(
           dir,

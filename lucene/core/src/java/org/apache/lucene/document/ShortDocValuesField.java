@@ -38,12 +38,21 @@ import org.apache.lucene.index.DocValues;
 
 public class ShortDocValuesField extends StoredField {
 
+  /**
+   * Type for 16-bit short DocValues.
+   */
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValueType(DocValues.Type.FIXED_INTS_16);
     TYPE.freeze();
   }
 
+  /** 
+   * Creates a new DocValues field with the specified 16-bit short value 
+   * @param name field name
+   * @param value 16-bit short value
+   * @throws IllegalArgumentException if the field name is null
+   */
   public ShortDocValuesField(String name, short value) {
     super(name, TYPE);
     fieldsData = Short.valueOf(value);

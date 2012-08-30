@@ -65,6 +65,7 @@ import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
@@ -591,6 +592,25 @@ public final class SolrCore implements SolrInfoMBean {
 
     if (schema==null) {
       schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
+    }
+
+    if (null != cd && null != cd.getCloudDescriptor()) {
+      // we are evidently running in cloud mode.  
+      //
+      // In cloud mode, version field is required for correct consistency
+      // ideally this check would be more fine grained, and individual features
+      // would assert it when they initialize, but DistribuedUpdateProcessor
+      // is currently a big ball of wax that does more then just distributing
+      // updates (ie: partial document updates), so it needs to work in no cloud
+      // mode as well, and can't assert version field support on init.
+
+      try {
+        Object ignored = VersionInfo.getAndCheckVersionField(schema);
+      } catch (SolrException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                                "Schema will not work with SolrCloud mode: " +
+                                e.getMessage(), e);
+      }
     }
 
     //Initialize JMX

@@ -19,6 +19,9 @@ package org.apache.lucene.analysis.util;
 
 /** Some commonly-used stemming functions */
 public class StemmerUtil {
+  /** no instance */
+  private StemmerUtil() {}
+
   /**
    * Returns true if the character array starts with the suffix.
    * 

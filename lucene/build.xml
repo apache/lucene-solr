@@ -248,6 +248,10 @@
       <!-- spatial: problems -->
       <check-missing-javadocs dir="build/docs/suggest" level="class"/>
       <check-missing-javadocs dir="build/docs/test-framework" level="class"/>
+
+      <!-- too much to fix for now, but enforce full javadocs for key packages -->
+      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
+      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/document" level="method"/>
     </sequential>
   </target>
   
@@ -452,16 +456,6 @@
     <sign-artifacts-macro artifacts.dir="${dist.dir}"/>
   </target>
 
-  <!-- ================================================================== -->
-  <!-- Build the JavaCC files into the source tree                        -->
-  <!-- ================================================================== -->
-
-  <target name="javacc" depends="javacc-check">
-  	<subant target="javacc" failonerror="true" inheritall="false">
-  	  <fileset dir="${common.dir}/queryparser" includes="build.xml"/>
-  	</subant>
-  </target>
-
   <target name="build-modules" depends="compile-test"
           description="Builds all additional modules and their tests">
     <modules-crawl target="build-artifacts-and-tests"/>
@@ -479,24 +473,6 @@
   <target name="test-modules" depends="compile-test">
     <modules-crawl target="test" failonerror="true"/>
   </target>
-
-  <!--
-   compile changes.txt into an html file
-   -->
-  <macrodef name="build-changes">
-    <attribute name="changes.src.dir" default="${changes.src.dir}"/>
-    <attribute name="changes.target.dir" default="${changes.target.dir}"/>
-    <sequential>
-      <mkdir dir="@{changes.target.dir}"/>
-      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
-            failonerror="true" logError="true">
-        <arg value="@{changes.src.dir}/changes2html.pl"/>
-      </exec>
-      <copy todir="@{changes.target.dir}">
-        <fileset dir="@{changes.src.dir}" includes="*.css"/>
-      </copy>
-    </sequential>
-  </macrodef>
 
   <target name="changes-to-html">
     <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" />

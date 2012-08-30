@@ -85,6 +85,22 @@ Bug Fixes
 * SOLR-3746: Proper error reporting if updateLog is configured w/o necessary 
   "_version_" field in schema.xml (hossman)
 
+* SOLR-3745: Proper error reporting if SolrCloud mode is used w/o 
+  necessary "_version_" field in schema.xml (hossman)
+
+* SOLR-3770: Overseer may lose updates to cluster state (siren)
+
+* SOLR-3721: Fix bug that could allow multiple recoveries to run briefly at
+  the same time if the recovery thread join call was interrupted.
+  (Per Steffensen, Mark Miller)
+  
+* SOLR-3750: On session expiration, we should explicitly wait some time before 
+  running the leader sync process so that we are sure every node participates.
+  (Per Steffensen, Mark Miller)
+  
+* SOLR-3772: On cluster startup, we should wait until we see all registered 
+  replicas before running the leader process - or if they all do not come up, 
+  N amount of time. (Jan Høydahl, Per Steffensen, Mark Miller)
 
 Other Changes
 ----------------------
@@ -99,6 +115,16 @@ Other Changes
   See http://wiki.apache.org/solr/ExtractingRequestHandler for examples (janhoy)
 
 * SOLR-3707: Upgrade Solr to Tika 1.2 (janhoy)
+
+* SOLR-2747: Updated changes2html.pl to handle Solr's CHANGES.txt; added
+  target 'changes-to-html' to solr/build.xml.
+  (Steve Rowe, Robert Muir)
+  
+* SOLR-3752: When a leader goes down, have the Overseer clear the leader state
+  in cluster.json (Mark Miller)
+
+* SOLR-3751: Add defensive checks for SolrCloud updates and requests that ensure 
+  the local state matches what we can tell the request expected. (Mark Miller)
 
 ==================  4.0.0-BETA ===================
 
@@ -234,7 +260,7 @@ Bug Fixes
 
 * SOLR-3660: Velocity: Link to admin page broken (janhoy)
 
-* SOLR-3658: Adding thousands of docs with one UpdateProcessorChain instance can briefly create 
+* SOLR-3658: Adding thousands of docs with one UpdateProcessorChain instance can briefly create
   spikes of threads in the thousands. (yonik, Mark Miller)
 
 * SOLR-3656: A core reload now always uses the same dataDir.  (Mark Miller, yonik)
@@ -308,6 +334,7 @@ Other Changes
   Also, the configuration itself can be passed using the "dataConfig" parameter rather than
   using a file (this previously worked in debug mode only).  When configuration errors are 
   encountered, the error message is returned in XML format.  (James Dyer)
+  
 * SOLR-3439: Make SolrCell easier to use out of the box. Also improves "/browse" to display
   rich-text documents correctly, along with facets for author and content_type.  
   With the new "content" field, highlighting of body is supported. See also SOLR-3672 for
@@ -421,26 +448,26 @@ New Features
   built-in load balancing, and distributed indexing. 
   (Jamie Johnson, Sami Siren, Ted Dunning, yonik, Mark Miller)
   Additional Work:
-  SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
-  (Massimo Schiavon, Mark Miller)
-  SOLR-2287: Allow users to query by multiple, compatible collections with SolrCloud.
-  (Soheb Mahmood, Alex Cowell, Mark Miller)
-  SOLR-2622: ShowFileRequestHandler does not work in SolrCloud mode. 
-  (Stefan Matheis, Mark Miller)
-  SOLR-3108: Error in SolrCloud's replica lookup code when replica's are hosted in same Solr instance.
-  (Bruno Dumon, Sami Siren, Mark Miller)
-  SOLR-3080: Remove shard info from zookeeper when SolrCore is explicitly unloaded.
-  (yonik, Mark Miller, siren)
-  SOLR-3437: Recovery issues a spurious commit to the cluster. (Trym R. Møller via Mark Miller)
-  SOLR-2822: Skip update processors already run on other nodes (hossman)
+  - SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
+    (Massimo Schiavon, Mark Miller)
+  - SOLR-2287: Allow users to query by multiple, compatible collections with SolrCloud.
+    (Soheb Mahmood, Alex Cowell, Mark Miller)
+  - SOLR-2622: ShowFileRequestHandler does not work in SolrCloud mode.
+    (Stefan Matheis, Mark Miller)
+  - SOLR-3108: Error in SolrCloud's replica lookup code when replica's are hosted in same Solr instance.
+    (Bruno Dumon, Sami Siren, Mark Miller)
+  - SOLR-3080: Remove shard info from zookeeper when SolrCore is explicitly unloaded.
+    (yonik, Mark Miller, siren)
+  - SOLR-3437: Recovery issues a spurious commit to the cluster. (Trym R. Møller via Mark Miller)
+  - SOLR-2822: Skip update processors already run on other nodes (hossman)
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
   as results. 
-  (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl, 
+  (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl,
   Arul Kalaipandian, Luca Cavanna, hossman)
-  SOLR-2037: Thanks to SOLR-1566, documents boosted by the QueryElevationComponent
-  can be marked as boosted.  (gsingers, ryan, yonik)
+  - SOLR-2037: Thanks to SOLR-1566, documents boosted by the QueryElevationComponent
+    can be marked as boosted.  (gsingers, ryan, yonik)
 
 * SOLR-2396: Add CollationField, which is much more efficient than 
   the Solr 3.x CollationKeyFilterFactory, and also supports 
@@ -456,10 +483,10 @@ New Features
   (Jan Høydahl via yonik)
 
 * SOLR-2272: Pseudo-join queries / filters.  Examples:
-  To restrict to the set of parents with at least one blue-eyed child:
-    fq={!join from=parent to=name}eyes:blue
-  To restrict to the set of children with at least one blue-eyed parent:
-    fq={!join from=name to=parent}eyes:blue
+  - To restrict to the set of parents with at least one blue-eyed child:
+      fq={!join from=parent to=name}eyes:blue
+  - To restrict to the set of children with at least one blue-eyed parent:
+      fq={!join from=name to=parent}eyes:blue
   (yonik)
 
 * SOLR-1942: Added the ability to select postings format per fieldType in schema.xml
@@ -506,12 +533,12 @@ New Features
 * SOLR-2703: Added support for Lucene's "surround" query parser. (Simon Rosenthal, ehatcher)
 
 * SOLR-2754: Added factories for several ranking algorithms: 
-    BM25SimilarityFactory: Okapi BM25
-    DFRSimilarityFactory: Divergence from Randomness models
-    IBSimilarityFactory: Information-based models
-    LMDirichletSimilarity: LM with Dirichlet smoothing
-    LMJelinekMercerSimilarity: LM with Jelinek-Mercer smoothing
- (David Mark Nemeskey, Robert Muir)
+    - BM25SimilarityFactory: Okapi BM25
+    - DFRSimilarityFactory: Divergence from Randomness models
+    - IBSimilarityFactory: Information-based models
+    - LMDirichletSimilarity: LM with Dirichlet smoothing
+    - LMJelinekMercerSimilarity: LM with Jelinek-Mercer smoothing
+  (David Mark Nemeskey, Robert Muir)
  
 * SOLR-2134 Trie* fields should support sortMissingLast=true, and deprecate Sortable* Field Types
   (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
@@ -534,18 +561,18 @@ New Features
 * SOLR-2802: New FieldMutatingUpdateProcessor and Factory to simplify the
   development of UpdateProcessors that modify field values of documents as 
   they are indexed. Also includes several useful new implementations:
-      RemoveBlankFieldUpdateProcessorFactory
-      TrimFieldUpdateProcessorFactory
-      HTMLStripFieldUpdateProcessorFactory
-      RegexReplaceProcessorFactory
-      FieldLengthUpdateProcessorFactory
-      ConcatFieldUpdateProcessorFactory
-      FirstFieldValueUpdateProcessorFactory
-      LastFieldValueUpdateProcessorFactory
-      MinFieldValueUpdateProcessorFactory
-      MaxFieldValueUpdateProcessorFactory
-      TruncateFieldUpdateProcessorFactory
-      IgnoreFieldUpdateProcessorFactory 
+    - RemoveBlankFieldUpdateProcessorFactory
+    - TrimFieldUpdateProcessorFactory
+    - HTMLStripFieldUpdateProcessorFactory
+    - RegexReplaceProcessorFactory
+    - FieldLengthUpdateProcessorFactory
+    - ConcatFieldUpdateProcessorFactory
+    - FirstFieldValueUpdateProcessorFactory
+    - LastFieldValueUpdateProcessorFactory
+    - MinFieldValueUpdateProcessorFactory
+    - MaxFieldValueUpdateProcessorFactory
+    - TruncateFieldUpdateProcessorFactory
+    - IgnoreFieldUpdateProcessorFactory
   (hossman, janhoy)
 
 * SOLR-3120: Optional post filtering for spatial queries bbox and geofilt
@@ -559,8 +586,8 @@ New Features
 
 * SOLR-2898: Support grouped faceting. (Martijn van Groningen)
   Additional Work:
-  SOLR-3406: Extended grouped faceting support to facet.query and facet.range parameters.
-             (David Boychuck, Martijn van Groningen)
+  - SOLR-3406: Extended grouped faceting support to facet.query and facet.range parameters.
+               (David Boychuck, Martijn van Groningen)
 
 * SOLR-2949: QueryElevationComponent is now supported with distributed search.
   (Mark Miller, yonik)
@@ -643,9 +670,9 @@ New Features
 
 * SOLR-3508: Simplify JSON update format for deletes as well as allow
   version specification for optimistic locking.  Examples:
-    {"delete":"myid"}
-    {"delete":["id1","id2","id3"]}
-    {"delete":{"id":"myid", "_version_":123456789}}
+    - {"delete":"myid"}
+    - {"delete":["id1","id2","id3"]}
+    - {"delete":{"id":"myid", "_version_":123456789}}
   (yonik)
 
 * SOLR-3211:  Allow parameter overrides in conjunction with "spellcheck.maxCollationTries".
@@ -689,9 +716,9 @@ Optimizations
   works with SolrCore to provide faster 'soft' commits, and has an improved API 
   that requires less instanceof special casing. (Mark Miller, Robert Muir)
   Additional Work:
-  SOLR-2697: commit and autocommit operations don't reset 
-  DirectUpdateHandler2.numDocsPending stats attribute.
-  (Alexey Serba, Mark Miller)
+  - SOLR-2697: commit and autocommit operations don't reset
+    DirectUpdateHandler2.numDocsPending stats attribute.
+    (Alexey Serba, Mark Miller)
 
 * SOLR-2950: The QueryElevationComponent now avoids using the FieldCache and looking up
   every document id (gsingers, yonik)
@@ -736,8 +763,8 @@ Bug Fixes
 * SOLR-2193, SOLR-2565, SOLR-2651: SolrCores now properly share IndexWriters across SolrCore reloads.
   (Mark Miller, Robert Muir)
   Additional Work:
-  SOLR-2705: On reload, IndexWriterProvider holds onto the initial SolrCore it was created with.
-  (Yury Kats, Mark Miller)
+  - SOLR-2705: On reload, IndexWriterProvider holds onto the initial SolrCore it was created with.
+    (Yury Kats, Mark Miller)
 
 * SOLR-2682: Remove addException() in SimpleFacet. FacetComponent no longer catches and embeds
   exceptions occurred during facet processing, it throws HTTP 400 or 500 exceptions instead. (koji)
@@ -916,7 +943,7 @@ Other Changes
 * SOLR-2607: Removed deprecated client/ruby directory, which included solr-ruby and flare.
   (ehatcher)
   
-* Solr-3032: logOnce from SolrException logOnce and all the supporting
+* SOLR-3032: logOnce from SolrException logOnce and all the supporting
   structure is gone. abortOnConfugrationError is also gone as it is no longer referenced.
   Errors should be caught and logged at the top-most level or logged and NOT propagated up the 
   chain. (Erick Erickson)
@@ -996,7 +1023,7 @@ More information about this release, including any errata related to the
 release notes, upgrade instructions, or other changes may be found online at:
    https://wiki.apache.org/solr/Solr3.6.1
 
-Bug Fixes:
+Bug Fixes
 
 * LUCENE-3969: Throw IAE on bad arguments that could cause confusing errors in
   PatternTokenizer. CommonGrams populates PositionLengthAttribute correctly.
@@ -1171,7 +1198,7 @@ New Features
 * SOLR-2001: The query component will substitute an empty query that matches
   no documents if the query parser returns null.  This also prevents an
   exception from being thrown by the default parser if "q" is missing. (yonik)
-  SOLR-435: if q is "" then it's also acceptable. (dsmiley, hoss)
+  - SOLR-435: if q is "" then it's also acceptable. (dsmiley, hoss)
 
 * SOLR-2919: Added parametric tailoring options to ICUCollationKeyFilterFactory.
   These can be used to customize range query/sort behavior, for example to
@@ -1554,7 +1581,7 @@ Bug Fixes
 * SOLR-2875: Fix the incorrect url in DIH example tika-data-config.xml 
   (Shinichiro Abe via koji)
 
- Other Changes
+Other Changes
 ----------------------
 
 * SOLR-2750: Make both "update.chain" and the deprecated "update.param" work
@@ -1690,7 +1717,7 @@ Bug Fixes
 * SOLR-2625: TermVectorComponent throws NPE if TF-IDF option is used without DF
   option. (Daniel Erenrich, Simon Willnauer)
 
-* SOLR-2631: PingRequestHandler should not allow to ping itsself using "qt"
+* SOLR-2631: PingRequestHandler should not allow to ping itself using "qt"
   param to prevent infinite loop. (Edoardo Tosca, Uwe Schindler)
 
 * SOLR-2636: Fix explain functionality for negative queries. (Tom Hill via yonik)
@@ -1764,7 +1791,7 @@ Bug Fixes
 * SOLR-2668: DIH multithreaded mode does not rollback on errors from 
   EntityProcessor (Frank Wesemann, shalin)
 
- Other Changes
+Other Changes
 ----------------------
 
 * SOLR-2629: Eliminate deprecation warnings in some JSPs.
@@ -2910,10 +2937,10 @@ Use of the "charset" option when configuring the following Analysis
 Factories has been deprecated and will cause a warning to be logged.
 In future versions of Solr attempting to use this option will cause an
 error.  See SOLR-1410 for more information.
- * GreekLowerCaseFilterFactory
- * RussianStemFilterFactory
- * RussianLowerCaseFilterFactory
- * RussianLetterTokenizerFactory
+ - GreekLowerCaseFilterFactory
+ - RussianStemFilterFactory
+ - RussianLowerCaseFilterFactory
+ - RussianLetterTokenizerFactory
 
 DIH: Evaluator API has been changed in a non back-compatible way. Users who 
 have developed custom Evaluators will need to change their code according to 
@@ -2990,7 +3017,7 @@ New Features
  7. SOLR-680: Add StatsComponent. This gets simple statistics on matched numeric fields,
     including: min, max, mean, median, stddev.  (koji, ryan)
 
-    7.1 SOLR-1380: Added support for multi-valued fields (Harish Agarwal via gsingers)
+    - SOLR-1380: Added support for multi-valued fields (Harish Agarwal via gsingers)
 
  8. SOLR-561: Added Replication implemented in Java as a request handler. Supports index replication
     as well as configuration replication and exposes detailed statistics and progress information
@@ -3511,11 +3538,12 @@ Bug Fixes
 28. SOLR-1008: Fix stats.jsp XML encoding for <stat> item entries with ampersands in their names.  (ehatcher)
 
 29. SOLR-976: deleteByQuery is ignored when deleteById is placed prior to deleteByQuery in a <delete>.
-    Now both delete by id and delete by query can be specified at the same time as follows. (koji)
+    Now both delete by id and delete by query can be specified at the same time as follows.
       <delete>
         <id>05991</id><id>06000</id>
         <query>office:Bridgewater</query><query>office:Osaka</query>
       </delete>
+    (koji)
 
 30. SOLR-1016: HTTP 503 error changes 500 in SolrCore (koji)
 
@@ -3774,7 +3802,7 @@ Other Changes
  8. SOLR-875: Upgraded to Lucene 2.9-dev (r723985) and consolidated the BitSet implementations (Michael Busch, gsingers)
 
  9. SOLR-819: Upgraded to Lucene 2.9-dev (r724059) to get access to Arabic public constructors (gsingers)
-                                                 and
+
 10. SOLR-900: Moved solrj into /src/solrj.  The contents of solr-common.jar is now included
     in the solr-solrj.jar. (ryan)
 
@@ -3858,10 +3886,10 @@ Other Changes
     (hossman)
 
 42. Upgraded to Lucene 2.9-dev r794238. Other changes include:
-    LUCENE-1614 - Use Lucene's DocIdSetIterator.NO_MORE_DOCS as the sentinel value.
-    LUCENE-1630 - Add acceptsDocsOutOfOrder method to Collector implementations.
-    LUCENE-1673, LUCENE-1701 - Trie has moved to Lucene core and renamed to NumericRangeQuery.
-    LUCENE-1662, LUCENE-1687 - Replace usage of ExtendedFieldCache by FieldCache.
+    - LUCENE-1614 - Use Lucene's DocIdSetIterator.NO_MORE_DOCS as the sentinel value.
+    - LUCENE-1630 - Add acceptsDocsOutOfOrder method to Collector implementations.
+    - LUCENE-1673, LUCENE-1701 - Trie has moved to Lucene core and renamed to NumericRangeQuery.
+    - LUCENE-1662, LUCENE-1687 - Replace usage of ExtendedFieldCache by FieldCache.
     (shalin)
 
 42. SOLR-1241: Solr's CharFilter has been moved to Lucene. Remove CharFilter and related classes
@@ -3871,7 +3899,7 @@ Other Changes
 
 44. Upgraded to Lucene 2.9-dev r801856 (Mark Miller)
 
-45. SOLR1276: Added StatsComponentTest (Rafa�ł Ku�ć, gsingers)
+45. SOLR-1276: Added StatsComponentTest (Rafał Kuć, gsingers)
 
 46. SOLR-1377:  The TokenizerFactory API has changed to explicitly return a Tokenizer 
     rather then a TokenStream (that may be or may not be a Tokenizer).  This change 
@@ -3968,7 +3996,7 @@ Build
 
 Documentation
 ----------------------
- 1. SOLR-789: The javadoc of RandomSortField is not readable (Nicolas Lalev�Á�e via koji)
+ 1. SOLR-789: The javadoc of RandomSortField is not readable (Nicolas Lalevée via koji)
 
  2. SOLR-962: Note about null handling in ModifiableSolrParams.add javadoc
     (Kay Kay via hossman)
@@ -4013,8 +4041,8 @@ example solrconfig.xml) for more details...
 In Solr 1.2, DateField did not enforce the canonical representation of
 the ISO 8601 format when parsing incoming data, and did not generation
 the canonical format when generating dates from "Date Math" strings
-(particularly as it pertains to milliseconds ending in trailing zeros)
--- As a result equivalent dates could not always be compared properly.
+(particularly as it pertains to milliseconds ending in trailing zeros).
+As a result equivalent dates could not always be compared properly.
 This problem is corrected in Solr 1.3, but DateField users that might
 have been affected by indexing inconsistent formats of equivilent
 dates (ie: 1995-12-31T23:59:59Z vs 1995-12-31T23:59:59.000Z) may want
@@ -4337,7 +4365,7 @@ Changes in runtime behavior
 
  2. SOLR-689 / SOLR-695: If you have used "MultiCore" functionality in an unreleased
     version of 1.3-dev, many classes and configs have been renamed for the official 
-    1.3 release.  Speciffically, solr.xml has replaced multicore.xml, and uses a slightly 
+    1.3 release.  Speciffically, solr.xml has replaced multicore.xml, and uses a slightly
     different syntax.  The solrj classes: MultiCore{Request/Response/Params} have been 
     renamed:  CoreAdmin{Request/Response/Params}  (hossman, ryan, Henri Biestro)
 
@@ -4416,7 +4444,7 @@ Bug Fixes
  9. SOLR-294: Logging of elapsed time broken on Solaris because the date command
     there does not support the %s output format.  (bill)
 
-10. SOLR-136: Snappuller - "date -d" and locales don't mix.  (J�Á�rgen Hermann via    bill)
+10. SOLR-136: Snappuller - "date -d" and locales don't mix.  (Jürgen Hermann via bill)
 
 11. SOLR-333: Changed distributiondump.jsp to use Solr HOME instead of CWD to set path.
  
@@ -4466,8 +4494,8 @@ Bug Fixes
 27. SOLR-267: Changed logging to report number of hits, and also provide a mechanism to add log 
     messages to be output by the SolrCore via a NamedList toLog member variable.  
     (Will Johnson, yseeley, gsingers)
-    
-    SOLR-267: Removed adding values to the HTTP headers in SolrDispatchFilter (gsingers)
+
+    - SOLR-267: Removed adding values to the HTTP headers in SolrDispatchFilter (gsingers)
 
 28. SOLR-509: Moved firstSearcher event notification to the end of the SolrCore constructor 
     (Koji Sekiguchi via gsingers)

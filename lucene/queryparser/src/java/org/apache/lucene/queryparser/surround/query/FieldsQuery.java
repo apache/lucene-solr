@@ -22,6 +22,9 @@ import java.util.Iterator;
 
 import org.apache.lucene.search.Query;
 
+/**
+ * Forms an OR query of the provided query across multiple fields.
+ */
 public class FieldsQuery extends SrndQuery { /* mostly untested */
   private SrndQuery q;
   private List<String> fieldNames;

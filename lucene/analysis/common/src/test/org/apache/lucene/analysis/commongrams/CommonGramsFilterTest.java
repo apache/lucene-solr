@@ -39,6 +39,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
     
     CharTermAttribute term = cgf.addAttribute(CharTermAttribute.class);
+    cgf.reset();
     assertTrue(cgf.incrementToken());
     assertEquals("How", term.toString());
     assertTrue(cgf.incrementToken());
@@ -61,6 +62,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     CommonGramsQueryFilter nsf = new CommonGramsQueryFilter(cgf);
     
     CharTermAttribute term = wt.addAttribute(CharTermAttribute.class);
+    nsf.reset();
     assertTrue(nsf.incrementToken());
     assertEquals("How_the", term.toString());
     assertTrue(nsf.incrementToken());

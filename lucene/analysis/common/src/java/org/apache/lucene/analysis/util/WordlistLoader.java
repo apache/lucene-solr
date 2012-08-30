@@ -36,7 +36,10 @@ import org.apache.lucene.util.Version;
  */
 public class WordlistLoader {
   
-  private static final int INITITAL_CAPACITY = 16;
+  private static final int INITIAL_CAPACITY = 16;
+  
+  /** no instance */
+  private WordlistLoader() {}
   
   /**
    * Reads lines from a Reader and adds every line as an entry to a CharArraySet (omitting
@@ -74,7 +77,7 @@ public class WordlistLoader {
    * @return A {@link CharArraySet} with the reader's words
    */
   public static CharArraySet getWordSet(Reader reader, Version matchVersion) throws IOException {
-    return getWordSet(reader, new CharArraySet(matchVersion, INITITAL_CAPACITY, false));
+    return getWordSet(reader, new CharArraySet(matchVersion, INITIAL_CAPACITY, false));
   }
 
   /**
@@ -89,7 +92,7 @@ public class WordlistLoader {
    * @return A CharArraySet with the reader's words
    */
   public static CharArraySet getWordSet(Reader reader, String comment, Version matchVersion) throws IOException {
-    return getWordSet(reader, comment, new CharArraySet(matchVersion, INITITAL_CAPACITY, false));
+    return getWordSet(reader, comment, new CharArraySet(matchVersion, INITIAL_CAPACITY, false));
   }
 
   /**
@@ -171,7 +174,7 @@ public class WordlistLoader {
    * @return A {@link CharArraySet} with the reader's words
    */
   public static CharArraySet getSnowballWordSet(Reader reader, Version matchVersion) throws IOException {
-    return getSnowballWordSet(reader, new CharArraySet(matchVersion, INITITAL_CAPACITY, false));
+    return getSnowballWordSet(reader, new CharArraySet(matchVersion, INITIAL_CAPACITY, false));
   }
 
 

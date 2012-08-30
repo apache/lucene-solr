@@ -113,13 +113,26 @@ public abstract class Scorer extends DocIdSetIterator {
     return Collections.emptyList();
   }
   
-  /** a child Scorer and its relationship to its parent.
+  /** A child Scorer and its relationship to its parent.
    * the meaning of the relationship depends upon the parent query. 
    * @lucene.experimental */
   public static class ChildScorer {
+    /**
+     * Child Scorer. (note this is typically a direct child, and may
+     * itself also have children).
+     */
     public final Scorer child;
+    /**
+     * An arbitrary string relating this scorer to the parent.
+     */
     public final String relationship;
     
+    /**
+     * Creates a new ChildScorer node with the specified relationship.
+     * <p>
+     * The relationship can be any be any string that makes sense to 
+     * the parent Scorer. 
+     */
     public ChildScorer(Scorer child, String relationship) {
       this.child = child;
       this.relationship = relationship;

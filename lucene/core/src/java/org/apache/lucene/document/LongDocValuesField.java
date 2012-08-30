@@ -37,12 +37,21 @@ import org.apache.lucene.index.DocValues;
 
 public class LongDocValuesField extends StoredField {
 
+  /**
+   * Type for 64-bit long DocValues.
+   */
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValueType(DocValues.Type.FIXED_INTS_64);
     TYPE.freeze();
   }
 
+  /** 
+   * Creates a new DocValues field with the specified 64-bit long value 
+   * @param name field name
+   * @param value 64-bit long value
+   * @throws IllegalArgumentException if the field name is null
+   */
   public LongDocValuesField(String name, long value) {
     super(name, TYPE);
     fieldsData = Long.valueOf(value);

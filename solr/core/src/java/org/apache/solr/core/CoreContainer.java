@@ -598,14 +598,15 @@ public class CoreContainer
         }
         cores.clear();
       } finally {
+        if (shardHandlerFactory != null) {
+          shardHandlerFactory.close();
+        }
+        // we want to close zk stuff last
         if(zkController != null) {
           zkController.close();
         }
         if (zkServer != null) {
           zkServer.stop();
-        }
-        if (shardHandlerFactory != null) {
-          shardHandlerFactory.close();
         }
       }
     }

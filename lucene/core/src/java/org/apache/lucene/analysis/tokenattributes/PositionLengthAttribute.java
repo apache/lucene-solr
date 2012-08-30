@@ -26,11 +26,20 @@ import org.apache.lucene.util.Attribute;
  *  produced by decompounding, word splitting/joining,
  *  synonym filtering, etc.
  *
- * <p>The default value is one. */
+ * <p>NOTE: this is optional, and most analyzers
+ *  don't change the default value (1). */
 
 public interface PositionLengthAttribute extends Attribute {
-  /** @param positionLength how many positions this token
-   *  spans. */
+  /**
+   * Set the position length of this Token.
+   * <p>
+   * The default value is one. 
+   * @param positionLength how many positions this token
+   *  spans. 
+   * @throws IllegalArgumentException if <code>positionLength</code> 
+   *         is zero or negative.
+   * @see #getPositionLength()
+   */
   public void setPositionLength(int positionLength);
 
   /** Returns the position length of this Token.

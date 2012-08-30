@@ -23,6 +23,11 @@ New Features
 * LUCENE-4323: Added support for an absolute maximum CFS segment size
   (in MiB) to LogMergePolicy and TieredMergePolicy.
   (Alexey Lef via Uwe Schindler)
+  
+* LUCENE-4339: Allow deletes against 3.x segments for easier upgrading.
+  Lucene3x Codec is still otherwise read-only, you should not set it
+  as the default Codec on IndexWriter, because it cannot write new segments.
+  (Mike McCandless, Robert Muir)
 
 API Changes
 
@@ -77,6 +82,10 @@ API Changes
   fields in a stored document, has been replaced with the simpler
   StoredFieldVisitor API.  (Mike McCandless)
 
+* LUCENE-4343: Made Tokenizer.setReader final. This is a setter that should
+  not be overriden by subclasses: per-stream initialization should happen
+  in reset().  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor
@@ -110,7 +119,17 @@ Bug Fixes
   containing non-BMP Unicode characters.  (Dawid Weiss, Robert Muir,
   Mike McCandless)
 
+* LUCENE-4224: Add in-order scorer to query time joining and the
+  out-of-order scorer throws an UOE. (Martijn van Groningen, Robert Muir)
+
+* LUCENE-4333: Fixed NPE in TermGroupFacetCollector when faceting on mv fields.
+  (Jesse MacVicar, Martijn van Groningen)
+
 Optimizations
+
+* LUCENE-4322: Decrease lucene-core JAR size. The core JAR size had increased a
+  lot because of generated code introduced in LUCENE-4161 and LUCENE-3892.
+  (Adrien Grand)
 
 * LUCENE-4317: Improve reuse of internal TokenStreams and StringReader
   in oal.document.Field.  (Uwe Schindler, Chris Male, Robert Muir)
@@ -883,7 +902,7 @@ API Changes
 
 * LUCENE-3866: IndexReaderContext.leaves() is now the preferred way to access
   atomic sub-readers of any kind of IndexReader (for AtomicReaders it returns
-  itsself as only leaf with docBase=0).  (Uwe Schindler)
+  itself as only leaf with docBase=0).  (Uwe Schindler)
 
 New features
 
@@ -2306,7 +2325,7 @@ Changes in backwards compatibility policy
   (Mike McCandless, Shai Erera)
 
 * LUCENE-3084: MergePolicy.OneMerge.segments was changed from
-  SegmentInfos to a List<SegmentInfo>. SegmentInfos itsself was changed
+  SegmentInfos to a List<SegmentInfo>. SegmentInfos itself was changed
   to no longer extend Vector<SegmentInfo> (to update code that is using
   Vector-API, use the new asList() and asSet() methods returning unmodifiable
   collections; modifying SegmentInfos is now only possible through
@@ -7547,7 +7566,7 @@ Infrastructure
 11. Fixed bugs in GermanAnalyzer (gschwarz)
 
 
-1.2 RC2:
+1.2 RC2
  - added sources to distribution
  - removed broken build scripts and libraries from distribution
  - SegmentsReader: fixed potential race condition
@@ -7562,7 +7581,8 @@ Infrastructure
  - JDK 1.1 compatibility fix: disabled lock files for JDK 1.1,
    since they rely on a feature added in JDK 1.2.
 
-1.2 RC1 (first Apache release):
+1.2 RC1
+  - first Apache release
   - packages renamed from com.lucene to org.apache.lucene
   - license switched from LGPL to Apache
   - ant-only build -- no more makefiles
@@ -7573,7 +7593,8 @@ Infrastructure
   - Analyzers can choose tokenizer based on field name
   - misc bug fixes.
 
-1.01b (last Sourceforge release)
+1.01b
+ . last Sourceforge release
  . a few bug fixes
  . new Query Parser
  . new prefix query (search for "foo*" matches "food")

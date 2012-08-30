@@ -33,6 +33,9 @@ import java.io.Reader;
  * You can optionally provide more efficient implementations of additional methods 
  * like {@link #read()}, {@link #read(char[])}, {@link #read(java.nio.CharBuffer)},
  * but this is not required.
+ * <p>
+ * For examples and integration with {@link Analyzer}, see the 
+ * {@link org.apache.lucene.analysis Analysis package documentation}.
  */
 // the way java.io.FilterReader should work!
 public abstract class CharFilter extends Reader {
@@ -52,6 +55,10 @@ public abstract class CharFilter extends Reader {
   
   /** 
    * Closes the underlying input stream.
+   * <p>
+   * <b>NOTE:</b> 
+   * The default implementation closes the input Reader, so
+   * be sure to call <code>super.close()</code> when overriding this method.
    */
   @Override
   public void close() throws IOException {

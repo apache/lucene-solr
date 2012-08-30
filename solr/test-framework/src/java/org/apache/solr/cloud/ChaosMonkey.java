@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.net.BindException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -174,16 +173,10 @@ public class ChaosMonkey {
   public static void kill(CloudJettyRunner cjetty) throws Exception {
     JettySolrRunner jetty = cjetty.jetty;
     monkeyLog("kill shard! " + jetty.getLocalPort());
-    FilterHolder fh = jetty.getDispatchFilter();
-    SolrDispatchFilter sdf = null;
-    if (fh != null) {
-      sdf = (SolrDispatchFilter) fh.getFilter();
-    }
+    
     jetty.stop();
     
-    if (sdf != null) {
-      sdf.destroy();
-    }
+    stop(jetty);
     
     if (!jetty.isStopped()) {
       throw new RuntimeException("could not kill jetty");
@@ -441,6 +434,7 @@ public class ChaosMonkey {
   }
   
   public static boolean start(JettySolrRunner jetty) throws Exception {
+    
     try {
       jetty.start();
     } catch (Exception e) {
@@ -454,7 +448,7 @@ public class ChaosMonkey {
         try {
           jetty.start();
         } catch (Exception e3) {
-          log.error("", e3);
+          log.error("Could not get the port to start jetty again", e3);
           // we coud not get the port
           jetty.stop();
           return false;

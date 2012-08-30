@@ -51,6 +51,7 @@ import org.apache.lucene.store.Directory;
 public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> {
   public static final int DEFAULT_TERMS_INDEX_DIVISOR = 1;
 
+  /** The index directory. */
   protected final Directory directory;
   
   /** Returns a IndexReader reading the index in the given

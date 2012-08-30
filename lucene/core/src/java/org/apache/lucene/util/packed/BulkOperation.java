@@ -19,7 +19,6 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import java.nio.ByteBuffer;
 
 /**
  * Efficient sequential read/write of packed integers.
@@ -50,46 +49,46 @@ abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
     new BulkOperationPacked22(),
     new BulkOperationPacked23(),
     new BulkOperationPacked24(),
-    new BulkOperationPacked25(),
-    new BulkOperationPacked26(),
-    new BulkOperationPacked27(),
-    new BulkOperationPacked28(),
-    new BulkOperationPacked29(),
-    new BulkOperationPacked30(),
-    new BulkOperationPacked31(),
-    new BulkOperationPacked32(),
-    new BulkOperationPacked33(),
-    new BulkOperationPacked34(),
-    new BulkOperationPacked35(),
-    new BulkOperationPacked36(),
-    new BulkOperationPacked37(),
-    new BulkOperationPacked38(),
-    new BulkOperationPacked39(),
-    new BulkOperationPacked40(),
-    new BulkOperationPacked41(),
-    new BulkOperationPacked42(),
-    new BulkOperationPacked43(),
-    new BulkOperationPacked44(),
-    new BulkOperationPacked45(),
-    new BulkOperationPacked46(),
-    new BulkOperationPacked47(),
-    new BulkOperationPacked48(),
-    new BulkOperationPacked49(),
-    new BulkOperationPacked50(),
-    new BulkOperationPacked51(),
-    new BulkOperationPacked52(),
-    new BulkOperationPacked53(),
-    new BulkOperationPacked54(),
-    new BulkOperationPacked55(),
-    new BulkOperationPacked56(),
-    new BulkOperationPacked57(),
-    new BulkOperationPacked58(),
-    new BulkOperationPacked59(),
-    new BulkOperationPacked60(),
-    new BulkOperationPacked61(),
-    new BulkOperationPacked62(),
-    new BulkOperationPacked63(),
-    new BulkOperationPacked64(),
+    new BulkOperationPacked(25),
+    new BulkOperationPacked(26),
+    new BulkOperationPacked(27),
+    new BulkOperationPacked(28),
+    new BulkOperationPacked(29),
+    new BulkOperationPacked(30),
+    new BulkOperationPacked(31),
+    new BulkOperationPacked(32),
+    new BulkOperationPacked(33),
+    new BulkOperationPacked(34),
+    new BulkOperationPacked(35),
+    new BulkOperationPacked(36),
+    new BulkOperationPacked(37),
+    new BulkOperationPacked(38),
+    new BulkOperationPacked(39),
+    new BulkOperationPacked(40),
+    new BulkOperationPacked(41),
+    new BulkOperationPacked(42),
+    new BulkOperationPacked(43),
+    new BulkOperationPacked(44),
+    new BulkOperationPacked(45),
+    new BulkOperationPacked(46),
+    new BulkOperationPacked(47),
+    new BulkOperationPacked(48),
+    new BulkOperationPacked(49),
+    new BulkOperationPacked(50),
+    new BulkOperationPacked(51),
+    new BulkOperationPacked(52),
+    new BulkOperationPacked(53),
+    new BulkOperationPacked(54),
+    new BulkOperationPacked(55),
+    new BulkOperationPacked(56),
+    new BulkOperationPacked(57),
+    new BulkOperationPacked(58),
+    new BulkOperationPacked(59),
+    new BulkOperationPacked(60),
+    new BulkOperationPacked(61),
+    new BulkOperationPacked(62),
+    new BulkOperationPacked(63),
+    new BulkOperationPacked(64),
   };
 
   // NOTE: this is sparse (some entries are null):
@@ -125,7 +124,7 @@ abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
     null,
     null,
     null,
-    new BulkOperationPackedSingleBlock32(),
+    new BulkOperationPackedSingleBlock(32),
   };
 
 
@@ -142,32 +141,11 @@ abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
     }
   }
 
-
-  private static long[] toLongArray(int[] ints, int offset, int length) {
-    long[] arr = new long[length];
-    for (int i = 0; i < length; ++i) {
-      arr[i] = ints[offset + i];
+  protected int writeLong(long block, byte[] blocks, int blocksOffset) {
+    for (int j = 1; j <= 8; ++j) {
+      blocks[blocksOffset++] = (byte) (block >>> (64 - (j << 3)));
     }
-    return arr;
-  }
-
-  @Override
-  public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-    encode(toLongArray(values, valuesOffset, iterations * valueCount()), 0, blocks, blocksOffset, iterations);
-  }
-
-  @Override
-  public void encode(long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
-    final long[] longBLocks = new long[blockCount() * iterations];
-    encode(values, valuesOffset, longBLocks, 0, iterations);
-    ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer().put(longBLocks);
-  }
-
-  @Override
-  public void encode(int[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
-    final long[] longBLocks = new long[blockCount() * iterations];
-    encode(values, valuesOffset, longBLocks, 0, iterations);
-    ByteBuffer.wrap(blocks, blocksOffset, 8 * iterations * blockCount()).asLongBuffer().put(longBLocks);
+    return blocksOffset;
   }
 
   /**

@@ -22,15 +22,10 @@ package org.apache.lucene.util.packed;
 /**
  * Efficient sequential read/write of packed integers.
  */
-final class BulkOperationPackedSingleBlock3 extends BulkOperation {
-    @Override
-    public int blockCount() {
-      return 1;
-     }
+final class BulkOperationPackedSingleBlock3 extends BulkOperationPackedSingleBlock {
 
-    @Override
-    public int valueCount() {
-      return 21;
+    public BulkOperationPackedSingleBlock3() {
+      super(3);
     }
 
     @Override
@@ -164,24 +159,6 @@ final class BulkOperationPackedSingleBlock3 extends BulkOperation {
         values[valuesOffset++] = (byte6 >>> 6) | ((byte7 & 1) << 2);
         values[valuesOffset++] = (byte7 >>> 1) & 7;
         values[valuesOffset++] = (byte7 >>> 4) & 7;
-      }
-    }
-
-    @Override
-    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = (values[valuesOffset++] & 0xffffffffL) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 60);
-      }
-    }
-
-    @Override
-    public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = values[valuesOffset++] | (values[valuesOffset++] << 3) | (values[valuesOffset++] << 6) | (values[valuesOffset++] << 9) | (values[valuesOffset++] << 12) | (values[valuesOffset++] << 15) | (values[valuesOffset++] << 18) | (values[valuesOffset++] << 21) | (values[valuesOffset++] << 24) | (values[valuesOffset++] << 27) | (values[valuesOffset++] << 30) | (values[valuesOffset++] << 33) | (values[valuesOffset++] << 36) | (values[valuesOffset++] << 39) | (values[valuesOffset++] << 42) | (values[valuesOffset++] << 45) | (values[valuesOffset++] << 48) | (values[valuesOffset++] << 51) | (values[valuesOffset++] << 54) | (values[valuesOffset++] << 57) | (values[valuesOffset++] << 60);
       }
     }
 

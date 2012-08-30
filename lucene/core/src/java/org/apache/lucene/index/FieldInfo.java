@@ -31,7 +31,9 @@ import org.apache.lucene.index.DocValues.Type;
  **/
 
 public final class FieldInfo {
+  /** Field's name */
   public final String name;
+  /** Internal field number */
   public final int number;
 
   private boolean indexed;
@@ -55,14 +57,29 @@ public final class FieldInfo {
     // NOTE: order is important here; FieldInfo uses this
     // order to merge two conflicting IndexOptions (always
     // "downgrades" by picking the lowest).
-    /** only documents are indexed: term frequencies and positions are omitted */
+    /** 
+     * Only documents are indexed: term frequencies and positions are omitted.
+     * Phrase and other positional queries on the field will throw an exception, and scoring
+     * will behave as if any term in the document appears only once.
+     */
     // TODO: maybe rename to just DOCS?
     DOCS_ONLY,
-    /** only documents and term frequencies are indexed: positions are omitted */  
+    /** 
+     * Only documents and term frequencies are indexed: positions are omitted. 
+     * This enables normal scoring, except Phrase and other positional queries
+     * will throw an exception.
+     */  
     DOCS_AND_FREQS,
-    /** documents, frequencies and positions */
+    /** 
+     * Indexes documents, frequencies and positions.
+     * This is a typical default for full-text search: full scoring is enabled
+     * and positional queries are supported.
+     */
     DOCS_AND_FREQS_AND_POSITIONS,
-    /** documents, frequencies, positions and offsets */
+    /** 
+     * Indexes documents, frequencies, positions and offsets.
+     * Character offsets are encoded alongside the positions. 
+     */
     DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
   };
 
@@ -149,27 +166,27 @@ public final class FieldInfo {
     assert checkConsistency();
   }
   
-  /** @return IndexOptions for the field, or null if the field is not indexed */
+  /** Returns IndexOptions for the field, or null if the field is not indexed */
   public IndexOptions getIndexOptions() {
     return indexOptions;
   }
   
   /**
-   * @return true if this field has any docValues.
+   * Returns true if this field has any docValues.
    */
   public boolean hasDocValues() {
     return docValueType != null;
   }
 
   /**
-   * @return {@link DocValues.Type} of the docValues. this may be null if the field has no docvalues.
+   * Returns {@link DocValues.Type} of the docValues. this may be null if the field has no docvalues.
    */
   public DocValues.Type getDocValuesType() {
     return docValueType;
   }
   
   /**
-   * @return {@link DocValues.Type} of the norm. this may be null if the field has no norms.
+   * Returns {@link DocValues.Type} of the norm. this may be null if the field has no norms.
    */
   public DocValues.Type getNormType() {
     return normType;
@@ -193,35 +210,35 @@ public final class FieldInfo {
   }
   
   /**
-   * @return true if norms are explicitly omitted for this field
+   * Returns true if norms are explicitly omitted for this field
    */
   public boolean omitsNorms() {
     return omitNorms;
   }
   
   /**
-   * @return true if this field actually has any norms.
+   * Returns true if this field actually has any norms.
    */
   public boolean hasNorms() {
     return normType != null;
   }
   
   /**
-   * @return true if this field is indexed.
+   * Returns true if this field is indexed.
    */
   public boolean isIndexed() {
     return indexed;
   }
   
   /**
-   * @return true if any payloads exist for this field.
+   * Returns true if any payloads exist for this field.
    */
   public boolean hasPayloads() {
     return storePayloads;
   }
   
   /**
-   * @return true if any term vectors exist for this field.
+   * Returns true if any term vectors exist for this field.
    */
   public boolean hasVectors() {
     return storeTermVector;
@@ -256,7 +273,7 @@ public final class FieldInfo {
   }
   
   /**
-   * @return internal codec attributes map. May be null if no mappings exist.
+   * Returns internal codec attributes map. May be null if no mappings exist.
    */
   public Map<String,String> attributes() {
     return attributes;

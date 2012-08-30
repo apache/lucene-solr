@@ -19,10 +19,13 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -36,6 +39,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.HashPartitioner;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -57,6 +61,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.MergeIndexesCommand;
+import org.apache.solr.update.SplitIndexCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.NumberUtils;
@@ -171,6 +176,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
           break;
         }
 
+        case SPLIT: {
+          doPersist = this.handleSplitAction(req, rsp);
+          break;
+        }
+
         case PREPRECOVERY: {
           this.handleWaitForStateAction(req, rsp);
           break;
@@ -201,6 +211,62 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
     rsp.setHttpCaching(false);
   }
+
+
+  protected boolean handleSplitAction(SolrQueryRequest adminReq, SolrQueryResponse rsp) throws IOException {
+    SolrParams params = adminReq.getParams();
+     // partitions=N    (split into N partitions, leaving it up to solr what the ranges are and where to put them)
+    // path - multiValued param, or comma separated param?  Only creates indexes, not cores
+
+    List<HashPartitioner.Range> ranges = null;
+    // boolean closeDirectories = true;
+    // DirectoryFactory dirFactory = null;
+
+
+    String cname = params.get(CoreAdminParams.CORE, "");
+    SolrCore core = coreContainer.getCore(cname);
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+    try {
+
+      String[] pathsArr = params.getParams("path");
+      List<String> paths = null;
+
+      String rangesStr = params.get("ranges");    // ranges=a-b,c-d,e-f
+
+
+      // dirFactory = core.getDirectoryFactory();
+
+
+      if (pathsArr != null) {
+
+        paths = Arrays.asList(pathsArr);
+
+        if (rangesStr == null) {
+          HashPartitioner hp = new HashPartitioner();
+          // should this be static?
+          // TODO: use real range if we know it.  If we don't know it, we should prob
+          // split on every other doc rather than on a hash?
+          ranges = hp.partitionRange(pathsArr.length, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        }
+
+      }
+
+
+      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, ranges);
+      core.getUpdateHandler().split(cmd);
+
+    } catch (Exception e) {
+      log.error("ERROR executing split:", e);
+      throw new RuntimeException(e);
+
+    } finally {
+      if (req != null) req.close();
+      if (core != null) core.close();
+    }
+
+    return false;
+  }
+
 
   protected boolean handleMergeAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     SolrParams params = req.getParams();
@@ -721,6 +787,21 @@ public class CoreAdminHandler extends RequestHandlerBase {
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
         
         boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props));
+        // solrcloud_debug
+//         try {
+//         RefCounted<SolrIndexSearcher> searchHolder =
+//         core.getNewestSearcher(false);
+//         SolrIndexSearcher searcher = searchHolder.get();
+//         try {
+//         System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName()
+//         + " synched "
+//         + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+//         } finally {
+//         searchHolder.decref();
+//         }
+//         } catch (Exception e) {
+//        
+//         }
         if (!success) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Sync Failed");
         }
@@ -750,7 +831,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String coreNodeName = params.get("coreNodeName");
     String waitForState = params.get("state");
     Boolean checkLive = params.getBool("checkLive");
+    Boolean onlyIfLeader = params.getBool("onlyIfLeader");
     int pauseFor = params.getInt("pauseFor", 0);
+    
+
     
     String state = null;
     boolean live = false;
@@ -764,6 +848,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
               + cname);
         }
         if (core != null) {
+          if (onlyIfLeader != null && onlyIfLeader) {
+           if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
+             throw new SolrException(ErrorCode.BAD_REQUEST, "We are not the leader");
+           }
+          }
+          
           // wait until we are sure the recovering node is ready
           // to accept updates
           CloudDescriptor cloudDescriptor = core.getCoreDescriptor()

@@ -70,9 +70,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  @Override
   protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
     filler.fillValue(doc);
     GroupHead groupHead = groups.get(mval);
@@ -87,13 +85,12 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
     this.temporalResult.groupHead = groupHead;
   }
 
-   /**
-   * {@inheritDoc}
-   */
+  @Override
   protected Collection<GroupHead> getCollectedGroupHeads() {
     return groups.values();
   }
 
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
     for (GroupHead groupHead : groups.values()) {
@@ -103,6 +100,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
     }
   }
 
+  @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
     this.readerContext = context;
     FunctionValues values = groupBy.getValues(vsContext, context);

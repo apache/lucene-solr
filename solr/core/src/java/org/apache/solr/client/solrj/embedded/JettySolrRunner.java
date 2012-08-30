@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Random;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
  * Run solr using jetty
@@ -47,8 +49,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * @since solr 1.3
  */
 public class JettySolrRunner {
-  static Map<JettySolrRunner,Exception> RUNNING_JETTIES = new HashMap<JettySolrRunner,Exception>();
-  
   Server server;
 
   FilterHolder dispatchFilter;
@@ -208,7 +208,6 @@ public class JettySolrRunner {
     
     if (!server.isRunning()) {
       server.start();
-      RUNNING_JETTIES.put(this, new RuntimeException());
     }
     synchronized (JettySolrRunner.this) {
       int cnt = 0;
@@ -225,20 +224,31 @@ public class JettySolrRunner {
   }
 
   public void stop() throws Exception {
-    if (!server.isStopped() && !server.isStopping()) {
-      server.stop();
-      RUNNING_JETTIES.remove(this);
+    // we try and do a bunch of extra stop stuff because
+    // jetty doesn't like to stop if it started
+    // and ended up in a failure state (like when it cannot get the port)
+    if (server.getState().equals(Server.FAILED)) {
+      Connector[] connectors = server.getConnectors();
+      for (Connector connector : connectors) {
+        connector.stop();
+      }
     }
+    Filter filter = dispatchFilter.getFilter();
+    ThreadPool threadPool = server.getThreadPool();
+    server.getServer().stop();
+    server.stop();
+    if (threadPool instanceof QueuedThreadPool) {
+      ((QueuedThreadPool) threadPool).setMaxStopTimeMs(15000);
+      ((QueuedThreadPool) threadPool).stop();
+      ((QueuedThreadPool) threadPool).stop();
+      ((QueuedThreadPool) threadPool).stop();
+    }
+    //server.destroy();
+    if (server.getState().equals(Server.FAILED)) {
+      filter.destroy();
+    }
+    
     server.join();
-  }
-  
-  public static void assertStoppedJetties() {
-    if (RUNNING_JETTIES.size() > 0) {
-      Iterator<Exception> stacktraces = RUNNING_JETTIES.values().iterator();
-      Exception cause = null;
-      cause = stacktraces.next();
-      throw new RuntimeException("Found a bad one!", cause);
-    }
   }
 
   /**

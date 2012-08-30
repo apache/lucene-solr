@@ -25,13 +25,12 @@ use strict;
 use warnings;
 
 # JIRA REST API documentation: <http://docs.atlassian.com/jira/REST/latest/>
-my $project_info_url = 'https://issues.apache.org/jira/rest/api/2/project/LUCENE';
+my $project_info_url = 'https://issues.apache.org/jira/rest/api/2/project';
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
 my $bugzilla_url_prefix = 'http://issues.apache.org/bugzilla/show_bug.cgi?id=';
-my %release_dates = &setup_release_dates;
 my $month_regex = &setup_month_regex;
 my %month_nums = &setup_month_nums;
-my %bugzilla_jira_map = &setup_bugzilla_jira_map;
+my %lucene_bugzilla_jira_map = &setup_lucene_bugzilla_jira_map;
 my $title = undef;
 my $release = undef;
 my $reldate = undef;
@@ -44,20 +43,35 @@ my @releases = ();
 
 my @lines = <>;                        # Get all input at once
 
+my $product = '';
+for my $line (@lines) {
+  ($product) = $line =~ /(Solr|Lucene)/i;
+  if ($product) {
+    $product = uc($product);
+    last;
+  }
+}
+my %release_dates = &setup_release_dates;
+my $in_major_component_versions_section = 0;
+
+
 #
 # Parse input and build hierarchical release structure in @releases
 #
 for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
   $_ = $lines[$line_num];
-  next unless (/\S/);                  # Skip blank lines
+  unless (/\S/) {                      # Skip blank lines
+    $in_major_component_versions_section = 0;
+    next;
+  }
   next if (/^\s*\$Id(?::.*)?\$/);      # Skip $Id$ lines
+  next if (/^\s{0,4}-{5,}\s*$/);       # Skip Solr's section underlines
 
   unless ($title) {
     if (/\S/) {
-      s/^\s+//;                        # Trim leading whitespace
+      s/^[^\p{N}\p{L}]*//;             # Trim leading non-alphanum chars, including BOM chars, if any
       s/\s+$//;                        # Trim trailing whitespace
     }
-    s/^[^Ll]*//;                       # Trim leading BOM characters if exists
     $title = $_;
     next;
   }
@@ -71,8 +85,11 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     ($reldate, $relinfo) = get_release_date($release, $relinfo);
     $sections = [];
     push @releases, [ $release, $reldate, $relinfo, $sections ];
-    ($first_relid = lc($release)) =~ s/\s+/_/g   if ($#releases == 0);
-    ($second_relid = lc($release)) =~ s/\s+/_/g  if ($#releases == 1);
+    ($first_relid = lc($release)) =~ s/\s+/_/g
+       if ($#releases == 0 or ($#releases == 1 and not ($releases[0][0])));
+    ($second_relid = lc($release)) =~ s/\s+/_/g
+       if (   ($#releases == 1 and $releases[0][0])
+           or ($#releases == 2 and not $releases[0][0]));
     $items = undef;
     next;
   }
@@ -90,18 +107,43 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     next;
   }
 
+  if (m!^20\d\d[-/]\d{1,2}[-/]\d{1,2}!) { # Collect dated postscripts
+    my $item = $_;
+    my $line = '';
+    while ($line_num < $#lines and ($line = $lines[++$line_num]) =~ /\S/) {
+      $line =~ s/^\s+//;                   # Trim leading whitespace
+      $line =~ s/\s+$//;                   # Trim trailing whitespace
+      $item .= "$line\n";
+    }
+    push @releases, [ $item, '', '', [] ];
+    next;
+  }
+
   # Section heading: no leading whitespace, initial word capitalized,
   #                  five words or less, and no trailing punctuation
-  if (/^([A-Z]\S*(?:\s+\S+){0,4})(?<![-.:;!()])\s*$/) {
+  if (    /^([A-Z]\S*(?:\s+\S+){0,4})(?<![-.:;!()])\s*$/
+      and not $in_major_component_versions_section) {
     my $heading = $1;
     $items = [];
+    unless (@releases) {
+      $sections = [];
+      # Make a fake release to hold pre-release sections
+      push @releases, [ undef, undef, undef, $sections ];
+    }
     push @$sections, [ $heading, $items ];
+    $in_major_component_versions_section
+      = ($heading =~ /Versions of Major Components/i);
     next;
   }
 
   # Handle earlier releases without sections - create a headless section
   unless ($items) {
     $items = [];
+    unless (@releases) {
+      $sections = [];
+      # Make a fake release to hold pre-release sections and items
+      push @releases, [ undef, undef, undef, $sections ];
+    }
     push @$sections, [ undef, $items ];
   }
 
@@ -130,7 +172,7 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     }
     $item =~ s/\n+\Z/\n/;                  # Trim trailing blank lines
     push @$items, $item;
-    --$line_num unless ($line_num == $#lines);
+    --$line_num unless ($line_num == $#lines && $lines[$line_num] !~ /^20/);
   } elsif ($type eq 'paragraph') {         # List item boundary is a blank line
     my $line;
     my $item = $_;
@@ -139,18 +181,22 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     $item =~ s/\s+$//;                     # Trim trailing whitespace
     $item .= "\n";
 
-    while ($line_num < $#lines and ($line = $lines[++$line_num]) =~ /\S/) {
-      $line =~ s/^\s{$leading_ws_width}//; # Trim leading whitespace
-      $line =~ s/\s+$//;                   # Trim trailing whitespace
-      $item .= "$line\n";
+    unless ($in_major_component_versions_section) {
+      while ($line_num < $#lines and ($line = $lines[++$line_num]) =~ /\S/) {
+        $line =~ s/^\s{$leading_ws_width}//; # Trim leading whitespace
+        $line =~ s/\s+$//;                   # Trim trailing whitespace
+        $item .= "$line\n";
+      }
+    } else {
+      ++$line_num;
     }
     push @$items, $item;
-    --$line_num unless ($line_num == $#lines);
+    --$line_num unless ($line_num == $#lines && $lines[$line_num] !~ /^20/);
   } else { # $type is one of the bulleted types
     # List item boundary is another bullet or a blank line
     my $line;
     my $item = $_;
-    $item =~ s/^(\s*\Q$type\E\s*)//;           # Trim the leading bullet
+    $item =~ s/^(\s*\Q$type\E\s*)//;       # Trim the leading bullet
     my $leading_ws_width = length($1);
     $item =~ s/\s+$//;                     # Trim trailing whitespace
     $item .= "\n";
@@ -162,7 +208,7 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
       $item .= "$line\n";
     }
     push @$items, $item;
-    --$line_num unless ($line_num == $#lines);
+    --$line_num unless ($line_num == $#lines && $lines[$line_num] !~ /^20/);
   }
 }
 
@@ -357,51 +403,71 @@ __HTML_HEADER__
 my $heading;
 my $relcnt = 0;
 my $header = 'h2';
+my $subheader = 'h3';
+
 for my $rel (@releases) {
-  if (++$relcnt == 3) {
+  if ($relcnt == 2) {
     $header = 'h3';
+    $subheader = 'h4';
     print "<h2><a id=\"older\" href=\"javascript:toggleList('older')\">";
     print "Older Releases";
     print "</a></h2>\n";
     print "<ul id=\"older.list\">\n"
   }
-      
+
   ($release, $reldate, $relinfo, $sections) = @$rel;
 
   # The first section heading is undefined for the older sectionless releases
   my $has_release_sections = has_release_sections($sections);
 
-  (my $relid = lc($release)) =~ s/\s+/_/g;
-  print "<$header><a id=\"$relid\" href=\"javascript:toggleList('$relid')\">";
-  print "Release " unless ($release =~ /^trunk$/i);
-  print "$release $relinfo";
-  print " [$reldate]" unless ($reldate eq 'unknown');
-  print "</a></$header>\n";
-  print "<ul id=\"$relid.list\">\n"
-    if ($has_release_sections);
+  my $relid = '';
+  if ($release) { # Pre-release sections have no release ID
+    ++$relcnt;
+    ($relid = lc($release)) =~ s/\s+/_/g;
+    print "<$header>";
+    print "<a id=\"$relid\" href=\"javascript:toggleList('$relid')\">"
+      unless ($release =~ /^20\d\d/);
+    print "Release " unless ($release =~ /^trunk$|^20\d\d/i);
+    print "$release $relinfo";
+    print " [$reldate]" unless ($reldate eq 'unknown' or not $reldate);
+    print "</a>" unless ($release =~ /^20\d\d/);
+    print "</$header>\n";
+    print "<ul id=\"$relid.list\">\n"
+      if ($has_release_sections);
+  }
 
   for my $section (@$sections) {
     ($heading, $items) = @$section;
     (my $sectid = lc($heading)) =~ s/\s+/_/g;
     my $numItemsStr = $#{$items} > 0 ? "($#{$items})" : "(none)";  
 
-    print "  <li><a id=\"$relid.$sectid\"",
-          " href=\"javascript:toggleList('$relid.$sectid')\">",
-          ($heading || ''), "</a>&nbsp;&nbsp;&nbsp;$numItemsStr\n"
-      if ($has_release_sections and $heading);
+    my $list_item = "li";
+    if ($release) {
+      if ($heading and $heading eq 'Detailed Change List') {
+        print "  <$subheader>$heading</$subheader>\n";
+        next;
+      } elsif ($has_release_sections and $heading) {
+        print "  <li><a id=\"$relid.$sectid\"",
+              " href=\"javascript:toggleList('$relid.$sectid')\">",
+              ($heading || ''), "</a>&nbsp;&nbsp;&nbsp;$numItemsStr\n"
+      }
+    } else {
+      print "<h2>$heading</h2>\n" if ($heading);
+      $list_item = "p";
+    }
 
     my $list_type = $items->[0] || '';
     my $list = ($has_release_sections || $list_type eq 'numbered' ? 'ol' : 'ul');
     my $listid = $sectid ? "$relid.$sectid" : $relid;
     print "    <$list id=\"$listid.list\">\n"
-      unless ($has_release_sections and not $heading);
+      unless (not $release or ($has_release_sections and not $heading));
 
     for my $itemnum (1..$#{$items}) {
       my $item = $items->[$itemnum];
-      $item =~ s:&:&amp;:g;               # Escape HTML metachars, but leave 
-      $item =~ s:<(?!/?code>):&lt;:gi;    #   <code> tags intact and add <pre>
-      $item =~ s:(?<!code)>:&gt;:gi;      #   wrappers for non-inline sections
-      $item =~ s{((?:^|.*\n)\s*)<code>(?!</code>.+)(.+)</code>(?![ \t]*\S)}
+      $item =~ s:&:&amp;:g;                       # Escape HTML metachars, but leave <code> tags
+      $item =~ s~<(?!/?code>(?:[^,]|$))~&lt;~gi;  #   intact - unless followed by a comma - and
+      $item =~ s:(?<!code)>:&gt;:gi;              #   add <pre> wrappers for non-inline sections
+      $item =~ s{((?:^|.*\n)\s*)<code>(?!,)(?!</code>.+)(.+)</code>(?![ \t]*\S)}
                 { 
                   my $prefix = $1; 
                   my $code = $2;
@@ -409,62 +475,67 @@ for my $rel (@releases) {
                   "$prefix<code><pre>$code</pre></code>"
                 }gise;
 
-      # Put attributions on their own lines.
-      # Check for trailing parenthesized attribution with no following period.
-      # Exclude things like "(see #3 above)" and "(use the bug number instead of xxxx)" 
-      unless ($item =~ s:\s*(\((?!see #|use the bug number)[^()"]+?\))\s*$:\n<br /><span class="attrib">$1</span>:) {
-        # If attribution is not found, then look for attribution with a
-        # trailing period, but try not to include trailing parenthesized things
-        # that are not attributions.
-        #
-        # Rule of thumb: if a trailing parenthesized expression with a following
-        # period does not contain "LUCENE-XXX", and it either has three or 
-        # fewer words or it includes the word "via" or the phrase "updates from",
-	    # then it is considered to be an attribution.
-
-        $item =~ s{(\s*(\((?!see \#|use the bug number)[^()"]+?\)))
-                   ((?:\.|(?i:\.?\s*Issue\s+\d{3,}|LUCENE-\d+)\.?)\s*)$}
-                  {
-                    my $subst = $1;  # default: no change
-                    my $parenthetical = $2;
-		                my $trailing_period_and_or_issue = $3;
-                    if ($parenthetical !~ /LUCENE-\d+/) {
-                      my ($no_parens) = $parenthetical =~ /^\((.*)\)$/s;
-                      my @words = grep {/\S/} split /\s+/, $no_parens;
-                      if ($no_parens =~ /\b(?:via|updates\s+from)\b/i || scalar(@words) <= 3) {
-                        $subst = "\n<br /><span class=\"attrib\">$parenthetical</span>";
-                      }
-                    }
-                    $subst . $trailing_period_and_or_issue;
-                  }ex;
-      }
+      $item = markup_trailing_attribution($item) unless ($item =~ /\n[ ]*-/);
 
       $item =~ s{(.*?)(<code><pre>.*?</pre></code>)|(.*)}
                 {
                   my $uncode = undef;
-                  if (defined($2)) {
-                    $uncode = $1 || '';
+                  my ($one,$two,$three) = ($1,$2,$3);
+                  if (defined($two)) {
+                    $uncode = $one || '';
+                    $uncode =~ s{^(.*?)(?=\n[ ]*-)}
+                                {
+                                  my $prefix = $1;
+                                  my ($primary,$additional_work) = $prefix =~ /^(.*?)((?:\s*Additional\s+Work:\s*)?)$/si;
+                                  my $result = markup_trailing_attribution($primary);
+                                  $result .= "<br />\n$additional_work<br />" if ($additional_work);
+                                  $result;
+                                }se;
                     $uncode =~ s{((?<=\n)[ ]*-.*\n(?:.*\n)*)}
                                 {
                                   my $bulleted_list = $1;
-                                  $bulleted_list 
-                                    =~ s{(?:(?<=\n)|\A)[ ]*-[ ]*(.*(?:\n|\z)(?:[ ]+[^ -].*(?:\n|\z))*)}
-                                        {<li class="bulleted-list">\n$1</li>\n}g;
                                   $bulleted_list
-                                    =~ s!(<li.*</li>\n)!<ul class="bulleted-list">\n$1</ul>\n!s;
+                                    =~ s{(?:(?<=\n)|\A)[ ]*-[ ]*(.*(?:\n|\z)(?:[ ]+[^ -].*(?:\n|\z))*)}
+                                        {
+                                            qq!<li class="bulleted-list">\n!
+                                          . markup_trailing_attribution($1)
+                                          . "</li>\n"
+                                        }ge;
+                                  $bulleted_list
+                                    =~ s{(<li.*</li>\n)(.*)}
+                                        {
+                                            qq!<ul class="bulleted-list">\n$1</ul>\n!
+                                          . markup_trailing_attribution($2 || '')
+                                        }se;
                                   $bulleted_list;
                                 }ge;
-                    "$uncode$2";
+                    "$uncode$two";
                   } else {
-                    $uncode = $3 || '';
+                    $uncode = $three || '';
+                    $uncode =~ s{^(.*?)(?=\n[ ]*-)}
+                                {
+                                  my $prefix = $1;
+                                  my ($primary,$additional_work) = $prefix =~ /^(.*?)((?:\s*Additional\s+Work:\s*)?)$/si;
+                                  my $result = markup_trailing_attribution($primary);
+                                  $result .= "<br />\n$additional_work<br />" if ($additional_work);
+                                  $result;
+                                }se;
                     $uncode =~ s{((?<=\n)[ ]*-.*\n(?:.*\n)*)}
                                 {
                                   my $bulleted_list = $1;
-                                  $bulleted_list 
-                                    =~ s{(?:(?<=\n)|\A)[ ]*-[ ]*(.*(?:\n|\z)(?:[ ]+[^ -].*(?:\n|\z))*)}
-                                        {<li class="bulleted-list">\n$1</li>\n}g;
                                   $bulleted_list
-                                    =~ s!(<li.*</li>\n)!<ul class="bulleted-list">\n$1</ul>\n!s;
+                                    =~ s{(?:(?<=\n)|\A)[ ]*-[ ]*(.*(?:\n|\z)(?:[ ]+[^ -].*(?:\n|\z))*)}
+                                        {
+                                            qq!<li class="bulleted-list">\n!
+                                          . markup_trailing_attribution($1)
+                                          . "</li>\n"
+                                        }ge;
+                                  $bulleted_list
+                                    =~ s{(<li.*</li>\n)(.*)}
+                                        {
+                                            qq!<ul class="bulleted-list">\n$1</ul>\n!
+                                          . markup_trailing_attribution($2 || '')
+                                        }se;
                                   $bulleted_list;
                                 }ge;
                     $uncode;
@@ -480,48 +551,118 @@ for my $rel (@releases) {
       # Link Lucene XXX, SOLR XXX and INFRA XXX to JIRA
       $item =~ s{((LUCENE|SOLR|INFRA)\s+(\d{3,}))}
                 {<a href="${jira_url_prefix}\U$2\E-$3">$1</a>}gi;
-      # Find single Bugzilla issues
-      $item =~ s~((?i:bug|patch|issue)\s*\#?\s*(\d+))
-                ~ my $issue = $1;
-                  my $jira_issue_num = $bugzilla_jira_map{$2}; # Link to JIRA copies
-                  $issue = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_num">!
-                         . qq!$issue&nbsp;[LUCENE-$jira_issue_num]</a>!
-                    if (defined($jira_issue_num));
-                  $issue;
-                ~gex;
-      # Find multiple Bugzilla issues
-      $item =~ s~(?<=(?i:bugs))(\s*)(\d+)(\s*(?i:\&|and)\s*)(\d+)
-		            ~ my $leading_whitespace = $1;
-		              my $issue_num_1 = $2;
-		              my $interlude = $3;
-                  my $issue_num_2 = $4;
-                  # Link to JIRA copies
-                  my $jira_issue_1 = $bugzilla_jira_map{$issue_num_1};
-                  my $issue1
-		                  = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_1">!
-                      . qq!$issue_num_1&nbsp;[LUCENE-$jira_issue_1]</a>!
-                    if (defined($jira_issue_1));
-                  my $jira_issue_2 = $bugzilla_jira_map{$issue_num_2};
-                  my $issue2
-		                  = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_2">!
-                      . qq!$issue_num_2&nbsp;[LUCENE-$jira_issue_2]</a>!
-                    if (defined($jira_issue_2));
-                  $leading_whitespace . $issue1 . $interlude . $issue2;
-                ~gex;
+      if ($product eq 'LUCENE') {
+        # Find single Bugzilla issues
+        $item =~ s~((?i:bug|patch|issue)\s*\#?\s*(\d+))
+                  ~ my $issue = $1;
+                    my $jira_issue_num = $lucene_bugzilla_jira_map{$2}; # Link to JIRA copies
+                    $issue = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_num">!
+                           . qq!$issue&nbsp;[LUCENE-$jira_issue_num]</a>!
+                      if (defined($jira_issue_num));
+                    $issue;
+                  ~gex;
+        # Find multiple Bugzilla issues
+        $item =~ s~(?<=(?i:bugs))(\s*)(\d+)(\s*(?i:\&|and)\s*)(\d+)
+		              ~ my $leading_whitespace = $1;
+		                my $issue_num_1 = $2;
+		                my $interlude = $3;
+                    my $issue_num_2 = $4;
+                    # Link to JIRA copies
+                    my $jira_issue_1 = $lucene_bugzilla_jira_map{$issue_num_1};
+                    my $issue1
+		                    = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_1">!
+                        . qq!$issue_num_1&nbsp;[LUCENE-$jira_issue_1]</a>!
+                      if (defined($jira_issue_1));
+                    my $jira_issue_2 = $lucene_bugzilla_jira_map{$issue_num_2};
+                    my $issue2
+		                    = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_2">!
+                        . qq!$issue_num_2&nbsp;[LUCENE-$jira_issue_2]</a>!
+                      if (defined($jira_issue_2));
+                    $leading_whitespace . $issue1 . $interlude . $issue2;
+                  ~gex;
+      }
 
       # Linkify URLs, except Bugzilla links, which don't work anymore
-      $item =~ s~(?<![">])(https?://(?!(?:nagoya|issues)\.apache\.org/bugzilla)\S+)~<a href="$1">$1</a>~g;
+      $item =~ s~(?<![">])(https?://(?!(?:nagoya|issues)\.apache\.org/bugzilla)[^\s\)]+)~<a href="$1">$1</a>~g;
 
-      print "      <li>$item</li>\n";
+      $item =~ s~</ul>\s+<p/>\s+<br\s*/>~</ul>~;
+
+      print "      <$list_item>$item</$list_item>\n";
     }
-    print "    </$list>\n" unless ($has_release_sections and not $heading);
-    print "  </li>\n" if ($has_release_sections);
+    print "    </$list>\n" unless (not $release or ($has_release_sections and not $heading));
+    print "  </li>\n" if ($release and $has_release_sections);
   }
-  print "</ul>\n" if ($has_release_sections);
+  print "</ul>\n" if ($release and $has_release_sections);
 }
 print "</ul>\n" if ($relcnt > 3);
 print "</body>\n</html>\n";
 
+
+# Subroutine: markup_trailing_attribution
+#
+# Takes one parameter:
+#
+#   - text possibly containing a trailing parenthesized attribution
+#
+# Returns one scalar:
+#
+#   - text with the the trailing attribution, if any, marked up with the color green
+#
+sub markup_trailing_attribution {
+  my $item = shift;
+
+  # Put attributions on their own lines.
+  # Check for trailing parenthesized attribution with no following period.
+  # Exclude things like "(see #3 above)" and "(use the bug number instead of xxxx)"
+  unless ($item =~ s{\s*(\((?![Ss]ee )
+                           (?!spans\b)
+                           (?!mainly\ )
+                           (?!LUCENE-\d+\))
+                           (?!and\ )
+                           (?!backported\ )
+                           (?!in\ )
+                           (?!inverse\ )
+                           (?![Tt]he\ )
+                           (?!use\ the\ bug\ number)
+                     [^()"]+?\))\s*$}
+                    {\n<br /><span class="attrib">$1</span>}x) {
+    # If attribution is not found, then look for attribution with a
+    # trailing period, but try not to include trailing parenthesized things
+    # that are not attributions.
+    #
+    # Rule of thumb: if a trailing parenthesized expression with a following
+    # period does not contain "LUCENE-XXX", and it either has three or
+    # fewer words or it includes the word "via" or the phrase "updates from",
+	  # then it is considered to be an attribution.
+
+    $item =~ s{(\s*(\((?![Ss]ee\ )
+                      (?!spans\b)
+                      (?!mainly\ )
+                      (?!LUCENE-\d+\))
+                      (?!and\ )
+                      (?!backported\ )
+                      (?!in\ )
+                      (?!inverse\ )
+                      (?![Tt]he\ )
+                      (?!use\ the\ bug\ number)
+                 [^()"]+?\)))
+                ((?:\.|(?i:\.?\s*Issue\s+\d{3,}|LUCENE-\d+)\.?)\s*)$}
+              {
+                my $subst = $1;  # default: no change
+                my $parenthetical = $2;
+	              my $trailing_period_and_or_issue = $3;
+                if ($parenthetical !~ /LUCENE-\d+/) {
+                  my ($no_parens) = $parenthetical =~ /^\((.*)\)$/s;
+                  my @words = grep {/\S/} split /\s+/, $no_parens;
+                  if ($no_parens =~ /\b(?:via|updates\s+from)\b/i || scalar(@words) <= 4) {
+                    $subst = "\n<br /><span class=\"attrib\">$parenthetical</span>";
+                  }
+                }
+                $subst . $trailing_period_and_or_issue;
+              }ex;
+  }
+  return $item;
+}
 
 #
 # Subroutine: has_release_sections
@@ -636,6 +777,8 @@ sub get_release_date {
     # Handle '1.2 RC6', which should be '1.2 final'
     $release = '1.2 final' if ($release eq '1.2 RC6');
 
+    $release =~ s/\.0\.0/\.0/;
+
     $reldate = ( exists($release_dates{$release}) 
                ? $release_dates{$release}
                : 'unknown');
@@ -658,7 +801,9 @@ sub get_release_date {
 # as well as those named "final" are included below.
 #
 sub setup_release_dates {
-  my %release_dates
+  my %release_dates;
+  if (uc($product) eq 'LUCENE') {
+    %release_dates
        = ( '0.01' => '2000-03-30',      '0.04' => '2000-04-19',
            '1.0' => '2000-10-04',       '1.01b' => '2001-06-02',
            '1.2 RC1' => '2001-10-02',   '1.2 RC2' => '2001-10-19',
@@ -677,9 +822,11 @@ sub setup_release_dates {
            '2.4.0' => '2008-10-06',     '2.4.1' => '2009-03-09',
            '2.9.0' => '2009-09-23',     '2.9.1' => '2009-11-06',
            '3.0.0' => '2009-11-25');
+  }
 
-  my $project_info_json = get_url_contents($project_info_url);
-  
+  print STDERR "Retrieving $project_info_url/$product ...\n";
+  my $project_info_json = get_url_contents("$project_info_url/$product");
+
   my $project_info = json2perl($project_info_json);
   for my $version (@{$project_info->{versions}}) {
     if ($version->{releaseDate}) {
@@ -750,12 +897,12 @@ sub setup_month_nums {
 
 
 #
-# setup_bugzilla_jira_map
+# setup_lucene_bugzilla_jira_map
 #
 # Returns a list of alternating Bugzilla bug IDs and LUCENE-* JIRA issue
-# numbers, for use in populating the %bugzilla_jira_map hash
+# numbers, for use in populating the %lucene_bugzilla_jira_map hash
 #
-sub setup_bugzilla_jira_map {
+sub setup_lucene_bugzilla_jira_map {
   return (  4049 =>   1,  4102 =>   2,  4105 =>   3,  4254 =>   4,
             4555 =>   5,  4568 =>   6,  4754 =>   7,  5313 =>   8,
             5456 =>   9,  6078 =>  10,  6091 =>  11,  6140 =>  12,
@@ -879,7 +1026,14 @@ sub json2perl {
   my $json_string = shift;
   $json_string =~ s/(:\s*)(true|false)/$1"$2"/g;
   $json_string =~ s/":/",/g;
-  return eval $json_string;
+  $json_string =~ s/\'/\\'/g;
+  $json_string =~ s/\"/\'/g;
+  my $project_info = eval $json_string;
+  die "ERROR eval'ing munged JSON string ||$json_string||: $@\n"
+    if ($@);
+  die "ERROR empty value after eval'ing JSON string ||$json_string||\n"
+    unless $project_info;
+  return $project_info;
 }
 
 1;

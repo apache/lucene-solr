@@ -37,6 +37,15 @@ import java.util.regex.PatternSyntaxException;
 /**
  * Abstract parent class for analysis factories {@link TokenizerFactory},
  * {@link TokenFilterFactory} and {@link CharFilterFactory}.
+ * <p>
+ * The typical lifecycle for a factory consumer is:
+ * <ol>
+ *   <li>Create factory via its a no-arg constructor
+ *   <li>Set version emulation by calling {@link #setLuceneMatchVersion(Version)}
+ *   <li>Calls {@link #init(Map)} passing arguments as key-value mappings.
+ *   <li>(Optional) If the factory uses resources such as files, {@link ResourceLoaderAware#inform(ResourceLoader)} is called to initialize those resources.
+ *   <li>Consumer calls create() to obtain instances.
+ * </ol>
  */
 public abstract class AbstractAnalysisFactory {
 
@@ -46,6 +55,9 @@ public abstract class AbstractAnalysisFactory {
   /** the luceneVersion arg */
   protected Version luceneMatchVersion = null;
 
+  /**
+   * Initialize this factory via a set of key-value pairs.
+   */
   public void init(Map<String,String> args) {
     this.args = args;
   }
@@ -104,6 +116,9 @@ public abstract class AbstractAnalysisFactory {
     return Boolean.parseBoolean(s);
   }
 
+  /**
+   * Compiles a pattern for the value of the specified argument key <code>name</code> 
+   */
   protected Pattern getPattern(String name) {
     try {
       String pat = args.get(name);
@@ -118,6 +133,10 @@ public abstract class AbstractAnalysisFactory {
     }
   }
 
+  /**
+   * Returns as {@link CharArraySet} from wordFiles, which
+   * can be a comma-separated list of filenames
+   */
   protected CharArraySet getWordSet(ResourceLoader loader,
       String wordFiles, boolean ignoreCase) throws IOException {
     assureMatchVersion();
@@ -137,6 +156,9 @@ public abstract class AbstractAnalysisFactory {
     return words;
   }
   
+  /**
+   * Returns the resource's lines (with content treated as UTF-8)
+   */
   protected List<String> getLines(ResourceLoader loader, String resource) throws IOException {
     return WordlistLoader.getLines(loader.openResource(resource), IOUtils.CHARSET_UTF_8);
   }

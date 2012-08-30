@@ -50,11 +50,6 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // we expect this time of exception as shards go up and down...
-    //ignoreException(".*");
-    
-    // sometimes we cannot get the same port
-    ignoreException("java\\.net\\.BindException: Address already in use");
     
     System.setProperty("numShards", Integer.toString(sliceCount));
   }

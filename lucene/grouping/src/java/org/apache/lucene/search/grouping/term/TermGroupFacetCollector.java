@@ -186,6 +186,10 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
     }
 
     public void collect(int doc) throws IOException {
+      if (facetFieldDocTermOrds.isEmpty()) {
+        return;
+      }
+
       int groupOrd = groupFieldTermsIndex.getOrd(doc);
       if (facetOrdTermsEnum != null) {
         reuse = facetFieldDocTermOrds.lookup(doc, reuse);

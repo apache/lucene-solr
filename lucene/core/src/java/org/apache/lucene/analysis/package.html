@@ -817,5 +817,30 @@ As a small hint, this is how the new Attribute class could begin:
 
   ...
 </pre>
+<h4>Adding a CharFilter chain</h4>
+Analyzers take Java {@link java.io.Reader}s as input. Of course you can wrap your Readers with {@link java.io.FilterReader}s
+to manipulate content, but this would have the big disadvantage that character offsets might be inconsistent with your original
+text.
+<p>
+{@link org.apache.lucene.analysis.CharFilter} is designed to allow you to pre-process input like a FilterReader would, but also
+preserve the original offsets associated with those characters. This way mechanisms like highlighting still work correctly.
+CharFilters can be chained.
+<p>
+Example:
+<pre class="prettyprint">
+public class MyAnalyzer extends Analyzer {
+
+  {@literal @Override}
+  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    return new TokenStreamComponents(new MyTokenizer(reader));
+  }
+  
+  {@literal @Override}
+  protected Reader initReader(String fieldName, Reader reader) {
+    // wrap the Reader in a CharFilter chain.
+    return new SecondCharFilter(new FirstCharFilter(reader));
+  }
+}
+</pre>
 </body>
 </html>

@@ -48,7 +48,20 @@ public abstract class FilteredTermsEnum extends TermsEnum {
    * the enum should call {@link #nextSeekTerm} and step forward.
    * @see #accept(BytesRef)
    */
-  protected static enum AcceptStatus {YES, YES_AND_SEEK, NO, NO_AND_SEEK, END};
+  protected static enum AcceptStatus {
+    /** Accept the term and position the enum at the next term. */
+    YES, 
+    /** Accept the term and advance ({@link FilteredTermsEnum#nextSeekTerm(BytesRef)})
+     * to the next term. */
+    YES_AND_SEEK, 
+    /** Reject the term and position the enum at the next term. */
+    NO, 
+    /** Reject the term and advance ({@link FilteredTermsEnum#nextSeekTerm(BytesRef)})
+     * to the next term. */
+    NO_AND_SEEK, 
+    /** Reject the term and stop enumerating. */
+    END
+  };
   
   /** Return if term is accepted, not accepted or the iteration should ended
    * (and possibly seek).

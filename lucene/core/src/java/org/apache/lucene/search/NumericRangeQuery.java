@@ -289,7 +289,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
   @Override @SuppressWarnings("unchecked")
   protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
-    // very strange: java.lang.Number itsself is not Comparable, but all subclasses used here are
+    // very strange: java.lang.Number itself is not Comparable, but all subclasses used here are
     if (min != null && max != null && ((Comparable<T>) min).compareTo(max) > 0) {
       return TermsEnum.EMPTY;
     }

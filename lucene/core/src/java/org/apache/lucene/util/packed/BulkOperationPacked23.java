@@ -22,15 +22,12 @@ package org.apache.lucene.util.packed;
 /**
  * Efficient sequential read/write of packed integers.
  */
-final class BulkOperationPacked23 extends BulkOperation {
-    @Override
-    public int blockCount() {
-      return 23;
-    }
+final class BulkOperationPacked23 extends BulkOperationPacked {
 
-    @Override
-    public int valueCount() {
-      return 64;
+    public BulkOperationPacked23() {
+      super(23);
+      assert blockCount() == 23;
+      assert valueCount() == 64;
     }
 
     @Override
@@ -732,68 +729,6 @@ final class BulkOperationPacked23 extends BulkOperation {
         final long byte182 = blocks[blocksOffset++] & 0xFF;
         final long byte183 = blocks[blocksOffset++] & 0xFF;
         values[valuesOffset++] = ((byte181 & 127) << 16) | (byte182 << 8) | byte183;
-      }
-    }
-
-    @Override
-    public void encode(int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 41) | ((values[valuesOffset++] & 0xffffffffL) << 18) | ((values[valuesOffset] & 0xffffffffL) >>> 5);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 59) | ((values[valuesOffset++] & 0xffffffffL) << 36) | ((values[valuesOffset++] & 0xffffffffL) << 13) | ((values[valuesOffset] & 0xffffffffL) >>> 10);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 54) | ((values[valuesOffset++] & 0xffffffffL) << 31) | ((values[valuesOffset++] & 0xffffffffL) << 8) | ((values[valuesOffset] & 0xffffffffL) >>> 15);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 49) | ((values[valuesOffset++] & 0xffffffffL) << 26) | ((values[valuesOffset++] & 0xffffffffL) << 3) | ((values[valuesOffset] & 0xffffffffL) >>> 20);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 44) | ((values[valuesOffset++] & 0xffffffffL) << 21) | ((values[valuesOffset] & 0xffffffffL) >>> 2);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 62) | ((values[valuesOffset++] & 0xffffffffL) << 39) | ((values[valuesOffset++] & 0xffffffffL) << 16) | ((values[valuesOffset] & 0xffffffffL) >>> 7);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 57) | ((values[valuesOffset++] & 0xffffffffL) << 34) | ((values[valuesOffset++] & 0xffffffffL) << 11) | ((values[valuesOffset] & 0xffffffffL) >>> 12);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 52) | ((values[valuesOffset++] & 0xffffffffL) << 29) | ((values[valuesOffset++] & 0xffffffffL) << 6) | ((values[valuesOffset] & 0xffffffffL) >>> 17);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 47) | ((values[valuesOffset++] & 0xffffffffL) << 24) | ((values[valuesOffset++] & 0xffffffffL) << 1) | ((values[valuesOffset] & 0xffffffffL) >>> 22);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 42) | ((values[valuesOffset++] & 0xffffffffL) << 19) | ((values[valuesOffset] & 0xffffffffL) >>> 4);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 60) | ((values[valuesOffset++] & 0xffffffffL) << 37) | ((values[valuesOffset++] & 0xffffffffL) << 14) | ((values[valuesOffset] & 0xffffffffL) >>> 9);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 55) | ((values[valuesOffset++] & 0xffffffffL) << 32) | ((values[valuesOffset++] & 0xffffffffL) << 9) | ((values[valuesOffset] & 0xffffffffL) >>> 14);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 50) | ((values[valuesOffset++] & 0xffffffffL) << 27) | ((values[valuesOffset++] & 0xffffffffL) << 4) | ((values[valuesOffset] & 0xffffffffL) >>> 19);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 45) | ((values[valuesOffset++] & 0xffffffffL) << 22) | ((values[valuesOffset] & 0xffffffffL) >>> 1);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 63) | ((values[valuesOffset++] & 0xffffffffL) << 40) | ((values[valuesOffset++] & 0xffffffffL) << 17) | ((values[valuesOffset] & 0xffffffffL) >>> 6);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 58) | ((values[valuesOffset++] & 0xffffffffL) << 35) | ((values[valuesOffset++] & 0xffffffffL) << 12) | ((values[valuesOffset] & 0xffffffffL) >>> 11);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 53) | ((values[valuesOffset++] & 0xffffffffL) << 30) | ((values[valuesOffset++] & 0xffffffffL) << 7) | ((values[valuesOffset] & 0xffffffffL) >>> 16);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 48) | ((values[valuesOffset++] & 0xffffffffL) << 25) | ((values[valuesOffset++] & 0xffffffffL) << 2) | ((values[valuesOffset] & 0xffffffffL) >>> 21);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 43) | ((values[valuesOffset++] & 0xffffffffL) << 20) | ((values[valuesOffset] & 0xffffffffL) >>> 3);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 61) | ((values[valuesOffset++] & 0xffffffffL) << 38) | ((values[valuesOffset++] & 0xffffffffL) << 15) | ((values[valuesOffset] & 0xffffffffL) >>> 8);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 56) | ((values[valuesOffset++] & 0xffffffffL) << 33) | ((values[valuesOffset++] & 0xffffffffL) << 10) | ((values[valuesOffset] & 0xffffffffL) >>> 13);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 51) | ((values[valuesOffset++] & 0xffffffffL) << 28) | ((values[valuesOffset++] & 0xffffffffL) << 5) | ((values[valuesOffset] & 0xffffffffL) >>> 18);
-        blocks[blocksOffset++] = ((values[valuesOffset++] & 0xffffffffL) << 46) | ((values[valuesOffset++] & 0xffffffffL) << 23) | (values[valuesOffset++] & 0xffffffffL);
-      }
-    }
-
-    @Override
-    public void encode(long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        blocks[blocksOffset++] = (values[valuesOffset++] << 41) | (values[valuesOffset++] << 18) | (values[valuesOffset] >>> 5);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 59) | (values[valuesOffset++] << 36) | (values[valuesOffset++] << 13) | (values[valuesOffset] >>> 10);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 54) | (values[valuesOffset++] << 31) | (values[valuesOffset++] << 8) | (values[valuesOffset] >>> 15);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 49) | (values[valuesOffset++] << 26) | (values[valuesOffset++] << 3) | (values[valuesOffset] >>> 20);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 44) | (values[valuesOffset++] << 21) | (values[valuesOffset] >>> 2);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 62) | (values[valuesOffset++] << 39) | (values[valuesOffset++] << 16) | (values[valuesOffset] >>> 7);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 57) | (values[valuesOffset++] << 34) | (values[valuesOffset++] << 11) | (values[valuesOffset] >>> 12);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 52) | (values[valuesOffset++] << 29) | (values[valuesOffset++] << 6) | (values[valuesOffset] >>> 17);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 47) | (values[valuesOffset++] << 24) | (values[valuesOffset++] << 1) | (values[valuesOffset] >>> 22);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 42) | (values[valuesOffset++] << 19) | (values[valuesOffset] >>> 4);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 60) | (values[valuesOffset++] << 37) | (values[valuesOffset++] << 14) | (values[valuesOffset] >>> 9);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 55) | (values[valuesOffset++] << 32) | (values[valuesOffset++] << 9) | (values[valuesOffset] >>> 14);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 50) | (values[valuesOffset++] << 27) | (values[valuesOffset++] << 4) | (values[valuesOffset] >>> 19);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 45) | (values[valuesOffset++] << 22) | (values[valuesOffset] >>> 1);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 63) | (values[valuesOffset++] << 40) | (values[valuesOffset++] << 17) | (values[valuesOffset] >>> 6);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 58) | (values[valuesOffset++] << 35) | (values[valuesOffset++] << 12) | (values[valuesOffset] >>> 11);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 53) | (values[valuesOffset++] << 30) | (values[valuesOffset++] << 7) | (values[valuesOffset] >>> 16);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 48) | (values[valuesOffset++] << 25) | (values[valuesOffset++] << 2) | (values[valuesOffset] >>> 21);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 43) | (values[valuesOffset++] << 20) | (values[valuesOffset] >>> 3);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 61) | (values[valuesOffset++] << 38) | (values[valuesOffset++] << 15) | (values[valuesOffset] >>> 8);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 56) | (values[valuesOffset++] << 33) | (values[valuesOffset++] << 10) | (values[valuesOffset] >>> 13);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 51) | (values[valuesOffset++] << 28) | (values[valuesOffset++] << 5) | (values[valuesOffset] >>> 18);
-        blocks[blocksOffset++] = (values[valuesOffset++] << 46) | (values[valuesOffset++] << 23) | values[valuesOffset++];
       }
     }
 

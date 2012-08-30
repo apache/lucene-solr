@@ -97,6 +97,10 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
     return fieldsToAdd == null || fieldsToAdd.contains(fieldInfo.name) ? Status.YES : Status.NO;
   }
 
+  /**
+   * Retrieve the visited document.
+   * @return StoredDocument populated with stored fields.
+   */
   public StoredDocument getDocument() {
     return doc;
   }

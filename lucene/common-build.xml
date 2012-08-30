@@ -173,7 +173,6 @@
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
 
-  <property name="javacc.home" location="${common.dir}"/>
   <property name="jflex.home" location="${common.dir}"/>
 
   <path id="jflex.classpath">
@@ -182,12 +181,6 @@
       <include name="jflex/target/*.jar"/>
       <!-- for a JFlex distribution (not yet available): -->
       <include name="lib/*.jar"/>
-    </fileset>
-  </path>
-
-  <path id="javacc.classpath">
-    <fileset dir="${javacc.home}/">
-      <include name="bin/lib/*.jar"/>
     </fileset>
   </path>
 
@@ -259,23 +252,6 @@
     <delete dir="${build.dir}"/>
     <delete dir="${dist.dir}"/>
     <delete file="velocity.log"/>
-  </target>
-
-  <!-- TODO: maybe make JavaCC checking specific to only the projects
-             that use it (Lucene core and queryparsers)
-  -->
-  <target name="javacc-uptodate-check">
-    <uptodate property="javacc.files.uptodate">
-      <srcfiles dir="${src.dir}" includes="**/*.jj" />
-      <mapper type="glob" from="*.jj" to="*.java"/>
-    </uptodate>
-  </target>
-
-  <target name="javacc-notice" depends="javacc-uptodate-check" unless="javacc.files.uptodate">
-    <echo>
-      One or more of the JavaCC .jj files is newer than its corresponding
-      .java file.  Run the "javacc" target to regenerate the artifacts.
-    </echo>
   </target>
 
   <target name="init" depends="resolve">
@@ -391,36 +367,6 @@
     </echo>
   </target>
 
-  <target name="javacc-check">
-    <available property="javacc.present" classname="org.javacc.parser.Main">
-      <classpath refid="javacc.classpath"/>
-    </available>
-    <fail unless="javacc.present">
-      ##################################################################
-      JavaCC not found.
-      JavaCC Home: ${javacc.home}
-
-      Please download and install JavaCC 4.1 from:
-
-      &lt;http://javacc.dev.java.net&gt;
-
-      Then, create a build.properties file either in your home
-      directory, or within the Lucene directory and set the javacc.home
-      property to the path where JavaCC is installed. For example,
-      if you installed JavaCC in /usr/local/java/javacc-4.1, then set the
-      javacc.home property to:
-
-      javacc.home=/usr/local/java/javacc-4.1
-
-      If you get an error like the one below, then you have not installed
-      things correctly. Please check all your paths and try again.
-
-      java.lang.NoClassDefFoundError: org.javacc.parser.Main
-      ##################################################################
-    </fail>
-
-  </target>
-	
   <target name="jflex-check">
     <available property="jflex.present" classname="jflex.anttask.JFlexTask">
       <classpath refid="jflex.classpath"/>
@@ -508,6 +454,9 @@
     <attribute name="spec.version"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
     <sequential>
+      <!-- If possible, include the svnversion -->
+      <exec dir="." executable="${svnversion.exe}" outputproperty="svnversion" failifexecutionfails="false"/>
+
       <manifest file="@{manifest.file}">
         <!--
         http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
@@ -558,12 +507,6 @@
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="nested" optional="true" implicit="true"/>
     <sequential>
-      <!-- If possible, include the svnversion -->
-      <exec dir="." executable="${svnversion.exe}"
-            outputproperty="svnversion" failifexecutionfails="false">
-        <arg value="."/>
-      </exec>
-      
       <build-manifest title="@{title}"
                       implementation.title="@{implementation.title}"
                       spec.version="@{spec.version}"
@@ -850,7 +793,14 @@
             <sysproperty key="tests.multiplier" value="@{tests.multiplier}"/>
             
             <!-- Temporary directory in the cwd. -->
-            <sysproperty key="tempDir" value="."/>
+            <sysproperty key="tempDir" value="." />
+            <sysproperty key="java.io.tmpdir" value="." />
+
+            <!-- Restrict access to certain Java features and install security manager: -->
+            <sysproperty key="tests.sandbox.dir" value="${build.dir}" />
+            <sysproperty key="clover.db.dir" value="${clover.db.dir}" />
+            <sysproperty key="java.security.manager" value="java.lang.SecurityManager" />
+            <sysproperty key="java.security.policy" value="${common.dir}/tools/junit4/tests.policy" />
 
             <sysproperty key="lucene.version" value="${dev.version}"/>
 
@@ -1381,28 +1331,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <!-- <compilerarg line="-Xmaxwarns 10000000"/>
         <compilerarg line="-Xmaxerrs 10000000"/> -->
         <!-- for generics in Java 1.5: -->
-	<compilerarg line="${javac.args}"/>
+        <compilerarg line="${javac.args}"/>
       </javac>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="invoke-javacc">
-    <attribute name="target"/>
-    <attribute name="outputDir"/>
-    <sequential>
-      <mkdir dir="@{outputDir}"/>
-      <javacc
-          target="@{target}"
-          outputDirectory="@{outputDir}"
-          debugTokenManager="${javacc.debug.tokenmgr}"
-          debugParser="${javacc.debug.parser}"
-          debuglookahead="${javacc.debug.lookahead}"
-          javacchome="${javacc.home}"
-          jdkversion="${javac.source}"
-      />
-      <fixcrlf srcdir="@{outputDir}" includes="*.java" encoding="UTF-8">
-        <containsregexp expression="Generated.*By.*JavaCC"/>
-      </fixcrlf>
     </sequential>
   </macrodef>
 
@@ -1547,10 +1477,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
             description="Populates properties svn.URL and svn.Revision using 'svn info'.">
     <attribute name="directory"/>
     <sequential>
-      <exec dir="." executable="${svnversion.exe}" outputproperty="svn.ver"/>
+      <exec dir="@{directory}" executable="${svnversion.exe}" outputproperty="svn.ver"/>
       <fail message="A subversion checkout is required for this target">
         <condition>
-          <equals arg1="${svn.ver}" arg2="exported"/>
+          <matches pattern="(exported|unversioned.*)" string="${svn.ver}" casesensitive="false"/>
         </condition>
       </fail>
       <exec dir="@{directory}" executable="${svn.exe}" outputproperty="svn.info" failonerror="true">
@@ -1697,7 +1627,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <element name="nested" optional="false" implicit="true"/>
     <sequential>
       <copy todir="@{todir}" flatten="@{flatten}" overwrite="@{overwrite}" verbose="true"
-        preservelastmodified="false" encoding="UTF-8" outputencoding="UTF-8"
+        preservelastmodified="false" encoding="UTF-8" outputencoding="UTF-8" taskname="pegdown"
       >
         <filterchain>
           <tokenfilter>
@@ -1755,6 +1685,24 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
          <arg value="@{level}"/>
        </exec>
      </sequential>
+  </macrodef>
+
+  <!--
+   compile changes.txt into an html file
+   -->
+  <macrodef name="build-changes">
+    <attribute name="changes.src.dir" default="${changes.src.dir}"/>
+    <attribute name="changes.target.dir" default="${changes.target.dir}"/>
+    <sequential>
+      <mkdir dir="@{changes.target.dir}"/>
+      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
+            failonerror="true" logError="true">
+        <arg value="@{changes.src.dir}/changes2html.pl"/>
+      </exec>
+      <copy todir="@{changes.target.dir}">
+        <fileset dir="@{changes.src.dir}" includes="*.css"/>
+      </copy>
+    </sequential>
   </macrodef>
 
 </project>

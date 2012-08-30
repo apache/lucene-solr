@@ -74,6 +74,7 @@ public class SolrZkClient {
   private ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor();
 
   private volatile boolean isClosed = false;
+  private ZkClientConnectionStrategy zkClientConnectionStrategy;
   
   /**
    * @param zkServerAddress
@@ -116,6 +117,7 @@ public class SolrZkClient {
    */
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect, int clientConnectTimeout) {
+    this.zkClientConnectionStrategy = strat;
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
         + zkServerAddress, this, zkServerAddress, zkClientTimeout, strat, onReconnect);
     try {
@@ -135,27 +137,22 @@ public class SolrZkClient {
               }
             }
           });
-    } catch (IOException e) {
-      connManager.close();
-      throw new RuntimeException();
-    } catch (InterruptedException e) {
-      connManager.close();
-      throw new RuntimeException();
-    } catch (TimeoutException e) {
+    } catch (Throwable e) {
       connManager.close();
       throw new RuntimeException();
     }
+    
     try {
       connManager.waitForConnected(clientConnectTimeout);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      connManager.close();
-      throw new RuntimeException();
-    } catch (TimeoutException e) {
+    } catch (Throwable e) {
       connManager.close();
       throw new RuntimeException();
     }
     numOpens.incrementAndGet();
+  }
+
+  public ZkClientConnectionStrategy getZkClientConnectionStrategy() {
+    return zkClientConnectionStrategy;
   }
 
   /**

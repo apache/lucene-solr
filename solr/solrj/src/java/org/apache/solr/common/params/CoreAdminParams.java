@@ -92,7 +92,8 @@ public interface CoreAdminParams
     SWAP,
     RENAME,
     MERGEINDEXES,
-    PREPRECOVERY, 
+    SPLIT,
+    PREPRECOVERY,
     REQUESTRECOVERY, 
     REQUESTSYNCSHARD;
     

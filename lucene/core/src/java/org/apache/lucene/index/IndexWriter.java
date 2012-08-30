@@ -549,6 +549,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
   }
 
+  /**
+   * Used internally to throw an {@link
+   * AlreadyClosedException} if this IndexWriter has been
+   * closed.
+   * <p>
+   * Calls {@link #ensureOpen(boolean) ensureOpen(true)}.
+   * @throws AlreadyClosedException if this IndexWriter is closed
+   */
   protected final void ensureOpen() throws AlreadyClosedException {
     ensureOpen(true);
   }
@@ -1030,6 +1038,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return count;
   }
 
+  /**
+   * Returns true if this index has deletions (including buffered deletions).
+   */
   public synchronized boolean hasDeletions() {
     ensureOpen();
     if (bufferedDeletesStream.any()) {
