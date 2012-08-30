@@ -144,6 +144,12 @@ public final class NumericTokenStream extends TokenStream {
     private long value = 0L;
     private int valueSize = 0, shift = 0, precisionStep = 0;
     private BytesRef bytes = new BytesRef();
+    
+    /** 
+     * Creates, but does not yet initialize this attribute instance
+     * @see #init(long, int, int, int)
+     */
+    public NumericTermAttributeImpl() {}
 
     public BytesRef getBytesRef() {
       return bytes;

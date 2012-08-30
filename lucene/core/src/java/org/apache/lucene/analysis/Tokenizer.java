@@ -54,7 +54,13 @@ public abstract class Tokenizer extends TokenStream {
     this.input = input;
   }
   
-  /** By default, closes the input Reader. */
+  /**
+   * {@inheritDoc}
+   * <p>
+   * <b>NOTE:</b> 
+   * The default implementation closes the input Reader, so
+   * be sure to call <code>super.close()</code> when overriding this method.
+   */
   @Override
   public void close() throws IOException {
     if (input != null) {

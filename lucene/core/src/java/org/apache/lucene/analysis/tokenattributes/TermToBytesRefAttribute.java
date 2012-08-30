@@ -56,7 +56,7 @@ public interface TermToBytesRefAttribute extends Attribute {
    * Updates the bytes {@link #getBytesRef()} to contain this term's
    * final encoding, and returns its hashcode.
    * @return the hashcode as defined by {@link BytesRef#hashCode}:
-   * <pre>
+   * <pre class="prettyprint">
    *  int hash = 0;
    *  for (int i = termBytes.offset; i &lt; termBytes.offset+termBytes.length; i++) {
    *    hash = 31*hash + termBytes.bytes[i];

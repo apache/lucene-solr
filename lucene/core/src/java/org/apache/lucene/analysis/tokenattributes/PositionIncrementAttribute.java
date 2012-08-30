@@ -49,11 +49,14 @@ public interface PositionIncrementAttribute extends Attribute {
   /** Set the position increment. The default value is one.
    *
    * @param positionIncrement the distance from the prior term
+   * @throws IllegalArgumentException if <code>positionIncrement</code> 
+   *         is negative.
+   * @see #getPositionIncrement()
    */
   public void setPositionIncrement(int positionIncrement);
 
   /** Returns the position increment of this Token.
-   * @see #setPositionIncrement
+   * @see #setPositionIncrement(int)
    */
   public int getPositionIncrement();
 }
