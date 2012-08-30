@@ -308,10 +308,4 @@ public final class CJKTokenizer extends Tokenizer {
       preIsTokened = false;
       tokenType = WORD_TYPE;
     }
-    
-    @Override
-    public void setReader(Reader reader) throws IOException {
-      super.setReader(reader);
-      reset();
-    }
 }

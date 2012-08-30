@@ -1545,7 +1545,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     @Override
-    public void setReader(Reader input) throws IOException {
+    public void reset() throws IOException {
        this.upto = 0;
        final StringBuilder b = new StringBuilder();
        final char[] buffer = new char[1024];

@@ -176,6 +176,8 @@ public abstract class AbstractTestCase extends LuceneTestCase {
 
     BytesRef bytesRef = termAttribute.getBytesRef();
 
+    tokenStream.reset();
+    
     while (tokenStream.incrementToken()) {
       termAttribute.fillBytesRef();
       bytesRefs.add(BytesRef.deepCopyOf(bytesRef));
@@ -314,12 +316,6 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     
     protected boolean isDelimiter( int c ){
       return delimiters.indexOf( c ) >= 0;
-    }
-    
-    @Override
-    public void setReader( Reader input ) throws IOException {
-      super.setReader( input );
-      reset();
     }
     
     @Override

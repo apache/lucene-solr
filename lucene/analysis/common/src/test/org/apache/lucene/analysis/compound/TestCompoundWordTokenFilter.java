@@ -235,6 +235,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
     
     CharTermAttribute termAtt = tf.getAttribute(CharTermAttribute.class);
+    tf.reset();
     assertTrue(tf.incrementToken());
     assertEquals("Rindfleischüberwachungsgesetz", termAtt.toString());
     assertTrue(tf.incrementToken());
@@ -256,6 +257,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
     MockRetainAttribute retAtt = stream.addAttribute(MockRetainAttribute.class);
+    stream.reset();
     while (stream.incrementToken()) {
       assertTrue("Custom attribute value was lost", retAtt.getRetain());
     }

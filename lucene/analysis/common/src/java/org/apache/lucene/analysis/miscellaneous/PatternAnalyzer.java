@@ -191,16 +191,16 @@ public final class PatternAnalyzer extends Analyzer {
   public TokenStreamComponents createComponents(String fieldName, Reader reader, String text) {
     // Ideally the Analyzer superclass should have a method with the same signature, 
     // with a default impl that simply delegates to the StringReader flavour. 
-    if (text == null) 
-      throw new IllegalArgumentException("text must not be null");
+    if (reader == null) 
+      reader = new FastStringReader(text);
     
     if (pattern == NON_WORD_PATTERN) { // fast path
-      return new TokenStreamComponents(new FastStringTokenizer(reader, text, true, toLowerCase, stopWords));
+      return new TokenStreamComponents(new FastStringTokenizer(reader, true, toLowerCase, stopWords));
     } else if (pattern == WHITESPACE_PATTERN) { // fast path
-      return new TokenStreamComponents(new FastStringTokenizer(reader, text, false, toLowerCase, stopWords));
+      return new TokenStreamComponents(new FastStringTokenizer(reader, false, toLowerCase, stopWords));
     }
 
-    Tokenizer tokenizer = new PatternTokenizer(reader, text, pattern, toLowerCase);
+    Tokenizer tokenizer = new PatternTokenizer(reader, pattern, toLowerCase);
     TokenStream result = (stopWords != null) ? new StopFilter(matchVersion, tokenizer, stopWords) : tokenizer;
     return new TokenStreamComponents(tokenizer, result);
   }
@@ -218,12 +218,7 @@ public final class PatternAnalyzer extends Analyzer {
    */
   @Override
   public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    try {
-      String text = toString(reader);
-      return createComponents(fieldName, reader, text);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    return createComponents(fieldName, reader, null);
   }
   
   /**
@@ -333,11 +328,10 @@ public final class PatternAnalyzer extends Analyzer {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
-    public PatternTokenizer(Reader input, String str, Pattern pattern, boolean toLowerCase) {
+    public PatternTokenizer(Reader input, Pattern pattern, boolean toLowerCase) {
       super(input);
       this.pattern = pattern;
-      this.str = str;
-      this.matcher = pattern.matcher(str);
+      this.matcher = pattern.matcher("");
       this.toLowerCase = toLowerCase;
     }
 
@@ -376,15 +370,10 @@ public final class PatternAnalyzer extends Analyzer {
     }
 
     @Override
-    public void setReader(Reader input) throws IOException {
-      super.setReader(input);
-      this.str = PatternAnalyzer.toString(input);
-      this.matcher = pattern.matcher(this.str);
-    }
-
-    @Override
     public void reset() throws IOException {
       super.reset();
+      this.str = PatternAnalyzer.toString(input);
+      this.matcher = pattern.matcher(this.str);
       this.pos = 0;
     }
   }
@@ -408,9 +397,8 @@ public final class PatternAnalyzer extends Analyzer {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
-    public FastStringTokenizer(Reader input, String str, boolean isLetter, boolean toLowerCase, CharArraySet stopWords) {
+    public FastStringTokenizer(Reader input, boolean isLetter, boolean toLowerCase, CharArraySet stopWords) {
       super(input);
-      this.str = str;
       this.isLetter = isLetter;
       this.toLowerCase = toLowerCase;
       this.stopWords = stopWords;
@@ -481,14 +469,9 @@ public final class PatternAnalyzer extends Analyzer {
     }
 
     @Override
-    public void setReader(Reader input) throws IOException {
-      super.setReader(input);
-      this.str = PatternAnalyzer.toString(input);
-    }
-
-    @Override
     public void reset() throws IOException {
       super.reset();
+      this.str = PatternAnalyzer.toString(input);
       this.pos = 0;
     }
   }

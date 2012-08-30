@@ -166,10 +166,4 @@ public final class ChineseTokenizer extends Tokenizer {
       super.reset();
       offset = bufferIndex = dataLen = 0;
     }
-    
-    @Override
-    public void setReader(Reader input) throws IOException {
-      super.setReader(input);
-      reset();
-    }
 }
