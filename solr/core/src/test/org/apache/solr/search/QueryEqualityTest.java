@@ -329,6 +329,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                      "div(field(foo_i), sub(4,bar_i))");
 
   }
+  public void testFuncMod() throws Exception {
+    assertFuncEquals("mod(5,4)", "mod(5, 4)");
+    assertFuncEquals("mod(foo_i,4)", "mod(foo_i, 4)", 
+                     "mod(field('foo_i'), 4)");
+    assertFuncEquals("mod(foo_i,sub(4,field('bar_i')))", 
+                     "mod(field(foo_i), sub(4,bar_i))");
+  }
   public void testFuncMap() throws Exception {
     assertFuncEquals("map(field(foo_i), 0, 45, 100)",
                      "map(foo_i, 0.0, 45, 100)");
