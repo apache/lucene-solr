@@ -88,6 +88,7 @@ Bug Fixes
 * SOLR-3745: Proper error reporting if SolrCloud mode is used w/o 
   necessary "_version_" field in schema.xml (hossman)
 
+* SOLR-3770: Overseer may lose updates to cluster state (siren)
 
 Other Changes
 ----------------------
