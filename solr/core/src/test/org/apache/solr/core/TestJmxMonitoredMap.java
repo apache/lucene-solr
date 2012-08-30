@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.JmxConfiguration;
 import org.junit.After;
@@ -32,13 +33,10 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.management.remote.rmi.RMIConnectorServer;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.RMIServerSocketFactory;
-import java.util.Collections;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -64,12 +62,11 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
   @Override
   @Before
   public void setUp() throws Exception {
-
     super.setUp();
     String oldHost = System.getProperty("java.rmi.server.hostname");
     try {
-      // this stupid sysprop thing is needed, because remote stubs use the
-      // hostname to connect, which does not work with server bound to 127.0.0.1
+      // this stupid sysprop thing is needed, because remote stubs use an
+      // arbitrary local ip to connect
       // See: http://weblogs.java.net/blog/emcmanus/archive/2006/12/multihomed_comp.html
       System.setProperty("java.rmi.server.hostname", "127.0.0.1");
       class LocalhostRMIServerSocketFactory implements RMIServerSocketFactory {
@@ -77,19 +74,16 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
         
         @Override
         public ServerSocket createServerSocket(int port) throws IOException {
-          socket = new ServerSocket();
-          socket.bind(new InetSocketAddress("127.0.0.1", port));
-          return socket;
+          return socket = new ServerSocket(port);
         }
       };
       LocalhostRMIServerSocketFactory factory = new LocalhostRMIServerSocketFactory();
       LocateRegistry.createRegistry(0, null, factory);
       port = factory.socket.getLocalPort();
-      //System.out.println("Using port: " + port);
-      String url = "service:jmx:rmi://127.0.0.1:"+port+"/jndi/rmi://127.0.0.1:"+port+"/solrjmx";
+      AbstractSolrTestCase.log.info("Using port: " + port);
+      String url = "service:jmx:rmi:///jndi/rmi://127.0.0.1:"+port+"/solrjmx";
       JmxConfiguration config = new JmxConfiguration(true, null, url, null);
-      monitoredMap = new JmxMonitoredMap<String, SolrInfoMBean>("", "", config,
-        Collections.singletonMap(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE, factory));
+      monitoredMap = new JmxMonitoredMap<String, SolrInfoMBean>("", "", config);
       JMXServiceURL u = new JMXServiceURL(url);
       connector = JMXConnectorFactory.connect(u);
       mbeanServer = connector.getMBeanServerConnection();
