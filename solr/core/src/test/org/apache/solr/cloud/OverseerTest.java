@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -125,7 +124,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         q.offer(ZkStateReader.toJSON(m));
       }
       
-      for (int i = 0; i < 30; i++) {
+      for (int i = 0; i < 120; i++) {
         String shardId = getShardId(coreName);
         if (shardId != null) {
           try {
@@ -143,7 +142,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           elector.joinElection(ctx);
           return shardId;
         }
-        Thread.sleep(400);
+        Thread.sleep(500);
       }
       return null;
     }
@@ -574,7 +573,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
     public void run() {
       try {
         overseerClient = electNewOverseer(zkAddress);
-        Random rnd = random();
         while (run) {
           if (killCounter.get()>0) {
             try {
