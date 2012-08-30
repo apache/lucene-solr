@@ -796,6 +796,11 @@
             <sysproperty key="tempDir" value="." />
             <sysproperty key="java.io.tmpdir" value="." />
 
+            <!-- Restrict access to certain Java features and install security manager: -->
+            <sysproperty key="tests.sandbox.dir" value="${build.dir}" />
+            <sysproperty key="java.security.manager" value="java.lang.SecurityManager" />
+            <sysproperty key="java.security.policy" value="${common.dir}/tools/junit4/tests.policy" />
+
             <sysproperty key="lucene.version" value="${dev.version}"/>
 
             <sysproperty key="jetty.testMode" value="1"/>

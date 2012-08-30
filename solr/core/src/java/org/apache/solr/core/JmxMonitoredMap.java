@@ -61,6 +61,13 @@ public class JmxMonitoredMap<K, V> extends
 
   public JmxMonitoredMap(String coreName, String coreHashCode,
                          final JmxConfiguration jmxConfig) {
+    this(coreName, coreHashCode, jmxConfig, null);
+  }
+  
+  // TODO: Make public? Move Map<String,?> env to environment?
+  // Currently the map is needed to bind to localhost
+  JmxMonitoredMap(String coreName, String coreHashCode,
+                         final JmxConfiguration jmxConfig, Map<String,?> env) {
     this.coreHashCode = coreHashCode;
     jmxRootName = (null != jmxConfig.rootName ?
                    jmxConfig.rootName
@@ -94,7 +101,7 @@ public class JmxMonitoredMap<K, V> extends
         server = MBeanServerFactory.newMBeanServer();
         JMXConnectorServer connector = JMXConnectorServerFactory
                 .newJMXConnectorServer(new JMXServiceURL(jmxConfig.serviceUrl),
-                        null, server);
+                        env, server);
         connector.start();
         LOG.info("JMX monitoring is enabled at " + jmxConfig.serviceUrl);
       } catch (Exception e) {

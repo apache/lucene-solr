@@ -30,10 +30,15 @@ import javax.management.Query;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import javax.management.remote.rmi.RMIConnectorServer;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.URL;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.server.RMIServerSocketFactory;
+import java.util.Collections;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -61,33 +66,38 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
   public void setUp() throws Exception {
 
     super.setUp();
-
-    int retries = 5;
-    for (int i = 0; i < retries; i++) {
-      try {
-        ServerSocket server = new ServerSocket(0);
-        try {
-          port = server.getLocalPort();
-        } finally {
-          server.close();
+    String oldHost = System.getProperty("java.rmi.server.hostname");
+    try {
+      // this stupid sysprop thing is needed, because remote stubs use the
+      // hostname to connect, which does not work with server bound to 127.0.0.1
+      // See: http://weblogs.java.net/blog/emcmanus/archive/2006/12/multihomed_comp.html
+      System.setProperty("java.rmi.server.hostname", "127.0.0.1");
+      class LocalhostRMIServerSocketFactory implements RMIServerSocketFactory {
+        ServerSocket socket;
+        
+        @Override
+        public ServerSocket createServerSocket(int port) throws IOException {
+          socket = new ServerSocket();
+          socket.bind(new InetSocketAddress("127.0.0.1", port));
+          return socket;
         }
-        // System.out.println("Using port: " + port);
-        try {
-          LocateRegistry.createRegistry(port);
-        } catch (RemoteException e) {
-          throw e;
-        }
-        String url = "service:jmx:rmi:///jndi/rmi://:" + port + "/solrjmx";
-        JmxConfiguration config = new JmxConfiguration(true, null, url, null);
-        monitoredMap = new JmxMonitoredMap<String, SolrInfoMBean>("", "", config);
-        JMXServiceURL u = new JMXServiceURL(url);
-        connector = JMXConnectorFactory.connect(u);
-        mbeanServer = connector.getMBeanServerConnection();
-        break;
-      } catch (Exception e) {
-        if(retries == (i + 1)) {
-          throw e;
-        }
+      };
+      LocalhostRMIServerSocketFactory factory = new LocalhostRMIServerSocketFactory();
+      LocateRegistry.createRegistry(0, null, factory);
+      port = factory.socket.getLocalPort();
+      //System.out.println("Using port: " + port);
+      String url = "service:jmx:rmi://127.0.0.1:"+port+"/jndi/rmi://127.0.0.1:"+port+"/solrjmx";
+      JmxConfiguration config = new JmxConfiguration(true, null, url, null);
+      monitoredMap = new JmxMonitoredMap<String, SolrInfoMBean>("", "", config,
+        Collections.singletonMap(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE, factory));
+      JMXServiceURL u = new JMXServiceURL(url);
+      connector = JMXConnectorFactory.connect(u);
+      mbeanServer = connector.getMBeanServerConnection();
+    } finally {
+      if (oldHost == null) {
+        System.clearProperty("java.rmi.server.hostname");
+      } else {
+        System.setProperty("java.rmi.server.hostname", oldHost);
       }
     }
   }
