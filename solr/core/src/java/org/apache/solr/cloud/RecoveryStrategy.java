@@ -185,6 +185,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     prepCmd.setCoreNodeName(coreZkNodeName);
     prepCmd.setState(ZkStateReader.RECOVERING);
     prepCmd.setCheckLive(true);
+    prepCmd.setOnlyIfLeader(true);
     prepCmd.setPauseFor(6000);
     
     server.request(prepCmd);
@@ -239,6 +240,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       return;
     }
 
+    boolean firstTime = true;
 
     List<Long> recentVersions;
     UpdateLog.RecentUpdates recentUpdates = null;
@@ -273,9 +275,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       log.info("###### startupVersions=" + startingVersions);
     }
 
-
-    boolean firstTime = true;
-
     if (recoveringAfterStartup) {
       // if we're recovering after startup (i.e. we have been down), then we need to know what the last versions were
       // when we went down.  We may have received updates since then.
@@ -305,7 +304,10 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
         boolean isLeader = leaderUrl.equals(ourUrl);
-        if (isLeader) {
+        if (isLeader && !cloudDesc.isLeader) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
+        }
+        if (cloudDesc.isLeader) {
           // we are now the leader - no one else must have been suitable
           log.warn("We have not yet recovered - but we are now the leader! core=" + coreName);
           log.info("Finished recovery process. core=" + coreName);
@@ -333,9 +335,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
                 new ModifiableSolrParams());
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
             log.info("PeerSync Recovery was successful - registering as Active. core=" + coreName);
-            // System.out
-            // .println("Sync Recovery was successful - registering as Active "
-            // + zkController.getNodeName());
 
             // solrcloud_debug
             // try {

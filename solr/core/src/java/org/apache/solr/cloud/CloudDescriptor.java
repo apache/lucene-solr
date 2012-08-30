@@ -26,6 +26,12 @@ public class CloudDescriptor {
   private String roles = null;
   private Integer numShards;
   
+  volatile boolean isLeader = false;
+  
+  public boolean isLeader() {
+    return isLeader;
+  }
+
   public void setShardId(String shardId) {
     this.shardId = shardId;
   }

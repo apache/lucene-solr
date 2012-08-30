@@ -721,6 +721,21 @@ public class CoreAdminHandler extends RequestHandlerBase {
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
         
         boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props));
+        // solrcloud_debug
+//         try {
+//         RefCounted<SolrIndexSearcher> searchHolder =
+//         core.getNewestSearcher(false);
+//         SolrIndexSearcher searcher = searchHolder.get();
+//         try {
+//         System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName()
+//         + " synched "
+//         + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+//         } finally {
+//         searchHolder.decref();
+//         }
+//         } catch (Exception e) {
+//        
+//         }
         if (!success) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Sync Failed");
         }
@@ -750,7 +765,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String coreNodeName = params.get("coreNodeName");
     String waitForState = params.get("state");
     Boolean checkLive = params.getBool("checkLive");
+    Boolean onlyIfLeader = params.getBool("onlyIfLeader");
     int pauseFor = params.getInt("pauseFor", 0);
+    
+
     
     String state = null;
     boolean live = false;
@@ -764,6 +782,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
               + cname);
         }
         if (core != null) {
+          if (onlyIfLeader != null && onlyIfLeader) {
+           if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
+             throw new SolrException(ErrorCode.BAD_REQUEST, "We are not the leader");
+           }
+          }
+          
           // wait until we are sure the recovering node is ready
           // to accept updates
           CloudDescriptor cloudDescriptor = core.getCoreDescriptor()
