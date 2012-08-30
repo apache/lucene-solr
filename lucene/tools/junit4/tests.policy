@@ -26,7 +26,7 @@
 grant { 
   permission java.io.FilePermission "<<ALL FILES>>", "read,execute";
   permission java.io.FilePermission "${tests.sandbox.dir}${/}-", "read,execute,write,delete";
-  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen";
+  permission java.net.SocketPermission "localhost:1024-", "accept,listen";
   permission java.net.SocketPermission "*", "connect,resolve";
   permission java.util.PropertyPermission "*", "read,write";
   permission java.lang.reflect.ReflectPermission "*";
