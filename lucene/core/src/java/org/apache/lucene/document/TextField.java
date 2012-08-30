@@ -46,17 +46,32 @@ public final class TextField extends Field {
 
   // TODO: add sugar for term vectors...?
 
-  /** Creates a new un-stored TextField with Reader value. */
+  /** Creates a new un-stored TextField with Reader value. 
+   * @param name field name
+   * @param reader reader value
+   * @throws IllegalArgumentException if the field name is null
+   * @throws NullPointerException if the reader is null
+   */
   public TextField(String name, Reader reader) {
     super(name, reader, TYPE_NOT_STORED);
   }
 
-  /** Creates a new TextField with String value. */
+  /** Creates a new TextField with String value. 
+   * @param name field name
+   * @param value string value
+   * @param store Store.YES if the content should also be stored
+   * @throws IllegalArgumentException if the field name or value is null.
+   */
   public TextField(String name, String value, Store store) {
     super(name, value, store == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
   }
   
-  /** Creates a new un-stored TextField with TokenStream value. */
+  /** Creates a new un-stored TextField with TokenStream value. 
+   * @param name field name
+   * @param stream TokenStream value
+   * @throws IllegalArgumentException if the field name is null.
+   * @throws NullPointerException if the tokenStream is null
+   */
   public TextField(String name, TokenStream stream) {
     super(name, stream, TYPE_NOT_STORED);
   }

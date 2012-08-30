@@ -90,6 +90,10 @@ public class Field implements IndexableField {
   /**
    * Expert: creates a field with no initial value.
    * Intended only for custom Field subclasses.
+   * @param name field name
+   * @param type field type
+   * @throws IllegalArgumentException if either the name or type
+   *         is null.
    */
   protected Field(String name, FieldType type) {
     if (name == null) {
@@ -104,6 +108,13 @@ public class Field implements IndexableField {
 
   /**
    * Create field with Reader value.
+   * @param name field name
+   * @param reader reader value
+   * @param type field type
+   * @throws IllegalArgumentException if either the name or type
+   *         is null, or if the field's type is stored(), or
+   *         if tokenized() is false.
+   * @throws NullPointerException if the reader is null
    */
   public Field(String name, Reader reader, FieldType type) {
     if (name == null) {
@@ -129,6 +140,13 @@ public class Field implements IndexableField {
 
   /**
    * Create field with TokenStream value.
+   * @param name field name
+   * @param tokenStream TokenStream value
+   * @param type field type
+   * @throws IllegalArgumentException if either the name or type
+   *         is null, or if the field's type is stored(), or
+   *         if tokenized() is false, or if indexed() is false.
+   * @throws NullPointerException if the tokenStream is null
    */
   public Field(String name, TokenStream tokenStream, FieldType type) {
     if (name == null) {
@@ -152,6 +170,15 @@ public class Field implements IndexableField {
   
   /**
    * Create field with binary value.
+   * 
+   * <p>NOTE: the provided byte[] is not copied so be sure
+   * not to change it until you're done with this field.
+   * @param name field name
+   * @param value byte array pointing to binary content (not copied)
+   * @param type field type
+   * @throws IllegalArgumentException if the field name is null,
+   *         or the field's type is indexed()
+   * @throws NullPointerException if the type is null
    */
   public Field(String name, byte[] value, FieldType type) {
     this(name, value, 0, value.length, type);
@@ -159,6 +186,17 @@ public class Field implements IndexableField {
 
   /**
    * Create field with binary value.
+   * 
+   * <p>NOTE: the provided byte[] is not copied so be sure
+   * not to change it until you're done with this field.
+   * @param name field name
+   * @param value byte array pointing to binary content (not copied)
+   * @param offset starting position of the byte array
+   * @param length valid length of the byte array
+   * @param type field type
+   * @throws IllegalArgumentException if the field name is null,
+   *         or the field's type is indexed()
+   * @throws NullPointerException if the type is null
    */
   public Field(String name, byte[] value, int offset, int length, FieldType type) {
     this(name, new BytesRef(value, offset, length), type);
@@ -169,6 +207,12 @@ public class Field implements IndexableField {
    *
    * <p>NOTE: the provided BytesRef is not copied so be sure
    * not to change it until you're done with this field.
+   * @param name field name
+   * @param bytes BytesRef pointing to binary content (not copied)
+   * @param type field type
+   * @throws IllegalArgumentException if the field name is null,
+   *         or the field's type is indexed()
+   * @throws NullPointerException if the type is null
    */
   public Field(String name, BytesRef bytes, FieldType type) {
     if (name == null) {
@@ -186,6 +230,13 @@ public class Field implements IndexableField {
 
   /**
    * Create field with String value.
+   * @param name field name
+   * @param value string value
+   * @param type field type
+   * @throws IllegalArgumentException if either the name or value
+   *         is null, or if the field's type is neither indexed() nor stored(), 
+   *         or if indexed() is false but storeTermVectors() is true.
+   * @throws NullPointerException if the type is null
    */
   public Field(String name, String value, FieldType type) {
     if (name == null) {
@@ -389,7 +440,9 @@ public class Field implements IndexableField {
   }
 
   /** 
-   * Sets the boost factor on this field. 
+   * Sets the boost factor on this field.
+   * @throws IllegalArgumentException if this field is not indexed, 
+   *         or if it omits norms. 
    * @see #boost()
    */
   public void setBoost(float boost) {

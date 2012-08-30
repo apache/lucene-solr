@@ -185,7 +185,20 @@ public class DateTools {
   /** Specifies the time granularity. */
   public static enum Resolution {
     
-    YEAR(4), MONTH(6), DAY(8), HOUR(10), MINUTE(12), SECOND(14), MILLISECOND(17);
+    /** Limit a date's resolution to year granularity. */
+    YEAR(4), 
+    /** Limit a date's resolution to month granularity. */
+    MONTH(6), 
+    /** Limit a date's resolution to day granularity. */
+    DAY(8), 
+    /** Limit a date's resolution to hour granularity. */
+    HOUR(10), 
+    /** Limit a date's resolution to minute granularity. */
+    MINUTE(12), 
+    /** Limit a date's resolution to second granularity. */
+    SECOND(14), 
+    /** Limit a date's resolution to millisecond granularity. */
+    MILLISECOND(17);
 
     final int formatLen;
     final SimpleDateFormat format;//should be cloned before use, since it's not threadsafe
