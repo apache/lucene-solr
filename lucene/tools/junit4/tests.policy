@@ -23,11 +23,23 @@
 // PLEASE NOTE: You may need to enable other permissions when new tests are added,
 // everything not allowed here is forbidden!
 
-grant { 
+grant {
+  // permissions for file access, write access only to sandbox:
   permission java.io.FilePermission "<<ALL FILES>>", "read,execute";
   permission java.io.FilePermission "${tests.sandbox.dir}${/}-", "read,execute,write,delete";
+  
+  // all possibilities of accepting/binding connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen";
+  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen";
+  permission java.net.SocketPermission "[::1]:1024-", "accept,listen";
+  
+  // This is a special case, because the network config of the Jenkins server is broken (INFRA-issue):
+  permission java.net.SocketPermission "lucene.zones.apache.org:1024-", "accept,listen";
+  
+  // Allow connecting to the internet anywhere
   permission java.net.SocketPermission "*", "connect,resolve";
+  
+  // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
   permission java.lang.reflect.ReflectPermission "*";
   permission java.lang.RuntimePermission "*";
