@@ -55,6 +55,10 @@ public abstract class CharFilter extends Reader {
   
   /** 
    * Closes the underlying input stream.
+   * <p>
+   * <b>NOTE:</b> 
+   * The default implementation closes the input Reader, so
+   * be sure to call <code>super.close()</code> when overriding this method.
    */
   @Override
   public void close() throws IOException {

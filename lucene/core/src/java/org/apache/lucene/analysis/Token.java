@@ -176,8 +176,8 @@ public class Token extends CharTermAttributeImpl
    *  instead use the char[] termBuffer methods to set the
    *  term text.
    *  @param text term text
-   *  @param start start offset
-   *  @param end end offset
+   *  @param start start offset in the source text
+   *  @param end end offset in the source text
    */
   public Token(String text, int start, int end) {
     checkOffsets(start, end);
@@ -191,8 +191,8 @@ public class Token extends CharTermAttributeImpl
    *  speed you should instead use the char[] termBuffer
    *  methods to set the term text.
    *  @param text term text
-   *  @param start start offset
-   *  @param end end offset
+   *  @param start start offset in the source text
+   *  @param end end offset in the source text
    *  @param typ token type
    */
   public Token(String text, int start, int end, String typ) {
@@ -208,9 +208,9 @@ public class Token extends CharTermAttributeImpl
    *  offsets, & type.  <b>NOTE:</b> for better indexing
    *  speed you should instead use the char[] termBuffer
    *  methods to set the term text.
-   * @param text
-   * @param start
-   * @param end
+   * @param text term text
+   * @param start start offset in the source text
+   * @param end end offset in the source text
    * @param flags token type bits
    */
   public Token(String text, int start, int end, int flags) {
@@ -225,11 +225,11 @@ public class Token extends CharTermAttributeImpl
    *  Constructs a Token with the given term buffer (offset
    *  & length), start and end
    *  offsets
-   * @param startTermBuffer
-   * @param termBufferOffset
-   * @param termBufferLength
-   * @param start
-   * @param end
+   * @param startTermBuffer buffer containing term text
+   * @param termBufferOffset the index in the buffer of the first character
+   * @param termBufferLength number of valid characters in the buffer
+   * @param start start offset in the source text
+   * @param end end offset in the source text
    */
   public Token(char[] startTermBuffer, int termBufferOffset, int termBufferLength, int start, int end) {
     checkOffsets(start, end);
@@ -238,31 +238,9 @@ public class Token extends CharTermAttributeImpl
     endOffset = end;
   }
 
-  /** Set the position increment.  This determines the position of this token
-   * relative to the previous Token in a {@link TokenStream}, used in phrase
-   * searching.
-   *
-   * <p>The default value is one.
-   *
-   * <p>Some common uses for this are:<ul>
-   *
-   * <li>Set it to zero to put multiple terms in the same position.  This is
-   * useful if, e.g., a word has multiple stems.  Searches for phrases
-   * including either stem will match.  In this case, all but the first stem's
-   * increment should be set to zero: the increment of the first instance
-   * should be one.  Repeating a token with an increment of zero can also be
-   * used to boost the scores of matches on that token.
-   *
-   * <li>Set it to values greater than one to inhibit exact phrase matches.
-   * If, for example, one does not want phrases to match across removed stop
-   * words, then one could build a stop word filter that removes stop words and
-   * also sets the increment to the number of stop words removed before each
-   * non-stop word.  Then exact phrase queries will only match when the terms
-   * occur with no intervening stop words.
-   *
-   * </ul>
-   * @param positionIncrement the distance from the prior term
-   * @see org.apache.lucene.index.DocsAndPositionsEnum
+  /**
+   * {@inheritDoc}
+   * @see PositionIncrementAttribute
    */
   public void setPositionIncrement(int positionIncrement) {
     if (positionIncrement < 0)
@@ -271,93 +249,101 @@ public class Token extends CharTermAttributeImpl
     this.positionIncrement = positionIncrement;
   }
 
-  /** Returns the position increment of this Token.
-   * @see #setPositionIncrement
+  /**
+   * {@inheritDoc}
+   * @see PositionIncrementAttribute
    */
   public int getPositionIncrement() {
     return positionIncrement;
   }
 
-  /** Set the position length.
-   * @see PositionLengthAttribute */
+  /**
+   * {@inheritDoc}
+   * @see PositionLengthAttribute
+   */
   @Override
   public void setPositionLength(int positionLength) {
     this.positionLength = positionLength;
   }
 
-  /** Get the position length.
-   * @see PositionLengthAttribute */
+  /**
+   * {@inheritDoc}
+   * @see PositionLengthAttribute
+   */
   @Override
   public int getPositionLength() {
     return positionLength;
   }
 
-  /** Returns this Token's starting offset, the position of the first character
-    corresponding to this token in the source text.
-
-    Note that the difference between endOffset() and startOffset() may not be
-    equal to {@link #length}, as the term text may have been altered by a
-    stemmer or some other filter. */
+  /**
+   * {@inheritDoc}
+   * @see OffsetAttribute
+   */
   public final int startOffset() {
     return startOffset;
   }
 
-  /** Returns this Token's ending offset, one greater than the position of the
-    last character corresponding to this token in the source text. The length
-    of the token in the source text is (endOffset - startOffset). */
+  /**
+   * {@inheritDoc}
+   * @see OffsetAttribute
+   */
   public final int endOffset() {
     return endOffset;
   }
 
-  /** Set the starting and ending offset.
-  @see #startOffset() and #endOffset()*/
+  /**
+   * {@inheritDoc}
+   * @see OffsetAttribute
+   */
   public void setOffset(int startOffset, int endOffset) {
     checkOffsets(startOffset, endOffset);
     this.startOffset = startOffset;
     this.endOffset = endOffset;
   }
 
-  /** Returns this Token's lexical type.  Defaults to "word". */
+  /**
+   * {@inheritDoc}
+   * @see TypeAttribute
+   */
   public final String type() {
     return type;
   }
 
-  /** Set the lexical type.
-      @see #type() */
+  /**
+   * {@inheritDoc}
+   * @see TypeAttribute
+   */
   public final void setType(String type) {
     this.type = type;
   }
 
   /**
-   * <p/>
-   *
-   * Get the bitset for any bits that have been set.  This is completely distinct from {@link #type()}, although they do share similar purposes.
-   * The flags can be used to encode information about the token for use by other {@link org.apache.lucene.analysis.TokenFilter}s.
-   *
-   * 
-   * @return The bits
-   * @lucene.experimental While we think this is here to stay, we may want to change it to be a long.
+   * {@inheritDoc}
+   * @see FlagsAttribute
    */
   public int getFlags() {
     return flags;
   }
 
   /**
-   * @see #getFlags()
+   * {@inheritDoc}
+   * @see FlagsAttribute
    */
   public void setFlags(int flags) {
     this.flags = flags;
   }
 
   /**
-   * Returns this Token's payload.
-   */ 
+   * {@inheritDoc}
+   * @see PayloadAttribute
+   */
   public BytesRef getPayload() {
     return this.payload;
   }
 
-  /** 
-   * Sets this Token's payload.
+  /**
+   * {@inheritDoc}
+   * @see PayloadAttribute
    */
   public void setPayload(BytesRef payload) {
     this.payload = payload;
@@ -551,8 +537,8 @@ public class Token extends CharTermAttributeImpl
 
   /**
    * Copy the prototype token's fields into this one, with a different term. Note: Payloads are shared.
-   * @param prototype
-   * @param newTerm
+   * @param prototype existing Token
+   * @param newTerm new term text
    */
   public void reinit(Token prototype, String newTerm) {
     setEmpty().append(newTerm);
@@ -566,10 +552,10 @@ public class Token extends CharTermAttributeImpl
 
   /**
    * Copy the prototype token's fields into this one, with a different term. Note: Payloads are shared.
-   * @param prototype
-   * @param newTermBuffer
-   * @param offset
-   * @param length
+   * @param prototype existing Token
+   * @param newTermBuffer buffer containing new term text
+   * @param offset the index in the buffer of the first character
+   * @param length number of valid characters in the buffer
    */
   public void reinit(Token prototype, char[] newTermBuffer, int offset, int length) {
     copyBuffer(newTermBuffer, offset, length);

@@ -248,6 +248,9 @@
       <!-- spatial: problems -->
       <check-missing-javadocs dir="build/docs/suggest" level="class"/>
       <check-missing-javadocs dir="build/docs/test-framework" level="class"/>
+
+      <!-- too much to fix for now, but enforce full javadocs for key packages -->
+      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
     </sequential>
   </target>
   

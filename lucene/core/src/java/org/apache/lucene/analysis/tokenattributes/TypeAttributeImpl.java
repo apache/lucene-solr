@@ -19,27 +19,24 @@ package org.apache.lucene.analysis.tokenattributes;
 
 import org.apache.lucene.util.AttributeImpl;
 
-/**
- * A Token's lexical type. The Default value is "word". 
- */
+/** Default implementation of {@link TypeAttribute}. */
 public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, Cloneable {
   private String type;
   
+  /** Initialize this attribute with {@link TypeAttribute#DEFAULT_TYPE} */
   public TypeAttributeImpl() {
     this(DEFAULT_TYPE); 
   }
   
+  /** Initialize this attribute with <code>type</code> */
   public TypeAttributeImpl(String type) {
     this.type = type;
   }
   
-  /** Returns this Token's lexical type.  Defaults to "word". */
   public String type() {
     return type;
   }
 
-  /** Set the lexical type.
-      @see #type() */
   public void setType(String type) {
     this.type = type;
   }

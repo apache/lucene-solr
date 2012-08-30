@@ -20,9 +20,7 @@ package org.apache.lucene.analysis.tokenattributes;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * The payload of a Token represented as {@link BytesRef}.
- */
+/** Default implementation of {@link PayloadAttribute}. */
 public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttribute, Cloneable {
   private BytesRef payload;  
   
@@ -38,16 +36,10 @@ public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttrib
     this.payload = payload;
   }
   
-  /**
-   * Returns this Token's payload.
-   */ 
   public BytesRef getPayload() {
     return this.payload;
   }
 
-  /** 
-   * Sets this Token's payload.
-   */
   public void setPayload(BytesRef payload) {
     this.payload = payload;
   }
