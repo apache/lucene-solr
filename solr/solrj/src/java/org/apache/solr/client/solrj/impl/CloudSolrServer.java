@@ -242,14 +242,16 @@ public class CloudSolrServer extends SolrServer {
       theUrlList.addAll(urlList);
     }
     Collections.shuffle(theUrlList, rand);
-    if (replicas != null) {
+    if (sendToLeaders) {
       ArrayList<String> theReplicas = new ArrayList<String>(replicasList.size());
       theReplicas.addAll(replicasList);
       Collections.shuffle(theReplicas, rand);
-
+    //  System.out.println("leaders:" + theUrlList);
+    //  System.out.println("replicas:" + theReplicas);
       theUrlList.addAll(theReplicas);
     }
-    //System.out.println("########################## MAKING REQUEST TO " + theUrlList);
+ 
+   // System.out.println("########################## MAKING REQUEST TO " + theUrlList);
  
     LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, theUrlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);
