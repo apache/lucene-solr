@@ -25,39 +25,57 @@ import java.util.List;
  * 
  */
 public class HashPartitioner {
-  
+
+  // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
   public static class Range {
-    public long min;
-    public long max;
+    public int min;  // inclusive
+    public int max;  // inclusive
     
-    public Range(long min, long max) {
+    public Range(int min, int max) {
       this.min = min;
       this.max = max;
     }
+
+    public boolean includes(int hash) {
+      return hash >= min && hash <= max;
+    }
+
+    public String toString() {
+      return Integer.toHexString(min) + '-' + Integer.toHexString(max);
+    }
+
+    public static Range fromString(String range) {
+      return null; // TODO
+    }
   }
   
+
   /**
-   * works up to 65537 before requested num of ranges is one short
-   * 
+   *
    * @param partitions
    * @return Range for each partition
    */
-  public List<Range> partitionRange(int partitions) {
-    // some hokey code to partition the int space
-    long range = Integer.MAX_VALUE + (Math.abs((long) Integer.MIN_VALUE));
-    long srange = range / partitions;
-    
+  public List<Range> partitionRange(int partitions, int min, int max) {
+    assert max >= min;
+    long range = (long)max - (long)min;
+    long srange = Math.max(1, range / partitions);
+
     List<Range> ranges = new ArrayList<Range>(partitions);
-    
-    long end = 0;
-    long start = Integer.MIN_VALUE;
-    
-    while (end < Integer.MAX_VALUE) {
+
+    long start = min;
+    long end = start;
+
+    while (end < max) {
       end = start + srange;
-      ranges.add(new Range(start, end));
+      // make last range always end exactly on MAX_VALUE
+      if (ranges.size() == partitions - 1) {
+        end = max;
+      }
+      ranges.add(new Range((int)start, (int)end));
       start = end + 1L;
     }
-    
+
     return ranges;
   }
+
 }

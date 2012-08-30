@@ -226,7 +226,7 @@ public class ClusterState implements JSONWriter.Writable {
     shardList.addAll(shards);
     Collections.sort(shardList);
     
-    ranges = hp.partitionRange(shards.size());
+    ranges = hp.partitionRange(shards.size(), Integer.MIN_VALUE, Integer.MAX_VALUE);
     
     rangeInfo.ranges = ranges;
     rangeInfo.shardList = shardList;
@@ -243,7 +243,7 @@ public class ClusterState implements JSONWriter.Writable {
     
     int cnt = 0;
     for (Range range : rangInfo.ranges) {
-      if (hash < range.max) {
+      if (range.includes(hash)) {
         return rangInfo.shardList.get(cnt);
       }
       cnt++;
