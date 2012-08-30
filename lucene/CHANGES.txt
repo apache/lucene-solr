@@ -23,6 +23,11 @@ New Features
 * LUCENE-4323: Added support for an absolute maximum CFS segment size
   (in MiB) to LogMergePolicy and TieredMergePolicy.
   (Alexey Lef via Uwe Schindler)
+  
+* LUCENE-4339: Allow deletes against 3.x segments for easier upgrading.
+  Lucene3x Codec is still otherwise read-only, you should not set it
+  as the default Codec on IndexWriter, because it cannot write new segments.
+  (Mike McCandless, Robert Muir)
 
 API Changes
 

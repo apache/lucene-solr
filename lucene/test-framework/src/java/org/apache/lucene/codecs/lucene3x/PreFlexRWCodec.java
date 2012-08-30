@@ -38,8 +38,6 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   private final TermVectorsFormat termVectors = new PreFlexRWTermVectorsFormat();
   private final SegmentInfoFormat segmentInfos = new PreFlexRWSegmentInfoFormat();
   private final StoredFieldsFormat storedFields = new PreFlexRWStoredFieldsFormat();
-  // TODO: this should really be a different impl
-  private final LiveDocsFormat liveDocs = new Lucene40LiveDocsFormat();
   
   @Override
   public PostingsFormat postingsFormat() {
@@ -83,15 +81,6 @@ public class PreFlexRWCodec extends Lucene3xCodec {
       return termVectors;
     } else {
       return super.termVectorsFormat();
-    }
-  }
-
-  @Override
-  public LiveDocsFormat liveDocsFormat() {
-    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
-      return liveDocs;
-    } else {
-      return super.liveDocsFormat();
     }
   }
 

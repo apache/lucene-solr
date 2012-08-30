@@ -302,6 +302,51 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
+  /** @deprecated 3.x transition mechanism */
+  @Deprecated
+  public void testDeleteOldIndex() throws IOException {
+    for (String name : oldNames) {
+      if (VERBOSE) {
+        System.out.println("TEST: oldName=" + name);
+      }
+      
+      // Try one delete:
+      Directory dir = newDirectory(oldIndexDirs.get(name));
+
+      IndexReader ir = DirectoryReader.open(dir);       
+      assertEquals(35, ir.numDocs());
+      ir.close();
+
+      IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      iw.deleteDocuments(new Term("id", "3"));
+      iw.close();
+
+      ir = DirectoryReader.open(dir);
+      assertEquals(34, ir.numDocs());
+      ir.close();
+
+      // Delete all but 1 document:
+      iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+      for(int i=0;i<35;i++) {
+        iw.deleteDocuments(new Term("id", ""+i));
+      }
+
+      // Verify NRT reader takes:
+      ir = DirectoryReader.open(iw, true);
+      iw.close();
+      
+      assertEquals("index " + name, 1, ir.numDocs());
+      ir.close();
+
+      // Verify non-NRT reader takes:
+      ir = DirectoryReader.open(dir);
+      assertEquals("index " + name, 1, ir.numDocs());
+      ir.close();
+
+      dir.close();
+    }
+  }
+
   private void doTestHits(ScoreDoc[] hits, int expectedCount, IndexReader reader) throws IOException {
     final int hitCount = hits.length;
     assertEquals("wrong number of hits", expectedCount, hitCount);

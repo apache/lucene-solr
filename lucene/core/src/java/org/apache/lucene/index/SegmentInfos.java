@@ -380,11 +380,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
 
           if (!segmentWasUpgraded(directory, si)) {
 
+            String markerFileName = IndexFileNames.segmentFileName(si.name, "upgraded", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
+            si.addFile(markerFileName);
+
             final String segmentFileName = write3xInfo(directory, si, IOContext.DEFAULT);
             upgradedSIFiles.add(segmentFileName);
             directory.sync(Collections.singletonList(segmentFileName));
-
-            String markerFileName = IndexFileNames.segmentFileName(si.name, "upgraded", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
 
             // Write separate marker file indicating upgrade
             // is completed.  This way, if there is a JVM
