@@ -48,6 +48,9 @@ New Features
 * SOLR-3670: New CountFieldValuesUpdateProcessorFactory makes it easy to index 
   the number of values in another field for later use at query time. (hossman)
 
+* SOLR-2768: new "mod(x,y)" function for computing the modulus of two value 
+  sources. (hossman)
+
 Optimizations
 ----------------------
 
