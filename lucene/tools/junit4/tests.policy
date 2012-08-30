@@ -27,6 +27,7 @@ grant {
   // permissions for file access, write access only to sandbox:
   permission java.io.FilePermission "<<ALL FILES>>", "read,execute";
   permission java.io.FilePermission "${tests.sandbox.dir}${/}-", "read,execute,write,delete";
+  permission java.io.FilePermission "${clover.db.dir}${/}-", "read,execute,write,delete";
   
   // all possibilities of accepting/binding connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen";
