@@ -93,6 +93,14 @@ Bug Fixes
 * SOLR-3721: Fix bug that could allow multiple recoveries to run briefly at
   the same time if the recovery thread join call was interrupted.
   (Per Steffensen, Mark Miller)
+  
+* SOLR-3750: On session expiration, we should explicitly wait some time before 
+  running the leader sync process so that we are sure every node participates.
+  (Per Steffensen, Mark Miller)
+  
+* SOLR-3772: On cluster startup, we should wait until we see all registered 
+  replicas before running the leader process - or if they all do not come up, 
+  N amount of time. (Jan Høydahl, Per Steffensen, Mark Miller)
 
 Other Changes
 ----------------------
@@ -111,6 +119,12 @@ Other Changes
 * SOLR-2747: Updated changes2html.pl to handle Solr's CHANGES.txt; added
   target 'changes-to-html' to solr/build.xml.
   (Steve Rowe, Robert Muir)
+  
+* SOLR-3752: When a leader goes down, have the Overseer clear the leader state
+  in cluster.json (Mark Miller)
+
+* SOLR-3751: Add defensive checks for SolrCloud updates and requests that ensure 
+  the local state matches what we can tell the request expected. (Mark Miller)
 
 ==================  4.0.0-BETA ===================
 

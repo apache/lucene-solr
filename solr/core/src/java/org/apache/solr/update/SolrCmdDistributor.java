@@ -166,6 +166,8 @@ public class SolrCmdDistributor {
     
     addCommit(ureq, cmd);
     
+    log.info("Distrib commit to:" + nodes);
+    
     for (Node node : nodes) {
       submit(ureq, node);
     }
@@ -345,7 +347,8 @@ public class SolrCmdDistributor {
     try {
       semaphore.acquire();
     } catch (InterruptedException e) {
-      throw new RuntimeException();
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Update thread interrupted");
     }
     pending.add(completionService.submit(task));
     

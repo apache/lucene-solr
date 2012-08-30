@@ -801,7 +801,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             SolrDocumentList lst1 = lastJetty.client.solrClient.query(query).getResults();
             SolrDocumentList lst2 = cjetty.client.solrClient.query(query).getResults();
 
-            showDiff(lst1, lst2, lastJetty.toString(), cjetty.client.solrClient.toString());
+            showDiff(lst1, lst2, lastJetty.url, cjetty.url);
           }
 
         }
@@ -1130,7 +1130,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       
       try {
         commit();
-      } catch (Exception e) {
+      } catch (Throwable t) {
+        t.printStackTrace();
         // we don't care if this commit fails on some nodes
       }
       
@@ -1146,8 +1147,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         retry  = true;
       }
       cnt++;
-      if (cnt > 2) break;
-      Thread.sleep(4000);
+      if (cnt > 4) break;
+      Thread.sleep(2000);
     } while (retry);
   }
   
