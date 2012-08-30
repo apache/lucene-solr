@@ -82,12 +82,18 @@ public abstract class Tokenizer extends TokenStream {
     return (input instanceof CharFilter) ? ((CharFilter) input).correctOffset(currentOff) : currentOff;
   }
 
-  /** Expert: Reset the tokenizer to a new reader.  Typically, an
+  /** Expert: Set a new reader on the Tokenizer.  Typically, an
    *  analyzer (in its tokenStream method) will use
    *  this to re-use a previously created tokenizer. */
-  public void setReader(Reader input) throws IOException {
+  public final void setReader(Reader input) throws IOException {
     assert input != null: "input must not be null";
     this.input = input;
+    assert setReaderTestPoint();
+  }
+  
+  // only used by assert, for testing
+  boolean setReaderTestPoint() {
+    return true;
   }
 }
 

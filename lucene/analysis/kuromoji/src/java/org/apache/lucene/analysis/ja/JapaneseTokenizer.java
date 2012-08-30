@@ -245,14 +245,8 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   @Override
-  public void setReader(Reader input) throws IOException {
-    super.setReader(input);
-    buffer.reset(input);
-  }
-
-  @Override
   public void reset() throws IOException {
-    super.reset();
+    buffer.reset(input);
     resetState();
   }
 

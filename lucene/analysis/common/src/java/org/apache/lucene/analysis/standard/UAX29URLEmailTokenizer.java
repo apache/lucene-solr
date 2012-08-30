@@ -162,8 +162,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   }
 
   @Override
-  public void setReader(Reader reader) throws IOException {
-    super.setReader(reader);
-    scanner.yyreset(reader);
+  public void reset() throws IOException {
+    scanner.yyreset(input);
   }
 }
