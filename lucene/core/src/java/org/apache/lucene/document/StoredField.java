@@ -38,11 +38,10 @@ public class StoredField extends Field {
   }
 
   /**
-   * Create a stored-only field with the given binary value.
-   * <p>NOTE: the provided byte[] is not copied so be sure
-   * not to change it until you're done with this field.
+   * Expert: allows you to customize the {@link
+   * FieldType}.
    * @param name field name
-   * @param value byte array pointing to binary content (not copied)
+   * @param type custom {@link FieldType} for this field
    * @throws IllegalArgumentException if the field name is null.
    */
   protected StoredField(String name, FieldType type) {
@@ -55,7 +54,7 @@ public class StoredField extends Field {
    * <p>NOTE: the provided byte[] is not copied so be sure
    * not to change it until you're done with this field.
    * @param name field name
-   * @param value byte array pointing to binary content (not copied)
+   * @param bytes byte array pointing to binary content (not copied)
    * @param type custom {@link FieldType} for this field
    * @throws IllegalArgumentException if the field name is null.
    */
@@ -63,6 +62,14 @@ public class StoredField extends Field {
     super(name, bytes, type);
   }
   
+  /**
+   * Create a stored-only field with the given binary value.
+   * <p>NOTE: the provided byte[] is not copied so be sure
+   * not to change it until you're done with this field.
+   * @param name field name
+   * @param value byte array pointing to binary content (not copied)
+   * @throws IllegalArgumentException if the field name is null.
+   */
   public StoredField(String name, byte[] value) {
     super(name, value, TYPE);
   }
@@ -103,6 +110,14 @@ public class StoredField extends Field {
     super(name, value, TYPE);
   }
   
+  /**
+   * Expert: allows you to customize the {@link
+   * FieldType}.
+   * @param name field name
+   * @param value string value
+   * @param type custom {@link FieldType} for this field
+   * @throws IllegalArgumentException if the field name or value is null.
+   */
   public StoredField(String name, String value, FieldType type) {
     super(name, value, type);
   }
