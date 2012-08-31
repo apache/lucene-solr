@@ -20,7 +20,7 @@ package org.apache.lucene.util.packed;
 /**
  * Non-specialized {@link BulkOperation} for {@link PackedInts.Format#PACKED_SINGLE_BLOCK}.
  */
-class BulkOperationPackedSingleBlock extends BulkOperation {
+final class BulkOperationPackedSingleBlock extends BulkOperation {
 
   private static final int BLOCK_COUNT = 1;
 
