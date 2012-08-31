@@ -355,14 +355,10 @@ public abstract class BufferedIndexInput extends IndexInput {
    */
   public static int bufferSize(IOContext context) {
     switch (context.context) {
-    case DEFAULT:
-    case FLUSH:
-    case READ:
-      return BUFFER_SIZE;
     case MERGE:
       return MERGE_BUFFER_SIZE;
     default:
-      throw new AssertionError("unknown IOContext " + context.context);
+      return BUFFER_SIZE;
     }
   }
   
