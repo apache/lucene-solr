@@ -70,11 +70,15 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
 @Slow
+@ThreadLeakAction({Action.WARN})
 public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
