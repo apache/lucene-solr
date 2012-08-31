@@ -34,16 +34,16 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.servlet.SolrDispatchFilter;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
+@ThreadLeakAction({Action.WARN})
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
-  
-  public BasicDistributedZk2Test() {
-    super();
-  }
-  
+
   /*
    * (non-Javadoc)
    * 
