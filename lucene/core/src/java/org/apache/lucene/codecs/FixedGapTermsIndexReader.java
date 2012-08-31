@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.BytesRef;
@@ -85,6 +86,9 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       
       readHeader(in);
       indexInterval = in.readInt();
+      if (indexInterval < 1) {
+        throw new CorruptIndexException("invalid indexInterval: " + indexInterval + " (resource=" + in + ")");
+      }
       this.indexDivisor = indexDivisor;
 
       if (indexDivisor < 0) {
@@ -98,18 +102,29 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       seekDir(in, dirOffset);
 
       // Read directory
-      final int numFields = in.readVInt();      
+      final int numFields = in.readVInt();     
+      if (numFields < 0) {
+        throw new CorruptIndexException("invalid numFields: " + numFields + " (resource=" + in + ")");
+      }
       //System.out.println("FGR: init seg=" + segment + " div=" + indexDivisor + " nF=" + numFields);
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final int numIndexTerms = in.readVInt();
+        if (numIndexTerms < 0) {
+          throw new CorruptIndexException("invalid numIndexTerms: " + numIndexTerms + " (resource=" + in + ")");
+        }
         final long termsStart = in.readVLong();
         final long indexStart = in.readVLong();
         final long packedIndexStart = in.readVLong();
         final long packedOffsetsStart = in.readVLong();
-        assert packedIndexStart >= indexStart: "packedStart=" + packedIndexStart + " indexStart=" + indexStart + " numIndexTerms=" + numIndexTerms + " seg=" + segment;
+        if (packedIndexStart < indexStart) {
+          throw new CorruptIndexException("invalid packedIndexStart: " + packedIndexStart + " indexStart: " + indexStart + "numIndexTerms: " + numIndexTerms + " (resource=" + in + ")");
+        }
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        fields.put(fieldInfo, new FieldIndexData(fieldInfo, numIndexTerms, indexStart, termsStart, packedIndexStart, packedOffsetsStart));
+        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(fieldInfo, numIndexTerms, indexStart, termsStart, packedIndexStart, packedOffsetsStart));
+        if (previous != null) {
+          throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
+        }
       }
       success = true;
     } finally {

@@ -23,6 +23,7 @@ import java.io.OutputStreamWriter; // for toDot
 import java.io.Writer;             // for toDot
 import java.util.HashMap;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -71,12 +72,18 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
       // Read directory
       final int numFields = in.readVInt();
+      if (numFields < 0) {
+        throw new CorruptIndexException("invalid numFields: " + numFields + " (resource=" + in + ")");
+      }
 
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long indexStart = in.readVLong();
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        fields.put(fieldInfo, new FieldIndexData(fieldInfo, indexStart));
+        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(fieldInfo, indexStart));
+        if (previous != null) {
+          throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
+        }
       }
       success = true;
     } finally {

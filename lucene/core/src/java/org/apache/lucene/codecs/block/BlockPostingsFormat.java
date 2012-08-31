@@ -406,7 +406,7 @@ public final class BlockPostingsFormat extends PostingsFormat {
     try {
       FieldsProducer ret = new BlockTreeTermsReader(state.dir,
                                                     state.fieldInfos,
-                                                    state.segmentInfo.name,
+                                                    state.segmentInfo,
                                                     postingsReader,
                                                     state.context,
                                                     state.segmentSuffix,
