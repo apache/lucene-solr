@@ -70,6 +70,45 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
   }
 
   @Test
+  public void testOneMeterPrecision() {
+    init(GeohashPrefixTree.getMaxLevelsPossible());
+    GeohashPrefixTree grid = (GeohashPrefixTree) ((RecursivePrefixTreeStrategy) strategy).getGrid();
+    //DWS: I know this to be true.  11 is needed for one meter
+    assertEquals(11, grid.getLevelForDistance(ctx.getDistCalc().distanceToDegrees(0.001)));
+  }
+
+  @Test
+  public void testPrecision() throws IOException{
+    init(GeohashPrefixTree.getMaxLevelsPossible());
+
+    Point iPt = ctx.makePoint(2.8028712999999925, 48.3708044);//lon, lat
+    addDocument(newDoc("iPt", iPt));
+    commit();
+
+    Point qPt = ctx.makePoint(2.4632387000000335, 48.6003516);
+
+    final double DIST = 35.75;//35.7499...
+    assertEquals(DIST, ctx.getDistCalc().distance(iPt, qPt), 0.001);
+
+    //distPrec will affect the query shape precision. The indexed precision
+    // was set to nearly zilch via init(GeohashPrefixTree.getMaxLevelsPossible());
+    final double distPrec = 0.025; //the suggested default, by the way
+    final double distMult = 1+distPrec;
+
+    assertTrue(35.74*distMult >= DIST);
+    checkHits(q(qPt, 35.74, distPrec), 1, null);
+
+    assertTrue(30*distMult < DIST);
+    checkHits(q(qPt, 30, distPrec), 0, null);
+
+    assertTrue(33*distMult < DIST);
+    checkHits(q(qPt, 33, distPrec), 0, null);
+
+    assertTrue(34*distMult < DIST);
+    checkHits(q(qPt, 34, distPrec), 0, null);
+  }
+
+  @Test
   public void geohashRecursiveRandom() throws IOException {
     init(12);
 
@@ -105,9 +144,9 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
                 qcYoff + clusterCenter.getY());
             double[] distRange = calcDistRange(queryCenter,clusterCenter,sideDegree);
             //4.1 query a small box getting nothing
-            checkHits(queryCenter, distRange[0]*0.99, 0, null);
+            checkHits(q(queryCenter, distRange[0]*0.99), 0, null);
             //4.2 Query a large box enclosing the cluster, getting everything
-            checkHits(queryCenter, distRange[1]*1.01, points.size(), null);
+            checkHits(q(queryCenter, distRange[1]*1.01), points.size(), null);
             //4.3 Query a medium box getting some (calculate the correct solution and verify)
             double queryDist = distRange[0] + (distRange[1]-distRange[0])/2;//average
 
@@ -122,7 +161,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
             ids = Arrays.copyOf(ids, ids_sz);
             //assert ids_sz > 0 (can't because randomness keeps us from being able to)
 
-            checkHits(queryCenter, queryDist, ids.length, ids);
+            checkHits(q(queryCenter, queryDist), ids.length, ids);
           }
         }
 
@@ -132,13 +171,20 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
 
   }//randomTest()
 
-  //TODO can we use super.runTestQueries() ?
-  private void checkHits(Point pt, double dist, int assertNumFound, int[] assertIds) {
+  private SpatialArgs q(Point pt, double dist) {
+    return q(pt, dist, 0.0);
+  }
+
+  private SpatialArgs q(Point pt, double dist, double distPrec) {
     Shape shape = ctx.makeCircle(pt,dist);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,shape);
-    args.setDistPrecision(0.0);
+    args.setDistPrecision(distPrec);
+    return args;
+  }
+
+  private void checkHits(SpatialArgs args, int assertNumFound, int[] assertIds) {
     SearchResults got = executeQuery(strategy.makeQuery(args), 100);
-    assertEquals(""+shape,assertNumFound,got.numFound);
+    assertEquals("" + args, assertNumFound, got.numFound);
     if (assertIds != null) {
       Set<Integer> gotIds = new HashSet<Integer>();
       for (SearchResult result : got.results) {
@@ -150,7 +196,6 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     }
   }
 
-  //
   private Document newDoc(String id, Shape shape) {
     Document doc = new Document();
     doc.add(new StringField("id", id, Field.Store.YES));
