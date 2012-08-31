@@ -223,7 +223,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
         field = new DoubleField(type.name(), 0.0, ft);
         break;
       default:
-        assert false;
+        fail();
         field = null;
       }
       numericFieldMap.put(type.name(), field);

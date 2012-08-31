@@ -521,7 +521,7 @@ public class Field implements IndexableField {
         nts.setDoubleValue(val.doubleValue());
         break;
       default:
-        assert false : "Should never get here";
+        throw new AssertionError("Should never get here");
       }
       return internalTokenStream;
     }

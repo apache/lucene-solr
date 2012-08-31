@@ -324,7 +324,7 @@ final class DocumentsWriterDeleteQueue {
         .newUpdater(Node.class, Node.class, "next");
 
     void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
-      assert false : "sentinel item must never be applied";
+      throw new IllegalStateException("sentinel item must never be applied");
     }
 
     boolean casNext(Node<?> cmp, Node<?> val) {
