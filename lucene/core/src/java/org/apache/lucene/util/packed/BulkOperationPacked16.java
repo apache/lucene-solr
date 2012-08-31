@@ -24,76 +24,44 @@ package org.apache.lucene.util.packed;
  */
 final class BulkOperationPacked16 extends BulkOperationPacked {
 
-    public BulkOperationPacked16() {
-      super(16);
-      assert blockCount() == 1;
-      assert valueCount() == 4;
-    }
+  public BulkOperationPacked16() {
+    super(16);
+    assert blockCount() == 1;
+    assert valueCount() == 4;
+  }
 
-    @Override
-    public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        final long block0 = blocks[blocksOffset++];
-        values[valuesOffset++] = (int) (block0 >>> 48);
-        values[valuesOffset++] = (int) ((block0 >>> 32) & 65535L);
-        values[valuesOffset++] = (int) ((block0 >>> 16) & 65535L);
-        values[valuesOffset++] = (int) (block0 & 65535L);
+  @Override
+  public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+    for (int i = 0; i < iterations; ++i) {
+      final long block = blocks[blocksOffset++];
+      for (int shift = 48; shift >= 0; shift -= 16) {
+        values[valuesOffset++] = (int) ((block >>> shift) & 65535);
       }
     }
+  }
 
-    @Override
-    public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
-      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        final int byte0 = blocks[blocksOffset++] & 0xFF;
-        final int byte1 = blocks[blocksOffset++] & 0xFF;
-        values[valuesOffset++] = (byte0 << 8) | byte1;
-        final int byte2 = blocks[blocksOffset++] & 0xFF;
-        final int byte3 = blocks[blocksOffset++] & 0xFF;
-        values[valuesOffset++] = (byte2 << 8) | byte3;
-        final int byte4 = blocks[blocksOffset++] & 0xFF;
-        final int byte5 = blocks[blocksOffset++] & 0xFF;
-        values[valuesOffset++] = (byte4 << 8) | byte5;
-        final int byte6 = blocks[blocksOffset++] & 0xFF;
-        final int byte7 = blocks[blocksOffset++] & 0xFF;
-        values[valuesOffset++] = (byte6 << 8) | byte7;
+  @Override
+  public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+    for (int j = 0; j < 4 * iterations; ++j) {
+      values[valuesOffset++] = ((blocks[blocksOffset++] & 0xFF) << 8) | (blocks[blocksOffset++] & 0xFF);
+    }
+  }
+
+  @Override
+  public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+    for (int i = 0; i < iterations; ++i) {
+      final long block = blocks[blocksOffset++];
+      for (int shift = 48; shift >= 0; shift -= 16) {
+        values[valuesOffset++] = (block >>> shift) & 65535;
       }
     }
+  }
 
-    @Override
-    public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
-      assert blocksOffset + iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        final long block0 = blocks[blocksOffset++];
-        values[valuesOffset++] = block0 >>> 48;
-        values[valuesOffset++] = (block0 >>> 32) & 65535L;
-        values[valuesOffset++] = (block0 >>> 16) & 65535L;
-        values[valuesOffset++] = block0 & 65535L;
-      }
+  @Override
+  public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+    for (int j = 0; j < 4 * iterations; ++j) {
+      values[valuesOffset++] = ((blocks[blocksOffset++] & 0xFFL) << 8) | (blocks[blocksOffset++] & 0xFFL);
     }
-
-    @Override
-    public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
-      assert blocksOffset + 8 * iterations * blockCount() <= blocks.length;
-      assert valuesOffset + iterations * valueCount() <= values.length;
-      for (int i = 0; i < iterations; ++i) {
-        final long byte0 = blocks[blocksOffset++] & 0xFF;
-        final long byte1 = blocks[blocksOffset++] & 0xFF;
-        values[valuesOffset++] = (byte0 << 8) | byte1;
-        final long byte2 = blocks[blocksOffset++] & 0xFF;
-        final long byte3 = blocks[blocksOffset++] & 0xFF;
-        values[valuesOffset++] = (byte2 << 8) | byte3;
-        final long byte4 = blocks[blocksOffset++] & 0xFF;
-        final long byte5 = blocks[blocksOffset++] & 0xFF;
-        values[valuesOffset++] = (byte4 << 8) | byte5;
-        final long byte6 = blocks[blocksOffset++] & 0xFF;
-        final long byte7 = blocks[blocksOffset++] & 0xFF;
-        values[valuesOffset++] = (byte6 << 8) | byte7;
-      }
-    }
+  }
 
 }
