@@ -1064,13 +1064,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // make the hash pluggable of course.
   // The hash also needs to be pluggable
   private int hash(AddUpdateCommand cmd) {
-    BytesRef br = cmd.getIndexedId();
-    return Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
+    String hashableId = cmd.getHashableId();
+    
+    return Hash.murmurhash3_x86_32(hashableId, 0, hashableId.length(), 0);
   }
   
   private int hash(DeleteUpdateCommand cmd) {
-    BytesRef br = cmd.getIndexedId();
-    return Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
+    return Hash.murmurhash3_x86_32(cmd.getId(), 0, cmd.getId().length(), 0);
   }
   
   // RetryNodes are used in the case of 'forward to leader' where we want
