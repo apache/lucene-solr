@@ -122,10 +122,10 @@ public class QuadPrefixTree extends SpatialPrefixTree {
 
   @Override
   public int getLevelForDistance(double dist) {
-    for (int i = 1; i < maxLevels; i++) {
+    for (int i = 0; i < maxLevels-1; i++) {
       //note: level[i] is actually a lookup for level i+1
-      if(dist > levelW[i] || dist > levelH[i]) {
-        return i;
+      if(dist > levelW[i] && dist > levelH[i]) {
+        return i+1;
       }
     }
     return maxLevels;

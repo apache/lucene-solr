@@ -18,7 +18,9 @@ package org.apache.lucene.spatial.prefix.tree;
  */
 
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
 import java.nio.charset.Charset;
@@ -66,30 +68,35 @@ public abstract class SpatialPrefixTree {
    * See {@link org.apache.lucene.spatial.query.SpatialArgs#getDistPrecision()}.
    * A grid level looked up via {@link #getLevelForDistance(double)} is returned.
    *
-   * @param precision 0-0.5
-   * @return 1-maxLevels
+   * @param precision 0 to 0.5
+   * @return 1 to maxLevels
    */
   public int getMaxLevelForPrecision(Shape shape, double precision) {
     if (precision < 0 || precision > 0.5) {
-      throw new IllegalArgumentException("Precision " + precision + " must be between [0-0.5]");
+      throw new IllegalArgumentException("Precision " + precision + " must be between [0 to 0.5]");
     }
     if (precision == 0 || shape instanceof Point) {
       return maxLevels;
     }
-    double bboxArea = shape.getBoundingBox().getArea();
-    if (bboxArea == 0) {
-      return maxLevels;
-    }
-    double avgSideLenFromCenter = Math.sqrt(bboxArea) / 2;
-    return getLevelForDistance(avgSideLenFromCenter * precision);
+    Rectangle bbox = shape.getBoundingBox();
+    //The diagonal distance should be the same computed from any opposite corner,
+    // and this is the longest distance that might be occurring within the shape.
+    double diagonalDist = ctx.getDistCalc().distance(
+        ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
+    //convert to degrees    //TODO not needed in Spatial4j 0.3
+    diagonalDist = ctx.getDistCalc().distanceToDegrees(diagonalDist);
+    return getLevelForDistance(diagonalDist * 0.5 * precision);
   }
 
   /**
-   * Returns the level of the smallest grid size with a side length that is greater or equal to the provided
-   * distance.
+   * Returns the level of the largest grid in which its longest side is less
+   * than or equal to the provided distance (in degrees). Consequently {@link
+   * dist} acts as an error epsilon declaring the amount of detail needed in the
+   * grid, such that you can get a grid with just the right amount of
+   * precision.
    *
    * @param dist >= 0
-   * @return level [1-maxLevels]
+   * @return level [1 to maxLevels]
    */
   public abstract int getLevelForDistance(double dist);
 

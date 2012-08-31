@@ -85,12 +85,14 @@ public class SpatialArgs {
   }
 
   /**
-   * The fraction of the distance from the center of the query shape to its nearest edge
-   * that is considered acceptable error. The algorithm for computing the distance to the
-   * nearest edge is actually a little different. It normalizes the shape to a square
-   * given it's bounding box area:
-   * <pre>sqrt(shape.bbox.area)/2</pre>
-   * And the error distance is beyond the shape such that the shape is a minimum shape.
+   * A measure of acceptable error of the shape.  It is specified as the
+   * fraction of the distance from the center of the query shape to its furthest
+   * bounding box corner.  This effectively inflates the size of the shape but
+   * should not shrink it.
+   * <p/>
+   * The default is {@link #DEFAULT_DIST_PRECISION}
+   *
+   * @return 0 to 0.5
    */
   public Double getDistPrecision() {
     return distPrecision;
