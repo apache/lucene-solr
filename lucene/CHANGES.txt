@@ -29,6 +29,9 @@ New Features
   as the default Codec on IndexWriter, because it cannot write new segments.
   (Mike McCandless, Robert Muir)
 
+* SOLR-3441: ElisionFilterFactory is now MultiTermAware
+  (Jack Krupansky via hossman)
+
 API Changes
 
 * LUCENE-4299: Added Terms.hasPositions() and Terms.hasOffsets().
