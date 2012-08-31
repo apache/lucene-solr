@@ -51,6 +51,8 @@ New Features
 * SOLR-2768: new "mod(x,y)" function for computing the modulus of two value 
   sources. (hossman)
 
+* SOLR-3238: Numerous small improvements to the Admin UI (steffkes)
+
 Optimizations
 ----------------------
 
