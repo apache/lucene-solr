@@ -362,8 +362,7 @@ public abstract class BufferedIndexInput extends IndexInput {
     case MERGE:
       return MERGE_BUFFER_SIZE;
     default:
-      assert false : "unknown IOContext " + context.context;
-      return BUFFER_SIZE;
+      throw new AssertionError("unknown IOContext " + context.context);
     }
   }
   

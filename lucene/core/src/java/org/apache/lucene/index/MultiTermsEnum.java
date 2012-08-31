@@ -401,8 +401,8 @@ public final class MultiTermsEnum extends TermsEnum {
         subDocs[upto].slice = entry.subSlice;
         upto++;
       } else {
-        // One of our subs cannot provide a docsenum:
-        assert false;
+        // should this be an error?
+        assert false : "One of our subs cannot provide a docsenum";
       }
     }
 
